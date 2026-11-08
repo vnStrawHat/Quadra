@@ -1,0 +1,31 @@
+{
+	"app": {"title": "Quadra Notes"},
+	"nav": {"all": "Tất cả ghi chú", "folders": "Thư mục", "notes": "Ghi chú", "table": "Bảng", "settings": "Cài đặt"},
+	"note": {
+		"new": "Ghi chú mới",
+		"untitled": "Không tiêu đề",
+		"delete": "Xoá ghi chú",
+		"move_to": "Chuyển đến {folder}",
+		"open_window": "Mở trong cửa sổ mới",
+		"count": {"other": "{n} ghi chú"},
+		"saved": "Đã lưu",
+		"saving": "Đang lưu…",
+		"unsaved": "Có thay đổi chưa lưu",
+		"empty": "Chọn một ghi chú hoặc tạo mới bằng Ctrl+N",
+		"placeholder": "Bắt đầu viết…",
+		"imported": {"other": "Đã nhập {n} ghi chú"},
+		"deleted": "Đã xoá ghi chú"
+	},
+	"search": {"placeholder": "Tìm ghi chú", "none": "Không có ghi chú phù hợp"},
+	"table": {"title": "Tiêu đề", "folder": "Thư mục", "modified": "Sửa lúc", "size": "Dung lượng"},
+	"settings": {
+		"title": "Cài đặt",
+		"theme": "Giao diện", "theme_system": "Theo hệ thống", "theme_light": "Sáng", "theme_dark": "Tối",
+		"density": "Mật độ", "compact": "Gọn", "comfortable": "Thoáng",
+		"language": "Ngôn ngữ",
+		"data": "Ghi chú được lưu tại"
+	},
+	"close": {"title": "Lưu thay đổi?", "message": "Một số ghi chú có thay đổi chưa được lưu.", "save": "Lưu và đóng"},
+	"cmd": {"palette": "Bảng lệnh", "theme": "Đổi giao diện sáng/tối", "search": "Tìm kiếm"},
+	"loading": "Đang tải ghi chú…"
+}

@@ -1,0 +1,10 @@
+.tools/
+.cache/
+.tmp/
+*.exe
+*.pdb
+*.ilk
+*.obj
+dist/
+docs/api/
+.private/

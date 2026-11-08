@@ -1,0 +1,128 @@
+// Texture atlases (pure V): shelf packing into fixed-size pages, with uploads queued
+// for the device. ponytail: no eviction yet; pages are added until memory says stop.
+module gpu
+
+pub enum AtlasKind {
+	mono // R8 coverage
+	poly // RGBA8 premultiplied
+}
+
+pub struct AtlasTile {
+pub:
+	page int
+	x    int
+	y    int
+	w    int
+	h    int
+	u0   f32
+	v0   f32
+	u1   f32
+	v1   f32
+}
+
+pub struct Upload {
+pub:
+	kind   AtlasKind
+	page   int
+	x      int
+	y      int
+	w      int
+	h      int
+	pixels []u8
+}
+
+struct Shelf {
+mut:
+	y      int
+	height int
+	x      int
+}
+
+struct Page {
+mut:
+	shelves []Shelf
+	next_y  int
+}
+
+pub struct Atlas {
+pub:
+	kind      AtlasKind
+	page_size int = 2048
+mut:
+	pages   []Page
+	uploads []Upload
+pub mut:
+	bytes_uploaded i64
+}
+
+pub fn new_atlas(kind AtlasKind, page_size int) Atlas {
+	return Atlas{
+		kind:      kind
+		page_size: page_size
+	}
+}
+
+pub fn (a &Atlas) page_count() int {
+	return a.pages.len
+}
+
+// insert packs a w x h bitmap and queues its upload. One px of padding avoids bleeding.
+pub fn (mut a Atlas) insert(w int, h int, pixels []u8) !AtlasTile {
+	if w <= 0 || h <= 0 {
+		return AtlasTile{}
+	}
+	if w + 1 > a.page_size || h + 1 > a.page_size {
+		return error('atlas tile ${w}x${h} exceeds page size ${a.page_size}')
+	}
+	for p in 0 .. a.pages.len {
+		if t := a.try_page(p, w, h) {
+			return a.finish(t, pixels)
+		}
+	}
+	a.pages << Page{}
+	t := a.try_page(a.pages.len - 1, w, h) or { return error('atlas allocation failed') }
+	return a.finish(t, pixels)
+}
+
+fn (mut a Atlas) try_page(p int, w int, h int) ?AtlasTile {
+	mut page := &a.pages[p]
+	need_w, need_h := w + 1, h + 1
+	// Best shelf: tall enough, not wastefully tall, with room left.
+	mut best := -1
+	for i, s in page.shelves {
+		if s.height >= need_h && s.height <= need_h + need_h / 2 + 2 && s.x + need_w <= a.page_size {
+			if best < 0 || s.height < page.shelves[best].height {
+				best = i
+			}
+		}
+	}
+	if best < 0 {
+		if page.next_y + need_h > a.page_size {
+			return none
+		}
+		page.shelves << Shelf{
+			y:      page.next_y
+			height: need_h
+		}
+		page.next_y += need_h
+		best = page.shelves.len - 1
+	}
+	mut s := &page.shelves[best]
+	x, y := s.x, s.y
+	s.x += need_w
+	inv := 1 / f32(a.page_size)
+	return AtlasTile{p, x, y, w, h, f32(x) * inv, f32(y) * inv, f32(x + w) * inv, f32(y + h) * inv}
+}
+
+fn (mut a Atlas) finish(t AtlasTile, pixels []u8) AtlasTile {
+	a.uploads << Upload{a.kind, t.page, t.x, t.y, t.w, t.h, pixels}
+	a.bytes_uploaded += pixels.len
+	return t
+}
+
+// take_uploads hands queued uploads to the device and clears the queue.
+pub fn (mut a Atlas) take_uploads() []Upload {
+	out := a.uploads
+	a.uploads = []Upload{}
+	return out
+}

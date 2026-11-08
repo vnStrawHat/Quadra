@@ -9,7 +9,7 @@ if [ ! -x .tools/v/v.exe ]; then
 	zip=.cache/downloads/v_windows-0.5.2.zip
 	[ -f "$zip" ] || curl -fL -o "$zip" https://github.com/vlang/v/releases/download/0.5.2/v_windows.zip
 	rm -rf .cache/downloads/v-unzip && mkdir -p .cache/downloads/v-unzip
-	unzip -q "$zip" -d .cache/downloads/v-unzip
+	python -I -m zipfile -e "$zip" .cache/downloads/v-unzip # Python 3, not unzip (not in Git Bash)
 	mv .cache/downloads/v-unzip/v .tools/v
 	rm -rf .cache/downloads/v-unzip
 fi

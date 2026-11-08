@@ -9,7 +9,7 @@ The kit's look is the "One" design language (specs/15): flat warm-neutral planes
 
 ## Setup
 
-On a fresh clone run `tools/setup.sh` from Git Bash: it downloads V 0.5.2 into `.tools/v` (everything stays inside the project) and checks that the MSVC toolchain builds. It needs Visual Studio Build Tools (C++ workload + Windows SDK), curl and unzip.
+On a fresh clone run `tools/setup.sh` from Git Bash: it downloads V 0.5.2 into `.tools/v` (everything stays inside the project) and checks that the MSVC toolchain builds. It needs Visual Studio Build Tools (C++ workload + Windows SDK), Python 3 and curl.
 
 ## Commands
 

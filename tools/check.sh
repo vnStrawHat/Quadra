@@ -49,7 +49,7 @@ fi
 #     when the folder was not copied to this machine).
 if [ -f .private/forbidden-names.txt ]; then
 	named=$(git ls-files -co --exclude-standard 2>/dev/null | grep -v '^\.private/' |
-		xargs -r grep -lniwF -f .private/forbidden-names.txt 2>/dev/null || true)
+		xargs -r grep -IlniwF -f .private/forbidden-names.txt 2>/dev/null || true)
 	if [ -n "$named" ]; then
 		say 'check: files naming a reference project (.private/forbidden-names.txt):'
 		say "$named"

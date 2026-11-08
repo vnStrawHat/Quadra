@@ -56,7 +56,7 @@ Notes, Folio, Cluster). It was called "Vela" until 2026-11-08; old notes may say
 | Run an app | `tools/v.sh run apps/gallery` |
 
 More in README.md. Requirements: Git Bash with coreutils, Visual Studio Build Tools (C++
-workload + Windows SDK; `fxc` only when editing HLSL), Python 3, curl and unzip.
+workload + Windows SDK; `fxc` only when editing HLSL), Python 3 and curl.
 
 ## Map
 

@@ -38,7 +38,7 @@ fn (mut f Folio) preview_pane(mut tab Tab, lay Layout, p &Prefs, t &kit.Theme, m
 	}).on_link(cx.listener(fn (mut f Folio, url &string, mut cx core.ViewCx[Folio]) {
 		f.follow_link(*url, mut cx)
 	}))
-	column := ui.div().flex_col().w_full().max_w(820).px(40).pt(preview_pad).pb(96).child(view)
+	column := ui.div().flex_col().w_full().max_w(1120).px(40).pt(preview_pad).pb(96).child(view)
 	scroller :=
 		ui.div().test_id('preview').grow().w_full().overflow_y_scroll().scroll_with(tab.scroll).flex_col().items_center().child(column)
 	return ui.div().test_id('preview-pane').grow().h_full().min_h(0).flex_col().bg(t.p.canvas).child(f.sync_el(tab,
@@ -90,7 +90,11 @@ fn (mut f Folio) outline_panel(p &Prefs, t &kit.Theme, mut cx core.ViewCx[Folio]
 				text_color: t.p.text
 			})
 		}
-		row.child(ui.div().pl(4).child(ui.text(if h.text == '' { '(untitled)' } else { h.text })))
+		row.child(ui.div().pl(4).child(ui.text(if h.text == '' {
+			'(untitled)'
+		} else {
+			h.text
+		}).truncate()))
 		row.on_click(core.listener_with[Folio, int, core.ClickEvent](cx.entity, h.line, fn (mut f Folio, line int, _ &core.ClickEvent, mut cx core.ViewCx[Folio]) {
 			f.reveal_line(line, mut cx)
 		}))

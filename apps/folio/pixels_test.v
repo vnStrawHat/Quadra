@@ -46,7 +46,7 @@ fn test_welcome_document_in_every_layout() {
 	shot(mut h, 'preview_dark')!
 	h.press('ctrl-2')!
 	h.press('ctrl-shift-o')!
-	shot(mut h, 'no_outline')!
+	shot(mut h, 'with_outline')!
 	h.press('ctrl-shift-o')!
 	readme := os.join_path(os.dir(@FILE), '..', '..', 'README.md')
 	h.inject(platform.FileDropEvent{

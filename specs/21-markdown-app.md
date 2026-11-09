@@ -38,8 +38,8 @@ the panels (`chrome` in the palette), panels one step lighter than the text area
 tabs, a breadcrumb toolbar, muted key labels ("Ctrl+Shift+P"), a spotlight palette.
 - **Titlebar** (custom, kit.titlebar): the app menu (≡) and the folder of the shown file,
   like a project name, then the window buttons. Double-click and drag behave as the OS bar.
-- **Outline** (left, 220 px, hidden with ctrl-shift-o or the status bar button): the
-  headings as a tree with indent guides. The section at the reading line (120 px into the
+- **Outline** (left, 220 px, hidden by default, toggled with ctrl-shift-o or the status bar button): the
+  headings as a tree with indent guides, one line each (a long one ends with …). The section at the reading line (120 px into the
   preview, or five lines into the editor in Raw) is marked and follows scrolling. A click
   scrolls the editor (Raw, Split) and the preview (Split, Preview) to the heading. A
   search field at the top (32 px, a search icon) filters the headings.
@@ -63,7 +63,7 @@ tabs, a breadcrumb toolbar, muted key labels ("Ctrl+Shift+P"), a spotlight palet
     has them; a list replaces another list's marker, a numbered list counts from 1;
   - links: the selection becomes the label and the URL is selected to type over (a selected
     URL becomes the target instead); blocks go on lines of their own with blank lines around.
-- **Preview**: the rendered document in a reading column (max 820 px wide with 40 px side
+- **Preview**: the rendered document in a reading column (max 1120 px wide with 40 px side
   padding, centered), scrolled independently. In Split, scrolling the editor moves the preview so
   the block at the editor's top line is at the preview's top (one way: editor → preview).
 - **Status bar**: the outline button on the left; the cursor's line:column (not in
@@ -115,7 +115,7 @@ The kit's Markdown module (`kit/md`) grows to cover what everyday documents use.
 records its source line, which the outline, the scroll sync and the tests use.
 - **Blocks**: ATX headings, paragraphs, bullet, numbered and task lists (`- [ ]`,
   `- [x]`, shown as checkboxes, read-only), fenced code (highlighted by language), quotes
-  (nested), rules, pipe tables with alignment, images, math blocks, Mermaid blocks, YAML
+  (nested), rules, pipe tables with alignment (columns share the width by their content and keep their longest word whole, up to 160 px), images, math blocks, Mermaid blocks, YAML
   front matter (hidden from the preview, shown as a muted block when it is the only content).
 - **Inline**: bold, italic, bold-italic, strikethrough (`~~`), code, links, autolinks
   (`<https://...>` and bare `https://...`), inline math, hard breaks (two spaces or `\`).

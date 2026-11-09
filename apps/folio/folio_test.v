@@ -51,11 +51,25 @@ fn test_opens_and_switches_layouts() {
 	assert r.h.find('editor-pane') == none && r.h.find('preview') != none
 	r.h.click('fmt-split')! // the layout buttons on the toolbar
 	assert r.h.find('editor-pane') != none && r.h.find('preview') != none
-	r.h.press('ctrl-shift-o')!
-	assert r.h.find('outline') == none
+	assert r.h.find('outline') == none // hidden until asked for
 	r.h.press('ctrl-shift-o')!
 	assert r.h.find('outline-1') != none
+	r.h.press('ctrl-shift-o')!
+	assert r.h.find('outline') == none
 	assert r.h.has_text('1:1')
+}
+
+fn test_table_columns_follow_their_content() {
+	long := 'many words in a long cell '.repeat(20)
+	mut r := start('table', '| Status | Notes |\n|---|---|\n| ok | ${long} |\n')!
+	r.h.press('ctrl-3')!
+	a0 := r.h.find('cell-0-0') or { panic('no cell') }
+	b0 := r.h.find('cell-0-1') or { panic('no cell') }
+	a1 := r.h.find('cell-1-0') or { panic('no cell') }
+	b1 := r.h.find('cell-1-1') or { panic('no cell') }
+	assert a0.width == a1.width && b0.width == b1.width // aligned across rows
+	assert a0.width < b0.width / 4 // the long column takes the room
+	assert a0.width >= 80 // 'Status' stays whole: 6 x 9.6 px + the padding
 }
 
 fn test_live_edit_dirty_and_save() {
@@ -63,7 +77,7 @@ fn test_live_edit_dirty_and_save() {
 	r.h.click('editor-pane')!
 	r.h.press('ctrl-end')!
 	r.h.type_text('\n## Added heading\n')
-	assert r.h.has_text('Added heading') // the preview and the outline have it at once
+	assert r.h.has_text('Added heading') // the preview has it at once
 	assert r.t().dirty() && r.f().dirty()
 	r.h.press('ctrl-s')!
 	assert !r.t().dirty()
@@ -80,6 +94,7 @@ fn test_outline_click_moves_the_editor() {
 		long += 'after ${i}\n\n' // room to scroll the heading to the top
 	}
 	mut r := start('outline', long)!
+	r.h.press('ctrl-shift-o')!
 	r.h.click('outline-3')!
 	cx := core.Cx{
 		app: r.h.app

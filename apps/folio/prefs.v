@@ -13,7 +13,7 @@ pub enum Layout {
 pub struct Prefs {
 pub mut:
 	layout    string = 'split' // raw | split | preview
-	outline   bool   = true
+	outline   bool
 	theme     string = 'system' // system | dark | light
 	scale     f32    = 1        // preview text size
 	split     f32    = 0.5      // the editor's share in Split

@@ -85,6 +85,22 @@ fn test_clicking_a_link_reports_its_url() {
 	assert cx.peek(v.model()).opened == ['https://docs']
 }
 
+struct Lines {}
+
+@[markused]
+pub fn (mut l Lines) render(mut cx core.ViewCx[Lines]) core.Element {
+	return ui.div().flex_col().child(ui.div().test_id('long').w(60).child(ui.text('many words that would wrap').truncate())).child(ui.div().test_id('short').w(60).child(ui.text('x').truncate()))
+}
+
+fn test_truncated_text_stays_on_one_line() {
+	mut h := testing.new_harness(width: 400, height: 200)!
+	h.open(Lines{}, width: 400, height: 200)!
+	long := h.find('long') or { panic('no long') }
+	short := h.find('short') or { panic('no short') }
+	assert long.height == short.height
+	assert long.width == 60
+}
+
 fn run(s string, st text.TextStyle) text.Run {
 	return text.Run{
 		text:  s

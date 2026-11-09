@@ -6,11 +6,13 @@ import quadra.core
 import quadra.kit
 import quadra.kit.code
 import quadra.layout
+import quadra.prim
+import quadra.text as txt
 import quadra.ui
 
 // block renders one block. An if chain, not a match: values computed inside the arms of a
 // match typed as core.Element get that type too (a V 0.5.2 bug).
-fn (mut v MarkdownView) block(b Block, t &kit.Theme) core.Element {
+fn (mut v MarkdownView) block(b Block, t &kit.Theme, mut cx core.LayoutCx) core.Element {
 	if b.kind == .heading {
 		return v.heading(b, t)
 	}
@@ -38,7 +40,7 @@ fn (mut v MarkdownView) block(b Block, t &kit.Theme) core.Element {
 		return ui.div().h(1).w_full().bg(t.p.line_strong)
 	}
 	if b.kind == .table {
-		return v.table(b, t)
+		return v.table(b, t, mut cx)
 	}
 	if img := v.image_only(b.text) {
 		return img
@@ -127,7 +129,42 @@ fn code_spans(src string, lang string, t &kit.Theme) []ui.Span {
 	return out
 }
 
-fn (mut v MarkdownView) table(b Block, t &kit.Theme) core.Element {
+// Column is what a table column needs: its longest cell on one line, its longest word.
+struct Column {
+mut:
+	want  f32
+	least f32
+}
+
+const cell_pad = f32(24) // the cell's padding, and a little for bold and code runs
+const longest_kept_word = f32(160) // a longer word (a url) breaks instead of taking the table
+
+fn (v &MarkdownView) columns(b Block, t &kit.Theme, mut cx core.LayoutCx) []Column {
+	mut n := 0
+	for row in b.rows {
+		n = if row.len > n { row.len } else { n }
+	}
+	mut out := []Column{len: n}
+	for r, row in b.rows {
+		st := txt.TextStyle{
+			family: cx.text_style.family
+			size:   v.body_size(t)
+			weight: if r == 0 { 600 } else { 400 }
+		}
+		for c, cell in row {
+			text := plain(cell)
+			out[c].want = prim.max(out[c].want, cx.text.layout_line(text, st).width)
+			for word in text.split(' ') {
+				w := cx.text.layout_line(word, st).width
+				out[c].least = prim.max(out[c].least, prim.min(w, longest_kept_word))
+			}
+		}
+	}
+	return out
+}
+
+fn (mut v MarkdownView) table(b Block, t &kit.Theme, mut cx core.LayoutCx) core.Element {
+	cols := v.columns(b, t, mut cx)
 	mut grid :=
 		ui.div().flex_col().border(1).border_color(t.p.line_strong).rounded(t.radius_md).overflow_hidden()
 	// A bordered grid (specs/15): the header row on the chrome tone, odd rows on the panel.
@@ -148,7 +185,12 @@ fn (mut v MarkdownView) table(b Block, t &kit.Theme) core.Element {
 					sp = sp.weight(600)
 				}
 			}
-			mut box := ui.div().flex(1, 1, layout.px(0)).flex_row().px(10).py(4)
+			// The same three numbers in every row keep the columns aligned.
+			// Flex removes space by shrink x base: squared room leaves short columns whole.
+			want := cols[c].want + cell_pad
+			room := cols[c].want - cols[c].least
+			mut box := ui.div().test_id('cell-${r}-${c}').flex(want, room * room / want,
+				layout.px(want)).min_w(cols[c].least + cell_pad).flex_row().px(10).py(4)
 			al := if c < b.align.len { b.align[c] } else { Align.none }
 			if al == .center {
 				box.justify_center()

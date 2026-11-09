@@ -67,6 +67,8 @@ pub fn (p &TextPatch) apply(base txt.TextStyle) txt.TextStyle {
 // Text leaves use the default layout style: their size comes from measuring.
 const text_leaf_style = layout.Style{}
 
+const no_wrap = f32(1.0e9) // a width no line reaches
+
 @[heap]
 pub struct TextEl {
 pub mut:
@@ -78,6 +80,7 @@ mut:
 	wrapped  &txt.WrappedText = unsafe { nil } // the last measure: paint reuses it when it fits
 	wrap_w   f32
 	node     layout.NodeId
+	one_line bool // truncate()
 	select   bool // selectable.v
 	sel      &SelectState = unsafe { nil }
 	bounds   prim.Rect
@@ -131,6 +134,13 @@ pub fn (self_ &TextEl) line_height(v f32) &TextEl {
 	return t
 }
 
+// truncate keeps the text on one line and ends it with … when it does not fit.
+pub fn (self_ &TextEl) truncate() &TextEl {
+	mut t := unsafe { self_ }
+	t.one_line = true
+	return t
+}
+
 // fits reports whether the last wrap is also the wrap at max_w: true for any width from its
 // widest line up to the width it was made for, or up without limit if no line broke for width.
 fn (t &TextEl) fits(max_w f32) bool {
@@ -141,12 +151,38 @@ fn (t &TextEl) fits(max_w f32) bool {
 fn measure_text(ctx voidptr, kw f32, _ f32, aw f32, _ f32) prim.Size {
 	mut t := unsafe { &TextEl(ctx) }
 	limit := if kw != layout.unknown { kw } else { aw }
-	max_w := if limit >= layout.unbounded { f32(1.0e9) } else { limit }
+	max_w := if t.one_line || limit >= layout.unbounded { no_wrap } else { limit }
 	if !t.fits(max_w) {
 		t.wrapped, t.wrap_w = t.ts.wrap(t.content, t.resolved, max_w), max_w
 	}
 	w := t.wrapped
-	return prim.size(if kw != layout.unknown { kw } else { w.width }, w.height)
+	width := if t.one_line { prim.min(w.width, limit) } else { w.width }
+	return prim.size(if kw != layout.unknown { kw } else { width }, w.height)
+}
+
+// lines_at is what paint draws in a box w wide.
+fn (t &TextEl) lines_at(w f32, mut cx core.PaintCx) &txt.WrappedText {
+	if t.one_line {
+		full := cx.text.wrap(t.content, t.resolved, no_wrap)
+		if full.width <= w {
+			return full
+		}
+		return cx.text.wrap(t.elided(w, mut cx), t.resolved, no_wrap)
+	}
+	return if t.fits(w) { t.wrapped } else { cx.text.wrap(t.content, t.resolved, w) }
+}
+
+// elided cuts the text at the last grapheme where it and … fit in w.
+fn (t &TextEl) elided(w f32, mut cx core.PaintCx) string {
+	room := w - cx.text.layout_line('…', t.resolved).width
+	mut end := 0
+	for stop in cx.text.layout_line(t.content, t.resolved).stops {
+		if stop.x > room {
+			break
+		}
+		end = stop.index
+	}
+	return t.content[..end].trim_right(' ') + '…'
 }
 
 pub fn (mut t TextEl) request_layout(mut cx core.LayoutCx) layout.NodeId {
@@ -170,11 +206,7 @@ pub fn (mut t TextEl) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 pub fn (mut t TextEl) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	// A little slack so float rounding never re-wraps differently from layout.
 	bw := bounds.width + 0.5
-	w := if t.fits(bw) {
-		t.wrapped
-	} else {
-		cx.text.wrap(t.content, t.resolved, bw)
-	}
+	w := t.lines_at(bw, mut cx)
 	asc, desc := cx.text.line_metrics(t.resolved)
 	lead := (w.line_height - (asc + desc)) / 2
 	if t.select {

@@ -250,6 +250,28 @@ fn test_row_scrolling_y_stretches_child_to_content() {
 	assert t.content_size(body).height == 1000
 }
 
+fn test_max_width_is_the_width_text_is_measured_at() {
+	// A full-width column capped by max_width: its height comes from the capped width.
+	mut t := Tree{}
+	txt := &FakeText{100}
+	leaf := t.leaf(Style{}, measure_fake, voidptr(txt))
+	col := t.node(Style{
+		direction: .column
+		width:     pct(100)
+		max_width: px(200)
+	}, [leaf])
+	root := t.node(Style{
+		direction:   .column
+		align_items: .center
+		width:       px(1000)
+		height:      px(400)
+		overflow_y:  .scroll
+	}, [col])
+	t.compute(root, prim.size(1000, 400))
+	assert t.rect(col).width == 200
+	assert t.rect(col).height == 64 // 25 chars a line, 4 lines
+}
+
 fn test_sole_grower_is_not_measured_for_its_base() {
 	// header + growing body in a fixed column: the body takes the rest whatever its content.
 	mut t := Tree{}

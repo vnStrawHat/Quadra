@@ -42,6 +42,11 @@ fn (mut t Tree) flex_item(c NodeId, cs &Style, ax &Axes, align_items Align, sole
 			.center { Align.center }
 		}
 	}
+	// Clamped now, not only at the end: the item's content is measured at this size, so text
+	// must wrap at the width it ends up with.
+	if it.def_cross != unknown {
+		it.def_cross = clamp_axis(it.def_cross, it.min_cross, it.max_cross)
+	}
 	def_main := if row { cw } else { ch }
 	basis := cs.basis.resolve(inner_main)
 	if basis != unknown {

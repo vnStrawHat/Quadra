@@ -144,7 +144,7 @@ pub fn (mut v MarkdownView) build_tree(mut cx core.LayoutCx) core.Element {
 		} else {
 			16
 		}
-		col.child(ui.div().flex_col().pt(gap).child(v.block(b, t)))
+		col.child(ui.div().flex_col().pt(gap).child(v.block(b, t, mut cx)))
 		lines << b.line
 		prev = b.kind
 	}

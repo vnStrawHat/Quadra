@@ -7,7 +7,7 @@ Workarounds for V 0.5.2 behaviours hit while building Quadra. Each one cost a de
 | Symptom | Cause | Rule |
 |---|---|---|
 | Working set climbs without bound (GBs) in MSVC builds; `gc_heap_usage()` is all zeros | V 0.5.2 builds MSVC targets with no garbage collector unless `-gc` is passed | `tools/v.sh` sets `VFLAGS=-gc boehm_full_opt`; `core.new_app` refuses to compile without `gcboehm` |
-| Random NaN/inf floats (garbage geometry, index-out-of-range `-2147483648`) only in MSVC `-prod`, roughly every other run | The stock Win64 closure thunk passes the context pointer in `xmm15`, which is callee-saved on Win64: optimized callers keep floats there across closure calls | `tools/v.sh` keeps the toolchain patched (`tools/patches/v-closure.diff`: `xmm5`, volatile and never an argument register) |
+| Random NaN/inf floats (garbage geometry, index-out-of-range `-2147483648`) only in MSVC `-prod`, roughly every other run | The stock Win64 closure thunk passes the context pointer in `xmm15`, which is callee-saved on Win64: optimized callers keep floats there across closure calls. clang is affected too (a function holding 14 floats across a closure call came back wrong every time on the stock thunk) | `tools/v.sh` keeps the toolchain patched (`tools/patches/v-closure.diff`: `xmm5`, volatile and never an argument register) |
 | Closures are never freed, with everything they captured | V frees only named local closures at scope exit (`closure_try_destroy`) and closures created inside a `closure.Lifetime` frame | Quadra owns closure lifetimes (`quadra/core/tracked.v`, specs/14); keep `fn [..]` out of engine hot paths; count with `life.live_closures()` |
 | `import builtin.closure` vanishes and the code turns into `builtin.closure.Lifetime` (does not compile) | vfmt 0.5.2 bug in some files of a non-main module | Use the `quadra.core.life` wrapper module |
 
@@ -48,4 +48,6 @@ Workarounds for V 0.5.2 behaviours hit while building Quadra. Each one cost a de
 - COM slots come from `tools/com_slots.sh`; never hand-count.
 - Struct layouts of D3D11/DXGI are checked by `spikes/m0/layout_check` (MSVC only).
 - tcc's import definitions lack newer kernel32/user32 functions: resolve them with `load_system_dll` + `dll_proc`.
+- clang 23 rejects V's generated C with `incompatible pointer types`; V also casts between pointer types without `-fno-strict-aliasing`. `tools/v.sh` adds both flags for `-cc clang`.
+- `v test -cflags "-a -b"` fails with `Unknown argument`: pass one flag per `-cflags`.
 - Never test the real clipboard in automated runs: it overwrites the user's clipboard. Use the headless platform.

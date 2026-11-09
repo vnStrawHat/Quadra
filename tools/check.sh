@@ -2,8 +2,8 @@
 # CI gate: formatting, portability rules, file size rule, headless tests.
 #   tools/check.sh          everything
 #   tools/check.sh quick    skip the tests
-#   tools/check.sh prod     also run the tests as MSVC -prod builds (release codegen: the
-#                           collector and closure bugs in docs/v-notes.md only show there)
+#   tools/check.sh prod     also run the tests as clang -prod builds (release codegen: the
+#                           closure bug in docs/v-notes.md only shows in optimized builds)
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 fail=0
@@ -98,8 +98,8 @@ if [ "${1:-}" != quick ]; then
 	fi
 fi
 if [ "${1:-}" = prod ]; then
-	if ! tools/v.sh -cc msvc -prod test quadra tests examples apps >.tmp/check-prod.txt 2>&1; then
-		say 'check: tests failed as MSVC -prod builds:'
+	if ! tools/v.sh -cc clang -prod test quadra tests examples apps >.tmp/check-prod.txt 2>&1; then
+		say 'check: tests failed as clang -prod builds:'
 		grep -E 'FAIL|> assert|Left|Right|panic' .tmp/check-prod.txt | head -30
 		fail=1
 	else

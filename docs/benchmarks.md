@@ -13,8 +13,8 @@ driver threads included (`bench/compare/run`).
 | `document` | 800×600 | 40 paragraphs (about 20 000 characters) wrapped to a width changing every frame |
 
 ```sh
-tools/v.sh -cc msvc -prod -o .tmp/cmp.exe bench/compare
-tools/v.sh -cc msvc -prod -o .tmp/cmprun.exe bench/compare/run
+tools/v.sh -cc clang -prod -o .tmp/cmp.exe bench/compare
+tools/v.sh -cc clang -prod -o .tmp/cmprun.exe bench/compare/run
 .tmp/cmprun.exe -runs 5 -out .tmp/cmp5.json quadra=.tmp/cmp.exe [other=app.exe ...]
 ```
 

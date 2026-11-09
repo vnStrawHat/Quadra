@@ -45,18 +45,18 @@ Notes, Folio, Cluster). It was called "Vela" until 2026-11-08; old notes may say
 
 | What | Command |
 |---|---|
-| Fresh machine | `tools/setup.sh` (V 0.5.2 into `.tools/v`, MSVC check) |
+| Fresh machine | `tools/setup.sh` (V 0.5.2 into `.tools/v`, portable clang into `.tools/llvm-mingw`) |
 | Format | `tools/v.sh fmt -w quadra apps tests examples bench` |
 | Gate (about 35 s) | `tools/check.sh` |
-| Release gate (about 6 min, MSVC -prod) | `tools/check.sh prod`; run both before saying done |
+| Release gate (clang -prod) | `tools/check.sh prod`; run both before saying done |
 | One test file | `tools/v.sh test tests/kit3_test.v` |
 | Type-check a module | `tools/v.sh -check quadra/kit` (a "main module" error is expected) |
 | API docs | `tools/docs.sh` (into docs/api, not committed) |
-| Screenshots for design review | `tools/v.sh -cc msvc -prod -o .tmp/shots.exe bench/shots && .tmp/shots.exe .tmp/shots/dark dark` |
+| Screenshots for design review | `tools/v.sh -cc clang -prod -o .tmp/shots.exe bench/shots && .tmp/shots.exe .tmp/shots/dark dark` |
 | Run an app | `tools/v.sh run apps/gallery` |
 
-More in README.md. Requirements: Git Bash with coreutils, Visual Studio Build Tools (C++
-workload + Windows SDK; `fxc` only when editing HLSL), Python 3 and curl.
+More in README.md. Requirements: Git Bash with coreutils, Python 3 and curl. The Windows SDK
+is needed only to edit HLSL (`fxc`).
 
 ## Map
 

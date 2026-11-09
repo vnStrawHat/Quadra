@@ -69,4 +69,4 @@ Each OS-independent layer (`platform`, `gpu`, `text`) holds only interfaces and 
 - Hot paths do not allocate per frame: buffers are reused, cleared, and keep their capacity (12-performance).
 - GPU-free logic has `*_test.v` tests. Performance-sensitive code has a benchmark in `bench/`.
 - Docs and code comments are in English.
-- Toolchain: V 0.4.x or newer. Release builds use `-prod` with MSVC or clang. tcc is fine for quick debug builds because no import libraries are needed (01-decisions D9).
+- Toolchain: V 0.5.2 with the closure patch (`tools/v.sh`). Release builds use `-cc clang -prod` with the portable clang (llvm-mingw) that `tools/setup.sh` puts in `.tools/llvm-mingw`, so no system C compiler is needed and apps do not need the VC++ runtime. MSVC also works when installed. tcc is fine for quick debug builds because no import libraries are needed (01-decisions D9).

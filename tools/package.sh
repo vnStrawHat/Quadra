@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release build of a Quadra app for Windows: MSVC -prod, GUI subsystem, and a resource file
+# Release build of a Quadra app for Windows: clang -prod, GUI subsystem, and a resource file
 # with the manifest (per-monitor DPI v2, UTF-8 code page, Common Controls v6, Windows 10+),
 # version info and the app icon.
 #
@@ -13,10 +13,6 @@ APP_DIR=$1 EXE=$2 PRODUCT=$3 VERSION=$4 ICON=${5:-}
 WORK="$ROOT/.tmp/package/$EXE"
 OUT="$ROOT/dist/$EXE"
 mkdir -p "$WORK" "$OUT"
-
-KITS="/c/Program Files (x86)/Windows Kits/10/bin"
-RC="$(ls -d "$KITS"/10.*/x64/rc.exe 2>/dev/null | sort -V | tail -1)"
-[ -n "$RC" ] || { echo "package.sh: rc.exe not found under $KITS" >&2; exit 1; }
 
 if [ -z "$ICON" ]; then
 	ICON="$WORK/app.ico"
@@ -70,8 +66,7 @@ BEGIN
 END
 EOF
 
-(cd "$WORK" && "$RC" //nologo //fo app.res app.rc)
-"$ROOT/tools/v.sh" -cc msvc -prod -subsystem windows -cflags "$(cygpath -w "$WORK/app.res")" \
+(cd "$WORK" && "$ROOT/.tools/llvm-mingw/bin/x86_64-w64-mingw32-windres" app.rc -O coff -o app.res.o)
+"$ROOT/tools/v.sh" -cc clang -prod -subsystem windows -cflags "$(cygpath -m "$WORK/app.res.o")" \
 	-o "$OUT/$EXE.exe" "$APP_DIR"
-rm -f "$OUT/$EXE.exp" "$OUT/$EXE.lib" # export stubs nobody links against
 echo "packaged $OUT/$EXE.exe"

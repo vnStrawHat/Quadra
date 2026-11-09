@@ -20,6 +20,10 @@ Status per milestone of specs/13-apps-roadmap.md. Run everything with `tools/v.s
 | Folio (Markdown app, specs/21) | Done | apps/folio: folio_test.v (layouts, live edit, dirty and save, outline click, close prompt, outside changes), pixels_test.v (every layout, palette, both themes, math, diagrams in .tmp/out/folio_*.png); kit/md (md2_test.v, tex, mermaid), kit/code lex_md_test.v, tests/fonts_windows_test.v (in-memory fonts), tests/rich_text_test.v (inline boxes) |
 | Design language "One" (specs/15) | Done: One Dark Pro and One Light are `kit.dark()` and `kit.light()`; IBM Plex Sans and Lilex are bundled in the kit (`kit.load_faces`, OFL texts in quadra/kit/fonts); controls, menus, tabs, overlays, chrome, tables, trees, the editor gutter and the Markdown view follow the spec. Since then: auto-hiding scroll thumbs on every scrolling container (one activity record per window, no per-container state), `calt` off for the UI face (`TextSystem.contextual_off`), accent match highlights in the palette and combobox, tooltip shortcuts and meta lines, invalid inputs (`input.set_invalid`), notifications at the bottom right (`kit.notify`), the hamburger app menu in the title bar, icon-only status bar toggles, the switch ring, the filled dropdown, toggled chips with a fill, and the Settings component (`kit.settings`). Then: draggable thumbs that also show when content moves by keys or the app, Settings groups expanding under their page and scrolling into view, notification actions and timeouts, Segoe Fluent caption glyphs on Windows 11, input text in the editor foreground, popups returning the focus to their trigger, hamburger menus in Notes and Cluster; One Dark Pro as the only dark theme with three new palette roles (`status_bg`, `tab_bg`, `scroll_thumb`); themes are JSON files (`kit.load_theme`, `kit.theme_from_json`, `Theme.to_json`; the built-ins are quadra/kit/themes/*.json, 57 us to parse). Cost of the bundled faces: 2.5 ms to load (views of the embedded bytes, one collection rebuild), gallery start-up 107 to about 109 ms, +4 MB working set, +1.6 MB binary | tests/fonts_windows_test.v (family names), tests/kit_test.v (`Ctrl-Shift-P` labels), tests/kit3_test.v (Settings, thumbs, notifications, match marks, theme files), pixel snapshots in .tmp/out (gallery, Folio, Notes, Cluster) |
 
+## Release toolchain (2026-11-09)
+
+Release builds moved from MSVC to the portable clang 23.1.5 (llvm-mingw) that `tools/setup.sh` installs in `.tools/llvm-mingw`: no Visual Studio, and packaged apps no longer need `vcruntime140.dll`. Against MSVC -prod, the median of the 11 benchmarks below takes 0.75 times as long (0.65 to 1.06; only the two text-wrap rows are slower), gallery start-up is 115 ms against 122 ms and the working set about the same. The tables below are still the MSVC numbers.
+
 ## Benchmarks (bench/, MSVC -prod with the collector, fake text backend, 2026-11-07)
 
 Re-measured after the memory fixes below and again after the gallery became one page per
@@ -63,10 +67,10 @@ The first gallery release grew from 15 MB to 2.3 GB in use. Four causes, all fix
    tree was only cleared by full builds. Prepaint now truncates the tree back to the build's
    nodes.
 
-Check with `bench/leak`: `tools/v.sh -cc msvc -prod -o .tmp/leak.exe bench/leak && .tmp/leak.exe real 30 all`.
+Check with `bench/leak`: `tools/v.sh -cc clang -prod -o .tmp/leak.exe bench/leak && .tmp/leak.exe real 30 all`.
 Scenarios are `all`, `switch`, `hover`, `scroll`, `type` and `table`. `tests/memory_test.v`
 guards points 3 and 4. Run `tools/check.sh prod` before a release: it also runs the suite as
-MSVC `-prod` builds, where points 1 and 2 show up.
+clang `-prod` builds, where point 2 shows up (point 1 was specific to MSVC).
 
 ### Text rendering (2026-11-07)
 
@@ -122,7 +126,7 @@ index is built; highlighting is lazy, so only the visible lines are tokenized.
 Appending was 16.6 s for the million lines until the batch loop stopped holding the batch
 array in scope while it called `push` (specs/14, GC pins around calls).
 
-Measure startup and memory with `tools/v.sh -cc msvc -prod -o .tmp/g.exe apps/gallery && .tmp/g.exe --measure`. GPU time per frame is not measured yet (no GPU timer queries).
+Measure startup and memory with `tools/v.sh -cc clang -prod -o .tmp/g.exe apps/gallery && .tmp/g.exe --measure`. GPU time per frame is not measured yet (no GPU timer queries).
 
 ## Manual checks (need a person at the machine)
 1. Session 0: run `spikes/m0/session0_check.sh` from an elevated Git Bash. The headless and pixel tests must pass as SYSTEM, without a login session.

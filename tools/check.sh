@@ -5,6 +5,8 @@
 #   tools/check.sh prod     also run the tests as clang -prod builds (release codegen: the
 #                           closure bug in docs/v-notes.md only shows in optimized builds)
 set -euo pipefail
+export PATH="/usr/bin:$PATH" # System32 first on PATH would pick up Windows find.exe
+export VJOBS="${VJOBS:-4}"   # 20 parallel V builds run the machine out of memory
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 fail=0
 say() { printf '%s\n' "$*"; }

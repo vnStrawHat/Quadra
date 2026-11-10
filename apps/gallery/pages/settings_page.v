@@ -33,48 +33,60 @@ pub fn (mut p SettingsDemo) render(mut cx core.ViewCx[SettingsDemo]) core.Elemen
 		}))
 	}
 	general := kit.SettingsPage{'General', [
-		kit.SettingsGroup{'General Settings', [
-			kit.SettingsRow{'Accessible Mode', 'Keep collapsed controls expanded and reachable from the keyboard, for screen readers.', p.toggle('set-a11y',
-				p.accessible, 0, mut cx)},
-			kit.SettingsRow{'When Closing With No Tabs', 'What closing the active item does when no tab is open.', kit.select_box('set-closing', [
-				'Platform Default',
-				'Close Window',
-				'Keep Window Open',
-			], p.closing).on_change(cx.listener(fn (mut p SettingsDemo, i &int, mut _ core.ViewCx[SettingsDemo]) {
-				p.closing = *i
-			}))},
-			kit.SettingsRow{'On Last Window Closed', 'What happens when the last window is closed.', kit.select_box('set-quit', [
-				'Platform Default',
-				'Quit App',
-			], p.quit).on_change(cx.listener(fn (mut p SettingsDemo, i &int, mut _ core.ViewCx[SettingsDemo]) {
-				p.quit = *i
-			}))},
-		]},
-		kit.SettingsGroup{'Security', [
-			kit.SettingsRow{'Trust All Projects', 'Run project tasks and language servers without asking first.', p.toggle('set-trust',
-				p.trust, 1, mut cx)},
-		]},
-	]}
+		kit.SettingsGroup{
+			title: 'General Settings'
+			rows:  [
+				kit.SettingsRow{'Accessible Mode', 'Keep collapsed controls expanded and reachable from the keyboard, for screen readers.', p.toggle('set-a11y',
+					p.accessible, 0, mut cx)},
+				kit.SettingsRow{'When Closing With No Tabs', 'What closing the active item does when no tab is open.', kit.select_box('set-closing', [
+					'Platform Default',
+					'Close Window',
+					'Keep Window Open',
+				], p.closing).on_change(cx.listener(fn (mut p SettingsDemo, i &int, mut _ core.ViewCx[SettingsDemo]) {
+					p.closing = *i
+				}))},
+				kit.SettingsRow{'On Last Window Closed', 'What happens when the last window is closed.', kit.select_box('set-quit', [
+					'Platform Default',
+					'Quit App',
+				], p.quit).on_change(cx.listener(fn (mut p SettingsDemo, i &int, mut _ core.ViewCx[SettingsDemo]) {
+					p.quit = *i
+				}))},
+			]
+		},
+		kit.SettingsGroup{
+			title: 'Security'
+			rows:  [
+				kit.SettingsRow{'Trust All Projects', 'Run project tasks and language servers without asking first.', p.toggle('set-trust',
+					p.trust, 1, mut cx)},
+			]
+		},
+	], '', ''}
 	appearance := kit.SettingsPage{'Appearance', [
-		kit.SettingsGroup{'Theme', [
-			kit.SettingsRow{'Theme Mode', 'Follow the system, or always use the light or the dark theme.', kit.segmented('set-mode', [
-				'Light',
-				'Dark',
-				'System',
-			], p.mode).on_change(cx.listener(fn (mut p SettingsDemo, i &int, mut _ core.ViewCx[SettingsDemo]) {
-				p.mode = *i
-			}))},
-		]},
-	]}
+		kit.SettingsGroup{
+			title: 'Theme'
+			rows:  [
+				kit.SettingsRow{'Theme Mode', 'Follow the system, or always use the light or the dark theme.', kit.segmented('set-mode', [
+					'Light',
+					'Dark',
+					'System',
+				], p.mode).on_change(cx.listener(fn (mut p SettingsDemo, i &int, mut _ core.ViewCx[SettingsDemo]) {
+					p.mode = *i
+				}))},
+			]
+		},
+	], '', ''}
 	editor := kit.SettingsPage{'Editor', [
-		kit.SettingsGroup{'Cursor', [
-			kit.SettingsRow{'Cursor Blink', 'Blink the text cursor while the editor has focus.', p.toggle('set-blink',
-				p.blink, 2, mut cx)},
-		]},
-	]}
+		kit.SettingsGroup{
+			title: 'Cursor'
+			rows:  [
+				kit.SettingsRow{'Cursor Blink', 'Blink the text cursor while the editor has focus.', p.toggle('set-blink',
+					p.blink, 2, mut cx)},
+			]
+		},
+	], '', ''}
 	mut pages := [general, appearance, editor]
 	for name in ['Keymap', 'Languages & Tools', 'Window & Layout', 'Terminal'] {
-		pages << kit.SettingsPage{name, []}
+		pages << kit.SettingsPage{name, [], '', ''}
 	}
 	t := kit.theme(cx)
 	mut header := []core.Element{}

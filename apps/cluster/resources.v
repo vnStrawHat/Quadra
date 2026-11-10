@@ -13,20 +13,6 @@ fn (mut c Cluster) setup(mut cx core.ViewCx[Cluster]) {
 			t.close()
 		}
 	}))
-	// The cell function is made once and reads the rows live: ticks make no closures.
-	holder := unsafe { &c }
-	c.cell = fn [holder] (row int, col int) string {
-		r := holder.rows[row]
-		return match col {
-			0 { r.name }
-			1 { r.namespace }
-			2 { r.status }
-			3 { r.ready }
-			4 { r.restarts.str() }
-			5 { r.age_s.str() }
-			else { r.node }
-		}
-	}
 	c.table = data.new_table(mut cx.Cx,
 		id:      'resources'
 		columns: [
@@ -62,7 +48,7 @@ fn (mut c Cluster) setup(mut cx core.ViewCx[Cluster]) {
 				width: 110
 			},
 		]
-		cell:    c.cell
+		cells:   ResourceCells{unsafe { &c }}
 	)
 	data.on_select(mut cx.Cx, c.table, cx.listener(fn (mut c Cluster, rows &[]int, mut cx core.ViewCx[Cluster]) {
 		c.selected = if rows.len == 1 && rows[0] < c.rows.len { c.rows[rows[0]].key() } else { '' }
@@ -93,7 +79,7 @@ fn (mut c Cluster) refresh(mut cx core.ViewCx[Cluster]) {
 	if c.selected != '' && c.selected !in keys {
 		c.selected = '' // the resource went away
 	}
-	data.set_keyed_rows(mut cx.Cx, c.table, keys, c.cell)
+	data.set_keyed_rows_from(mut cx.Cx, c.table, keys, ResourceCells{unsafe { &c }})
 }
 
 // show_kind loads one kind into the table (from listeners, not render).
@@ -118,4 +104,22 @@ fn (c &Cluster) current() ?fake.Resource {
 		}
 	}
 	return none
+}
+
+// ResourceCells reads the rows live (data.Cells): ticks make no closures.
+struct ResourceCells {
+	c &Cluster = unsafe { nil }
+}
+
+fn (r ResourceCells) cell(row int, col int) string {
+	res := r.c.rows[row]
+	return match col {
+		0 { res.name }
+		1 { res.namespace }
+		2 { res.status }
+		3 { res.ready }
+		4 { res.restarts.str() }
+		5 { res.age_s.str() }
+		else { res.node }
+	}
 }

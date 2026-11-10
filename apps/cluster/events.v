@@ -5,17 +5,6 @@ import quadra.core
 import quadra.kit.data
 
 fn (mut c Cluster) setup_events(mut cx core.ViewCx[Cluster]) {
-	holder := unsafe { &c }
-	c.event_cell = fn [holder] (row int, col int) string {
-		e := holder.event_rows[row]
-		return match col {
-			0 { e.typ }
-			1 { e.reason }
-			2 { e.object }
-			3 { e.message }
-			else { (holder.data.t - e.at).str() }
-		}
-	}
 	c.events = data.new_table(mut cx.Cx,
 		id:      'events'
 		columns: [
@@ -41,7 +30,7 @@ fn (mut c Cluster) setup_events(mut cx core.ViewCx[Cluster]) {
 				kind:  .age
 			},
 		]
-		cell:    c.event_cell
+		cells:   EventCells{unsafe { &c }}
 	)
 	c.refresh_events(mut cx)
 }
@@ -51,5 +40,21 @@ fn (mut c Cluster) refresh_events(mut cx core.ViewCx[Cluster]) {
 		return
 	}
 	c.event_rows = c.data.events.reverse()
-	data.set_keyed_rows(mut cx.Cx, c.events, c.event_rows.map(it.id.str()), c.event_cell)
+	data.set_keyed_rows_from(mut cx.Cx, c.events, c.event_rows.map(it.id.str()), EventCells{unsafe { &c }})
+}
+
+// EventCells reads the event rows live (data.Cells): ticks make no closures.
+struct EventCells {
+	c &Cluster = unsafe { nil }
+}
+
+fn (e EventCells) cell(row int, col int) string {
+	ev := e.c.event_rows[row]
+	return match col {
+		0 { ev.typ }
+		1 { ev.reason }
+		2 { ev.object }
+		3 { ev.message }
+		else { (e.c.data.t - ev.at).str() }
+	}
 }

@@ -19,7 +19,6 @@ pub mut:
 	kind     string        = 'Pod'
 	rows     []fake.Resource
 	table    core.View[data.Table]
-	cell     data.CellFn = unsafe { nil } // made once, reads rows
 	selected string // key of the selected resource ('' = none)
 	tab      string        = 'overview'
 	root     work.PaneNode = work.vsplit(work.leaf('list'), work.leaf('detail'), 0.55)
@@ -37,7 +36,6 @@ pub mut:
 	log_seen    int
 	events      core.View[data.Table]
 	event_rows  []fake.Event // newest first
-	event_cell  data.CellFn = unsafe { nil }
 }
 
 const kinds = {

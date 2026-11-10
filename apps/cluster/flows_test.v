@@ -3,6 +3,7 @@
 module main
 
 import quadra.core
+import quadra.core.life
 import quadra.kit
 import quadra.kit.code
 import quadra.kit.term
@@ -128,4 +129,36 @@ fn test_metrics_and_events() {
 	assert c.event_rows.len > n
 	assert h.has_text('Events · ${c.event_rows.len}')
 	assert h.has_text(c.event_rows[0].message)
+}
+
+// Closure leak gate (specs/14): the typical flows, repeated with live ticks, leave the live
+// closure count where it was and the dispatch detector quiet.
+fn cluster_flows(mut h testing.Harness) ! {
+	for kind in ['nav-Deployment', 'nav-Pod'] {
+		h.click(kind)!
+		h.click('resources-row0')!
+		for tab in ['detail-tabs-yaml', 'detail-tabs-manifest', 'detail-tabs-logs',
+			'detail-tabs-metrics', 'detail-tabs-shell', 'detail-tabs-overview'] {
+			h.click(tab) or {} // not every kind has every tab
+			h.advance(1000) // a live tick
+		}
+	}
+	h.click('act-events')!
+	h.advance(1000)
+	h.click('act-workloads') or {}
+	h.frame()
+	h.frame()
+}
+
+fn test_flows_leak_no_closures() {
+	mut h, _, _ := open_app()!
+	cluster_flows(mut h)!
+	c0 := life.live_closures()
+	for _ in 0 .. 3 {
+		cluster_flows(mut h)!
+	}
+	grown := life.live_closures() - c0
+	eprintln('cluster: closures +${grown} over 3 rounds of flows')
+	assert grown <= 0
+	assert h.app.closure_leaks() == []
 }

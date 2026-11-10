@@ -1,6 +1,8 @@
 // Text element and the inherited text-style patch.
 module ui
 
+import math
+import strconv
 import quadra.core
 import quadra.prim
 import quadra.layout
@@ -78,6 +80,8 @@ mut:
 	resolved txt.TextStyle
 	ts       &txt.TextSystem  = unsafe { nil }
 	wrapped  &txt.WrappedText = unsafe { nil } // the last measure: paint reuses it when it fits
+	own      &txt.WrappedText = unsafe { nil } // a number's wrap, refilled in place (kept by the arena)
+	pooled   bool // from a render arena (arena.v)
 	wrap_w   f32
 	node     layout.NodeId
 	one_line bool // truncate()
@@ -86,10 +90,58 @@ mut:
 	bounds   prim.Rect
 }
 
+// text makes a text element; like div(), it belongs to the render that made it.
 pub fn text(s string) &TextEl {
-	return &TextEl{
-		content: s
+	return new_text(s)
+}
+
+// number makes a text element showing v with `decimals` (0 to 9) digits after the point,
+// exactly as '${v:.2f}' does but without a string builder: a table or a meter that changes
+// every frame then allocates only its digits.
+pub fn number(v f64, decimals int) &TextEl {
+	return new_text(format_fixed(v, decimals))
+}
+
+fn format_fixed(v f64, decimals int) string {
+	d := int(prim.clamp(f32(decimals), 0, 9))
+	mut scale := u64(1)
+	for _ in 0 .. d {
+		scale *= 10
 	}
+	a := math.abs(v) * f64(scale)
+	// Below 1e12 the product is off by less than 2.3e-4, so rounding it gives the exact
+	// decimal rounding unless it is close to a tie. Ties, huge values, NaN and infinities
+	// take strconv's exact path (the one interpolation uses).
+	if !(a < 1.0e12) || math.abs(a - math.floor(a) - 0.5) < 1.0e-3 {
+		return strconv.format_fl(v, strconv.BF_param{ len1: d, positive: !math.signbit(v) })
+	}
+	x := u64(math.round(a))
+	mut buf := [32]u8{}
+	mut p := 32
+	mut ip := x / scale
+	mut fp := x % scale
+	if d > 0 {
+		for _ in 0 .. d {
+			p--
+			buf[p] = u8(`0` + fp % 10)
+			fp /= 10
+		}
+		p--
+		buf[p] = `.`
+	}
+	for {
+		p--
+		buf[p] = u8(`0` + ip % 10)
+		ip /= 10
+		if ip == 0 {
+			break
+		}
+	}
+	if math.signbit(v) { // interpolation keeps the sign of -0.004 and -0.0
+		p--
+		buf[p] = `-`
+	}
+	return unsafe { tos(&buf[p], 32 - p) }.clone()
 }
 
 pub fn (self_ &TextEl) size(v f32) &TextEl {
@@ -153,11 +205,24 @@ fn measure_text(ctx voidptr, kw f32, _ f32, aw f32, _ f32) prim.Size {
 	limit := if kw != layout.unknown { kw } else { aw }
 	max_w := if t.one_line || limit >= layout.unbounded { no_wrap } else { limit }
 	if !t.fits(max_w) {
-		t.wrapped, t.wrap_w = t.ts.wrap(t.content, t.resolved, max_w), max_w
+		t.wrapped, t.wrap_w = t.wrap_at(max_w), max_w
 	}
 	w := t.wrapped
 	width := if t.one_line { prim.min(w.width, limit) } else { w.width }
 	return prim.size(if kw != layout.unknown { kw } else { width }, w.height)
+}
+
+// wrap_at wraps the text at max_w. An arena element lays a number out into its own wrap,
+// which it keeps from render to render: no allocation and no cache entry. Other elements are
+// new every time, so they use the cache, where a number that stays the same is found again.
+fn (mut t TextEl) wrap_at(max_w f32) &txt.WrappedText {
+	if t.pooled && !t.one_line {
+		if w := t.ts.wrap_number(t.content, t.resolved, max_w, t.own) {
+			t.own = w
+			return w
+		}
+	}
+	return t.ts.wrap(t.content, t.resolved, max_w)
 }
 
 // lines_at is what paint draws in a box w wide.

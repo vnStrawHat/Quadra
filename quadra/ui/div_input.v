@@ -53,6 +53,12 @@ pub fn (self_ &Div) on_key_down(l core.Listener[core.KeyDownEvent]) &Div {
 	return d
 }
 
+pub fn (self_ &Div) on_key_up(l core.Listener[core.KeyUpEvent]) &Div {
+	mut d := unsafe { self_ }
+	d.keys << KeySpec{.key_up, '', l.any}
+	return d
+}
+
 pub fn (self_ &Div) on_text_input(l core.Listener[core.TextInputEvent]) &Div {
 	mut d := unsafe { self_ }
 	d.keys << KeySpec{.text, '', l.any}

@@ -87,6 +87,13 @@ pub mut:
 	active ?Patch
 	focus  ?Patch
 	drop   ?Patch // while an accepted drag is over this drop target
+	// hover groups (div_states.v): group_hb is the group the patches follow, set in prepaint
+	group        bool
+	group_hover  ?Patch
+	group_active ?Patch
+	group_hb     int = -1
+	ring_w       f32 // ring(): a band outside the border box
+	ring_color   prim.Color
 	// drag and drop (core/drag.v)
 	drag      ?core.DragSource
 	drop_kind string
@@ -96,18 +103,6 @@ pub mut:
 	tr         &Transition = unsafe { nil }
 	motion     &Motion     = unsafe { nil } // animate (div_timeline.v)
 	clock      &Clock      = unsafe { nil }
-}
-
-fn (mut d Div) states_mut() &States {
-	if d.states == unsafe { nil } {
-		d.states = &States{}
-	}
-	return d.states
-}
-
-@[inline]
-fn (d &Div) restyles() bool {
-	return d.states != unsafe { nil } && (d.states.hover != none || d.states.active != none)
 }
 
 @[inline]
@@ -120,8 +115,10 @@ fn (d &Div) has_focus_patch() bool {
 	return d.states != unsafe { nil } && d.states.focus != none
 }
 
+// div makes a container. During a view's render it comes from the view's render arena
+// (arena.v): it belongs to that render, do not keep it (specs/07).
 pub fn div() &Div {
-	return &Div{}
+	return new_div()
 }
 
 fn (d &Div) interactive() bool {
@@ -166,6 +163,7 @@ pub fn (mut d Div) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 		}
 		cx.push_hitbox(d.hitbox)
 	}
+	saved_group := d.enter_group(mut cx)
 	if d.test_id != '' {
 		cx.register_test_id(d.test_id, bounds)
 	}
@@ -189,6 +187,7 @@ pub fn (mut d Div) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 		c.prepaint(r, mut cx)
 	}
 	cx.text_style = saved
+	cx.group = saved_group
 	if d.clips() {
 		cx.pop_clip()
 	}
@@ -276,6 +275,9 @@ fn (mut d Div) paint_box(bounds prim.Rect, restyles bool, mut cx core.PaintCx) {
 		cx.pop_clip()
 	}
 	d.paint_thumbs(bounds, mut cx)
+	if d.states != unsafe { nil } && d.states.ring_w > 0 {
+		d.paint_ring(bounds, v.radii, mut cx)
+	}
 	if d.focus_id != 0 && !d.has_focus_patch() && cx.is_focused(d.focus_id) && cx.focus_visible() {
 		// Default focus mark: the box's own 1 px edge in the focus color, focus-visible only.
 		cx.quad(gpu.Quad{

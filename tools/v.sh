@@ -43,6 +43,10 @@ grep -q 'quadra patch: lets bench/leak see closure leaks' "$closure" ||
 # closure.trace for quadra's leak detector (QUADRA_TRACE_CLOSURES), on top of the patch above.
 grep -q 'quadra patch (closure trace)' "$closure" ||
 	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-closure-trace.diff"
+# Argon2's memory-hard buffer (64 MiB) lives in the C heap, wiped and freed once the key is out:
+# on the collector's heap stale words kept it alive, so a vault unlock kept 64 MiB.
+grep -q 'quadra patch (argon2 release)' "$ROOT/.tools/v/vlib/crypto/argon2/argon2.v" ||
+	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-argon2-release.diff"
 # MSVC drops intermediate `*.tmp.obj` files into the working directory; remove them after each run.
 status=0
 "$ROOT/.tools/v/v.exe" "$@" || status=$?

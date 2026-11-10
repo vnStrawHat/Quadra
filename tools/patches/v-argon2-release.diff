@@ -1,0 +1,68 @@
+--- vlib/crypto/argon2/argon2.v
++++ vlib/crypto/argon2/argon2.v
+@@ -172,7 +172,38 @@
+ 		init_hash(password, salt, secret, data, time, effective_memory, threads_u32, key_len, mode)!
+ 	mut blocks := init_blocks(h0, effective_memory, threads_u32)!
+ 	process_blocks(mut blocks, time, effective_memory, threads_u32, mode)
+-	return extract_key(mut blocks, effective_memory, threads_u32, key_len)
++	key := extract_key(mut blocks, effective_memory, threads_u32, key_len) or {
++		release_blocks(mut blocks)
++		return err
++	}
++	release_blocks(mut blocks)
++	return key
++}
++
++// quadra patch (argon2 release): the memory-hard buffer (64 MiB by default) lives in the C
++// heap, wiped and freed as soon as the key is out. On the collector's heap a block that large
++// was kept alive by any stale word pointing into it, and tcc's prebuilt collector never
++// returns memory to the OS, so one vault unlock kept 64 MiB for good.
++fn new_blocks(n int) []u64 {
++	mut blocks := []u64{}
++	unsafe {
++		blocks.data = C.calloc(usize(n), 8)
++		if blocks.data == nil {
++			panic('argon2: out of memory')
++		}
++		blocks.len = n
++		blocks.cap = n
++		blocks.flags.set(.nogrow | .nofree)
++	}
++	return blocks
++}
++
++fn release_blocks(mut blocks []u64) {
++	unsafe {
++		C.memset(blocks.data, 0, usize(blocks.len) * 8)
++		C.free(blocks.data)
++	}
++	blocks = []u64{}
+ }
+ 
+ fn normalize_params(params Params) Params {
+@@ -227,16 +258,22 @@
+ 
+ fn init_blocks(h0 []u8, memory u32, threads u32) ![]u64 {
+ 	mut block := []u8{len: block_bytes, init: 0}
+-	mut blocks := []u64{len: int(memory) * block_length, init: u64(0)}
++	mut blocks := new_blocks(int(memory) * block_length)
+ 	mut h0_block := h0.clone()
+ 	for lane := u32(0); lane < threads; lane++ {
+ 		start := lane * (memory / threads)
+ 		binary.little_endian_put_u32_at(mut h0_block, lane, blake2b.size512 + 4)
+ 		binary.little_endian_put_u32_at(mut h0_block, 0, blake2b.size512)
+-		block = blake2b_hash(block_bytes, h0_block)!
++		block = blake2b_hash(block_bytes, h0_block) or {
++			release_blocks(mut blocks)
++			return err
++		}
+ 		set_block(mut blocks, start, block)
+ 		binary.little_endian_put_u32_at(mut h0_block, 1, blake2b.size512)
+-		block = blake2b_hash(block_bytes, h0_block)!
++		block = blake2b_hash(block_bytes, h0_block) or {
++			release_blocks(mut blocks)
++			return err
++		}
+ 		set_block(mut blocks, start + 1, block)
+ 	}
+ 	return blocks

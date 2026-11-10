@@ -1,6 +1,7 @@
 // Facts about processes on Windows: liveness, elevation and resource use.
 module sys
 
+import time
 import quadra.platform.win
 
 const process_query_limited = u32(0x1000)
@@ -179,6 +180,12 @@ pub fn process_counters() ProcessCounters {
 	mut out := ProcessCounters{
 		cpu_time_100ns: kernel + user
 		threads:        thread_count() or { -1 }
+	}
+	// FILETIME counts 100 ns from 1601; the Unix epoch is 11644473600 s later.
+	started_ms := (i64(created) - 116444736000000000) / 10000
+	now_ms := time.now().unix_milli()
+	if created > 0 && now_ms > started_ms {
+		out.uptime_ms = u64(now_ms - started_ms)
 	}
 	lib := win.load_system_dll('kernel32.dll') or { return out }
 	f := FnMemInfo(win.dll_proc(lib, 'K32GetProcessMemoryInfo') or { return out })

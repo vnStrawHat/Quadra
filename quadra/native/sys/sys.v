@@ -11,6 +11,7 @@ pub mut:
 	working_set    u64
 	commit         u64
 	peak           u64
+	uptime_ms      u64 // since the process started; 0: unknown
 }
 
 // ChildProcess is a process this one started, directly or through its children.

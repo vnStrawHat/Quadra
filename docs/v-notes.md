@@ -9,6 +9,8 @@ Workarounds for V 0.5.2 behaviours hit while building Quadra. Each one cost a de
 | Working set climbs without bound (GBs) in MSVC builds; `gc_heap_usage()` is all zeros | V 0.5.2 builds MSVC targets with no garbage collector unless `-gc` is passed | `tools/v.sh` sets `VFLAGS=-gc boehm_full_opt`; `core.new_app` refuses to compile without `gcboehm` |
 | Random NaN/inf floats (garbage geometry, index-out-of-range `-2147483648`) only in MSVC `-prod`, roughly every other run | The stock Win64 closure thunk passes the context pointer in `xmm15`, which is callee-saved on Win64: optimized callers keep floats there across closure calls. clang is affected too (a function holding 14 floats across a closure call came back wrong every time on the stock thunk) | `tools/v.sh` keeps the toolchain patched (`tools/patches/v-closure.diff`: `xmm5`, volatile and never an argument register) |
 | Closures are never freed, with everything they captured | V frees only named local closures at scope exit (`closure_try_destroy`) and closures created inside a `closure.Lifetime` frame | Quadra owns closure lifetimes (`quadra/core/tracked.v`, specs/14); keep `fn [..]` out of engine hot paths; count with `life.live_closures()` |
+| Every thread costs 8 MiB of commit (a tab with its two PTY threads 16 MiB) | V passes its thread stack size (8 MiB) to `CreateThread` as the commit size, not as a reservation | `tools/v.sh` passes `-thread-stack-size 0`: the executable's default, 32 MiB reserved, committed as used |
+| The collector's heap never shrinks: a burst's heap stays committed and resident; `unmapped_bytes` is always 0 | V compiles its bundled bdwgc without the config header, so `USE_MUNMAP` is off | `tools/v.sh` adds `-cflags -DUSE_MUNMAP` (it is also in V's cache key, so the collector object is rebuilt); `core` unmaps after a burst (trim.v) |
 | `import builtin.closure` vanishes and the code turns into `builtin.closure.Lifetime` (does not compile) | vfmt 0.5.2 bug in some files of a non-main module | Use the `quadra.core.life` wrapper module |
 
 ## Language and codegen
@@ -40,6 +42,18 @@ Workarounds for V 0.5.2 behaviours hit while building Quadra. Each one cost a de
 | `string__plus` undeclared in C | a string `+` inside a multiple assignment (`a, b = s + t, x`) | Compute the string on its own line first |
 | tcc crashes (no message) on an assignment | an if-expression nested inside another if-expression on the right side | Use an `if` statement, or a helper function |
 | A word breaks in two ("Previe w") at exactly its measured width | float error in layout sums (`68.004 - 24 = 44.003998`) | `text.wrap` breaks with 0.01 px of slack (tests/shaping_test.v) |
+
+## Found while building OneTerm
+
+- An `if` expression passed as an argument in a chained call can build under tcc and crash at run time: assign it to a variable first.
+- `json.encode` inside a `match` expression generates invalid C: encode first, then match.
+- `cx.listener(named_fn)` can fail with an undeclared `call_listener_T_...`: pass an inline `fn`.
+- A view's `render` in an app submodule needs `@[markused]`.
+- `listener_with` with a pointer as its type argument breaks: wrap the pointer in a struct.
+- Overlays opened from task or timer callbacks have a nil `cx.win`: open them from an event, or keep the window.
+- `small` is a Windows macro once `net` is imported (hence `is_small` in the kit).
+- `$embed_file` entries with the same base path collide: give the files distinct names.
+- Under llvm-mingw `os.open_file` fails on `_fseeki64`, and `os.open_append` leaves the fd unset.
 
 ## Windows interop
 

@@ -22,6 +22,9 @@ Run the commands from Git Bash. From cmd use `tools\v.cmd` in place of `tools/v.
 | Run the gallery | `tools/v.sh run apps/gallery` |
 | Run Notes with its data in one folder | `tools/v.sh run apps/notes --data .tmp/notes` |
 | Read and write Markdown (Folio) | `tools/v.sh run apps/folio apps/folio/samples/welcome.md` |
+| Terminal (OneTerm) | `tools/v.sh run apps/oneterm --data .tmp/oneterm-data` |
+| Bundled console host beside a dev build (`.tmp/oneterm.exe`); `tools/package.sh` does it for `dist/` | `tools/conpty.sh .tmp` |
+| Terminal load test (run it inside the terminal) | `tools/v.sh -cc clang -prod -o .tmp/fire.exe bench/fire && .tmp/fire.exe --seconds 15` |
 | CI gate (format, portability, file sizes, tests) | `tools/check.sh` |
 | Release gate (also runs the tests as clang `-prod` builds) | `tools/check.sh prod` |
 | Memory over a long session (stays flat) | `tools/v.sh -cc clang -prod -o .tmp/leak.exe bench/leak && .tmp/leak.exe real 30 all` |

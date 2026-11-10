@@ -15,7 +15,7 @@ Notes, Folio, Cluster). It was called "Vela" until 2026-11-08; old notes may say
    `docs(specs): ...`, `refactor: ...`, `test: ...`, `chore: ...`, `perf: ...`; `!` or a
    `BREAKING CHANGE:` footer for breaking API changes). Scopes are module or app names:
    core, ui, kit, text, gpu, layout, prim, platform, app, testing, gallery, notes, folio,
-   cluster, specs, tools.
+   cluster, oneterm, specs, tools.
 4. **Never name the projects the design was researched from** anywhere in the repo (code,
    comments, docs, specs, commit messages). Describe traits instead; the design language
    is called "One" (specs/15). The list is in `.private/forbidden-names.txt`, and
@@ -65,7 +65,7 @@ is needed only to edit HLSL (`fxc`).
   are JSON files in `quadra/kit/themes/`, loaded by `kit.load_theme`).
 - `specs/README.md` indexes the specs; specs/13 has the roadmap and the After-v1 list,
   specs/15 the design language and themes, specs/14 implementation rules.
-- `apps/`: gallery (one page per component), notes, folio (Markdown), cluster.
+- `apps/`: gallery (one page per component), notes, folio (Markdown), cluster, oneterm (specs/22-27).
 - `tests/`, `examples/`, `bench/` (benchmarks, leak probe, shots), `tools/`.
 
 ## Private material (`.private/`, git-ignored)
@@ -74,10 +74,14 @@ Research notes, the user's reference screenshots, the forbidden-names list and C
 memory from the first machine. It is copied by hand, not through git. If it exists, read
 `.private/README.md` at the start of a session; if it is missing, ask the user to copy it.
 
-## State at the last handoff (2026-11-08)
+## State at the last handoff (2026-11-10)
 
-All milestones M0-M10 are done (docs/progress.md). The latest session: One Dark Pro is the
-only dark theme and themes load from JSON; the project was renamed Vela -> Quadra and
-`geom` -> `prim`. Open: the switch's on-track color (see `.private/README.md`), color emoji
+All milestones M0-M10 are done (docs/progress.md). OneTerm is ported 1:1 from the original
+(specs/22-27); `tools/check.sh` passes. `tools/check.sh prod` fails only because Windows
+Defender removes a few test binaries on this machine. Performance work on OneTerm is next.
+Open decisions: the bundled console host (not loaded), the coreutils option catalog
+(specs/24, Licence). One Dark Pro is the only dark theme and themes load from JSON; the
+project was renamed Vela -> Quadra and `geom` -> `prim`. Open: the switch's on-track color
+(see `.private/README.md`), color emoji
 (monochrome today), the M0 manual checks, the 150 ms start-up budget, the After-v1 list.
 `dist/` still holds builds packaged under the old name; `tools/package.sh` rebuilds them.

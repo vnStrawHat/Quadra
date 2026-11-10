@@ -28,12 +28,14 @@ fn test_cmd_reports_its_prompt_and_gets_the_environment() {
 		env:     spec.env
 		cols:    120
 		rows:    30
-		on_data: fn [mut sink] (data []u8) {
+		ctx:     sink
+		on_data: fn (ctx voidptr, data []u8) {
+			mut sink := unsafe { &Sink(ctx) }
 			sink.mu.@lock()
 			sink.out << data
 			sink.mu.unlock()
 		}
-		on_exit: fn (code int) {}
+		on_exit: fn (_ voidptr, code int) {}
 	}) or {
 		eprintln('skipped: ${err}')
 		return

@@ -73,7 +73,9 @@ fn test_agent_auth_and_forwarding() {
 	cfg.agent_pipe = test_pipe
 	cfg.agent_forwarding = true
 	mut warned := &EventLog{}
-	cfg.on_warning = fn [mut warned] (m string) {
+	cfg.warning_ctx = warned
+	cfg.on_warning = fn (ctx voidptr, m string) {
+		mut warned := unsafe { &EventLog(ctx) }
 		warned.warnings << m
 	}
 	mut s := connect(cfg) or { panic(err) }

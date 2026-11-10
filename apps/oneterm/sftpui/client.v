@@ -13,8 +13,8 @@ mut:
 	remove(path string) !
 	remove_dir_all(path string) !
 	mkdir(path string) !
-	upload(id u64, local string, remote string, on_event fn (e ssh.TransferEvent)) !
-	download(id u64, remote string, local string, on_event fn (e ssh.TransferEvent)) !
+	upload(id u64, local string, remote string, on_event ssh.OnTransfer) !
+	download(id u64, remote string, local string, on_event ssh.OnTransfer) !
 	cancel_transfer(id u64)
 	alive() bool
 }
@@ -54,11 +54,11 @@ pub fn (mut c SftpClient) mkdir(path string) ! {
 	c.s.mkdir(path)!
 }
 
-pub fn (mut c SftpClient) upload(id u64, local string, remote string, on_event fn (e ssh.TransferEvent)) ! {
+pub fn (mut c SftpClient) upload(id u64, local string, remote string, on_event ssh.OnTransfer) ! {
 	c.s.upload(id, local, remote, on_event)!
 }
 
-pub fn (mut c SftpClient) download(id u64, remote string, local string, on_event fn (e ssh.TransferEvent)) ! {
+pub fn (mut c SftpClient) download(id u64, remote string, local string, on_event ssh.OnTransfer) ! {
 	c.s.download(id, remote, local, on_event)!
 }
 
@@ -68,4 +68,22 @@ pub fn (mut c SftpClient) cancel_transfer(id u64) {
 
 pub fn (mut c SftpClient) alive() bool {
 	return c.s.alive()
+}
+
+// Job is a worker task's data: what the work function needs, passed in instead of captured
+// (no closures in apps, specs/14). Each task fills the fields it uses.
+struct Job {
+	client   Client
+	bus      &Bus = unsafe { nil }
+	key      u64
+	gen      u64
+	id       u64
+	path     string
+	cwd      string
+	name     string
+	remote   string
+	paths    []string
+	entry    ssh.FileEntry
+	rename   bool
+	baseline ?i64
 }

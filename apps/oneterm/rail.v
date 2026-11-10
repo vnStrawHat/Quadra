@@ -32,7 +32,7 @@ fn (mut o OneTerm) rail_width(mut cx core.ViewCx[OneTerm]) f32 {
 	return clamp_tab_rail_width(pref, o.rail_group_width(mut cx))
 }
 
-fn (mut o OneTerm) toggle_rail_collapsed(mut cx core.ViewCx[OneTerm]) {
+fn (mut o OneTerm) toggle_rail_collapsed(mut _ core.ViewCx[OneTerm]) {
 	o.ui.vertical_tabs.collapsed = !o.ui.vertical_tabs.collapsed
 	o.persist_ui() or {}
 }
@@ -219,13 +219,21 @@ fn (mut o OneTerm) rail_cell(i int, tab &TermTab, t &kit.Theme, mut cx core.View
 			cell.child(ui.div().absolute().top(3).left(3).child(recording_dot(dot, t)))
 		}
 	}
-	return kit.hover_card(o.rail_events(cell, RowEvent{tab.id, i}, title, shell_glyph(tab), mut cx), fn [title, cwd, t] () core.Element {
-		mut col := ui.div().flex_col().gap(2).max_w(280).child(ui.text(title))
-		if cwd != '' {
-			col.child(ui.text(trim_start(cwd, 40)).color(t.p.text_2))
-		}
-		return col
-	})
+	return kit.hover_card_with(o.rail_events(cell, RowEvent{tab.id, i}, title, shell_glyph(tab), mut
+		cx), RailCard{title, cwd}, rail_card)
+}
+
+struct RailCard {
+	title string
+	cwd   string
+}
+
+fn rail_card(c RailCard, t &kit.Theme) core.Element {
+	mut col := ui.div().flex_col().gap(2).max_w(280).child(ui.text(c.title))
+	if c.cwd != '' {
+		col.child(ui.text(trim_start(c.cwd, 40)).color(t.p.text_2))
+	}
+	return col
 }
 
 // tab_lead_no_status is the lead of a rail row, whose status icon goes on the second line.

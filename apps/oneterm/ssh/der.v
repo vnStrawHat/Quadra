@@ -28,7 +28,7 @@ fn (mut d Der) next() !(u8, []u8) {
 		}
 		n = 0
 		for _ in 0 .. count {
-			n = n << 8 | int(d.buf[d.pos])
+			n = int(u32(n) << 8) | int(d.buf[d.pos])
 			d.pos++
 		}
 	}
@@ -61,7 +61,7 @@ fn (mut d Der) int_bytes() ![]u8 {
 fn (mut d Der) int_val() !int {
 	mut v := 0
 	for b in d.int_bytes()! {
-		v = v << 8 | int(b)
+		v = int(u32(v) << 8) | int(b)
 	}
 	return v
 }

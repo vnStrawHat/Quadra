@@ -148,12 +148,19 @@ fn (mut p SftpPanel) start_edit(e ssh.FileEntry, mut cx core.ViewCx[SftpPanel]) 
 		return
 	}
 	temp := os.join_path(dir, sanitize_file_name(e.name))
-	mut client := p.active.client
-	mut bus := p.bus
-	name, remote, baseline := e.name, e.path, e.modified
-	core.spawn_task[SftpPanel, EditDownloaded](mut cx, fn [mut client, mut bus, key, name, temp, remote, baseline] (_ &core.TaskCx) !EditDownloaded {
-		status := run_transfer(mut client, mut bus, key, .download, name, temp, remote)
-		return EditDownloaded{key, remote, temp, baseline, status}
+	core.spawn_task_with[SftpPanel, Job, EditDownloaded](mut cx, Job{
+		client:   p.active.client
+		bus:      p.bus
+		key:      key
+		name:     e.name
+		path:     temp
+		remote:   e.path
+		baseline: e.modified
+	}, fn (j Job, _ &core.TaskCx) !EditDownloaded {
+		mut client := j.client
+		mut bus := j.bus
+		status := run_transfer(mut client, mut bus, j.key, .download, j.name, j.path, j.remote)
+		return EditDownloaded{j.key, j.remote, j.path, j.baseline, status}
 	}, on_edit_downloaded)
 }
 

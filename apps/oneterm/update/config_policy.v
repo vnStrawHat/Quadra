@@ -70,27 +70,35 @@ fn merge_owned_fields(path string, keys []string, values map[string]json2.Any, r
 	if read_only {
 		return error('a read-only window writes no configuration')
 	}
-	merge := fn [keys, values] (mut doc json2.Any) ! {
-		mut fields := store.object_of(doc) or {
-			map[string]json2.Any{}
-		}
-		for key in keys {
-			if value := values[key] {
-				fields[key] = value
-			} else {
-				fields.delete(key)
-			}
-		}
-		fields[store.schema_field] = json2.Any(i64(current_schema))
-		doc = json2.Any(fields)
-	}
-	store.update_json_file(path, merge) or {
+	owned := OwnedFields{keys, values}
+	store.update_json_file_with(path, owned, merge_fields) or {
 		if err is store.InvalidData {
 			eprintln('${document_name} is unreadable; quarantining before rewrite')
 			store.quarantine_file(path, false)!
-			store.update_json_file(path, merge)!
+			store.update_json_file_with(path, owned, merge_fields)!
 			return
 		}
 		return err
 	}
+}
+
+// OwnedFields is what merge_fields writes: the owned keys and their new values.
+struct OwnedFields {
+	keys   []string
+	values map[string]json2.Any
+}
+
+fn merge_fields(o OwnedFields, mut doc json2.Any) ! {
+	mut fields := store.object_of(doc) or {
+		map[string]json2.Any{}
+	}
+	for key in o.keys {
+		if value := o.values[key] {
+			fields[key] = value
+		} else {
+			fields.delete(key)
+		}
+	}
+	fields[store.schema_field] = json2.Any(i64(current_schema))
+	doc = json2.Any(fields)
 }

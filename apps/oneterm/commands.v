@@ -249,7 +249,7 @@ fn (mut o OneTerm) launch_admin(shell string, mut cx core.ViewCx[OneTerm]) {
 		return
 	}
 	o.launching = true
-	core.spawn_task[OneTerm, string](mut cx, fn [shell] (_ &core.TaskCx) !string {
+	core.spawn_task_with[OneTerm, string, string](mut cx, shell, fn (shell string, _ &core.TaskCx) !string {
 		started, code := request_elevation(shell)
 		return launch_outcome(started, code)
 	}, fn (mut o OneTerm, r &core.TaskResult[string], mut cx core.ViewCx[OneTerm]) {

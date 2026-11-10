@@ -133,7 +133,7 @@ fn script_transport(replies [][]u8) (&Transport, &ScriptStream) {
 	for r in replies {
 		s.incoming << build_packet(r, PlainSealer{})
 	}
-	t := new_transport(Stream(s), Offer{}, fn (k HostKey) ! {})
+	t := new_transport(Stream(s), Offer{}, HostCheck{})
 	return t, s
 }
 

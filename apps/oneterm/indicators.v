@@ -23,8 +23,8 @@ pub fn (l GitLabel) whole() string {
 	return l.head + diff + l.tail
 }
 
-fn (l GitLabel) element(budget f32, measure fn (string) f32, t &kit.Theme) core.Element {
-	if measure(l.whole()) > budget {
+fn (l GitLabel) element(budget f32, measure Measure, t &kit.Theme) core.Element {
+	if measure.width(l.whole()) > budget {
 		return ui.text(elide_right(l.whole(), budget, measure))
 	}
 	row := ui.div().flex_row().items_center().child(ui.text(l.head))
@@ -159,6 +159,7 @@ pub mut:
 	working_set    u64
 	commit         u64
 	peak           u64
+	uptime_ms      u64
 	at_ms          f64
 }
 
@@ -219,7 +220,7 @@ fn (mut o OneTerm) tick_git(mut cx core.ViewCx[OneTerm]) {
 		return
 	}
 	o.git.busy, o.git.since = true, 0
-	core.spawn_task[OneTerm, GitResult](mut cx, fn [cwd] (_ &core.TaskCx) !GitResult {
+	core.spawn_task_with[OneTerm, string, GitResult](mut cx, cwd, fn (cwd string, _ &core.TaskCx) !GitResult {
 		return git_query(cwd)
 	}, fn (mut o OneTerm, r &core.TaskResult[GitResult], mut cx core.ViewCx[OneTerm]) {
 		o.git.busy = false

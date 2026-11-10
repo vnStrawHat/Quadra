@@ -85,8 +85,7 @@ fn retires_secret(previous []u8, kept map[string]bool) bool {
 
 fn save_snapshot(document SessionDocument, path string) ! {
 	json := encode_session_document(document)
-	kept := sealed_values(json)
-	atomic_write_sealed(path, json.bytes(), fn [kept] (previous []u8) bool {
+	atomic_write_sealed_with(path, json.bytes(), sealed_values(json), fn (kept map[string]bool, previous []u8) bool {
 		return retires_secret(previous, kept)
 	})!
 }

@@ -121,8 +121,8 @@ pub fn (mut f FakeClient) mkdir(path string) ! {
 	f.mutation('mkdir ${path}')!
 }
 
-pub fn (mut f FakeClient) upload(id u64, local string, remote string, on_event fn (e ssh.TransferEvent)) ! {
-	on_event(ssh.TransferEvent{ kind: .progress, fraction: 0.5 })
+pub fn (mut f FakeClient) upload(id u64, local string, remote string, on_event ssh.OnTransfer) ! {
+	on_event.f(on_event.ctx, ssh.TransferEvent{ kind: .progress, fraction: 0.5 })
 	if f.hang_chunk {
 		for id !in f.cancelled {
 			time.sleep(2 * time.millisecond)
@@ -134,11 +134,11 @@ pub fn (mut f FakeClient) upload(id u64, local string, remote string, on_event f
 	f.uploaded[remote] = data
 	f.log << 'upload ${remote}'
 	f.mu.unlock()
-	on_event(ssh.TransferEvent{ kind: .progress, fraction: 1 })
+	on_event.f(on_event.ctx, ssh.TransferEvent{ kind: .progress, fraction: 1 })
 }
 
-pub fn (mut f FakeClient) download(id u64, remote string, local string, on_event fn (e ssh.TransferEvent)) ! {
-	on_event(ssh.TransferEvent{ kind: .progress, fraction: 0.5 })
+pub fn (mut f FakeClient) download(id u64, remote string, local string, on_event ssh.OnTransfer) ! {
+	on_event.f(on_event.ctx, ssh.TransferEvent{ kind: .progress, fraction: 0.5 })
 	if f.hang_chunk {
 		for id !in f.cancelled {
 			time.sleep(2 * time.millisecond)
@@ -150,7 +150,7 @@ pub fn (mut f FakeClient) download(id u64, remote string, local string, on_event
 	f.log << 'download ${remote} -> ${local}'
 	f.mu.unlock()
 	os.write_file(local, data)!
-	on_event(ssh.TransferEvent{ kind: .progress, fraction: 1 })
+	on_event.f(on_event.ctx, ssh.TransferEvent{ kind: .progress, fraction: 1 })
 }
 
 pub fn (mut f FakeClient) cancel_transfer(id u64) {

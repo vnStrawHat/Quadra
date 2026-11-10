@@ -40,9 +40,14 @@ fn (mut p SftpPanel) load_dir(path string, mut cx core.ViewCx[SftpPanel]) {
 	p.sync_table(mut cx)
 	p.sync_path(mut cx)
 	cx.notify()
-	gen, key := st.generation, st.key
-	mut client := st.client
-	core.spawn_task[SftpPanel, Listed](mut cx, fn [mut client, path, gen, key] (_ &core.TaskCx) !Listed {
+	core.spawn_task_with[SftpPanel, Job, Listed](mut cx, Job{
+		client: st.client
+		key:    st.key
+		gen:    st.generation
+		path:   path
+	}, fn (j Job, _ &core.TaskCx) !Listed {
+		mut client := j.client
+		path, key, gen := j.path, j.key, j.gen
 		mut resolved := ''
 		if !path.starts_with('/') {
 			resolved = client.realpath(path) or { '' }
@@ -134,9 +139,14 @@ fn (mut p SftpPanel) goto_path(path string, mut cx core.ViewCx[SftpPanel]) {
 		return
 	}
 	mut st := p.active
-	key, gen := st.key, st.generation
-	mut client := st.client
-	core.spawn_task[SftpPanel, GotoResult](mut cx, fn [mut client, path, key, gen] (_ &core.TaskCx) !GotoResult {
+	core.spawn_task_with[SftpPanel, Job, GotoResult](mut cx, Job{
+		client: st.client
+		key:    st.key
+		gen:    st.generation
+		path:   path
+	}, fn (j Job, _ &core.TaskCx) !GotoResult {
+		mut client := j.client
+		path, key, gen := j.path, j.key, j.gen
 		e := client.stat(path) or { return GotoResult{
 			key:  key
 			gen:  gen

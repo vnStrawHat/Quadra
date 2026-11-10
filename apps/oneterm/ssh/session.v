@@ -25,7 +25,7 @@ mut:
 
 fn warn(cfg &Config, msg string) {
 	if cfg.on_warning != unsafe { nil } {
-		cfg.on_warning(msg)
+		cfg.on_warning(cfg.warning_ctx, msg)
 	}
 }
 
@@ -45,9 +45,9 @@ pub fn connect(cfg Config) !&Session {
 	for i in 0 .. config.jump_hops.len {
 		mut hop := config.jump_hops[i]
 		label := hop.label()
-		conn := connect_hop(mut g, last, mut hop, config) or {
+		mut conn := connect_hop(mut g, last, mut hop, config) or {
 			close_all(mut hops)
-			return hop_error(label, err)
+			return hop_error(label, IError(err))
 		}
 		hops << conn
 		last = conn
@@ -73,9 +73,7 @@ fn build_session(mut g Guard, last &Conn, mut hops []&Conn, cfg &Config) !&Sessi
 		conn: conn
 		hops: hops
 	}
-	s.conn.on_closed = fn [mut s] () {
-		spawn s.close()
-	}
+	s.conn.owner = s
 	s.open_shell(mut g, cfg) or {
 		s.close()
 		return err
@@ -89,10 +87,8 @@ fn build_session(mut g Guard, last &Conn, mut hops []&Conn, cfg &Config) !&Sessi
 	}
 	s.forwards = new_forwards(s.conn, cfg)
 	if cfg.agent_forwarding {
-		s.conn.agent_bridge = fn [cfg] (ch &Channel) ! {
-			mut channel := unsafe { ch }
-			spawn bridge_agent(mut channel, cfg.agent_pipe)
-		}
+		s.conn.agent_pipe = cfg.agent_pipe
+		s.conn.agent_on = true
 	}
 	return s
 }
@@ -151,7 +147,7 @@ fn (mut s Session) open_shell(mut g Guard, cfg &Config) ! {
 	s.shell = pty_
 }
 
-fn (mut s Session) open_sftp_channel(mut g Guard, cfg &Config) ! {
+fn (mut s Session) open_sftp_channel(mut g Guard, _ &Config) ! {
 	g.enter(.sftp_setup)
 	mut ch := s.conn.open_channel('session', [], sftp_window) or { return g.fail(err) }
 	ch.traffic = s.traffic

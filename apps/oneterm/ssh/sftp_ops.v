@@ -58,9 +58,11 @@ fn (mut s Sftp) close_handle(handle []u8) ! {
 
 // close_handle_later releases a handle without blocking the caller (after cancel).
 fn (mut s Sftp) close_handle_later(handle []u8) {
-	spawn fn [mut s, handle] () {
-		s.close_handle(handle) or {}
-	}()
+	spawn close_handle_quietly(mut s, handle)
+}
+
+fn close_handle_quietly(mut s Sftp, handle []u8) {
+	s.close_handle(handle) or {}
 }
 
 // attrs_of returns the attributes of a path; lstat does not follow symlinks.

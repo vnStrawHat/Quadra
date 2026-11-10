@@ -120,12 +120,12 @@ fn (mut m UpdateManager) check_with_cache(reuse bool) !UpdateCheckResult {
 	response := m.client.fetch_releases(m.repository, etag)!
 	m.config.record_success(response.etag, current_text)
 	if response.not_modified {
-		cached := if reuse { m.cached_candidate() } else { none }
-		if cached == none {
+		reused := if reuse { m.cached_candidate() } else { none }
+		if reused == none {
 			m.config.cached_candidate = none
 		}
 		m.persist_config()
-		if c := cached {
+		if c := reused {
 			return UpdateCheckResult{
 				kind:      .available
 				candidate: c
@@ -160,23 +160,23 @@ fn (mut m UpdateManager) check_with_cache(reuse bool) !UpdateCheckResult {
 }
 
 fn (m &UpdateManager) cached_candidate() ?UpdateCandidate {
-	cached := m.config.cached_candidate or { return none }
-	if cached.target_triple != m.target {
+	hit := m.config.cached_candidate or { return none }
+	if hit.target_triple != m.target {
 		return none
 	}
 	// The cache was filled under the channel active at that time.
-	if cached.prerelease && m.config.channel != .preview {
+	if hit.prerelease && m.config.channel != .preview {
 		return none
 	}
-	version := parse_release_version(cached.version) or { return none }
+	version := parse_release_version(hit.version) or { return none }
 	current := m.current_version or { return none }
 	if version.compare(current) <= 0 {
 		return none
 	}
-	if (m.config.skipped_version or { '' }) == cached.version {
+	if (m.config.skipped_version or { '' }) == hit.version {
 		return none
 	}
-	return cached
+	return hit
 }
 
 // Only the checker-owned fields: the settings UI owns preferences and may have changed them.

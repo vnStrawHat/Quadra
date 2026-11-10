@@ -197,9 +197,12 @@ pub fn row_of(e ssh.FileEntry) Row {
 	}
 }
 
+// Keyed carries the sort column and direction itself, so the compare captures nothing.
 struct Keyed {
 	e     ssh.FileEntry
 	lower string
+	col   SortCol
+	desc  bool
 }
 
 fn opt_i64(v ?i64) i64 {
@@ -236,16 +239,16 @@ fn compare_col(a &Keyed, b &Keyed, col SortCol) int {
 // sort_entries puts folders first; the column orders each group, the name breaks ties.
 pub fn sort_entries(mut es []ssh.FileEntry, s SortState) {
 	col, desc := if s.on { s.col, s.desc } else { SortCol.name, false }
-	mut keyed := es.map(Keyed{it, it.name.to_lower()})
-	keyed.sort_with_compare(fn [col, desc] (a &Keyed, b &Keyed) int {
+	mut keyed := es.map(Keyed{it, it.name.to_lower(), col, desc})
+	keyed.sort_with_compare(fn (a &Keyed, b &Keyed) int {
 		if a.e.is_dir != b.e.is_dir {
 			return if a.e.is_dir { -1 } else { 1 }
 		}
-		c := compare_col(a, b, col)
+		c := compare_col(a, b, a.col)
 		if c == 0 {
 			return a.lower.compare(b.lower)
 		}
-		return if desc { -c } else { c }
+		return if a.desc { -c } else { c }
 	})
 	for i, k in keyed {
 		es[i] = k.e

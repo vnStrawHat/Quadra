@@ -35,10 +35,25 @@ pub fn divide_centre(window_w f32, icons int, fixed f32, git f32) (f32, f32) {
 	return room - g, g
 }
 
+// Measure gives the width of a label (the status bar's text system; tests count runes).
+pub interface Measure {
+	width(s string) f32
+}
+
+struct TextMeasure {
+	ts    &text.TextSystem = unsafe { nil }
+	style text.TextStyle
+}
+
+fn (m TextMeasure) width(s string) f32 {
+	mut ts := m.ts
+	return ts.layout_line(s, m.style).width
+}
+
 // elide_left keeps the tail of a path behind an ellipsis, cutting at a separator; only a single
 // component longer than the budget is cut inside itself.
-pub fn elide_left(path string, budget f32, measure fn (string) f32) string {
-	if measure(path) <= budget {
+pub fn elide_left(path string, budget f32, measure Measure) string {
+	if measure.width(path) <= budget {
 		return path
 	}
 	mut i := 0
@@ -54,7 +69,7 @@ pub fn elide_left(path string, budget f32, measure fn (string) f32) string {
 		}
 		i = cut
 		tail := '…' + path[i..]
-		if measure(tail) <= budget {
+		if measure.width(tail) <= budget {
 			return tail
 		}
 	}
@@ -64,7 +79,7 @@ pub fn elide_left(path string, budget f32, measure fn (string) f32) string {
 	for k > 1 {
 		k--
 		s := '…' + r[r.len - k..].string()
-		if measure(s) <= budget {
+		if measure.width(s) <= budget {
 			return s
 		}
 	}
@@ -77,14 +92,14 @@ pub fn cwd_tooltip(shown string, cwd string) string {
 }
 
 // elide_right keeps the head (a branch name is known by its start).
-pub fn elide_right(s string, budget f32, measure fn (string) f32) string {
-	if measure(s) <= budget {
+pub fn elide_right(s string, budget f32, measure Measure) string {
+	if measure.width(s) <= budget {
 		return s
 	}
 	r := s.runes()
 	for k := r.len - 1; k > 0; k-- {
 		t := r[..k].string() + '…'
-		if measure(t) <= budget {
+		if measure.width(t) <= budget {
 			return t
 		}
 	}
@@ -98,20 +113,16 @@ fn item_el(glyph string, label core.Element, t &kit.Theme) &ui.Div {
 
 fn (mut o OneTerm) status_bar(t &kit.Theme, mut cx core.ViewCx[OneTerm]) core.Element {
 	size := t.font_size(.xs)
-	mut ts := cx.app.text
-	style := text.TextStyle{
+	measure := TextMeasure{cx.app.text, text.TextStyle{
 		family: t.font_family
 		size:   size
-	}
-	measure := fn [mut ts, style] (s string) f32 {
-		return ts.layout_line(s, style).width
-	}
+	}}
 	cwd := o.active_cwd(mut cx)
 	git := o.git.label
 	res := o.res.text
-	mut fixed := measure(o.clock) + measure(o.net_text) + measure(res)
+	mut fixed := measure.width(o.clock) + measure.width(o.net_text) + measure.width(res)
 	if o.stats_on && o.stats_text != '' {
-		fixed += measure(o.stats_text)
+		fixed += measure.width(o.stats_text)
 	}
 	git_text := git.whole()
 	mut icons := 1
@@ -121,7 +132,7 @@ fn (mut o OneTerm) status_bar(t &kit.Theme, mut cx core.ViewCx[OneTerm]) core.El
 	icons += if git.head != '' { 1 } else { 0 }
 	width := cx.win.size().width - if o.ui.vertical_tabs.enabled { toggle_chrome } else { f32(0) }
 	path_w, git_w := divide_centre(width, icons, fixed, if git.head != '' {
-		measure(git_text)
+		measure.width(git_text)
 	} else {
 		f32(0)
 	})
@@ -162,8 +173,8 @@ fn (mut o OneTerm) status_bar(t &kit.Theme, mut cx core.ViewCx[OneTerm]) core.El
 		right << kit.status_divider()
 	}
 	if res != '' {
-		right << kit.hover_card(item_el(icon_cpu, ui.text(res), t).test_id('status-res'),
-			resource_table(o.res, t))
+		right << kit.hover_card_with(item_el(icon_cpu, ui.text(res), t).test_id('status-res'), BoxRef{o.res},
+			resource_table)
 		right << kit.status_divider()
 	}
 	if o.stats_on && o.stats_text != '' {

@@ -143,9 +143,12 @@ pub mut:
 	shell_integration bool
 	port_forwards     []PortForward
 	keepalive         Keepalive
-	cols              int             = 80
-	rows              int             = 24
-	term_version      string          = '0.6.11'
-	cancel            &Cancel         = new_cancel()
-	on_warning        fn (msg string) = unsafe { nil } // a forward or agent problem: a toast
+	cols              int     = 80
+	rows              int     = 24
+	term_version      string  = '0.6.11'
+	cancel            &Cancel = new_cancel()
+	// a forward or agent problem (a toast), on a worker thread: on_warning(warning_ctx, msg),
+	// data instead of a closure (no closures in apps, specs/14)
+	on_warning  fn (ctx voidptr, msg string) = unsafe { nil }
+	warning_ctx voidptr
 }

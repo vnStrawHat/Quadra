@@ -38,17 +38,17 @@ fn test_dock_and_rail_widths_clamp() {
 	assert clamp_tab_rail_width(10, 300) == 140
 }
 
+struct Runes {}
+
+fn (r Runes) width(s string) f32 {
+	return f32(s.runes().len)
+}
+
 fn test_status_bar_centre_and_elision() {
-	assert elide_left('C:/a/b/c', 20, fn (s string) f32 {
-		return f32(s.len)
-	}) == 'C:/a/b/c'
-	short := elide_left('C:/aaaa/bbbb/cccc', 8, fn (s string) f32 {
-		return f32(s.runes().len)
-	})
+	assert elide_left('C:/a/b/c', 20, Runes{}) == 'C:/a/b/c'
+	short := elide_left('C:/aaaa/bbbb/cccc', 8, Runes{})
 	assert short.starts_with('…') && short.ends_with('cccc') && short.runes().len <= 8
-	end := elide_right('abcdefghij', 5, fn (s string) f32 {
-		return f32(s.runes().len)
-	})
+	end := elide_right('abcdefghij', 5, Runes{})
 	assert end.ends_with('…') && end.starts_with('abc') && end.runes().len <= 5
 }
 

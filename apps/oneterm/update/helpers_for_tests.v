@@ -27,13 +27,13 @@ mut:
 	fail_download bool
 }
 
-fn (mut f FakeClient) fetch_releases(repository string, etag ?string) !ReleaseResponse {
+fn (mut f FakeClient) fetch_releases(_ string, etag ?string) !ReleaseResponse {
 	f.fetches++
 	f.last_etag = etag
 	return f.response
 }
 
-fn (mut f FakeClient) download_to_file(url string, path string, max_bytes u64) ! {
+fn (mut f FakeClient) download_to_file(_ string, path string, max_bytes u64) ! {
 	f.downloads++
 	if f.fail_download {
 		return error('network down')

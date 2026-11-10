@@ -35,14 +35,14 @@ fn (m &UpdateManager) select_candidate(releases []GitHubRelease, current Version
 			continue
 		}
 		expected := expected_asset_name(version_text, m.target)
-		mut asset := ?GitHubAsset(none)
+		mut found := ?GitHubAsset(none)
 		for a in release.assets {
 			if a.name == expected {
-				asset = a
+				found = a
 				break
 			}
 		}
-		matched := asset or {
+		matched := found or {
 			missing = true
 			continue
 		}

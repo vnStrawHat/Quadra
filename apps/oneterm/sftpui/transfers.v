@@ -40,11 +40,15 @@ fn (mut p SftpPanel) upload_paths(paths []string, mut cx core.ViewCx[SftpPanel])
 	if p.active == unsafe { nil } || paths.len == 0 {
 		return
 	}
-	mut client := p.active.client
-	key, cwd := p.active.key, p.active.cwd
-	core.spawn_task[SftpPanel, Existing](mut cx, fn [mut client, key, cwd, paths] (_ &core.TaskCx) !Existing {
-		entries := client.read_dir(cwd) or { []ssh.FileEntry{} }
-		return Existing{key, paths, entries}
+	core.spawn_task_with[SftpPanel, Job, Existing](mut cx, Job{
+		client: p.active.client
+		key:    p.active.key
+		cwd:    p.active.cwd
+		paths:  paths
+	}, fn (j Job, _ &core.TaskCx) !Existing {
+		mut client := j.client
+		entries := client.read_dir(j.cwd) or { []ssh.FileEntry{} }
+		return Existing{j.key, j.paths, entries}
 	}, on_existing)
 }
 
@@ -78,16 +82,21 @@ fn on_collision_answer(mut p SftpPanel, a CollisionAnswer, yes &bool, mut cx cor
 
 // upload_batch uploads sequentially; a failed or cancelled file does not stop the rest.
 fn (mut p SftpPanel) upload_batch(st &Backend, paths []string, mut cx core.ViewCx[SftpPanel]) {
-	key, cwd := st.key, st.cwd
-	mut client := st.client
-	mut bus := p.bus
-	core.spawn_task[SftpPanel, BatchDone](mut cx, fn [mut client, mut bus, key, cwd, paths] (_ &core.TaskCx) !BatchDone {
-		for path in paths {
+	core.spawn_task_with[SftpPanel, Job, BatchDone](mut cx, Job{
+		client: st.client
+		bus:    p.bus
+		key:    st.key
+		cwd:    st.cwd
+		paths:  paths
+	}, fn (j Job, _ &core.TaskCx) !BatchDone {
+		mut client := j.client
+		mut bus := j.bus
+		for path in j.paths {
 			name := upload_name(path)
-			remote := ssh.remote_join(cwd, name)
-			run_transfer(mut client, mut bus, key, .upload, name, path, remote)
+			remote := ssh.remote_join(j.cwd, name)
+			run_transfer(mut client, mut bus, j.key, .upload, name, path, remote)
 		}
-		return BatchDone{key}
+		return BatchDone{j.key}
 	}, on_batch_done)
 }
 
@@ -101,26 +110,9 @@ fn run_transfer(mut client Client, mut bus Bus, key u64, dir Direction, name str
 		direction: dir
 		name:      name
 	})
-	on_event := fn [mut bus, key, id] (e ssh.TransferEvent) {
-		match e.kind {
-			.progress {
-				bus.post(BusMsg{
-					key:      key
-					kind:     .progress
-					id:       id
-					fraction: e.fraction
-				})
-			}
-			.discovering {
-				bus.post(BusMsg{
-					key:   key
-					kind:  .discovering
-					id:    id
-					files: e.files
-				})
-			}
-			.cancelled {}
-		}
+	on_event := ssh.OnTransfer{
+		ctx: &TransferPost{bus, key, id}
+		f:   post_transfer_event
 	}
 	mut status := TransferStatus.completed
 	mut msg := ''
@@ -143,6 +135,37 @@ fn run_transfer(mut client Client, mut bus Bus, key u64, dir Direction, name str
 		error:  msg
 	})
 	return status
+}
+
+// TransferPost is what a transfer's events are posted with (ssh.OnTransfer.ctx).
+struct TransferPost {
+	bus &Bus = unsafe { nil }
+	key u64
+	id  u64
+}
+
+fn post_transfer_event(ctx voidptr, e ssh.TransferEvent) {
+	t := unsafe { &TransferPost(ctx) }
+	mut bus := t.bus
+	match e.kind {
+		.progress {
+			bus.post(BusMsg{
+				key:      t.key
+				kind:     .progress
+				id:       t.id
+				fraction: e.fraction
+			})
+		}
+		.discovering {
+			bus.post(BusMsg{
+				key:   t.key
+				kind:  .discovering
+				id:    t.id
+				files: e.files
+			})
+		}
+		.cancelled {}
+	}
 }
 
 fn on_batch_done(mut p SftpPanel, r &core.TaskResult[BatchDone], mut cx core.ViewCx[SftpPanel]) {
@@ -206,13 +229,18 @@ fn (mut p SftpPanel) download_to(e ssh.FileEntry, local string, mut cx core.View
 	if p.active == unsafe { nil } {
 		return
 	}
-	key := p.active.key
-	mut client := p.active.client
-	mut bus := p.bus
-	name, remote := e.name, e.path
-	core.spawn_task[SftpPanel, BatchDone](mut cx, fn [mut client, mut bus, key, name, local, remote] (_ &core.TaskCx) !BatchDone {
-		run_transfer(mut client, mut bus, key, .download, name, local, remote)
-		return BatchDone{key}
+	core.spawn_task_with[SftpPanel, Job, BatchDone](mut cx, Job{
+		client: p.active.client
+		bus:    p.bus
+		key:    p.active.key
+		name:   e.name
+		path:   local
+		remote: e.path
+	}, fn (j Job, _ &core.TaskCx) !BatchDone {
+		mut client := j.client
+		mut bus := j.bus
+		run_transfer(mut client, mut bus, j.key, .download, j.name, j.path, j.remote)
+		return BatchDone{j.key}
 	}, fn (mut p SftpPanel, _ &core.TaskResult[BatchDone], mut cx core.ViewCx[SftpPanel]) {
 		if p.expanded {
 			p.local_refresh(mut cx)

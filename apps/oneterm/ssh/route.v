@@ -29,11 +29,8 @@ fn new_guard(cancel &Cancel) &Guard {
 		phase_at: time.now()
 		start_at: time.now()
 	}
-	mut wake := g.wake
 	mut c := g.cancel
-	c.set_hook(fn [mut wake] () {
-		wake.post()
-	})
+	c.set_wake(g.wake)
 	return g
 }
 
@@ -105,7 +102,7 @@ fn (mut g Guard) fail(err IError) IError {
 			message: text
 		}
 	}
-	return phase_err(g.phase, err)
+	return phase_err(g.phase, IError(err))
 }
 
 struct DialResult {
@@ -170,13 +167,15 @@ fn connect_hop(mut g Guard, carrier &Conn, mut hop Hop, cfg &Config) !&Conn {
 		g.set_stream(stream)
 	}
 	name := host_port(hop.host, hop.port)
-	known := known_keys(cfg.known_hosts_path, name) or { []KnownKey{} }
-	path := cfg.known_hosts_path
-	host, port, policy := hop.host, hop.port, hop.policy
+	entries := known_keys(cfg.known_hosts_path, name) or { []KnownKey{} }
 	mut tr := new_transport(stream, Offer{
-		host_key: preferred_algorithms(known)
-	}, fn [path, host, port, policy] (key HostKey) ! {
-		check_host_key(path, host, port, policy, key)!
+		host_key: preferred_algorithms(entries)
+	}, HostCheck{
+		verify: true
+		path:   cfg.known_hosts_path
+		host:   hop.host
+		port:   hop.port
+		policy: hop.policy
 	})
 	tr.handshake() or {
 		tr.close()

@@ -53,7 +53,7 @@ fn (mut t Transport) run_kex(server_init []u8) ! {
 		t.session_id = ex.h.clone()
 	}
 	if !t.first_done {
-		t.on_hostkey(key)!
+		t.on_hostkey.check(key)!
 		t.host_blob = ex.k_s.clone()
 	} else if ex.k_s != t.host_blob {
 		return error('the server changed its host key during a rekey')

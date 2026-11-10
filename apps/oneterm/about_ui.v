@@ -20,25 +20,28 @@ fn open_about(one core.Model[OneTerm], mut cx core.Cx) {
 		one: one
 	})
 	mut holder := &ModalRef{}
-	body := fn [view] () core.Element {
-		return core.view_element(view.any())
-	}
-	foot := fn [one, holder] () core.Element {
-		mut row := ui.div().flex_row().justify_end().gap(8)
-		if !is_restricted() {
-			row.child(kit.button('about-check-update').label('Check for Updates').ghost().on_click(core.handler_with(one,
-				about_check)))
-		}
-		row.child(kit.button('about-close').label('Close').on_click(core.handler_with(ModalClose{holder},
-			about_close)))
-		return row
-	}
 	holder.id = kit.open_modal(mut cx, kit.ModalOptions{
-		title:  'About OneTerm'
-		width:  520
-		body:   body
-		footer: foot
+		title:       'About OneTerm'
+		width:       520
+		body_with:   kit.view_body(view.any())
+		footer_with: kit.build_with(AboutFoot{one, holder}, about_foot)
 	})
+}
+
+struct AboutFoot {
+	one    core.Model[OneTerm]
+	holder &ModalRef = unsafe { nil }
+}
+
+fn about_foot(a AboutFoot, _ &kit.Theme) core.Element {
+	mut row := ui.div().flex_row().justify_end().gap(8)
+	if !is_restricted() {
+		row.child(kit.button('about-check-update').label('Check for Updates').ghost().on_click(core.handler_with(a.one,
+			about_check)))
+	}
+	row.child(kit.button('about-close').label('Close').on_click(core.handler_with(ModalClose{a.holder},
+		about_close)))
+	return row
 }
 
 fn about_check(one core.Model[OneTerm], _ &core.ClickEvent, mut cx core.Cx) {

@@ -97,14 +97,17 @@ fn (mut o OneTerm) check_for_updates(mut cx core.ViewCx[OneTerm]) {
 
 fn (mut o OneTerm) run_check(manual bool, mut cx core.ViewCx[OneTerm]) {
 	o.upd.status = .checking
-	config := o.update_engine_config()
-	storage := o.update_storage()
-	client := o.update_client
-	core.spawn_task[OneTerm, CheckOutcome](mut cx, fn [manual, config, storage, client] (_ &core.TaskCx) !CheckOutcome {
-		mut m := new_update_manager(config, storage, client)
+	job := UpdateJob{
+		manual:  manual
+		config:  o.update_engine_config()
+		storage: o.update_storage()
+		client:  o.update_client
+	}
+	core.spawn_task_with[OneTerm, UpdateJob, CheckOutcome](mut cx, job, fn (j UpdateJob, _ &core.TaskCx) !CheckOutcome {
+		mut m := new_update_manager(j.config, j.storage, j.client)
 		mut result := update.UpdateCheckResult{}
 		mut message := ''
-		if manual {
+		if j.manual {
 			result = m.refresh_now() or {
 				message = err.msg()
 				update.UpdateCheckResult{}
@@ -120,6 +123,18 @@ fn (mut o OneTerm) run_check(manual bool, mut cx core.ViewCx[OneTerm]) {
 		o.finish_check(r, mut cx)
 	})
 	cx.notify()
+}
+
+// UpdateJob is what the update tasks need, passed as data (no closures in apps, specs/14).
+struct UpdateJob {
+	manual    bool
+	config    update.UpdateConfig
+	storage   update.UpdateStorage
+	client    ?update.ReleaseClient
+	candidate update.UpdateCandidate
+	staged    update.StagedUpdate
+	dir       string
+	installer ?UpdateInstaller
 }
 
 fn (mut o OneTerm) finish_check(r &core.TaskResult[CheckOutcome], mut cx core.ViewCx[OneTerm]) {
@@ -192,12 +207,15 @@ fn (mut o OneTerm) download_and_install(mut cx core.ViewCx[OneTerm]) {
 	}
 	candidate := o.upd.candidate or { return }
 	o.upd.status, o.upd.detail = .downloading, candidate.version
-	config := o.update_engine_config()
-	storage := o.update_storage()
-	client := o.update_client
-	core.spawn_task[OneTerm, update.StagedUpdate](mut cx, fn [config, storage, client, candidate] (_ &core.TaskCx) !update.StagedUpdate {
-		mut m := new_update_manager(config, storage, client)
-		return m.download_and_stage(candidate)!
+	job := UpdateJob{
+		config:    o.update_engine_config()
+		storage:   o.update_storage()
+		client:    o.update_client
+		candidate: candidate
+	}
+	core.spawn_task_with[OneTerm, UpdateJob, update.StagedUpdate](mut cx, job, fn (j UpdateJob, _ &core.TaskCx) !update.StagedUpdate {
+		mut m := new_update_manager(j.config, j.storage, j.client)
+		return m.download_and_stage(j.candidate)!
 	}, fn (mut o OneTerm, r &core.TaskResult[update.StagedUpdate], mut cx core.ViewCx[OneTerm]) {
 		if r.ok {
 			o.upd.staged = r.value
@@ -212,13 +230,16 @@ fn (mut o OneTerm) download_and_install(mut cx core.ViewCx[OneTerm]) {
 
 fn (mut o OneTerm) run_install(staged update.StagedUpdate, mut cx core.ViewCx[OneTerm]) {
 	o.upd.status = .installing
-	dir := os.join_path(o.dir, 'update-cache')
-	installer := o.update_install
-	core.spawn_task[OneTerm, update.InstallOutcome](mut cx, fn [staged, dir, installer] (_ &core.TaskCx) !update.InstallOutcome {
-		if run := installer {
-			return run(staged)!
+	job := UpdateJob{
+		staged:    staged
+		dir:       os.join_path(o.dir, 'update-cache')
+		installer: o.update_install
+	}
+	core.spawn_task_with[OneTerm, UpdateJob, update.InstallOutcome](mut cx, job, fn (j UpdateJob, _ &core.TaskCx) !update.InstallOutcome {
+		if run := j.installer {
+			return run(j.staged)!
 		}
-		return update.install_staged_update(staged, os.executable(), dir, is_restricted())!
+		return update.install_staged_update(j.staged, os.executable(), j.dir, is_restricted())!
 	}, fn (mut o OneTerm, r &core.TaskResult[update.InstallOutcome], mut cx core.ViewCx[OneTerm]) {
 		o.finish_install(r, mut cx)
 	})

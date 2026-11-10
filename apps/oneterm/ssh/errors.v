@@ -116,7 +116,7 @@ pub struct Cancel {
 mut:
 	mu   &sync.Mutex = sync.new_mutex()
 	flag bool
-	hook fn () = unsafe { nil } // wakes a blocked operation, called once
+	wake &sync.Semaphore = unsafe { nil } // posted once to wake a blocked operation
 }
 
 pub fn new_cancel() &Cancel {
@@ -127,10 +127,10 @@ pub fn (mut c Cancel) cancel() {
 	c.mu.@lock()
 	already := c.flag
 	c.flag = true
-	hook := c.hook
+	mut wake := c.wake
 	c.mu.unlock()
-	if !already && hook != unsafe { nil } {
-		hook()
+	if !already && wake != unsafe { nil } {
+		wake.post()
 	}
 }
 
@@ -142,13 +142,15 @@ pub fn (mut c Cancel) is_cancelled() bool {
 	return c.flag
 }
 
-// set_hook runs f on cancel, at once if already cancelled.
-fn (mut c Cancel) set_hook(f fn ()) {
+// set_wake posts wake on cancel, at once if already cancelled (a semaphore, not a closure:
+// no closures in apps, specs/14).
+fn (mut c Cancel) set_wake(wake &sync.Semaphore) {
 	c.mu.@lock()
-	c.hook = f
+	c.wake = wake
 	done := c.flag
 	c.mu.unlock()
 	if done {
-		f()
+		mut w := unsafe { wake }
+		w.post()
 	}
 }

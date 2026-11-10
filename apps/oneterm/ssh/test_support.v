@@ -22,7 +22,7 @@ fn key_auth(dir string, name string, pass string) AuthMethod {
 	return AuthMethod(ka)
 }
 
-fn hop_for(dir string, port int, auth AuthMethod) Hop {
+fn hop_for(_ string, port int, auth AuthMethod) Hop {
 	return Hop{
 		host:     '127.0.0.1'
 		port:     port
@@ -73,12 +73,15 @@ fn run_cmd(mut conn Conn, cmd string) !(string, int) {
 
 fn ptyopts(mut got ShellSink) platform.PtyOptions {
 	return platform.PtyOptions{
-		on_data: fn [mut got] (d []u8) {
+		ctx:     got
+		on_data: fn (ctx voidptr, d []u8) {
+			mut got := unsafe { &ShellSink(ctx) }
 			got.mu.@lock()
 			got.data << d
 			got.mu.unlock()
 		}
-		on_exit: fn [mut got] (code int) {
+		on_exit: fn (ctx voidptr, code int) {
+			mut got := unsafe { &ShellSink(ctx) }
 			got.code = code
 			got.done.post()
 		}

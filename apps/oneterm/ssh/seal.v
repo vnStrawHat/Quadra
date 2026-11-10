@@ -58,15 +58,15 @@ fn (s PlainSealer) length_excluded() bool {
 	return false
 }
 
-fn (mut s PlainSealer) seal(seq u32, mut pkt []u8) ![]u8 {
+fn (mut s PlainSealer) seal(_ u32, mut pkt []u8) ![]u8 {
 	return pkt
 }
 
-fn (mut s PlainSealer) read_len(seq u32, first []u8) !int {
+fn (mut s PlainSealer) read_len(_ u32, first []u8) !int {
 	return int(binary.big_endian_u32(first))
 }
 
-fn (mut s PlainSealer) open(seq u32, mut wire []u8) ![]u8 {
+fn (mut s PlainSealer) open(_ u32, mut wire []u8) ![]u8 {
 	return wire[4..]
 }
 
@@ -156,7 +156,7 @@ fn (mut s ChachaSealer) open(seq u32, mut wire []u8) ![]u8 {
 		wipe(mut pk)
 	}
 	body_end := wire.len - 16
-	tag := wire[body_end..]
+	tag := unsafe { wire[body_end..] } // a view: the decrypted body stops before the tag
 	if !poly1305.verify_tag(tag, wire[..body_end], pk) {
 		return error('bad packet authentication tag')
 	}

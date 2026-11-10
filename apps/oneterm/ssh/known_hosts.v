@@ -96,7 +96,7 @@ fn known_keys(path string, host_name string) ![]KnownKey {
 			if fields[0] == '@cert-authority' {
 				continue
 			}
-			fields = fields[1..]
+			fields = fields[1..].clone()
 		}
 		if fields.len < 3 || !patterns_match(fields[0], host_name) {
 			continue
@@ -139,9 +139,9 @@ fn preferred_algorithms(known []KnownKey) []string {
 // check_host_key decides whether the presented key may be used for host:port.
 fn check_host_key(path string, host string, port int, policy HostKeyPolicy, key HostKey) ! {
 	name := host_port(host, port)
-	known := known_keys(path, name)!
+	entries := known_keys(path, name)!
 	fp := key.fingerprint()
-	for k in known {
+	for k in entries {
 		if k.blob == key.blob {
 			if k.revoked {
 				return HostKeyChanged{
@@ -153,7 +153,7 @@ fn check_host_key(path string, host string, port int, policy HostKeyPolicy, key 
 			return
 		}
 	}
-	if known.len > 0 {
+	if entries.len > 0 {
 		return HostKeyChanged{
 			host:        host
 			port:        port

@@ -21,8 +21,12 @@ fn test_sftp_round_trip() {
 	local_down := os.join_path(dir, 'down.bin')
 	os.write_file_array(local_up, data) or { panic(err) }
 	mut log := &EventLog{}
-	c.upload(1, local_up, '${root}/a.bin', fn [mut log] (e TransferEvent) {
-		log.events << e
+	c.upload(1, local_up, '${root}/a.bin', OnTransfer{
+		ctx: log
+		f:   fn (ctx voidptr, e TransferEvent) {
+			mut log := unsafe { &EventLog(ctx) }
+			log.events << e
+		}
 	}) or { panic(err) }
 	assert log.events.last().fraction == 1.0
 	for i in 1 .. log.events.len {
@@ -30,11 +34,11 @@ fn test_sftp_round_trip() {
 	}
 	st := c.stat('${root}/a.bin') or { panic(err) }
 	assert st.size == u64(data.len) && !st.is_dir
-	c.download(2, '${root}/a.bin', local_down, unsafe { nil }) or { panic(err) }
+	c.download(2, '${root}/a.bin', local_down, OnTransfer{}) or { panic(err) }
 	downloaded := os.read_bytes(local_down) or { panic(err) }
 	assert downloaded == data
 	// overwrite through the backup path, and rename
-	c.upload(3, local_up, '${root}/a.bin', unsafe { nil }) or { panic(err) }
+	c.upload(3, local_up, '${root}/a.bin', OnTransfer{}) or { panic(err) }
 	c.rename('${root}/a.bin', '${root}/b.bin') or { panic(err) }
 	c.mkdir('${root}/Sub') or { panic(err) }
 	names := c.read_dir(root) or { panic(err) }
@@ -71,12 +75,16 @@ fn test_sftp_large_transfer_across_rekeys_and_folders() {
 	os.write_file_array(os.join_path(tree, 'nest', 'deep', 'big.bin'), data) or { panic(err) }
 	os.write_file(os.join_path(tree, 'small.txt'), 'hi') or { panic(err) }
 	mut seen := &EventLog{}
-	c.upload(10, tree, root, unsafe { nil }) or { panic(err) }
+	c.upload(10, tree, root, OnTransfer{}) or { panic(err) }
 	back := os.join_path(dir, 'tree_back')
 	os.rmdir_all(back) or {}
-	c.download(11, root, back, fn [mut seen] (e TransferEvent) {
-		if e.kind == .discovering {
-			seen.files = e.files
+	c.download(11, root, back, OnTransfer{
+		ctx: seen
+		f:   fn (ctx voidptr, e TransferEvent) {
+			mut seen := unsafe { &EventLog(ctx) }
+			if e.kind == .discovering {
+				seen.files = e.files
+			}
 		}
 	}) or { panic(err) }
 	assert seen.files == 2
@@ -99,7 +107,7 @@ fn test_sftp_cancel_and_duplicate_id() {
 	os.write_file_array(big, rand.bytes(16 * 1024 * 1024) or { panic(err) }) or { panic(err) }
 	th := spawn upload_expect_cancel(mut c, big, '${root}/x.bin')
 	time.sleep(30 * time.millisecond)
-	c.upload(77, big, '${root}/y.bin', unsafe { nil }) or {
+	c.upload(77, big, '${root}/y.bin', OnTransfer{}) or {
 		assert err.msg().contains('duplicate'), err.msg()
 	}
 	c.cancel_transfer(77)
@@ -111,7 +119,7 @@ fn test_sftp_cancel_and_duplicate_id() {
 }
 
 fn upload_expect_cancel(mut c Sftp, local string, remote string) bool {
-	c.upload(77, local, remote, unsafe { nil }) or { return err is Cancelled }
+	c.upload(77, local, remote, OnTransfer{}) or { return err is Cancelled }
 	return false
 }
 
@@ -174,7 +182,9 @@ fn test_forwards_local_dynamic_remote() {
 		}),
 	]
 	mut warned := &EventLog{}
-	cfg.on_warning = fn [mut warned] (m string) {
+	cfg.warning_ctx = warned
+	cfg.on_warning = fn (ctx voidptr, m string) {
+		mut warned := unsafe { &EventLog(ctx) }
 		warned.warnings << m
 	}
 	mut s := connect(cfg) or { panic(err) }

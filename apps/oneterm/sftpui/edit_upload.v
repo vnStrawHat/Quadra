@@ -23,11 +23,15 @@ fn (mut p SftpPanel) begin_upload_edit(id u64, mut cx core.ViewCx[SftpPanel]) {
 		return
 	}
 	s.uploading = true
-	mut client := s.client
-	remote, baseline := s.remote, s.baseline
-	core.spawn_task[SftpPanel, Conflict](mut cx, fn [mut client, remote, baseline, id] (_ &core.TaskCx) !Conflict {
-		e := client.stat(remote) or { ssh.FileEntry{} }
-		return Conflict{id, is_conflict(baseline, e.modified)}
+	core.spawn_task_with[SftpPanel, Job, Conflict](mut cx, Job{
+		client:   s.client
+		remote:   s.remote
+		baseline: s.baseline
+		id:       id
+	}, fn (j Job, _ &core.TaskCx) !Conflict {
+		mut client := j.client
+		e := client.stat(j.remote) or { ssh.FileEntry{} }
+		return Conflict{j.id, is_conflict(j.baseline, e.modified)}
 	}, on_conflict_checked)
 }
 
@@ -58,11 +62,19 @@ struct EditUploaded {
 
 fn (mut p SftpPanel) upload_edit(id u64, mut cx core.ViewCx[SftpPanel]) {
 	mut s := p.edits[id] or { return }
-	mut client := s.client
-	mut bus := p.bus
-	key, name, temp, remote := s.key, ssh.remote_file_name(s.remote), s.temp, s.remote
-	core.spawn_task[SftpPanel, EditUploaded](mut cx, fn [mut client, mut bus, key, id, name, temp, remote] (_ &core.TaskCx) !EditUploaded {
-		status := run_transfer(mut client, mut bus, key, .upload, name, temp, remote)
+	core.spawn_task_with[SftpPanel, Job, EditUploaded](mut cx, Job{
+		client: s.client
+		bus:    p.bus
+		key:    s.key
+		id:     id
+		name:   ssh.remote_file_name(s.remote)
+		path:   s.temp
+		remote: s.remote
+	}, fn (j Job, _ &core.TaskCx) !EditUploaded {
+		mut client := j.client
+		mut bus := j.bus
+		id, remote := j.id, j.remote
+		status := run_transfer(mut client, mut bus, j.key, .upload, j.name, j.path, remote)
 		ok := status == .completed
 		mut mtime := ?i64(none)
 		if ok {

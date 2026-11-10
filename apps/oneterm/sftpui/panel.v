@@ -113,9 +113,14 @@ pub fn set_session(mut cx core.Cx, v core.View[SftpPanel], s ?&ssh.Sftp) {
 
 // set_client is set_session for any Client; key identifies the session across calls.
 pub fn set_client(mut cx core.Cx, v core.View[SftpPanel], c Client, key u64) {
-	cx.update_view(v, fn [c, key] (mut p SftpPanel, mut cx core.ViewCx[SftpPanel]) {
-		p.attach(c, key, mut cx)
+	cx.update_view_with(v, ClientKey{c, key}, fn (mut p SftpPanel, k ClientKey, mut cx core.ViewCx[SftpPanel]) {
+		p.attach(k.c, k.key, mut cx)
 	})
+}
+
+struct ClientKey {
+	c   Client
+	key u64
 }
 
 pub fn clear_client(mut cx core.Cx, v core.View[SftpPanel]) {
@@ -129,7 +134,7 @@ pub fn clear_client(mut cx core.Cx, v core.View[SftpPanel]) {
 // follow_cwd is the active terminal's working folder from OSC 7 ('' = unknown): the sync
 // button jumps to it, and the Follow toggle goes there whenever it changes.
 pub fn follow_cwd(mut cx core.Cx, v core.View[SftpPanel], path string) {
-	cx.update_view(v, fn [path] (mut p SftpPanel, mut cx core.ViewCx[SftpPanel]) {
+	cx.update_view_with(v, path, fn (mut p SftpPanel, path string, mut cx core.ViewCx[SftpPanel]) {
 		p.term_cwd = path
 		p.maybe_follow(mut cx)
 		cx.notify()
@@ -137,27 +142,31 @@ pub fn follow_cwd(mut cx core.Cx, v core.View[SftpPanel], path string) {
 }
 
 pub fn set_edit_settings(mut cx core.Cx, v core.View[SftpPanel], s EditSettings) {
-	cx.update_view(v, fn [s] (mut p SftpPanel, mut cx core.ViewCx[SftpPanel]) {
+	cx.update_view_with(v, s, fn (mut p SftpPanel, s EditSettings, mut cx core.ViewCx[SftpPanel]) {
 		p.settings = s
 	})
 }
 
 // set_shortcuts fills the menus' shortcut column from the app's keymap (action key -> keys).
 pub fn set_shortcuts(mut cx core.Cx, v core.View[SftpPanel], m map[string]string) {
-	cx.update_view(v, fn [m] (mut p SftpPanel, mut cx core.ViewCx[SftpPanel]) {
-		p.shortcut = m.clone()
+	cx.update_view_with(v, Shortcuts{m}, fn (mut p SftpPanel, s Shortcuts, mut cx core.ViewCx[SftpPanel]) {
+		p.shortcut = s.m.clone()
 	})
+}
+
+struct Shortcuts {
+	m map[string]string
 }
 
 // run_action runs a browser action, for the app's key bindings.
 pub fn run_action(mut cx core.Cx, v core.View[SftpPanel], a SftpAction) {
-	cx.update_view(v, fn [a] (mut p SftpPanel, mut cx core.ViewCx[SftpPanel]) {
+	cx.update_view_with(v, a, fn (mut p SftpPanel, a SftpAction, mut cx core.ViewCx[SftpPanel]) {
 		p.run(a, mut cx)
 	})
 }
 
 pub fn set_expanded(mut cx core.Cx, v core.View[SftpPanel], on bool) {
-	cx.update_view(v, fn [on] (mut p SftpPanel, mut cx core.ViewCx[SftpPanel]) {
+	cx.update_view_with(v, on, fn (mut p SftpPanel, on bool, mut cx core.ViewCx[SftpPanel]) {
 		p.set_expanded(on, mut cx)
 	})
 }

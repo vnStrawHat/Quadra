@@ -95,19 +95,20 @@ fn (mut c Conn) channel_open_request(mut r Reader) ! {
 	remote := r.get_u32()!
 	window := r.get_u32()!
 	packet := r.get_u32()!
-	if kind == 'forwarded-tcpip' && c.forward_target != unsafe { nil } {
+	if kind == 'forwarded-tcpip' && c.forwards != unsafe { nil } {
 		addr := r.get_str()!
 		port := r.get_u32()!
-		if target := c.forward_target(addr, port) {
+		mut f := c.forwards
+		if target := f.remote_target(addr, port) {
 			mut ch := c.accept_channel(remote, window, packet)
 			c.send_confirm(ch)! // before any data of the relay
-			c.forward_start(ch, target)
+			spawn f.relay_outbound(mut ch, target)
 			return
 		}
-	} else if kind == 'auth-agent@openssh.com' && c.agent_bridge != unsafe { nil } {
+	} else if kind == 'auth-agent@openssh.com' && c.agent_on {
 		mut ch := c.accept_channel(remote, window, packet)
 		c.send_confirm(ch)!
-		c.agent_bridge(ch)!
+		spawn bridge_agent(mut ch, c.agent_pipe)
 		return
 	}
 	mut w := new_writer(32)

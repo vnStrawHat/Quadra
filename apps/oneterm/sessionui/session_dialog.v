@@ -45,23 +45,29 @@ fn (mut p SessionPanel) open_session_dialog(mut cx core.Cx, edit ?u64, s store.S
 		logging:  s.logging
 		advanced: advanced_is_configured(s.jump_host, s.forwards, s.agent_forwarding)
 	})
-	cx.update_view(v, fn [s, edit, focus_group] (mut d SessionDialog, mut cx core.ViewCx[SessionDialog]) {
-		d.init(s, edit, focus_group, mut cx)
+	cx.update_view_with(v, SessionInit{s, edit, focus_group}, fn (mut d SessionDialog, i SessionInit, mut cx core.ViewCx[SessionDialog]) {
+		d.init(i.s, i.edit, i.focus_group, mut cx)
 	})
 	mut d := cx.peek(v.model())
 	d.modal = kit.open_modal(mut cx, kit.ModalOptions{
-		title:  title
-		width:  560
-		body:   fn [v] () core.Element {
-			return core.view_element(v.any())
-		}
-		footer: fn [d] () core.Element {
-			return d.footer()
-		}
+		title:       title
+		width:       560
+		body_with:   kit.view_body(v.any())
+		footer_with: kit.build_with(SessionRef{d}, fn (r SessionRef, _ &kit.Theme) core.Element {
+			return r.d.footer()
+		})
 	})
-	p.track(d.modal, fn [v] (mut cx core.Cx) {
-		cx.release(v.model())
-	})
+	p.track(d.modal, v.any())
+}
+
+struct SessionInit {
+	s           store.Session
+	edit        ?u64
+	focus_group bool
+}
+
+struct SessionRef {
+	d &SessionDialog = unsafe { nil }
 }
 
 fn (mut d SessionDialog) init(s store.Session, edit ?u64, focus_group bool, mut cx core.ViewCx[SessionDialog]) {

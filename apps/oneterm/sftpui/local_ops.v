@@ -83,14 +83,14 @@ fn (p &SftpPanel) local_more_menu(mut cx core.ViewCx[SftpPanel]) []kit.MenuItem 
 
 // run_local runs one blocking change on a worker; on success the form closes and the list
 // refreshes, on failure the form stays and a notice says why.
-fn (mut p SftpPanel) run_local(success string, prefix string, work fn () !, mut cx core.ViewCx[SftpPanel]) {
-	core.spawn_task[SftpPanel, LocalDone](mut cx, fn [work, success, prefix] (_ &core.TaskCx) !LocalDone {
-		work() or { return LocalDone{
-			err: '${prefix}: ${err.msg()}'
+fn (mut p SftpPanel) run_local(success string, prefix string, op LocalOp, mut cx core.ViewCx[SftpPanel]) {
+	core.spawn_task_with[SftpPanel, LocalJob, LocalDone](mut cx, LocalJob{op, success, prefix}, fn (j LocalJob, _ &core.TaskCx) !LocalDone {
+		j.op.run() or { return LocalDone{
+			err: '${j.prefix}: ${err.msg()}'
 		} }
 		return LocalDone{
 			ok:  true
-			msg: success
+			msg: j.success
 		}
 	}, fn (mut p SftpPanel, r &core.TaskResult[LocalDone], mut cx core.ViewCx[SftpPanel]) {
 		d := r.value
@@ -117,9 +117,9 @@ fn (mut p SftpPanel) local_do_new_folder(mut cx core.ViewCx[SftpPanel]) {
 			p.notice(.warning, err.msg(), mut cx)
 			return
 		}
-		path := os.join_path(p.local.cwd, name)
-		p.run_local('Folder "${name}" created.', 'Create folder failed', fn [path] () ! {
-			os.mkdir(path)!
+		p.run_local('Folder "${name}" created.', 'Create folder failed', LocalOp{
+			kind: .mkdir
+			path: os.join_path(p.local.cwd, name)
 		}, mut cx)
 	}))
 }
@@ -135,12 +135,10 @@ fn (mut p SftpPanel) local_do_rename(mut cx core.ViewCx[SftpPanel]) {
 			p.notice(.warning, err.msg(), mut cx)
 			return
 		}
-		from, to := e.path, os.join_path(p.local.cwd, name)
-		p.run_local('Renamed to "${name}".', 'Rename failed', fn [from, to] () ! {
-			if os.exists(to) {
-				return error('an entry with that name already exists')
-			}
-			os.mv(from, to)!
+		p.run_local('Renamed to "${name}".', 'Rename failed', LocalOp{
+			kind: .rename
+			path: e.path
+			to:   os.join_path(p.local.cwd, name)
 		}, mut cx)
 	}))
 }
@@ -155,13 +153,10 @@ fn (mut p SftpPanel) local_do_delete(mut cx core.ViewCx[SftpPanel]) {
 		if !*yes {
 			return
 		}
-		path, is_dir := e.path, e.is_dir
-		p.run_local('Deleted successfully.', 'Delete failed', fn [path, is_dir] () ! {
-			if is_dir {
-				os.rmdir_all(path)!
-			} else {
-				os.rm(path)!
-			}
+		p.run_local('Deleted successfully.', 'Delete failed', LocalOp{
+			kind:   .delete
+			path:   e.path
+			is_dir: e.is_dir
 		}, mut cx)
 	}))
 }
@@ -187,4 +182,45 @@ fn (mut p SftpPanel) local_pane(mut cx core.ViewCx[SftpPanel], th &kit.Theme) co
 		col.child(ui.div().test_id('local-listing-error').w_full().shrink_0().px(8).py(4).bg(th.p.error_tint).text_size(th.font_size(.xs)).text_color(th.p.error).child(ui.text('Could not open "${p.local.cwd}": ${p.local.error}')))
 	}
 	return col.child(ui.div().grow().min_h(0).child(core.view_element(p.local.table.any())))
+}
+
+enum LocalOpKind {
+	mkdir
+	rename
+	delete
+}
+
+// LocalOp is one blocking change on the local disk, run on a worker (no closure: specs/14).
+struct LocalOp {
+	kind   LocalOpKind
+	path   string
+	to     string // rename target
+	is_dir bool   // delete a folder tree
+}
+
+fn (o LocalOp) run() ! {
+	match o.kind {
+		.mkdir {
+			os.mkdir(o.path)!
+		}
+		.rename {
+			if os.exists(o.to) {
+				return error('an entry with that name already exists')
+			}
+			os.mv(o.path, o.to)!
+		}
+		.delete {
+			if o.is_dir {
+				os.rmdir_all(o.path)!
+			} else {
+				os.rm(o.path)!
+			}
+		}
+	}
+}
+
+struct LocalJob {
+	op      LocalOp
+	success string
+	prefix  string
 }

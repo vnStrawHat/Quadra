@@ -126,7 +126,7 @@ fn install_unix_update(staged StagedUpdate, current_exe string) !InstallOutcome 
 			package_dir: staged.package_dir
 		}
 	}
-	replace_directory_contents_and_launch(staged.package_dir, install_dir, fn [current_exe] () ! {
+	replace_directory_contents_and_launch(staged.package_dir, install_dir, current_exe, fn (current_exe string) ! {
 		mut p := os.new_process(current_exe)
 		p.run()
 		if p.err != '' {
@@ -141,9 +141,10 @@ fn install_unix_update(staged StagedUpdate, current_exe string) !InstallOutcome 
 
 // replace_directory_contents_and_launch replaces the package files in `install_dir`, then runs
 // `launch`. The previous files stay in a backup until launch succeeds; a failure restores them.
-fn replace_directory_contents_and_launch(source_dir string, install_dir string, launch fn () !) ! {
+// The launcher takes its data as an argument (no capturing closures in apps, specs/14).
+fn replace_directory_contents_and_launch[D](source_dir string, install_dir string, data D, launch fn (d D) !) ! {
 	backup := replace_directory_contents(source_dir, install_dir)!
-	launch() or {
+	launch(data) or {
 		restore_directory_contents(source_dir, install_dir, backup) or {
 			eprintln('failed to restore previous install after launch error: ${err.msg()}')
 		}

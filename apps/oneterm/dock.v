@@ -155,8 +155,8 @@ fn (mut o OneTerm) sync_active(mut cx core.ViewCx[OneTerm]) {
 	mut sftp := ?&ssh.Sftp(none)
 	mut key := u64(0)
 	if s.session != unsafe { nil } && !s.ssh_closed {
-		if live := s.session.sftp() {
-			sftp = live
+		sftp = s.session.sftp()
+		if live := sftp {
 			key = u64(voidptr(live))
 		}
 	}
@@ -183,10 +183,10 @@ fn (mut o OneTerm) follow_cwd_of(s &Space, mut cx core.ViewCx[OneTerm]) {
 // section is a dock section: a header (the title in the text colour, the actions in a
 // full-height group behind a left border, as the tab strip's) above its content.
 fn section(title string, actions []core.Element, content core.Element, t &kit.Theme) core.Element {
-	group :=
+	actions_row :=
 		ui.div().flex_row().items_center().h_full().shrink_0().border_l(1).border_color(t.p.line).px(t.sp(8)).gap(t.sp(4)).children(actions)
 	header :=
-		ui.div().flex_row().items_center().w_full().h(t.panel_header_h).shrink_0().bg(t.p.tab_bg).border_b(1).border_color(t.p.line).child(ui.div().grow().min_w(0).px(t.sp(8)).child(ui.text(title).size(t.font_size(.sm)).color(t.p.text))).child(group)
+		ui.div().flex_row().items_center().w_full().h(t.panel_header_h).shrink_0().bg(t.p.tab_bg).border_b(1).border_color(t.p.line).child(ui.div().grow().min_w(0).px(t.sp(8)).child(ui.text(title).size(t.font_size(.sm)).color(t.p.text))).child(actions_row)
 	return ui.div().flex_col().size_full().child(header).child(ui.div().grow().min_h(0).child(content))
 }
 
@@ -225,7 +225,7 @@ fn (mut o OneTerm) right_dock(t &kit.Theme, mut cx core.ViewCx[OneTerm]) core.El
 }
 
 // toggle_dock opens or closes the dock and remembers the choice for this tab's kind.
-fn (mut o OneTerm) toggle_dock(mut cx core.ViewCx[OneTerm]) {
+fn (mut o OneTerm) toggle_dock(mut _ core.ViewCx[OneTerm]) {
 	if is_restricted() {
 		return
 	}

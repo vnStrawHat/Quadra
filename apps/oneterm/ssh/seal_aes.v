@@ -79,7 +79,7 @@ fn (mut s GcmSealer) next_nonce() {
 	}
 }
 
-fn (mut s GcmSealer) seal(seq u32, mut pkt []u8) ![]u8 {
+fn (mut s GcmSealer) seal(_ u32, mut pkt []u8) ![]u8 {
 	mut body := unsafe { pkt[4..] }
 	mut tag := []u8{len: 16}
 	s.cng.aes_gcm_seal(s.key, s.nonce, pkt[..4], mut body, mut tag)!
@@ -90,11 +90,11 @@ fn (mut s GcmSealer) seal(seq u32, mut pkt []u8) ![]u8 {
 	return out
 }
 
-fn (mut s GcmSealer) read_len(seq u32, first []u8) !int {
+fn (mut s GcmSealer) read_len(_ u32, first []u8) !int {
 	return int(binary.big_endian_u32(first))
 }
 
-fn (mut s GcmSealer) open(seq u32, mut wire []u8) ![]u8 {
+fn (mut s GcmSealer) open(_ u32, mut wire []u8) ![]u8 {
 	end := wire.len - 16
 	mut body := unsafe { wire[4..end] }
 	s.cng.aes_gcm_open(s.key, s.nonce, wire[..4], mut body, wire[end..])!
@@ -170,7 +170,7 @@ fn (mut s CtrSealer) seal(seq u32, mut pkt []u8) ![]u8 {
 	return out
 }
 
-fn (mut s CtrSealer) read_len(seq u32, first []u8) !int {
+fn (mut s CtrSealer) read_len(_ u32, first []u8) !int {
 	if s.mac.etm {
 		return int(binary.big_endian_u32(first))
 	}

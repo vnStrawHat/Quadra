@@ -29,7 +29,7 @@ fn new_shell_pty(ch &Channel) &ShellPty {
 
 // start spawns the two worker threads; attach calls it once.
 fn (mut p ShellPty) start(opts platform.PtyOptions) {
-	spawn p.pump(opts.on_data, opts.on_exit)
+	spawn p.pump(opts.ctx, opts.on_data, opts.on_exit)
 	spawn p.writer()
 }
 
@@ -123,12 +123,12 @@ fn (mut p ShellPty) writer() {
 	}
 }
 
-fn (mut p ShellPty) pump(on_data fn (data []u8), on_exit fn (code int)) {
+fn (mut p ShellPty) pump(ctx voidptr, on_data fn (ctx voidptr, data []u8), on_exit fn (ctx voidptr, code int)) {
 	mut buf := []u8{len: 64 * 1024}
 	for {
 		n := p.ch.read(mut buf) or { break }
 		if on_data != unsafe { nil } {
-			on_data(buf[..n].clone())
+			on_data(ctx, buf[..n].clone())
 		}
 	}
 	code := p.ch.wait_exit(500)
@@ -141,6 +141,6 @@ fn (mut p ShellPty) pump(on_data fn (data []u8), on_exit fn (code int)) {
 		s.close()
 	}
 	if on_exit != unsafe { nil } {
-		on_exit(code)
+		on_exit(ctx, code)
 	}
 }

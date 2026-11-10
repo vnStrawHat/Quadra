@@ -47,11 +47,11 @@ mut:
 	recv_bytes  u64
 	last_kex    time.Time
 	offer       Offer
-	on_hostkey  fn (key HostKey) ! = unsafe { nil }
+	on_hostkey  HostCheck
 	closing     bool
 }
 
-fn new_transport(stream Stream, offer Offer, on_hostkey fn (key HostKey) !) &Transport {
+fn new_transport(stream Stream, offer Offer, on_hostkey HostCheck) &Transport {
 	mut t := &Transport{
 		stream:     stream
 		offer:      offer

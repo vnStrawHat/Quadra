@@ -81,7 +81,7 @@ fn new_auth_form(mut cx core.Cx, id string, method store.AuthMethod, key_path st
 		editor:  !secrets
 		vault:   unsafe { v }
 	})
-	cx.update_view(f, fn [key_path] (mut a AuthForm, mut cx core.ViewCx[AuthForm]) {
+	cx.update_view_with(f, key_path, fn (mut a AuthForm, key_path string, mut cx core.ViewCx[AuthForm]) {
 		a.saved_focus = cx.focus_handle()
 		a.password = input.new_input(mut cx.Cx,
 			id:          '${a.id}-password'

@@ -97,7 +97,7 @@ fn test_wrong_passphrase_and_auth_failures() {
 // connect_offering connects with a restricted algorithm offer; returns the output of a command.
 fn connect_offering(dir string, port int, offer Offer) !string {
 	mut stream := dial_stream('127.0.0.1', port)!
-	mut tr := new_transport(Stream(stream), offer, fn (key HostKey) ! {})
+	mut tr := new_transport(Stream(stream), offer, HostCheck{})
 	tr.handshake()!
 	mut auth := key_auth(dir, 'id_ed25519', '')
 	authenticate(mut tr, os.getenv('USERNAME'), mut auth, '')!

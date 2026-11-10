@@ -10,8 +10,6 @@ import quadra.kit
 import quadra.kit.input
 import quadra.ui
 
-const crash_issue_title = 'Crash report'
-
 // install_crash_capture runs first thing: the platform filter, then the crash module, which
 // chains it. Nothing is lost if either fails: the app still runs.
 fn install_crash_capture(mut a core.App, dir string) string {
@@ -64,22 +62,27 @@ fn (mut o OneTerm) open_next_report(mut cx core.ViewCx[OneTerm]) {
 	mut holder := &ModalRef{}
 	url := '${crash.new_issue_url(update.repository_default)}?title=Crash%20report'
 	self_ := cx.self_model()
-	body := fn [field] () core.Element {
-		return ui.div().flex_col().gap(12).w_full().child(ui.text('OneTerm detected a crash report from a previous run.')).child(ui.div().flex_col().w_full().child(core.view_element(field.any())))
-	}
-	foot := fn [holder, self_, report, url] () core.Element {
-		return ui.div().flex_row().justify_end().gap(8).child(kit.button('crash-dismiss').label('Dismiss').on_click(core.handler_with(CrashAct{self_, report, holder},
-			crash_dismiss))).child(kit.button('crash-copy').label('Copy').on_click(core.handler_with(report.contents,
-			crash_copy))).child(kit.button('crash-issue').label('Create Issue').primary().on_click(core.handler_with(url,
-			crash_issue)))
-	}
 	holder.id = kit.open_modal(mut cx.Cx, kit.ModalOptions{
-		title:  'OneTerm closed unexpectedly'
-		width:  760
-		body:   body
-		footer: foot
+		title:       'OneTerm closed unexpectedly'
+		width:       760
+		body_with:   kit.build_with(field.any(), fn (field core.AnyView, _ &kit.Theme) core.Element {
+			return ui.div().flex_col().gap(12).w_full().child(ui.text('OneTerm detected a crash report from a previous run.')).child(ui.div().flex_col().w_full().child(core.view_element(field)))
+		})
+		footer_with: kit.build_with(CrashFoot{CrashAct{self_, report, holder}, url}, crash_foot)
 	})
 	cx.notify()
+}
+
+struct CrashFoot {
+	act CrashAct
+	url string
+}
+
+fn crash_foot(f CrashFoot, _ &kit.Theme) core.Element {
+	return ui.div().flex_row().justify_end().gap(8).child(kit.button('crash-dismiss').label('Dismiss').on_click(core.handler_with(f.act,
+		crash_dismiss))).child(kit.button('crash-copy').label('Copy').on_click(core.handler_with(f.act.report.contents,
+		crash_copy))).child(kit.button('crash-issue').label('Create Issue').primary().on_click(core.handler_with(f.url,
+		crash_issue)))
 }
 
 struct CrashAct {

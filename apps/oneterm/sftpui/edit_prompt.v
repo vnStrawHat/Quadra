@@ -28,23 +28,36 @@ fn (mut p SftpPanel) prompt_upload(mut s EditSession, mut cx core.ViewCx[SftpPan
 	id := s.id
 	mut m := &ModalRef{}
 	ent := cx.entity
+	args := UploadPrompt{name, checked, ent, m, id}
 	m.id = kit.open_modal(mut cx.Cx, kit.ModalOptions{
-		title:  'Upload change'
-		width:  440
-		body:   fn [name, checked, ent] () core.Element {
-			return ui.div().flex_col().gap(10).w_full().child(ui.text('"${name}" was saved. Upload it to the remote host?')).child(kit.checkbox('sftp-edit-always',
-				checked.on).label('Always upload this file while editing').on_change(core.listener_with[SftpPanel, CheckRef, bool](ent, CheckRef{checked}, fn (mut _ SftpPanel, c CheckRef, v &bool, mut cx core.ViewCx[SftpPanel]) {
-				mut mc := unsafe { c.c }
-				mc.on = *v
-				cx.notify()
-			})))
-		}
-		footer: fn [ent, m, id, checked] () core.Element {
-			return ui.div().flex_row().gap(4).child(kit.button('upload-cancel').label('Cancel').on_click(core.listener_with[SftpPanel, UploadAnswer, core.ClickEvent](ent, UploadAnswer{m, id, checked, false},
-				answer_upload))).child(kit.button('upload-ok').label('Upload').primary().on_click(core.listener_with[SftpPanel, UploadAnswer, core.ClickEvent](ent, UploadAnswer{m, id, checked, true},
-				answer_upload)))
-		}
+		title:       'Upload change'
+		width:       440
+		body_with:   kit.build_with(args, upload_prompt_body)
+		footer_with: kit.build_with(args, upload_prompt_footer)
 	})
+}
+
+struct UploadPrompt {
+	name    string
+	checked &ModalCheck = unsafe { nil }
+	ent     u32
+	m       &ModalRef = unsafe { nil }
+	id      u64
+}
+
+fn upload_prompt_body(a UploadPrompt, _ &kit.Theme) core.Element {
+	return ui.div().flex_col().gap(10).w_full().child(ui.text('"${a.name}" was saved. Upload it to the remote host?')).child(kit.checkbox('sftp-edit-always',
+		a.checked.on).label('Always upload this file while editing').on_change(core.listener_with[SftpPanel, CheckRef, bool](a.ent, CheckRef{a.checked}, fn (mut _ SftpPanel, c CheckRef, v &bool, mut cx core.ViewCx[SftpPanel]) {
+		mut mc := unsafe { c.c }
+		mc.on = *v
+		cx.notify()
+	})))
+}
+
+fn upload_prompt_footer(a UploadPrompt, _ &kit.Theme) core.Element {
+	return ui.div().flex_row().gap(4).child(kit.button('upload-cancel').label('Cancel').on_click(core.listener_with[SftpPanel, UploadAnswer, core.ClickEvent](a.ent, UploadAnswer{a.m, a.id, a.checked, false},
+		answer_upload))).child(kit.button('upload-ok').label('Upload').primary().on_click(core.listener_with[SftpPanel, UploadAnswer, core.ClickEvent](a.ent, UploadAnswer{a.m, a.id, a.checked, true},
+		answer_upload)))
 }
 
 struct CheckRef {

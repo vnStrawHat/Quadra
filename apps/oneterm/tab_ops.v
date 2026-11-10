@@ -179,19 +179,22 @@ fn (mut o OneTerm) ask_rename(id string, mut cx core.ViewCx[OneTerm]) {
 		o.finish_rename(f.rename, cx.peek(f.field.model()).value(), mut cx)
 	})
 	cancel := core.handler_with(ModalClose{modal}, about_close)
-	th := kit.theme(cx)
-	size, fg := th.font_size(.sm), th.p.text
 	modal.id = kit.open_modal(mut cx.Cx, kit.ModalOptions{
-		title:  'Rename Tab'
-		width:  440
-		body:   fn [field, size, fg] () core.Element {
-			return ui.div().flex_col().gap(4).w_full().child(ui.text('Tab title').size(size).color(fg)).child(core.view_element(field.any()))
-		}
-		footer: fn [save, cancel] () core.Element {
-			return ui.div().flex_row().justify_end().gap(8).child(kit.button('rename-cancel').label('Cancel').outline().on_click(cancel)).child(kit.button('rename-save').label('Save').primary().on_click(save))
-		}
+		title:       'Rename Tab'
+		width:       440
+		body_with:   kit.build_with(field.any(), fn (field core.AnyView, th &kit.Theme) core.Element {
+			return ui.div().flex_col().gap(4).w_full().child(ui.text('Tab title').size(th.font_size(.sm)).color(th.p.text)).child(core.view_element(field))
+		})
+		footer_with: kit.build_with(RenameFoot{save, cancel}, fn (f RenameFoot, _ &kit.Theme) core.Element {
+			return ui.div().flex_row().justify_end().gap(8).child(kit.button('rename-cancel').label('Cancel').outline().on_click(f.cancel)).child(kit.button('rename-save').label('Save').primary().on_click(f.save))
+		})
 	})
 	cx.peek(field.model()).focus.focus(mut cx.Cx)
+}
+
+struct RenameFoot {
+	save   core.Listener[core.ClickEvent]
+	cancel core.Listener[core.ClickEvent]
 }
 
 fn (mut o OneTerm) finish_rename(r Rename, text string, mut cx core.ViewCx[OneTerm]) {

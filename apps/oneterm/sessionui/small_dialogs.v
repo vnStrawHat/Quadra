@@ -29,7 +29,7 @@ fn (mut p SessionPanel) open_rename_group(mut cx core.Cx, group string) {
 		panel: unsafe { p }
 		old:   group
 	})
-	cx.update_view(v, fn [group] (mut d RenameDialog, mut cx core.ViewCx[RenameDialog]) {
+	cx.update_view_with(v, group, fn (mut d RenameDialog, group string, mut cx core.ViewCx[RenameDialog]) {
 		d.ent = cx.entity
 		d.name = input.new_input(mut cx.Cx,
 			id:          'group-name'
@@ -40,18 +40,18 @@ fn (mut p SessionPanel) open_rename_group(mut cx core.Cx, group string) {
 	})
 	mut d := cx.peek(v.model())
 	d.modal = kit.open_modal(mut cx, kit.ModalOptions{
-		title:  'Rename Group'
-		width:  440
-		body:   fn [v] () core.Element {
-			return core.view_element(v.any())
-		}
-		footer: fn [d] () core.Element {
-			return d.footer()
-		}
+		title:       'Rename Group'
+		width:       440
+		body_with:   kit.view_body(v.any())
+		footer_with: kit.build_with(RenameRef{d}, fn (r RenameRef, _ &kit.Theme) core.Element {
+			return r.d.footer()
+		})
 	})
-	p.track(d.modal, fn [v] (mut cx core.Cx) {
-		cx.release(v.model())
-	})
+	p.track(d.modal, v.any())
+}
+
+struct RenameRef {
+	d &RenameDialog = unsafe { nil }
 }
 
 @[markused]
@@ -106,15 +106,20 @@ fn (mut p SessionPanel) open_danger(mut cx core.Cx, title string, lines []string
 		width:       448
 		description: lines.join('\n')
 		alert:       true
-		footer:      fn [data, ok] () core.Element {
-			return ui.div().flex_row().gap(8).child(kit.button('danger-cancel').label('Cancel').on_click(core.handler_with(data,
-				danger_cancel))).child(kit.button('danger-ok').label(ok).danger().on_click(core.handler_with(data,
+		footer_with: kit.build_with(DangerFooter{data, ok}, fn (f DangerFooter, _ &kit.Theme) core.Element {
+			return ui.div().flex_row().gap(8).child(kit.button('danger-cancel').label('Cancel').on_click(core.handler_with(f.data,
+				danger_cancel))).child(kit.button('danger-ok').label(f.ok).danger().on_click(core.handler_with(f.data,
 				danger_ok)))
-		}
+		})
 	})
 	modal.id = opened
-	p.track(opened, unsafe { nil })
+	p.track(opened, core.AnyView{})
 	return opened
+}
+
+struct DangerFooter {
+	data DangerData
+	ok   string
 }
 
 fn danger_cancel(d DangerData, _ &core.ClickEvent, mut cx core.Cx) {

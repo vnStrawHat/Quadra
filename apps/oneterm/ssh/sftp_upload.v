@@ -28,9 +28,8 @@ fn (mut s Sftp) upload_any(local string, remote string, on_event OnTransfer, mut
 	}
 	total := os.file_size(local)
 	mut rep := Reporter{
-		on_bytes: fn [on_event, total] (done u64) {
-			emit(on_event, .progress, fraction_of(done, total), 0)
-		}
+		on_event: on_event
+		total:    total
 	}
 	s.upload_file(local, remote, mut cancel, mut rep)!
 	emit(on_event, .progress, 1.0, 0)
@@ -135,16 +134,10 @@ fn (mut s Sftp) upload_dir(local string, remote string, on_event OnTransfer, mut
 		}
 		start := tree.done
 		mut rep := Reporter{
-			on_bytes: fn [on_event, total, start, mut tree] (n u64) {
-				tree.done = start + n
-				if total > 0 {
-					fr := fraction_of(tree.done, total)
-					if fr > tree.reported {
-						tree.reported = fr
-						emit(on_event, .progress, fr, 0)
-					}
-				}
-			}
+			on_event: on_event
+			total:    total
+			start:    start
+			tree:     tree
 		}
 		s.upload_file(e.local, e.remote, mut cancel, mut rep)!
 		tree.done = start + e.size

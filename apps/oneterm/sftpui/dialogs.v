@@ -32,23 +32,33 @@ fn (p &SftpPanel) ask(mut cx core.ViewCx[SftpPanel], title string, body string, 
 	any := l.any
 	mut m := &ModalRef{}
 	m.id = kit.open_modal(mut cx.Cx, kit.ModalOptions{
-		title:  title
-		width:  440
-		body:   fn [body] () core.Element {
+		title:       title
+		width:       440
+		body_with:   kit.build_with(body, fn (body string, _ &kit.Theme) core.Element {
 			return ui.div().w_full().child(ui.text(body))
-		}
-		footer: fn [any, m, yes, no, danger] () core.Element {
-			mut y := kit.button('ask-yes').label(yes).on_click(core.handler_with(Answer{any, m, true},
-				answer_click))
-			if danger {
-				y.danger()
-			} else {
-				y.primary()
-			}
-			return ui.div().flex_row().gap(4).child(kit.button('ask-no').label(no).on_click(core.handler_with(Answer{any, m, false},
-				answer_click))).child(y)
-		}
+		})
+		footer_with: kit.build_with(AskArgs{any, m, yes, no, danger}, ask_footer)
 	})
+}
+
+struct AskArgs {
+	any    core.AnyListener
+	m      &ModalRef = unsafe { nil }
+	yes    string
+	no     string
+	danger bool
+}
+
+fn ask_footer(a AskArgs, _ &kit.Theme) core.Element {
+	mut y := kit.button('ask-yes').label(a.yes).on_click(core.handler_with(Answer{a.any, a.m, true},
+		answer_click))
+	if a.danger {
+		y.danger()
+	} else {
+		y.primary()
+	}
+	return ui.div().flex_row().gap(4).child(kit.button('ask-no').label(a.no).on_click(core.handler_with(Answer{a.any, a.m, false},
+		answer_click))).child(y)
 }
 
 // open_form asks for a name: label, input, a required mark. Submit (button or Enter) calls
@@ -58,22 +68,34 @@ fn open_form(mut cx core.Cx, title string, label string, value string, placehold
 	input.on_submit(mut cx, field, on_submit)
 	submit := on_submit.any
 	mut m := &ModalRef{}
+	args := FormArgs{field, label, m, submit, confirm}
 	m.id = kit.open_modal(mut cx, kit.ModalOptions{
-		title:  title
-		width:  440
-		body:   fn [field, label] () core.Element {
-			return kit.field(label, core.view_element(field.any()), '', '', true)
-		}
-		footer: fn [field, m, submit, confirm] () core.Element {
-			cancel := kit.button('form-cancel').label('Cancel').on_click(core.handler_with(m.id, fn (id int, _ &core.ClickEvent, mut cx core.Cx) {
-				kit.close_modal(mut cx, id)
-			}))
-			return ui.div().flex_row().gap(4).child(cancel).child(kit.button('form-ok').label(confirm).primary().on_click(core.handler_with(FormSubmit{submit, field},
+		title:       title
+		width:       440
+		body_with:   kit.build_with(args, fn (a FormArgs, _ &kit.Theme) core.Element {
+			return kit.field(a.label, core.view_element(a.field.any()), '', '', true)
+		})
+		footer_with: kit.build_with(args, fn (a FormArgs, _ &kit.Theme) core.Element {
+			cancel := kit.button('form-cancel').label('Cancel').on_click(core.handler_with(a.m.id,
+				close_on_click))
+			return ui.div().flex_row().gap(4).child(cancel).child(kit.button('form-ok').label(a.confirm).primary().on_click(core.handler_with(FormSubmit{a.submit, a.field},
 				form_submit)))
-		}
+		})
 	})
 	cx.peek(field.model()).focus.focus(mut cx)
 	return m
+}
+
+struct FormArgs {
+	field   core.View[input.TextInput]
+	label   string
+	m       &ModalRef = unsafe { nil }
+	submit  core.AnyListener
+	confirm string
+}
+
+fn close_on_click(id int, _ &core.ClickEvent, mut cx core.Cx) {
+	kit.close_modal(mut cx, id)
 }
 
 struct FormSubmit {
@@ -110,19 +132,27 @@ fn show_properties(mut cx core.ViewCx[SftpPanel], e ssh.FileEntry) {
 		['Group:', format_owner(e.group, e.gid)], ['Path:', e.path]]
 	mut m := &ModalRef{}
 	m.id = kit.open_modal(mut cx.Cx, kit.ModalOptions{
-		title:  'Properties'
-		width:  480
-		body:   fn [rows, muted] () core.Element {
+		title:       'Properties'
+		width:       480
+		body_with:   kit.build_with(PropRows{rows, muted}, fn (a PropRows, _ &kit.Theme) core.Element {
 			mut col := ui.div().flex_col().w_full()
-			for r in rows {
-				col.child(prop_row(r[0], r[1], muted))
+			for r in a.rows {
+				col.child(prop_row(r[0], r[1], a.muted))
 			}
 			return col
-		}
-		footer: fn [m] () core.Element {
-			return kit.button('props-close').label('Close').primary().on_click(core.handler_with(m.id, fn (id int, _ &core.ClickEvent, mut cx core.Cx) {
-				kit.close_modal(mut cx, id)
-			}))
-		}
+		})
+		footer_with: kit.build_with(ModalBox{m}, fn (b ModalBox, _ &kit.Theme) core.Element {
+			return kit.button('props-close').label('Close').primary().on_click(core.handler_with(b.m.id,
+				close_on_click))
+		})
 	})
+}
+
+struct PropRows {
+	rows  [][]string
+	muted prim.Color
+}
+
+struct ModalBox {
+	m &ModalRef = unsafe { nil }
 }

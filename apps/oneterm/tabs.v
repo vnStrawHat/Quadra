@@ -7,6 +7,7 @@ import quadra.kit.term
 import quadra.kit.work
 import quadra.platform
 import termlog
+import ssh
 import os
 
 fn (mut o OneTerm) new_space(mut cx core.ViewCx[OneTerm]) &Space {
@@ -42,7 +43,7 @@ fn (mut o OneTerm) start(mut s Space, kind string, cwd string, mut cx core.ViewC
 	}
 	spec := resolve_shell(shell_cfg, kind, if is_restricted() { '' } else { cwd })
 	s.shell = spec
-	o.open_terminal(mut s, o.spawn, platform.PtyOptions{
+	o.open_terminal(mut s, Spawn{ make: o.spawn, app: cx.app }, platform.PtyOptions{
 		command: spec.command
 		env:     spec.env
 		cwd:     spec.cwd
@@ -53,7 +54,7 @@ fn (mut o OneTerm) start(mut s Space, kind string, cwd string, mut cx core.ViewC
 }
 
 // open_terminal gives a Space its terminal and runs `make` behind the broadcast decorator.
-fn (mut o OneTerm) open_terminal(mut s Space, make term.SpawnFn, opts platform.PtyOptions, logging bool, identity string, mut cx core.ViewCx[OneTerm]) ! {
+fn (mut o OneTerm) open_terminal(mut s Space, make Spawn, opts platform.PtyOptions, logging bool, identity string, mut cx core.ViewCx[OneTerm]) ! {
 	s.view = term.new_terminal(mut cx.Cx,
 		id:               'term-${s.id}'
 		scrollback:       o.cfg.scroll.scrollback_history
@@ -67,30 +68,76 @@ fn (mut o OneTerm) open_terminal(mut s Space, make term.SpawnFn, opts platform.P
 		o.on_terminal_info(m, e, mut cx)
 	})
 	o.attach_ext(mut s, logging, identity, mut cx)
-	one := unsafe { &OneTerm(&o) }
-	app := cx.app
-	space := unsafe { &Space(&s) }
-	mut log := s.ext.log
-	wrap := fn [make, one, app, space, mut log] (opts platform.PtyOptions) !platform.Pty {
-		on_data := opts.on_data
-		mut b := &BroadcastPty{
-			one:   one
-			space: space
-			app:   app
-			inner: make(platform.PtyOptions{
-				...opts
-				on_data: fn [mut log, on_data] (data []u8) {
-					log.process(data) // the printable output goes to the log file
-					on_data(data)
-				}
-			})!
-		}
-		mut sp := unsafe { space }
-		sp.pty = b
-		sp.ext.pty = b
-		return b
+	term.start_with(mut cx.Cx, s.view, TabSpawn{make, unsafe { &OneTerm(&o) }, cx.app, unsafe { &Space(&s) }},
+		spawn_tab, opts)!
+}
+
+// Spawn is how a Space's program starts: the platform's shell (or a test's spawner), or an
+// SSH session's shell.
+struct Spawn {
+	make term.SpawnFn = unsafe { nil } // tests: a fake
+	sess &ssh.Session = unsafe { nil }
+	app  &core.App    = unsafe { nil }
+}
+
+fn (s Spawn) run(opts platform.PtyOptions) !platform.Pty {
+	if s.sess != unsafe { nil } {
+		mut sess := s.sess
+		return sess.attach(opts)!
 	}
-	term.start(mut cx.Cx, s.view, wrap, opts)!
+	if s.make != unsafe { nil } {
+		return s.make(opts)!
+	}
+	mut app := s.app
+	return app.plat.spawn_pty(opts)!
+}
+
+// TabSpawn is what spawn_tab needs: data, not a closure per terminal (specs/14).
+struct TabSpawn {
+	make  Spawn
+	one   &OneTerm  = unsafe { nil }
+	app   &core.App = unsafe { nil }
+	space &Space    = unsafe { nil }
+}
+
+// spawn_tab runs the program behind the broadcast decorator; its output also goes to the
+// Space's log (LogTap).
+fn spawn_tab(w TabSpawn, opts platform.PtyOptions) !platform.Pty {
+	tap := &LogTap{w.space.ext.log, opts.ctx, opts.on_data, opts.on_exit}
+	mut b := &BroadcastPty{
+		one:   w.one
+		space: w.space
+		app:   w.app
+		inner: w.make.run(platform.PtyOptions{
+			...opts
+			ctx:     tap
+			on_data: tap_data
+			on_exit: tap_exit
+		})!
+	}
+	mut sp := w.space
+	sp.pty = b
+	sp.ext.pty = b
+	return b
+}
+
+struct LogTap {
+	log     &termlog.TerminalLogController = unsafe { nil }
+	ctx     voidptr
+	on_data fn (ctx voidptr, data []u8) = unsafe { nil }
+	on_exit fn (ctx voidptr, code int)  = unsafe { nil }
+}
+
+fn tap_data(ctx voidptr, data []u8) {
+	t := unsafe { &LogTap(ctx) }
+	mut log := t.log
+	log.process(data) // the printable output goes to the log file
+	t.on_data(t.ctx, data)
+}
+
+fn tap_exit(ctx voidptr, code int) {
+	t := unsafe { &LogTap(ctx) }
+	t.on_exit(t.ctx, code)
 }
 
 // focus_active gives the keyboard to the active Space of the active tab.

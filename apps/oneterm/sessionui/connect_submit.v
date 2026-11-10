@@ -23,12 +23,9 @@ fn (mut d ConnectDialog) connect(mut cx core.ViewCx[ConnectDialog]) {
 				d.attempt_now(mut cx)
 			}
 			.locked, .uninitialised {
-				m := d.me.model()
-				p.ensure_unlocked(mut cx.Cx, fn [m] (mut cx core.Cx) {
-					cx.update(m, fn (mut d ConnectDialog, mut cx core.ViewCx[ConnectDialog]) {
-						d.attempt_now(mut cx)
-					})
-				})
+				p.ensure_unlocked(mut cx.Cx, core.listener_of[ConnectDialog, bool](d.me.id, fn (mut d ConnectDialog, _ &bool, mut cx core.ViewCx[ConnectDialog]) {
+					d.attempt_now(mut cx)
+				}))
 			}
 			.unavailable {
 				mut reason := p.vault.unavailable_reason()

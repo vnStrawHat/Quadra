@@ -97,13 +97,19 @@ fn (mut d SessionDialog) reveal(field InvalidField, mut cx core.ViewCx[SessionDi
 }
 
 fn (mut d SessionDialog) after_unlock(plan PasswordPlan, session store.Session, typed string, old SavedPassword, mut cx core.ViewCx[SessionDialog]) {
-	m := d.me.model()
 	mut p := d.panel
-	p.ensure_unlocked(mut cx.Cx, fn [m, plan, session, typed, old] (mut cx core.Cx) {
-		cx.update(m, fn [plan, session, typed, old] (mut d SessionDialog, mut cx core.ViewCx[SessionDialog]) {
-			d.finish(plan, session, typed, old, mut cx)
-		})
-	})
+	// The typed password rides in the listener's data, freed with the vault dialog (a
+	// capturing closure would keep it in memory for good).
+	p.ensure_unlocked(mut cx.Cx, core.listener_with(d.me.id, AfterUnlock{plan, session, typed, old}, fn (mut d SessionDialog, a AfterUnlock, _ &bool, mut cx core.ViewCx[SessionDialog]) {
+		d.finish(a.plan, a.session, a.typed, a.old, mut cx)
+	}))
+}
+
+struct AfterUnlock {
+	plan    PasswordPlan
+	session store.Session
+	typed   string
+	old     SavedPassword
 }
 
 // finish seals the password per the plan, stores the session and closes the dialog.

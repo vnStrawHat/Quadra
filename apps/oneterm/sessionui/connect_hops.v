@@ -98,15 +98,13 @@ fn (mut d ConnectDialog) activate_saved(m core.Model[ConnectDialog], mut cx core
 			return
 		}
 		.locked {
-			p.ensure_unlocked(mut cx, fn [saved_forms, m] (mut cx core.Cx) {
-				for f in saved_forms {
+			p.ensure_unlocked(mut cx, core.listener_with(m.id, saved_forms, fn (mut d ConnectDialog, forms []core.View[AuthForm], _ &bool, mut cx core.ViewCx[ConnectDialog]) {
+				for f in forms {
 					mut fm := cx.peek(f.model())
 					fm.use_saved(true)
 				}
-				cx.update(m, fn (mut d ConnectDialog, mut cx core.ViewCx[ConnectDialog]) {
-					d.focus_first(mut cx.Cx)
-				})
-			})
+				d.focus_first(mut cx.Cx)
+			}))
 			return
 		}
 		.uninitialised {

@@ -18,10 +18,11 @@ pub:
 	on_cancel  core.Listener[u64]
 }
 
-// DialogEntry is an open dialog: its modal and how to release its view once it is closed.
+// DialogEntry is an open dialog: its modal and the view to release once it is closed (none
+// when id is 0).
 struct DialogEntry {
-	modal   int
-	release fn (mut cx core.Cx) = unsafe { nil }
+	modal int
+	view  core.AnyView
 }
 
 @[heap]
@@ -117,16 +118,18 @@ fn (mut p SessionPanel) reconcile(mut cx core.Cx) {
 				cx.app.invoke(p.on_cancel, &id, cx.win, true)
 			}
 		}
-		if d.release != unsafe { nil } {
-			d.release(mut cx)
+		if d.view.id != 0 {
+			// release only needs the id: the model type does not matter
+			cx.release(core.Model[u8]{d.view.id, d.view.gen})
 		}
 	}
 	p.dialogs = keep
 }
 
-// track remembers an open dialog so reconcile releases it.
-fn (mut p SessionPanel) track(modal int, release fn (mut cx core.Cx)) {
-	p.dialogs << DialogEntry{modal, release}
+// track remembers an open dialog so reconcile releases its view (data, not a closure:
+// apps make none, specs/14).
+fn (mut p SessionPanel) track(modal int, view core.AnyView) {
+	p.dialogs << DialogEntry{modal, view}
 }
 
 // select_row highlights a tree item (any mouse button).

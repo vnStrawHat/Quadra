@@ -134,8 +134,10 @@ fn (o &OneTerm) config_of(req &sessionui.ConnectRequest, cancel &ssh.Cancel, mut
 			max:     o.cfg.ssh.keepalive_max
 		}
 		cancel:            cancel
-		on_warning:        fn [mut box] (msg string) {
-			box.push(msg)
+		warning_ctx:       box
+		on_warning:        fn (ctx voidptr, msg string) {
+			mut b := unsafe { &WarnBox(ctx) }
+			b.push(msg)
 		}
 	}
 }
@@ -217,17 +219,25 @@ fn (mut o OneTerm) on_connect(req &sessionui.ConnectRequest, mut cx core.ViewCx[
 	}
 	mut cancel := ssh.new_cancel()
 	o.attempts[req.attempt] = cancel
-	mut cfg := o.config_of(req, cancel, mut o.warn_box)
+	cfg := o.config_of(req, cancel, mut o.warn_box)
 	base := ConnectOutcome{
 		attempt: req.attempt
 		meta:    meta_of(req)
 		logging: req.logging
 	}
-	core.spawn_task[OneTerm, ConnectOutcome](mut cx, fn [mut cfg, base] (_ &core.TaskCx) !ConnectOutcome {
-		return run_connect(mut cfg, base)
+	// Task data, not a capture: the config holds the password, and V never frees a closure.
+	core.spawn_task_with[OneTerm, ConnectJob, ConnectOutcome](mut cx, ConnectJob{cfg, base}, fn (j ConnectJob, _ &core.TaskCx) !ConnectOutcome {
+		mut job := j
+		return run_connect(mut job.cfg, job.base)
 	}, fn (mut o OneTerm, r &core.TaskResult[ConnectOutcome], mut cx core.ViewCx[OneTerm]) {
 		o.finish_connect(r.value, mut cx)
 	})
+}
+
+struct ConnectJob {
+mut:
+	cfg  ssh.Config
+	base ConnectOutcome
 }
 
 // on_cancel: closing the dialog ends the attempt; a late result finds no attempt and is dropped.

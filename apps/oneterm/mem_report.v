@@ -7,6 +7,7 @@ module main
 import json
 import time
 import quadra.core
+import quadra.core.life
 import quadra.native.sys
 
 pub struct MemProbe {
@@ -42,6 +43,7 @@ mut:
 	gc_free     u64
 	gc_unmapped u64 // returned to the OS
 	gc_total    u64 // allocated since start
+	closures    int // closures alive (V frees none on its own)
 	gpu_bytes   i64 // atlas pages and instance buffers the app created
 	heap_alloc  u64 // the process heaps (C runtime, DirectWrite, D3D, system DLLs)
 	heap_commit u64
@@ -73,6 +75,7 @@ fn (mut o OneTerm) write_mem_report(mut cx core.ViewCx[OneTerm]) {
 		gc_free:     u64(gc.free_bytes)
 		gc_unmapped: u64(gc.unmapped_bytes)
 		gc_total:    u64(gc.total_bytes)
+		closures:    life.live_closures()
 		gpu_bytes:   cx.app.device.stats().resident_bytes
 	}
 	r.heap_alloc, r.heap_commit = sys.native_heaps()

@@ -16,7 +16,6 @@ import quadra.kit
 import quadra.kit.input
 import quadra.kit.term
 import quadra.kit.work
-import quadra.platform
 import quadra.ui
 
 // Space is one pane of a tab: empty, or a terminal.
@@ -164,8 +163,8 @@ pub fn (mut o OneTerm) render(mut cx core.ViewCx[OneTerm]) core.Element {
 // title_items are the title bar's left side: 12 in, the glyph, the app menu and the elevation
 // suffix with no gap between them (one group, so the bar's own gap does not apply).
 fn (o &OneTerm) title_items(t &kit.Theme) []core.Element {
-	mut row := ui.div().flex_row().items_center().pl(t.sp(12)).child(kit.icon(icon_terminal_logo).size(20).color(brand_accent)).child(kit.menu_button('titlebar-menu',
-		'OneTerm', o.app_menu()).ghost().size(.sm).compact())
+	mut row := ui.div().flex_row().items_center().pl(t.sp(12)).child(kit.icon(icon_terminal_logo).size(20).color(brand_accent)).child(kit.menu_button_with('titlebar-menu',
+		'OneTerm', OneRef{o}, app_menu_items).ghost().size(.sm).compact())
 	suffix := elevation_suffix(elevation)
 	if suffix != '' {
 		row.child(ui.text(suffix).weight(700).color(t.p.warn))
@@ -218,12 +217,6 @@ fn (mut o OneTerm) setup(mut cx core.ViewCx[OneTerm]) {
 		}
 		cx.notify()
 	})
-	if o.spawn == unsafe { nil } {
-		mut app := cx.app
-		o.spawn = fn [mut app] (opts platform.PtyOptions) !platform.Pty {
-			return app.plat.spawn_pty(opts)
-		}
-	}
 	o.mount_panels(mut cx)
 	o.new_tab(o.first_shell, '', mut cx)
 	o.open_probe_tabs(mut cx)

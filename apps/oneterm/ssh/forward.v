@@ -29,13 +29,7 @@ fn new_forwards(conn &Conn, cfg &Config) &Forwards {
 		cfg:  cfg
 	}
 	mut c := unsafe { conn }
-	c.forward_target = fn [mut f] (addr string, port u32) ?ForwardTarget {
-		return f.remote_target(addr, port)
-	}
-	c.forward_start = fn [mut f] (ch &Channel, target ForwardTarget) {
-		mut channel := unsafe { ch }
-		spawn f.relay_outbound(mut channel, target)
-	}
+	c.forwards = f
 	for spec in cfg.port_forwards {
 		f.start(spec)
 	}

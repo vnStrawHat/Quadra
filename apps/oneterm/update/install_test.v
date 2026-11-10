@@ -60,14 +60,14 @@ fn test_replace_restores_old_install_when_copy_fails() {
 
 fn test_launch_success_removes_backup_directory() {
 	source, install := fixture('launch-ok')
-	replace_directory_contents_and_launch(source, install, fn () ! {})!
+	replace_directory_contents_and_launch(source, install, 0, fn (_ int) ! {})!
 	assert os.read_file(os.join_path(install, 'oneterm.exe'))! == 'new'
 	assert backups_of(install).len == 0
 }
 
 fn test_launch_failure_restores_old_install_and_removes_backup_directory() {
 	source, install := fixture('launch-fail')
-	if _ := replace_directory_contents_and_launch(source, install, fn () ! {
+	if _ := replace_directory_contents_and_launch(source, install, 0, fn (_ int) ! {
 		return error('cannot start')
 	})
 	{

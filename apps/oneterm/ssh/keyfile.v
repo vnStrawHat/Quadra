@@ -132,8 +132,9 @@ fn openssh_decrypt(cipher string, kdf string, kdf_options []u8, pass []u8, encry
 	defer {
 		wipe(mut km)
 	}
-	key := km[..keylen]
-	iv := km[keylen..]
+	// Views into km, so the deferred wipe clears the key and iv too.
+	key := unsafe { km[..keylen] }
+	iv := unsafe { km[keylen..] }
 	mut data := encrypted.clone()
 	mut c := cng.instance()!
 	if cipher.ends_with('-ctr') {

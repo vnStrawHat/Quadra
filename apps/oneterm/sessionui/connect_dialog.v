@@ -63,27 +63,27 @@ fn title_of(mode ConnectMode, s store.Session) string {
 // open_connect_view creates the view and modal for any mode.
 fn (mut p SessionPanel) open_connect_view(mut cx core.Cx, d_ ConnectDialog, specs []HopSpec) {
 	v := cx.new_view(d_)
-	cx.update_view(v, fn [specs] (mut d ConnectDialog, mut cx core.ViewCx[ConnectDialog]) {
+	cx.update_view_with(v, specs, fn (mut d ConnectDialog, specs []HopSpec, mut cx core.ViewCx[ConnectDialog]) {
 		d.init(specs, mut cx)
 	})
 	mut d := cx.peek(v.model())
 	d.modal = kit.open_modal(mut cx, kit.ModalOptions{
-		title:  title_of(d.mode, d.session)
-		width:  440
-		body:   fn [v] () core.Element {
-			return core.view_element(v.any())
-		}
-		footer: fn [d] () core.Element {
-			return d.footer()
-		}
+		title:       title_of(d.mode, d.session)
+		width:       440
+		body_with:   kit.view_body(v.any())
+		footer_with: kit.build_with(ConnectRef{d}, fn (r ConnectRef, _ &kit.Theme) core.Element {
+			return r.d.footer()
+		})
 	})
-	p.track(d.modal, fn [v] (mut cx core.Cx) {
-		cx.release(v.model())
-	})
+	p.track(d.modal, v.any())
 	if d.mode == .saved {
 		d.activate_saved(v.model(), mut cx)
 	}
 	d.focus_first(mut cx)
+}
+
+struct ConnectRef {
+	d &ConnectDialog = unsafe { nil }
 }
 
 fn (mut p SessionPanel) open_saved_connect(mut cx core.Cx, id u64, s store.Session) {

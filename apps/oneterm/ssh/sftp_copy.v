@@ -20,9 +20,15 @@ pub:
 	files    int
 }
 
-pub type OnTransfer = fn (e TransferEvent)
+// OnTransfer receives a transfer's events on the worker thread: f(ctx, event). Data rides in
+// ctx, so no closure is made per transfer (no closures in apps, specs/14). Zero = no events.
+pub struct OnTransfer {
+pub:
+	ctx voidptr
+	f   fn (ctx voidptr, e TransferEvent) = unsafe { nil }
+}
 
-// TreeProgress is the running total of a folder transfer (closures capture by value).
+// TreeProgress is the running total of a folder transfer.
 @[heap]
 struct TreeProgress {
 mut:
@@ -30,10 +36,14 @@ mut:
 	reported f64
 }
 
-// Reporter calls on_bytes with the running total, once per chunk of bytes advanced.
+// Reporter reports the running total as progress, once per chunk of bytes advanced: of one
+// file (tree nil), or of a folder's file that started at `start` bytes into the tree.
 struct Reporter {
 mut:
-	on_bytes fn (done u64) = unsafe { nil }
+	on_event OnTransfer
+	total    u64
+	start    u64
+	tree     &TreeProgress = unsafe { nil }
 	copied   u64
 	reported u64
 }
@@ -49,6 +59,22 @@ fn (mut p Reporter) add(n u64) {
 fn (mut p Reporter) finish() {
 	if p.copied > p.reported {
 		p.on_bytes(p.copied)
+	}
+}
+
+fn (mut p Reporter) on_bytes(n u64) {
+	if p.tree == unsafe { nil } {
+		emit(p.on_event, .progress, fraction_of(n, p.total), 0)
+		return
+	}
+	mut tree := p.tree
+	tree.done = p.start + n
+	if p.total > 0 {
+		fr := fraction_of(tree.done, p.total)
+		if fr > tree.reported {
+			tree.reported = fr
+			emit(p.on_event, .progress, fr, 0)
+		}
 	}
 }
 
@@ -187,8 +213,8 @@ fn (mut s Sftp) push(mut input os.File, handle []u8, mut cancel Cancel, mut rep 
 }
 
 fn emit(on_event OnTransfer, kind TransferKind, fraction f64, files int) {
-	if on_event != unsafe { nil } {
-		on_event(TransferEvent{kind, fraction, files})
+	if on_event.f != unsafe { nil } {
+		on_event.f(on_event.ctx, TransferEvent{kind, fraction, files})
 	}
 }
 

@@ -18,6 +18,7 @@ pub fn sample_process() ResourceSample {
 		working_set:    p.working_set
 		commit:         p.commit
 		peak:           p.peak
+		uptime_ms:      p.uptime_ms
 	}
 }
 
@@ -28,7 +29,7 @@ fn (mut o OneTerm) tick_resources(mut cx core.ViewCx[OneTerm]) {
 	}
 	o.res_busy = true
 	now := cx.now_ms()
-	core.spawn_task[OneTerm, ResourceSample](mut cx, fn [now] (_ &core.TaskCx) !ResourceSample {
+	core.spawn_task_with[OneTerm, f64, ResourceSample](mut cx, now, fn (now f64, _ &core.TaskCx) !ResourceSample {
 		mut s := sample_process()
 		s.at_ms = now
 		return s
@@ -54,27 +55,31 @@ fn (mut o OneTerm) apply_sample(s ResourceSample) {
 	o.res.cpu = cpu
 }
 
+// BoxRef is the resource table's data: the box it reads.
+struct BoxRef {
+	box &ResourceBox = unsafe { nil }
+}
+
+fn res_row(theme &kit.Theme, k string, v string) &ui.Div {
+	return ui.div().flex_row().items_center().gap(16).child(ui.text(k).color(theme.p.text_2)).child(ui.div().grow()).child(ui.text(v))
+}
+
 // resource_table is the indicator's hover table; it reads the box, so it follows each sample.
-fn resource_table(box &ResourceBox, t &kit.Theme) fn () core.Element {
-	theme := unsafe { t }
-	return fn [box, theme] () core.Element {
-		s := box.sample
-		row := fn [theme] (k string, v string) &ui.Div {
-			return ui.div().flex_row().items_center().gap(16).child(ui.text(k).color(theme.p.text_2)).child(ui.div().grow()).child(ui.text(v))
-		}
-		threads := if s.threads >= 0 { s.threads.str() } else { 'n/a' }
-		mut col := ui.div().flex_col().gap(2).min_w(280).child(ui.text('Memory'))
-		if s.private_ws > 0 {
-			col.child(row('Private working set', format_memory(s.private_ws)))
-		}
-		col.child(row('Working set', format_memory(s.working_set)))
-		col.child(row('Commit (private bytes)', format_memory(s.commit)))
-		col.child(row('Peak working set', format_memory(s.peak)))
-		col.child(ui.div().h(6)).child(ui.text('CPU'))
-		col.child(row('Usage', '${box.cpu:.1f}% of ${s.cores} logical cores'))
-		col.child(row('CPU time (user + kernel)', format_duration(s.cpu_time_100ns / 10000)))
-		col.child(row('Threads', threads))
-		col.child(row('Uptime', format_duration(u64(s.at_ms))))
-		return col
+fn resource_table(r BoxRef, theme &kit.Theme) core.Element {
+	box := r.box
+	s := box.sample
+	threads := if s.threads >= 0 { s.threads.str() } else { 'n/a' }
+	mut col := ui.div().flex_col().gap(2).min_w(280).child(ui.text('Memory'))
+	if s.private_ws > 0 {
+		col.child(res_row(theme, 'Private working set', format_memory(s.private_ws)))
 	}
+	col.child(res_row(theme, 'Working set', format_memory(s.working_set)))
+	col.child(res_row(theme, 'Commit (private bytes)', format_memory(s.commit)))
+	col.child(res_row(theme, 'Peak working set', format_memory(s.peak)))
+	col.child(ui.div().h(6)).child(ui.text('CPU'))
+	col.child(res_row(theme, 'Usage', '${box.cpu:.1f}% of ${s.cores} logical cores'))
+	col.child(res_row(theme, 'CPU time (user + kernel)', format_duration(s.cpu_time_100ns / 10000)))
+	col.child(res_row(theme, 'Threads', threads))
+	col.child(res_row(theme, 'Uptime', format_duration(s.uptime_ms)))
+	return col
 }

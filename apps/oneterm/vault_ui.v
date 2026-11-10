@@ -59,13 +59,10 @@ fn open_vault_dialog(kind DialogKind, one core.Model[OneTerm], mut cx core.Cx) {
 		kind:   kind
 		fields: fields
 	})
-	body := fn [view] () core.Element {
-		return core.view_element(view.any())
-	}
 	id := kit.open_modal(mut cx, kit.ModalOptions{
-		title: kind.title()
-		width: 480
-		body:  body
+		title:     kind.title()
+		width:     480
+		body_with: kit.view_body(view.any())
 	})
 	mut d := cx.peek(view.model())
 	d.modal = id
@@ -187,13 +184,18 @@ pub fn (mut d VaultDialog) render(mut cx core.ViewCx[VaultDialog]) core.Element 
 // start_vault_job runs a job on a worker owned by the OneTerm view: the settings window that
 // started it may close before it ends.
 fn (mut o OneTerm) start_vault_job(job vault.VaultJob, m core.Model[OneTerm], mut cx core.Cx) {
-	cx.update_view(core.View[OneTerm]{m.id, m.gen}, fn [job] (mut o OneTerm, mut cx core.ViewCx[OneTerm]) {
-		core.spawn_task[OneTerm, vault.JobResult](mut cx, fn [job] (_ &core.TaskCx) !vault.JobResult {
-			return job.run()
-		}, fn (mut o OneTerm, r &core.TaskResult[vault.JobResult], mut cx core.ViewCx[OneTerm]) {
+	cx.update_with(m, job, fn (mut o OneTerm, job vault.VaultJob, mut cx core.ViewCx[OneTerm]) {
+		core.spawn_task_with[OneTerm, vault.VaultJob, vault.JobResult](mut cx, job, run_vault_job, fn (mut o OneTerm, r &core.TaskResult[vault.JobResult], mut cx core.ViewCx[OneTerm]) {
+			cx.app.trim_now() // Argon2id's 64 MiB goes back to the OS now, not after a quiet period
 			o.finish_vault(r, mut cx)
 		})
 	})
+}
+
+// run_vault_job is the work of a vault task. Jobs carry the password: they are passed as
+// task data, never captured (a closure is never freed, nor what it holds).
+fn run_vault_job(job vault.VaultJob, _ &core.TaskCx) !vault.JobResult {
+	return job.run()
 }
 
 // finish_vault applies a job and reports to the dialog or the lock screen that waits for it.

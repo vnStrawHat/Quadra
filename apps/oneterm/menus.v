@@ -69,6 +69,16 @@ fn (o &OneTerm) current_theme() string {
 	return if o.ui.theme_name != '' { o.ui.theme_name } else { default_theme }
 }
 
+// OneRef lets a menu build its items when it opens (kit.menu_button_with), not at every
+// render: the app menu with its theme list was about 50 KB per root render.
+struct OneRef {
+	o &OneTerm = unsafe { nil }
+}
+
+fn app_menu_items(r OneRef) []kit.MenuItem {
+	return r.o.app_menu()
+}
+
 fn (o &OneTerm) app_menu() []kit.MenuItem {
 	current := o.current_theme()
 	light := if i := theme_info(o.themes, current) { i.light } else { false }
@@ -127,7 +137,9 @@ fn session_row(s SavedSession) kit.MenuItem {
 
 // new_tab_button is xsmall in the strip, small in the rail's header.
 fn (o &OneTerm) new_tab_button(size kit.Size) core.Element {
-	return kit.menu_button('new-tab', '', o.new_tab_items()).icon(kit.icon_plus).ghost().size(size).tooltip('New Terminal')
+	return kit.menu_button_with('new-tab', '', OneRef{o}, fn (r OneRef) []kit.MenuItem {
+		return r.o.new_tab_items()
+	}).icon(kit.icon_plus).ghost().size(size).tooltip('New Terminal')
 }
 
 // tab_menu acts on the right-clicked tab; `below` names the bulk row for the rail.

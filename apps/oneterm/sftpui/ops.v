@@ -110,11 +110,17 @@ fn submit_form(mut p SftpPanel, d FormData, v &string, mut cx core.ViewCx[SftpPa
 	if p.active == unsafe { nil } {
 		return
 	}
-	mut client := p.active.client
-	key, cwd := p.active.key, p.active.cwd
-	entry, is_rename := d.entry, d.kind == .rename
-	core.spawn_task[SftpPanel, OpDone](mut cx, fn [mut client, key, cwd, name, entry, is_rename] (_ &core.TaskCx) !OpDone {
-		if is_rename {
+	core.spawn_task_with[SftpPanel, Job, OpDone](mut cx, Job{
+		client: p.active.client
+		key:    p.active.key
+		cwd:    p.active.cwd
+		name:   name
+		entry:  d.entry
+		rename: d.kind == .rename
+	}, fn (j Job, _ &core.TaskCx) !OpDone {
+		mut client := j.client
+		key, cwd, name, entry := j.key, j.cwd, j.name, j.entry
+		if j.rename {
 			target := ssh.remote_join(ssh.remote_parent(entry.path), name)
 			client.rename(entry.path, target) or { return op_error(key, 'Rename failed', err) }
 			return op_ok(key, 'Renamed to "${name}".')
@@ -155,9 +161,13 @@ fn confirm_delete(mut p SftpPanel, e ssh.FileEntry, yes &bool, mut cx core.ViewC
 	if !*yes || p.active == unsafe { nil } {
 		return
 	}
-	mut client := p.active.client
-	key := p.active.key
-	core.spawn_task[SftpPanel, OpDone](mut cx, fn [mut client, key, e] (_ &core.TaskCx) !OpDone {
+	core.spawn_task_with[SftpPanel, Job, OpDone](mut cx, Job{
+		client: p.active.client
+		key:    p.active.key
+		entry:  e
+	}, fn (j Job, _ &core.TaskCx) !OpDone {
+		mut client := j.client
+		key, e := j.key, j.entry
 		if e.is_dir {
 			client.remove_dir_all(e.path) or { return op_error(key, 'Delete failed', err) }
 		} else {
@@ -179,11 +189,14 @@ fn (mut p SftpPanel) do_properties(mut cx core.ViewCx[SftpPanel]) {
 		p.notice(.warning, 'Select a file or folder to view properties.', mut cx)
 		return
 	}
-	mut client := p.active.client
-	key := p.active.key
-	path := e.path
-	core.spawn_task[SftpPanel, Stated](mut cx, fn [mut client, key, path] (_ &core.TaskCx) !Stated {
-		entry := client.stat(path) or { return Stated{
+	core.spawn_task_with[SftpPanel, Job, Stated](mut cx, Job{
+		client: p.active.client
+		key:    p.active.key
+		path:   e.path
+	}, fn (j Job, _ &core.TaskCx) !Stated {
+		mut client := j.client
+		key := j.key
+		entry := client.stat(j.path) or { return Stated{
 			key: key
 			err: err.msg()
 		} }

@@ -82,20 +82,22 @@ pub fn (mut t Traffic) snapshot() (u64, u64) {
 @[heap]
 struct Conn {
 mut:
-	tr             &Transport
-	mu             &sync.Mutex = sync.new_mutex()
-	channels       map[u32]&Channel
-	next_id        u32
-	globals        []GlobalWait
-	closed         bool
-	reason         string
-	last_rx        time.Time
-	missed         int
-	stop           &sync.Semaphore = sync.new_semaphore()
-	forward_target fn (addr string, port u32) ?ForwardTarget = unsafe { nil }
-	forward_start  fn (ch &Channel, target ForwardTarget)    = unsafe { nil }
-	agent_bridge   fn (ch &Channel) !                        = unsafe { nil }
-	on_closed      fn () = unsafe { nil }
+	tr       &Transport
+	mu       &sync.Mutex = sync.new_mutex()
+	channels map[u32]&Channel
+	next_id  u32
+	globals  []GlobalWait
+	closed   bool
+	reason   string
+	last_rx  time.Time
+	missed   int
+	stop     &sync.Semaphore = sync.new_semaphore()
+	// What channels the server opens go to, and who hears the end: references, not closures
+	// (no closures in apps, specs/14).
+	forwards   &Forwards = unsafe { nil } // remote forwards: forwarded-tcpip channels
+	agent_pipe string // agent forwarding on: auth-agent channels bridge to this pipe
+	agent_on   bool
+	owner      &Session = unsafe { nil } // closed when the connection drops
 }
 
 fn new_conn(tr &Transport) &Conn {
@@ -167,8 +169,9 @@ fn (mut c Conn) shutdown(reason string) {
 			w.finish(false, [])
 		}
 	}
-	if c.on_closed != unsafe { nil } {
-		c.on_closed()
+	if c.owner != unsafe { nil } {
+		mut s := c.owner
+		spawn s.close()
 	}
 }
 

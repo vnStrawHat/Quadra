@@ -39,20 +39,21 @@ pub mut:
 	ticking bool
 	vault   &vault.VaultState = unsafe { nil }
 	panel   &SessionPanel     = unsafe { nil }
-	ready   ?fn (mut cx core.Cx)
+	ready   core.Listener[bool] // what ensure_unlocked runs once unlocked
 	ent     u32
 	modal   int
 }
 
-// ensure_unlocked runs `ready` once the vault is unlocked: at once when it is, after the
-// Unlock or Set up dialog when not. An unavailable vault does nothing; the caller says why.
-fn (mut p SessionPanel) ensure_unlocked(mut cx core.Cx, ready fn (mut cx core.Cx)) {
+// ensure_unlocked runs `ready` (a listener, invoked with true) once the vault is unlocked: at
+// once when it is, after the Unlock or Set up dialog when not. An unavailable vault does
+// nothing; the caller says why.
+fn (mut p SessionPanel) ensure_unlocked(mut cx core.Cx, ready core.Listener[bool]) {
 	if p.vault.is_screen_locked() {
 		return
 	}
 	match p.vault.phase() {
 		.unlocked {
-			ready(mut cx)
+			run_ready(mut cx, ready)
 		}
 		.locked {
 			p.open_vault_dialog(mut cx, .unlock, ready)
@@ -68,7 +69,12 @@ fn (mut p SessionPanel) ensure_unlocked(mut cx core.Cx, ready fn (mut cx core.Cx
 	}
 }
 
-fn (mut p SessionPanel) open_vault_dialog(mut cx core.Cx, kind VaultKind, ready fn (mut cx core.Cx)) {
+fn run_ready(mut cx core.Cx, ready core.Listener[bool]) {
+	yes := true
+	cx.app.invoke(ready.any, &yes, cx.win, true)
+}
+
+fn (mut p SessionPanel) open_vault_dialog(mut cx core.Cx, kind VaultKind, ready core.Listener[bool]) {
 	v := cx.new_view(VaultDialog{
 		kind:  kind
 		vault: p.vault
@@ -80,18 +86,18 @@ fn (mut p SessionPanel) open_vault_dialog(mut cx core.Cx, kind VaultKind, ready 
 	})
 	mut d := cx.peek(v.model())
 	d.modal = kit.open_modal(mut cx, kit.ModalOptions{
-		title:  kind.title()
-		width:  440
-		body:   fn [v] () core.Element {
-			return core.view_element(v.any())
-		}
-		footer: fn [d] () core.Element {
-			return d.footer()
-		}
+		title:       kind.title()
+		width:       440
+		body_with:   kit.view_body(v.any())
+		footer_with: kit.build_with(VaultRef{d}, fn (r VaultRef, _ &kit.Theme) core.Element {
+			return r.d.footer()
+		})
 	})
-	p.track(d.modal, fn [v] (mut cx core.Cx) {
-		cx.release(v.model())
-	})
+	p.track(d.modal, v.any())
+}
+
+struct VaultRef {
+	d &VaultDialog = unsafe { nil }
 }
 
 fn (mut d VaultDialog) init(mut cx core.ViewCx[VaultDialog]) {
@@ -162,11 +168,16 @@ fn (mut d VaultDialog) submit(mut cx core.ViewCx[VaultDialog]) {
 	d.error = ''
 	cx.touch_global[kit.Overlays]()
 	cx.notify()
-	core.spawn_task[VaultDialog, vault.JobResult](mut cx, fn [job] (_ &core.TaskCx) !vault.JobResult {
-		return job.run()
-	}, fn (mut d VaultDialog, r &core.TaskResult[vault.JobResult], mut cx core.ViewCx[VaultDialog]) {
+	core.spawn_task_with[VaultDialog, vault.VaultJob, vault.JobResult](mut cx, job, run_vault_job, fn (mut d VaultDialog, r &core.TaskResult[vault.JobResult], mut cx core.ViewCx[VaultDialog]) {
+		cx.app.trim_now() // Argon2id's 64 MiB goes back to the OS now
 		d.finish(r, mut cx)
 	})
+}
+
+// run_vault_job is the work of a vault task. Jobs carry the password: they are passed as
+// task data, never captured (a closure is never freed, nor what it holds).
+fn run_vault_job(job vault.VaultJob, _ &core.TaskCx) !vault.JobResult {
+	return job.run()
 }
 
 fn (mut d VaultDialog) show_begin_error(err IError, mut cx core.ViewCx[VaultDialog]) {
@@ -209,8 +220,8 @@ fn (mut d VaultDialog) finish(r &core.TaskResult[vault.JobResult], mut cx core.V
 	kit.close_modal(mut cx.Cx, d.modal)
 	mut p := d.panel
 	p.refresh(mut cx.Cx)
-	if ready := d.ready {
-		ready(mut cx.Cx)
+	if d.ready.any.call != unsafe { nil } {
+		run_ready(mut cx.Cx, d.ready)
 	}
 }
 
@@ -218,10 +229,10 @@ fn (mut d VaultDialog) finish(r &core.TaskResult[vault.JobResult], mut cx core.V
 fn (mut d VaultDialog) run_followup(mut cx core.ViewCx[VaultDialog]) {
 	job := d.vault.take_followup() or { return }
 	mut p := d.panel
-	cx.update_view(p.view, fn [job] (mut p SessionPanel, mut cx core.ViewCx[SessionPanel]) {
-		core.spawn_task[SessionPanel, vault.JobResult](mut cx, fn [job] (_ &core.TaskCx) !vault.JobResult {
-			return job.run()
-		}, fn (mut p SessionPanel, r &core.TaskResult[vault.JobResult], mut _ core.ViewCx[SessionPanel]) {
+	cx.update_with(p.view.model(), job, fn (mut p SessionPanel, job vault.VaultJob, mut cx core.ViewCx[SessionPanel]) {
+		core.spawn_task_with[SessionPanel, vault.VaultJob, vault.JobResult](mut cx, job,
+			run_vault_job, fn (mut p SessionPanel, r &core.TaskResult[vault.JobResult], mut cx core.ViewCx[SessionPanel]) {
+			cx.app.trim_now()
 			if r.ok {
 				p.vault.apply(r.value) or {}
 			}

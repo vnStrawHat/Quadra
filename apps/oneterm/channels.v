@@ -93,14 +93,14 @@ fn (mut o OneTerm) join_channel(arg string, mut cx core.ViewCx[OneTerm]) {
 	}
 }
 
-fn (mut o OneTerm) leave_channel(mut cx core.ViewCx[OneTerm]) {
+fn (mut o OneTerm) leave_channel(mut _ core.ViewCx[OneTerm]) {
 	if mut s := o.current().active_space() {
 		s.channel = ''
 	}
 }
 
 // close_channel removes every Space from the active Space's channel.
-fn (mut o OneTerm) close_channel(mut cx core.ViewCx[OneTerm]) {
+fn (mut o OneTerm) close_channel(mut _ core.ViewCx[OneTerm]) {
 	letter := if s := o.current().active_space() { s.channel } else { '' }
 	if letter == '' {
 		return
@@ -124,7 +124,7 @@ fn (mut o OneTerm) join_all(arg string, mut cx core.ViewCx[OneTerm]) {
 	}
 }
 
-fn (mut o OneTerm) leave_all(mut cx core.ViewCx[OneTerm]) {
+fn (mut o OneTerm) leave_all(mut _ core.ViewCx[OneTerm]) {
 	mut tab := o.current()
 	for mut s in tab.spaces {
 		s.channel = ''

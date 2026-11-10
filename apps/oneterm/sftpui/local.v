@@ -96,8 +96,9 @@ fn (mut p SftpPanel) local_load(path string, mut cx core.ViewCx[SftpPanel]) {
 	p.local_sync_table(mut cx)
 	p.local_sync_path(mut cx)
 	cx.notify()
-	core.spawn_task[SftpPanel, LocalListed](mut cx, fn [path, gen] (_ &core.TaskCx) !LocalListed {
-		l := read_local_dir(path) or { return LocalListed{
+	core.spawn_task_with[SftpPanel, LocalList, LocalListed](mut cx, LocalList{path, gen}, fn (j LocalList, _ &core.TaskCx) !LocalListed {
+		gen := j.gen
+		l := read_local_dir(j.path) or { return LocalListed{
 			gen: gen
 			err: err.msg()
 		} }
@@ -107,6 +108,12 @@ fn (mut p SftpPanel) local_load(path string, mut cx core.ViewCx[SftpPanel]) {
 			entries: l.entries
 		}
 	}, on_local_listed)
+}
+
+// LocalList is a local listing's data (no client involved).
+struct LocalList {
+	path string
+	gen  u64
 }
 
 fn on_local_listed(mut p SftpPanel, r &core.TaskResult[LocalListed], mut cx core.ViewCx[SftpPanel]) {

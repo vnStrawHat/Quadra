@@ -68,11 +68,23 @@ pub fn atomic_write(path string, bytes []u8) ! {
 // shown the document being replaced, and answers true when the new bytes drop or replace a sealed
 // value, which makes `.bak` a copy of the new document.
 pub fn atomic_write_sealed(path string, bytes []u8, retire fn (previous []u8) bool) ! {
+	atomic_write_sealed_with(path, bytes, PlainRetire{retire}, fn (p PlainRetire, previous []u8) bool {
+		return p.f(previous)
+	})!
+}
+
+struct PlainRetire {
+	f fn (previous []u8) bool = unsafe { nil }
+}
+
+// atomic_write_sealed_with is atomic_write_sealed for a test that needs data: it is an
+// argument, not a capture (no capturing closures in apps, specs/14). D is a value type.
+pub fn atomic_write_sealed_with[D](path string, bytes []u8, data D, retire fn (d D, previous []u8) bool) ! {
 	mut guard := acquire_lock(path)!
 	defer {
 		guard.release()
 	}
-	sensitivity := if os.exists(path) && retire(os.read_bytes(path)!) {
+	sensitivity := if os.exists(path) && retire(data, os.read_bytes(path)!) {
 		Sensitivity.secret
 	} else {
 		Sensitivity.private_doc
@@ -110,16 +122,35 @@ fn write_and_replace(path string, temporary string, bytes []u8, sensitivity Sens
 
 // update_json_file is a read-modify-write transaction under the document's lock.
 pub fn update_json_file(path string, update JsonUpdate) ! {
-	update_json_file_as(path, update, .ordinary)!
+	update_json_file_as(path, PlainUpdate{update}, run_plain, .ordinary)!
+}
+
+// update_json_file_with is update_json_file for an update that needs data: it is an argument,
+// not a capture (no capturing closures in apps, specs/14). D must be a value type.
+pub fn update_json_file_with[D](path string, data D, update fn (d D, mut doc json2.Any) !) ! {
+	update_json_file_as(path, data, update, .ordinary)!
+}
+
+struct PlainUpdate {
+	f JsonUpdate = unsafe { nil }
+}
+
+fn run_plain(p PlainUpdate, mut doc json2.Any) ! {
+	p.f(mut doc)!
 }
 
 // update_secret_json_file is the transaction for a document holding secret material: `.bak`
 // always equals the new document.
 pub fn update_secret_json_file(path string, update JsonUpdate) ! {
-	update_json_file_as(path, update, .secret)!
+	update_json_file_as(path, PlainUpdate{update}, run_plain, .secret)!
 }
 
-fn update_json_file_as(path string, update JsonUpdate, sensitivity Sensitivity) ! {
+// update_secret_json_file_with is update_secret_json_file with data (see update_json_file_with).
+pub fn update_secret_json_file_with[D](path string, data D, update fn (d D, mut doc json2.Any) !) ! {
+	update_json_file_as(path, data, update, .secret)!
+}
+
+fn update_json_file_as[D](path string, data D, update fn (d D, mut doc json2.Any) !, sensitivity Sensitivity) ! {
 	mut guard := acquire_lock(path)!
 	defer {
 		guard.release()
@@ -130,7 +161,7 @@ fn update_json_file_as(path string, update JsonUpdate, sensitivity Sensitivity) 
 			reason: err.msg()
 		} }
 	}
-	update(mut doc)!
+	update(data, mut doc)!
 	atomic_write_unlocked(path, encode_pretty(doc).bytes(), sensitivity)!
 }
 

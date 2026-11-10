@@ -48,8 +48,9 @@ fn (mut w SettingsWin) general_groups(mut cx core.ViewCx[SettingsWin]) []kit.Set
 		w.changed(mut cx)
 	}))
 	labels := settings_shell_kinds.map(display_name(it))
-	picker :=
-		kit.menu_button('theme-picker', current, o.theme_items(current, w.one)).outline().caret().size(.lg)
+	picker := kit.menu_button_with('theme-picker', current, ThemePick{o, w.one}, fn (p ThemePick) []kit.MenuItem {
+		return p.o.theme_items(p.o.current_theme(), p.one)
+	}).outline().caret().size(.lg)
 	return [
 		group('Theme', [
 			kit.SettingsRow{'Mode', 'Switching this also swaps the color theme to the last one used in that mode.', mode},
@@ -212,4 +213,10 @@ fn (mut w SettingsWin) ssh_groups(mut cx core.ViewCx[SettingsWin]) []kit.Setting
 				'Files larger than this prompt before opening. 0 = no limit.', mut cx),
 		]),
 	]
+}
+
+// ThemePick builds the theme picker's items when it opens.
+struct ThemePick {
+	o   &OneTerm = unsafe { nil }
+	one core.Model[OneTerm]
 }

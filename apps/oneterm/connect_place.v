@@ -29,9 +29,8 @@ fn (mut o OneTerm) place_session(out ConnectOutcome, mut cx core.ViewCx[OneTerm]
 	}
 	identity := termlog.ssh_log_identity(out.meta.username, out.meta.host, u16(out.meta.port))
 	logging := out.logging.resolve(o.cfg.logging.ssh)
-	o.open_terminal(mut target, fn [mut sess] (opts platform.PtyOptions) !platform.Pty {
-		return sess.attach(opts)!
-	}, platform.PtyOptions{}, logging, identity, mut cx) or {
+	o.open_terminal(mut target, Spawn{ sess: sess }, platform.PtyOptions{}, logging, identity, mut
+		cx) or {
 		spawn close_session(mut sess)
 		kit.notify(mut cx.Cx, .error, 'SSH',
 			'Connected, but the terminal could not be started: ${err.msg()}')
@@ -48,8 +47,8 @@ fn (mut o OneTerm) place_session(out ConnectOutcome, mut cx core.ViewCx[OneTerm]
 
 // remote_cd_command is the original's `cd -- '<path>'`, quoting single quotes.
 fn remote_cd_command(cwd string) string {
-	quoted := cwd.replace("'", '\'"\'"\'')
-	return "cd -- '${quoted}'\r"
+	escaped := cwd.replace("'", '\'"\'"\'')
+	return "cd -- '${escaped}'\r"
 }
 
 // landing_space resolves a tag ('' = a new connection, see duplicate_ssh for the others).

@@ -189,14 +189,24 @@ fn write_create(dir string, header VaultHeader, read_only bool) ! {
 			kind: .already_initialised
 		}
 	}
-	store.update_secret_json_file(path, fn [path, header] (mut doc json2.Any) ! {
-		if os.is_file(path) {
+	store.update_secret_json_file_with(path, InitDoc{path, header}, fn (d InitDoc, mut doc json2.Any) ! {
+		if os.is_file(d.path) {
 			return VaultError{
 				kind: .already_initialised
 			}
 		}
-		doc = to_document(header)
+		doc = to_document(d.header)
 	}) or { return io_error(err) }
+}
+
+struct InitDoc {
+	path   string
+	header VaultHeader
+}
+
+struct Rewrap {
+	from VaultHeader
+	to   VaultHeader
 }
 
 // write_rewrap replaces the KDF fields and the wrapped key, only when the file loads as ready
@@ -204,7 +214,8 @@ fn write_create(dir string, header VaultHeader, read_only bool) ! {
 fn write_rewrap(dir string, from VaultHeader, to VaultHeader, read_only bool) ! {
 	refuse_read_only(read_only)!
 	path := os.join_path(dir, document_name)
-	store.update_secret_json_file(path, fn [from, to] (mut doc json2.Any) ! {
+	store.update_secret_json_file_with(path, Rewrap{from, to}, fn (r Rewrap, mut doc json2.Any) ! {
+		from, to := r.from, r.to
 		on_disk := parse_value(doc)
 		if on_disk.kind != .ready || on_disk.header.vault_id != from.vault_id {
 			return VaultError{

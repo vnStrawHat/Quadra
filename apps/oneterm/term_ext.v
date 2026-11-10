@@ -197,7 +197,7 @@ fn (mut x TermExt) apply_key(k CompletionKey, mut t term.Terminal) {
 }
 
 // accept writes the suggestion to this terminal alone: never broadcast, as in the original.
-fn (mut x TermExt) accept(mut t term.Terminal) {
+fn (mut x TermExt) accept(mut _ term.Terminal) {
 	if a := x.ctl.accept() {
 		data := a.bytes()
 		if data.len > 0 && x.pty != unsafe { nil } {
@@ -243,7 +243,7 @@ fn cells_text(cells []term.Cell) string {
 }
 
 // update is the per-render step: gating, then a recompute only when something moved.
-fn (mut x TermExt) update(mut t term.Terminal, mut cx core.ViewCx[term.Terminal]) {
+fn (mut x TermExt) update(mut t term.Terminal, mut _ core.ViewCx[term.Terminal]) {
 	x.ctl.sync_settings(x.kind, completion_config(x.one.cfg.completion))
 	if !x.ctl.enabled() || t.exited != none {
 		x.dismiss()

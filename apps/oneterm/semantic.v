@@ -123,7 +123,7 @@ fn (mut x TermExt) rescan(t &term.Terminal, start int, end int, role highlight.R
 		for col in 0 .. last {
 			if cells[col].flags & term.f_spacer == 0 {
 				x.text << if cells[col].ch == 0 { ` ` } else { rune(cells[col].ch) }
-				x.owners << (r << 16) | col
+				x.owners << int(u32(r) << 16) | col
 			}
 		}
 		if x.cache[r].len != cells.len {

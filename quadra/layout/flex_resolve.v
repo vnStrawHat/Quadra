@@ -160,16 +160,19 @@ fn (mut t Tree) place_absolutes(ids []NodeId, s &Style, outer_w f32, outer_h f32
 	for c in ids {
 		cs := t.nodes[c].style
 		m := cs.margin
+		// Insets may be negative, so "set" comes from the unit: -1 px equals `unknown`.
+		has_l, has_r := !cs.inset_left.is_auto(), !cs.inset_right.is_auto()
+		has_t, has_b := !cs.inset_top.is_auto(), !cs.inset_bottom.is_auto()
 		left := cs.inset_left.resolve(pbw)
 		right := cs.inset_right.resolve(pbw)
 		top := cs.inset_top.resolve(pbh)
 		bottom := cs.inset_bottom.resolve(pbh)
 		mut w := cs.width.resolve(pbw)
 		mut h := cs.height.resolve(pbh)
-		if w == unknown && left != unknown && right != unknown {
+		if w == unknown && has_l && has_r {
 			w = prim.max(0, pbw - left - right - m.horizontal())
 		}
-		if h == unknown && top != unknown && bottom != unknown {
+		if h == unknown && has_t && has_b {
 			h = prim.max(0, pbh - top - bottom - m.vertical())
 		}
 		if w == unknown || h == unknown {
@@ -177,16 +180,16 @@ fn (mut t Tree) place_absolutes(ids []NodeId, s &Style, outer_w f32, outer_h f32
 			w, h = sz.width, sz.height
 		}
 		t.layout_node(c, w, h, w, h, true)
-		x := if left != unknown {
+		x := if has_l {
 			b.left + left + m.left
-		} else if right != unknown {
+		} else if has_r {
 			outer_w - b.right - right - w - m.right
 		} else {
 			s.frame().left + m.left
 		}
-		y := if top != unknown {
+		y := if has_t {
 			b.top + top + m.top
-		} else if bottom != unknown {
+		} else if has_b {
 			outer_h - b.bottom - bottom - h - m.bottom
 		} else {
 			s.frame().top + m.top

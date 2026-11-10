@@ -84,14 +84,15 @@ fn zero_if_unknown(v f32) f32 {
 	return if v == unknown { 0 } else { v }
 }
 
-fn collect_lines(items []FlexItem, wrap bool, limit f32, gap f32) []FlexLine {
+// collect_lines fills lines (cleared by the caller) with the flex lines of items.
+fn collect_lines(items []FlexItem, wrap bool, limit f32, gap f32, mut lines []FlexLine) {
 	if !wrap || limit >= unbounded || items.len == 0 {
-		return [FlexLine{
+		lines << FlexLine{
 			start: 0
 			end:   items.len
-		}]
+		}
+		return
 	}
-	mut lines := []FlexLine{}
 	mut start := 0
 	mut used := f32(0)
 	for i, it in items {
@@ -111,7 +112,6 @@ fn collect_lines(items []FlexItem, wrap bool, limit f32, gap f32) []FlexLine {
 		start: start
 		end:   items.len
 	}
-	return lines
 }
 
 fn line_outer(items []FlexItem, l FlexLine, gap f32, hyp bool) f32 {

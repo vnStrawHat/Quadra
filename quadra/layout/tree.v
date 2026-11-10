@@ -41,6 +41,10 @@ const cache_slots = 4
 pub struct Tree {
 mut:
 	nodes []Node
+	// flex scratch, one per nesting depth of layout_flex (flex.v): reused, never reallocated
+	flex_items [][]FlexItem
+	flex_lines [][]FlexLine
+	depth      int
 pub mut:
 	measure_calls int // statistics: number of layout_node evaluations not served by the cache
 }

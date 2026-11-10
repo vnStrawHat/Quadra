@@ -84,7 +84,18 @@ fn (mut t Tree) layout_flex(id NodeId, s &Style, kw f32, kh f32, aw f32, ah f32,
 
 	// No copies on this hot path: layout never adds nodes or changes child lists.
 	children := t.nodes[id].children
-	mut items := []FlexItem{cap: children.len}
+	// Items and lines live in scratch kept per nesting depth: children laid out below use
+	// the next depth, so nothing here is overwritten while in use.
+	depth := t.depth
+	t.depth++
+	if depth == t.flex_items.len {
+		t.flex_items << []FlexItem{}
+		t.flex_lines << []FlexLine{}
+	}
+	mut items := unsafe { t.flex_items[depth] }
+	items.clear()
+	mut flines := unsafe { t.flex_lines[depth] }
+	flines.clear()
 	mut absolutes := []NodeId{}
 	// The only growing item of a container with a definite main size ends at the leftover
 	// space whatever its content (it grows into free space and, flexible first, gives back
@@ -116,11 +127,11 @@ fn (mut t Tree) layout_flex(id NodeId, s &Style, kw f32, kh f32, aw f32, ah f32,
 		}
 	}
 
-	mut flines := collect_lines(items, s.wrap, if inner_main != unknown {
+	collect_lines(items, s.wrap, if inner_main != unknown {
 		inner_main
 	} else {
 		avail_main
-	}, gap_main)
+	}, gap_main, mut flines)
 	// Main size of an auto container: its widest line. Width is limited by the available space
 	// (so text can wrap), and so is a scroll container's height (it scrolls instead); any other
 	// auto height is the content height, so tall content never squeezes its own children.
@@ -227,5 +238,8 @@ fn (mut t Tree) layout_flex(id NodeId, s &Style, kw f32, kh f32, aw f32, ah f32,
 			s.padding.bottom)
 		t.place_absolutes(absolutes, s, out_w, out_h)
 	}
+	t.flex_items[depth] = items
+	t.flex_lines[depth] = flines
+	t.depth--
 	return prim.size(out_w, out_h)
 }

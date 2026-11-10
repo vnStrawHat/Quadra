@@ -35,6 +35,7 @@ mut:
 	next_id    u32
 	msg_hwnd   voidptr
 	posted     []Task
+	acts       []PostedAct // screen reader actions, delivered after the UIA call returns
 	post_lock  &sync.Mutex = sync.new_mutex()
 	timers     map[u64]bool // id -> repeat
 	next_timer u64
@@ -123,10 +124,30 @@ fn (mut p WinPlatform) run_posted() {
 	p.post_lock.@lock()
 	tasks := p.posted
 	p.posted = []Task{}
+	acts := p.acts
+	p.acts = []PostedAct{}
 	p.post_lock.unlock()
 	for t in tasks {
 		t()
 	}
+	for a in acts {
+		mut w := a.w
+		w.emit(a.ev)
+	}
+}
+
+struct PostedAct {
+	w  &WinWindow = unsafe { nil }
+	ev platform.A11yEvent
+}
+
+// post_act delivers a screen reader action on the next turn of the message loop, as data:
+// no closure per action (V frees none, specs/14).
+fn (mut p WinPlatform) post_act(w &WinWindow, ev platform.A11yEvent) {
+	p.post_lock.@lock()
+	p.acts << PostedAct{w, ev}
+	p.post_lock.unlock()
+	C.PostMessageW(p.msg_hwnd, wm_app, 0, 0)
 }
 
 fn msg_wnd_proc(hwnd voidptr, msg u32, wparam usize, lparam isize) isize {

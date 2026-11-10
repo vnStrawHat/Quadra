@@ -171,10 +171,13 @@ pub:
 	command string // the command line; empty = the user's shell
 	cwd     string
 	env     map[string]string // added to the parent's environment; an empty value removes the variable
-	cols    int            = 80
-	rows    int            = 24
-	on_data fn (data []u8) = unsafe { nil } // reader thread; data is lent for the call: copy to keep it
-	on_exit fn (code int)  = unsafe { nil } // reader thread, once, after the last data
+	cols    int = 80
+	rows    int = 24
+	// ctx is handed back to on_data and on_exit: plain functions with their data, no closure
+	// per terminal (V frees none, specs/14)
+	ctx     voidptr
+	on_data fn (ctx voidptr, data []u8) = unsafe { nil } // reader thread; data is lent for the call: copy to keep it
+	on_exit fn (ctx voidptr, code int)  = unsafe { nil } // reader thread, once, after the last data
 }
 
 // merged_env is the `parent` environment with `extra` applied, as sorted KEY=value lines (names

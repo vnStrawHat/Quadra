@@ -5,6 +5,10 @@ module win
 import time
 import quadra.platform
 
+struct ExitBox {
+	exited chan int
+}
+
 fn test_a_shell_closed_at_once_still_exits() {
 	for _ in 0 .. 3 {
 		exited := chan int{cap: 1}
@@ -12,8 +16,10 @@ fn test_a_shell_closed_at_once_still_exits() {
 			command: 'cmd.exe /K chcp 65001 >nul'
 			cols:    80
 			rows:    24
-			on_exit: fn [exited] (code int) {
-				exited <- code
+			ctx:     &ExitBox{exited}
+			on_exit: fn (ctx voidptr, code int) {
+				b := unsafe { &ExitBox(ctx) }
+				b.exited <- code
 			}
 		}) or {
 			eprintln('skipped: ${err}')

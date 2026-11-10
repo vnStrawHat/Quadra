@@ -19,12 +19,15 @@ fn test_conpty_runs_a_program() {
 		command: 'cmd.exe /c echo quadra-ok'
 		cols:    80
 		rows:    24
-		on_data: fn [mut sink] (data []u8) {
+		ctx:     sink
+		on_data: fn (ctx voidptr, data []u8) {
+			mut sink := unsafe { &Sink(ctx) }
 			sink.mu.@lock()
 			sink.out << data
 			sink.mu.unlock()
 		}
-		on_exit: fn [mut sink] (code int) {
+		on_exit: fn (ctx voidptr, code int) {
+			mut sink := unsafe { &Sink(ctx) }
 			sink.mu.@lock()
 			sink.code = code
 			sink.mu.unlock()

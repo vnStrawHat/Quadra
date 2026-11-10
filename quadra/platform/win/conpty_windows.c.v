@@ -136,8 +136,8 @@ pub fn spawn_conpty(opts platform.PtyOptions) !platform.Pty {
 		output:  out_read
 		process: pi.process
 	}
-	reader := spawn read_loop(out_read, opts.on_data)
-	spawn wait_loop(mut p, reader, opts.on_exit)
+	reader := spawn read_loop(out_read, opts.ctx, opts.on_data)
+	spawn wait_loop(mut p, reader, opts.ctx, opts.on_exit)
 	return p
 }
 
@@ -161,7 +161,7 @@ fn env_block(extra map[string]string) []u16 {
 	return block
 }
 
-fn read_loop(h voidptr, on_data fn (data []u8)) {
+fn read_loop(h voidptr, ctx voidptr, on_data fn (ctx voidptr, data []u8)) {
 	mut buf := []u8{len: 65536}
 	for {
 		mut got := u32(0)
@@ -169,14 +169,14 @@ fn read_loop(h voidptr, on_data fn (data []u8)) {
 			return
 		}
 		if on_data != unsafe { nil } {
-			on_data(buf[..int(got)]) // lent: the inbox copies it, so a read allocates nothing
+			on_data(ctx, buf[..int(got)]) // lent: the inbox copies it, so a read allocates nothing
 		}
 	}
 }
 
 // wait_loop waits for the program, then closes the pseudo console (which ends the reader
 // once the last output is read) and reports the exit code after the data.
-fn wait_loop(mut p ConPty, reader thread, on_exit fn (code int)) {
+fn wait_loop(mut p ConPty, reader thread, ctx voidptr, on_exit fn (ctx voidptr, code int)) {
 	C.WaitForSingleObject(p.process, -1)
 	mut code := u32(0)
 	C.GetExitCodeProcess(p.process, &code)
@@ -185,7 +185,7 @@ fn wait_loop(mut p ConPty, reader thread, on_exit fn (code int)) {
 	C.CloseHandle(p.output)
 	C.CloseHandle(p.process)
 	if on_exit != unsafe { nil } {
-		on_exit(int(code))
+		on_exit(ctx, int(code))
 	}
 }
 

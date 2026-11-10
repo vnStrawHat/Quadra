@@ -156,10 +156,7 @@ fn (n &UiaNode) act(action platform.A11yAction) int {
 		return uia_e_elementnotavailable
 	}
 	mut w := n.uia.w
-	ev := platform.A11yEvent{n.id, action}
-	w.plat.post(fn [mut w, ev] () {
-		w.emit(ev)
-	})
+	w.plat.post_act(w, platform.A11yEvent{n.id, action})
 	return 0
 }
 

@@ -1,0 +1,25 @@
+--- vlib/builtin/closure/closure.c.v
++++ vlib/builtin/closure/closure.c.v
+@@ -853,6 +853,10 @@
+ 	closure_live_set(curr_closure, data, owns_data)
+ 	closure_lifetime_track_no_lock(curr_closure)
+ 	closure_mtx_unlock_platform()
++	if g_closure_trace {
++		eprintln('closure created at:') // quadra patch (closure trace): see trace()
++		print_backtrace()
++	}
+ 
+ 	// Return executable closure object
+ 	return closure_return_ptr(curr_closure)
+@@ -889,3 +893,11 @@
+ pub fn live_closures() int {
+ 	return g_closure.live.len
+ }
++
++// quadra patch (closure trace): trace prints a backtrace at every closure creation while on,
++// so a leak found by quadra's detector (quadra/core/leakcheck.v) can be traced to its source.
++__global g_closure_trace = false
++
++pub fn trace(on bool) {
++	g_closure_trace = on
++}

@@ -69,12 +69,23 @@ if [ -n "$long" ]; then
 fi
 
 # 3b. Closures in the framework (specs/14, avoiding closures): only the made-once ones are
-#     left. The cap only goes down; a new `fn [..]` needs one of the four ways instead.
-closure_cap=22
+#     left, each with a comment saying why it does not leak. The cap only goes down.
+closure_cap=3
 closures=$(find quadra -name '*.v' ! -name '*_test.v' -print0 | xargs -0 grep -hE '^[^/]*fn \[' | wc -l)
 if [ "$closures" -gt "$closure_cap" ]; then
 	say "check: $closures closures in quadra/ (cap $closure_cap); see specs/14, avoiding closures:"
 	find quadra -name '*.v' ! -name '*_test.v' -print0 | xargs -0 grep -nE '^[^/]*fn \[' | head -40
+	fail=1
+fi
+
+# 3c. No capturing closures in apps or examples at all (specs/14, no closures in apps): V frees
+#     none made outside a render frame, and a leak is worse than any memory it saves. `fn [` at
+#     any position on a line, comments excepted; tests may use them.
+app_closures=$(find apps examples -name '*.v' ! -name '*_test.v' -print0 |
+	xargs -0 grep -nE '(^|[^A-Za-z0-9_])fn[[:space:]]*\[' | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' || true)
+if [ -n "$app_closures" ]; then
+	say 'check: capturing closures in apps/examples (cap 0; use the _with variants, specs/14):'
+	say "$app_closures"
 	fail=1
 fi
 

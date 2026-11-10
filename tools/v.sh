@@ -40,6 +40,9 @@ mkdir -p "$VMODULES" "$VCACHE" "$VTMP"
 closure="$ROOT/.tools/v/vlib/builtin/closure/closure.c.v"
 grep -q 'quadra patch: lets bench/leak see closure leaks' "$closure" ||
 	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-closure.diff"
+# closure.trace for quadra's leak detector (QUADRA_TRACE_CLOSURES), on top of the patch above.
+grep -q 'quadra patch (closure trace)' "$closure" ||
+	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-closure-trace.diff"
 # MSVC drops intermediate `*.tmp.obj` files into the working directory; remove them after each run.
 status=0
 "$ROOT/.tools/v/v.exe" "$@" || status=$?

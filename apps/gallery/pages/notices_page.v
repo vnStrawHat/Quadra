@@ -6,28 +6,29 @@ import quadra.kit
 import quadra.ui
 
 fn drawer_page(_ &kit.Theme) core.Element {
-	open := fn (side kit.ModalSide) fn (&core.ClickEvent, mut core.Cx) {
-		return fn [side] (_ &core.ClickEvent, mut cx core.Cx) {
-			kit.open_modal(mut cx, kit.ModalOptions{
-				side:  side
-				title: 'Pod api-7d9f8c'
-				width: if side == .bottom { f32(240) } else { 360 }
-				body:  fn () core.Element {
-					return kit.description_list([
-						kit.Description{'Status', kit.badge('Running', .success)},
-						kit.Description{'Node', ui.text('pool-a-3')},
-						kit.Description{'Restarts', ui.text('2')},
-					])
-				}
-			})
-		}
+	open := fn (side kit.ModalSide, _ &core.ClickEvent, mut cx core.Cx) {
+		kit.open_modal(mut cx, kit.ModalOptions{
+			side:  side
+			title: 'Pod api-7d9f8c'
+			width: if side == .bottom { f32(240) } else { 360 }
+			body:  fn () core.Element {
+				return kit.description_list([
+					kit.Description{'Status', kit.badge('Running', .success)},
+					kit.Description{'Node', ui.text('pool-a-3')},
+					kit.Description{'Restarts', ui.text('2')},
+				])
+			}
+		})
 	}
 	return page('Drawer',
 		'A panel sliding over the window from an edge, for details and settings. Escape or a click outside closes it.', [
 		demo('Sides', row([
-			kit.button('drawer-right').label('Right').primary().on_click(core.handler(open(.right))),
-			kit.button('drawer-left').label('Left').on_click(core.handler(open(.left))),
-			kit.button('drawer-bottom').label('Bottom').on_click(core.handler(open(.bottom))),
+			kit.button('drawer-right').label('Right').primary().on_click(core.handler_with(kit.ModalSide.right,
+				open)),
+			kit.button('drawer-left').label('Left').on_click(core.handler_with(kit.ModalSide.left,
+				open)),
+			kit.button('drawer-bottom').label('Bottom').on_click(core.handler_with(kit.ModalSide.bottom,
+				open)),
 		]),
 			"kit.open_modal(mut cx, kit.ModalOptions{ side: .right, title: '...', width: 360, body: ... })"),
 	])

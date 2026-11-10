@@ -104,10 +104,10 @@ pub fn (mut p SettingsDemo) render(mut cx core.ViewCx[SettingsDemo]) core.Elemen
 	][p.mode]}"\n}'
 	header << kit.button('set-json').label('Edit in settings.json').outline().size(.sm).on_click(core.handler_with(json, fn (json string, _ &core.ClickEvent, mut cx core.Cx) {
 		kit.open_modal(mut cx, kit.ModalOptions{
-			title: 'settings.json'
-			body:  fn [json] () core.Element {
+			title:     'settings.json'
+			body_with: kit.build_with(json, fn (json string, _ &kit.Theme) core.Element {
 				return ui.text(json).family(kit.mono_face)
-			}
+			})
 		})
 	}))
 	view := kit.settings('settings', pages, p.current).search(cx.child_view(p.search), p.query).header(header).hint('ctrl-shift-e',

@@ -103,20 +103,36 @@ fn statusbar_page(t &kit.Theme) core.Element {
 // commands is the demo command list for the palette (ctrl-k opens it anywhere).
 pub fn commands() []input.Command {
 	return [
-		input.Command{'Mở tệp…', 'ctrl-o', fn (mut cx core.Cx) {
-			kit.push_toast(mut cx, .info, 'Mở tệp')
-		}},
-		input.Command{'Lưu', 'ctrl-s', fn (mut cx core.Cx) {
-			kit.push_toast(mut cx, .success, 'Đã lưu')
-		}},
-		input.Command{'Đổi giao diện sáng/tối', '', fn (mut cx core.Cx) {
-			t := kit.theme_of(cx.app)
-			kit.set_theme(mut cx.app, if t.mode == .dark { kit.light() } else { kit.dark() })
-		}},
-		input.Command{'Mở profiler', 'ctrl-shift-p', fn (mut cx core.Cx) {
-			cx.win.debug.profiler = !cx.win.debug.profiler
-			cx.win.invalidate_paint()
-		}},
+		input.Command{
+			title: 'Mở tệp…'
+			keys:  'ctrl-o'
+			run:   fn (mut cx core.Cx) {
+				kit.push_toast(mut cx, .info, 'Mở tệp')
+			}
+		},
+		input.Command{
+			title: 'Lưu'
+			keys:  'ctrl-s'
+			run:   fn (mut cx core.Cx) {
+				kit.push_toast(mut cx, .success, 'Đã lưu')
+			}
+		},
+		input.Command{
+			title: 'Đổi giao diện sáng/tối'
+			keys:  ''
+			run:   fn (mut cx core.Cx) {
+				t := kit.theme_of(cx.app)
+				kit.set_theme(mut cx.app, if t.mode == .dark { kit.light() } else { kit.dark() })
+			}
+		},
+		input.Command{
+			title: 'Mở profiler'
+			keys:  'ctrl-shift-p'
+			run:   fn (mut cx core.Cx) {
+				cx.win.debug.profiler = !cx.win.debug.profiler
+				cx.win.invalidate_paint()
+			}
+		},
 	]
 }
 

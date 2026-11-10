@@ -63,7 +63,7 @@ pub fn (mut p TerminalPage) render(mut cx core.ViewCx[TerminalPage]) core.Elemen
 		p.fake = &term.FakePty{
 			answer: fake_shell
 		}
-		term.start(mut cx.Cx, p.term, p.fake.spawner(), platform.PtyOptions{}) or {}
+		term.start_with(mut cx.Cx, p.term, term.FakeRef{p.fake}, term.spawn_fake, platform.PtyOptions{}) or {}
 		p.fake.prompt = '\x1b[32mquadra\x1b[0m:\x1b[34m~\x1b[0m$ '
 		p.fake.output(term_banner + p.fake.prompt)
 		for cmd in ['ls', 'styles', 'colors'] {

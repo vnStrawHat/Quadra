@@ -19,7 +19,6 @@ pub struct LiveTablePage {
 mut:
 	rows  []Svc
 	table core.View[data.Table]
-	cell  data.CellFn = unsafe { nil }
 	step  int
 }
 
@@ -27,16 +26,6 @@ const svc_states = ['Running', 'Running', 'Pending', 'Running', 'Failed']
 
 fn (mut p LiveTablePage) setup(mut cx core.ViewCx[LiveTablePage]) {
 	p.rows = []Svc{len: 40, init: Svc{'service-${index:02}', 'Running', 20 + index * 7 % 90, index * 3700}}
-	holder := unsafe { &p }
-	p.cell = fn [holder] (row int, col int) string {
-		s := holder.rows[row]
-		return match col {
-			0 { s.name }
-			1 { s.status }
-			2 { s.latency.str() }
-			else { s.age.str() }
-		}
-	}
 	p.table = data.new_table(mut cx.Cx,
 		id:      'live-table'
 		columns: [
@@ -60,13 +49,24 @@ fn (mut p LiveTablePage) setup(mut cx core.ViewCx[LiveTablePage]) {
 				kind:  .age
 			},
 		]
-		cell:    p.cell
+		cells:   data.Cells(unsafe { &p })
 	)
 	p.push(mut cx)
 }
 
 fn (mut p LiveTablePage) push(mut cx core.ViewCx[LiveTablePage]) {
-	data.set_keyed_rows(mut cx.Cx, p.table, p.rows.map(it.name), p.cell)
+	data.set_keyed_rows_from(mut cx.Cx, p.table, p.rows.map(it.name), unsafe { &p })
+}
+
+// cell reads the rows live (data.Cells): updates make no closures.
+fn (p &LiveTablePage) cell(row int, col int) string {
+	s := p.rows[row]
+	return match col {
+		0 { s.name }
+		1 { s.status }
+		2 { s.latency.str() }
+		else { s.age.str() }
+	}
 }
 
 // update changes a few rows the same way every time (a stand-in for a live source).

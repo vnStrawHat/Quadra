@@ -35,7 +35,7 @@ fn main() {
 // measure prints startup time to the first presented frame and the working set, then
 // quits (used by docs/progress.md; run the packaged exe for representative numbers).
 fn measure(mut app core.App, started u64) {
-	app.after(16, fn [started] (mut app core.App) {
+	app.after_with(16, started, fn (started u64, mut app core.App) {
 		if app.windows.len == 0 || app.windows[0].stats.frames == 0 {
 			measure(mut app, started) // not presented yet: look again next frame
 			return

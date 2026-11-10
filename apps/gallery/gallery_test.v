@@ -196,3 +196,36 @@ fn test_hud_reports_frames_cpu_and_memory() {
 	out := os.join_path(os.dir(@FILE), '..', '..', '.tmp', 'out')
 	h.save_png(os.join_path(out, 'gallery_hud.png'))!
 }
+
+// Closure leak gate (specs/14): overlays opened from handlers (drawer, dialog, palette),
+// repeated, leave the live closure count where it was and the dispatch detector quiet.
+fn overlay_flows(mut h testing.Harness) ! {
+	open_page(mut h, 'drawer')!
+	for side in ['drawer-right', 'drawer-left', 'drawer-bottom'] {
+		h.click(side)!
+		h.press('escape')!
+	}
+	open_page(mut h, 'settings')!
+	h.click('set-json')!
+	h.press('escape')!
+	h.click('status-search')!
+	h.press('escape')!
+	h.frame()
+	h.frame()
+}
+
+fn test_overlays_leak_no_closures() {
+	mut h := testing.new_harness(width: 1200, height: 800)!
+	kit.install(mut h.app)!
+	install_commands(mut h.app)!
+	h.open(pages.Gallery{}, width: 1200, height: 800)!
+	overlay_flows(mut h)!
+	c0 := life.live_closures()
+	for _ in 0 .. 3 {
+		overlay_flows(mut h)!
+	}
+	grown := life.live_closures() - c0
+	eprintln('gallery: closures +${grown} over 3 rounds of overlays')
+	assert grown <= 0
+	assert h.app.closure_leaks() == []
+}

@@ -128,7 +128,7 @@ pub fn (mut p ComboboxPage) render(mut cx core.ViewCx[ComboboxPage]) core.Elemen
 	if p.city.id == 0 {
 		p.city = input.new_combobox(mut cx.Cx, 'in-city', towns,
 			'Tìm thành phố (gõ không dấu cũng được)')
-		input.on_pick(mut cx.Cx, p.city, cx.listener(fn [towns] (mut p ComboboxPage, i &int, mut _ core.ViewCx[ComboboxPage]) {
+		input.on_pick(mut cx.Cx, p.city, core.listener_with(cx.entity, towns, fn (mut p ComboboxPage, towns []string, i &int, mut _ core.ViewCx[ComboboxPage]) {
 			p.picked = towns[*i]
 		}))
 	}

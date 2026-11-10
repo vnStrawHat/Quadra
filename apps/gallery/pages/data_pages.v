@@ -123,8 +123,13 @@ fn feed_text(i int) string {
 	return words.join(' ')
 }
 
+struct ThemeRef {
+	t &kit.Theme = unsafe { nil }
+}
+
 fn variable_list_page(t &kit.Theme) core.Element {
-	list := ui.list('feed', 100_000, fn [t] (i int) core.Element {
+	list := ui.list_with('feed', 100_000, ThemeRef{unsafe { t }}, fn (r ThemeRef, i int) core.Element {
+		t := r.t
 		return ui.div().flex_col().gap(2).px(12).py(8).border_b(1).border_color(t.p.line).child(ui.text('#${i}').color(t.p.text_3).size(t.font_size(.xs))).child(ui.text(feed_text(i)))
 	}).estimate(52)
 	return page('Variable list',

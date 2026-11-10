@@ -78,7 +78,7 @@ mut:
 
 fn list_row(i int) core.Element {
 	return ui.div().w_full().h(40).px(12).gap(12).flex_row().items_center().child(ui.div().grow().flex_col().child(ui.text('Item ${i}').size(13)).child(ui.text(words(
-		i + 1, 6)).size(11).color(prim.rgb(0x707070)))).child(ui.text('${cell_value(i, 0):.2f}').size(13))
+		i + 1, 6)).size(11).color(prim.rgb(0x707070)))).child(ui.number(cell_value(i, 0), 2).size(13))
 }
 
 @[markused]
@@ -108,7 +108,7 @@ pub fn (mut g Grid) render(mut cx core.ViewCx[Grid]) core.Element {
 		mut r := ui.div().flex_row()
 		for col in 0 .. 20 {
 			v := cell_value(row * 20 + col, g.frame)
-			r.child(ui.div().w(40).h(20).center().bg(cell_color(v)).child(ui.text('${v:.2f}').size(11).color(prim.rgb(0x101010))))
+			r.child(ui.div().w(40).h(20).center().bg(cell_color(v)).child(ui.number(v, 2).size(11).color(prim.rgb(0x101010))))
 		}
 		root.child(r)
 	}

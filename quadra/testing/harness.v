@@ -174,7 +174,10 @@ pub fn (h &Harness) scene() gpu.Scene {
 	if h.dev == unsafe { nil } {
 		return h.window().scene
 	}
-	return h.dev.last
+	return gpu.Scene{
+		instances: h.dev.last.instances.clone()
+		xforms:    h.dev.last.xforms.clone()
+	} // a snapshot: the device reuses its arrays
 }
 
 pub fn (h &Harness) cursor() platform.Cursor {

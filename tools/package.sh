@@ -6,7 +6,8 @@
 #   tools/package.sh <app dir> <exe name> "<product name>" <version a.b.c> [icon.ico]
 #   tools/package.sh apps/notes quadra-notes "Quadra Notes" 1.0.0
 #
-# Output: dist/<exe name>/<exe name>.exe. Intermediate files go to .tmp/package/.
+# Output: dist/<exe name>/<exe name>.exe (OneTerm also gets the bundled ConPTY host,
+# tools/conpty.sh). Intermediate files go to .tmp/package/.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_DIR=$1 EXE=$2 PRODUCT=$3 VERSION=$4 ICON=${5:-}
@@ -69,4 +70,5 @@ EOF
 (cd "$WORK" && "$ROOT/.tools/llvm-mingw/bin/x86_64-w64-mingw32-windres" app.rc -O coff -o app.res.o)
 "$ROOT/tools/v.sh" -cc clang -prod -subsystem windows -cflags "$(cygpath -m "$WORK/app.res.o")" \
 	-o "$OUT/$EXE.exe" "$APP_DIR"
+[ "$(basename "$APP_DIR")" != oneterm ] || "$ROOT/tools/conpty.sh" "$OUT"
 echo "packaged $OUT/$EXE.exe"

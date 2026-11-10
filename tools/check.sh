@@ -6,7 +6,7 @@
 #                           closure bug in docs/v-notes.md only shows in optimized builds)
 set -euo pipefail
 export PATH="/usr/bin:$PATH" # System32 first on PATH would pick up Windows find.exe
-export VJOBS="${VJOBS:-4}"   # 20 parallel V builds run the machine out of memory
+# export VJOBS="${VJOBS:-4}"   # 20 parallel V builds run the machine out of memory
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 fail=0
 say() { printf '%s\n' "$*"; }
@@ -70,7 +70,7 @@ fi
 
 # 3b. Closures in the framework (specs/14, avoiding closures): only the made-once ones are
 #     left. The cap only goes down; a new `fn [..]` needs one of the four ways instead.
-closure_cap=23
+closure_cap=22
 closures=$(find quadra -name '*.v' ! -name '*_test.v' -print0 | xargs -0 grep -hE '^[^/]*fn \[' | wc -l)
 if [ "$closures" -gt "$closure_cap" ]; then
 	say "check: $closures closures in quadra/ (cap $closure_cap); see specs/14, avoiding closures:"

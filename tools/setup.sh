@@ -27,6 +27,13 @@ if [ ! -x .tools/llvm-mingw/bin/clang.exe ]; then
 	mv ".cache/downloads/llvm-unzip/$llvm" .tools/llvm-mingw
 	rm -rf .cache/downloads/llvm-unzip
 fi
+# The terminal conformance corpus (Apache-2.0, not carried in this repo; specs/22).
+corpus_at=e67dba6
+if [ ! -d .cache/downloads/oneterm/crates/tools/corpus ]; then
+	mkdir -p .cache/downloads
+	git clone -q https://github.com/vnStrawHat/OneTerm .cache/downloads/oneterm
+	git -C .cache/downloads/oneterm checkout -q "$corpus_at"
+fi
 # tools/v.sh applies the toolchain patch (tools/patches/v-closure.diff) on its first run.
 tools/v.sh -cc clang -o .tmp/setup-hello.exe examples/counter >/dev/null ||
 	{ echo 'setup: the clang build failed (see the output above)' >&2; exit 1; }

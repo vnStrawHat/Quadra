@@ -6,7 +6,7 @@ Module `quadra.gpu`. Core produces a `Scene` of plain data, the `Renderer` draws
 
 | Primitive | Fields | Used for |
 |---|---|---|
-| `Quad` | bounds, fill (solid or 2-stop gradient), border widths[4], border color, corner radii[4] | backgrounds, borders, rounded boxes |
+| `Quad` | bounds, fill (solid or 2-stop gradient), border widths[4], border color, corner radii[4] | backgrounds, borders, rounded boxes. The instance has one second color (gradient end or border), so a quad with both becomes two instances: the gradient fill, then the border over a clear fill |
 | `Shadow` | bounds, corner radii, blur, offset, color | drop shadows (analytic Gaussian on a rounded-rect SDF) |
 | `MonoSprite` | bounds, atlas tile, color | glyphs, kit icons |
 | `PolySprite` | bounds, atlas tile, corner radii, opacity, grayscale | images, SVGs, color emoji, ClearType glyphs (blended per channel, 04-text) |
@@ -68,6 +68,7 @@ pub fn new_renderer(native_handle voidptr, opts RendererOptions) !&Renderer
 ## D3D11 backend
 - `D3D11CreateDevice` with HARDWARE, fallback to WARP, and `PREVENT_INTERNAL_THREADING_OPTIMIZATIONS` (no driver worker thread: less process CPU per frame, measured in docs/benchmarks.md).
 - WARP-first start-up: a cold hardware driver start takes 100+ ms, WARP about 10 ms. The first frames draw on WARP while one worker thread creates the WARP device, then the hardware one (one after the other: the driver start holds the DLL loader lock). Meanwhile a window has no swap chain: it draws into an offscreen texture that `present` copies to the window with GDI (`SetDIBitsToDevice`, gdi32 loaded at run time; no waitable). A repeating 25 ms internal timer calls `Device.try_upgrade`. Once the hardware device is ready, the windows' offscreen textures move to it, the atlas uploads made so far are replayed into new pages, the WARP device is released, and every window repaints; that draw creates the window's swap chain first thing, and the core sends its waitable to the platform after the frame. Two things measured in the grid scene left about 1% of frames at two intervals for good, so they are avoided: replacing a window's flip swap chain, and creating it between frames (from the timer) instead of right before the frame that presents to it. With no hardware device, or with offscreen surfaces bound to WARP, the swap chain is made on WARP.
+- `Device.adapter_name()` is the adapter the device draws on: `IDXGIDevice::GetAdapter` then `IDXGIAdapter::GetDesc`, read once when the device is created (on the worker thread) and kept with it, so it follows the WARP-to-hardware switch and costs nothing to ask per frame. WARP answers its own description (`Microsoft Basic Render Driver`); `is_software()` tells it apart. The null device answers `Null device`. `core.App.adapter_name()` forwards it to apps.
 - Flip-model swap chain (`FLIP_DISCARD`), BGRA8, `SetMaximumFrameLatency(1)`, and the frame-latency waitable is exposed to the platform loop.
 - `Present1` with dirty rects (the union of changed chunk bounds) so DWM recomposes less. GPU redraw is full-frame in v1, because it costs well under a millisecond.
 - One vertex shader expands instances from `SV_VertexID`. Per-kind instance data sits in dynamic structured buffers (`MAP_WRITE_DISCARD`), sized by doubling.

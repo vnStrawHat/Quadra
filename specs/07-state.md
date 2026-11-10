@@ -80,5 +80,45 @@ When the parent re-renders, `cx.child_view(v.sidebar)` reuses the child entirely
 
 Scroll containers inside a view get their own chunk, so scrolling one panel never repaints its neighbors.
 
+## Element memory (render arenas)
+A view that renders every frame (a live table, a dashboard) would otherwise build a new
+element tree each time and leave the old one to the collector. `ui.div()` and `ui.text()`
+called during a view's render take their element from the view's **render arena** instead:
+a pool of elements the view used before, reset and handed out again (`core/arena.v`).
+
+- **Two arenas per view.** One holds the tree of the view's latest render (its cache); the
+  other is free. A render fills the free one. At the end of the build in which the view
+  rendered, the arena of the tree it replaced becomes the free one. That is the moment the
+  previous render's closures are freed too (specs/14, closure lifetimes): the old tree is
+  then no longer reachable from the window (root element, layout, hitboxes, handlers, paint
+  patches, deferred draws all come from the new build).
+- **Clean views are untouched.** A cached tree stays in its arena until the view renders
+  again, whatever other views do.
+- **Pins abandon arenas.** When a render is pinned (something long-lived was made in it, or
+  a handler stored something that may hold elements: a model, a global, a popup, a drag
+  preview), both of the view's arenas are dropped at the end of the next build in which it
+  renders and left to the collector, so whatever kept elements from them stays valid.
+- **Outside a tracked render the heap is used**: in handlers, constructors, tests, kit
+  builds during layout, list rows and overlays built in prepaint, a nested render, a view
+  rendered twice in one build. A view rendered by a prepaint-only frame (an overlay's view)
+  can take an arena, then renders on the heap until the next build settles it. Only the main
+  thread builds elements.
+- **A recycled element is reset to its defaults** (`Div{}`, `TextEl{}`); a div keeps only
+  its children array's capacity, cleared. Nothing reads stale fields.
+- What may hold an element across renders, and why it is safe:
+
+| Holder | Lifetime |
+|---|---|
+| a view's cached tree, `ViewElement.inner`, the window's root element | replaced by the build that renders the view again |
+| layout nodes (`ctx` of a text leaf), hitboxes, handlers (`handler_with` data, a selectable text's listener), key nodes, deferred draws, drag sources, paint patches | rebuilt by every prepaint or paint, which follows every build |
+| scroll thumbs (`ThumbTarget`) | point at element state or kit components, not at divs |
+| a drag's preview | starting a drag pins every view's render |
+| popups, modals, models, globals, observers, timers, tasks | creating or touching them pins (specs/14) |
+| element state (`cx.state`), text caches, a11y nodes, test ids | hold copies or their own objects, never an element |
+
+**Lifetime rule for app code:** an element returned from `render` belongs to that render.
+Do not keep it in the view or anywhere else to return it again later; build it again (it is
+cheap) or keep the data it shows. The framework's own registries pin as listed above.
+
 ## Tests
 `model_test.v` (tracking, stale handles, ownership release), `effects_test.v` (ordering, coalescing, cycle limit), `view_cache_test.v`, which counts render, layout and paint calls per view in scripted scenarios on the headless platform.

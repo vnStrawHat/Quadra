@@ -197,6 +197,16 @@ rules that follow from it (measured in docs/benchmarks.md, "Memory work"):
 - **Rare parts behind a pointer**, nil by default: a div's state patches and drag source,
   a style's grid part. Every element and layout node pays for inline fields, every frame.
 - **Small enums** (`enum X as u8`) in structs copied per node.
+- **Elements from render arenas** (specs/07, Element memory): a view's render reuses the
+  divs and texts of its render before last, reset at the end of the build that replaced
+  them, on the closure lifetimes' schedule and pins. An arena text element showing a number
+  lays it out into a wrap it owns (`TextSystem.wrap_number`), kept with the element, and
+  does not cache it; elements made elsewhere (list rows in prepaint) keep using the cache,
+  where an unchanged number is found again. Layout keeps its flex items and lines in scratch per nesting depth.
+- **No hidden allocations per character or element**: UTF-8 decoding in grapheme stepping
+  allocated a substring and a rune array per character; prepaint ids were two interpolated
+  strings per element; `'${v:.2f}'` costs about 220 bytes (a string builder), `ui.number`
+  16.
 - **The heap grows by a third between collections** (`AppOptions.gc_divisor` 3, Boehm's
   default here was 1): about a third less peak memory for a few percent CPU. Incremental
   collection measured worse on every scene and stays off.

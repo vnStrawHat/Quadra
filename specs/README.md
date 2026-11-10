@@ -26,5 +26,11 @@ Quadra is a native, GPU-rendered UI framework written in V for building real des
 | [19-live-data.md](19-live-data.md) | Live table, log view, value viewer, charts, cluster app |
 | [20-gaps.md](20-gaps.md) | Gap analysis against other GPU UI frameworks, and the plan to close it |
 | [21-markdown-app.md](21-markdown-app.md) | Folio, the Markdown reader and editor: layouts, outline, math, diagrams |
+| [22-oneterm.md](22-oneterm.md) | OneTerm, the terminal application: tabs, Spaces, shell integration, config |
+| [23-oneterm-ssh.md](23-oneterm-ssh.md) | OneTerm's SSH2 client and SFTP engine in V, with Windows CNG for the asymmetric crypto |
+| [24-oneterm-completion.md](24-oneterm-completion.md) | Command completion and semantic highlighting |
+| [25-oneterm-services.md](25-oneterm-services.md) | Vault, session store, updater, crash reports, terminal logs |
+| [26-oneterm-session-ui.md](26-oneterm-session-ui.md) | The sessions panel and its dialogs |
+| [27-oneterm-sftp-ui.md](27-oneterm-sftp-ui.md) | The SFTP panel: panes, transfers, edit in place |
 
 Suggested reading order: 00, 01, 07, 06, then the rest.

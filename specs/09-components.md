@@ -41,7 +41,7 @@ pub fn follow_system(mut cx core.Cx, light Theme, dark Theme)   // dark mode, ac
 | | `segmented` | builder | `.options` `.selected` `.on_change(int)` |
 | Forms | `input` | view | placeholder, value, password, prefix, suffix, clear button, `.on_change(string)` `.on_submit` |
 | | `textarea` | view | multi-line, auto-grow up to max rows, same buffer as input |
-| | `number_input` | view | min, max, step, format, arrow keys and wheel |
+| | `number_input` | view | min, max, step, format, arrow keys and wheel; `stepper: true` is a framed `− value +` control |
 | | `checkbox`, `switch` | builder | `.checked` `.indeterminate` `.label` `.on_change(bool)` |
 | | `radio_group` | builder | `.options` `.selected` `.on_change(int)` |
 | | `slider`, `range_slider` | builder | `.range(min, max, step)` `.width` `.on_change(f32)`; the range slider has two focusable thumbs that never cross, `.on_change(Range)` |
@@ -69,7 +69,7 @@ pub fn follow_system(mut cx core.Cx, light Theme, dark Theme)   // dark mode, ac
 | | `tooltip` | builder | `.keys` (a shortcut after the text) and `.meta` (a line under it); buttons take `.tooltip_keys(text, keys)` |
 | Window | `titlebar` | builder | custom titlebar regions for snap layouts, caption buttons, `.menu(items)` behind a hamburger button |
 | | `statusbar` | builder | left and right items; `status_button` (icon-only panel toggles), `status_divider`, `status_item` |
-| | `settings` | builder | preferences in pages: a searchable page column whose chevrons expand the groups, groups of rows (title, description, control); the app owns the controls, the query and the chosen page; the component keeps the expansion and the scroll position |
+| | `settings` | builder | preferences in pages: a searchable page column whose chevrons expand the groups, groups of rows (title, description, control); the app owns the controls, the query and the chosen page; the component keeps the expansion and the scroll position. `.cards()` is the outlined-card layout (specs/15): page icons, a page header with the actions on the right, an optional page description |
 | | `key_hint` | builder | a keyboard hint: the keys in a box, then what they do |
 
 ## Text input internals (`kit/input/`)

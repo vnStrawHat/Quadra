@@ -54,6 +54,10 @@ A small but complete notes app, built only with public framework APIs.
 
 M0 items still waiting for the user: the session-0 run as SYSTEM (`spikes/m0/session0_check.sh`, elevated), IME composition typed by a person, and a real 150% DPI window.
 
+| App after v1 | Status |
+|---|---|
+| OneTerm (specs/22-27) | P1 (local terminal), P2 (SSH, SFTP, vault) and P3 (parity with the original) done; docs/progress.md lists the known gaps. Performance work is next. |
+
 ## After v1
 1. UIA accessibility provider on top of the semantic tree (first priority).
 2. Linux (Wayland, then X11; Vulkan; FreeType, HarfBuzz and fontconfig) and macOS (AppKit, Metal, CoreText).

@@ -39,11 +39,11 @@ ui.div().apply(card).bg(t.surface).child(...)
 | Size | `w(l)` `h(l)` `size(l)` `w_full()` `h_full()` `min_w` `max_w` `min_h` `max_h` `aspect(r)` |
 | Spacing | `p` `px` `py` `pt/pr/pb/pl` and `m*` |
 | Position | `absolute()` `top/right/bottom/left(n)` `inset(n)` `z(n)` (paint order among siblings) |
-| Box | `bg(c)` `border(n)` `border_color(c)` `rounded(n)` `rounded_full()` `shadow(level)` `opacity(f)` |
+| Box | `bg(c)` `border(n)` `border_color(c)` `rounded(n)` `rounded_full()` `shadow(level)` `opacity(f)` `ring(w, c)` (a band `w` wide just outside the border box, its corners the box's plus `w`; only the band is painted, so a translucent fill stays as it is; a clipping ancestor cuts it) |
 | Motion | `translate(x, y)` `scale(k)` `rotate(deg)` (about the center, paint only: layout and hit testing keep the box; text is rasterized again at the scaled size in quarter px steps), `transition(ms)` `transition_with(ms, easing)`: background, border color, opacity, translate, scale and rotation ease to new values, from a state patch (`Patch.translate`, `.scale`, `.rotate`) or a new render. The first paint shows the target at once; a new target starts from the current value. `animate(m)` plays a timeline from the first paint: `ui.tween(ms, patch)` and `ui.tween_with(ms, easing, patch)` ease towards a patch, `ui.pause(ms)` waits, `a + b` runs b after a, `ui.parallel(a, b, ...)` runs them together (a later one wins a property both set), `m.repeat(n)` `m.forever()` `m.alternate()`. Each step starts from where the property is; the end values stay after the last step; restart by changing the element's key |
 | Text (inherited) | `text_size` `text_color` `font_weight` `font(family)` `line_height` `tabular_nums()` |
 | Overflow | `overflow_hidden()` `overflow_y_scroll()` `overflow_x_scroll()` |
-| States | `hover(s Style)` `active(s Style)` `focus_visible(s Style)` `disabled(bool)` |
+| States | `hover(s Style)` `active(s Style)` `focus_visible(s Style)` `disabled(bool)`; hover groups: `group()` marks a Div, `group_hover(p)` and `group_active(p)` restyle a descendant while its nearest group is hovered or pressed (a close button shown only while its card is hovered). Paint-only, like the other state patches |
 | Interaction | `id(s)` `cursor(c)` `track_focus(h)` `tab_index(n)` `key_context(s)` `tooltip(s)` |
 | Events | `on_click` `on_mouse_down/up/move` `on_wheel` `on_key_down` `on_action[T]` `on_drag_start` `on_drop` |
 | Semantics | `role(r)` `label(s)` `value(s)` `state(...)` `test_id(s)` |

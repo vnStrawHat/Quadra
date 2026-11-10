@@ -1,0 +1,63 @@
+{
+	"name": "Hybrid Light",
+	"mode": "light",
+	"palette": {
+		"canvas": "#E4E4E4",
+		"panel": "#D7D7D7",
+		"panel_hover": "#D5D5D5",
+		"raised": "#D0D0D0",
+		"raised_hover": "#C4C4C499",
+		"press": "#79792C20",
+		"overlay_bg": "#E4E4E4",
+		"scrim": "#0000000D",
+		"line": "#CACACA",
+		"line_strong": "#CACACA",
+		"border_focused": "#00195F",
+		"chrome": "#D0D0D0",
+		"status_bg": "#DADADA",
+		"tab_bg": "#E8E8E8",
+		"scroll_thumb": "#8F8F8F",
+		"text": "#1C1C1C",
+		"text_2": "#525252",
+		"text_3": "#6F6F6F",
+		"text_disabled": "#949494",
+		"text_on_accent": "#FFFFFF",
+		"accent": "#005F87",
+		"accent_hover": "#176C90",
+		"accent_press": "#00567A",
+		"accent_tint": "#005F8740",
+		"accent_text": "#005F87",
+		"ok": "#005F00",
+		"warn": "#665800",
+		"error": "#FF5F5F",
+		"info": "#005A5F",
+		"selection": "#005F874C",
+		"tab_fg": "#5F5F5F",
+		"tab_active_fg": "#1C1C1C",
+		"table_head_bg": "#E4E4E4",
+		"table_head_fg": "#525252",
+		"table_row_border": "#CACACA",
+		"list_even": "#DFDFDF",
+		"scroll_thumb_hover": "#8F8F8F",
+		"text_on_status": "#FFFFFF",
+		"error_hover": "#FC6C6C",
+		"cyan": "#005A5F"
+	},
+	"editor": {
+		"foreground": "#1C1C1C",
+		"selection": "#005F874C"
+	},
+	"terminal": {
+		"foreground": "#1C1C1C",
+		"background": "#E4E4E4",
+		"cursor": "#005F87",
+		"selection": "#005F874C"
+	},
+	"series": [
+		"#00195F",
+		"#005F00",
+		"#948000",
+		"#5F1C51",
+		"#5F0000"
+	]
+}

@@ -1,0 +1,1 @@
+__ot=$?; __ot_b=$'\001\033]133;B\007\002'; if [ -n "${__ot_seen-}" ]; then printf '\033]133;D;%s\033\\' "$__ot"; fi; __ot_seen=1; printf '\033]7;file://%s%s\033\\' "$HOSTNAME" "$PWD"; printf '\033]133;A\033\\'; case $PS1 in *"$__ot_b"*) ;; *) PS1="$PS1$__ot_b" ;; esac; ( exit $__ot )

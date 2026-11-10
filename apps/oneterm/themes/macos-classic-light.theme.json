@@ -1,0 +1,63 @@
+{
+	"name": "macOS Classic Light",
+	"mode": "light",
+	"palette": {
+		"canvas": "#F9F9F9",
+		"panel": "#EAEAEA",
+		"panel_hover": "#E7E7E7",
+		"raised": "#E0E0E0",
+		"raised_hover": "#E5E5E5",
+		"press": "#0060DE15",
+		"overlay_bg": "#F5F5F5",
+		"scrim": "#0000000D",
+		"line": "#D2D2D2",
+		"line_strong": "#D2D2D2",
+		"border_focused": "#0060DE",
+		"chrome": "#FEFEFE",
+		"status_bg": "#E9E9E9",
+		"tab_bg": "#E9E9E9",
+		"scroll_thumb": "#C8C8C8",
+		"text": "#000000",
+		"text_2": "#626262",
+		"text_3": "#808080",
+		"text_disabled": "#A6A6A6",
+		"text_on_accent": "#FFFFFF",
+		"accent": "#0060DE",
+		"accent_hover": "#196FE1",
+		"accent_press": "#0056C8",
+		"accent_tint": "#0060DE40",
+		"accent_text": "#0060DE",
+		"ok": "#319A00",
+		"warn": "#796700",
+		"error": "#D21F07",
+		"info": "#007E8A",
+		"selection": "#0060DE4C",
+		"tab_fg": "#606060",
+		"tab_active_fg": "#000000",
+		"table_head_bg": "#F9F9F9",
+		"table_head_fg": "#626262",
+		"table_row_border": "#D2D2D2",
+		"list_even": "#EFEFEF",
+		"scroll_thumb_hover": "#C8C8C8",
+		"text_on_status": "#FFFFFF",
+		"error_hover": "#D6351F",
+		"cyan": "#007E8A"
+	},
+	"editor": {
+		"foreground": "#000000",
+		"selection": "#0060DE4C"
+	},
+	"terminal": {
+		"foreground": "#000000",
+		"background": "#F9F9F9",
+		"cursor": "#0060DE",
+		"selection": "#0060DE4C"
+	},
+	"series": [
+		"#0060DE",
+		"#319A00",
+		"#B59A00",
+		"#9A0068",
+		"#D21F07"
+	]
+}

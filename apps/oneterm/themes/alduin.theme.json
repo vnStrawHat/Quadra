@@ -1,0 +1,63 @@
+{
+	"name": "Alduin",
+	"mode": "dark",
+	"palette": {
+		"canvas": "#1C1C1C",
+		"panel": "#262626",
+		"panel_hover": "#272524",
+		"raised": "#282828",
+		"raised_hover": "#36323099",
+		"press": "#262626",
+		"overlay_bg": "#1C1C1C",
+		"scrim": "#00000033",
+		"line": "#3A3A3A",
+		"line_strong": "#3A3A3A",
+		"border_focused": "#9E9E9E",
+		"chrome": "#262626",
+		"status_bg": "#262626",
+		"tab_bg": "#1C1C1C",
+		"scroll_thumb": "#504945",
+		"text": "#9E9E9E",
+		"text_2": "#959595",
+		"text_3": "#7D7D7D",
+		"text_disabled": "#5F5F5F",
+		"text_on_accent": "#F0F0F0",
+		"accent": "#458588",
+		"accent_hover": "#458588AA",
+		"accent_press": "#45858899",
+		"accent_tint": "#45858840",
+		"accent_text": "#458588",
+		"ok": "#7A875F",
+		"warn": "#9D906C",
+		"error": "#CC241D",
+		"info": "#878787",
+		"selection": "#4585884C",
+		"tab_fg": "#848382",
+		"tab_active_fg": "#EBDBB2",
+		"table_head_bg": "#1C1C1C",
+		"table_head_fg": "#959595",
+		"table_row_border": "#50494570",
+		"list_even": "#262626",
+		"scroll_thumb_hover": "#504945",
+		"text_on_status": "#F0F0F0",
+		"error_hover": "#FB4934",
+		"cyan": "#878787"
+	},
+	"editor": {
+		"foreground": "#9E9E9E",
+		"selection": "#4585884C"
+	},
+	"terminal": {
+		"foreground": "#9E9E9E",
+		"background": "#1C1C1C",
+		"cursor": "#458588",
+		"selection": "#4585884C"
+	},
+	"series": [
+		"#87AFAF",
+		"#7A875F",
+		"#9D906C",
+		"#AF8787",
+		"#8B5F61"
+	]
+}

@@ -1,0 +1,63 @@
+{
+	"name": "Molokai Light",
+	"mode": "light",
+	"palette": {
+		"canvas": "#FEFAF9",
+		"panel": "#F1EDED",
+		"panel_hover": "#F3EDEB",
+		"raised": "#E4DEDA",
+		"raised_hover": "#E4DEDA99",
+		"press": "#E1477411",
+		"overlay_bg": "#FEFAF9",
+		"scrim": "#0000000D",
+		"line": "#E4DEDA",
+		"line_strong": "#E4DEDA",
+		"border_focused": "#A0A0AB",
+		"chrome": "#E8E3E0",
+		"status_bg": "#E8E3E0",
+		"tab_bg": "#FEFAF9",
+		"scroll_thumb": "#ADADB0",
+		"text": "#0A0A0A",
+		"text_2": "#5F5F5F",
+		"text_3": "#7F7E7E",
+		"text_disabled": "#A7A5A4",
+		"text_on_accent": "#FAFAFA",
+		"accent": "#E14774",
+		"accent_hover": "#E45981",
+		"accent_press": "#DD2E61",
+		"accent_tint": "#E1477440",
+		"accent_text": "#E14774",
+		"ok": "#82CC0A",
+		"warn": "#766306",
+		"error": "#E17047",
+		"info": "#0ACC78",
+		"selection": "#E147744C",
+		"tab_fg": "#0A0A0A",
+		"tab_active_fg": "#0A0A0A",
+		"table_head_bg": "#FEFAF9",
+		"table_head_fg": "#5F5F5F",
+		"table_row_border": "#E4DEDA",
+		"list_even": "#E4DEDA33",
+		"scroll_thumb_hover": "#ADADB0",
+		"text_on_status": "#FAFAFA",
+		"error_hover": "#E47E59",
+		"cyan": "#0ACC78"
+	},
+	"editor": {
+		"foreground": "#0A0A0A",
+		"selection": "#E147744C"
+	},
+	"terminal": {
+		"foreground": "#0A0A0A",
+		"background": "#FEFAF9",
+		"cursor": "#E14774",
+		"selection": "#E147744C"
+	},
+	"series": [
+		"#E16032",
+		"#82CC0A",
+		"#CCAC0A",
+		"#7058BE",
+		"#E17047"
+	]
+}

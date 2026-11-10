@@ -1,0 +1,12 @@
+OneTerm completion catalogs. Part of OneTerm (Apache-2.0), Copyright 2026 The OneTerm authors.
+
+external/cmd: command and option names extracted from the MicrosoftDocs
+windows-commands pages (https://github.com/MicrosoftDocs/windowsserverdocs,
+WindowsServerDocs/administration/windows-commands).
+
+external/coreutils: command and option names extracted from the Debian bookworm
+coreutils manual pages (https://manpages.debian.org/bookworm/coreutils/index.html).
+GNU coreutils and its manual pages are GPL-3.0-or-later; these files keep only
+option name tokens, no prose.
+
+manual/: hand-authored by the OneTerm authors.

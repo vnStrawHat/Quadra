@@ -1,0 +1,63 @@
+{
+	"name": "Kibble",
+	"mode": "dark",
+	"palette": {
+		"canvas": "#0E100A",
+		"panel": "#292A2455",
+		"panel_hover": "#2C292B54",
+		"raised": "#22231F",
+		"raised_hover": "#22231F",
+		"press": "#2BCF1315",
+		"overlay_bg": "#0E100A",
+		"scrim": "#00000033",
+		"line": "#292A24",
+		"line_strong": "#292A24",
+		"border_focused": "#3449D1",
+		"chrome": "#161712",
+		"status_bg": "#161712",
+		"tab_bg": "#0E100A",
+		"scroll_thumb": "#726E69",
+		"text": "#F7F7F7",
+		"text_2": "#949494",
+		"text_3": "#797A78",
+		"text_disabled": "#585956",
+		"text_on_accent": "#101010",
+		"accent": "#6CE05C",
+		"accent_hover": "#63CB54",
+		"accent_press": "#6CE05C99",
+		"accent_tint": "#6CE05C40",
+		"accent_text": "#6CE05C",
+		"ok": "#5C6EE0",
+		"warn": "#E0C85C",
+		"error": "#E07B5C",
+		"info": "#5CD1E0",
+		"selection": "#9BA7874C",
+		"tab_fg": "#969696",
+		"tab_active_fg": "#F7F7F7",
+		"table_head_bg": "#0E100A",
+		"table_head_fg": "#949494",
+		"table_row_border": "#292A24",
+		"list_even": "#24222355",
+		"scroll_thumb_hover": "#726E69",
+		"text_on_status": "#101010",
+		"error_hover": "#CB7054",
+		"cyan": "#0798AB"
+	},
+	"editor": {
+		"foreground": "#F7F7F7",
+		"selection": "#9BA787"
+	},
+	"terminal": {
+		"foreground": "#F7F7F7",
+		"background": "#0E100A",
+		"cursor": "#6CE05C",
+		"selection": "#9BA787"
+	},
+	"series": [
+		"#3449D1",
+		"#2BCF13",
+		"#C7A302",
+		"#8400FF",
+		"#C70231"
+	]
+}

@@ -1,0 +1,63 @@
+{
+	"name": "Tokyo Night",
+	"mode": "dark",
+	"palette": {
+		"canvas": "#1A1B26",
+		"panel": "#2C304544",
+		"panel_hover": "#252839",
+		"raised": "#292E42",
+		"raised_hover": "#2D3349",
+		"press": "#7AA2F722",
+		"overlay_bg": "#1A1B26",
+		"scrim": "#00000033",
+		"line": "#292E42",
+		"line_strong": "#292E42",
+		"border_focused": "#7AA2F7",
+		"chrome": "#161720",
+		"status_bg": "#161720",
+		"tab_bg": "#1A1B26",
+		"scroll_thumb": "#414868",
+		"text": "#C0CAF5",
+		"text_2": "#98A0BE",
+		"text_3": "#7F85A0",
+		"text_disabled": "#5F647A",
+		"text_on_accent": "#1A1B26",
+		"accent": "#7AA2F7",
+		"accent_hover": "#7094E2",
+		"accent_press": "#3471F3",
+		"accent_tint": "#7AA2F740",
+		"accent_text": "#7AA2F7",
+		"ok": "#9ECE6A",
+		"warn": "#E0AF68",
+		"error": "#F7768E",
+		"info": "#7DCFFF",
+		"selection": "#7AA2F74C",
+		"tab_fg": "#C0CAF5",
+		"tab_active_fg": "#C0CAF5",
+		"table_head_bg": "#1A1B26",
+		"table_head_fg": "#98A0BE",
+		"table_row_border": "#292E42",
+		"list_even": "#2C304599",
+		"scroll_thumb_hover": "#414868",
+		"text_on_status": "#1A1B26",
+		"error_hover": "#E16D84",
+		"cyan": "#7DCFFF"
+	},
+	"editor": {
+		"foreground": "#C0CAF5",
+		"selection": "#7AA2F74C"
+	},
+	"terminal": {
+		"foreground": "#C0CAF5",
+		"background": "#1A1B26",
+		"cursor": "#7AA2F7",
+		"selection": "#7AA2F74C"
+	},
+	"series": [
+		"#7AA2F7",
+		"#9ECE6A",
+		"#E0AF68",
+		"#565F89",
+		"#F7768E"
+	]
+}

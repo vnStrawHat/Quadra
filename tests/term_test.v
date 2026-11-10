@@ -103,7 +103,7 @@ fn test_select_copy_and_paste() {
 	h.frame()
 	h.app.plat.clipboard_write('a\nb')
 	h.press('ctrl-shift-v')!
-	assert fake.written.bytestr().ends_with('\x1b[200~a\rb\x1b[201~')
+	assert fake.written.bytestr().ends_with('\x1b[200~a\nb\x1b[201~')
 	// Triple-click selects the row.
 	h.advance(1000)
 	h.click_at(x, y)
@@ -122,4 +122,25 @@ fn test_exit_and_resize() {
 	h.frame()
 	assert t.exited or { -1 } == 3
 	assert t.screen.text().contains('[process exited with code 3]')
+}
+
+fn test_color_queries_and_sixel_through_the_view() {
+	mut h, host := open()!
+	mut fake := host.fake
+	t := screen_of(h, host)
+	h.click('t')!
+	fake.written.clear()
+	fake.echo = false
+	fake.output('\x1b]11;?\x07\x1bPq#0;2;100;0;0#0!40~-!40~\x1b\\\r\n')
+	h.frame()
+	assert fake.written.bytestr().starts_with('\x1b]11;rgb:')
+	assert t.screen.graphics.len == 1
+	h.frame()
+	assert t.gfx.len == 1 // painted, so uploaded to the atlas
+	fake.output('\x1b[2J\x1b[3J\r\n') // cleared rows free the image and its tile
+	for _ in 0 .. 70 {
+		fake.output('x\r\n') // one chunk per frame: the sweep runs every 64 chunks
+		h.frame()
+	}
+	assert t.screen.graphics.len == 0 && t.gfx.len == 0 && t.gfx_free.len == 1
 }

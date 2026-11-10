@@ -16,6 +16,7 @@ pub mut:
 	closed  bool
 	answer  LineFn = unsafe { nil } // output for each entered line (a fake shell)
 	prompt  string
+	opts    platform.PtyOptions // what the terminal asked for
 mut:
 	on_data fn (data []u8) = unsafe { nil }
 	on_exit fn (code int)  = unsafe { nil }
@@ -26,6 +27,7 @@ mut:
 pub fn (mut f FakePty) spawner() fn (opts platform.PtyOptions) !platform.Pty {
 	mut fp := unsafe { f }
 	return fn [mut fp] (opts platform.PtyOptions) !platform.Pty {
+		fp.opts = opts
 		fp.on_data, fp.on_exit = opts.on_data, opts.on_exit
 		fp.cols, fp.rows = opts.cols, opts.rows
 		if fp.prompt != '' {

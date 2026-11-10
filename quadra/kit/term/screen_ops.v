@@ -33,11 +33,18 @@ fn (mut s Screen) fill(y int, a int, b int) {
 		s.lines[y].cells[x] = blank
 	}
 	s.lines[y].marks = s.lines[y].marks.filter(it.col < a || it.col >= b)
+	if s.lines[y].extra != unsafe { nil } {
+		s.lines[y].drop_images(a, b)
+	}
 	s.touch(y)
 }
 
 // erase_line: 0 to the end, 1 to the start (inclusive), 2 the whole line (EL).
 pub fn (mut s Screen) erase_line(mode int) {
+	s.sel_on_erase_line()
+	if mode == 0 && s.wrap_pending {
+		return
+	}
 	match mode {
 		0 { s.fill(s.y, s.x, s.cols) }
 		1 { s.fill(s.y, 0, s.x + 1) }
@@ -47,11 +54,11 @@ pub fn (mut s Screen) erase_line(mode int) {
 	if mode != 1 {
 		s.lines[s.y].wrapped = false
 	}
-	s.wrap_pending = false
 }
 
 // erase_display: 0 below, 1 above, 2 all, 3 all and the scrollback (ED).
 pub fn (mut s Screen) erase_display(mode int) {
+	s.sel_on_erase_display(mode)
 	match mode {
 		0 {
 			s.erase_line(0)
@@ -118,6 +125,7 @@ pub fn (mut s Screen) insert_lines(n int) {
 		return
 	}
 	k := clamp(n, 1, s.bottom - s.y + 1)
+	s.sel_shift(s.y, s.bottom, k, s.bottom - k + 1, s.bottom)
 	for _ in 0 .. k {
 		s.lines.delete(s.bottom)
 		s.lines.insert(s.y, blank_row(s.cols, s.pen.bg))
@@ -131,6 +139,7 @@ pub fn (mut s Screen) delete_lines(n int) {
 		return
 	}
 	k := clamp(n, 1, s.bottom - s.y + 1)
+	s.sel_shift(s.y, s.bottom, -k, s.y, s.y + k - 1)
 	for _ in 0 .. k {
 		s.lines.delete(s.y)
 		s.lines.insert(s.bottom, blank_row(s.cols, s.pen.bg))
@@ -151,12 +160,11 @@ pub fn (mut s Screen) set_region(top int, bottom int) {
 }
 
 pub fn (mut s Screen) save_cursor() {
-	s.saved = Saved{s.x, s.y, s.pen}
+	s.saved = s.snapshot()
 }
 
 pub fn (mut s Screen) restore_cursor() {
-	s.x, s.y, s.pen = clamp(s.saved.x, 0, s.cols - 1), clamp(s.saved.y, 0, s.rows - 1), s.saved.pen
-	s.wrap_pending = false
+	s.apply_saved(s.saved)
 }
 
 // set_alt switches to the alternate screen (cleared, no scrollback) and back (1049).
@@ -164,29 +172,47 @@ pub fn (mut s Screen) set_alt(on bool) {
 	if on == s.alt_active {
 		return
 	}
+	s.sel.clear()
 	if on {
-		s.main_saved = Saved{s.x, s.y, s.pen}
+		s.main_saved = s.snapshot()
+		s.saved = s.alt_saved
 		s.main = s.lines
 		s.lines = []Row{len: s.rows, init: blank_row(s.cols, 0)}
 	} else {
 		s.lines = s.main
 		s.main = []
-		s.x, s.y, s.pen = s.main_saved.x, s.main_saved.y, s.main_saved.pen
+		s.alt_saved = s.saved
+		s.saved = s.main_saved
+		s.apply_saved(s.main_saved)
 	}
 	s.alt_active = on
+	s.keyboard.swap()
 	s.top, s.bottom = 0, s.rows - 1
-	s.wrap_pending = false
 	s.touch_range(0, s.rows - 1)
 }
 
-// reset returns to the power-on state, keeping the scrollback (RIS).
+// reset returns to the power-on state and drops the scrollback (RIS).
 pub fn (mut s Screen) reset() {
 	s.set_alt(false)
+	s.sel.clear()
 	s.pen = Cell{}
-	s.autowrap, s.cursor_on, s.shape = true, true, .block
+	s.autowrap, s.cursor_on, s.shape, s.cursor_blink = true, true, .block, 0
 	s.app_cursor, s.app_keypad, s.bracketed, s.origin = false, false, false, false
-	s.mouse, s.mouse_sgr, s.line_drawing = .off, false, false
+	s.mouse, s.mouse_enc = .off, .normal
+	s.reverse_video, s.reverse_wrap, s.focus_reports, s.grapheme, s.sync = false, false, false, false, false
+	s.urgency, s.modify_other = true, 0
+	s.charsets, s.active_cs, s.single_shift, s.line_drawing = [4]u8{}, 0, -1, false
+	s.keyboard = KeyboardStacks{}
+	s.extras, s.extra_ids, s.graphics = [], map[u64]u16{}, []
+	s.title_stack, s.icon_name, s.title = [], '', ''
+	s.over, s.has_over = [261]u32{}, false
+	s.status, s.program_status, s.progress = [], none, Progress{}
 	s.top, s.bottom = 0, s.rows - 1
+	s.insert, s.last_ch = false, 0
+	s.saved, s.alt_saved = Saved{}, Saved{}
+	s.stops, s.links = [], []
+	s.alt_scroll = true
 	s.erase_display(2)
+	s.scrollback.clear()
 	s.goto(0, 0)
 }

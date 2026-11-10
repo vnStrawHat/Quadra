@@ -34,7 +34,8 @@ fn test_key_encoding() {
 
 fn test_paste() {
 	assert paste_bytes('a\nb', false).bytestr() == 'a\rb'
-	assert paste_bytes('x\r\ny', true).bytestr() == '\x1b[200~x\ry\x1b[201~'
+	assert paste_bytes('x\r\ny', true).bytestr() == '\x1b[200~x\r\ny\x1b[201~'
+	assert paste_bytes('a\x1bb\x03c', true).bytestr() == '\x1b[200~abc\x1b[201~'
 	// An embedded end marker cannot break out of the bracket.
 	assert paste_bytes('a\x1b[201~rm', true).bytestr() == '\x1b[200~arm\x1b[201~'
 }

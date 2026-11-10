@@ -1,7 +1,8 @@
 // Key encoding: what the terminal sends to the program for a key press (xterm style).
-// Printable text arrives as text input instead and is sent as UTF-8.
+// Printable text arrives as text input instead and is sent as UTF-8. Also the view's key events.
 module term
 
+import quadra.core
 import quadra.platform
 
 // encode_key returns the bytes for a key, or none when the key is plain text (sent by the
@@ -106,9 +107,74 @@ fn key_char(key platform.Key, shift bool) ?u8 {
 // paste_bytes wraps pasted text for programs that asked for bracketed paste; newlines
 // become CR, as typed.
 pub fn paste_bytes(s string, bracketed bool) []u8 {
-	body := s.replace('\r\n', '\r').replace('\n', '\r')
 	if bracketed {
-		return '\x1b[200~${body.replace('\x1b[201~', '')}\x1b[201~'.bytes()
+		return '\x1b[200~${s.replace('\x1b[201~', '').replace('\x1b', '').replace('\x03', '')}\x1b[201~'.bytes()
 	}
-	return body.bytes()
+	return s.replace('\r\n', '\r').replace('\n', '\r').bytes()
+}
+
+fn (mut t Terminal) key(e &core.KeyDownEvent, mut cx core.ViewCx[Terminal]) {
+	if t.hooks.key != unsafe { nil } && t.hooks.key(t.hooks.holder, mut t, e, mut cx) {
+		cx.notify()
+		cx.stop_propagation()
+		return
+	}
+	if t.view_key(e, mut cx) {
+		cx.notify()
+		cx.stop_propagation()
+		return
+	}
+	s := t.screen
+	input := KeyInput{s.app_cursor, s.keyboard.active.live, s.modify_other}
+	action := if e.repeat { KeyAction.repeat } else { KeyAction.press }
+	if b := encode_key_event(e.key, e.mods, action, input) {
+		// With flag 8 even printable keys go as CSI u: the text event that follows is dropped.
+		t.eat_text = input.flags & kitty_all_as_esc != 0 && key_generates_text(e.key, e.mods)
+		t.type_bytes(b)
+		t.key_held[int(e.key)] = true
+		cx.notify()
+		cx.stop_propagation()
+	}
+}
+
+// key_up sends a kitty release for a key whose press reached the program (specs/17).
+fn (mut t Terminal) key_up(e &core.KeyUpEvent) {
+	if int(e.key) !in t.key_held {
+		return
+	}
+	t.key_held.delete(int(e.key))
+	s := t.screen
+	if b := encode_key_event(e.key, e.mods, .release, KeyInput{s.app_cursor, s.keyboard.active.live, s.modify_other}) {
+		t.send(b)
+	}
+}
+
+// view_key handles the keys the terminal keeps for itself: copy and paste, scrolling, zoom.
+fn (mut t Terminal) view_key(e &core.KeyDownEvent, mut cx core.ViewCx[Terminal]) bool {
+	cs := platform.Mods.ctrl | .shift
+	n := t.screen.scrollback.len()
+	if t.b.clipboard_keys && e.mods == cs && e.key == .c {
+		t.copy(mut cx)
+	} else if t.b.clipboard_keys && e.mods == cs && e.key == .v {
+		t.paste_clipboard(mut cx.Cx)
+	} else if e.mods == .shift && e.key == .insert {
+		t.paste_clipboard(mut cx.Cx)
+	} else if e.mods.has(.shift) && e.key == .page_up {
+		t.offset = clamp(t.offset + t.screen.rows - 1, 0, n)
+	} else if e.mods.has(.shift) && e.key == .page_down {
+		t.offset = clamp(t.offset - t.screen.rows + 1, 0, n)
+	} else if e.mods == .shift && e.key == .home {
+		t.offset = n
+	} else if e.mods == .shift && e.key == .end {
+		t.offset = 0
+	} else if e.mods.has(.ctrl) && !e.mods.has(.alt) && e.key == .equal {
+		t.zoom += 1 // shift too: `ctrl-+`
+	} else if e.mods.has(.ctrl) && !e.mods.has(.alt) && e.key == .minus {
+		t.zoom -= 1
+	} else if e.mods.has(.ctrl) && !e.mods.has(.alt) && e.key == .digit0 {
+		t.zoom = 0
+	} else {
+		return false
+	}
+	return true
 }

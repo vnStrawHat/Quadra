@@ -2,15 +2,15 @@
 // loop, no allocation per byte; runs of printable ASCII take a fast path.
 module term
 
-import encoding.base64
-
 enum State {
 	ground
 	escape
 	esc_inter
 	csi
 	osc
-	skip_string // DCS, SOS, PM, APC: consumed until ST
+	dcs_entry   // DCS parameters and final byte
+	dcs         // DCS payload, for a sink (Sixel, DECRQSS, XTGETTCAP)
+	skip_string // SOS, PM, APC and unknown DCS: consumed until ST
 }
 
 pub struct Parser {
@@ -24,14 +24,32 @@ mut:
 	ignore  bool
 	osc     []u8
 	esc_st  bool // ESC seen inside a string: ST ends it
-	acc     u32  // UTF-8 decoding
+	bel     bool // the string that just ended used BEL (a reply uses the same)
+	ul_op   int  // what SGR did to the underline color: 1 set, 2 reset
+	ul_val  u32
+	over_op int // and to overline: 1 on, 2 off
+	sixel   &Sixel = unsafe { nil }
+	query   DcsQuery
+	payload []u8 // a DCS query's body
+	dcs_len int
+	held    []u8 // bytes after a synchronized update opened (mode 2026)
+	held_on bool
+	acc     u32 // UTF-8 decoding
 	need    int
 }
 
 pub const max_osc = 1 << 20
+pub const max_osc52 = 256 * 1024
+pub const max_dcs = 16 << 20
+const max_query = 8 * 1024
 
 // feed parses data into s.
 pub fn (mut p Parser) feed(mut s Screen, data []u8) {
+	if p.held_on {
+		p.held << data
+		p.release_held(mut s)
+		return
+	}
 	mut i := 0
 	for i < data.len {
 		b := data[i]
@@ -44,13 +62,51 @@ pub fn (mut p Parser) feed(mut s Screen, data []u8) {
 			i = j
 			continue
 		}
+		if p.state == .ground && p.need == 0 {
+			mut next := -1
+			if b >= 0xc0 {
+				next = p.fast_utf8(mut s, data, i)
+			} else if b == 0x1b && i + 1 < data.len && data[i + 1] == `[` {
+				next = p.fast_csi(mut s, data, i)
+			}
+			if next >= 0 {
+				i = next
+				if s.sync {
+					p.held_on = true
+					p.feed(mut s, data[i..])
+					return
+				}
+				continue
+			}
+		}
 		p.step(mut s, b)
 		i++
+		if s.sync && p.state == .ground {
+			p.held_on = true
+			p.feed(mut s, data[i..])
+			return
+		}
+	}
+	if s.graphics.len > 0 {
+		s.sweep_count++
+		if s.sweep_count & 63 == 0 {
+			s.sweep_graphics()
+		}
+	}
+}
+
+// release_held parses the held bytes when the end of the update has arrived.
+fn (mut p Parser) release_held(mut s Screen) {
+	if p.held.bytestr().contains('[?2026l') {
+		buf := p.held
+		p.held = []u8{}
+		p.held_on = false
+		p.feed(mut s, buf)
 	}
 }
 
 fn (mut p Parser) step(mut s Screen, b u8) {
-	if p.state == .osc || p.state == .skip_string {
+	if p.state == .osc || p.state == .skip_string || p.state == .dcs {
 		p.string_byte(mut s, b)
 		return
 	}
@@ -61,6 +117,10 @@ fn (mut p Parser) step(mut s Screen, b u8) {
 	}
 	if b == 0x18 || b == 0x1a {
 		p.state = .ground
+		return
+	}
+	if p.state == .dcs_entry {
+		p.dcs_entry(mut s, b)
 		return
 	}
 	if b < 0x20 {
@@ -78,10 +138,13 @@ fn (mut p Parser) step(mut s Screen, b u8) {
 fn (mut p Parser) execute(mut s Screen, b u8) {
 	match b {
 		0x08 { s.backspace() }
-		0x09 { s.tab() }
+		0x09 { s.tab(1) }
 		0x0a, 0x0b, 0x0c { s.linefeed() }
 		0x0d { s.carriage_return() }
-		else {} // BEL, SO, SI and the rest: nothing to draw
+		0x07 { s.bell = true }
+		0x0e { s.shift_charset(1) }
+		0x0f { s.shift_charset(0) }
+		else {} // the rest: nothing to draw
 	}
 }
 
@@ -122,8 +185,13 @@ fn (mut p Parser) escape(mut s Screen, b u8) {
 		return
 	}
 	p.state = .ground
-	if p.inter == `(` {
-		s.line_drawing = b == `0`
+	s.cl_ok = false
+	if p.inter >= `(` && p.inter <= `+` {
+		s.designate(int(p.inter - `(`), b)
+		return
+	}
+	if p.inter == `#` && b == `8` {
+		s.align_test()
 		return
 	}
 	if p.inter != 0 {
@@ -138,7 +206,12 @@ fn (mut p Parser) escape(mut s Screen, b u8) {
 			p.state, p.esc_st = .osc, false
 			p.osc.clear()
 		}
-		`P`, `X`, `^`, `_` {
+		`P` {
+			p.state, p.esc_st, p.np, p.sub, p.private, p.inter = .dcs_entry, false, 0, 0, 0, 0
+			p.params = [16]int{}
+			p.ignore = false
+		}
+		`X`, `^`, `_` {
 			p.state, p.esc_st = .skip_string, false
 		}
 		`7` {
@@ -156,6 +229,26 @@ fn (mut p Parser) escape(mut s Screen, b u8) {
 		}
 		`M` {
 			s.reverse_index()
+		}
+		`H` {
+			s.set_tab_stop()
+		}
+		`Z` {
+			s.identify(0)
+		}
+		`n` {
+			s.shift_charset(2)
+		}
+		`o` {
+			s.shift_charset(3)
+		}
+		`N` {
+			s.single_shift = 2
+			s.update_charset()
+		}
+		`O` {
+			s.single_shift = 3
+			s.update_charset()
 		}
 		`c` {
 			s.reset()
@@ -198,51 +291,5 @@ fn (mut p Parser) csi_byte(mut s Screen, b u8) {
 		if !p.ignore {
 			p.csi(mut s, b)
 		}
-	}
-}
-
-fn (mut p Parser) string_byte(mut s Screen, b u8) {
-	if p.esc_st {
-		p.end_string(mut s)
-		if b != `\\` {
-			p.state, p.inter = .escape, 0
-			p.step(mut s, b)
-		}
-		return
-	}
-	if b == 0x1b {
-		p.esc_st = true
-	} else if b == 0x07 {
-		p.end_string(mut s)
-	} else if p.state == .osc && p.osc.len < max_osc {
-		p.osc << b
-	}
-}
-
-fn (mut p Parser) end_string(mut s Screen) {
-	if p.state == .osc {
-		p.osc_dispatch(mut s)
-	}
-	p.state, p.esc_st = .ground, false
-}
-
-// osc_dispatch: 0 and 2 set the title, 52 writes the clipboard when allowed; 8 (links) and
-// the rest are consumed.
-fn (mut p Parser) osc_dispatch(mut s Screen) {
-	body := p.osc.bytestr()
-	semi := body.index(';') or { return }
-	code := body[..semi]
-	arg := body[semi + 1..]
-	match code {
-		'0', '2' {
-			s.title = arg
-		}
-		'52' {
-			data := arg.all_after(';')
-			if s.allow_osc52 && data != '?' {
-				s.clipboard = base64.decode_str(data)
-			}
-		}
-		else {}
 	}
 }

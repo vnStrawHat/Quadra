@@ -92,7 +92,7 @@ fn test_wide_characters_take_two_cells() {
 
 fn test_replies_title_and_split_input() {
 	mut s := run(10, 5, '\x1b[2;3H\x1b[6n\x1b[c')
-	assert s.replies.bytestr() == '\x1b[2;3R\x1b[?62;22c'
+	assert s.replies.bytestr() == '\x1b[2;3R\x1b[?62;4;22c'
 	assert run(10, 1, '\x1b]0;one\x07').title == 'one'
 	assert run(10, 1, '\x1b]2;two\x1b\\x').title == 'two'
 	// Sequences and UTF-8 may be cut anywhere between two reads.
@@ -112,7 +112,7 @@ fn test_replies_title_and_split_input() {
 
 fn test_modes() {
 	s := run(10, 2, '\x1b[?1h\x1b[?2004h\x1b[?25l\x1b[?1000;1006h\x1b[5 q')
-	assert s.app_cursor && s.bracketed && !s.cursor_on && s.mouse == .click && s.mouse_sgr
+	assert s.app_cursor && s.bracketed && !s.cursor_on && s.mouse == .click && s.mouse_enc == .sgr
 	assert s.shape == .bar
 	t := run(5, 2, '\x1b[?7labcdefg')
 	assert t.text() == 'abcdg' // no auto wrap: the last column is overwritten

@@ -16,8 +16,26 @@ fn is_regional(r rune) bool {
 }
 
 // decode returns the rune at byte offset i and its length.
+// It runs for every byte of every new line layout, so well-formed UTF-8 is decoded in place
+// (no substring, no rune array); anything else takes the general path.
 fn decode(s string, i int) (rune, int) {
-	n := utf8_char_len(s[i])
+	c := s[i]
+	if c < 0x80 {
+		return rune(c), 1
+	}
+	n := utf8_char_len(c)
+	if n >= 2 && i + n <= s.len {
+		mut r := u32(c) & (u32(0x7f) >> n)
+		mut ok := true
+		for k in 1 .. n {
+			b := s[i + k]
+			ok = ok && b & 0xc0 == 0x80
+			r = r << 6 | (u32(b) & 0x3f)
+		}
+		if ok {
+			return rune(r), n
+		}
+	}
 	end := if i + n > s.len { s.len } else { i + n }
 	r := s[i..end].runes()
 	return if r.len > 0 { r[0] } else { rune(s[i]) }, end - i

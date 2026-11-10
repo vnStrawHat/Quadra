@@ -67,3 +67,31 @@ fn test_glyph_tiles_upload_once() {
 	assert ts.take_uploads().len == 1
 	assert ts.glyph_tile(0, u16(` `), 20, 0).empty
 }
+
+fn test_wrap_number_matches_wrap() {
+	mut ts := sys()
+	mut reuse := &text.WrappedText(unsafe { nil })
+	for s in ['0', '12.50', '-3,141.59', '100%', '12:30', '1/2'] {
+		for w in [f32(1.0e9), 200, 30.01] {
+			got := ts.wrap_number(s, st, w, reuse) or {
+				assert w < 100 // only too narrow a box refuses
+				continue
+			}
+			if reuse != unsafe { nil } {
+				assert got == reuse // refilled in place
+			}
+			reuse = unsafe { got }
+			want := ts.wrap(s, st, w)
+			assert got.lines.len == 1 && want.lines.len == 1
+			assert got.width == want.width && got.height == want.height
+			assert got.line_height == want.line_height && got.width_breaks == want.width_breaks
+			a, b := got.lines[0], want.lines[0]
+			assert a.start == b.start && a.end == b.end && a.y == b.y
+			assert a.layout.glyphs == b.layout.glyphs && a.layout.stops == b.layout.stops
+			assert a.layout.width == b.layout.width && a.layout.text == b.layout.text
+		}
+	}
+	assert ts.wrap_number('12 34', st, 1.0e9, unsafe { nil }) == none
+	assert ts.wrap_number('abc', st, 1.0e9, unsafe { nil }) == none
+	assert ts.wrap_number('123456', st, 12, unsafe { nil }) == none // breaks between digits
+}

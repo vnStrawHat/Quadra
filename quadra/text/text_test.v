@@ -31,3 +31,22 @@ fn test_fold_diacritics() {
 	assert fold_diacritics('Đà Nẵng, Việt Nam') == 'Da Nang, Viet Nam'
 	assert fold_diacritics('ệ') == 'e'
 }
+
+fn test_decode_matches_runes() {
+	for s in ['abc', 'Việt Nam', 'ệ', '👨‍👩‍👧', '🇻🇳', '€', 'x\xe2\x82',
+		'\x80a', '\xc3'] {
+		mut i := 0
+		for i < s.len {
+			r, n := decode(s, i)
+			end := if i + utf8_char_len(s[i]) > s.len { s.len } else { i + utf8_char_len(s[i]) }
+			want := s[i..end].runes()
+			assert n == end - i
+			assert r == if want.len > 0 {
+				want[0]
+			} else {
+				rune(s[i])
+			}
+			i += n
+		}
+	}
+}

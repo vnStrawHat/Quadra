@@ -15,7 +15,8 @@ mut:
 	loc_of   string
 	ascii    [2]ScriptAnalysis // the analyses of printable ASCII: [0] without letters, [1] with
 	ascii_ok bool
-	no_calt  []string // families shaped without contextual alternates
+	no_calt  []string                 // families shaped without contextual alternates
+	feats    map[string][]FontFeature // the features of a family (font_features)
 pub mut:
 	locale string = 'en-us'
 	// cleartype renders subpixel glyphs; it follows the Windows setting (apps may turn it
@@ -51,6 +52,7 @@ pub fn (mut b DWriteBackend) face(key text.FontKey) !text.FaceId {
 	b.faces << FontFace{
 		...ff
 		no_calt: key.family in b.no_calt
+		feats:   b.feats[key.family] or { []FontFeature{} }
 	}
 	b.keys << key
 	return b.faces.len - 1
@@ -88,6 +90,25 @@ pub fn (mut b DWriteBackend) contextual_off(family string) {
 			b.faces[i] = FontFace{
 				...b.faces[i]
 				no_calt: true
+			}
+		}
+	}
+}
+
+// font_features sets the OpenType features of a family's faces; other faces are untouched.
+pub fn (mut b DWriteBackend) font_features(family string, features []text.FontFeature) {
+	mut feats := []FontFeature{cap: features.len}
+	for f in features {
+		if f.tag.len == 4 {
+			feats << FontFeature{u32(f.tag[0]) | u32(f.tag[1]) << 8 | u32(f.tag[2]) << 16 | u32(f.tag[3]) << 24, f.value}
+		}
+	}
+	b.feats[family] = feats
+	for i, k in b.keys {
+		if k.family == family {
+			b.faces[i] = FontFace{
+				...b.faces[i]
+				feats: feats
 			}
 		}
 	}

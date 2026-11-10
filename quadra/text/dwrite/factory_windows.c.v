@@ -33,8 +33,9 @@ pub struct FontFace {
 pub:
 	face    voidptr // IDWriteFontFace
 	metrics FontMetrics
-	color   bool // has color layers (emoji, color_windows.c.v)
-	no_calt bool // shaped with contextual alternates off (DWriteBackend.contextual_off)
+	color   bool          // has color layers (emoji, color_windows.c.v)
+	no_calt bool          // shaped with contextual alternates off (DWriteBackend.contextual_off)
+	feats   []FontFeature // the OpenType features of the family, when set (font_features)
 }
 
 pub fn new_factory() !&Factory {

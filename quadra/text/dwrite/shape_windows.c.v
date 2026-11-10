@@ -66,13 +66,17 @@ pub fn (f &Factory) shape(text []u16, start u32, len u32, sa ScriptAnalysis, fac
 	mut max := len * 3 / 2 + 16
 	mut count := u32(0)
 	get_glyphs := unsafe { FnGetGlyphs(win.slot(f.analyzer, analyzer_get_glyphs)) }
-	// One feature range over the whole run turns calt off for faces that ask for it.
+	// One feature range over the whole run: the face's features, or calt off when it asks.
 	off := FontFeature{tag_calt, 0}
-	set := TypoFeatures{&off, 1}
+	set := if face.feats.len > 0 {
+		TypoFeatures{unsafe { &FontFeature(face.feats.data) }, u32(face.feats.len)}
+	} else {
+		TypoFeatures{&off, 1}
+	}
 	sets := &set
 	range_len := len
 	mut feats, mut lens, mut ranges := unsafe { nil }, unsafe { nil }, u32(0)
-	if face.no_calt {
+	if face.feats.len > 0 || face.no_calt {
 		feats, lens, ranges = voidptr(&sets), voidptr(&range_len), 1
 	}
 	for {

@@ -66,6 +66,7 @@ const factory_get_system_font_collection = 3
 const factory_create_text_analyzer = 21
 const factory2_create_glyph_run_analysis = 30
 // IDWriteFontCollection, IDWriteFontFamily, IDWriteFont, IDWriteFontFace
+const collection_get_font_family_count = 3
 const collection_get_font_family = 4
 const collection_find_family_name = 5
 const family_get_first_matching_font = 7

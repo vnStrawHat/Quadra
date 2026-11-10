@@ -12,7 +12,8 @@ pub:
 }
 
 pub struct WrappedText {
-pub:
+pub mut:
+	// read-only outside this module
 	lines       []WrappedLine
 	width       f32 // widest line, without trailing spaces
 	height      f32
@@ -81,6 +82,38 @@ pub fn (mut ts TextSystem) wrap(s string, st TextStyle, max_w f32) &WrappedText 
 	}
 	w := &WrappedText{lines, width, f32(n) * lh, lh, n > paragraphs}
 	ts.wraps.put(s, key, key2, w)
+	return w
+}
+
+// wrap_number lays out a number that fits on one line, as wrap does, into reuse (or a new
+// WrappedText when reuse is nil), reusing its arrays and line layout: a text element keeps
+// one (ui TextEl), so a number that changes every frame allocates nothing. Numbers are not
+// cached. It returns none, leaving reuse alone, when s is not a number, the face does not
+// compose numbers (numeric.v), or s does not fit max_w: then call wrap.
+pub fn (mut ts TextSystem) wrap_number(s string, st TextStyle, max_w f32, reuse &WrappedText) ?&WrappedText {
+	if s.len == 0 || !is_numeric(s) {
+		return none
+	}
+	face := ts.face_for(st)
+	if !ts.numeric_ok(face) {
+		return none
+	}
+	lim := max_w + 0.01 // break_paragraph's slack
+	if ts.compose_numeric(s, face, st.size).width > lim && lim > 0 {
+		return none
+	}
+	mut w := if reuse != unsafe { nil } { unsafe { reuse } } else { &WrappedText{} }
+	mut l := &LineLayout(unsafe { nil })
+	if w.lines.len == 1 {
+		l = unsafe { w.lines[0].layout }
+	} else {
+		l = &LineLayout{}
+	}
+	ts.fill_line(mut l, s, st)
+	lh := st.line_px()
+	w.lines.clear()
+	w.lines << WrappedLine{0, s.len, 0, l}
+	w.width, w.height, w.line_height, w.width_breaks = l.x_for_index(s.len), lh, lh, false
 	return w
 }
 

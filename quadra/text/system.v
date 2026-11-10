@@ -71,6 +71,11 @@ pub fn (mut ts TextSystem) load_fonts(files [][]u8) ![]string {
 	return ts.backend.load_fonts(files)
 }
 
+// font_families lists the installed and loaded families, sorted.
+pub fn (mut ts TextSystem) font_families() []string {
+	return ts.backend.font_families()
+}
+
 // has_family reports whether a family is installed or loaded (asked once per family).
 pub fn (mut ts TextSystem) has_family(family string) bool {
 	if known := ts.families[family] {
@@ -86,6 +91,14 @@ pub fn (mut ts TextSystem) has_family(family string) bool {
 
 pub fn (mut ts TextSystem) contextual_off(family string) {
 	ts.backend.contextual_off(family)
+}
+
+// font_features changes how the family is shaped; what was shaped before is shaped again.
+pub fn (mut ts TextSystem) font_features(family string, features []FontFeature) {
+	ts.backend.font_features(family, features)
+	ts.words.m.clear()
+	ts.lines.m.clear()
+	ts.wraps.m.clear()
 }
 
 // end_frame advances the cache generations (unused entries are swept, cache.v).

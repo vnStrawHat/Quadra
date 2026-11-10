@@ -64,6 +64,17 @@ mut:
 	// contextual_off shapes the family without contextual alternates (OpenType calt), for
 	// interface faces whose alternates suit code, not labels. Call it before shaping.
 	contextual_off(family string)
+	// font_features sets the OpenType features the family is shaped with ([] = defaults).
+	font_features(family string, features []FontFeature)
+	// font_families lists the installed and loaded families, sorted ([] when it cannot).
+	font_families() []string
+}
+
+// FontFeature is an OpenType feature setting: a 4-letter tag and its value (1 on, 0 off).
+pub struct FontFeature {
+pub:
+	tag   string
+	value u32
 }
 
 pub struct TextStyle {

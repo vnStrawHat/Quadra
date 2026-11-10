@@ -17,9 +17,10 @@ pub:
 }
 
 // LineLayout is a laid-out line. A line cut from a longer one (cut) shares its glyphs and
-// stops: their x is measured from `origin` and their byte offsets from `base`.
+// stops: their x is measured from `origin` and their byte offsets from `base`. Read-only
+// outside this module; wrap_number refills a layout a text element owns.
 pub struct LineLayout {
-pub:
+pub mut:
 	text    string
 	glyphs  []PositionedGlyph
 	stops   []CaretStop
@@ -51,8 +52,20 @@ fn (mut ts TextSystem) line(s string, st TextStyle, owned bool) &LineLayout {
 }
 
 fn (mut ts TextSystem) build_line(s string, st TextStyle) &LineLayout {
+	mut l := &LineLayout{
+		glyphs: []PositionedGlyph{cap: s.len}
+		stops:  []CaretStop{cap: s.len + 1}
+	}
+	ts.fill_line(mut l, s, st)
+	return l
+}
+
+// fill_line lays out s into l, reusing l's glyph and stop arrays (cleared). l must not be
+// shared with cut lines.
+fn (mut ts TextSystem) fill_line(mut l LineLayout, s string, st TextStyle) {
 	face := ts.face_for(st)
-	mut glyphs := []PositionedGlyph{cap: s.len}
+	mut glyphs := unsafe { l.glyphs }
+	glyphs.clear()
 	mut x := f32(0)
 	unset := f32(-1.0e30)
 	if ts.first_x.len < s.len {
@@ -77,7 +90,8 @@ fn (mut ts TextSystem) build_line(s string, st TextStyle) &LineLayout {
 		i = e
 	}
 	// Caret stops at grapheme boundaries; boundaries inside a ligature reuse the previous x.
-	mut stops := []CaretStop{cap: s.len + 1}
+	mut stops := unsafe { l.stops }
+	stops.clear()
 	mut last := f32(0)
 	mut b := 0
 	for {
@@ -96,17 +110,9 @@ fn (mut ts TextSystem) build_line(s string, st TextStyle) &LineLayout {
 		b = next_grapheme(s, b)
 	}
 	asc, desc := ts.line_metrics(st)
-	l := &LineLayout{
-		text:    s
-		glyphs:  glyphs
-		stops:   stops
-		width:   x
-		ascent:  asc
-		descent: desc
-		size:    st.size
-	}
+	l.text, l.glyphs, l.stops, l.width, l.ascent, l.descent, l.size = s, glyphs, stops, x, asc, desc, st.size
+	l.origin, l.base = 0, 0
 	ts.stats.lines_built++
-	return l
 }
 
 // x_for_index returns the caret x for a byte offset (snapped to the grapheme at or before it).

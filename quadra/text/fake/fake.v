@@ -79,6 +79,12 @@ pub fn (b &FakeBackend) raster(face text.FaceId, glyph u16, size_px f32, subpixe
 
 pub fn (mut b FakeBackend) contextual_off(_ string) {}
 
+pub fn (mut b FakeBackend) font_features(_ string, _ []text.FontFeature) {}
+
+pub fn (mut b FakeBackend) font_families() []string {
+	return b.families.clone()
+}
+
 pub fn (mut b FakeBackend) load_fonts(files [][]u8) ![]string {
 	mut names := []string{}
 	for _ in files {

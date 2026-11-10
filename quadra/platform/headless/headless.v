@@ -229,6 +229,10 @@ pub fn (mut p HeadlessPlatform) set_appearance(a platform.Appearance) {
 	p.run_posted()
 }
 
+pub fn (p &HeadlessPlatform) pty_host() string {
+	return ''
+}
+
 pub fn (mut p HeadlessPlatform) spawn_pty(opts platform.PtyOptions) !platform.Pty {
 	return error('headless: no pseudo terminal (use term.FakePty in tests)')
 }

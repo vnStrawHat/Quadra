@@ -1,5 +1,5 @@
 // ConPTY: a pseudo console with a reader thread (specs/17). The pseudo console functions and
-// the attribute-list helpers are loaded at run time, so older toolchains still build.
+// the attribute-list helpers are loaded at run time (conpty_host_windows.c.v picks the host).
 module win
 
 import os
@@ -18,7 +18,17 @@ type FnUpdateAttr = fn (list voidptr, flags u32, attr usize, value voidptr, size
 
 const proc_thread_attribute_pseudoconsole = usize(0x00020016)
 const extended_startupinfo_present = u32(0x00080000)
+const create_unicode_environment = u32(0x00000400)
 const startf_usestdhandles = u32(0x00000100)
+const duplicate_same_access = u32(2)
+const wait_timeout = 0x102
+// child_exit_grace: how long a closed session's program may take to exit before it is
+// terminated. A program whose start-up had not finished when its pseudo console closed never
+// exits on its own (it never sees the host's exit request), and keeps its console host alive.
+const child_exit_grace_ms = 2000
+
+fn C.TerminateProcess(process voidptr, code u32) int
+fn C.DuplicateHandle(src_process voidptr, src voidptr, dst_process voidptr, dst &voidptr, access u32, inherit int, options u32) int
 
 // StartupInfoEx mirrors STARTUPINFOEXW (x64 layout).
 struct StartupInfoEx {
@@ -51,17 +61,7 @@ struct PcApi {
 	close  FnClosePC    = unsafe { nil }
 	init   FnInitAttrs  = unsafe { nil }
 	update FnUpdateAttr = unsafe { nil }
-}
-
-fn pc_api() !PcApi {
-	k := load_system_dll('kernel32.dll')!
-	return PcApi{
-		create: unsafe { FnCreatePC(dll_proc(k, 'CreatePseudoConsole')!) }
-		resize: unsafe { FnResizePC(dll_proc(k, 'ResizePseudoConsole')!) }
-		close:  unsafe { FnClosePC(dll_proc(k, 'ClosePseudoConsole')!) }
-		init:   unsafe { FnInitAttrs(dll_proc(k, 'InitializeProcThreadAttributeList')!) }
-		update: unsafe { FnUpdateAttr(dll_proc(k, 'UpdateProcThreadAttribute')!) }
-	}
+	host   ConptyHost
 }
 
 @[heap]
@@ -85,11 +85,15 @@ pub fn spawn_conpty(opts platform.PtyOptions) !platform.Pty {
 	mut in_read, mut in_write := unsafe { nil }, unsafe { nil }
 	mut out_read, mut out_write := unsafe { nil }, unsafe { nil }
 	if !C.CreatePipe(&in_read, &in_write, unsafe { nil }, 0)
-		|| !C.CreatePipe(&out_read, &out_write, unsafe { nil }, 0) {
+		|| !C.CreatePipe(&out_read, &out_write, unsafe { nil }, 1 << 20) {
 		return error('CreatePipe failed: ${C.GetLastError()}')
 	}
 	mut hpc := unsafe { nil }
-	hr := api.create(coord(opts.cols, opts.rows), in_read, out_write, 0, &hpc)
+	mut flags := u32(0) // an older inbox host may reject flags it does not know
+	if api.host == .bundled {
+		flags = pseudoconsole_glyph_width_wcswidth
+	}
+	hr := api.create(coord(opts.cols, opts.rows), in_read, out_write, flags, &hpc)
 	C.CloseHandle(in_read)
 	C.CloseHandle(out_write)
 	if hr != 0 {
@@ -111,8 +115,13 @@ pub fn spawn_conpty(opts platform.PtyOptions) !platform.Pty {
 	mut pi := ProcessInfo{}
 	cmd := if opts.command != '' { opts.command } else { os.getenv_opt('COMSPEC') or { 'cmd.exe' } }
 	cwd := if opts.cwd != '' { opts.cwd.to_wide() } else { unsafe { &u16(nil) } }
+	block := env_block(opts.env)
+	mut env := unsafe { nil }
+	if block.len > 0 {
+		env = voidptr(block.data)
+	}
 	if !C.CreateProcessW(unsafe { nil }, cmd.to_wide(), unsafe { nil }, unsafe { nil }, false,
-		extended_startupinfo_present, unsafe { nil }, cwd, &si, &pi) {
+		extended_startupinfo_present | create_unicode_environment, env, cwd, &si, &pi) {
 		code := C.GetLastError()
 		api.close(hpc)
 		C.CloseHandle(in_write)
@@ -132,6 +141,26 @@ pub fn spawn_conpty(opts platform.PtyOptions) !platform.Pty {
 	return p
 }
 
+// env_block is the UTF-16 environment of the child: the parent's plus `extra`, sorted the way
+// CreateProcess wants it. Empty when there is nothing to change.
+fn env_block(extra map[string]string) []u16 {
+	if extra.len == 0 {
+		return []
+	}
+	mut block := []u16{}
+	for line in platform.merged_env(os.environ(), extra) {
+		w := line.to_wide()
+		mut i := 0
+		for unsafe { w[i] } != 0 {
+			block << unsafe { w[i] }
+			i++
+		}
+		block << 0
+	}
+	block << 0
+	return block
+}
+
 fn read_loop(h voidptr, on_data fn (data []u8)) {
 	mut buf := []u8{len: 65536}
 	for {
@@ -140,7 +169,7 @@ fn read_loop(h voidptr, on_data fn (data []u8)) {
 			return
 		}
 		if on_data != unsafe { nil } {
-			on_data(buf[..int(got)].clone())
+			on_data(buf[..int(got)]) // lent: the inbox copies it, so a read allocates nothing
 		}
 	}
 }
@@ -151,7 +180,7 @@ fn wait_loop(mut p ConPty, reader thread, on_exit fn (code int)) {
 	C.WaitForSingleObject(p.process, -1)
 	mut code := u32(0)
 	C.GetExitCodeProcess(p.process, &code)
-	p.close()
+	p.shut(false)
 	reader.wait()
 	C.CloseHandle(p.output)
 	C.CloseHandle(p.process)
@@ -188,15 +217,40 @@ pub fn (mut p ConPty) resize(cols int, rows int) ! {
 	}
 }
 
-// close ends the session: closing the pseudo console ends the programs attached to it.
+// close ends the session: closing the pseudo console asks the programs attached to it to exit.
+// The program still running child_exit_grace_ms later is terminated, from a thread of its own.
 pub fn (mut p ConPty) close() {
+	p.shut(true)
+}
+
+fn (mut p ConPty) shut(reap bool) {
 	p.mu.@lock()
 	if p.closed {
 		p.mu.unlock()
 		return
 	}
 	p.closed = true
+	// The reaper gets its own handle: wait_loop closes p.process once the program ends, but only
+	// after this lock is released, so the handle is still open here.
+	mut own := unsafe { nil }
+	if reap {
+		me := C.GetCurrentProcess()
+		C.DuplicateHandle(me, p.process, me, &own, 0, 0, duplicate_same_access)
+	}
 	p.mu.unlock()
 	p.api.close(p.hpc)
 	C.CloseHandle(p.input)
+	if own != unsafe { nil } {
+		spawn reap_child(own)
+	}
+}
+
+// reap_child terminates a closed session's program that outlived the grace period. Only this
+// process's own child, through the handle it holds for it.
+fn reap_child(process voidptr) {
+	if C.WaitForSingleObject(process, child_exit_grace_ms) == wait_timeout {
+		eprintln('conpty: the shell outlived its closed pseudo console by ${child_exit_grace_ms} ms; terminating it')
+		C.TerminateProcess(process, 1)
+	}
+	C.CloseHandle(process)
 }

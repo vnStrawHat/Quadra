@@ -215,6 +215,10 @@ pub fn (mut p WinPlatform) run() {
 	}
 }
 
+pub fn (p &WinPlatform) pty_host() string {
+	return conpty_host().name()
+}
+
 pub fn (mut p WinPlatform) spawn_pty(opts platform.PtyOptions) !platform.Pty {
 	return spawn_conpty(opts)
 }

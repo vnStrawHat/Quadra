@@ -101,6 +101,9 @@ pub interface Platform {
 	appearance() Appearance
 	clipboard_read() ?string
 	is_headless() bool
+	// pty_host names the pseudo terminal host spawn_pty uses ('conpty: bundled', 'conpty:
+	// system'; '' without one), for the log (specs/17).
+	pty_host() string
 mut:
 	set_sink(mut sink EventSink)
 	run() // blocks until quit or the last window closes
@@ -167,8 +170,28 @@ pub struct PtyOptions {
 pub:
 	command string // the command line; empty = the user's shell
 	cwd     string
+	env     map[string]string // added to the parent's environment; an empty value removes the variable
 	cols    int            = 80
 	rows    int            = 24
-	on_data fn (data []u8) = unsafe { nil } // reader thread
+	on_data fn (data []u8) = unsafe { nil } // reader thread; data is lent for the call: copy to keep it
 	on_exit fn (code int)  = unsafe { nil } // reader thread, once, after the last data
+}
+
+// merged_env is the `parent` environment with `extra` applied, as sorted KEY=value lines (names
+// compare case-insensitively, as on Windows); an empty value in extra removes the variable.
+pub fn merged_env(parent map[string]string, extra map[string]string) []string {
+	mut by_name := map[string]string{}
+	for k, v in parent {
+		by_name[k.to_upper()] = '${k}=${v}'
+	}
+	for k, v in extra {
+		if v == '' {
+			by_name.delete(k.to_upper())
+		} else {
+			by_name[k.to_upper()] = '${k}=${v}'
+		}
+	}
+	mut names := by_name.keys()
+	names.sort()
+	return names.map(by_name[it])
 }

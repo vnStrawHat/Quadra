@@ -10,13 +10,15 @@ pub mut:
 	instances        int // in the last frame
 	upload_bytes     i64 // total
 	upload_instances int // instances sent in the last frame (all, or a patched range)
+	resident_bytes   i64 // atlas pages and instance buffers the backend holds (not swap chains)
 }
 
 // Device owns GPU resources shared by all windows: atlas textures and pipelines.
 pub interface Device {
 	stats() RenderStats
 	is_software() bool
-	upgrading() bool // a faster device is on its way (try_upgrade)
+	adapter_name() string // the adapter drawing (DXGI's description on D3D11)
+	upgrading() bool      // a faster device is on its way (try_upgrade)
 mut:
 	// try_upgrade moves to that device once it is ready; true when it did (every surface
 	// must draw again and may have a new waitable).

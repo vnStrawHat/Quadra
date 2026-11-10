@@ -69,6 +69,10 @@ pub fn (d &NullDevice) is_software() bool {
 	return true
 }
 
+pub fn (d &NullDevice) adapter_name() string {
+	return 'Null device'
+}
+
 pub fn (d &NullDevice) upgrading() bool {
 	return false
 }

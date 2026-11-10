@@ -214,6 +214,7 @@ const ctx_flush = 111
 // DXGI slots
 const dxgi_object_get_parent = 6
 const dxgi_device_get_adapter = 7
+const dxgi_adapter_get_desc = 8
 const dxgi_factory_make_window_association = 8
 const dxgi_factory2_create_swapchain_for_hwnd = 15
 const sc_present = 8

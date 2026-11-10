@@ -20,6 +20,8 @@ pub:
 	ctx    voidptr
 	warp   bool // software rasterizer (forced, or no hardware adapter)
 	debug  bool // debug layer active
+	// adapter is DXGI's description of the adapter, '' when it cannot be read
+	adapter string
 }
 
 @[params]
@@ -48,10 +50,11 @@ pub fn new_device(opts DeviceOptions) !&Device {
 				u32(levels.len), sdk_version, &dev, &level, &ctx)
 			if last >= 0 {
 				return &Device{
-					device: dev
-					ctx:    ctx
-					warp:   driver == driver_warp
-					debug:  flags & create_debug != 0
+					device:  dev
+					ctx:     ctx
+					warp:    driver == driver_warp
+					debug:   flags & create_debug != 0
+					adapter: adapter_description(dev) or { '' }
 				}
 			}
 		}
@@ -114,6 +117,37 @@ pub fn (d &Device) create_pixel_shader(code []u8) !voidptr {
 	mut out := unsafe { nil }
 	win.check(f(d.device, code.data, usize(code.len), unsafe { nil }, &out), 'CreatePixelShader')!
 	return out
+}
+
+// AdapterDesc is DXGI_ADAPTER_DESC.
+struct AdapterDesc {
+	description   [128]u16
+	vendor        u32
+	device        u32
+	subsys        u32
+	revision      u32
+	dedicated_vid usize
+	dedicated_sys usize
+	shared_sys    usize
+	luid          u64
+}
+
+// adapter_description reads DXGI's name for the adapter behind the device.
+fn adapter_description(device voidptr) !string {
+	dxgi_dev := win.query_interface(device, &iid_dxgi_device)!
+	defer {
+		win.release(dxgi_dev)
+	}
+	get_adapter := unsafe { FnOut1(win.slot(dxgi_dev, dxgi_device_get_adapter)) }
+	mut adapter := unsafe { nil }
+	win.check(get_adapter(dxgi_dev, &adapter), 'GetAdapter')!
+	defer {
+		win.release(adapter)
+	}
+	get_desc := unsafe { FnOut1(win.slot(adapter, dxgi_adapter_get_desc)) }
+	desc := AdapterDesc{}
+	win.check(get_desc(adapter, voidptr(&desc)), 'GetDesc')!
+	return unsafe { string_from_wide(&desc.description[0]) }
 }
 
 // dxgi_factory walks device -> adapter -> factory, so the swap chain uses the same adapter.

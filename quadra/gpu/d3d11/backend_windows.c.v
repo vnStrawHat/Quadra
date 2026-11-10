@@ -97,8 +97,26 @@ pub fn (b &Backend) is_software() bool {
 	return b.dev.warp
 }
 
+// adapter_name is the description of the adapter the current device draws on.
+pub fn (b &Backend) adapter_name() string {
+	mut m := unsafe { b }
+	m.ready() or { return '' }
+	return b.dev.adapter
+}
+
 pub fn (b &Backend) stats() gpu.RenderStats {
-	return b.st
+	mut st := b.st
+	st.resident_bytes = i64(b.pipe.capacity) * i64(sizeof(gpu.Instance)) +
+		i64(b.pipe.xcap) * i64(sizeof(gpu.Rigid))
+	for i in 0 .. b.mono.len {
+		e := i64(gpu.page_extent(b.page_size, i))
+		st.resident_bytes += e * e
+	}
+	for i in 0 .. b.poly.len {
+		e := i64(gpu.page_extent(b.page_size, i))
+		st.resident_bytes += 4 * e * e
+	}
+	return st
 }
 
 fn (mut b Backend) page(kind gpu.AtlasKind, index int) !AtlasPage {
@@ -107,9 +125,10 @@ fn (mut b Backend) page(kind gpu.AtlasKind, index int) !AtlasPage {
 		if index < pages.len {
 			return pages[index]
 		}
+		size := u32(gpu.page_extent(b.page_size, pages.len))
 		tex := b.dev.create_texture2d(&Texture2dDesc{
-			width:      u32(b.page_size)
-			height:     u32(b.page_size)
+			width:      size
+			height:     size
 			format:     if kind == .mono { format_r8_unorm } else { format_r8g8b8a8_unorm }
 			usage:      usage_default
 			bind_flags: bind_shader_resource

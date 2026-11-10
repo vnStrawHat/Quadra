@@ -99,3 +99,29 @@ fn test_atlas_packs_and_adds_pages() {
 		assert false, 'oversized tile must fail'
 	}
 }
+
+fn test_the_first_atlas_page_is_small() {
+	mut a := new_atlas(.poly, 2048)
+	small := a.insert(10, 10, []u8{})!
+	assert small.page == 0 && small.u1 == f32(10) / 1024
+	big := a.insert(1500, 20, []u8{})! // wider than the first page: a full-size one
+	assert big.page == 1 && big.u1 == f32(1500) / 2048
+	assert page_extent(2048, 0) == 1024 && page_extent(2048, 1) == 2048
+	assert page_extent(64, 0) == 64
+}
+
+fn test_a_gradient_keeps_its_end_color_under_a_border() {
+	mut s := Scene{}
+	s.quad(Quad{
+		bounds:        prim.rect(0, 0, 100, 34)
+		background:    prim.rgb(0x202429)
+		gradient_to:   prim.rgb(0x1E2227)
+		border_widths: prim.Edges{
+			bottom: 1
+		}
+		border_color:  prim.rgb(0x3E4451)
+	}, ContentMask{})
+	assert s.instances.len == 2
+	assert s.instances[0].flags == 1 && s.instances[0].color2 == prim.rgb(0x1E2227).to_array()
+	assert s.instances[1].flags == 2 && s.instances[1].color2 == prim.rgb(0x3E4451).to_array()
+}

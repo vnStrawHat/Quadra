@@ -60,6 +60,20 @@ pub fn (mut s Scene) quad(q Quad, mask ContentMask) {
 	if q.bounds.is_empty() || (q.background.is_transparent() && q.border_widths == prim.Edges{}) {
 		return
 	}
+	if q.gradient_to != none && q.border_widths != prim.Edges{} {
+		// The shader keeps one second color (gradient end or border): draw the gradient
+		// fill, then the border over a clear fill.
+		s.add(Quad{
+			...q
+			border_widths: prim.Edges{}
+		}.instance(mask))
+		s.add(Quad{
+			...q
+			background:  prim.Color{}
+			gradient_to: none
+		}.instance(mask))
+		return
+	}
 	s.add(q.instance(mask))
 }
 

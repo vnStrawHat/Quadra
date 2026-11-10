@@ -27,9 +27,9 @@ fn main() {
 			time.sleep(3 * time.second)
 			used := cpu_ms() - start
 			println('idle CPU over 3 s: ${used:.1f} ms (${used / 30:.2f}% of one core)')
-			app.plat.post(fn [mut app] () {
+			app.post_main(fn (mut app core.App, _ voidptr) {
 				app.quit()
-			})
+			}, unsafe { nil })
 		}(mut app)
 	}
 	app.run()

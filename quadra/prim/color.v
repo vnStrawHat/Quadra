@@ -1,5 +1,7 @@
 module prim
 
+import strconv
+
 // Color is straight (non-premultiplied) sRGB with alpha, components in [0, 1].
 pub struct Color {
 pub mut:
@@ -82,4 +84,13 @@ fn fmod(v f32, m f32) f32 {
 		r += m
 	}
 	return r
+}
+
+// parse_hex reads "#RRGGBB" or "#RRGGBBAA".
+pub fn parse_hex(s string) ?Color {
+	if (s.len != 7 && s.len != 9) || s[0] != `#` {
+		return none
+	}
+	n := u32(strconv.parse_uint(s[1..], 16, 32) or { return none })
+	return if s.len == 7 { rgb(n) } else { rgba(n) }
 }

@@ -16,6 +16,8 @@ pub mut:
 	placeholder string // '' = the installed Strings.select_placeholder
 	width       f32 = 220
 	disabled    bool
+	compact     bool // as wide as its value, the menu right-aligned (specs/15)
+	size        Size = .md
 	change      ?core.AnyListener
 mut:
 	div &ui.Div = unsafe { nil }
@@ -41,6 +43,20 @@ pub fn (self_ &Select) width(w f32) &Select {
 	return s
 }
 
+// compact makes the select as wide as its value, its menu opening below with the right
+// edges aligned.
+pub fn (self_ &Select) compact() &Select {
+	mut s := unsafe { self_ }
+	s.compact = true
+	return s
+}
+
+pub fn (self_ &Select) size(sz Size) &Select {
+	mut s := unsafe { self_ }
+	s.size = sz
+	return s
+}
+
 pub fn (self_ &Select) on_change(l core.Listener[int]) &Select {
 	mut s := unsafe { self_ }
 	s.change = l.any
@@ -52,24 +68,33 @@ struct SelectOpen {
 	selected int
 	change   ?core.AnyListener
 	width    f32
+	end      bool // the menu's right edge on the button's
 }
 
-fn options_menu(s SelectOpen, _ &Theme) core.Element {
+// options_menu lists the options: One's menu with a check icon on the chosen row, or with
+// Controls.select_input a list whose chosen row is filled and checked at its end.
+fn options_menu(s SelectOpen, t &Theme) core.Element {
+	list := t.ctl.select_input
 	mut items := []MenuItem{cap: s.options.len}
 	for i, o in s.options {
 		items << MenuItem{
-			label:  o
-			glyph:  if i == s.selected { icon_check } else { '' }
-			action: PickIndex{s.change, i}
+			label:   o
+			glyph:   if i == s.selected && !list { icon_check } else { '' }
+			checked: i == s.selected && list
+			action:  PickIndex{s.change, i}
 		}
 	}
 	mut m := menu(items)
-	m.width = s.width
+	m.list = list
+	if s.width > 0 {
+		m.width = s.width
+	}
 	return m
 }
 
 fn open_options(mut cx core.Cx, s SelectOpen) {
-	open_popup_with(mut cx, cx.target_bounds(), .bottom_start, s, options_menu)
+	open_popup_with(mut cx, cx.target_bounds(), if s.end { .bottom_end } else { .bottom_start }, s,
+		options_menu)
 }
 
 pub fn (mut s Select) request_layout(mut cx core.LayoutCx) layout.NodeId {
@@ -86,23 +111,42 @@ pub fn (mut s Select) build_tree(mut cx core.LayoutCx) core.Element {
 	} else {
 		strings_of(cx.app).select_placeholder
 	}
-	// A filled dropdown button (specs/15): the value, then an up-down chevron.
-	mut d := ui.div().id(s.id).test_id(s.id).flex_row().items_center().gap(4).w(s.width).h(t.height(.md)).px(8).rounded(t.radius_md).bg(t.p.raised).border(1).border_color(t.p.line).role(.listbox).label(shown).disabled(s.disabled).focus_ring(ui.Patch{
-		border_color: t.p.border_focused
-	})
-
-	d.child(ui.div().grow().overflow_hidden().child(ui.text(shown).color(if s.selected < 0 {
+	// The trigger (specs/15): One's filled button with an up-down chevron, or with
+	// Controls.select_input the input fill and a chevron-down.
+	fg := if s.selected < 0 {
 		t.p.text_3
 	} else if s.disabled {
 		t.p.text_disabled
 	} else {
 		t.p.text
-	}))).child(icon(icon_chevrons_up_down).size(12).color(t.p.text_2))
+	}
+	mut d := ui.div().id(s.id).test_id(s.id).flex_row().items_center().h(t.height(s.size)).rounded(t.radius_md).border(1).border_color(t.p.line).text_size(t.ui_text(.md)).role(.listbox).label(shown).disabled(s.disabled).focus_ring(ui.Patch{
+		border_color: t.p.border_focused
+	})
+	value := ui.div().grow().overflow_hidden().child(ui.text(shown).color(fg))
+	if s.compact {
+		d.shrink_0()
+	} else {
+		d.w(s.width)
+	}
+	if t.ctl.select_input {
+		d.gap(8).px(10).bg(t.p.input_bg).child(value).child(icon(icon_chevron_down).size(16).color(if s.compact {
+			fg.alpha(0.75)
+		} else {
+			t.p.text_2
+		}))
+	} else {
+		d.gap(4).px(8).bg(t.p.raised).child(value).child(icon(icon_chevrons_up_down).size(12).color(t.p.text_2))
+	}
 	if !s.disabled {
-		open := SelectOpen{s.options, s.selected, s.change, s.width}
+		open := SelectOpen{s.options, s.selected, s.change, if s.compact {
+			f32(0)
+		} else {
+			s.width
+		}, s.compact}
 
 		d.cursor(.pointer).hover(ui.Patch{
-			background: t.p.raised_hover
+			background: if t.ctl.select_input { t.p.line.alpha(0.5) } else { t.p.raised_hover }
 		}).on_click(core.handler_with(open, fn (s SelectOpen, _ &core.ClickEvent, mut cx core.Cx) {
 			open_options(mut cx, s)
 		})).on_key_down(core.handler_with(open, fn (s SelectOpen, e &core.KeyDownEvent, mut cx core.Cx) {

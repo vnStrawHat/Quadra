@@ -108,7 +108,7 @@ pub fn (mut d Diagram) request_layout(mut cx core.LayoutCx) layout.NodeId {
 		t := kit.theme_of(cx.app)
 		d.lay_out(mut cx.text, text.TextStyle{
 			family: t.font_family
-			size:   t.font_size(.md)
+			size:   t.ui_text(.md)
 		})
 		w, h = d.drawing.width, d.drawing.height
 	}

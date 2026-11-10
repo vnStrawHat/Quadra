@@ -47,15 +47,15 @@ pub fn field(label string, control core.Element, help string, error string, requ
 		control, help, error, required_mark := a.control, a.help, a.error, a.required_mark
 		p := t.p
 		// Label, control, then the error or the help, 12 px and 4 apart (specs/15).
-		mut head := ui.div().flex_row().gap(4).child(ui.text(a.label).size(t.font_size(.sm)))
+		mut head := ui.div().flex_row().gap(4).child(ui.text(a.label).size(t.ui_text(.sm)))
 		if required_mark {
-			head.child(ui.text('*').size(t.font_size(.sm)).color(p.error))
+			head.child(ui.text('*').size(t.ui_text(.sm)).color(p.error))
 		}
 		mut col := ui.div().flex_col().gap(4).child(head).child(control)
 		if error != '' {
-			col.child(ui.div().flex_row().items_center().gap(4).role(.alert).label(error).child(icon(icon_circle_alert).size(12).color(p.error)).child(ui.text(error).size(t.font_size(.sm)).color(p.error)))
+			col.child(ui.div().flex_row().items_center().gap(4).role(.alert).label(error).child(icon(icon_circle_alert).size(12).color(p.error)).child(ui.text(error).size(t.ui_text(.sm)).color(p.error)))
 		} else if help != '' {
-			col.child(ui.text(help).size(t.font_size(.sm)).color(p.text_2))
+			col.child(ui.text(help).size(t.ui_text(.sm)).color(p.text_2))
 		}
 		return col
 	})
@@ -66,14 +66,15 @@ pub fn confirm(mut cx core.Cx, title string, message string, yes string, l core.
 	answer := l.any
 	cancel := strings_of(cx.app).cancel
 	mut holder := &ModalId{}
+	card := theme_of(cx.app).ctl.card_dialogs
+	gap := if card { f32(8) } else { 4 }
 	id := open_modal(mut cx, ModalOptions{
-		title:  title
-		width:  440
-		body:   fn [message] () core.Element {
-			return ui.text(message)
-		}
-		footer: fn [answer, yes, cancel, mut holder] () core.Element {
-			return ui.div().flex_row().gap(4).child(button('confirm-no').label(cancel).on_click(core.handler_with(Answer{answer, holder, false},
+		title:       title
+		width:       if card { 448 } else { 440 }
+		description: message
+		alert:       true
+		footer:      fn [answer, yes, cancel, gap, mut holder] () core.Element {
+			return ui.div().flex_row().gap(gap).child(button('confirm-no').label(cancel).on_click(core.handler_with(Answer{answer, holder, false},
 				answer_click))).child(button('confirm-yes').label(yes).primary().on_click(core.handler_with(Answer{answer, holder, true},
 				answer_click)))
 		}

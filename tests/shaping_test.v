@@ -89,3 +89,15 @@ fn test_word_fits_its_measured_width() {
 		assert ts.wrap(s, st, w - 0.0001).lines.len == 1, s
 	}
 }
+
+// font_features changes the glyphs a family is shaped with, and back.
+fn test_font_features_change_the_glyphs() {
+	mut b := dwrite.new_backend()!
+	face := b.face(text.FontKey{'Cascadia Mono', 400, false})!
+	plain := b.shape('0', face, 13)
+	b.font_features('Cascadia Mono', [text.FontFeature{'zero', 1}])
+	feat := b.shape('0', face, 13)
+	assert plain[0].id != feat[0].id
+	b.font_features('Cascadia Mono', []text.FontFeature{})
+	assert b.shape('0', face, 13)[0].id == plain[0].id
+}

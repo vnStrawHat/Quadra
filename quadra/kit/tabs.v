@@ -42,7 +42,7 @@ fn (tb &Tabs) tab(i int, item string, t &Theme) &ui.Div {
 	// Toggle buttons (specs/15): the selected one has an accent label; pills also take the
 	// accent tint.
 	mut tab :=
-		ui.div().test_id('${tb.id}-${i}').px(8).h(t.height(.md)).flex_row().items_center().cursor(.pointer).role(.tab).label(item).selected(on).text_size(t.font_size(.md)).rounded(t.radius_md)
+		ui.div().test_id('${tb.id}-${i}').px(8).h(t.height(.md)).flex_row().items_center().cursor(.pointer).role(.tab).label(item).selected(on).text_size(t.ui_text(.md)).rounded(t.radius_md)
 	tab.on_click(fire_click(tb.change, i))
 	if on {
 		tab.text_color(p.accent_text)

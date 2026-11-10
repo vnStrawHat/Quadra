@@ -61,7 +61,7 @@ fn build_month_grid(g MonthGrid, t &Theme) core.Element {
 	// label, weekday names muted at 12 px.
 	mut grid := ui.div().grid().cols(layout.repeat(7, layout.track_px(32))).gap(2)
 	for n in g.words.weekdays {
-		grid.child(ui.div().h(22).center().child(ui.text(n).size(t.font_size(.sm)).color(p.text_2)))
+		grid.child(ui.div().h(22).center().child(ui.text(n).size(t.ui_text(.sm)).color(p.text_2)))
 	}
 	for _ in 0 .. first_weekday(year, month) {
 		grid.child(ui.div())
@@ -69,7 +69,7 @@ fn build_month_grid(g MonthGrid, t &Theme) core.Element {
 	for d in 1 .. days_in(year, month) + 1 {
 		on := value.year == year && value.month == month && value.day == d
 		date := Date{year, month, d}
-		mut cell := ui.div().test_id('${prefix}day-${d}').h(28).center().rounded(t.radius_md).cursor(.pointer).text_size(t.font_size(.md)).role(.button).label(date.str()).selected(on).on_click(core.handler_with(DayClick{g.target, date},
+		mut cell := ui.div().test_id('${prefix}day-${d}').h(28).center().rounded(t.radius_md).cursor(.pointer).text_size(t.ui_text(.md)).role(.button).label(date.str()).selected(on).on_click(core.handler_with(DayClick{g.target, date},
 			day_click))
 		if on {
 			cell.bg(p.accent_tint).text_color(p.accent_text)

@@ -4,11 +4,10 @@
 module kit
 
 import os
-import strconv
 import x.json2
 import quadra.prim
 
-const theme_keys = ['name', 'mode', 'palette', 'syntax', 'editor', 'terminal', 'series']
+const theme_keys = ['name', 'mode', 'palette', 'syntax', 'editor', 'terminal', 'series', 'controls']
 
 // load_theme reads a theme file (theme_from_json).
 pub fn load_theme(path string) !Theme {
@@ -17,8 +16,8 @@ pub fn load_theme(path string) !Theme {
 
 // theme_from_json parses a theme: {"name", "mode": "dark" | "light" | "high_contrast",
 // "palette": {...}, "syntax": {...}, "editor": {...}, "terminal": {..., "ansi": [16]},
-// "series": [...]}, each color "#RRGGBB" or "#RRGGBBAA". Colors left out keep the values
-// of dark() or light(), whichever matches the mode.
+// "series": [...], "controls": {...}}, each color "#RRGGBB" or "#RRGGBBAA". What is left
+// out keeps the values of dark() or light(), whichever matches the mode.
 pub fn theme_from_json(text string) !Theme {
 	o, mode := theme_object(text)!
 	base := if mode == .light { light() } else { dark() }
@@ -58,7 +57,13 @@ fn (base Theme) merged(o map[string]json2.Any, mode Mode) !Theme {
 	if name := o['name'] {
 		t.name = name.str()
 	}
-	colors_into(mut t.p, section(o, 'palette')!, 'palette')!
+	pal := section(o, 'palette')!
+	mut listed := map[string]bool{}
+	for k, _ in pal {
+		listed[k] = true
+	}
+	t.p.clear_derived(listed) // they follow this theme's own colors (finish)
+	colors_into(mut t.p, pal, 'palette')!
 	colors_into(mut t.code.syntax, section(o, 'syntax')!, 'syntax')!
 	colors_into(mut t.code.editor, section(o, 'editor')!, 'editor')!
 	term := section(o, 'terminal')!
@@ -71,6 +76,12 @@ fn (base Theme) merged(o map[string]json2.Any, mode Mode) !Theme {
 		for i, c in ansi {
 			t.code.terminal.ansi[i] = c
 		}
+	}
+	if c := o['controls'] {
+		if c !is map[string]json2.Any {
+			return error('controls: an object')
+		}
+		controls_into(mut t.ctl, c.as_map())!
 	}
 	if s := o['series'] {
 		t.series = color_list(s, 'series')!
@@ -120,11 +131,12 @@ fn color_list(v json2.Any, at string) ![]prim.Color {
 
 fn color_of(v json2.Any, at string) !prim.Color {
 	s := v.str()
-	if v !is string || (s.len != 7 && s.len != 9) || s[0] != `#` {
+	if v !is string {
 		return error('${at}: a color is "#RRGGBB" or "#RRGGBBAA", not ${v.json_str()}')
 	}
-	n := u32(strconv.parse_uint(s[1..], 16, 32) or { return error('${at}: bad hex ${s}') })
-	return if s.len == 7 { prim.rgb(n) } else { prim.rgba(n) }
+	return prim.parse_hex(s) or {
+		return error('${at}: a color is "#RRGGBB" or "#RRGGBBAA", not ${v.json_str()}')
+	}
 }
 
 // to_json writes the theme in the file format, every color included: a starting point
@@ -140,6 +152,7 @@ pub fn (t Theme) to_json() string {
 		block('editor', color_lines(t.code.editor)),
 		block('terminal', term),
 		'"series": [${t.series.map(quoted_hex(it)).join(', ')}]',
+		block('controls', control_lines(t.ctl)),
 	]
 	return '{\n\t' + parts.join(',\n\t') + '\n}\n'
 }

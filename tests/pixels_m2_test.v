@@ -78,3 +78,12 @@ fn test_m2_visuals() {
 	h.save_png(os.join_path(out, 'm2_showcase.png'))!
 	assert (h.find('btn') or { panic('') }).width > 0
 }
+
+// The adapter name reaches apps through core: the null device and real D3D11 on WARP.
+fn test_adapter_name() {
+	h := testing.new_harness()!
+	assert h.app.adapter_name() == 'Null device'
+	p := testing.new_pixel_harness()!
+	assert p.app.adapter_name() != ''
+	assert p.app.device.is_software()
+}

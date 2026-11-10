@@ -1,10 +1,12 @@
-// NumberInput: a text input that accepts numbers, with stepper buttons and arrow keys.
+// NumberInput: a text input that accepts numbers, with stepper buttons and arrow keys
+// (specs/15): up and down chevrons beside the field, or a framed `− value +` stepper.
 module input
 
 import math
 import strconv
 import quadra.core
 import quadra.kit
+import quadra.prim
 import quadra.ui
 
 @[heap]
@@ -17,6 +19,8 @@ pub mut:
 	step     f64 = 1
 	decimals int
 	change   ?core.AnyListener // f64
+	id       string
+	stepper  bool
 }
 
 @[params]
@@ -28,6 +32,7 @@ pub:
 	max      f64 = 1.0e15
 	step     f64 = 1
 	decimals int
+	stepper  bool // a framed `− value +` control, 128 wide
 }
 
 fn format_number(v f64, decimals int) string {
@@ -44,7 +49,12 @@ fn format_number(v f64, decimals int) string {
 }
 
 pub fn new_number_input(mut cx core.Cx, opts NumberOptions) core.View[NumberInput] {
-	field := new_input(mut cx, id: opts.id, value: format_number(opts.value, opts.decimals))
+	field := new_input(mut cx,
+		id:     opts.id
+		value:  format_number(opts.value, opts.decimals)
+		bare:   opts.stepper
+		center: opts.stepper
+	)
 	cx.update_silent(field.model(), fn (mut v TextInput, mut _ core.ViewCx[TextInput]) {
 		v.filter = fn (s string) string {
 			return s.bytes().filter(it.is_digit() || it == `.` || it == `-` || it == `,`).bytestr().replace(',', '.')
@@ -57,6 +67,8 @@ pub fn new_number_input(mut cx core.Cx, opts NumberOptions) core.View[NumberInpu
 		max:      opts.max
 		step:     opts.step
 		decimals: opts.decimals
+		id:       opts.id
+		stepper:  opts.stepper
 	})
 	on_change(mut cx, field, core.Listener[string]{core.AnyListener{
 		view:   view.id
@@ -96,7 +108,7 @@ fn (mut n NumberInput) bump(dir f64, mut cx core.ViewCx[NumberInput]) {
 @[markused]
 pub fn (mut n NumberInput) render(mut cx core.ViewCx[NumberInput]) core.Element {
 	t := kit.theme(cx)
-	return ui.div().flex_row().items_center().gap(4).w(160).on_key_down(cx.listener(fn (mut n NumberInput, e &core.KeyDownEvent, mut cx core.ViewCx[NumberInput]) {
+	mut d := ui.div().flex_row().items_center().on_key_down(cx.listener(fn (mut n NumberInput, e &core.KeyDownEvent, mut cx core.ViewCx[NumberInput]) {
 		match e.key {
 			.up { n.bump(1, mut cx) }
 			.down { n.bump(-1, mut cx) }
@@ -104,9 +116,32 @@ pub fn (mut n NumberInput) render(mut cx core.ViewCx[NumberInput]) core.Element 
 		}
 
 		cx.stop_propagation()
-	})).child(ui.div().grow().child(cx.child_view(n.field))).child(ui.div().flex_col().child(stepper(cx.entity,
-		t, 1, kit.icon_chevron_up, 'num-up')).child(stepper(cx.entity, t, -1,
-		kit.icon_chevron_down, 'num-down')))
+	}))
+	field := ui.div().grow().min_w(0).child(cx.child_view(n.field))
+	if n.stepper {
+		r := t.radius_lg - 1 // inside the 1 px frame
+		return d.w(128).h(t.height(.lg)).rounded(t.radius_lg).bg(t.p.input_bg).border(1).border_color(t.p.line).child(step_button(cx.entity,
+			t, -1, '${n.id}-dec', prim.Corners{ top_left: r, bottom_left: r })).child(field).child(step_button(cx.entity,
+			t, 1, '${n.id}-inc', prim.Corners{ top_right: r, bottom_right: r }))
+	}
+	return d.gap(4).w(160).child(field).child(ui.div().flex_col().child(stepper(cx.entity, t, 1,
+		kit.icon_chevron_up, 'num-up')).child(stepper(cx.entity, t, -1, kit.icon_chevron_down,
+		'num-down')))
+}
+
+// step_button is the stepper's `−` or `+`: ghost, 32 wide, full height, only its outer
+// corners rounded.
+fn step_button(entity u32, t &kit.Theme, dir f64, id string, radii prim.Corners) core.Element {
+	mut b := ui.div().test_id(id).w(32).h_full().center().shrink_0().cursor(.pointer).text_color(t.p.text).hover(ui.Patch{
+		background: t.p.line.alpha(0.4)
+	}).active(ui.Patch{
+		background: t.p.line.alpha(0.6)
+	}).role(.button).label(if dir < 0 { 'Decrement' } else { 'Increment' }).on_click(core.listener_with[NumberInput, f64, core.ClickEvent](entity,
+		dir, fn (mut n NumberInput, dir f64, _ &core.ClickEvent, mut cx core.ViewCx[NumberInput]) {
+		n.bump(dir, mut cx)
+	})).child(kit.icon(if dir < 0 { kit.icon_minus } else { kit.icon_plus }).size(16))
+	b.visual.radii = radii
+	return b
 }
 
 // stepper is one of the up and down buttons.

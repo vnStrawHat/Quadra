@@ -143,7 +143,7 @@ pub fn (mut lv LogView) render(mut cx core.ViewCx[LogView]) core.Element {
 		lv.mode = if *on { FilterMode.dim } else { FilterMode.hide }
 		lv.set_filter(lv.query, lv.use_re)
 		cx.notify()
-	}))).child(ui.div().grow()).child(ui.text(count).size(t.font_size(.sm)).color(t.p.text_3)).child(kit.toggle_button('${lv.id}-follow',
+	}))).child(ui.div().grow()).child(ui.text(count).size(t.ui_text(.sm)).color(t.p.text_3)).child(kit.toggle_button('${lv.id}-follow',
 		lv.follow).label('Follow').size(.sm).tooltip('Keep the newest line in view').on_toggle(cx.listener(fn (mut lv LogView, on &bool, mut cx core.ViewCx[LogView]) {
 		lv.follow = *on
 		cx.notify()

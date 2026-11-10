@@ -111,7 +111,7 @@ fn (mut e Editor) find_bar(mut cx core.ViewCx[Editor]) core.Element {
 	r := e.replace_with or { return ui.div() }
 	mut row := ui.div().flex_row().items(.center).gap(2).child(ui.div().w(220).flex_col().child(cx.child_view(q))).child(e.option('case',
 		'Aa', e.find.case, 'Match case', mut cx)).child(e.option('word', 'ab', e.find.word,
-		'Whole word', mut cx)).child(e.option('regex', '.*', e.find.regex, 'Regular expression', mut cx)).child(ui.div().w(76).px(6).child(ui.text(e.status()).size(t.font_size(.sm)).color(t.p.text_2))).child(kit.icon_button('${e.id}-prev',
+		'Whole word', mut cx)).child(e.option('regex', '.*', e.find.regex, 'Regular expression', mut cx)).child(ui.div().w(76).px(6).child(ui.text(e.status()).size(t.ui_text(.sm)).color(t.p.text_2))).child(kit.icon_button('${e.id}-prev',
 		kit.icon_arrow_up).size(.sm).tooltip('Previous match').on_click(cx.listener(fn (mut e Editor, _ &core.ClickEvent, mut cx core.ViewCx[Editor]) {
 		e.run(&EditorAction{ op: .find_prev }, mut cx)
 	}))).child(kit.icon_button('${e.id}-next', kit.icon_arrow_down).size(.sm).tooltip('Next match').on_click(cx.listener(fn (mut e Editor, _ &core.ClickEvent, mut cx core.ViewCx[Editor]) {

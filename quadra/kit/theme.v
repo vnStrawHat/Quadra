@@ -1,10 +1,7 @@
-// Theme tokens (specs/15-design-language.md). Themes are plain values stored as an app
-// global. Palettes live in theme_one.v and theme_code.v, the bundled faces in fonts.v.
+// Theme tokens (specs/15), an app global. Palettes: theme_one.v, theme_code.v; faces: fonts.v.
 module kit
 
-import quadra.core
 import quadra.prim
-import quadra.text
 
 pub enum Mode {
 	light
@@ -44,12 +41,23 @@ pub mut:
 	status_bg      prim.Color // the status bar when it differs from the title bar (else chrome)
 	tab_bg         prim.Color // tab strips and inactive tabs (else panel)
 	scroll_thumb   prim.Color // scroll thumbs (else text at 30 %)
+	input_bg       prim.Color // text fields, steppers, dropdown triggers (else canvas)
+	// roles a theme may split off; finish() derives the unset ones (derived_roles)
+	selection          prim.Color // selected UI text (else accent_tint in fields, the editor selection elsewhere)
+	tab_fg             prim.Color // inactive tab labels (else text_2)
+	tab_active_fg      prim.Color // the active tab's label, and any tab's under the pointer (else text)
+	table_head_bg      prim.Color // table headers (else panel)
+	table_head_fg      prim.Color // their labels (else text_2)
+	table_row_border   prim.Color // lines between table rows (else line_strong)
+	list_even          prim.Color // even rows of striped lists (else transparent: no stripes)
+	scroll_thumb_hover prim.Color // a thumb under the pointer or dragged (else scroll_thumb)
 	// text
 	text           prim.Color
 	text_2         prim.Color
 	text_3         prim.Color
 	text_disabled  prim.Color
 	text_on_accent prim.Color
+	text_on_status prim.Color // on ok, warn, error and info fills (else text_on_accent)
 	// accent
 	accent       prim.Color
 	accent_hover prim.Color
@@ -58,13 +66,15 @@ pub mut:
 	accent_text  prim.Color
 	// feedback, each with a tint for banners and tinted buttons (finish() derives unset ones;
 	// accent_tint is the info tint)
-	ok         prim.Color
-	warn       prim.Color
-	error      prim.Color
-	info       prim.Color
-	ok_tint    prim.Color
-	warn_tint  prim.Color
-	error_tint prim.Color
+	ok          prim.Color
+	warn        prim.Color
+	error       prim.Color
+	info        prim.Color
+	ok_tint     prim.Color
+	warn_tint   prim.Color
+	error_tint  prim.Color
+	error_hover prim.Color // a filled error control under the pointer (else error toward canvas)
+	cyan        prim.Color // a cyan hue for kinds and marks (else the syntax type color)
 	// workload status (shape + color, specs/15)
 	running     prim.Color
 	pending     prim.Color
@@ -112,6 +122,7 @@ pub mut:
 	code    CodeColors
 	series  []prim.Color // categorical chart colors (kit/viz), tuned per theme
 	density Density
+	ctl     Controls // control shapes (theme_controls.v)
 	// shape
 	radius_sm f32 = 2 // checkboxes, keys
 	radius_md f32 = 4 // buttons, rows, chips
@@ -127,10 +138,18 @@ pub mut:
 	text_xl     f32    = 18
 	text_2xl    f32    = 23
 	text_3xl    f32    = 28
-	text_scale  f32    = 1     // OS text-size setting
-	line_height f32    = 1.618 // of UI text
-	mono_size   f32    = 15    // the code editor's text
-	mono_line   f32    = 1.618 // and its line height
+	text_scale  f32    = 1 // OS text-size setting
+	text_step   int // 1: components take their text one step down the scale (ui_text), for scales whose md is body text (16)
+	line_height f32 = 1.618 // of UI text
+	mono_size   f32 = 15    // the code editor's text
+	mono_line   f32 = 1.618 // and its line height
+	// size (specs/15, Size): control heights by Size, and the factor that scales them and the
+	// paddings of components (a UI font-size setting; 1 at One's sizes)
+	h_xs     f32 = 18
+	h_sm     f32 = 22
+	h_md     f32 = 28
+	h_lg     f32 = 32
+	ui_scale f32 = 1
 	// chrome
 	titlebar_h     f32 = 32
 	activity_w     f32 = 40
@@ -138,8 +157,7 @@ pub mut:
 	panel_header_h f32 = 28
 	row_h          f32 = 26
 	statusbar_h    f32 = 30
-	// follow_system tints the accent from the OS accent color when set
-	system_accent bool
+	system_accent  bool // follow_system tints the accent from the OS accent color
 }
 
 // finish derives the original token names from the palette.
@@ -157,6 +175,10 @@ pub fn (t Theme) finish() Theme {
 	if r.p.scroll_thumb.a == 0 {
 		r.p.scroll_thumb = r.p.text.alpha(0.3)
 	}
+	if r.p.input_bg.a == 0 {
+		r.p.input_bg = r.p.canvas
+	}
+	r.p.derive_roles(r.code.syntax.typ)
 	if r.code.editor.foreground.a == 0 {
 		r.code.editor.foreground = r.p.text
 	}
@@ -191,12 +213,12 @@ pub fn (t Theme) finish() Theme {
 		secondary:       p.raised
 		secondary_hover: p.raised_hover
 		danger:          p.error
-		danger_fg:       p.text_on_accent
-		danger_hover:    p.error.lerp(p.canvas, 0.15)
+		danger_fg:       p.text_on_status
+		danger_hover:    p.error_hover
 		success:         p.ok
 		warning:         p.warn
 		info:            p.info
-		selection:       p.accent_tint
+		selection:       if p.selection.a > 0 { p.selection } else { p.accent_tint }
 		link:            p.accent_text
 	}
 	return r
@@ -205,13 +227,35 @@ pub fn (t Theme) finish() Theme {
 // height is the control height for a size at the theme's density.
 pub fn (t &Theme) height(s Size) f32 {
 	base := match s {
-		.xs { f32(18) }
-		.sm { 22 }
-		.md { 28 }
-		.lg { 32 }
+		.xs { t.h_xs }
+		.sm { t.h_sm }
+		.md { t.h_md }
+		.lg { t.h_lg }
 	}
 
-	return if t.density == .comfortable { base + 4 } else { base }
+	return (if t.density == .comfortable {
+		base + 4
+	} else {
+		base
+	}) * t.ui_scale
+}
+
+// sp scales a component's padding, gap or fixed size by ui_scale.
+pub fn (t &Theme) sp(v f32) f32 {
+	return v * t.ui_scale
+}
+
+// ui_text is the text size kit components use for size s: font_size, one step down the
+// scale when text_step is 1 (a scale whose md is body text, 16, keeps controls at 14).
+pub fn (t &Theme) ui_text(s Size) f32 {
+	if t.text_step == 0 {
+		return t.font_size(s)
+	}
+	return match s {
+		.xs, .sm { t.text_xs * t.text_scale }
+		.md { t.text_sm * t.text_scale }
+		.lg { t.text_md * t.text_scale }
+	}
 }
 
 // font_size is the text size for a control size, scaled by the OS text setting.
@@ -228,70 +272,4 @@ pub fn (t &Theme) font_size(s Size) f32 {
 
 pub fn (t &Theme) scaled(v f32) f32 {
 	return v * t.text_scale
-}
-
-// theme reads the global theme during render (tracked: the view re-renders on change).
-pub fn theme(cx &core.Cx) &Theme {
-	return cx.global[Theme]() or { &Theme{
-		...dark()
-	} }
-}
-
-// theme_of reads the theme at layout time; components resolve tokens there, so a theme
-// switch only needs a relayout, never a re-render.
-pub fn theme_of(app &core.App) &Theme {
-	cx := core.Cx{
-		app: unsafe { app }
-	}
-	return cx.peek_global[Theme]() or { &Theme{
-		...dark()
-	} }
-}
-
-// set_theme replaces the theme and relays out every window.
-pub fn set_theme(mut app core.App, t Theme) {
-	mut cx := core.Cx{
-		app: app
-	}
-	cx.set_global(t)
-	app.text_style = text.TextStyle{
-		family:      t.font_family
-		size:        t.text_md * t.text_scale
-		color:       t.colors.foreground
-		line_height: t.line_height
-	}
-	for mut w in app.windows {
-		w.clear_color = t.colors.background
-		w.focus_color = t.p.border_focused
-		w.scroll_color = t.p.scroll_thumb
-		w.invalidate()
-	}
-}
-
-// follow_system picks light, dark or high contrast from the OS and keeps following it.
-// Themes with `system_accent` take the accent from the OS too.
-pub fn follow_system(mut app core.App, light_theme Theme, dark_theme Theme) {
-	apply := fn [light_theme, dark_theme] (mut app core.App) {
-		look := app.plat.appearance()
-		mut t := if look.high_contrast {
-			high_contrast()
-		} else if look.dark {
-			dark_theme
-		} else {
-			light_theme
-		}
-		if !look.high_contrast && t.system_accent {
-			t.p.accent = look.accent
-			t.p.accent_hover = look.accent.lerp(prim.white, 0.12)
-			t.p.accent_press = look.accent.lerp(prim.black, 0.15)
-			t.p.accent_tint = look.accent.alpha(0.1)
-			t.p.accent_text = look.accent
-			t.p.border_focused = look.accent
-			t = t.finish()
-		}
-		t.text_scale = look.text_scale
-		set_theme(mut app, t)
-	}
-	apply(mut app)
-	app.appearance_hooks << apply
 }

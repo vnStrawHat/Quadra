@@ -159,7 +159,7 @@ fn tree_row(d TreeRows, i int) core.Element {
 	// A panel row (specs/15): 26 tall, indent 20 with 1 px guides, hover one step, selected
 	// two; the selected row of a focused tree is outlined in the focus color.
 	mut row := ui.div().test_id('${id}-${n.id}').flex_row().items_center().gap(2).pl(8 +
-		f32(f.depth) * indent).pr(8).h_full().cursor(.pointer).role(.treeitem).label(n.label).selected(on).expanded(d.expanded[n.id]).text_size(th.font_size(.md)).text_color(p.text)
+		f32(f.depth) * indent).pr(8).h_full().cursor(.pointer).role(.treeitem).label(n.label).selected(on).expanded(d.expanded[n.id]).text_size(th.ui_text(.md)).text_color(p.text)
 	for k in 0 .. f.depth {
 		row.child(ui.div().absolute().left(8 + f32(k) * indent + 7).top(0).w(1).h_full().bg(p.text.alpha(0.1)))
 	}

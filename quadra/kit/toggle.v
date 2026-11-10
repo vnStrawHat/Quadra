@@ -65,6 +65,9 @@ pub fn (self_ &Toggle) on_change(l core.Listener[bool]) &Toggle {
 // a 12 px knob in the text color, the accent at 40 % when on.
 fn (tg &Toggle) control(t &Theme) &ui.Div {
 	p := t.p
+	if t.ctl.plain_toggles {
+		return tg.plain_control(t)
+	}
 	if tg.is_switch {
 		bg := if tg.on { p.accent.alpha(0.4) } else { p.raised }
 		mut track := ui.div().w(32).h(20).shrink_0().rounded_full().px(2).flex_row().items_center().bg(bg).border(1).border_color(if tg.on {
@@ -111,6 +114,38 @@ fn (tg &Toggle) control(t &Theme) &ui.Div {
 	return box
 }
 
+// plain_control is the plain shape (Controls.plain_toggles): a 36 x 20 track with a 16
+// thumb inset 2, or a 16 box with radius 4 filled with the accent when checked.
+fn (tg &Toggle) plain_control(t &Theme) &ui.Div {
+	p := t.p
+	mut d := ui.div().shrink_0()
+	if tg.is_switch {
+		d.w(36).h(20).p(2).rounded_full().flex_row().items_center().bg(if tg.on {
+			p.accent
+		} else {
+			p.line
+		}).child(ui.div().size(16).rounded_full().bg(p.text))
+		if tg.on {
+			d.justify_end()
+		}
+	} else {
+		on := tg.on || tg.indeterminate
+
+		d.size(16).center().rounded(t.radius_md).border(1).border_color(if on {
+			p.accent
+		} else {
+			p.line
+		}).bg(if on { p.accent } else { p.input_bg }).text_color(p.text_on_accent)
+		if on {
+			d.child(icon(if tg.indeterminate { icon_minus } else { icon_check }).size(12))
+		}
+	}
+	if tg.disabled {
+		d.opacity(0.5)
+	}
+	return d
+}
+
 pub fn (mut tg Toggle) request_layout(mut cx core.LayoutCx) layout.NodeId {
 	el := core.tracked(mut tg, mut cx)
 	return tg.layout_inner(el, mut cx)
@@ -123,6 +158,9 @@ pub fn (mut tg Toggle) build_tree(mut cx core.LayoutCx) core.Element {
 	} else {
 		core.Role.checkbox
 	}).label(tg.text).checked(tg.on).disabled(tg.disabled).child(tg.control(t))
+	if t.ctl.plain_toggles {
+		d.gap(8)
+	}
 	if tg.text != '' {
 		d.child(ui.text(tg.text).color(if tg.disabled { t.p.text_disabled } else { t.p.text }))
 	}

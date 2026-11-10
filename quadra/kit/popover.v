@@ -14,7 +14,7 @@ const hover_card_grace_ms = 150.0 // crossing the gap between trigger and card
 
 // popover_frame is the popover surface: an overlay at level 1 with padding (specs/15).
 pub fn popover_frame(t &Theme, content core.Element) &ui.Div {
-	return ui.div().flex_col().gap(8).p(12).rounded(t.radius_xl).bg(t.p.overlay_bg).border(1).border_color(t.p.line).shadow_level(1).text_color(t.p.text).text_size(t.font_size(.md)).role(.dialog).child(content)
+	return ui.div().flex_col().gap(8).p(12).rounded(t.radius_xl).bg(t.p.overlay_bg).border(1).border_color(t.p.line).shadow_level(1).text_color(t.p.text).text_size(t.ui_text(.md)).role(.dialog).child(content)
 }
 
 // open_popover shows build() in a popover next to anchor and returns its popup id.

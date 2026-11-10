@@ -25,13 +25,15 @@ pub:
 
 pub struct Modal {
 pub:
-	id     int
-	win    u32
-	side   ModalSide
-	title  string
-	body   fn () core.Element = unsafe { nil }
-	footer ?fn () core.Element
-	width  f32 = 420
+	id          int
+	win         u32
+	side        ModalSide
+	title       string
+	body        fn () core.Element = unsafe { nil }
+	footer      ?fn () core.Element
+	width       f32 = 420
+	description string
+	alert       bool
 }
 
 pub struct Popup {
@@ -77,7 +79,9 @@ pub fn install(mut app core.App) ! {
 	}
 	app.bind('escape', Dismiss{})!
 	app.on_action(core.handler(fn (_ &Dismiss, mut cx core.Cx) {
-		dismiss_top(mut cx)
+		if !dismiss_top(mut cx) {
+			cx.skip() // no overlay: Esc belongs to the focused element (a terminal)
+		}
 	}))
 }
 
@@ -88,7 +92,12 @@ pub fn (mut h Host) render(mut cx core.ViewCx[Host]) core.Element {
 	win := cx.win.id
 	cx.win.focus_color = t.p.border_focused // windows opened after set_theme
 	cx.win.scroll_color = t.p.scroll_thumb
-	cx.win.selection_color = t.code.editor.selection
+	cx.win.thumb_style = thumb_style(t)
+	cx.win.selection_color = if t.p.selection.a > 0 {
+		t.p.selection
+	} else {
+		t.code.editor.selection
+	}
 	mut root :=
 		ui.div().size_full().bg(t.colors.background).text_color(t.colors.foreground).child(cx.child_any(h.root))
 	for p in ov.popups.filter(it.win == win) {
@@ -99,9 +108,16 @@ pub fn (mut h Host) render(mut cx core.ViewCx[Host]) core.Element {
 			p.id * 2))
 	}
 	for m in ov.modals.filter(it.win == win) {
-		root.child(ui.anchored(modal_frame(m, t)).fill_window().layer(1000 + m.id))
+		root.child(ui.anchored(modal_frame(m, t, cx.win.size())).fill_window().layer(1000 + m.id))
 	}
 	toasts := ov.toasts.filter(it.win == win)
+	notices := ov.notices.filter(it.win == win)
+	if t.ctl.tinted_notices {
+		if toasts.len + notices.len > 0 {
+			root.child(tinted_stack(notices, toasts, t, cx.win.size()))
+		}
+		return root
+	}
 	if toasts.len > 0 {
 		// Bottom center, just above the status bar (specs/15).
 		mut stack := ui.div().flex_col().gap(8).items_center()
@@ -112,7 +128,6 @@ pub fn (mut h Host) render(mut cx core.ViewCx[Host]) core.Element {
 		root.child(ui.anchored(stack).at(prim.rect(sz.width / 2, sz.height - t.statusbar_h - 8, 0,
 			0)).placement(.top).layer(5000))
 	}
-	notices := ov.notices.filter(it.win == win)
 	if notices.len > 0 {
 		root.child(notice_stack(notices, t, cx.win.size()))
 	}
@@ -120,19 +135,19 @@ pub fn (mut h Host) render(mut cx core.ViewCx[Host]) core.Element {
 }
 
 // dismiss_top closes the most recent popup, else the most recent modal, in this window.
-pub fn dismiss_top(mut cx core.Cx) {
+pub fn dismiss_top(mut cx core.Cx) bool {
 	if cx.win == unsafe { nil } {
-		return
+		return false
 	}
 	win := cx.win.id
-	mut ov := cx.peek_global[Overlays]() or { return }
+	mut ov := cx.peek_global[Overlays]() or { return false }
 	for i := ov.popups.len - 1; i >= 0; i-- {
 		if ov.popups[i].win == win {
 			restore_focus(mut cx, ov.popups[i])
 			ov.popups.delete(i)
 			ov.free_idle(mut cx)
 			cx.touch_global[Overlays]()
-			return
+			return true
 		}
 	}
 	for i := ov.modals.len - 1; i >= 0; i-- {
@@ -140,7 +155,8 @@ pub fn dismiss_top(mut cx core.Cx) {
 			ov.modals.delete(i)
 			ov.free_idle(mut cx)
 			cx.touch_global[Overlays]()
-			return
+			return true
 		}
 	}
+	return false
 }

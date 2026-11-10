@@ -20,6 +20,8 @@ pub mut:
 	max_rows       int
 	fill           bool // grow to fill the parent (editors)
 	bare           bool // no box (InputOptions.bare)
+	center         bool // single-line text centred while it fits (InputOptions.center)
+	height         f32  // a fixed single-line height (InputOptions.height)
 	disabled       bool
 	readonly       bool
 	invalid        bool   // the border shows the error color (set_invalid)
@@ -53,6 +55,8 @@ pub:
 	max_rows    int
 	fill        bool // grow to fill the parent along its main axis (editors)
 	bare        bool // no box: a field inside another surface (palette, panel filter)
+	center      bool // centre the text (a stepper's value)
+	height      f32  // a fixed height for a single-line input; 0: padding 6 around the text
 	prefix      string
 	disabled    bool
 	readonly    bool
@@ -73,6 +77,8 @@ pub fn new_input(mut cx core.Cx, opts InputOptions) core.View[TextInput] {
 		max_rows:    opts.max_rows
 		fill:        opts.fill
 		bare:        opts.bare
+		center:      opts.center
+		height:      opts.height
 		prefix:      opts.prefix
 		disabled:    opts.disabled
 		readonly:    opts.readonly
@@ -159,11 +165,12 @@ pub fn (mut v TextInput) render(mut cx core.ViewCx[TextInput]) core.Element {
 	c := t.colors
 	v.style = text.TextStyle{
 		family:      t.font_family
-		size:        t.font_size(.md)
+		size:        t.ui_text(.md)
 		color:       if v.disabled { t.p.text_disabled } else { t.code.editor.foreground }
 		line_height: t.line_height
 	}
-	v.placeholder_color = t.p.text_3
+	roomy := t.ctl.roomy_inputs
+	v.placeholder_color = if roomy { t.p.text_2 } else { t.p.text_3 }
 	v.selection_color = c.selection
 	v.caret_color = t.code.editor.cursor
 	focused := v.focus.is_focused(cx.Cx)
@@ -172,21 +179,35 @@ pub fn (mut v TextInput) render(mut cx core.ViewCx[TextInput]) core.Element {
 		.start
 	} else {
 		.center
-	}).gap(4).px(8).py(if v.multiline { 8 } else { 6 }).min_h(32).rounded(t.radius_lg).border(1).border_color(if v.invalid {
+	}).gap(t.sp(if roomy { 6 } else { 4 })).px(t.sp(if roomy { 10 } else { 8 })).py(t.sp(if
+		v.multiline || roomy {
+		8
+	} else {
+		6
+	})).min_h(t.sp(32)).rounded(t.radius_lg).border(1).border_color(if v.invalid {
 		t.p.error
 	} else if focused {
 		t.p.border_focused
 	} else {
 		t.p.line
-	}).bg(if v.disabled { t.p.panel } else { t.p.canvas }).focus_ring(ui.Patch{}).cursor(.ibeam).role(.textbox).label(if v.placeholder != '' {
+	}).bg(if v.disabled { t.p.panel } else { t.p.input_bg }).focus_ring(ui.Patch{}).cursor(.ibeam).role(.textbox).label(if v.placeholder != '' {
 		v.placeholder
 	} else {
 		v.id
 	}).sem_value(if v.password { '' } else { v.buf.text }).disabled(v.disabled)
+	if v.height > 0 && !v.multiline {
+		d.h(v.height).py(0).min_h(0)
+	}
+	if roomy && focused && !v.invalid && !v.fill && !v.bare {
+		d.ring(3, t.p.border_focused.alpha(0.5)) // on any focus, as the border
+	}
 	d.key_context(if v.multiline { 'TextInput Multiline' } else { 'TextInput' })
 	if v.fill {
 		// A filling input is an editor: a plane, not a boxed control (specs/15).
 		d.grow().border(0).rounded(0).px(24).py(16)
+		if !v.disabled {
+			d.bg(t.p.canvas) // a plane, not a field
+		}
 	} else if v.bare {
 		d.border(0).rounded(0).px(0).py(0).min_h(0).bg(t.p.canvas.alpha(0)) // the caret shows focus
 	}

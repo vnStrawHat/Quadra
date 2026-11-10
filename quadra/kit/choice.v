@@ -75,8 +75,8 @@ fn (ch &Choice) option(i int, label string, t &Theme) &ui.Div {
 		d.cursor(.pointer).on_click(fire_click(ch.change, i))
 	}
 	if ch.segmented {
-		small := ch.size == .xs || ch.size == .sm
-		d.px(if small { 8 } else { 12 }).shrink_0().h(t.height(ch.size)).justify_center().text_size(t.font_size(if small {
+		is_small := ch.size == .xs || ch.size == .sm
+		d.px(if is_small { 8 } else { 12 }).shrink_0().h(t.height(ch.size)).justify_center().text_size(t.ui_text(if is_small {
 			Size.sm
 		} else {
 			Size.md

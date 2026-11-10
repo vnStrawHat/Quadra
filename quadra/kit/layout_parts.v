@@ -122,9 +122,13 @@ pub fn (mut s Split) request_layout(mut cx core.LayoutCx) layout.NodeId {
 		b.h_full()
 	}
 	cursor := if s.vertical { platform.Cursor.resize_ns } else { platform.Cursor.resize_ew }
-	// A 1 px seam in a 6 px grab area, no hover mark (specs/15).
-	mut line := ui.div().bg(t.p.line_strong)
+	// A 1 px seam in a 6 px grab area; no hover mark, or a pill with accent_chrome (specs/15).
+	chrome := t.ctl.accent_chrome
+	line := resize_line(s.vertical, if chrome { t.p.line } else { t.p.line_strong }, t)
 	mut handle := ui.div().test_id('${s.id}-handle').center().cursor(cursor).child(line)
+	if chrome {
+		handle.group()
+	}
 
 	// Handlers are holder + function, not closures: layout runs every frame (specs/14).
 	handle.handlers << ui.Handler{.mouse_down, false, core.AnyListener{
@@ -137,10 +141,8 @@ pub fn (mut s Split) request_layout(mut cx core.LayoutCx) layout.NodeId {
 	}}
 	if s.vertical {
 		handle.h(6).w_full().shrink_0()
-		line.h(1).w_full()
 	} else {
 		handle.w(6).h_full().shrink_0()
-		line.w(1).h_full()
 	}
 	s.div = ui.div().size_full().child(a).child(handle).child(b)
 	if s.vertical {
@@ -161,4 +163,41 @@ pub fn (mut s Split) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 
 pub fn (mut s Split) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	s.div.paint(bounds, mut cx)
+}
+
+// resize_line is a resize handle's 1 px hairline (`vertical`: across stacked panes). With
+// Controls.accent_chrome it carries the handle's pill (specs/15): 3 px in `text_2`, 20 long
+// at 35 % while the handle, a ui group(), is hovered and 44 long at 90 % while it is pressed.
+pub fn resize_line(vertical bool, color prim.Color, t &Theme) &ui.Div {
+	mut line := ui.div().bg(color).shrink_0()
+	if vertical {
+		line.h(1).w_full()
+	} else {
+		line.w(1).h_full()
+	}
+	if !t.ctl.accent_chrome {
+		return line
+	}
+	// ponytail: hover and press only; the original's 28 px pressed-but-still step and its
+	// length easing are left out (a pill element with its own state could add them)
+	clear := prim.transparent
+	mut short := ui.div().shrink_0().bg(clear).rounded_full().group_hover(ui.Patch{
+		background: t.p.text_2.alpha(0.35)
+	}).group_active(ui.Patch{
+		background: clear
+	})
+	mut long := ui.div().shrink_0().center().bg(clear).rounded_full().group_active(ui.Patch{
+		background: t.p.text_2.alpha(0.9)
+	}).child(short)
+	// The pill is centred along the line and overhangs it by 1 on each side.
+	if vertical {
+		line.flex_row().justify_center()
+		long.w(44).h(3).my(-1)
+		short.w(20).h(3)
+	} else {
+		line.flex_col().justify_center()
+		long.w(3).h(44).mx(-1)
+		short.w(3).h(20)
+	}
+	return line.child(long)
 }

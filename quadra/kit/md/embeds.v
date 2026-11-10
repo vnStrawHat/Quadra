@@ -63,7 +63,7 @@ fn (mut v MarkdownView) diagram(src string) &mermaid.Diagram {
 fn (mut v MarkdownView) diagram_block(src string, t &kit.Theme) core.Element {
 	d := v.diagram(src)
 	if msg := d.error() {
-		note := ui.text('Diagram: ${msg}').size(t.font_size(.sm)).color(t.p.text_3)
+		note := ui.text('Diagram: ${msg}').size(t.ui_text(.sm)).color(t.p.text_3)
 		return ui.div().flex_col().gap(6).child(code_box(code_spans(src, 'mermaid', t), t)).child(note)
 	}
 	return ui.div().w_full().overflow_x_scroll().flex_row().justify_center().py(8).child(d)
@@ -85,7 +85,7 @@ fn (mut v MarkdownView) formula(src string, display bool) &tex.Formula {
 fn (mut v MarkdownView) math_block(src string, t &kit.Theme) core.Element {
 	f := v.formula(src, true)
 	if msg := f.error() {
-		note := ui.text('Math: ${msg}').size(t.font_size(.sm)).color(t.p.text_3)
+		note := ui.text('Math: ${msg}').size(t.ui_text(.sm)).color(t.p.text_3)
 		return ui.div().flex_col().gap(6).child(code_box(code_spans(src, 'tex', t), t)).child(note)
 	}
 	return ui.div().w_full().overflow_x_scroll().flex_row().justify_center().py(6).child(f)

@@ -68,3 +68,43 @@ fn test_hover_and_press_are_patched_like_a_full_paint() {
 	})
 	assert h.snapshot() == full_paint_snapshot(mut h)
 }
+
+struct Cards {}
+
+@[markused]
+pub fn (mut c Cards) render(mut cx core.ViewCx[Cards]) core.Element {
+	mark := ui.div().w(20).h(20).bg(prim.transparent).group_hover(ui.Patch{
+		background: prim.rgb(0xFF0000)
+	}).group_active(ui.Patch{
+		background: prim.rgb(0x00FF00)
+	})
+	return ui.div().p(20).child(ui.div().test_id('card').group().w(200).h(80).bg(prim.rgb(0x222222)).child(ui.div().p(4).child(mark)))
+}
+
+fn test_group_hover_restyles_a_descendant_like_a_full_paint() {
+	mut h := testing.new_harness(width: 400, height: 200)!
+	h.open(Cards{})!
+	idle := h.snapshot()
+	r := h.find('card') or { panic('card') }
+	x, y := r.x + 150, r.y + 60 // on the card, away from the mark
+	h.move_to(x, y)
+	hovered := h.snapshot()
+	assert hovered != idle
+	assert hovered == full_paint_snapshot(mut h)
+	h.inject(platform.MouseEvent{
+		action: .down
+		button: .left
+		x:      x
+		y:      y
+	})
+	pressed := h.snapshot()
+	assert pressed != hovered && pressed == full_paint_snapshot(mut h)
+	h.inject(platform.MouseEvent{
+		action: .up
+		button: .left
+		x:      x
+		y:      y
+	})
+	h.move_to(390, 190)
+	assert h.snapshot() == idle
+}

@@ -27,9 +27,9 @@ pub fn alert(tone Tone, title string, message string) &Styled {
 			text.child(ui.text(title))
 		}
 		if message != '' {
-			text.child(ui.text(message).size(t.font_size(.sm)).color(t.p.text_2))
+			text.child(ui.text(message).size(t.ui_text(.sm)).color(t.p.text_2))
 		}
-		return ui.div().flex_row().items_start().gap(8).p(8).rounded(t.radius_md).bg(c.alpha(0.1)).border(1).border_color(c.alpha(0.2)).text_size(t.font_size(.md)).role(if tone in [
+		return ui.div().flex_row().items_start().gap(8).p(8).rounded(t.radius_md).bg(c.alpha(0.1)).border(1).border_color(c.alpha(0.2)).text_size(t.ui_text(.md)).role(if tone in [
 			.danger,
 			.warning,
 		] {
@@ -49,7 +49,7 @@ pub fn empty_state(glyph string, title string, description string, action core.E
 		col.child(icon(glyph).size(16).color(t.p.text_3))
 		col.child(ui.text(title).color(t.p.text))
 		if description != '' {
-			col.child(ui.text(description).size(t.font_size(.sm)).color(t.p.text_2))
+			col.child(ui.text(description).size(t.ui_text(.sm)).color(t.p.text_2))
 		}
 		return col.child(ui.div().pt(8).child(action))
 	})
@@ -65,7 +65,7 @@ pub:
 pub fn description_list(items []Description) &Styled {
 	return themed_with(items, fn (items []Description, t &Theme) core.Element {
 		mut grid :=
-			ui.div().cols([layout.max_content(), layout.fr(1)]).gap_x(24).gap_y(8).text_size(t.font_size(.md))
+			ui.div().cols([layout.max_content(), layout.fr(1)]).gap_x(24).gap_y(8).text_size(t.ui_text(.md))
 		for it in items {
 			grid.child(ui.text(it.term).color(t.p.text_2))
 			grid.child(it.detail)

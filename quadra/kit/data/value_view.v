@@ -141,7 +141,7 @@ pub fn (mut vv ValueView) render(mut cx core.ViewCx[ValueView]) core.Element {
 	list := ui.uniform_list_with('${vv.id}-rows', rows.len, vv.row_h, ValueRows{rows, selected, focused, opened, ent, id, unsafe { th }},
 		value_row)
 	path := if vv.selected == '' { 'Select a value' } else { vv.selected }
-	bar := ui.div().flex_row().items_center().gap(6).px(8).h(th.panel_header_h).shrink_0().border_b(1).border_color(th.p.line).child(ui.text(path).family(th.mono_family).size(th.font_size(.sm)).color(th.p.text_2).selectable()).child(ui.div().grow()).child(kit.button('${vv.id}-copy').label('Copy path').size(.sm).disabled(vv.selected == '').on_click(cx.listener(fn (mut vv ValueView, _ &core.ClickEvent, mut cx core.ViewCx[ValueView]) {
+	bar := ui.div().flex_row().items_center().gap(6).px(8).h(th.panel_header_h).shrink_0().border_b(1).border_color(th.p.line).child(ui.text(path).family(th.mono_family).size(th.ui_text(.sm)).color(th.p.text_2).selectable()).child(ui.div().grow()).child(kit.button('${vv.id}-copy').label('Copy path').size(.sm).disabled(vv.selected == '').on_click(cx.listener(fn (mut vv ValueView, _ &core.ClickEvent, mut cx core.ViewCx[ValueView]) {
 		cx.clipboard_write(vv.selected)
 	})))
 	return ui.div().id(vv.id).test_id(vv.id).flex_col().size_full().role(.tree).track_focus(vv.focus).on_key_down(cx.listener(fn (mut vv ValueView, e &core.KeyDownEvent, mut cx core.ViewCx[ValueView]) {
@@ -166,7 +166,7 @@ fn value_row(d ValueRows, i int) core.Element {
 	container := r.value.kind in [.map, .list]
 	open := d.opened[r.path] or { r.depth < 2 }
 	mut row := ui.div().test_id('${id}-row${i}').flex_row().items_center().gap(6).h_full().pl(8 +
-		f32(r.depth) * 16).text_size(th.font_size(.md)).font(th.mono_family).role(.treeitem).label(r.path).selected(r.path == selected)
+		f32(r.depth) * 16).text_size(th.ui_text(.md)).font(th.mono_family).role(.treeitem).label(r.path).selected(r.path == selected)
 	if r.path == selected {
 		row.bg(th.p.press)
 		if focused {

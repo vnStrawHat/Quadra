@@ -62,7 +62,7 @@ fn (sb &Sidebar) item(it NavItem, t &Theme) &ui.Div {
 	p := t.p
 	// A panel row (specs/15): 26 tall, hover one step, the selected row two.
 	mut row :=
-		ui.div().test_id('nav-${it.id}').flex_row().items_center().gap(6).h(t.row_h).pl(10).pr(8).cursor(.pointer).role(.treeitem).label(it.label).selected(on).text_size(t.font_size(.md)).text_color(p.text)
+		ui.div().test_id('nav-${it.id}').flex_row().items_center().gap(6).h(t.row_h).pl(10).pr(8).cursor(.pointer).role(.treeitem).label(it.label).selected(on).text_size(t.ui_text(.md)).text_color(p.text)
 	row.on_click(fire_click(picked, id))
 	if on {
 		row.bg(p.press)
@@ -143,7 +143,7 @@ pub fn (mut b Breadcrumb) build_tree(mut cx core.LayoutCx) core.Element {
 	t := theme_of(cx.app)
 	// Mono 14 px muted segments split by a placeholder-toned "›" (specs/15).
 	mut row :=
-		ui.div().flex_row().items_center().gap(4).text_size(t.font_size(.md)).font(t.mono_family).text_color(t.p.text_2)
+		ui.div().flex_row().items_center().gap(4).text_size(t.ui_text(.md)).font(t.mono_family).text_color(t.p.text_2)
 	for i, item in b.items {
 		last := i == b.items.len - 1
 		if i > 0 {

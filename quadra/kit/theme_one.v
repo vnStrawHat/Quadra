@@ -28,6 +28,7 @@ pub fn high_contrast() Theme {
 		canvas:         prim.black
 		panel:          prim.black
 		chrome:         prim.black
+		input_bg:       prim.black
 		panel_hover:    prim.rgb(0x1A1A1A)
 		raised:         prim.black
 		raised_hover:   prim.rgb(0x1A1A1A)
@@ -47,5 +48,6 @@ pub fn high_contrast() Theme {
 		accent_tint:    prim.rgba(0xFFFF0055)
 		accent_text:    prim.rgb(0xFFFF00)
 	}
+	t.p.clear_derived(map[string]bool{}) // they follow the colors above, not One Dark's
 	return t.finish()
 }

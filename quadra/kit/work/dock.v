@@ -13,6 +13,26 @@ import quadra.ui
 
 const dock_kind = 'dock-tab'
 
+// tab_drag_kind is the drop kind of a dragged tab, for apps with their own drop targets.
+pub const tab_drag_kind = dock_kind
+
+// tab_drag_id is the id of the tab a drag carries.
+pub fn tab_drag_id(p core.DragPayload) string {
+	_, tab := dock_parts(p)
+	return tab
+}
+
+// tab_drag_source is a drag of a tab for apps that lay tabs out themselves.
+pub fn tab_drag_source(id string, title string, glyph string) core.DragSource {
+	return core.DragSource{
+		payload:    dock_payload('', id)
+		preview_el: core.Element(&TabChip{
+			title: title
+			glyph: glyph
+		})
+	}
+}
+
 pub enum DockZone {
 	center
 	left

@@ -63,7 +63,7 @@ pub fn heading(s string, level int) &Styled {
 // label is muted secondary text.
 pub fn label(s string) &Styled {
 	return themed_with(s, fn (s string, t &Theme) core.Element {
-		return ui.text(s).size(t.font_size(.sm)).color(t.p.text_2)
+		return ui.text(s).size(t.ui_text(.sm)).color(t.p.text_2)
 	})
 }
 
@@ -99,13 +99,13 @@ pub fn badge(s string, tone Tone) &Styled {
 		col := t.tone(a.tone)
 		// A chip (specs/15): 10 px mono text, 4 padding, a faint tint of the tone. The outer
 		// row keeps it at its text's width in grid cells, which stretch their children.
-		return ui.div().flex_row().child(ui.div().px(4).h(16).flex_row().items_center().rounded(t.radius_md).border(1).border_color(col.alpha(0.2)).bg(col.alpha(0.1)).text_color(col).text_size(t.font_size(.xs)).font(t.mono_family).child(ui.text(s)))
+		return ui.div().flex_row().child(ui.div().px(4).h(16).flex_row().items_center().rounded(t.radius_md).border(1).border_color(col.alpha(0.2)).bg(col.alpha(0.1)).text_color(col).text_size(t.ui_text(.xs)).font(t.mono_family).child(ui.text(s)))
 	})
 }
 
 pub fn tag(s string) &Styled {
 	return themed_with(s, fn (s string, t &Theme) core.Element {
-		return ui.div().px(4).h(18).flex_row().items_center().rounded(t.radius_md).border(1).border_color(t.p.line_strong).bg(t.p.raised).text_color(t.p.text).text_size(t.font_size(.xs)).font(t.mono_family).child(ui.text(s))
+		return ui.div().px(4).h(18).flex_row().items_center().rounded(t.radius_md).border(1).border_color(t.p.line_strong).bg(t.p.raised).text_color(t.p.text).text_size(t.ui_text(.xs)).font(t.mono_family).child(ui.text(s))
 	})
 }
 
@@ -153,7 +153,7 @@ pub fn card(title string, description string, body core.Element) &Styled {
 		if title != '' {
 			mut head := ui.div().flex_col().gap(2).child(ui.text(title).size(t.scaled(t.text_lg)))
 			if description != '' {
-				head.child(ui.text(description).size(t.font_size(.sm)).color(t.p.text_2))
+				head.child(ui.text(description).size(t.ui_text(.sm)).color(t.p.text_2))
 			}
 			d.child(head)
 		}
@@ -175,13 +175,22 @@ pub fn vdivider() &Styled {
 
 // section_label names a group (sidebar and panel sections): 12 px muted text (specs/15).
 pub fn section_label(s string, t &Theme) &ui.Div {
-	return ui.div().child(ui.text(s).size(t.font_size(.sm)).color(t.p.text_2))
+	return ui.div().child(ui.text(s).size(t.ui_text(.sm)).color(t.p.text_2))
 }
 
 // key_label writes a binding like "ctrl-shift-p" the way the kit shows shortcuts (specs/15):
 // "Ctrl-Shift-P", modifiers in the order Ctrl, Win, Alt, Shift; chords keep their spaces.
 pub fn key_label(keys string) string {
 	return keys.split(' ').map(stroke_label(it)).join(' ')
+}
+
+// key_text is key_label in the theme's form: with Controls.plus_keys "Ctrl+Shift+P",
+// modifiers in the order Ctrl, Alt, Shift, Win, and "Page Up".
+pub fn key_text(keys string, t &Theme) string {
+	if !t.ctl.plus_keys {
+		return key_label(keys)
+	}
+	return keys.split(' ').map(stroke_plus(it)).join(' ')
 }
 
 fn stroke_label(stroke string) string {
@@ -194,6 +203,25 @@ fn stroke_label(stroke string) string {
 	}
 	out << key_part(parts.last())
 	return out.join('-')
+}
+
+fn stroke_plus(stroke string) string {
+	parts := stroke.to_lower().split('-')
+	mods := parts[..parts.len - 1].map(if it in ['super', 'cmd'] { 'win' } else { it })
+	mut out := []string{cap: parts.len}
+	for m in ['ctrl', 'alt', 'shift', 'win'] {
+		if m in mods {
+			out << m.capitalize()
+		}
+	}
+	k := parts.last()
+	out << match k {
+		'pageup' { 'Page Up' }
+		'pagedown' { 'Page Down' }
+		else { key_part(k) }
+	}
+
+	return out.join('+')
 }
 
 fn key_part(k string) string {
@@ -220,6 +248,6 @@ pub fn key_hint(keys string, text string) &Styled {
 		k := if t.mode == .light { f32(0.5) } else { f32(1) }
 		key := ui.div().px(2).rounded(t.radius_md).border(1).border_color(p.panel.lerp(p.text,
 			0.16 * k)).bg(p.panel.lerp(p.accent_text, 0.1 * k)).child(ui.text(key_label(a[0])).size(10).italic())
-		return ui.div().flex_row().items_center().gap(4).font(t.mono_family).text_color(p.text_disabled).child(key).child(ui.text(a[1]).size(t.font_size(.sm)).italic())
+		return ui.div().flex_row().items_center().gap(4).font(t.mono_family).text_color(p.text_disabled).child(key).child(ui.text(a[1]).size(t.ui_text(.sm)).italic())
 	})
 }

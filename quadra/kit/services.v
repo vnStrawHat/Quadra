@@ -38,13 +38,18 @@ pub:
 	body   fn () core.Element = unsafe { nil }
 	footer ?fn () core.Element
 	width  f32 = 440
+	// muted text under the title (One: the body when there is no body)
+	description string
+	// an alert (a question that needs an answer): with Controls.card_dialogs it has no
+	// close button and outside clicks do not close it
+	alert bool
 }
 
 // open_modal shows a dialog in the current window; escape closes it.
 pub fn open_modal(mut cx core.Cx, opts ModalOptions) int {
 	mut ov, id := add_overlay(cx) or { return 0 }
 	cx.keep_build()
-	ov.modals << Modal{id, win_id(cx), opts.side, opts.title, opts.body, opts.footer, opts.width}
+	ov.modals << Modal{id, win_id(cx), opts.side, opts.title, opts.body, opts.footer, opts.width, opts.description, opts.alert}
 	cx.touch_global[Overlays]()
 	return id
 }
@@ -139,7 +144,8 @@ pub fn push_toast(mut cx core.Cx, kind ToastKind, text string) {
 	mut ov, id := add_overlay(cx) or { return }
 	ov.toasts << Toast{id, win_id(cx), kind, text}
 	cx.touch_global[Overlays]()
-	cx.app.after(10000, expire_toast)
+	cx.app.after(if theme_of(cx.app).ctl.tinted_notices { tinted_hide_ms } else { 10000 },
+		expire_toast)
 }
 
 // expire_toast removes the oldest toast: every toast lives 10 s, so they expire in order.
@@ -156,7 +162,10 @@ fn expire_toast(mut app core.App) {
 
 // modal_frame draws a dialog (specs/15): a level-2 overlay hanging 80 px from the window
 // top, no backdrop (a click outside closes it); drawers sit against their edge.
-fn modal_frame(m Modal, t &Theme) core.Element {
+fn modal_frame(m Modal, t &Theme, win prim.Size) core.Element {
+	if t.ctl.card_dialogs && m.side == .center {
+		return card_dialog(m, t, win)
+	}
 	id := m.id
 	p := t.p
 	mut dialog := ui.div().flex_col().bg(p.overlay_bg).border(1).border_color(p.line).shadow_level(2).role(.dialog).label(m.title).test_id('modal-${id}').on_mouse_down(core.handler(fn (_ &core.MouseDownEvent, mut cx core.Cx) {
@@ -170,7 +179,13 @@ fn modal_frame(m Modal, t &Theme) core.Element {
 	dialog.child(ui.div().flex_row().items_center().gap(4).px(12).pt(8).pb(4).child(ui.text(m.title).size(t.scaled(t.text_lg))).child(ui.div().grow()).child(ui.div().test_id('modal-close').size(22).center().rounded(t.radius_md).cursor(.pointer).text_color(p.text_2).hover(ui.Patch{
 		background: p.panel_hover
 	}).on_click(core.handler_with(id, close_modal_on[core.ClickEvent])).child(icon(icon_x).size(14))))
-	dialog.child(ui.div().px(12).py(8).grow().text_color(p.text_2).child(m.body()))
+	mut body := ui.div().px(12).py(8).grow().text_color(p.text_2)
+	if m.body != unsafe { nil } {
+		body.child(m.body())
+	} else {
+		body.child(ui.text(m.description))
+	}
+	dialog.child(body)
 	if f := m.footer {
 		dialog.child(ui.div().flex_row().justify_end().gap(4).p(8).border_t(1).border_color(p.line).child(f()))
 	}
@@ -212,5 +227,5 @@ fn toast_card(toast Toast, t &Theme) core.Element {
 	}
 
 	// A status toast (specs/15): level 2 on the panel tone, a status icon and the text.
-	return ui.div().flex_row().items_center().gap(8).max_w(448).pl(10).pr(10).py(6).bg(t.p.panel).rounded(t.radius_xl).border(1).border_color(t.p.line).shadow_level(2).role(.alert).label(toast.text).child(icon(glyph).color(accent).size(14)).child(ui.text(toast.text).size(t.font_size(.md)))
+	return ui.div().flex_row().items_center().gap(8).max_w(448).pl(10).pr(10).py(6).bg(t.p.panel).rounded(t.radius_xl).border(1).border_color(t.p.line).shadow_level(2).role(.alert).label(toast.text).child(icon(glyph).color(accent).size(14)).child(ui.text(toast.text).size(t.ui_text(.md)))
 }

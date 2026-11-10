@@ -36,11 +36,15 @@ pub:
 // notify shows a notification in the current window and returns its id.
 pub fn notify(mut cx core.Cx, kind ToastKind, title string, body string, opts NoticeOptions) int {
 	mut ov, id := add_overlay(cx) or { return 0 }
-	expires := if opts.timeout_ms > 0 { cx.app.plat.now_ms() + opts.timeout_ms } else { 0 }
+	mut timeout := opts.timeout_ms
+	if timeout == 0 && opts.actions.len == 0 && theme_of(cx.app).ctl.tinted_notices {
+		timeout = tinted_hide_ms
+	}
+	expires := if timeout > 0 { cx.app.plat.now_ms() + timeout } else { 0 }
 	ov.notices << Notice{id, win_id(cx), kind, title, body, opts.actions, expires}
 	cx.touch_global[Overlays]()
-	if opts.timeout_ms > 0 {
-		cx.app.after(opts.timeout_ms, expire_notices)
+	if timeout > 0 {
+		cx.app.after(timeout, expire_notices)
 	}
 	return id
 }
@@ -117,5 +121,5 @@ fn notice_card(n Notice, t &Theme) core.Element {
 	close := ui.div().test_id('notice-close-${n.id}').size(22).center().shrink_0().rounded(t.radius_md).cursor(.pointer).text_color(p.text_2).hover(ui.Patch{
 		background: p.panel_hover
 	}).role(.button).label('Close').on_click(core.handler_with(n.id, dismiss_on)).child(icon(icon_x).size(14))
-	return ui.div().test_id('notice-${n.id}').flex_row().items_start().gap(8).p(12).bg(p.panel).rounded(t.radius_xl).border(1).border_color(p.line).shadow_level(2).text_size(t.font_size(.md)).text_color(p.text).role(.alert).label(n.title).child(ui.div().pt(3).child(icon(glyph).size(16).color(color))).child(text).child(close)
+	return ui.div().test_id('notice-${n.id}').flex_row().items_start().gap(8).p(12).bg(p.panel).rounded(t.radius_xl).border(1).border_color(p.line).shadow_level(2).text_size(t.ui_text(.md)).text_color(p.text).role(.alert).label(n.title).child(ui.div().pt(3).child(icon(glyph).size(16).color(color))).child(text).child(close)
 }

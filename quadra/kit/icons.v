@@ -87,3 +87,5 @@ pub const icon_upload = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><p
 pub const icon_user = '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'
 pub const icon_workflow = '<rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/>'
 pub const icon_x = '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
+pub const icon_window_maximize = '<rect width="14" height="14" x="5" y="5" rx="1"/>'
+pub const icon_window_restore = '<rect width="12" height="12" x="4" y="8" rx="1"/><path d="M8 8V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-3"/>'

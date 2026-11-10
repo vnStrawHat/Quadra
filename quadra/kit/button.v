@@ -30,6 +30,8 @@ pub mut:
 	square   bool
 	full     bool
 	muted    bool // the label and icon in the muted text color (status bar buttons)
+	caret    bool // a dropdown trigger: a trailing chevron, the input fill (caret())
+	compact  bool // narrower padding, at least as wide as tall (compact())
 	tip      string
 	tip_keys string // the shortcut the tooltip shows after its text
 	click    ?core.AnyListener
@@ -64,112 +66,14 @@ pub fn toggle_button(id string, pressed bool) &Button {
 	}
 }
 
-pub fn (self_ &Button) label(s string) &Button {
-	mut b := unsafe { self_ }
-	b.text = s
-	return b
-}
-
-pub fn (self_ &Button) icon(glyph string) &Button {
-	mut b := unsafe { self_ }
-	b.glyph = glyph
-	return b
-}
-
-pub fn (self_ &Button) variant(v Variant) &Button {
-	mut b := unsafe { self_ }
-	b.variant = v
-	return b
-}
-
-pub fn (self_ &Button) primary() &Button {
-	return self_.variant(.primary)
-}
-
-pub fn (self_ &Button) danger() &Button {
-	return self_.variant(.danger)
-}
-
-pub fn (self_ &Button) ghost() &Button {
-	return self_.variant(.ghost)
-}
-
-pub fn (self_ &Button) outline() &Button {
-	return self_.variant(.outline)
-}
-
-pub fn (self_ &Button) link() &Button {
-	return self_.variant(.link)
-}
-
-pub fn (self_ &Button) size(s Size) &Button {
-	mut b := unsafe { self_ }
-	b.size = s
-	return b
-}
-
-pub fn (self_ &Button) muted() &Button {
-	mut b := unsafe { self_ }
-	b.muted = true
-	return b
-}
-
-pub fn (self_ &Button) disabled(on bool) &Button {
-	mut b := unsafe { self_ }
-	b.disabled = on
-	return b
-}
-
-pub fn (self_ &Button) loading(on bool) &Button {
-	mut b := unsafe { self_ }
-	b.loading = on
-	return b
-}
-
-pub fn (self_ &Button) full_width() &Button {
-	mut b := unsafe { self_ }
-	b.full = true
-	return b
-}
-
-pub fn (self_ &Button) tooltip(s string) &Button {
-	mut b := unsafe { self_ }
-	b.tip = s
-	return b
-}
-
-// tooltip_keys is a tooltip that names the button's shortcut (key_label form).
-pub fn (self_ &Button) tooltip_keys(s string, keys string) &Button {
-	mut b := unsafe { self_ }
-	b.tip, b.tip_keys = s, keys
-	return b
-}
-
-pub fn (self_ &Button) on_click(l core.Listener[core.ClickEvent]) &Button {
-	mut b := unsafe { self_ }
-	b.click = l.any
-	return b
-}
-
-// selected shows the button pressed (a toggle whose state the parent owns, e.g. a panel
-// that is open).
-pub fn (self_ &Button) selected(on bool) &Button {
-	mut b := unsafe { self_ }
-	b.pressed = on
-	return b
-}
-
-pub fn (self_ &Button) on_toggle(l core.Listener[bool]) &Button {
-	mut b := unsafe { self_ }
-	b.toggled = l.any
-	return b
-}
-
 // colors maps a variant to its fills (specs/15): ghost has none, secondary and outline are
 // outlined, primary and danger tinted. Toggled: the selected step, the label the accent.
 fn (b &Button) colors(t &Theme) ButtonColors {
 	p := t.p
 	clear := prim.transparent
+	if t.ctl.solid_buttons {
+		return b.solid_colors(t)
+	}
 	c := match b.variant {
 		.primary {
 			tinted(p.accent_tint, p.accent, p.text)
@@ -191,6 +95,12 @@ fn (b &Button) colors(t &Theme) ButtonColors {
 		}
 	}
 
+	return b.state_colors(c, t)
+}
+
+// state_colors applies the toggled, disabled and muted states to a variant's colors.
+fn (b &Button) state_colors(c ButtonColors, t &Theme) ButtonColors {
+	p := t.p
 	on := b.pressed or { false }
 	return ButtonColors{
 		...c
@@ -210,13 +120,17 @@ fn (b &Button) colors(t &Theme) ButtonColors {
 fn (b &Button) build(t &Theme) &ui.Div {
 	col := b.colors(t)
 	h := t.height(b.size)
-	small := b.size == .xs || b.size == .sm
+	is_small := b.size == .xs || b.size == .sm
+	solid := t.ctl.solid_buttons
 	inactive := b.disabled || b.loading
-	mut d := ui.div().id(b.id).test_id(b.id).flex_row().items_center().justify_center().gap(4).h(h).shrink_0().rounded(t.radius_md).bg(col.bg).text_color(col.fg).text_size(t.font_size(if b.size == .xs {
-		Size.sm
-	} else {
-		Size.md
-	})).role(if b.pressed != none {
+	mut text_sz := Size.md
+	if b.size == .xs {
+		text_sz = .sm
+	} else if solid && b.size == .lg {
+		text_sz = .lg
+	}
+	gap := if solid && !is_small { t.sp(8) } else { t.sp(4) }
+	mut d := ui.div().id(b.id).test_id(b.id).flex_row().items_center().justify_center().gap(gap).h(h).shrink_0().rounded(t.radius_md).bg(col.bg).text_color(col.fg).text_size(t.ui_text(text_sz)).role(if b.pressed != none {
 		core.Role.switch
 	} else {
 		core.Role.button
@@ -226,8 +140,10 @@ fn (b &Button) build(t &Theme) &ui.Div {
 	}
 	if b.square {
 		d.w(h)
+	} else if b.compact {
+		d.px(t.sp(prim.min(button_px(b.size, solid), compact_px(b.size)))).min_w(h)
 	} else {
-		d.px(if small { 4 } else { 8 })
+		d.px(t.sp(button_px(b.size, solid)))
 	}
 	if b.full {
 		d.w_len(layout.pct(100))
@@ -243,7 +159,11 @@ fn (b &Button) build(t &Theme) &ui.Div {
 	if !inactive {
 		d.cursor(.pointer).hover(ui.Patch{
 			background:   col.hover
-			border_color: if col.border.a > 0 { ?prim.Color(t.p.line_strong) } else { none }
+			border_color: if col.border.a > 0 && !solid {
+				?prim.Color(t.p.line_strong)
+			} else {
+				none
+			}
 		}).active(ui.Patch{
 			background: col.active
 		})
@@ -261,7 +181,7 @@ fn (b &Button) build(t &Theme) &ui.Div {
 	} else if b.disabled {
 		d.cursor(.not_allowed)
 	}
-	glyph := if small { f32(14) } else { 16 }
+	glyph := button_icon(b.size, b.square && solid)
 	if b.loading {
 		d.child(spinner().size(glyph))
 	} else if b.glyph != '' {
@@ -269,6 +189,9 @@ fn (b &Button) build(t &Theme) &ui.Div {
 	}
 	if b.text != '' {
 		d.child(ui.text(b.text))
+	}
+	if b.caret {
+		d.gap(8).bg(t.p.input_bg).child(icon(icon_chevron_down).size(16).color(col.fg.alpha(0.75)))
 	}
 	return d
 }

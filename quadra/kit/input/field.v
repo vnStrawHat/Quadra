@@ -65,6 +65,9 @@ pub fn (mut f Field) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 			v.scroll_x = x
 		}
 		v.scroll_x = prim.clamp(v.scroll_x, 0, prim.max(0, l.width - bounds.width + 2))
+		if v.center && l.width < bounds.width {
+			v.scroll_x = -(bounds.width - l.width) / 2 // a negative scroll shifts the text right
+		}
 	}
 }
 

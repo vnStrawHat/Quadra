@@ -80,16 +80,33 @@ pub fn (mut tp Tooltip) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 		cx.request_prepaint_after(int(tooltip_delay_ms - (now - st.since)) + 1)
 	} else {
 		t := theme_of(cx.app)
-		mut line := ui.div().flex_row().items_center().gap(16).child(ui.text(tp.text))
+		// Controls.roomy_menus: padding 8 x 2, radius_md, a 12 shortcut 12 after the text,
+		// placed at the pointer + 1 (specs/15).
+		roomy := t.ctl.roomy_menus
+		mut line :=
+			ui.div().flex_row().items_center().gap(t.sp(if roomy { 12 } else { 16 })).child(ui.text(tp.text))
 		if tp.keys != '' {
-			line.child(ui.text(key_label(tp.keys)).color(t.p.text_2))
+			mut keys := ui.text(key_text(tp.keys, t)).color(t.p.text_2)
+			if roomy {
+				keys.size(t.ui_text(.sm))
+			}
+			line.child(keys)
 		}
-		mut bubble :=
-			ui.div().flex_col().px(8).py(4).max_w(288).rounded(t.radius_xl).bg(t.p.overlay_bg).border(1).border_color(t.p.line).shadow_level(1).text_color(t.p.text).text_size(t.font_size(.md)).role(.tooltip).label(tp.text).child(line)
+		mut bubble := ui.div().flex_col().px(t.sp(8)).py(t.sp(if roomy { 2 } else { 4 })).max_w(288).rounded(if roomy {
+			t.radius_md
+		} else {
+			t.radius_xl
+		}).bg(t.p.overlay_bg).border(1).border_color(t.p.line).shadow_level(1).text_color(t.p.text).text_size(t.ui_text(.md)).role(.tooltip).label(tp.text).child(line)
 		if tp.meta != '' {
-			bubble.child(ui.text(tp.meta).size(t.font_size(.sm)).color(t.p.text_2))
+			bubble.child(ui.text(tp.meta).size(t.ui_text(.sm)).color(t.p.text_2))
 		}
-		mut a := ui.anchored(bubble).at(bounds).placement(tp.placement).gap(6).layer(4000)
+		mut a := ui.anchored(bubble).layer(4000)
+		if roomy {
+			m := cx.win.mouse
+			a.at(prim.rect(m.x + 1, m.y + 1, 0, 0)).placement(.bottom_start).gap(0)
+		} else {
+			a.at(bounds).placement(tp.placement).gap(6)
+		}
 		a.prepaint(bounds, mut cx)
 	}
 }

@@ -103,6 +103,17 @@ fn test_confirm_dialog() {
 	h.click('ask')!
 	h.click('confirm-no')!
 	assert forms(h, v).answer == 'no'
+	// card dialogs (Controls.card_dialogs): a confirm is an alert, an outside click keeps it
+	mut t := kit.dark()
+	t.ctl.card_dialogs = true
+	kit.set_theme(mut h.app, t)
+	h.click('ask')!
+	assert h.find('confirm-yes') != none && h.find('modal-close') == none
+	h.click_at(2, 2)
+	h.frame()
+	assert h.find('confirm-yes') != none
+	h.click('confirm-yes')!
+	assert forms(h, v).answer == 'yes'
 }
 
 fn test_validation_rules() {

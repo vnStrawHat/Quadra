@@ -26,7 +26,7 @@ fn (t &Table) header(mut cx core.ViewCx[Table], th &kit.Theme) core.Element {
 	mut pins := []bool{}
 	// The header (specs/15): muted 14 px titles over a hairline; the sort arrow in accent.
 	mut row :=
-		ui.div().flex_row().h(th.panel_header_h).w(if pinned { 0 } else { t.total_width() }).shrink_0().bg(p.panel).border_b(1).border_color(p.line).text_size(th.font_size(.md)).text_color(p.text_2)
+		ui.div().flex_row().h(th.panel_header_h).w(if pinned { 0 } else { t.total_width() }).shrink_0().bg(p.table_head_bg).border_b(1).border_color(p.line).text_size(th.ui_text(.md)).text_color(p.table_head_fg)
 	for i, col in t.columns {
 		if col.hidden {
 			continue
@@ -163,7 +163,7 @@ fn table_row(d TableRows, pos int) core.Element {
 		0
 	} else {
 		total
-	}).h_full().border_b(1).border_color(p.line_strong).text_size(th.font_size(.md)).role(.row).selected(on)
+	}).h_full().border_b(1).border_color(p.table_row_border).text_size(th.ui_text(.md)).role(.row).selected(on)
 	// Rows (specs/15): a seam below each, hover a step, selected two; the cursor row of a
 	// focused table is outlined in the focus color (an overlay, so nothing shifts).
 	if on {

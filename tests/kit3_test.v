@@ -12,6 +12,7 @@ struct Prefs {
 mut:
 	page   int
 	query  string
+	cards  bool
 	scroll &ui.ScrollState = &ui.ScrollState{}
 }
 
@@ -22,14 +23,27 @@ pub fn (mut p Prefs) render(mut cx core.ViewCx[Prefs]) core.Element {
 	}
 	pages := [
 		kit.SettingsPage{'General', [
-			kit.SettingsGroup{'General Settings', [row('Autosave'),
-				row('Restore Session')]},
-		]},
+			kit.SettingsGroup{
+				title: 'General Settings'
+				rows:  [row('Autosave'), row('Restore Session')]
+			},
+		], '', ''},
 		kit.SettingsPage{'Editor', [
-			kit.SettingsGroup{'Cursor', [row('Cursor Blink')]},
-		]},
+			kit.SettingsGroup{
+				title: 'Cursor'
+				rows:  [row('Cursor Blink')]
+			},
+			kit.SettingsGroup{
+				title: 'Font'
+				rows:  [row('Font Size')]
+			},
+		], '', ''},
 	]
-	settings := kit.settings('set', pages, p.page).search(ui.div(), p.query).on_select(cx.listener(fn (mut p Prefs, i &int, mut _ core.ViewCx[Prefs]) {
+	mut settings := kit.settings('set', pages, p.page)
+	if p.cards {
+		settings.cards()
+	}
+	settings.search(ui.div(), p.query).on_select(cx.listener(fn (mut p Prefs, i &int, mut _ core.ViewCx[Prefs]) {
 		p.page = *i
 	}))
 	tall := ui.div().h(1000).shrink_0()
@@ -62,6 +76,35 @@ fn test_settings_pages_and_search() {
 	h.frame()
 	assert h.has_text('Restore Session') && !h.has_text('Autosave')
 	assert h.find('set-page-1') == none // a page without matches leaves the navigation
+}
+
+fn test_settings_cards_navigation() {
+	mut h := testing.new_harness()!
+	kit.install(mut h.app)!
+	v := h.open(Prefs{ cards: true },
+		width:  800
+		height: 400
+	)!
+	assert h.has_text('Autosave') && h.has_text('General Settings')
+	assert h.find('set-expand-0') == none // one group: no chevron
+	h.click('set-page-1')! // picks the page and opens its groups
+	assert h.has_text('Cursor Blink') && h.find('set-group-1-1') != none
+	h.click('set-expand-1')! // the chevron alone closes them
+	assert h.find('set-group-1-0') == none && h.has_text('Cursor Blink')
+	h.click('set-expand-1')!
+	h.click('set-group-1-1')!
+	assert h.has_text('Font Size')
+	mut cx := core.Cx{
+		app: h.app
+		win: h.window()
+	}
+	mut p := cx.peek(v.model())
+	p.page, p.query = 0, 'font size'
+	cx.touch(v.model())
+	h.frame()
+	// the chosen page has no match: the first page that has one shows, the choice stays
+	assert h.find('set-page-0') == none && h.has_text('Font Size') && !h.has_text('Autosave')
+	assert p.page == 0
 }
 
 // thumb finds the scroll thumb of the scroll box (x 600..800): a 6 px wide pill; it
@@ -163,6 +206,27 @@ fn test_match_marks_and_key_labels() {
 	assert spans.map(it.text) == ['G', 'o to ', 'D', 'efinition']
 	assert kit.key_label('Ctrl-Shift-F12') == 'Ctrl-Shift-F12'
 	assert kit.key_label('ctrl-k ctrl-f') == 'Ctrl-K Ctrl-F'
+	mut t := kit.dark()
+	assert kit.key_text('shift-ctrl-c', t) == 'Ctrl-Shift-C'
+	t.ctl.plus_keys = true
+	assert kit.key_text('shift-ctrl-c', t) == 'Ctrl+Shift+C'
+	assert kit.key_text('win-shift-alt-pageup ctrl-k', t) == 'Alt+Shift+Win+Page Up Ctrl+K'
+}
+
+fn test_theme_sizes_and_split_roles() {
+	mut t := kit.dark()
+	assert t.height(.md) == 28 && t.ui_text(.md) == 14 && t.ui_text(.sm) == 12
+	t.text_xs, t.text_sm, t.text_md, t.text_lg = 12, 14, 16, 18
+	t.text_step, t.ui_scale, t.h_md = 1, 1.125, 32
+	assert t.ui_text(.md) == 14 && t.ui_text(.lg) == 16 && t.ui_text(.sm) == 12
+	assert t.height(.md) == 36 && t.sp(8) == 9
+	pro := kit.dark()
+	assert pro.p.tab_fg == pro.p.text_2 && pro.p.error_hover.a > 0 && pro.p.list_even.a == 0
+	night :=
+		kit.theme_from_json('{"mode": "dark", "palette": {"text_2": "#808080", "tab_active_fg": "#FFFFFF"}}')!
+	assert night.p.tab_fg.hex() == '#808080ff' && night.p.tab_active_fg.hex() == '#ffffffff' // derived roles follow the file
+	hc := kit.high_contrast()
+	assert hc.p.tab_fg == hc.p.text_2 && hc.p.text_on_status == hc.p.text_on_accent
 }
 
 // theme_error is the error a theme file gives, or '' when it loads.
@@ -181,6 +245,10 @@ fn test_themes_load_from_json() {
 	assert night.name == 'Night' && night.p.canvas.hex() == '#000000ff'
 	assert night.p.panel == pro.p.panel && night.colors.background == night.p.canvas // the rest is One Dark Pro
 	assert kit.theme_from_json('{"mode": "light"}')!.p.canvas == kit.light().p.canvas
+	assert night.p.input_bg == night.p.canvas && !pro.ctl.plain_toggles // fields follow the canvas
+	plain := kit.theme_from_json('{"mode": "dark", "controls": {"plain_toggles": true}}')!
+	assert plain.ctl.plain_toggles && kit.theme_from_json(plain.to_json())! == plain
+	assert theme_error('{"mode": "dark", "controls": {"plain": true}}').contains('controls.plain')
 	assert theme_error('{"mode": "dark", "palette": {"canvass": "#000000"}}').contains('palette.canvass')
 	assert theme_error('{"mode": "dim"}').contains('mode')
 	assert theme_error('{"mode": "dark", "editor": {"cursor": "#12"}}').contains('editor.cursor')

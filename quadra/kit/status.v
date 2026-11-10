@@ -71,7 +71,7 @@ pub fn status_color(t &Theme, s Status) prim.Color {
 pub fn statusbar(left []core.Element, right []core.Element) &Styled {
 	return themed_with(Sides{left, right}, fn (a Sides, t &Theme) core.Element {
 		left, right := a.left, a.right
-		return ui.div().test_id('statusbar').flex_row().items_center().gap(12).px(8).h(t.statusbar_h).shrink_0().bg(t.p.status_bg).border_t(1).border_color(t.p.line_strong).text_size(t.font_size(.sm)).text_color(t.p.text).children(left).child(ui.div().grow()).children(right)
+		return ui.div().test_id('statusbar').flex_row().items_center().gap(12).px(8).h(t.statusbar_h).shrink_0().bg(t.p.status_bg).border_t(1).border_color(t.p.line_strong).text_size(t.ui_text(.sm)).text_color(t.p.text).children(left).child(ui.div().grow()).children(right)
 	})
 }
 
@@ -96,6 +96,9 @@ pub fn status_button(id string, glyph string, active bool) &Button {
 // status_divider separates groups of status bar buttons: 1 x 14 px in the border color.
 pub fn status_divider() &Styled {
 	return themed(fn (t &Theme) core.Element {
+		if t.ctl.accent_chrome {
+			return ui.div().w(1).h(t.sp(12)).shrink_0().bg(t.p.line)
+		}
 		return ui.div().w(1).h(14).shrink_0().bg(t.p.line_strong)
 	})
 }

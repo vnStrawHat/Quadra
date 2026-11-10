@@ -51,8 +51,7 @@ fn (mut s Shell) notes_page(n &Notes, mut cx core.ViewCx[Shell]) core.Element {
 	left :=
 		ui.div().flex_row().size_full().child(s.folders(n, mut cx)).child(s.note_list(n, mut cx))
 	return kit.split('main-split', left, s.editor_pane(n, mut cx), cx.peek(s.prefs.model).split).on_resize(cx.listener(fn (mut s Shell, r &f32, mut cx core.ViewCx[Shell]) {
-		ratio := *r
-		s.prefs.update(mut cx.Cx, fn [ratio] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
+		app.update_with(mut cx.Cx, s.prefs, *r, fn (mut p Prefs, ratio f32, mut _ core.ViewCx[Prefs]) {
 			p.split = ratio
 		})
 	}))

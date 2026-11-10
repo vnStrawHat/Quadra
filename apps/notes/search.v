@@ -6,16 +6,13 @@ import apps.notes.store
 import quadra.core
 
 pub fn search(mut cx core.Cx, m core.Model[Notes], q string) {
-	cx.update(m, fn [q] (mut n Notes, mut cx core.ViewCx[Notes]) {
+	cx.update_with(m, q, fn (mut n Notes, q string, mut cx core.ViewCx[Notes]) {
 		n.query = q
 		if n.search != 0 {
 			cx.cancel_task(n.search)
 		}
-		ix := n.index
-		n.search = core.spawn_task[Notes, []string](mut cx, fn [ix, q] (tc &core.TaskCx) ![]string {
-			return ix.query(q, fn [tc] () bool {
-				return tc.cancelled()
-			})
+		n.search = core.spawn_task_with[Notes, Query, []string](mut cx, Query{n.index, q}, fn (j Query, tc &core.TaskCx) ![]string {
+			return j.ix.query(j.q, tc)
 		}, fn (mut n Notes, r &core.TaskResult[[]string], mut _ core.ViewCx[Notes]) {
 			n.search = 0
 			if r.ok {
@@ -23,6 +20,11 @@ pub fn search(mut cx core.Cx, m core.Model[Notes], q string) {
 			}
 		})
 	})
+}
+
+struct Query {
+	ix store.Index
+	q  string
 }
 
 // title_of is the title shown for a note: its first line, or a placeholder.

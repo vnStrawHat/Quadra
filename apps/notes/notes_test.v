@@ -4,6 +4,7 @@ module main
 
 import os
 import quadra.core
+import quadra.core.life
 import quadra.platform
 import quadra.testing
 
@@ -229,4 +230,47 @@ fn test_pixels() {
 	h.press('ctrl-1')!
 	h.press('ctrl-p')!
 	h.save_png(os.join_path(out, 'notes_palette.png'))!
+}
+
+// Closure leak gate (specs/14): the typical flows, repeated, leave the live closure count
+// where it was and the dispatch detector quiet.
+fn (mut r Run) flows() ! {
+	r.h.press('ctrl-n')!
+	r.h.type_text('Leak check\nbody')
+	r.h.advance(autosave_ms)
+	r.h.wait_tasks()!
+	r.h.click('search')!
+	r.h.type_text('leak')
+	r.h.wait_tasks()!
+	r.h.press('ctrl-a')!
+	r.h.press('backspace')!
+	r.h.wait_tasks()!
+	r.h.press('ctrl-2')! // the table
+	r.h.press('ctrl-,')! // settings: theme and language
+	r.h.click('set-theme-2')!
+	r.h.click('set-theme-1')!
+	r.h.click('set-language-1')!
+	r.h.click('set-language-0')!
+	r.h.advance(1000)
+	r.h.press('ctrl-1')!
+	r.h.press('ctrl-p')! // the palette
+	r.h.press('escape')!
+	r.h.click('note-0')!
+	r.h.press('ctrl-shift-backspace')!
+	r.h.wait_tasks()!
+	r.h.frame()
+	r.h.frame()
+}
+
+fn test_flows_leak_no_closures() {
+	mut r := start('leaks')!
+	r.flows()! // warm up: first-time caches and views
+	c0 := life.live_closures()
+	for _ in 0 .. 3 {
+		r.flows()!
+	}
+	grown := life.live_closures() - c0
+	eprintln('notes: closures +${grown} over 3 rounds of flows')
+	assert grown <= 0
+	assert r.h.app.closure_leaks() == []
 }

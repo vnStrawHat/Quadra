@@ -48,12 +48,16 @@ fn test_import_and_search() {
 		id:   'z'
 		body: 'Shopping list'
 	}])
-	never := fn () bool {
-		return false
-	}
+	never := Never{}
 	assert ix.query('da nang', never) == [notes[0].id] // no diacritics needed
 	assert ix.query('HOP', never).len == 2 // substring: also matches 'shopping'
 	assert ix.query('HOP voi', never) == [notes[0].id]
 	assert ix.query('list shopping', never) == ['z']
 	assert ix.query('', never).len == 2
+}
+
+struct Never {}
+
+fn (n Never) cancelled() bool {
+	return false
 }

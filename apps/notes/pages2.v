@@ -15,14 +15,16 @@ fn (mut s Shell) refresh_table(mut cx core.ViewCx[Shell]) {
 	}
 	s.table_v = s.version
 	n := cx.peek(s.notes)
-	columns := table_columns(cx.Cx)
-	cx.update_view(s.table, fn [columns] (mut t data.Table, mut _ core.ViewCx[data.Table]) {
+	cx.update_view_with(s.table, table_columns(cx.Cx), fn (mut t data.Table, columns []data.Column, mut _ core.ViewCx[data.Table]) {
 		for i, c in columns {
 			t.columns[i].title = c.title
 		}
 	})
-	data.set_rows(mut cx.Cx, s.table, n.lib.notes.len, table_cell(n.lib.notes.clone(), app.t(cx.Cx,
-		'note.untitled'), app.locale(cx.Cx)))
+	mut rows := s.rows
+	rows.notes = n.lib.notes.clone()
+	rows.untitled = app.t(cx.Cx, 'note.untitled')
+	rows.locale = app.locale(cx.Cx)
+	data.set_rows_from(mut cx.Cx, s.table, n.lib.notes.len, rows)
 }
 
 fn (mut s Shell) table_page(mut cx core.ViewCx[Shell]) core.Element {
@@ -35,23 +37,19 @@ fn (mut s Shell) settings_page(mut cx core.ViewCx[Shell]) core.Element {
 	theme_labels :=
 		['settings.theme_system', 'settings.theme_light', 'settings.theme_dark'].map(app.t(cx.Cx, it))
 	density_labels := ['settings.compact', 'settings.comfortable'].map(app.t(cx.Cx, it))
-	prefs := s.prefs
-	theme := kit.segmented('set-theme', theme_labels, themes.index(p.theme)).on_change(cx.listener(fn [prefs] (mut s Shell, i &int, mut cx core.ViewCx[Shell]) {
-		v := themes[*i]
-		update_prefs(mut cx.Cx, prefs, fn [v] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
+	theme := kit.segmented('set-theme', theme_labels, themes.index(p.theme)).on_change(cx.listener(fn (mut s Shell, i &int, mut cx core.ViewCx[Shell]) {
+		update_prefs_with(mut cx.Cx, s.prefs, themes[*i], fn (mut p Prefs, v string, mut _ core.ViewCx[Prefs]) {
 			p.theme = v
 		})
 	}))
-	density := kit.segmented('set-density', density_labels, densities.index(p.density)).on_change(cx.listener(fn [prefs] (mut s Shell, i &int, mut cx core.ViewCx[Shell]) {
-		v := densities[*i]
-		update_prefs(mut cx.Cx, prefs, fn [v] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
+	density := kit.segmented('set-density', density_labels, densities.index(p.density)).on_change(cx.listener(fn (mut s Shell, i &int, mut cx core.ViewCx[Shell]) {
+		update_prefs_with(mut cx.Cx, s.prefs, densities[*i], fn (mut p Prefs, v string, mut _ core.ViewCx[Prefs]) {
 			p.density = v
 		})
 	}))
 	language := kit.segmented('set-language', ['English', 'Tiếng Việt'],
-		languages.index(p.language)).on_change(cx.listener(fn [prefs] (mut s Shell, i &int, mut cx core.ViewCx[Shell]) {
-		v := languages[*i]
-		update_prefs(mut cx.Cx, prefs, fn [v] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
+		languages.index(p.language)).on_change(cx.listener(fn (mut s Shell, i &int, mut cx core.ViewCx[Shell]) {
+		update_prefs_with(mut cx.Cx, s.prefs, languages[*i], fn (mut p Prefs, v string, mut _ core.ViewCx[Prefs]) {
 			p.language = v
 		})
 		s.relabel(mut cx)

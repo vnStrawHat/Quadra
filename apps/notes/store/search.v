@@ -21,16 +21,21 @@ pub fn build_index(notes []Note) Index {
 	}
 }
 
-// query returns the ids of matching notes, in index order. `cancelled` is polled so a
-// newer query can stop an older one early.
-pub fn (ix &Index) query(q string, cancelled fn () bool) []string {
+// Cancel is polled by a long query (a task's core.TaskCx): a newer query stops an older one.
+pub interface Cancel {
+	cancelled() bool
+}
+
+// query returns the ids of matching notes, in index order. `c` is polled so a newer query
+// can stop an older one early.
+pub fn (ix &Index) query(q string, c Cancel) []string {
 	words := fold(q).fields()
 	if words.len == 0 {
 		return ix.ids.clone()
 	}
 	mut out := []string{}
 	for i, t in ix.texts {
-		if i % 512 == 0 && cancelled() {
+		if i % 512 == 0 && c.cancelled() {
 			return []string{}
 		}
 		if words.all(t.contains(it)) {

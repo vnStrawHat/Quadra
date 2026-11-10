@@ -31,6 +31,7 @@ pub mut:
 	shown    string // id of the note loaded in the editor
 	table_v  int    // library version shown by the table
 	version  int    // bumped whenever the notes model changes
+	rows     &TableRows = &TableRows{} // what the table shows
 }
 
 @[markused]
@@ -177,11 +178,10 @@ fn (mut s Shell) close_requested(mut cx core.ViewCx[Shell]) {
 		return
 	}
 	cx.prevent_close()
-	m := s.notes
 	kit.confirm(mut cx.Cx, app.t(cx.Cx, 'close.title'), app.t(cx.Cx, 'close.message'), app.t(cx.Cx,
-		'close.save'), cx.listener(fn [m] (mut s Shell, yes &bool, mut cx core.ViewCx[Shell]) {
+		'close.save'), cx.listener(fn (mut s Shell, yes &bool, mut cx core.ViewCx[Shell]) {
 		if *yes {
-			save_all(mut cx.Cx, m) or {
+			save_all(mut cx.Cx, s.notes) or {
 				kit.push_toast(mut cx.Cx, .error, err.msg())
 				return
 			}
@@ -212,24 +212,32 @@ fn table_columns(cx &core.Cx) []data.Column {
 	]
 }
 
-// table_cell formats one cell of the all-notes table from a snapshot of the library.
-fn table_cell(notes []store.Note, untitled string, locale string) data.CellFn {
-	return fn [notes, untitled, locale] (row int, col int) string {
-		n := notes[row]
-		return match col {
-			0 {
-				title_of(n, untitled)
-			}
-			1 {
-				n.folder
-			}
-			2 {
-				app.format_date(locale, time_of(n.modified)) + ' ' +
-					app.format_time(locale, time_of(n.modified))
-			}
-			else {
-				n.body.len.str()
-			}
+// TableRows is the snapshot of the library the table shows; refresh_table fills it.
+@[heap]
+struct TableRows {
+mut:
+	notes    []store.Note
+	untitled string
+	locale   string
+}
+
+// cell formats one cell of the all-notes table from the snapshot (data.Cells).
+fn (rows &TableRows) cell(row int, col int) string {
+	n := rows.notes[row]
+	locale := rows.locale
+	return match col {
+		0 {
+			title_of(n, rows.untitled)
+		}
+		1 {
+			n.folder
+		}
+		2 {
+			app.format_date(locale, time_of(n.modified)) + ' ' +
+				app.format_time(locale, time_of(n.modified))
+		}
+		else {
+			n.body.len.str()
 		}
 	}
 }

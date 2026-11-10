@@ -62,48 +62,60 @@ fn (mut s Shell) show(p Page, mut cx core.ViewCx[Shell]) {
 	}
 }
 
-// commands lists the palette entries; each one updates the shell through its view handle.
+// commands lists the palette entries; each one runs as a listener of the shell, with its
+// data (a page) in the listener: no closure per palette opening (specs/14).
 fn (mut s Shell) commands(mut cx core.ViewCx[Shell]) []input.Command {
-	me := cx.handle()
-	m := s.notes
-	prefs := s.prefs
 	mut cmds := [
-		input.Command{app.t(cx.Cx, 'note.new'), 'ctrl-n', fn [me] (mut cx core.Cx) {
-			cx.update_view(me, fn (mut s Shell, mut cx core.ViewCx[Shell]) {
+		input.Command{
+			title:  app.t(cx.Cx, 'note.new')
+			keys:   'ctrl-n'
+			on_run: cx.listener(fn (mut s Shell, _ &bool, mut cx core.ViewCx[Shell]) {
 				s.new_note(mut cx)
 			})
-		}},
-		input.Command{app.t(cx.Cx, 'cmd.search'), 'ctrl-f', fn [me] (mut cx core.Cx) {
-			cx.update_view(me, fn (mut s Shell, mut cx core.ViewCx[Shell]) {
+		},
+		input.Command{
+			title:  app.t(cx.Cx, 'cmd.search')
+			keys:   'ctrl-f'
+			on_run: cx.listener(fn (mut s Shell, _ &bool, mut cx core.ViewCx[Shell]) {
 				s.go(.notes)
 				cx.peek(s.search.model()).focus.focus(mut cx.Cx)
 			})
-		}},
-		input.Command{app.t(cx.Cx, 'cmd.theme'), '', fn [prefs] (mut cx core.Cx) {
-			dark := kit.theme_of(cx.app).mode == .dark
-			update_prefs(mut cx, prefs, fn [dark] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
-				p.theme = if dark { 'light' } else { 'dark' }
+		},
+		input.Command{
+			title:  app.t(cx.Cx, 'cmd.theme')
+			on_run: cx.listener(fn (mut s Shell, _ &bool, mut cx core.ViewCx[Shell]) {
+				dark := kit.theme_of(cx.app).mode == .dark
+				update_prefs_with(mut cx.Cx, s.prefs, dark, fn (mut p Prefs, dark bool, mut _ core.ViewCx[Prefs]) {
+					p.theme = if dark { 'light' } else { 'dark' }
+				})
 			})
-		}},
+		},
 	]
 	for p in [Page.notes, .table, .settings] {
 		key := ['nav.notes', 'nav.table', 'nav.settings'][int(p)]
-		cmds << input.Command{app.t(cx.Cx, key), '', fn [me, p] (mut cx core.Cx) {
-			cx.update_view(me, fn [p] (mut s Shell, mut cx core.ViewCx[Shell]) {
+		cmds << input.Command{
+			title:  app.t(cx.Cx, key)
+			on_run: core.listener_with(cx.entity, p, fn (mut s Shell, p Page, _ &bool, mut cx core.ViewCx[Shell]) {
 				s.show(p, mut cx)
 			})
-		}}
+		}
 	}
 	if s.selected != '' {
-		id := s.selected
-		cmds << input.Command{app.t(cx.Cx, 'note.open_window'), '', fn [m, id] (mut cx core.Cx) {
-			open_note_window(mut cx, m, id) or { kit.push_toast(mut cx, .error, err.msg()) }
-		}}
-		cmds << input.Command{app.t(cx.Cx, 'note.delete'), 'ctrl-shift-backspace', fn [me] (mut cx core.Cx) {
-			cx.update_view(me, fn (mut s Shell, mut cx core.ViewCx[Shell]) {
+		cmds << input.Command{
+			title:  app.t(cx.Cx, 'note.open_window')
+			on_run: core.listener_with(cx.entity, s.selected, fn (mut s Shell, id string, _ &bool, mut cx core.ViewCx[Shell]) {
+				open_note_window(mut cx.Cx, s.notes, id) or {
+					kit.push_toast(mut cx.Cx, .error, err.msg())
+				}
+			})
+		}
+		cmds << input.Command{
+			title:  app.t(cx.Cx, 'note.delete')
+			keys:   'ctrl-shift-backspace'
+			on_run: cx.listener(fn (mut s Shell, _ &bool, mut cx core.ViewCx[Shell]) {
 				s.delete_selected(mut cx)
 			})
-		}}
+		}
 	}
 	return cmds
 }

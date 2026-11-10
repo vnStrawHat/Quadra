@@ -97,7 +97,12 @@ pub fn (mut w Window) dispatch_action(action_type string, action voidptr) bool {
 	}
 	for h in app.global_actions {
 		if h.action_type == action_type {
+			w.skipped = false
 			app.invoke(h.listener, action, w, true)
+			if w.skipped { // nothing to do: the key goes on to the focused element
+				w.skipped = false
+				continue
+			}
 			return true
 		}
 	}

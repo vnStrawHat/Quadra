@@ -111,6 +111,13 @@ fn (mut w Window) drag_move(p prim.Point) bool {
 		if src.preview != unsafe { nil } {
 			w.drag.preview = src.preview()
 		}
+		if w.drag.preview != none {
+			// The preview (or the closure making it) comes from a render and is kept for the
+			// whole drag: pin the renders, so neither its closures nor its elements (arena.v)
+			// are reused.
+			mut app := w.app
+			app.escaped()
+		}
 		w.capture = 0
 		w.down_path = []u64{} // a drag is not a click
 		w.pressed = map[u64]bool{}

@@ -69,6 +69,7 @@ mut:
 	upgrade_watch     bool                // lifecycle.v
 	rjob              RenderJob           // render tracking (tracked.v)
 	dead_lives        []DeadLife          // closures of released views, freed after their window rebuilds
+	trim              Trim                // memory given back after a burst (trim.v)
 }
 
 pub fn new_app(b Backends, opts AppOptions) !&App {

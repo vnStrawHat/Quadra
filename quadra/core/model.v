@@ -51,6 +51,12 @@ mut:
 	cached    ?Element // views: the element tree from the last render
 	lifetime  &life.Life = unsafe { nil } // views: closures of their renders (tracked.v)
 	pinned    bool // the current render's closures may have escaped: never free them
+	// views: render arenas (arena.v): the latest render's, the one it replaced in this
+	// build, the free one; arena_build: a render of this build took an arena
+	arena       &Arena = unsafe { nil }
+	arena_old   &Arena = unsafe { nil }
+	arena_free  &Arena = unsafe { nil }
+	arena_build bool
 }
 
 struct Store {
@@ -177,4 +183,9 @@ fn (mut app App) end_tracking() {
 // store_ptr gives the raw value of a live model (escape hatch for tests and bridges).
 pub fn (app &App) store_ptr(id u32) voidptr {
 	return app.store.slots[id].ptr
+}
+
+// self_model is the handle of the model this context acts for.
+pub fn (cx &ViewCx[T]) self_model() Model[T] {
+	return Model[T]{cx.entity, cx.app.store.slots[cx.entity].gen}
 }

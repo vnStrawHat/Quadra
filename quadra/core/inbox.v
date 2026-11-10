@@ -6,7 +6,7 @@ module core
 import sync
 
 // Chunk is what the owner receives: the bytes since the last delivery, and the exit code
-// once the producer has finished.
+// once the producer has finished. `data` is lent for the call: the inbox reuses the buffer.
 pub struct Chunk {
 pub:
 	data      []u8
@@ -19,6 +19,7 @@ pub struct Inbox {
 mut:
 	mu        &sync.Mutex = sync.new_mutex()
 	buf       []u8
+	spare     []u8 // the other buffer, main thread only: drains swap the two, so a steady stream allocates nothing
 	pending   bool
 	exited    bool
 	exit_code int
@@ -77,15 +78,18 @@ fn (mut b Inbox) post() {
 
 fn (mut b Inbox) drain() {
 	b.mu.@lock()
-	data := b.buf
-	b.buf = []u8{}
+	mut data := unsafe { b.buf }
+	b.buf = b.spare
+	b.spare = []u8{}
 	b.pending = false
 	exited := b.exited && !b.delivered
 	if exited {
 		b.delivered = true
+		b.buf = []u8{} // the producer is gone: nothing comes after this
 	}
 	b.mu.unlock()
 	if data.len == 0 && !exited {
+		b.spare = data
 		return
 	}
 	chunk := &Chunk{data, exited, b.exit_code}
@@ -98,4 +102,21 @@ fn (mut b Inbox) drain() {
 		app.changed(b.l.view)
 	}
 	app.flush()
+	if keeps_buffer(data.cap, data.len, exited) { // only drains touch spare: no lock
+		data.clear()
+		b.spare = data
+	}
 }
+
+// keeps_buffer says whether a drained buffer is kept as the spare. A buffer far bigger than
+// what it carried was grown by a burst that is over (`type` of a large file), so it goes to
+// the collector, like any buffer once the producer has exited.
+fn keeps_buffer(cap int, len int, exited bool) bool {
+	return cap <= max_spare && !exited && (cap <= shrink_floor || len >= cap / 8)
+}
+
+// max_spare is the largest buffer a drain keeps for reuse; a bigger burst is left to the GC.
+const max_spare = 4 << 20
+
+// shrink_floor: buffers up to this size are always kept.
+const shrink_floor = 256 << 10

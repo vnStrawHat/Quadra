@@ -153,7 +153,7 @@ struct DeadLife {
 fn (mut app App) render_tracked(id u32, win &Window, render RenderFn) Element {
 	mut j := &app.rjob
 	if j.active != 0 || win.tracking.active {
-		return render(mut app, win, id)
+		return heap_render(mut app, win, id, render)
 	}
 	if j.work == unsafe { nil } {
 		j.work = fn [mut j] () {
@@ -171,14 +171,20 @@ fn (mut app App) render_tracked(id u32, win &Window, render RenderFn) Element {
 	j.render = render
 	j.out = none
 	j.active = id
+	arena := app.take_arena(id)
+	saved := set_render_arena(arena)
 	lt.frame(j.work) or {
+		set_render_arena(saved)
+		app.give_back(id, arena)
 		j.active = 0
-		return render(mut app, win, id)
+		return heap_render(mut app, win, id, render)
 	}
+	set_render_arena(saved)
+	app.put_arena(id, arena)
 	j.active = 0
 	mut w := unsafe { win }
 	w.tracking.rendered << id
-	return j.out or { render(mut app, win, id) }
+	return j.out or { heap_render(mut app, win, id, render) }
 }
 
 // escaped is called by every registry that keeps a value beyond the current render. During
@@ -232,6 +238,7 @@ fn (mut app App) settle_renders(mut w Window) {
 			continue
 		}
 		mut s := &app.store.slots[id]
+		settle_arena(mut s, s.pinned)
 		if s.lifetime == unsafe { nil } {
 			continue
 		}
@@ -266,4 +273,5 @@ fn (mut app App) retire_life(id u32) {
 	}
 	s.lifetime = unsafe { nil }
 	s.pinned = false
+	drop_arenas(mut s)
 }

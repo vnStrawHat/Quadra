@@ -1,7 +1,6 @@
 // Elements and the phase contexts they run in (specs/06-core.md).
 module core
 
-import hash.fnv1a
 import quadra.prim
 import quadra.layout
 import quadra.platform
@@ -67,6 +66,7 @@ pub mut:
 	tree       &layout.Tree     = unsafe { nil }
 	text       &text.TextSystem = unsafe { nil }
 	text_style text.TextStyle
+	group      int = -1 // hitbox of the nearest enclosing hover group (ui Div.group), -1 none
 mut:
 	ids      []u64 = [u64(0)]
 	counters []int = [0]
@@ -80,11 +80,34 @@ mut:
 pub fn (mut cx PrepaintCx) enter(key string) u64 {
 	n := cx.counters.last()
 	cx.counters[cx.counters.len - 1] = n + 1
-	local := if key == '' { '#${n}' } else { key }
-	id := fnv1a.sum64_string('${cx.ids.last()}/${local}')
+	id := child_id(cx.ids.last(), key, n)
 	cx.ids << id
 	cx.counters << 0
 	return id
+}
+
+const fnv_prime = u64(0x100000001b3)
+
+// child_id hashes (FNV-1a) the parent id with the key, or with the position n when the key
+// is empty; a tag byte keeps keys and positions apart. Every element of every prepaint gets
+// one, so no string is built.
+fn child_id(parent u64, key string, n int) u64 {
+	mut h := u64(0xcbf29ce484222325)
+	for k in 0 .. 8 {
+		h = (h ^ ((parent >> (8 * k)) & 0xff)) * fnv_prime
+	}
+	if key == '' {
+		h = (h ^ 1) * fnv_prime
+		for k in 0 .. 4 {
+			h = (h ^ ((u64(n) >> (8 * k)) & 0xff)) * fnv_prime
+		}
+		return h
+	}
+	h = (h ^ 2) * fnv_prime
+	for c in key {
+		h = (h ^ c) * fnv_prime
+	}
+	return h
 }
 
 pub fn (mut cx PrepaintCx) leave() {

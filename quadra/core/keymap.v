@@ -133,6 +133,12 @@ pub fn (mut app App) bind[A](keys string, action A, opts BindOptions) ! {
 	}
 }
 
+// unbind removes every binding of an action type, so an app can rebind its keys.
+pub fn (mut app App) unbind[A]() {
+	name := typeof[A]().name
+	app.keymap.bindings = app.keymap.bindings.filter(it.action_type != name)
+}
+
 pub enum MatchResult {
 	none
 	pending

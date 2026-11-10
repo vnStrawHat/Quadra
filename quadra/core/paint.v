@@ -211,19 +211,8 @@ pub fn (mut cx PaintCx) glyphs_range(l &text.LineLayout, x f32, baseline f32, co
 		if tile.empty {
 			continue
 		}
-		bounds := prim.rect(fx + tile.left, base_y - f32(math.round(g.y * s)) + tile.top,
-			tile.tile.w, tile.tile.h)
-		sprite := gpu.Sprite{
-			bounds: bounds
-			tile:   tile.tile
-			color:  c
-			glyph:  !tile.color
-		}
-		if tile.color || tile.subpixel {
-			cx.scene.poly(sprite, cx.mask())
-		} else {
-			cx.scene.mono(sprite, cx.mask())
-		}
+		cx.glyph_sprite(tile, prim.rect(fx + tile.left,
+			base_y - f32(math.round(g.y * s)) + tile.top, tile.tile.w, tile.tile.h), c)
 	}
 }
 

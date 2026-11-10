@@ -63,6 +63,7 @@ fn (mut w Window) paint_debug(mut cx PaintCx) {
 			'builds ${st.builds}  prepaints ${st.prepaints}  paints ${st.paints}',
 			'views cached ${st.cache_hits}  nodes ${st.layout_nodes}',
 			'draw calls ${st.draw_calls}  instances ${st.instances}',
+			'gpu ${w.app.adapter_name()}',
 		]
 		for i, l in lines {
 			w.debug_label(mut cx, l, 8, 8 + f32(i) * 18)
@@ -105,6 +106,12 @@ fn (mut app App) after_frame(mut w Window) {
 		w.invalidate_paint()
 	}
 	app.tick_animations(mut w)
+	app.arm_trim()
+}
+
+// adapter_name is the GPU the app draws on (specs/03), '' when the backend cannot tell.
+pub fn (app &App) adapter_name() string {
+	return app.device.adapter_name()
 }
 
 // debug_counts summarizes the sizes of the app's registries and caches (leak hunting).

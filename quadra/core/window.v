@@ -44,7 +44,8 @@ pub mut:
 	focus_color     prim.Color = prim.rgba(0x3B82F6CC) // default focus ring; themes set it
 	selection_color prim.Color = prim.rgba(0x3B82F655) // selected text; themes set it
 	scroll_color    prim.Color = prim.rgba(0x8088904C) // scroll thumbs; themes set it
-	dirty           bool       = true
+	thumb_style     ThumbStyle // the rest of the thumbs' look (scrollbar.v); themes set it
+	dirty           bool = true
 	stopped         bool
 	stats           WindowStats
 	hitboxes        []Hitbox

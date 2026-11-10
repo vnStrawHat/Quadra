@@ -220,5 +220,6 @@ const dxgi_factory2_create_swapchain_for_hwnd = 15
 const sc_present = 8
 const sc_get_buffer = 9
 const sc_resize_buffers = 13
+const sc1_set_background_color = 25
 const sc2_set_max_frame_latency = 31
 const sc2_get_frame_latency_waitable = 33

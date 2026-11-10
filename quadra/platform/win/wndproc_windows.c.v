@@ -3,6 +3,8 @@ module win
 
 import quadra.platform
 
+fn C.WaitForSingleObject(h voidptr, ms u32) u32
+
 fn (mut w WinWindow) handle(msg u32, wparam usize, lparam isize) isize {
 	if w.custom {
 		if r := w.titlebar_msg(msg, wparam, lparam) {
@@ -18,7 +20,10 @@ fn (mut w WinWindow) handle(msg u32, wparam usize, lparam isize) isize {
 		}
 		wm_paint {
 			C.ValidateRect(w.hwnd, unsafe { nil })
-			w.frame_requested = true
+			// In the size loop WM_SIZE has drawn this size: draw only pending changes.
+			if !w.in_size_move {
+				w.frame_requested = true
+			}
 			w.frame_now_if_modal()
 			return 0
 		}
@@ -161,10 +166,17 @@ fn (mut w WinWindow) handle(msg u32, wparam usize, lparam isize) isize {
 	return C.DefWindowProcW(w.hwnd, msg, wparam, lparam)
 }
 
-// During the modal move/size loop our run() is not pumping, so frames are produced here.
+// During the modal move/size loop our run() is not pumping, so frames are produced here,
+// paced like run(): each waits for the swap chain's latency object first (presents that
+// skip it queue up and the screen falls many frames behind the window's edge), then for
+// the composition that shows it (specs/02, "Live resize").
 fn (mut w WinWindow) frame_now_if_modal() {
 	if w.in_size_move && w.frame_requested {
+		if w.waitable != unsafe { nil } {
+			C.WaitForSingleObject(w.waitable, 100)
+		}
 		w.frame_now()
+		w.plat.after_live_frame()
 	}
 }
 

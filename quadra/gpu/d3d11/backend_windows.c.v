@@ -197,6 +197,9 @@ pub fn (mut b Backend) draw(mut surface gpu.Surface, scene &gpu.Scene, clear pri
 			if surface.gdi && b.upgrade == unsafe { nil } {
 				surface.attach()
 			}
+			if !surface.gdi {
+				surface.sc.set_background(clear)
+			}
 			surface.rtv()
 		}
 		OffscreenSurface {

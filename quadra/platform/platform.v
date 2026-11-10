@@ -61,6 +61,24 @@ pub:
 	resizable       bool = true
 	kind            WindowKind
 	parent          WindowId
+	// centered opens the window centred on the primary display (else where the OS puts it);
+	// fit, when above 0, caps each side at that fraction of the display first.
+	centered bool
+	fit      f32
+}
+
+// fit_size is a window size capped by WindowOptions.fit against a display (logical px).
+pub fn fit_size(w f32, h f32, display prim.Size, fit f32) prim.Size {
+	mut s := prim.size(w, h)
+	if fit > 0 && display.width > 0 && display.height > 0 {
+		if s.width > display.width * fit {
+			s.width = display.width * fit
+		}
+		if s.height > display.height * fit {
+			s.height = display.height * fit
+		}
+	}
+	return s
 }
 
 pub interface PlatformWindow {

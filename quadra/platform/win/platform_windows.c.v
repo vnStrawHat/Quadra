@@ -45,7 +45,8 @@ mut:
 	ole_       Ole
 	ime        Ime
 	qpc_freq   i64
-	tray_on    bool // tray_windows.c.v
+	tray_on    bool    // tray_windows.c.v
+	dwm_flush  voidptr // DwmFlush, resize_windows.c.v
 }
 
 pub fn new_platform() !&WinPlatform {
@@ -55,6 +56,7 @@ pub fn new_platform() !&WinPlatform {
 		ime:   load_ime()!
 	}
 	C.QueryPerformanceFrequency(&p.qpc_freq)
+	p.dwm_flush = load_dwm_flush()
 	inst := C.GetModuleHandleW(unsafe { nil })
 	wc := C.WNDCLASSEXW{
 		cbSize:        u32(sizeof(C.WNDCLASSEXW))

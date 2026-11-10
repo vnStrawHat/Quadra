@@ -43,7 +43,8 @@ mut:
 }
 ```
 
-`WindowOptions`: title, size, min_size, position (or centered), resizable, `titlebar: .system | .custom`, kind (`.normal | .popup | .tool`), parent, transparent.
+`WindowOptions`: title, size, min_size, position (or `centered` on the primary display, the
+size first capped per side at `fit` of that display's logical size, 0 for no cap), resizable, `titlebar: .system | .custom`, kind (`.normal | .popup | .tool`), parent, transparent.
 
 ## Services (one struct, filled per OS)
 
@@ -76,7 +77,7 @@ pub type Event = MouseEvent | WheelEvent | KeyEvent | TextEvent | ImeEvent | Res
 ## Windows implementation notes
 - Process: per-monitor DPI v2, `OleInitialize`, UTF-8 active code page and DPI awareness set in the embedded manifest.
 - Loop: `MsgWaitForMultipleObjectsEx` waits on messages **and** the swap chain's frame-latency waitable, so a frame starts as soon as the GPU can accept it. Idle means fully blocked.
-- Modal resize/move loop: frames are produced from `WM_SIZE` / a timer during the loop so content never freezes.
+- Modal resize/move loop (live resize): the OS loop does not return to `run()`, so frames are produced from `WM_SIZE`, after the swap chain took the new size, and from `WM_PAINT` only for pending changes (`WM_SIZE` has drawn that size). Each one is paced like `run()`: it first waits for the frame-latency waitable (presents that skip it queue up, and the screen fell up to 460 px behind the window's edge), then calls `DwmFlush` after Present, so the loop's next window move lands in the same composition as the frame drawn for it. The cost is a step of about two display intervals instead of one (27 ms at 75 Hz). The swap chain's background colour (`SetBackgroundColor`) is the window's clear colour, so pixels no buffer covers show the theme background, not black: these are frames slower than a composition interval, which still lag the edge by one step, and maximize. Drawing in `WM_WINDOWPOSCHANGING`, before the rect moves, would remove that lag for the right and bottom edges; it is not done. `bench/resize` measures all of this on screen.
 - IME: IMM32 composition strings and candidate window placement from `set_ime_rect`.
 - Custom titlebar: `WM_NCCALCSIZE` plus `WM_NCHITTEST` from `set_titlebar_regions`. The maximize region returns `HTMAXBUTTON` so Windows 11 snap layouts work.
 - `WM_DPICHANGED`: apply the suggested rect and emit `ScaleEvent`.

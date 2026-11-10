@@ -24,6 +24,7 @@ pub mut:
 	phase_bytes   [4]u64 // bytes allocated by each phase of the last build
 	first_present u64    // time.sys_mono_now() when the first frame was presented
 	last_frame_us i64
+	present_us    i64 // Present of the last frame (blocks while the queue is full)
 	draw_calls    int
 	instances     int
 	layout_nodes  int
@@ -172,7 +173,9 @@ pub fn (mut w Window) draw_frame() {
 		eprintln('quadra: draw failed: ${err}')
 	}
 	w.scene.mark_drawn()
+	p0 := sw.elapsed().microseconds()
 	w.surface.present() or { eprintln('quadra: present failed: ${err}') }
+	w.stats.present_us = sw.elapsed().microseconds() - p0
 	if w.stats.first_present == 0 {
 		w.stats.first_present = time.sys_mono_now()
 	}

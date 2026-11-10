@@ -17,6 +17,26 @@ pub mut:
 fn C.GetWindowPlacement(hwnd voidptr, wp &C.WINDOWPLACEMENT) int
 fn C.SetWindowPlacement(hwnd voidptr, wp &C.WINDOWPLACEMENT) int
 fn C.MonitorFromRect(r &C.RECT, flags u32) voidptr
+fn C.MonitorFromPoint(pt C.POINT, flags u32) voidptr
+fn C.GetMonitorInfoW(mon voidptr, mi &C.MONITORINFO) int
+
+@[typedef]
+pub struct C.MONITORINFO {
+pub mut:
+	cbSize    u32
+	rcMonitor C.RECT
+	rcWork    C.RECT
+	dwFlags   u32
+}
+
+// primary_display is the primary monitor's rect in device px (WindowOptions.centered).
+fn primary_display() C.RECT {
+	mut mi := C.MONITORINFO{
+		cbSize: u32(sizeof(C.MONITORINFO))
+	}
+	C.GetMonitorInfoW(C.MonitorFromPoint(C.POINT{0, 0}, 1), &mi) // MONITOR_DEFAULTTOPRIMARY
+	return mi.rcMonitor
+}
 
 const sw_showmaximized = 3
 const sw_shownormal = 1

@@ -90,7 +90,8 @@ pub fn (mut h Host) render(mut cx core.ViewCx[Host]) core.Element {
 	ov := cx.global[Overlays]() or { &Overlays{} }
 	t := theme(cx)
 	win := cx.win.id
-	cx.win.focus_color = t.p.border_focused // windows opened after set_theme
+	cx.win.clear_color = t.colors.background // windows opened after set_theme
+	cx.win.focus_color = t.p.border_focused
 	cx.win.scroll_color = t.p.scroll_thumb
 	cx.win.thumb_style = thumb_style(t)
 	cx.win.selection_color = if t.p.selection.a > 0 {

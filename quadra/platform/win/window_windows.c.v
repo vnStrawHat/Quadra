@@ -61,10 +61,19 @@ fn (mut p WinPlatform) create_window(opts platform.WindowOptions) !&WinWindow {
 	}
 	// Size the client area to the requested logical size at this monitor's DPI.
 	w.scale_ = p.dpi.scale_of(hwnd)
-	mut r := C.RECT{0, 0, int(opts.width * w.scale_), int(opts.height * w.scale_)}
+	mon := primary_display()
+	mw, mh := mon.right - mon.left, mon.bottom - mon.top
+	size := platform.fit_size(opts.width, opts.height, prim.size(f32(mw) / w.scale_,
+		f32(mh) / w.scale_), opts.fit)
+	mut r := C.RECT{0, 0, int(size.width * w.scale_), int(size.height * w.scale_)}
 	p.dpi.adjust_rect(&r, style, 0, 0, u32(w.scale_ * 96))
-	C.SetWindowPos(hwnd, unsafe { nil }, 0, 0, r.right - r.left, r.bottom - r.top,
-		swp_nozorder | swp_noactivate | 0x0002)
+	ow, oh := r.right - r.left, r.bottom - r.top
+	mut flags := swp_nozorder | swp_noactivate
+	if !opts.centered {
+		flags |= 0x0002 // SWP_NOMOVE
+	}
+	C.SetWindowPos(hwnd, unsafe { nil }, mon.left + (mw - ow) / 2, mon.top + (mh - oh) / 2, ow, oh,
+		flags)
 	mut cr := C.RECT{}
 	C.GetClientRect(hwnd, &cr)
 	if w.custom {

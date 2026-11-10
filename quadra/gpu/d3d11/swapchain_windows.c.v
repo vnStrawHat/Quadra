@@ -1,6 +1,7 @@
 // Flip-model swap chain with a frame-latency waitable object (lowest input latency).
 module d3d11
 
+import quadra.prim
 import quadra.platform.win
 
 type FnCreateSwapChainForHwnd = fn (this voidptr, device voidptr, hwnd voidptr, desc &SwapChainDesc1, fs voidptr, output voidptr, out &voidptr) int
@@ -15,6 +16,8 @@ type FnResizeBuffers = fn (this voidptr, count u32, w u32, h u32, format u32, fl
 
 type FnGetHandle = fn (this voidptr) voidptr
 
+type FnSetBackground = fn (this voidptr, rgba &f32) int
+
 pub struct SwapChain {
 pub mut:
 	rtv      voidptr // render target view of the current back buffer
@@ -22,7 +25,8 @@ pub mut:
 	height   u32
 	waitable voidptr // signaled when the swap chain can accept a new frame
 mut:
-	sc voidptr // IDXGISwapChain2
+	sc voidptr     // IDXGISwapChain2
+	bg ?prim.Color // last background colour given to DXGI
 }
 
 pub fn new_swapchain(d &Device, hwnd voidptr, width u32, height u32) !SwapChain {
@@ -92,4 +96,18 @@ pub fn (mut s SwapChain) resize(d &Device, width u32, height u32) ! {
 pub fn (s &SwapChain) present() ! {
 	present := unsafe { FnPresent(win.slot(s.sc, sc_present)) }
 	win.check(present(s.sc, 1, 0), 'Present')!
+}
+
+// set_background gives DXGI the colour of the window area no buffer covers: while the
+// window grows faster than frames arrive, the gap shows the canvas colour, not black.
+pub fn (mut s SwapChain) set_background(c prim.Color) {
+	if bg := s.bg {
+		if bg == c {
+			return
+		}
+	}
+	s.bg = c
+	rgba := [c.r, c.g, c.b, f32(1)]! // alpha is ignored (dxgi_alpha_ignore)
+	set := unsafe { FnSetBackground(win.slot(s.sc, sc1_set_background_color)) }
+	set(s.sc, &rgba[0])
 }

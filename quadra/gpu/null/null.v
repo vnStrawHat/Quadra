@@ -49,10 +49,12 @@ pub fn (mut d NullDevice) draw(mut surface gpu.Surface, scene &gpu.Scene, clear 
 		}
 		d.st.upload_instances = end - start
 	} else {
-		d.last = gpu.Scene{
-			instances: scene.instances.clone()
-			xforms:    scene.xforms.clone()
-		}
+		// Copied into the arrays it already has, like a GPU buffer: a test's copy comes from
+		// Harness.scene, which clones.
+		d.last.instances.clear()
+		d.last.instances << scene.instances
+		d.last.xforms.clear()
+		d.last.xforms << scene.xforms
 		d.held, d.held_rev = voidptr(scene), scene.revision
 		d.st.upload_instances = scene.instances.len
 	}

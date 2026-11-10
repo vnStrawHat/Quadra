@@ -96,6 +96,17 @@ pub fn (s Settings[T]) get(cx &core.Cx) &T {
 // update changes the settings and schedules a save.
 pub fn (s Settings[T]) update(mut cx core.Cx, f fn (mut v T, mut cx core.ViewCx[T])) {
 	cx.update(s.model, f)
+	s.saved(mut cx)
+}
+
+// update_with is Settings.update for a callback that needs data, without a closure
+// (specs/14). A free function: a generic method on Settings[T] trips V (docs/v-notes.md).
+pub fn update_with[T, D](mut cx core.Cx, s Settings[T], data D, f fn (mut v T, d D, mut cx core.ViewCx[T])) {
+	cx.update_with(s.model, data, f)
+	s.saved(mut cx)
+}
+
+fn (s Settings[T]) saved(mut cx core.Cx) {
 	mut st := s.state
 	text := st.encode(voidptr(cx.peek(s.model)))
 	schedule_save(mut cx.app, mut st, text)
@@ -111,21 +122,30 @@ pub fn (s Settings[T]) flush(mut cx core.Cx) ! {
 	st.write()!
 }
 
-// Not generic on purpose: V mishandles closures created inside generic functions.
+struct SaveRef {
+	st &SaveState
+}
+
 fn schedule_save(mut a core.App, mut st SaveState, text string) {
 	st.pending = text
 	if st.timer != 0 {
-		a.plat.cancel_timer(st.timer)
-	}
-	st.timer = a.after(save_delay_ms, fn [mut st] (mut _ core.App) {
-		st.timer = 0
-		st.write() or {
-			if st.log != unsafe { nil } {
-				mut l := st.log
-				l.error('settings', err.msg())
-			}
+		mut cx := core.Cx{
+			app: a
 		}
-	})
+		cx.cancel_timer(st.timer)
+	}
+	st.timer = a.after_with(save_delay_ms, SaveRef{st}, save_now)
+}
+
+fn save_now(r SaveRef, mut _ core.App) {
+	mut st := r.st
+	st.timer = 0
+	st.write() or {
+		if st.log != unsafe { nil } {
+			mut l := st.log
+			l.error('settings', err.msg())
+		}
+	}
 }
 
 // write saves atomically: a temp file next to the target, flushed, then moved over it.

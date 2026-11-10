@@ -32,7 +32,12 @@ pub fn remember_placement(mut cx core.Cx, s Settings[WindowStates], key string) 
 	if !p.valid {
 		return
 	}
-	s.update(mut cx, fn [key, p] (mut st WindowStates, mut _ core.ViewCx[WindowStates]) {
-		st.placements[key] = p
+	update_with(mut cx, s, Placed{key, p}, fn (mut st WindowStates, d Placed, mut _ core.ViewCx[WindowStates]) {
+		st.placements[d.key] = d.p
 	})
+}
+
+struct Placed {
+	key string
+	p   platform.Placement
 }

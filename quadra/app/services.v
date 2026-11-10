@@ -41,6 +41,7 @@ pub fn init(mut a core.App, info AppInfo) !&Services {
 	}
 	d := dirs(info.id, info.root)!
 	mut log := new_logger(d.logs, info.id, info.log_level)
+	// Made once per process (the crash handler lives as long as the process): no leak.
 	a.plat.install_crash_handler(d.crashes, fn [mut log] () string {
 		return log.recent(100).map(it.str()).join('\n')
 	})

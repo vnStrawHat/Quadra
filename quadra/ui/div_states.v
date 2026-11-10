@@ -38,7 +38,11 @@ pub fn (self_ &Div) ring(w f32, c prim.Color) &Div {
 
 fn (mut d Div) states_mut() &States {
 	if d.states == unsafe { nil } {
-		d.states = &States{}
+		if d.spare != unsafe { nil } {
+			d.states, d.spare = d.spare, unsafe { nil } // an arena div's, reset (arena.v)
+		} else {
+			d.states = &States{}
+		}
 	}
 	return d.states
 }

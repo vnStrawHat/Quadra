@@ -6,6 +6,7 @@ import quadra.core
 
 const arena_divs = 0
 const arena_texts = 1
+const arena_svgs = 2
 
 fn init() {
 	core.set_arena_reset(reset_arena)
@@ -51,19 +52,61 @@ fn new_text(s string) &TextEl {
 	return t
 }
 
-// reset_arena puts the elements a render took back to their defaults. A div keeps its
-// children array's capacity (cleared): it always owns that array (child() and children()
-// copy into it).
+@[inline]
+fn new_svg(src string, size f32) &SvgEl {
+	mut a := core.render_arena()
+	if a == unsafe { nil } {
+		return &SvgEl{
+			src: src
+			w:   size
+			h:   size
+		}
+	}
+	k := a.used[arena_svgs]
+	a.used[arena_svgs] = k + 1
+	if k < a.pools[arena_svgs].len {
+		mut s := unsafe { &SvgEl(a.pools[arena_svgs][k]) }
+		same := s.src.len == src.len && (unsafe { s.src.str == src.str } || s.src == src)
+		if !same {
+			s.parsed, s.hash, s.key = none, 0, ''
+		}
+		s.src, s.w, s.h = src, size, size
+		return s
+	}
+	s := &SvgEl{
+		src: src
+		w:   size
+		h:   size
+	}
+	a.pools[arena_svgs] << voidptr(s)
+	return s
+}
+
+// reset_arena puts the elements a render took back to their defaults. A div keeps the
+// capacity of its children, handler and key arrays (cleared: it owns them, builders only
+// append) and its state patches, reset, for the next states_mut().
 fn reset_arena(mut a core.Arena) {
 	for i in 0 .. a.used[arena_divs] {
 		mut d := unsafe { &Div(a.pools[arena_divs][i]) }
 		mut kids := unsafe { d.children }
 		unsafe { vmemset(kids.data, 0, kids.len * int(sizeof(core.Element))) }
 		kids.clear()
+		mut hs := unsafe { d.handlers }
+		unsafe { vmemset(hs.data, 0, hs.len * int(sizeof(Handler))) }
+		hs.clear()
+		mut ks := unsafe { d.keys }
+		unsafe { vmemset(ks.data, 0, ks.len * int(sizeof(KeySpec))) }
+		ks.clear()
+		mut spare := if d.states != unsafe { nil } { d.states } else { d.spare }
+		if spare != unsafe { nil } {
+			unsafe {
+				*spare = States{}
+			}
+		}
 		unsafe {
 			*d = Div{}
 		}
-		d.children = kids
+		d.children, d.handlers, d.keys, d.spare = kids, hs, ks, spare
 	}
 	for i in 0 .. a.used[arena_texts] {
 		mut t := unsafe { &TextEl(a.pools[arena_texts][i]) }
@@ -72,5 +115,14 @@ fn reset_arena(mut a core.Arena) {
 			*t = TextEl{}
 		}
 		t.own, t.pooled = own, true
+	}
+	for i in 0 .. a.used[arena_svgs] {
+		mut s := unsafe { &SvgEl(a.pools[arena_svgs][i]) }
+		// the source and what depends on it only: new_svg compares the next source
+		src, parsed, hash, key, kw, kh, kc := s.src, s.parsed, s.hash, s.key, s.kw, s.kh, s.kcolor
+		unsafe {
+			*s = SvgEl{}
+		}
+		s.src, s.parsed, s.hash, s.key, s.kw, s.kh, s.kcolor = src, parsed, hash, key, kw, kh, kc
 	}
 }

@@ -46,6 +46,21 @@ pub fn list(id string, count int, render RowFn) &VariableList {
 	}
 }
 
+// list_with is list with the data the row builder needs passed in, so the builder captures
+// nothing (specs/14). D must not be a pointer type.
+pub fn list_with[D](id string, count int, data D, render fn (d D, i int) core.Element) &VariableList {
+	return &VariableList{
+		id:    id
+		count: count
+		build: core.bind_fn[D, int, core.Element](data, render)
+		style: layout.Style{
+			grow:   1
+			width:  layout.pct(100)
+			height: layout.pct(100)
+		}
+	}
+}
+
 // estimate is the height assumed for rows not yet measured (24 by default).
 pub fn (self_ &VariableList) estimate(h f32) &VariableList {
 	mut l := unsafe { self_ }

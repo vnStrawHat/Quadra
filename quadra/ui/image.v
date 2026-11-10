@@ -22,24 +22,23 @@ mut:
 	parsed  ?vector.Svg
 	node    layout.NodeId
 	inherit prim.Color
+	// paint memo: the source hash and the image cache key for a device size and color. An
+	// arena element keeps them, and parsed, while it shows the same source (arena.v).
+	hash   u64
+	key    string
+	kw     int
+	kh     int
+	kcolor prim.Color
 }
 
 // svg draws inline SVG markup, rasterized at the exact device size and cached.
 pub fn svg(src string) &SvgEl {
-	return &SvgEl{
-		src: src
-		w:   24
-		h:   24
-	}
+	return new_svg(src, 24)
 }
 
 // icon is a 16 px svg tinted with the current text color.
 pub fn icon(src string) &SvgEl {
-	return &SvgEl{
-		src: src
-		w:   16
-		h:   16
-	}
+	return new_svg(src, 16)
 }
 
 pub fn (self_ &SvgEl) size(v f32) &SvgEl {
@@ -66,7 +65,10 @@ pub fn (mut s SvgEl) request_layout(mut cx core.LayoutCx) layout.NodeId {
 pub fn (mut s SvgEl) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {}
 
 pub fn (mut s SvgEl) paint(bounds prim.Rect, mut cx core.PaintCx) {
-	src_hash := fnv1a.sum64_string(s.src)
+	if s.hash == 0 {
+		s.hash = fnv1a.sum64_string(s.src)
+	}
+	src_hash := s.hash
 	if s.parsed == none {
 		mut app := cx.app
 		mut doc := &vector.Svg(unsafe { nil })
@@ -90,7 +92,11 @@ pub fn (mut s SvgEl) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	}
 	color := s.color or { s.inherit }
 	mono := art.is_single_color()
-	key := 'svg:${src_hash}:${dw}x${dh}' + if mono { '' } else { ':${color.hex()}' }
+	if s.key == '' || s.kw != dw || s.kh != dh || (!mono && s.kcolor != color) {
+		s.key = 'svg:${src_hash}:${dw}x${dh}' + if mono { '' } else { ':${color.hex()}' }
+		s.kw, s.kh, s.kcolor = dw, dh, color
+	}
+	key := s.key
 	mut app := cx.app
 	entry := app.cached_image(key) or {
 		px := if mono { art.render_mask(dw, dh) } else { art.render_rgba(dw, dh, color) }
@@ -165,10 +171,7 @@ fn decode_file(path string) !core.Bitmap {
 pub fn (mut i ImgEl) request_layout(mut cx core.LayoutCx) layout.NodeId {
 	mut st := i.style
 	mut app := cx.app
-	path := i.path
-	e := app.image_async('img:${i.path}', fn [path] () !core.Bitmap {
-		return decode_file(path)
-	})
+	e := app.image_async_with('img:${i.path}', i.path, decode_file)
 	w := if i.w > 0 {
 		i.w
 	} else if e.status == .ready {

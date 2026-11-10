@@ -78,6 +78,7 @@ mut:
 	scroll            prim.Point
 	scroll_target     ScrollTarget
 	own_scroll_hitbox bool
+	spare             &States = unsafe { nil } // kept by an arena div for its next use (2.6 KB)
 }
 
 // States are the patches a Div applies while hovered, pressed or focused.

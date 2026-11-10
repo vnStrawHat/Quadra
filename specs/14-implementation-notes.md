@@ -37,7 +37,7 @@ Where the implementation deliberately differs from specs 00–13, and why. Each 
 - The profiler, paint flashing and inspector are an in-window overlay toggled with `ctrl-shift-p`, `ctrl-shift-f` and `ctrl-shift-i`, rather than a separate window.
 
 ## App services (10) and Notes (13)
-- **Tasks run one OS thread each** (`core.spawn_task`); a fixed pool is deferred until apps spawn many at once. `debounce` ships; `throttle`, `timeout` and `retry` are deferred.
+- **Tasks run one OS thread each** (`core.spawn_task`); a fixed pool is deferred until apps spawn many at once. Results come back through the app's main-thread queue (`App.post_main`, one closure per app), never a closure per result: V frees no closure, and one made per task kept its result alive for good. Work that needs data uses `core.spawn_task_with[T, D, R](mut cx, data, work, done)`, whose `work` takes the data as an argument, so the caller makes no closure either (apps make none at all: "No closures in apps"). `debounce` ships; `throttle`, `timeout` and `retry` are deferred.
 - **Directories come from V's `os.config_dir()` and `os.cache_dir()`**, so `quadra.app` has no OS code. `AppInfo.root` (Notes: `--data`) keeps everything in one folder.
 - **Atomic file replace is `platform.replace_file`** (MoveFileExW on Windows), because MSVCRT `rename` fails on an existing target.
 - **With nothing focused, actions go to every handler, topmost first.** App shortcuts work before anything has focus. Key-down events still need focus.
@@ -91,10 +91,10 @@ V frees no closure by itself, so Quadra assigns every closure made in a frame an
 | A kit component's build (`Lazy.build_tree`, runs at every layout) | the window's layout lifetime | after the next build |
 | A list row or overlay built in prepaint | the window's prepaint lifetime | after the next prepaint |
 | A view's `render` | the view | when the view renders again, at the end of that build; when it is released, after its window rebuilds |
-| Handlers, constructors, startup | nobody | never (keep them out of per-event paths) |
+| Handlers, constructors, startup | nobody | never: apps make none (see "No closures in apps"); quadra keeps 3 made-once ones |
 
-**Rule for app code:** a closure made during `render` belongs to that render. Make
-long-lived closures in constructors or handlers. When a render creates something long-lived
+**Rule for framework code:** a closure made during `render` belongs to that render (apps
+make none: "No closures in apps" below). When a render creates something long-lived
 (`new_model`, `new_view`, a global, an observer, a subscription, a timer, a task, a debounce,
 an action or key binding), the framework pins that render and never frees it. Creating a
 model or updating a global from a handler pins the current render of every view, because what
@@ -113,9 +113,12 @@ scratch: each prepaint truncates the layout tree back to the nodes of the last b
 `quadra.core.life` wraps `closure.Lifetime`, because vfmt 0.5.2 drops `import builtin.closure`
 from `quadra.core`'s files.
 
-Posting to the main thread is a per-event path too: `core.Inbox` builds its drain closure
-once and posts that same closure every time (bench/term checks closures stay flat while
-output streams).
+Posting to the main thread is a per-event path too: `core.Inbox` hands its drain to the
+app's main-thread queue (`App.post_main(f, data)`, public: worker threads reach the app with a
+plain function and its data), so an inbox has no closure of its own and a closed tab's inbox
+is collected. The work functions handed to `Lifetime.frame` are plain functions reading a
+per-process slot (`core/frame_work.v`), not a closure per window: a closed window's would have
+kept the window alive.
 
 Live sources that change a model every tick do not call `cx.update` (it takes a closure):
 they mutate through `cx.peek(model)` and then call `cx.touch(model)`, which marks it
@@ -139,12 +142,50 @@ in this order of preference:
 | 4. Interface objects | kit values that store an action | `kit.MenuItem.action` (`kit.MenuAction`: `kit.PickIndex`, a tab strip's `SelectTab`), the month grid's `CalendarTarget`: fields are the data, the method the behaviour; the GC frees them |
 
 Model updates from handlers use `cx.peek` plus `cx.touch` (or plain mutation without
-`touch` where `update_silent` was used) instead of `cx.update*` closures. Closures that
-remain are made once (window and app setup, the inbox drain, lifetime work functions) or
-belong to app code in `render`, where lifetimes free them. `tools/check.sh` caps the number
-of `fn [` in `quadra/` (23 left of 117) so new ones need a reason. The closure-taking APIs stay
-for app code (`open_popup`, `uniform_list`, `MenuItem.on_select`, `DragSource.preview`, a
-ready `preview_el` being the closure-free form).
+`touch` where `update_silent` was used), or the `_with` variants below, instead of capturing
+`cx.update*` closures. Three closures remain in `quadra/`, each made once and commented with
+why it does not leak: the app's main-queue drain, the crash handler's log reader (one per
+process) and `FakePty.spawner` (a test fixture, one per fake). `tools/check.sh` caps them at 3;
+the cap only goes down. The closure-taking APIs stay as thin wrappers over the `_with` forms
+for tests (`open_popup`, `hover_card`, `uniform_list`, `ui.list`, `ModalOptions.body`,
+`term.start`, `data.set_rows`).
+
+### No closures in apps (rule)
+
+A leak is worse than any memory a closure saves, so **apps and examples make no capturing
+closure at all**, in render or anywhere else: `tools/check.sh` fails on any `fn [` in a
+non-test `.v` file under `apps/` or `examples/` (cap 0, no allowlist; tests may use them).
+What to use instead:
+
+| Need | Closure-free form |
+|---|---|
+| A handler or listener with data | `core.handler_with(data, f)`, `core.listener_with(view_id, data, f)`, `cx.listener(f)` with state in the view |
+| Updates | `cx.update_with(m, data, f)`, `cx.update_view_with(v, data, f)`, `cx.update_global_with(data, f)`, `app.update_with(mut cx, settings, data, f)` |
+| Timers | `core.set_timeout_with(mut cx, ms, data, f)`, `core.set_interval_with`, `core.debounce_with`, `App.after_with(ms, data, f)` |
+| Observers, subscriptions | `core.observe_with(mut cx, m, data, f)`, `core.subscribe_with(mut cx, m, data, f)` |
+| Tasks | `core.spawn_task_with[T, D, R](mut cx, data, work, done)`; the result carries what `done` needs |
+| Worker thread to the main thread | `App.post_main(f, data)` |
+| Overlays and builders | `ModalOptions.body_with` / `footer_with` with `kit.build_with(data, f)` or `kit.view_body(v)`; `kit.hover_card_with`, `kit.open_popup_with`, `kit.menu_button_with` (items built when the menu opens), `ui.list_with`, `ui.uniform_list_with` |
+| Palette commands | `input.Command.on_run` (a `core.Listener[bool]`) |
+| Table cells | a `data.Cells` object (`cell(row, col)` reading the owner's rows), `data.set_rows_from`, `data.set_keyed_rows_from` |
+| Terminals | `term.start_with(mut cx, v, data, spawn, opts)`; `PtyOptions.ctx` is handed back to the plain `on_data` and `on_exit` |
+| Rules, measures, callbacks a library calls | a value or an interface with a method (`kit.Rule`, a `Measure` interface), or `ctx voidptr` plus a plain function for C-style callbacks on other threads |
+
+`D` is a value type, never a pointer (V 0.5.2 mangles the generic function pointer): wrap a
+pointer in a small struct. Method values (`obj.method` used as a function value) are closures
+too; the grep cannot see them, the detector can.
+
+**The detector.** Outside `-prod`, every framework dispatch that runs code outside a lifetime
+frame (listeners, timer callbacks, task completions, observers, subscribers, inbox chunks,
+main-thread calls) counts the live closures before and after (`core/leakcheck.v`). Growth is
+reported once per dispatch kind and owner type ("a handler of Notes made 1 closure(s) that will
+never be freed ...") and listed by `App.closure_leaks()`. Nested dispatches report their own
+growth only. Closures made outside any dispatch (main, app and window set-up) are made once and
+never reported: there is nothing to mark. `QUADRA_TRACE_CLOSURES=1` prints a backtrace at
+every closure made inside a dispatch (`closure.trace`, the toolchain patch
+`tools/patches/v-closure-trace.diff`). Each app has a gate test that runs its typical flows,
+repeats them and asserts the live closure count did not grow and `closure_leaks()` is empty
+(notes, folio, cluster, gallery, OneTerm and its SFTP browser).
 
 Measured after the change (bench, closures freed per operation): typing in the gallery 86 → 4,
 a full relayout on resize 82 → 0, scrolling the million-row table 14 → 0. Typing went from
@@ -198,8 +239,9 @@ rules that follow from it (measured in docs/benchmarks.md, "Memory work"):
   a style's grid part. Every element and layout node pays for inline fields, every frame.
 - **Small enums** (`enum X as u8`) in structs copied per node.
 - **Elements from render arenas** (specs/07, Element memory): a view's render reuses the
-  divs and texts of its render before last, reset at the end of the build that replaced
-  them, on the closure lifetimes' schedule and pins. An arena text element showing a number
+  divs, texts and svgs of its render before last, reset at the end of the build that
+  replaced them, on the closure lifetimes' schedule and pins; nested renders use the view's
+  arena and kit builds during layout the window's pass arena. An arena text element showing a number
   lays it out into a wrap it owns (`TextSystem.wrap_number`), kept with the element, and
   does not cache it; elements made elsewhere (list rows in prepaint) keep using the cache,
   where an unchanged number is found again. Layout keeps its flex items and lines in scratch per nesting depth.

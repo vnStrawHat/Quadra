@@ -83,8 +83,9 @@ Scroll containers inside a view get their own chunk, so scrolling one panel neve
 ## Element memory (render arenas)
 A view that renders every frame (a live table, a dashboard) would otherwise build a new
 element tree each time and leave the old one to the collector. `ui.div()` and `ui.text()`
-called during a view's render take their element from the view's **render arena** instead:
-a pool of elements the view used before, reset and handed out again (`core/arena.v`).
+(and `ui.svg()`, `ui.icon()`) called during a view's render take their element from the view's
+**render arena** instead: a pool of elements the view used before, reset and handed out
+again (`core/arena.v`).
 
 - **Two arenas per view.** One holds the tree of the view's latest render (its cache); the
   other is free. A render fills the free one. At the end of the build in which the view
@@ -98,13 +99,31 @@ a pool of elements the view used before, reset and handed out again (`core/arena
   a handler stored something that may hold elements: a model, a global, a popup, a drag
   preview), both of the view's arenas are dropped at the end of the next build in which it
   renders and left to the collector, so whatever kept elements from them stays valid.
-- **Outside a tracked render the heap is used**: in handlers, constructors, tests, kit
-  builds during layout, list rows and overlays built in prepaint, a nested render, a view
-  rendered twice in one build. A view rendered by a prepaint-only frame (an overlay's view)
+- **Nested renders use the view's arena too.** A view reached while another render or a
+  kit build is running (`ViewElement.request_layout` inside a `Lazy.build_tree`) renders
+  into its own arena under the same rules, without a closure frame of its own; its closures
+  belong to the enclosing frame. A view rendered twice in one build renders on the heap the
+  second time: the first tree may still be placed.
+- **Layout pass arenas.** What kit components build during layout (`Lazy.build_tree`, not
+  inside a view's render) comes from the window's pass arena: the arena of the pass before
+  last is reset at the end of a pass, when the pass that replaced it has rebuilt every
+  holder. `keep_build` (an overlay opened from a build) or a pin during the pass drops the
+  current and the previous pass arenas instead. The arena pin is separate from the closure
+  pin of a frame: an escape during a render pins the arena being filled (the view's or the
+  pass's) and those of the views rendered so far in the build (a nested view's tree is part
+  of the tree that escaped); an escape from a handler, or `keep_build`, pins every arena
+  that holds a tree.
+- **Outside these the heap is used**: in handlers, constructors, tests, list rows and
+  overlays built in prepaint. A view rendered by a prepaint-only frame (an overlay's view)
   can take an arena, then renders on the heap until the next build settles it. Only the main
   thread builds elements.
-- **A recycled element is reset to its defaults** (`Div{}`, `TextEl{}`); a div keeps only
-  its children array's capacity, cleared. Nothing reads stale fields.
+- **A recycled element is reset to its defaults** (`Div{}`, `TextEl{}`, `SvgEl{}`). A div
+  keeps the capacity of its children, handlers and keys arrays (cleared) and its interaction
+  states block reset to `States{}` (2.6 KB, reused by the next `hover`/`active`/`focus_ring`).
+  A text keeps its owned buffer. An svg keeps its source, parsed document, hash and texture
+  key only while the next use has the same source. Nothing reads stale fields.
+- **Long menus cost nothing until opened**: `kit.menu_button_with(id, text, data, items_fn)`
+  builds its items when the menu opens, so a render showing the button allocates no items.
 - What may hold an element across renders, and why it is safe:
 
 | Holder | Lifetime |

@@ -8,7 +8,9 @@ Workarounds for V 0.5.2 behaviours hit while building Quadra. Each one cost a de
 |---|---|---|
 | Working set climbs without bound (GBs) in MSVC builds; `gc_heap_usage()` is all zeros | V 0.5.2 builds MSVC targets with no garbage collector unless `-gc` is passed | `tools/v.sh` sets `VFLAGS=-gc boehm_full_opt`; `core.new_app` refuses to compile without `gcboehm` |
 | Random NaN/inf floats (garbage geometry, index-out-of-range `-2147483648`) only in MSVC `-prod`, roughly every other run | The stock Win64 closure thunk passes the context pointer in `xmm15`, which is callee-saved on Win64: optimized callers keep floats there across closure calls. clang is affected too (a function holding 14 floats across a closure call came back wrong every time on the stock thunk) | `tools/v.sh` keeps the toolchain patched (`tools/patches/v-closure.diff`: `xmm5`, volatile and never an argument register) |
-| Closures are never freed, with everything they captured | V frees only named local closures at scope exit (`closure_try_destroy`) and closures created inside a `closure.Lifetime` frame | Quadra owns closure lifetimes (`quadra/core/tracked.v`, specs/14); keep `fn [..]` out of engine hot paths; count with `life.live_closures()` |
+| Closures are never freed, with everything they captured (a captured password stays in memory for good) | V frees only named local closures that never escape (passed, stored or returned) at scope exit (`closure_try_destroy`), and closures created inside a `closure.Lifetime` frame | No `fn [` in apps or examples at all (check.sh, cap 0) and 3 made-once ones in quadra; use the `_with(data, fn)` variants (specs/14, "No closures in apps"); count with `life.live_closures()` |
+| A closure leak with no idea where it comes from | — | Outside -prod the dispatch detector warns ("a handler of X made 1 closure(s) ..."); `QUADRA_TRACE_CLOSURES=1` prints a backtrace at each closure made in a dispatch (patched `closure.trace`) |
+| A method value (`obj.method` as a function value) leaks like `fn [obj]` | V builds a closure for a bound method | Pass a plain function and the object as data |
 | Every thread costs 8 MiB of commit (a tab with its two PTY threads 16 MiB) | V passes its thread stack size (8 MiB) to `CreateThread` as the commit size, not as a reservation | `tools/v.sh` passes `-thread-stack-size 0`: the executable's default, 32 MiB reserved, committed as used |
 | The collector's heap never shrinks: a burst's heap stays committed and resident; `unmapped_bytes` is always 0 | V compiles its bundled bdwgc without the config header, so `USE_MUNMAP` is off | `tools/v.sh` adds `-cflags -DUSE_MUNMAP` (it is also in V's cache key, so the collector object is rebuilt); `core` unmaps after a burst (trim.v) |
 | `import builtin.closure` vanishes and the code turns into `builtin.closure.Lifetime` (does not compile) | vfmt 0.5.2 bug in some files of a non-main module | Use the `quadra.core.life` wrapper module |
@@ -49,7 +51,13 @@ Workarounds for V 0.5.2 behaviours hit while building Quadra. Each one cost a de
 - `json.encode` inside a `match` expression generates invalid C: encode first, then match.
 - `cx.listener(named_fn)` can fail with an undeclared `call_listener_T_...`: pass an inline `fn`.
 - A view's `render` in an app submodule needs `@[markused]`.
-- `listener_with` with a pointer as its type argument breaks: wrap the pointer in a struct.
+- `listener_with` with a pointer as its type argument breaks: wrap the pointer in a struct. The
+  same holds for every `_with[D]` (spawn_task_with, update_with, kit.build_with, ...).
+- `undeclared call_listener_T_...` in C when a module's listener is built only inside a function
+  the unused-code pass keeps but never marks (kit/term in an app without terminals):
+  `core.listener_of` makes a never-taken direct call to `call_listener` for this.
+- A generic method with its own type parameter on a generic struct (`Settings[T].update_with[D]`)
+  fails with `unknown type T` in the checker: make it a free function (`app.update_with`).
 - Overlays opened from task or timer callbacks have a nil `cx.win`: open them from an event, or keep the window.
 - `small` is a Windows macro once `net` is imported (hence `is_small` in the kit).
 - `$embed_file` entries with the same base path collide: give the files distinct names.

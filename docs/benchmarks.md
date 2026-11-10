@@ -183,6 +183,47 @@ hover change was 12.4 → 18.2 µs with both builds spread over 11–25 µs (a c
 landing in the 200 hovers or not); a hover mostly repaints a patch, which this work
 did not touch.
 
+## OneTerm idle allocation (2026-11-10)
+OneTerm idle in the harness, measured by `apps/oneterm/leak_gate_test.v` (run it with
+`tools/v.sh -cc msvc -stats test apps/oneterm/leak_gate_test.v`; it prints the numbers and fails
+only when closures leak): the null device, a 1 s clock tick rebuilds the root view, the caret
+blinks every 250 ms. Two steps. First the arenas (the root render's own arena was already
+used; what was left):
+- **Kit builds during layout** (`Lazy.build_tree`: title bar, tab strip, buttons) and the
+  views rendered inside them allocated about 55 KB a build: they now use the window's pass
+  arena and the view's arena (specs/07). About 6 KB a build remains.
+- **Interaction states** (`ui.States`, 2.6 KB) were allocated by every div with a hover or
+  focus patch: an arena div keeps its block. Svg icons are pooled with their parsed source,
+  hash and texture key; `kit.icon` caches its source string per glyph.
+- **Each paint** allocated about 18 KB: the null device copied the scene's arrays; it now
+  reuses them (`Harness.scene()` returns a copy). The GPU device never did this.
+
+| | committed | after the arenas |
+|---|---|---|
+| idle, per second | 236 KB | 125 KB |
+| with no task running, per second | 201 KB | 104 KB |
+| a root render (build) | 156 KB | 82 KB |
+| a caret-blink paint | 18-21 KB | 0-5 KB |
+
+Then the rest, app code in the root render: about 50 KB of eager menu items (the app menu,
+the new-tab menu, the theme picker) and closures. The menus now use `kit.menu_button_with`
+(items built when a menu opens) and apps make no closures (specs/14, No closures in apps):
+
+| | committed | after both steps |
+|---|---|---|
+| closures created while idle | 20 in 20 s (60 a minute) | 0 |
+| idle, allocated per second | 235 KB | 46 KB |
+| a root render (build) | 156 KB | 28 KB |
+| closures over 3 rounds of the gate flows (tabs, spaces, menus, settings window, update check, About, lock and unlock) | not measured (no gate then) | +0 |
+
+A 200 s idle run of the MSVC `-prod` build (`--mem`, a fresh `--data` folder): the `closures`
+field stays at 1 (the main-queue drain); private working set 24-25 MB after the first 30 s in
+both builds, commit 70-71 MB after against 72-74 MB before, the collector's heap 7-10 MB
+(collected in between, not growing). Idle never made many closures (60 a minute, small ones):
+the leaks that mattered were per event (a closure per task, update, dialog, terminal, palette
+opening, settings save) and kept what they captured: `start_vault_job` captured the
+`vault.VaultJob`, master password and new password included, in two closures per job.
+
 ## OneTerm memory (2026-11-10)
 The three numbers Task Manager shows (private working set, working set, commit size), in fixed
 scenarios, medians of 3 runs:

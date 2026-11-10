@@ -28,6 +28,11 @@ Notes, Folio, Cluster). It was called "Vela" until 2026-11-08; old notes may say
   **English**.
 - **Performance first.** Specs come before code: change `specs/` first, then implement,
   then update `docs/progress.md` (the source of truth for what is done).
+- **No capturing closures in apps or examples** (`fn [` anywhere outside tests: check.sh
+  fails, cap 0). Use the `_with(data, fn)` variants, listeners with data, interfaces or
+  `ctx` + plain functions (specs/14, "No closures in apps"); V frees no closure made outside a
+  render frame. The leak detector names a dispatch that made one; `QUADRA_TRACE_CLOSURES=1`
+  shows where.
 - Files stay **at most 300 lines** (check.sh). The framework has a **closure cap**
   (`closure_cap` in check.sh, only ever lowered): avoid `fn [..]` in `quadra/`, use the
   closure-free patterns in specs/14 (`core.handler_with(data, fn)`, `themed_with`, typed

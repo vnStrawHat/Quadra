@@ -38,7 +38,7 @@ fn parse_color_spec(spec string) u32 {
 		mut rgb := [3]int{}
 		for i in 0 .. 3 {
 			part := spec[1 + i * n..1 + (i + 1) * n]
-			v := int(part.parse_uint(16, 32) or { return 0 }) << 4
+			v := int((part.parse_uint(16, 32) or { return 0 }) << 4)
 			rgb[i] = v >> (4 * (part.len - 1))
 		}
 		return rgb_color(rgb[0], rgb[1], rgb[2])

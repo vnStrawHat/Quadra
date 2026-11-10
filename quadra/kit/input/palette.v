@@ -12,6 +12,9 @@ pub:
 	title string
 	keys  string // shortcut shown on the right, e.g. "ctrl-s"
 	run   fn (mut cx core.Cx) = unsafe { nil }
+	// on_run is run without a closure (`core.listener_with(view, data, f)`): a palette is
+	// opened from a handler, where V frees no closure (specs/14). It gets `true`.
+	on_run core.Listener[bool]
 }
 
 @[heap]
@@ -47,14 +50,11 @@ pub fn open_command_palette(mut cx core.Cx, commands []Command) {
 		view: pv.id
 		call: palette_typed
 	}})
-	any := pv.any()
 	id := kit.open_modal(mut cx, kit.ModalOptions{
-		side:  .top
-		title: words.commands
-		width: 608
-		body:  fn [any] () core.Element {
-			return core.view_element(any)
-		}
+		side:      .top
+		title:     words.commands
+		width:     608
+		body_with: kit.view_body(pv.any())
 	})
 	mut w := cx.peek(pv.model())
 	w.modal = id
@@ -86,6 +86,9 @@ fn (mut p Palette) run(mut cx core.ViewCx[Palette]) {
 		kit.close_modal(mut cx.Cx, p.modal)
 		if cmd.run != unsafe { nil } {
 			cmd.run(mut cx.Cx)
+		} else {
+			yes := true
+			cx.app.invoke(cmd.on_run.any, &yes, cx.win, true)
 		}
 	}
 }

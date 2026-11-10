@@ -46,28 +46,49 @@ pub fn set_theme(mut app core.App, t Theme) {
 
 // follow_system picks light, dark or high contrast from the OS and keeps following it.
 // Themes with `system_accent` take the accent from the OS too.
+// Calling it again (a theme picked in settings) only changes the themes followed.
 pub fn follow_system(mut app core.App, light_theme Theme, dark_theme Theme) {
-	apply := fn [light_theme, dark_theme] (mut app core.App) {
-		look := app.plat.appearance()
-		mut t := if look.high_contrast {
-			high_contrast()
-		} else if look.dark {
-			dark_theme
-		} else {
-			light_theme
-		}
-		if !look.high_contrast && t.system_accent {
-			t.p.accent = look.accent
-			t.p.accent_hover = look.accent.lerp(prim.white, 0.12)
-			t.p.accent_press = look.accent.lerp(prim.black, 0.15)
-			t.p.accent_tint = look.accent.alpha(0.1)
-			t.p.accent_text = look.accent
-			t.p.border_focused = look.accent
-			t = t.finish()
-		}
-		t.text_scale = look.text_scale
-		set_theme(mut app, t)
+	mut cx := core.Cx{
+		app: app
 	}
-	apply(mut app)
-	app.appearance_hooks << apply
+	if mut f := cx.peek_global[Followed]() {
+		f.light, f.dark = light_theme, dark_theme
+	} else {
+		cx.set_global(Followed{light_theme, dark_theme})
+		app.appearance_hooks << apply_followed // one plain-function hook per app
+	}
+	apply_followed(mut app)
+}
+
+// Followed holds the themes follow_system follows.
+pub struct Followed {
+mut:
+	light Theme
+	dark  Theme
+}
+
+fn apply_followed(mut app core.App) {
+	cx := core.Cx{
+		app: app
+	}
+	f := cx.peek_global[Followed]() or { return }
+	look := app.plat.appearance()
+	mut t := if look.high_contrast {
+		high_contrast()
+	} else if look.dark {
+		f.dark
+	} else {
+		f.light
+	}
+	if !look.high_contrast && t.system_accent {
+		t.p.accent = look.accent
+		t.p.accent_hover = look.accent.lerp(prim.white, 0.12)
+		t.p.accent_press = look.accent.lerp(prim.black, 0.15)
+		t.p.accent_tint = look.accent.alpha(0.1)
+		t.p.accent_text = look.accent
+		t.p.border_focused = look.accent
+		t = t.finish()
+	}
+	t.text_scale = look.text_scale
+	set_theme(mut app, t)
 }

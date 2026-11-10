@@ -145,14 +145,22 @@ fn test_command_palette_runs_the_best_match() {
 	}
 	pid := v.id
 	input.open_command_palette(mut cx, [
-		input.Command{'Mở tệp', 'ctrl-o', fn [pid] (mut cx core.Cx) {
-			mut p := unsafe { &Palette(cx.app.store_ptr(pid)) }
-			p.ran = 'open'
-		}},
-		input.Command{'Lưu tệp', 'ctrl-s', fn [pid] (mut cx core.Cx) {
-			mut p := unsafe { &Palette(cx.app.store_ptr(pid)) }
-			p.ran = 'save'
-		}},
+		input.Command{
+			title: 'Mở tệp'
+			keys:  'ctrl-o'
+			run:   fn [pid] (mut cx core.Cx) {
+				mut p := unsafe { &Palette(cx.app.store_ptr(pid)) }
+				p.ran = 'open'
+			}
+		},
+		input.Command{
+			title: 'Lưu tệp'
+			keys:  'ctrl-s'
+			run:   fn [pid] (mut cx core.Cx) {
+				mut p := unsafe { &Palette(cx.app.store_ptr(pid)) }
+				p.ran = 'save'
+			}
+		},
 	])
 	h.frame()
 	h.type_text('lưu')

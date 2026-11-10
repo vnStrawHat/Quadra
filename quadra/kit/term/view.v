@@ -89,28 +89,55 @@ pub fn new_terminal(mut cx core.Cx, opts TerminalOptions) core.View[Terminal] {
 
 // start runs a program on a PTY from make (the platform spawn_pty, or a FakePty spawner).
 pub fn start(mut cx core.Cx, v core.View[Terminal], make SpawnFn, opts platform.PtyOptions) ! {
-	mut t := cx.peek(v.model())
-	if t.inbox == unsafe { nil } {
-		cx.update_view(v, fn (mut t Terminal, mut cx core.ViewCx[Terminal]) {
-			t.inbox = core.new_inbox(mut cx, fn (mut t Terminal, c &core.Chunk, mut cx core.ViewCx[Terminal]) {
-				t.receive(c, mut cx)
-			})
-		})
-	}
-	mut inbox := t.inbox
-	pty := make(platform.PtyOptions{
+	mut t := prepare(mut cx, v)
+	t.pty = make(pty_options(t, opts))!
+	t.exited = none
+}
+
+// start_with is start for a spawner that needs data, without a closure per terminal
+// (specs/14): `term.start_with(mut cx, v, term.FakeRef{fake}, term.spawn_fake, opts)`.
+pub fn start_with[D](mut cx core.Cx, v core.View[Terminal], data D, make fn (d D, opts platform.PtyOptions) !platform.Pty, opts platform.PtyOptions) ! {
+	mut t := prepare(mut cx, v)
+	t.pty = make(data, pty_options(t, opts))!
+	t.exited = none
+}
+
+fn pty_options(t &Terminal, opts platform.PtyOptions) platform.PtyOptions {
+	return platform.PtyOptions{
 		...opts
 		cols:    t.screen.cols
 		rows:    t.screen.rows
-		on_data: fn [mut inbox] (data []u8) {
-			inbox.push(data)
+		ctx:     t.inbox
+		on_data: inbox_data
+		on_exit: inbox_exit
+	}
+}
+
+fn prepare(mut cx core.Cx, v core.View[Terminal]) &Terminal {
+	mut t := cx.peek(v.model())
+	if t.inbox == unsafe { nil } {
+		mut vcx := core.ViewCx[Terminal]{
+			Cx: core.Cx{
+				app:    cx.app
+				win:    cx.win
+				entity: v.id
+			}
 		}
-		on_exit: fn [mut inbox] (code int) {
-			inbox.finish(code)
-		}
-	})!
-	t.pty = pty
-	t.exited = none
+		t.inbox = core.new_inbox(mut vcx, fn (mut t Terminal, c &core.Chunk, mut cx core.ViewCx[Terminal]) {
+			t.receive(c, mut cx)
+		})
+	}
+	return t
+}
+
+fn inbox_data(ctx voidptr, data []u8) {
+	mut inbox := unsafe { &core.Inbox(ctx) }
+	inbox.push(data)
+}
+
+fn inbox_exit(ctx voidptr, code int) {
+	mut inbox := unsafe { &core.Inbox(ctx) }
+	inbox.finish(code)
 }
 
 // set_hooks attaches an app's extensions (specs/17, App hooks); call it before the first paint.

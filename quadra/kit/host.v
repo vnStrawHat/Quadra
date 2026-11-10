@@ -29,8 +29,8 @@ pub:
 	win         u32
 	side        ModalSide
 	title       string
-	body        fn () core.Element = unsafe { nil }
-	footer      ?fn () core.Element
+	body        core.BoundRef[Theme, core.Element]
+	footer      core.BoundRef[Theme, core.Element]
 	width       f32 = 420
 	description string
 	alert       bool

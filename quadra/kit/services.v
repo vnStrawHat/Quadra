@@ -7,9 +7,26 @@ import quadra.ui
 
 // icon wraps a Lucide icon body (kit.icon_*) into a tintable SVG element.
 // The stroke is 1.8 on the 24 grid: 1.2 px at 16 px, the outline weight of specs/15.
+// Kit builds make icons at every layout: the wrapped source is made once per body.
 pub fn icon(body string) &ui.SvgEl {
-	return ui.icon('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>')
+	if src := icon_sources.m[body] {
+		return ui.icon(src)
+	}
+	src := '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>'
+	if icon_sources.m.len < 1024 { // bodies are constants; a few made on the fly stay bounded
+		mut c := unsafe { icon_sources }
+		c.m[body] = src
+	}
+	return ui.icon(src)
 }
+
+struct IconSources {
+mut:
+	m map[string]string
+}
+
+// One per process, like the elements built from it: main thread only.
+const icon_sources = &IconSources{}
 
 // add_overlay reserves the next overlay id. The state is mutated in place (no update
 // closure, specs/14); callers then call cx.touch_global[Overlays]().
@@ -37,7 +54,11 @@ pub:
 	title  string
 	body   fn () core.Element = unsafe { nil }
 	footer ?fn () core.Element
-	width  f32 = 440
+	// body_with and footer_with are body and footer without a closure (kit.build_with,
+	// kit.view_body): a closure made in a handler is never freed (specs/14).
+	body_with   core.BoundRef[Theme, core.Element]
+	footer_with core.BoundRef[Theme, core.Element]
+	width       f32 = 440
 	// muted text under the title (One: the body when there is no body)
 	description string
 	// an alert (a question that needs an answer): with Controls.card_dialogs it has no
@@ -49,9 +70,33 @@ pub:
 pub fn open_modal(mut cx core.Cx, opts ModalOptions) int {
 	mut ov, id := add_overlay(cx) or { return 0 }
 	cx.keep_build()
-	ov.modals << Modal{id, win_id(cx), opts.side, opts.title, opts.body, opts.footer, opts.width, opts.description, opts.alert}
+	mut body := opts.body_with
+	if !body.is_set() && opts.body != unsafe { nil } {
+		body = build_with(Builder{opts.body}, run_builder)
+	}
+	mut footer := opts.footer_with
+	if f := opts.footer {
+		footer = build_with(Builder{f}, run_builder)
+	}
+	ov.modals << Modal{id, win_id(cx), opts.side, opts.title, body, footer, opts.width, opts.description, opts.alert}
 	cx.touch_global[Overlays]()
 	return id
+}
+
+// build_with pairs data with a builder for ModalOptions.body_with and footer_with:
+// `kit.build_with(args, fn (a Args, t &kit.Theme) core.Element {...})`. D must not be a
+// pointer type: wrap a pointer in a struct.
+pub fn build_with[D](data D, f fn (d D, t &Theme) core.Element) core.BoundRef[Theme, core.Element] {
+	return core.bind_fn_ref[D, Theme, core.Element](data, f)
+}
+
+// view_body is a modal body showing view v.
+pub fn view_body(v core.AnyView) core.BoundRef[Theme, core.Element] {
+	return build_with(v, show_view)
+}
+
+fn show_view(v core.AnyView, _ &Theme) core.Element {
+	return core.view_element(v)
 }
 
 pub fn close_modal(mut cx core.Cx, id int) {
@@ -174,20 +219,20 @@ fn modal_frame(m Modal, t &Theme, win prim.Size) core.Element {
 	mut backdrop := ui.div().size_full().bg(p.scrim).on_mouse_down(core.handler_with(id,
 		close_modal_on[core.MouseDownEvent]))
 	if m.side == .top {
-		return backdrop.flex_col().items_center().pt(80).child(dialog.w(m.width).max_w(720).rounded(t.radius_xl).overflow_hidden().child(m.body()))
+		return backdrop.flex_col().items_center().pt(80).child(dialog.w(m.width).max_w(720).rounded(t.radius_xl).overflow_hidden().child(m.body.run(t)))
 	}
 	dialog.child(ui.div().flex_row().items_center().gap(4).px(12).pt(8).pb(4).child(ui.text(m.title).size(t.scaled(t.text_lg))).child(ui.div().grow()).child(ui.div().test_id('modal-close').size(22).center().rounded(t.radius_md).cursor(.pointer).text_color(p.text_2).hover(ui.Patch{
 		background: p.panel_hover
 	}).on_click(core.handler_with(id, close_modal_on[core.ClickEvent])).child(icon(icon_x).size(14))))
 	mut body := ui.div().px(12).py(8).grow().text_color(p.text_2)
-	if m.body != unsafe { nil } {
-		body.child(m.body())
+	if m.body.is_set() {
+		body.child(m.body.run(t))
 	} else {
 		body.child(ui.text(m.description))
 	}
 	dialog.child(body)
-	if f := m.footer {
-		dialog.child(ui.div().flex_row().justify_end().gap(4).p(8).border_t(1).border_color(p.line).child(f()))
+	if m.footer.is_set() {
+		dialog.child(ui.div().flex_row().justify_end().gap(4).p(8).border_t(1).border_color(p.line).child(m.footer.run(t)))
 	}
 	match m.side {
 		.center {

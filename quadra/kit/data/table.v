@@ -26,15 +26,31 @@ pub mut:
 
 pub type CellFn = fn (row int, col int) string
 
+// Cells is what a table shows: an object whose cell method reads the owner's rows. Apps use
+// it instead of a capturing CellFn (no closures in apps, specs/14).
+pub interface Cells {
+	cell(row int, col int) string
+}
+
+// FnCells adapts a capture-free cell function to Cells.
+pub struct FnCells {
+pub:
+	f CellFn = unsafe { nil }
+}
+
+pub fn (c FnCells) cell(row int, col int) string {
+	return c.f(row, col)
+}
+
 @[heap]
 pub struct Table {
 pub mut:
 	id        string
 	columns   []Column
 	rows      int
-	cell      CellFn = unsafe { nil }
-	row_h     f32    = 26
-	sort_col  int    = -1
+	cells     Cells = FnCells{}
+	row_h     f32   = 26
+	sort_col  int   = -1
 	sort_desc bool
 	order     []int // display position -> data row
 	selected  map[int]bool
@@ -63,7 +79,8 @@ pub:
 	id      string
 	columns []Column
 	rows    int
-	cell    CellFn @[required]
+	cell    CellFn = unsafe { nil } // or cells
+	cells   ?Cells
 	row_h   f32 = 26
 	// select_cells makes the cursor a cell (spreadsheet-like); rows are still selected.
 	select_cells bool
@@ -74,7 +91,7 @@ pub fn new_table(mut cx core.Cx, opts TableOptions) core.View[Table] {
 		id:        opts.id
 		columns:   opts.columns
 		rows:      opts.rows
-		cell:      opts.cell
+		cells:     opts.cells or { Cells(FnCells{opts.cell}) }
 		row_h:     opts.row_h
 		focus:     cx.focus_handle()
 		cell_mode: opts.select_cells
@@ -89,8 +106,13 @@ pub fn on_select(mut cx core.Cx, t core.View[Table], l core.Listener[[]int]) {
 // set_rows replaces the data (live data sources): the selection is cleared and the current
 // sort is applied again.
 pub fn set_rows(mut cx core.Cx, t core.View[Table], rows int, cell CellFn) {
+	set_rows_from(mut cx, t, rows, FnCells{cell})
+}
+
+// set_rows_from is set_rows for a Cells object.
+pub fn set_rows_from(mut cx core.Cx, t core.View[Table], rows int, cells Cells) {
 	mut tb := cx.peek(t.model())
-	tb.rows, tb.cell = rows, cell
+	tb.rows, tb.cells = rows, cells
 	tb.keys.clear()
 	tb.prev.clear()
 	tb.flash.clear()
@@ -102,6 +124,11 @@ pub fn set_rows(mut cx core.Cx, t core.View[Table], rows int, cell CellFn) {
 		tb.sort_by(tb.sort_col)
 	}
 	cx.touch(t.model())
+}
+
+// cell is the text of a data row's column.
+pub fn (t &Table) cell(row int, col int) string {
+	return t.cells.cell(row, col)
 }
 
 // data_row maps a display position to a data row (after sorting).
@@ -122,29 +149,40 @@ fn (mut t Table) sort_by(col int) {
 		t.sort_col, t.sort_desc = col, false
 	}
 	numeric := t.columns[col].numeric || t.columns[col].kind == .age
-	keys := []string{len: t.rows, init: t.cell(index, col)}
-	nums := if numeric { keys.map(it.f64()) } else { []f64{} }
-	mut order := []int{len: t.rows, init: index}
-	desc := t.sort_desc
-	order.sort_with_compare(fn [keys, nums, numeric, desc] (a &int, b &int) int {
-		mut c := 0
-		if numeric {
-			c = if nums[*a] < nums[*b] {
-				-1
-			} else if nums[*a] > nums[*b] {
-				1
-			} else {
-				0
-			}
-		} else {
-			c = compare_strings(keys[*a], keys[*b])
+	mut keys := []SortKey{len: t.rows, init: SortKey{t.cell(index, col), 0, index}}
+	// Plain compare functions, no closure per sort (specs/14): ascending, then reversed.
+	if numeric {
+		for mut k in keys {
+			k.n = k.s.f64()
 		}
-		if c == 0 {
-			c = *a - *b // stable
-		}
-		return if desc { -c } else { c }
-	})
+		keys.sort_with_compare(compare_nums)
+	} else {
+		keys.sort_with_compare(compare_keys)
+	}
+	mut order := keys.map(it.i)
+	if t.sort_desc {
+		order.reverse_in_place()
+	}
 	t.order = order
+}
+
+struct SortKey {
+	s string
+mut:
+	n f64
+	i int
+}
+
+fn compare_nums(a &SortKey, b &SortKey) int {
+	if a.n != b.n {
+		return if a.n < b.n { -1 } else { 1 }
+	}
+	return a.i - b.i // stable
+}
+
+fn compare_keys(a &SortKey, b &SortKey) int {
+	c := compare_strings(a.s, b.s)
+	return if c != 0 { c } else { a.i - b.i }
 }
 
 fn (mut t Table) click_row(pos int, mods core.ClickEvent, mut cx core.ViewCx[Table]) {

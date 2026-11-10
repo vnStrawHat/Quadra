@@ -27,7 +27,7 @@ fn test_keyed_updates_keep_selection_cursor_and_sort() {
 		values: [3, 1, 2]
 	}
 	mut t, cell := table_of(m)
-	t.update_keyed(m.names.clone(), cell, 0)
+	t.update_keyed(m.names.clone(), FnCells{cell}, 0)
 	t.sort_by(1) // by value: b, c, a
 	assert [t.data_row(0), t.data_row(1), t.data_row(2)] == [1, 2, 0]
 	t.selected[2] = true // c
@@ -35,20 +35,20 @@ fn test_keyed_updates_keep_selection_cursor_and_sort() {
 	// c moves to the front of the data, b goes away, d arrives.
 	m.names = ['c', 'a', 'd']
 	m.values = [2, 3, 0]
-	t.update_keyed(m.names.clone(), cell, 1000)
+	t.update_keyed(m.names.clone(), FnCells{cell}, 1000)
 	assert t.selection() == [0] // still c
 	assert t.keys[t.data_row(t.cursor)] == 'c'
 	assert [t.data_row(0), t.data_row(1), t.data_row(2)] == [2, 0, 1] // still sorted: d, c, a
 	assert t.flash.len == 0 // new and removed rows do not flash
 	// A changed value flashes once, then fades.
 	m.values = [5, 3, 0]
-	t.update_keyed(m.names.clone(), cell, 2000)
+	t.update_keyed(m.names.clone(), FnCells{cell}, 2000)
 	assert flash_level(t.flash, 'c', 1, 2000) == 1
 	assert flash_level(t.flash, 'c', 0, 2000) == 0
 	assert flash_level(t.flash, 'a', 1, 2000) == 0
 	assert flash_level(t.flash, 'c', 1, 2400) > 0.4
 	assert flash_level(t.flash, 'c', 1, 2900) == 0
-	t.update_keyed(m.names.clone(), cell, 4000)
+	t.update_keyed(m.names.clone(), FnCells{cell}, 4000)
 	assert t.flash.len == 0 // finished flashes are dropped
 }
 

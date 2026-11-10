@@ -84,7 +84,7 @@ fn (t &Table) body(mut cx core.ViewCx[Table], th &kit.Theme) core.Element {
 	}
 	order := t.order
 	rows := t.rows
-	cell := t.cell
+	cell := t.cells
 	keys := t.keys
 	flash := t.flash.clone()
 	app := cx.app
@@ -134,7 +134,7 @@ struct TableRows {
 	shown     []int
 	order     []int
 	rows      int
-	cell      CellFn = unsafe { nil }
+	cell      Cells = FnCells{}
 	keys      []string
 	flash     map[string]f64
 	app       &core.App = unsafe { nil }
@@ -185,7 +185,7 @@ fn table_row(d TableRows, pos int) core.Element {
 	mut cells := []core.Element{cap: cols.len}
 	for k, col in cols {
 		ci := shown[k]
-		v := cell(row, ci)
+		v := cell.cell(row, ci)
 		mut cl :=
 			ui.div().w(col.width).h_full().flex_row().items_center().shrink_0().px(8).overflow_hidden().role(.cell)
 		if col.numeric || col.kind == .age {

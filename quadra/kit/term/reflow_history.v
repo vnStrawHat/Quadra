@@ -30,7 +30,7 @@ fn (s &Screen) split_history(i int, j int, cols int) []Line {
 	mut extra := unsafe { &RowExtra(nil) }
 	for h in i .. j + 1 {
 		l := s.scrollback.at(h)
-		extra = merge_extra(extra, l.extra)
+		extra = unsafe { merge_extra(extra, l.extra) } // rows share extras; reflow only reads them
 		off := text.len
 		for r in l.runs {
 			runs << Run{u16(int(r.col) + off), r.fg, r.bg, r.flags, r.link}

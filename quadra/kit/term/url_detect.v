@@ -59,29 +59,29 @@ fn (t &Terminal) plain_url_at(p Pos) ?Link {
 	if click < 0 || is_white(chars[click]) {
 		return none
 	}
-	for start := click; start >= 0; start-- {
+	for begin := click; begin >= 0; begin-- {
 		for prefix in url_prefixes {
-			if !starts_with_at(chars, start, prefix) {
+			if !starts_with_at(chars, begin, prefix) {
 				continue
 			}
-			mut end := start + prefix.len
+			mut end := begin + prefix.len
 			for end < chars.len && !is_white(chars[end]) {
 				end++
 			}
 			if click >= end {
 				continue
 			}
-			for end > start + prefix.len && is_trailing_punct(chars[end - 1]) {
+			for end > begin + prefix.len && is_trailing_punct(chars[end - 1]) {
 				end--
 			}
-			if end <= start + prefix.len {
+			if end <= begin + prefix.len {
 				continue
 			}
-			mut url := chars[start..end].string()
+			mut url := chars[begin..end].string()
 			if url.starts_with('www.') {
 				url = 'https://${url}'
 			}
-			a, b := cols[start], cols[end - 1]
+			a, b := cols[begin], cols[end - 1]
 			return Link{
 				line:     a.line
 				c0:       a.col
@@ -191,17 +191,17 @@ pub fn (t &Terminal) link_cols(rows []Row) []Link {
 				col++
 				continue
 			}
-			start := col
+			begin := col
 			for col < n && mask[col] {
 				col++
 			}
 			end := col
 			if end >= n && row.wrapped { // the URL runs on: its end is on a later row
-				out << Link{r, start, end, '', r, '', false}
+				out << Link{r, begin, end, '', r, '', false}
 				continue
 			}
 			mut stripped := end
-			for stripped > start + 1 {
+			for stripped > begin + 1 {
 				c := row.cells[stripped - 1]
 				if c.flags & f_spacer != 0 || is_trailing_punct(visible_rune(c)) {
 					stripped--
@@ -209,7 +209,7 @@ pub fn (t &Terminal) link_cols(rows []Row) []Link {
 					break
 				}
 			}
-			out << Link{r, start, stripped, '', r, '', false}
+			out << Link{r, begin, stripped, '', r, '', false}
 		}
 	}
 	return out

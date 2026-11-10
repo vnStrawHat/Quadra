@@ -16,13 +16,18 @@ fn flash_key(key string, col int) string {
 // function is normally the same one every time (made once, reading the owner's data), so
 // live updates make no closures.
 pub fn set_keyed_rows(mut cx core.Cx, t core.View[Table], keys []string, cell CellFn) {
+	set_keyed_rows_from(mut cx, t, keys, FnCells{cell})
+}
+
+// set_keyed_rows_from is set_keyed_rows for a Cells object (reading the owner's rows).
+pub fn set_keyed_rows_from(mut cx core.Cx, t core.View[Table], keys []string, cells Cells) {
 	mut tb := cx.peek(t.model())
-	tb.update_keyed(keys, cell, cx.app.plat.now_ms())
+	tb.update_keyed(keys, cells, cx.app.plat.now_ms())
 	cx.touch(t.model())
 }
 
 // update_keyed is set_keyed_rows on the model (tests and owners holding the table).
-pub fn (mut t Table) update_keyed(keys []string, cell CellFn, now f64) {
+pub fn (mut t Table) update_keyed(keys []string, cells Cells, now f64) {
 	// Remember what was selected and where the cursor was, by key.
 	same_shape := t.keys.len == t.rows
 	mut sel_keys := map[string]bool{}
@@ -37,9 +42,9 @@ pub fn (mut t Table) update_keyed(keys []string, cell CellFn, now f64) {
 			cursor_key = t.keys[t.data_row(t.cursor)]
 		}
 	}
-	t.flash_cells(keys, cell, now)
+	t.flash_cells(keys, cells, now)
 	t.keys = keys
-	t.rows, t.cell = keys.len, cell
+	t.rows, t.cells = keys.len, cells
 	t.order = []int{}
 	if t.sort_col >= 0 {
 		t.sort_desc = !t.sort_desc // sort_by toggles: keep the direction
@@ -63,10 +68,10 @@ pub fn (mut t Table) update_keyed(keys []string, cell CellFn, now f64) {
 }
 
 // flash_cells records the cells whose text changed under the same key.
-fn (mut t Table) flash_cells(keys []string, cell CellFn, now f64) {
+fn (mut t Table) flash_cells(keys []string, src Cells, now f64) {
 	mut next := map[string][]string{}
 	for row, k in keys {
-		cells := []string{len: t.columns.len, init: t.shown_text(cell(row, index), index)}
+		cells := []string{len: t.columns.len, init: t.shown_text(src.cell(row, index), index)}
 		if old := t.prev[k] {
 			for c in 0 .. cells.len {
 				if c < old.len && old[c] != cells[c] {

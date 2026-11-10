@@ -162,27 +162,27 @@ fn (t &Terminal) expand_range(kind SelExpand, a Pos, b Pos) (Pos, Pos) {
 	mut w := Walker{
 		t: t
 	}
-	mut start, mut end := if b.before(a) { b, a } else { a, b }
+	mut begin, mut end := if b.before(a) { b, a } else { a, b }
 	if kind == .lines {
-		for start.line > 0 && w.wrapped(start.line - 1) {
-			start = Pos{start.line - 1, 0}
+		for begin.line > 0 && w.wrapped(begin.line - 1) {
+			begin = Pos{begin.line - 1, 0}
 		}
 		for end.line < w.last_line() && w.wrapped(end.line) {
 			end = Pos{end.line + 1, 0}
 		}
-		return Pos{start.line, 0}, Pos{end.line, t.screen.cols}
+		return Pos{begin.line, 0}, Pos{end.line, t.screen.cols}
 	}
-	if start == end {
-		if m := w.bracket_search(start) {
-			if m.before(start) {
-				start = m
+	if begin == end {
+		if m := w.bracket_search(begin) {
+			if m.before(begin) {
+				begin = m
 			} else {
 				end = m
 			}
-			return start, Pos{end.line, end.col + 1}
+			return begin, Pos{end.line, end.col + 1}
 		}
 	}
-	s := w.semantic_left(start)
+	s := w.semantic_left(begin)
 	e := w.semantic_right(end)
 	return s, Pos{e.line, e.col + 1}
 }

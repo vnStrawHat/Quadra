@@ -43,15 +43,21 @@ pub struct HoverCard {
 pub mut:
 	child core.Element
 mut:
-	build fn () core.Element = unsafe { nil }
+	build core.BoundRef[Theme, core.Element]
 	node  layout.NodeId
 }
 
 // hover_card shows build() in a card below child while the pointer rests on child.
 pub fn hover_card(child core.Element, build fn () core.Element) &HoverCard {
+	return hover_card_with(child, Builder{build}, run_builder)
+}
+
+// hover_card_with is hover_card with the data the builder needs passed in, so the builder
+// captures nothing (specs/14). D must not be a pointer type.
+pub fn hover_card_with[D](child core.Element, data D, build fn (d D, t &Theme) core.Element) &HoverCard {
 	return &HoverCard{
 		child: child
-		build: build
+		build: build_with(data, build)
 	}
 }
 
@@ -95,7 +101,7 @@ pub fn (mut h HoverCard) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 	}
 	t := theme_of(cx.app)
 	box := &CardBox{
-		content: popover_frame(t, h.build())
+		content: popover_frame(t, h.build.run(t))
 		state:   st
 	}
 	mut a := ui.anchored(box).at(bounds).placement(.bottom_start).gap(6).layer(3900)

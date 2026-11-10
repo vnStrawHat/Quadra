@@ -20,11 +20,11 @@ fn card_dialog(m Modal, t &Theme, win prim.Size) core.Element {
 		head.child(ui.text(m.description).size(t.ui_text(.md)).color(p.text_2))
 	}
 	dialog.child(head)
-	if m.body != unsafe { nil } {
-		dialog.child(ui.div().flex_col().grow().pt(t.sp(8)).child(m.body()))
+	if m.body.is_set() {
+		dialog.child(ui.div().flex_col().grow().pt(t.sp(8)).child(m.body.run(t)))
 	}
-	if f := m.footer {
-		dialog.child(ui.div().flex_row().justify_end().gap(t.sp(8)).pt(t.sp(16)).child(f()))
+	if m.footer.is_set() {
+		dialog.child(ui.div().flex_row().justify_end().gap(t.sp(8)).pt(t.sp(16)).child(m.footer.run(t)))
 	}
 	if !m.alert {
 		dialog.child(ui.div().absolute().top(8).right(8).test_id('modal-close').size(t.height(.sm)).center().rounded(t.radius_md).cursor(.pointer).hover(ui.Patch{

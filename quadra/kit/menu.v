@@ -198,6 +198,23 @@ pub fn menu_button(id string, text string, items []MenuItem) &Button {
 	}))
 }
 
+// menu_button_with builds its items only when the menu opens, from data (no closure,
+// specs/14): a render showing the button pays nothing for a long menu (a theme list). D must
+// not be a pointer type.
+pub fn menu_button_with[D](id string, text string, data D, items fn (d D) []MenuItem) &Button {
+	return button(id).label(text).ghost().on_click(core.handler_with(LazyMenu[D]{data, items},
+		open_lazy_menu[D]))
+}
+
+struct LazyMenu[D] {
+	data  D
+	items fn (d D) []MenuItem = unsafe { nil }
+}
+
+fn open_lazy_menu[D](m LazyMenu[D], _ &core.ClickEvent, mut cx core.Cx) {
+	open_popup_with(mut cx, cx.target_bounds(), .bottom_start, m.items(m.data), menu_popup)
+}
+
 // caret marks a button as a dropdown trigger (specs/15): a 16 chevron-down after the label
 // at 75 %, gap 8, the input fill.
 pub fn (self_ &Button) caret() &Button {

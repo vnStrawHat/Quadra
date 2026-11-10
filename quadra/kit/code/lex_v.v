@@ -17,7 +17,8 @@ const v_types = ['int', 'i8', 'i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64', 'f
 
 pub fn (t VTokenizer) tokenize(line string, state int) ([]Token, int) {
 	mut l := Lex{
-		s: line
+		s:   line
+		out: []Token{cap: line.len / 3 + 2}
 	}
 	mut st := state
 	if st >= 1000 {
@@ -182,7 +183,7 @@ fn (mut l Lex) v_ident() {
 	for l.i < l.s.len && is_ident(l.s[l.i]) {
 		l.i++
 	}
-	word := l.s[a..l.i]
+	b := l.i
 	mut k := l.i
 	for k < l.s.len && l.s[k] == ` ` {
 		k++
@@ -191,13 +192,13 @@ fn (mut l Lex) v_ident() {
 	after_dot := a > 0 && l.s[a - 1] == `.`
 	kind := if after_dot {
 		if call { TokenKind.function } else { TokenKind.property }
-	} else if word in v_keywords {
+	} else if l.word_in(v_keywords, a, b, false) {
 		TokenKind.keyword
-	} else if word in v_control {
+	} else if l.word_in(v_control, a, b, false) {
 		TokenKind.control
-	} else if word in v_constants {
+	} else if l.word_in(v_constants, a, b, false) {
 		TokenKind.constant
-	} else if word in v_types || word[0].is_capital() {
+	} else if l.word_in(v_types, a, b, false) || l.s[a].is_capital() {
 		TokenKind.typ
 	} else if call {
 		TokenKind.function

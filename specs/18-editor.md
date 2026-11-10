@@ -9,7 +9,7 @@ Implementation spec for the editor of specs/16. Budgets there: open a 10 MB file
 | `Buffer` | piece table + line-start index; byte offsets, UTF-8 |
 | `History` | undo and redo of grouped transactions with cursor states |
 | `Doc` | buffer, history, cursors and the editing commands; no UI, fully unit tested |
-| `Tokenizer` | per-line tokenizing with an end state; V, YAML and plain text |
+| `Tokenizer` | per-line tokenizing with an end state; V, YAML, Markdown, about 30 languages through one table-driven tokenizer, plain text |
 | `Highlighter` | line end states, recomputed lazily from the first edited line |
 | `Find` | query, options, matches |
 | `Editor` | the view: one element paints gutter, text, selections, cursors; input and IME |
@@ -55,6 +55,36 @@ Implementation spec for the editor of specs/16. Budgets there: open a 10 MB file
   `${}` interpolation and escapes, runes, numbers, comments (`//`, nested `/* */` across
   lines), attributes. YAML tokenizer: keys, strings, numbers, booleans and null, comments,
   anchors and aliases, block scalars across lines, document markers.
+- Other languages share one scanner (`LangTokenizer`, lex_lang.v) driven by a `LangSpec` row
+  per language (langs_c.v, langs_script.v, langs_data.v); a new language is a row, not a
+  lexer. A row holds keyword, control, type, constant and builtin word sets (case-folded for
+  SQL, PowerShell, batch, Dockerfile, INI), line comment markers (`//`, `#`, `--`, `;`, `rem`,
+  `::`; shell `#` only at a word start), one block comment pair (`/* */`, `<# #>`, Lua
+  `--[[ ]]`, nesting for Rust, Swift, Kotlin), quote sets (one-line, multi-line, raw), triple
+  quotes, string prefixes (`r b f u`, C# `@ $`, Rust `r#"..."#`), interpolation openers per
+  quote (`${`, `#{`, `\(`, `$(`), Lua long strings, and flags: `$var` / `%var%` variables,
+  `@name` as attribute, variable or keyword, C preprocessor lines, Rust `#[...]`, lifetimes
+  and `name!` macros, capitalized types and ALL_CAPS constants, dash words (cmdlets,
+  `-Param`, CSS), keys before `:` or `=`, `[section]` lines, make targets and batch labels,
+  CSS selector lines. Two modes are not rows: markup (tags, attributes, strings, entities,
+  `<!-- -->` and tags across lines) and diff (whole lines by their first characters).
+  States: 0 code, 1..999 block comment depth, 1000 + quote + flags (raw 256, triple 512, hash
+  1024) an open string; markup 1 comment, 2 inside a tag. One-line quotes close at the line
+  end, so a stray apostrophe colors one line, not the rest of the block.
+- Kinds follow the V tokenizer, so a fence reads like the editor: keyword, control, typ,
+  function (a word before `(`, after a dot with `(`), property (after a dot, or a key), number
+  (hex, binary, underscores, floats, exponents, units), str, escape (and interpolation marks
+  around a variable), comment, constant, attribute, variable, tag, operator, punctuation.
+- `tokenizer_for(name)` takes a file path (`src/a.rs`, `Dockerfile`) or a fence info string
+  (`python`, `js {.class}`, `rust title=main.rs`), lowercased, with `{...}` attributes and the
+  folder dropped; it tries the whole name, its first word, then their extensions against
+  every row's names and aliases. Unknown names stay plain.
+- Cost: no substring per word: word sets are compared in place (`Lex.word_in`, by length
+  then bytes, folded when the row says so), the row is a pointer into the const table, and
+  the token array is made once per line (`line.len / 3 + 2` tokens). `bench/highlight`
+  (2,000-line blocks, clang -prod): V 0.31-0.41 us and 208 B a line (was 0.43 us, 524 B with
+  a substring per word and a growing array), JS 0.41-0.43 us / 224 B, Rust 0.55-0.65 us /
+  228 B, Python 0.40-0.42 us / 200 B.
 
 ## View
 - One element. Paint walks the visible lines only. Each line has one cached line layout. The
@@ -107,6 +137,9 @@ Ctrl-c, ctrl-x and ctrl-v use the clipboard.
   checks after each edit, CRLF.
 - `doc_test.v`: movement, every command, multi-cursor edits, undo grouping.
 - `tokenizer_test.v`: token kinds for V and YAML, multi-line states, lazy highlighting.
+- `lex_lang_test.v`: per language family (C, JVM, Swift, Go, Rust, JS/TS, scripts, shells,
+  SQL and build files, data formats, markup and diff) keywords, strings, comments, numbers
+  and states across lines; alias and extension resolution; bytes per line (token array only).
 - `tests/editor_test.v`: the view in the harness: typing, clicks, selection, multi-cursor,
   find and replace, clipboard (headless), IME, scrolling.
 - `bench/editor`: open 10 MB, a keystroke plus repaint on a 100 000-line file, a scroll frame.
@@ -122,6 +155,10 @@ Ctrl-c, ctrl-x and ctrl-v use the clipboard.
   Dragging past the edge scrolls only while the mouse moves (no repeat timer).
 - Tokenizers: the expression inside `${}` is colored as one variable; YAML quoted strings do
   not continue across lines. A ligature that spans two tokens takes the first one's color.
+- Table tokenizer ceilings: JS regex literals and JSX tags, heredocs, Python f-string
+  fields, Ruby `=begin` blocks, C++ raw strings, Rust `r##"` (two or more hashes) and
+  `<script>`/`<style>` bodies in HTML are not recognized (they read as code, string or text);
+  Dockerfile instruction words match anywhere on a line.
 - Column selection by keys is alt-shift-up/down (add a cursor at the anchor column) plus
   alt-shift-left/right (extend every cursor).
 - In the find bar, enter goes to the next match (the input submits) and shift-enter to the

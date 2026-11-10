@@ -41,19 +41,41 @@ pub fn (t PlainTokenizer) tokenize(line string, state int) ([]Token, int) {
 	return []Token{}, 0
 }
 
-// tokenizer_for picks a tokenizer by file name.
+// tokenizer_for picks a tokenizer by file name ('src/a.rs', 'Dockerfile') or by a fence
+// info string ('python', 'js {.class}', 'rust title=main.rs'), ignoring case. It tries the
+// whole name, then the first word, then the extension.
 pub fn tokenizer_for(path string) Tokenizer {
-	p := path.to_lower()
-	if p.ends_with('.v') || p.ends_with('.vsh') {
-		return VTokenizer{}
+	mut p := path.to_lower()
+	if p.contains_u8(`{`) {
+		p = p.all_before('{')
 	}
-	if p.ends_with('.yaml') || p.ends_with('.yml') {
-		return YamlTokenizer{}
-	}
-	if p.ends_with('.md') || p.ends_with('.markdown') {
-		return MarkdownTokenizer{}
+	p = p.trim_space()
+	p = p.all_after_last('/').all_after_last('\\')
+	word := p.all_before(' ')
+	for name in [p, word, p.all_after_last('.'), word.all_after_last('.')] {
+		if t := tokenizer_named(name) {
+			return t
+		}
 	}
 	return PlainTokenizer{}
+}
+
+fn tokenizer_named(name string) ?Tokenizer {
+	if name in ['v', 'vsh', 'vlang'] {
+		return VTokenizer{}
+	}
+	if name in ['yaml', 'yml'] {
+		return YamlTokenizer{}
+	}
+	if name in ['md', 'markdown'] {
+		return MarkdownTokenizer{}
+	}
+	if sp := lang_named(name) {
+		return LangTokenizer{
+			spec: sp
+		}
+	}
+	return none
 }
 
 // Lex is the scanning state shared by the tokenizers.

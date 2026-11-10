@@ -151,12 +151,16 @@ fn (mut f Folio) move_tab(id int, to int, mut cx core.ViewCx[Folio]) {
 
 // save_session keeps the open files (and which one is shown) for the next start.
 fn (mut f Folio) save_session(mut cx core.ViewCx[Folio]) {
-	paths := f.tabs.filter(it.path != '').map(it.path)
 	shown := if f.tabs.len > 0 { f.cur().path } else { '' }
-	f.prefs.update(mut cx.Cx, fn [paths, shown] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
-		p.session = paths
-		p.shown = shown
+	f.prefs_with(mut cx.Cx, Session{f.tabs.filter(it.path != '').map(it.path), shown}, fn (mut p Prefs, s Session, mut _ core.ViewCx[Prefs]) {
+		p.session = s.paths
+		p.shown = s.shown
 	})
+}
+
+struct Session {
+	paths []string
+	shown string
 }
 
 // restore opens the last session's files that still exist.

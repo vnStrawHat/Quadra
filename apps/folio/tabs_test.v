@@ -4,6 +4,7 @@ module main
 
 import os
 import quadra.core
+import quadra.core.life
 import quadra.platform
 import quadra.testing
 
@@ -80,4 +81,44 @@ fn test_session_comes_back() {
 	r.f().prefs.flush(mut cx)!
 	mut again := open_tabs(dir, [])!
 	assert again.names() == ['a.md', 'b.md'] && again.f().cur().name() == 'a.md'
+}
+
+// Closure leak gate (specs/14): the typical flows, repeated, leave the live closure count
+// where it was and the dispatch detector quiet.
+fn (mut r Tabs) flows() ! {
+	r.h.press('ctrl-tab')!
+	r.h.press('ctrl-shift-tab')!
+	r.h.press('ctrl-n')!
+	r.h.type_text('# Leak\n\ntext')
+	r.h.press('ctrl-1')!
+	r.h.press('ctrl-2')!
+	r.h.press('ctrl-3')!
+	r.h.press('ctrl-=')!
+	r.h.press('ctrl-0')!
+	r.h.press('ctrl-shift-o')!
+	r.h.press('ctrl-shift-o')!
+	r.h.press('ctrl-shift-p')!
+	r.h.press('escape')!
+	r.h.press('ctrl-2')!
+	r.h.advance(1000)
+	r.h.frame()
+	r.h.frame()
+}
+
+fn test_flows_leak_no_closures() {
+	dir := os.join_path(os.temp_dir(), 'quadra-tests', 'folio', 'leaks')
+	os.rmdir_all(dir) or {}
+	os.mkdir_all(dir)!
+	a := os.join_path(dir, 'a.md')
+	os.write_file(a, '# A\n\nsome *text*\n')!
+	mut r := open_tabs(dir, [a])!
+	r.flows()!
+	c0 := life.live_closures()
+	for _ in 0 .. 3 {
+		r.flows()!
+	}
+	grown := life.live_closures() - c0
+	eprintln('folio: closures +${grown} over 3 rounds of flows')
+	assert grown <= 0
+	assert r.h.app.closure_leaks() == []
 }

@@ -165,3 +165,12 @@ fn (mut f Folio) outside_banner(t &kit.Theme, mut cx core.ViewCx[Folio]) core.El
 		ui.text('${f.cur().name()} changed on disk, and you have unsaved changes here.').color(t.p.text)
 	return ui.div().test_id('outside-banner').flex_row().items_center().gap(10).px(12).h(36).shrink_0().bg(t.p.warn.alpha(0.14)).border_b(1).border_color(t.p.line).child(kit.icon(kit.icon_triangle_alert).size(15).color(t.p.warn)).child(msg).child(ui.div().grow()).child(keep).child(reload)
 }
+
+// prefs_with changes the settings with data, without a closure (specs/14).
+fn (f &Folio) prefs_with[D](mut cx core.Cx, data D, fun fn (mut p Prefs, d D, mut cx core.ViewCx[Prefs])) {
+	app.update_with(mut cx, f.prefs, data, fun)
+}
+
+fn add_recent(mut p Prefs, path string, mut _ core.ViewCx[Prefs]) {
+	p.recent = with_recent(p.recent, path)
+}

@@ -169,25 +169,24 @@ fn (mut f Folio) menu_items(mut cx core.ViewCx[Folio]) []kit.MenuItem {
 }
 
 fn (mut f Folio) palette(mut cx core.ViewCx[Folio]) {
-	to := cx.listener(fn (mut f Folio, c &Cmd, mut cx core.ViewCx[Folio]) {
-		f.run(*c, mut cx)
-	})
 	mut list := []input.Command{}
 	for c in all_commands() {
 		if c.cmd == .palette {
 			continue
 		}
-		r := RunCmd{to, c.cmd}
-		list << input.Command{c.title, c.keys, fn [r] (mut cx core.Cx) {
-			r.run(mut cx)
-		}}
+		list << input.Command{
+			title:  c.title
+			keys:   c.keys
+			on_run: core.listener_with(cx.entity, c.cmd, fn (mut f Folio, c Cmd, _ &bool, mut cx core.ViewCx[Folio]) {
+				f.run(c, mut cx)
+			})
+		}
 	}
 	input.open_command_palette(mut cx.Cx, list)
 }
 
 fn (mut f Folio) set_layout(l Layout, mut cx core.ViewCx[Folio]) {
-	name := layouts[int(l)]
-	f.prefs.update(mut cx.Cx, fn [name] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
+	f.prefs_with(mut cx.Cx, layouts[int(l)], fn (mut p Prefs, name string, mut _ core.ViewCx[Prefs]) {
 		p.layout = name
 	})
 	if f.tabs.len > 0 {
@@ -202,7 +201,7 @@ fn (mut f Folio) toggle_outline(mut cx core.ViewCx[Folio]) {
 }
 
 fn (mut f Folio) zoom(step f32, mut cx core.ViewCx[Folio]) {
-	f.prefs.update(mut cx.Cx, fn [step] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
+	f.prefs_with(mut cx.Cx, step, fn (mut p Prefs, step f32, mut _ core.ViewCx[Prefs]) {
 		p.scale = if step == 0 { f32(1) } else { kit_clamp(p.scale + step, 0.7, 1.8) }
 	})
 }
@@ -218,7 +217,7 @@ fn kit_clamp(v f32, lo f32, hi f32) f32 {
 }
 
 fn (mut f Folio) set_theme(name string, mut cx core.ViewCx[Folio]) {
-	f.prefs.update(mut cx.Cx, fn [name] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
+	f.prefs_with(mut cx.Cx, name, fn (mut p Prefs, name string, mut _ core.ViewCx[Prefs]) {
 		p.theme = name
 	})
 	apply_theme(mut cx.app, *f.prefs.get(cx.Cx))

@@ -19,8 +19,7 @@ fn (mut f Folio) main_area(lay Layout, p &Prefs, t &kit.Theme, mut cx core.ViewC
 	}
 	return ui.div().grow().min_h(0).child(kit.split('split', f.editor_pane(tab, t, mut cx), f.preview_pane(mut tab,
 		lay, p, t, mut cx), p.split).on_resize(cx.listener(fn (mut f Folio, r &f32, mut cx core.ViewCx[Folio]) {
-		ratio := *r
-		f.prefs.update(mut cx.Cx, fn [ratio] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
+		f.prefs_with(mut cx.Cx, *r, fn (mut p Prefs, ratio f32, mut _ core.ViewCx[Prefs]) {
 			p.split = ratio
 		})
 	})))

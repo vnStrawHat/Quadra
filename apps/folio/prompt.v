@@ -38,17 +38,23 @@ fn (mut f Folio) ask_save(ids []int, window bool, mut cx core.ViewCx[Folio]) {
 		window: window
 	}
 	pr.modal = kit.open_modal(mut cx.Cx, kit.ModalOptions{
-		title:  'Save changes?'
-		width:  440
-		body:   fn [msg] () core.Element {
+		title:       'Save changes?'
+		width:       440
+		body_with:   kit.build_with(msg, fn (msg string, _ &kit.Theme) core.Element {
 			return ui.text(msg)
-		}
-		footer: fn [ent, pr] () core.Element {
+		})
+		footer_with: kit.build_with(PromptRef{ent, pr}, fn (r PromptRef, _ &kit.Theme) core.Element {
+			ent, pr := r.ent, r.pr
 			return ui.div().flex_row().gap(8).child(answer_button(ent, pr, 0, 'close-cancel',
 				'Cancel')).child(answer_button(ent, pr, 1, 'close-discard', "Don't save")).child(answer_button(ent,
 				pr, 2, 'close-save', 'Save'))
-		}
+		})
 	})
+}
+
+struct PromptRef {
+	ent u32
+	pr  &Prompt = unsafe { nil }
 }
 
 fn answer_button(ent u32, pr &Prompt, pick int, id string, label string) core.Element {

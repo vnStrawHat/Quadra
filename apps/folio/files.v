@@ -55,9 +55,7 @@ fn (mut f Folio) open_path(path string, mut cx core.ViewCx[Folio]) {
 	} else {
 		f.add_tab(full, d, mut cx)
 	}
-	f.prefs.update(mut cx.Cx, fn [full] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
-		p.recent = with_recent(p.recent, full)
-	})
+	f.prefs_with(mut cx.Cx, full, add_recent)
 }
 
 // load puts a document read from disk into a tab; its views start at the top.
@@ -120,9 +118,7 @@ fn (mut f Folio) save_as_tab(mut t Tab, mut cx core.ViewCx[Folio]) bool {
 	if !f.save_tab(mut t, mut cx) {
 		return false
 	}
-	f.prefs.update(mut cx.Cx, fn [path] (mut p Prefs, mut _ core.ViewCx[Prefs]) {
-		p.recent = with_recent(p.recent, path)
-	})
+	f.prefs_with(mut cx.Cx, path, add_recent)
 	f.activate(f.active, mut cx) // the title and the session
 	return true
 }

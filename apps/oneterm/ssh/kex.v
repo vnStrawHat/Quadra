@@ -90,6 +90,9 @@ fn build_kexinit(offer Offer) []u8 {
 }
 
 fn parse_kexinit(pkt []u8) !KexInit {
+	if pkt.len < 17 { // the message type and the 16-byte cookie
+		return error('truncated KEXINIT')
+	}
 	mut r := new_reader(pkt[17..])
 	kex := r.get_names()!
 	host_key := r.get_names()!

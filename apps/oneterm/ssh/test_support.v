@@ -1,9 +1,11 @@
 // Helpers for the live tests (interop*_test.v). Compiled out of the app: nothing else calls them.
 module ssh
 
+import io
 import os
 import sync
 import quadra.platform
+import quadra.prim
 
 fn gate() ?(string, int) {
 	if os.getenv('QUADRA_SSHD_TESTS') != '1' {
@@ -52,6 +54,65 @@ fn base_config(dir string, port int, auth AuthMethod, tag string) Config {
 	}
 }
 
+// FuzzStream serves a fixed byte buffer, then io.Eof; writes go to sink when set (the fuzz tests).
+@[heap]
+struct FuzzStream {
+mut:
+	data []u8
+	pos  int
+	sink FuzzSink
+}
+
+interface FuzzSink {
+mut:
+	sent(wire []u8)
+}
+
+struct NoSink {}
+
+fn (mut n NoSink) sent(wire []u8) {}
+
+fn (mut s FuzzStream) read(mut buf []u8) !int {
+	if s.pos >= s.data.len {
+		return io.Eof{}
+	}
+	n := copy(mut buf, s.data[s.pos..])
+	s.pos += n
+	return n
+}
+
+fn (mut s FuzzStream) write(data []u8) ! {
+	s.sink.sent(data)
+}
+
+fn (mut s FuzzStream) close() {}
+
+// fuzz_ceiling fails a fuzz run whose heap passes 256 MB; called every input, it reads the heap
+// every 100th.
+fn fuzz_ceiling(i int) {
+	if i % 100 == 99 {
+		heap := gc_heap_usage().heap_size
+		assert heap < 256 << 20, 'fuzz input ${i}: heap ${heap >> 20} MB'
+	}
+}
+
+// plain_packets frames payloads as unencrypted packets.
+fn plain_packets(payloads [][]u8) []u8 {
+	mut out := []u8{}
+	for p in payloads {
+		out << build_packet(p, PlainSealer{})
+	}
+	return out
+}
+
+fn fuzz_transport(data []u8) &Transport {
+	s := &FuzzStream{
+		data: data
+		sink: NoSink{}
+	}
+	return new_transport(Stream(s), Offer{}, HostCheck{})
+}
+
 // run_cmd opens an exec channel, returns (output, exit code).
 fn run_cmd(mut conn Conn, cmd string) !(string, int) {
 	mut ch := conn.open_channel('session', [], default_window)!
@@ -73,15 +134,15 @@ fn run_cmd(mut conn Conn, cmd string) !(string, int) {
 
 fn ptyopts(mut got ShellSink) platform.PtyOptions {
 	return platform.PtyOptions{
-		ctx:     got
-		on_data: fn (ctx voidptr, d []u8) {
-			mut got := unsafe { &ShellSink(ctx) }
+		ctx:     prim.hold(got)
+		on_data: fn (ctx prim.Holder, d []u8) {
+			mut got := prim.held[ShellSink](ctx)
 			got.mu.@lock()
 			got.data << d
 			got.mu.unlock()
 		}
-		on_exit: fn (ctx voidptr, code int) {
-			mut got := unsafe { &ShellSink(ctx) }
+		on_exit: fn (ctx prim.Holder, code int) {
+			mut got := prim.held[ShellSink](ctx)
 			got.code = code
 			got.done.post()
 		}

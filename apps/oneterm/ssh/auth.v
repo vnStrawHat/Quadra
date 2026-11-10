@@ -9,6 +9,7 @@ const msg_userauth_info_request = u8(60)
 const msg_userauth_info_response = u8(61)
 
 const max_agent_identities = 6
+const max_kbd_prompts = 100 // per round; the OpenSSH client allows as many
 
 struct AuthOutcome {
 	success   bool
@@ -140,6 +141,9 @@ fn auth_keyboard(mut t Transport, user string, password []u8) !AuthOutcome {
 	r.get_str()! // instruction
 	r.get_str()! // language
 	count := int(r.get_u32()!)
+	if count < 0 || count > max_kbd_prompts { // the answer repeats the password per prompt
+		return auth_err('keyboard-interactive authentication sent ${count} prompts')
+	}
 	for _ in 0 .. count {
 		r.get_str()! // prompt
 		if r.get_bool()! {

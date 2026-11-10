@@ -8,12 +8,23 @@ Module `quadra.ui`. Primitive elements on top of `core.Element`. Everything in `
 |---|---|
 | `div()` | Flex or grid container: box styling, children, events, focus, scrolling, semantics |
 | `text(s)` | Text leaf: wraps by default, `.truncate()`, `.selectable()`, inherits text style |
-| `rich_text(spans)` | Mixed styles and links in one paragraph: `span(s).bold().italic().color(c).size(v).family(f).link(url)`, `.on_link(l)`. Words glued across spans never break. `.selectable_in(group)`: one selection over every rich text of a `ui.select_group()` (prepaint the group before its members), with drag across members, double-click word, triple-click member, shift-click, ctrl-a, ctrl-c (members joined by `\n`). Not yet: inline icons, selecting inline boxes |
+| `rich_text(spans)` | Mixed styles and links in one paragraph: `span(s).bold().italic().color(c).size(v).family(f).link(url)`, `.on_link(l)`. `.ctrl_links()` (user content, every Markdown view): links open on ctrl-click only, the pointer shows only while ctrl is held, a plain click selects like any text, and resting on a link shows the hint "Ctrl+click to open" (web and mail links) or "Ctrl+click to follow" (anchors, files) through a hitbox hint (specs/06); the pieces of one link on a row are one hitbox. Without it a plain click opens (app UI links). Words glued across spans never break. `.selectable_in(group)`: one selection over every rich text of a `ui.select_group()` (prepaint the group before its members), with drag across members, double-click word, triple-click member, shift-click, ctrl-a, ctrl-c (members joined by `\n`). Not yet: inline icons, selecting inline boxes |
 | `icon(name)` | Kit icon from the bundled icon font (mono, tinted by color) |
 | `svg(src)` | SVG from asset or bytes, rasterized at device size, cached |
 | `img(src)` | Image from asset, path, bytes or URL; `.fit(.cover \| .contain \| .fill)`, async with placeholder |
 | `list(id, count, render)` | Virtualized list of rows sized by their content (below); `.estimate(h)`, `.reveal(i)`, `.scroll_y(y)`. `uniform_list(id, count, row_h, render)` for equal rows |
 | `canvas(paint_fn)` | Custom painting: quads, paths (fill, stroke), text, images |
+
+Image caps: `img` decodes a file only when its header says at most `ui.max_image_side`
+(16384) pixels a side and `ui.max_image_pixels` (16 Mi, 64 MiB of RGBA) in all, from a file of
+at most `ui.max_image_file_bytes` (256 MiB), whose header claims at most
+`ui.max_pixels_per_byte` (16384) pixels per byte of file (no format packs more; a lying header
+made the decoder allocate its frame buffers first), and, for PNG, whose chunks all fit in the
+file (the decoder sizes its data buffer from a chunk's claimed length). Anything else fails like
+a corrupt file (the element stays empty, no pixel decoded). A decode holds two RGBA buffers at once (the decoder's and the
+premultiplied copy), so one image costs at most 128 MiB whatever its header claims. Decoding
+runs on a worker thread and returns errors, never panics. The atlas shows up to 2047 px a side
+(specs/03); larger images fail at upload until images are downscaled.
 
 `div()` is the only element with the full box-style builder. Leaves have their own few methods and are wrapped in a `div()` for padding, background or borders. One builder implementation instead of one per element type.
 
@@ -45,6 +56,15 @@ ui.div().apply(card).bg(t.surface).child(...)
 | Overflow | `overflow_hidden()` `overflow_y_scroll()` `overflow_x_scroll()` |
 | States | `hover(s Style)` `active(s Style)` `focus_visible(s Style)` `disabled(bool)`; hover groups: `group()` marks a Div, `group_hover(p)` and `group_active(p)` restyle a descendant while its nearest group is hovered or pressed (a close button shown only while its card is hovered). Paint-only, like the other state patches |
 | Interaction | `id(s)` `cursor(c)` `track_focus(h)` `tab_index(n)` `key_context(s)` `tooltip(s)` |
+
+Tooltips for parts of an element: `kit.tooltip` wraps a whole element; a link in rich text, a
+URL in the editor or in the terminal is a rect inside one. Such a part sets
+`HitboxOptions.hint` on its hitbox (specs/06, Hover hints) and `kit.HintLayer`, which the kit's
+Host adds after the app root, draws the bubble with the tooltip's code (`tip_bubble`): the same
+delay (500 ms), style and placement (above the hitbox with a 6 px gap; at the pointer + 1 with
+roomy menus). It closes on a press, a wheel or the pointer leaving, and stays while ctrl is
+held (the pointer then shows too). The URL itself is not in the hint: it is a constant, so a
+link costs no string per prepaint.
 | Events | `on_click` `on_mouse_down/up/move` `on_wheel` `on_key_down` `on_action[T]` `on_drag_start` `on_drop` |
 | Semantics | `role(r)` `label(s)` `value(s)` `state(...)` `test_id(s)` |
 | Tree | `child(el)` `children(els)` `when(cond, fn (mut Div))` |

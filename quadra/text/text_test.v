@@ -50,3 +50,12 @@ fn test_decode_matches_runes() {
 		}
 	}
 }
+
+fn test_display_width() {
+	assert display_width('abc') == 3
+	assert display_width('Tiếng Việt') == 10 // precomposed
+	assert display_width('Việt') == 4 // e + two combining marks is one cell
+	assert display_width('漢字') == 4
+	assert display_width('👩‍💻') == 2 // one ZWJ sequence
+	assert rune_width(0x0301) == 0 && rune_width(0x1F600) == 2 && rune_width(u32(`A`)) == 1
+}

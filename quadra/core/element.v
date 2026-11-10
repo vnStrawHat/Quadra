@@ -20,6 +20,7 @@ pub mut:
 	tree       &layout.Tree     = unsafe { nil }
 	text       &text.TextSystem = unsafe { nil }
 	text_style text.TextStyle
+	views      int // views entered above this point (relayout.v)
 }
 
 pub struct Hitbox {
@@ -29,6 +30,8 @@ pub:
 	parent          int
 	cursor          platform.Cursor
 	has_cursor      bool
+	cursor_mods     platform.Mods // the cursor applies only while these are held
+	hint            string        // a tooltip for this part of an element (hint.v)
 	hover_sensitive bool
 	hover_prepaint  bool               // hover changes need a prepaint (tooltips)
 	focus_id        u64                // focus target activated by clicking here
@@ -51,6 +54,8 @@ pub:
 pub struct HitboxOptions {
 pub:
 	cursor          ?platform.Cursor
+	cursor_mods     platform.Mods // the cursor applies only while these are held (ctrl: links)
+	hint            string        // shown as a tooltip after a rest (hint.v): links in text
 	hover_sensitive bool
 	hover_prepaint  bool
 	focus_id        u64
@@ -119,14 +124,7 @@ pub fn (mut cx PrepaintCx) leave() {
 // delays). Requests coalesce: a caller woken early asks again for the time left.
 pub fn (mut cx PrepaintCx) request_prepaint_after(ms int) {
 	mut w := cx.win
-	if w.prepaint_timer != 0 {
-		return
-	}
-	mut app := cx.app
-	w.prepaint_timer = app.plat.set_timer(ms, false)
-	app.timers[w.prepaint_timer] = TimerEntry{
-		reprepaint: w.id
-	}
+	w.prepaint_after(ms)
 }
 
 pub fn (cx &PrepaintCx) now_ms() f64 {
@@ -169,6 +167,8 @@ pub fn (mut cx PrepaintCx) insert_hitbox(bounds prim.Rect, opts HitboxOptions) i
 		parent:          parent
 		cursor:          opts.cursor or { platform.Cursor.arrow }
 		has_cursor:      opts.cursor != none
+		cursor_mods:     opts.cursor_mods
+		hint:            opts.hint
 		hover_sensitive: opts.hover_sensitive
 		focus_id:        opts.focus_id
 		hover_prepaint:  opts.hover_prepaint
@@ -254,39 +254,4 @@ pub struct TextEntry {
 pub:
 	text   string
 	bounds prim.Rect
-}
-
-// ViewElement places a child view; it renders the view when laid out.
-pub struct ViewElement {
-	view AnyView
-mut:
-	inner ?Element
-	fresh bool
-}
-
-pub fn (mut e ViewElement) request_layout(mut cx LayoutCx) layout.NodeId {
-	mut app := cx.app
-	before := cx.win.stats.renders[e.view.id]
-	mut el := app.render_any(e.view.id, cx.win)
-	e.fresh = cx.win.stats.renders[e.view.id] != before
-	e.inner = el
-	return el.request_layout(mut cx)
-}
-
-pub fn (mut e ViewElement) prepaint(bounds prim.Rect, mut cx PrepaintCx) {
-	if e.fresh {
-		mut w := cx.win
-		w.fresh_views << bounds
-	}
-	cx.enter('v${e.view.id}')
-	if mut el := e.inner {
-		el.prepaint(bounds, mut cx)
-	}
-	cx.leave()
-}
-
-pub fn (mut e ViewElement) paint(bounds prim.Rect, mut cx PaintCx) {
-	if mut el := e.inner {
-		el.paint(bounds, mut cx)
-	}
 }

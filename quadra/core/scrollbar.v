@@ -26,13 +26,13 @@ pub:
 }
 
 // ThumbSet moves a container to `offset` px along an axis (a dragged thumb).
-pub type ThumbSet = fn (holder voidptr, offset f32, vertical bool)
+pub type ThumbSet = fn (holder prim.Holder, offset f32, vertical bool)
 
 // ThumbTarget is how a dragged thumb scrolls its container; a nil `set` makes the thumb
 // display-only.
 pub struct ThumbTarget {
 pub:
-	holder voidptr
+	holder prim.Holder
 	set    ThumbSet = unsafe { nil }
 }
 

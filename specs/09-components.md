@@ -66,7 +66,7 @@ pub fn follow_system(mut cx core.Cx, light Theme, dark Theme)   // dark mode, ac
 | | `modal`, `confirm` | service | focus trap, Escape, backdrop; `confirm` returns the choice to a listener |
 | | `toast` | service | stack, action button, auto-dismiss, pause on hover |
 | | `notify` | service | notification cards stacked at the bottom right (title, body, close, optional actions), kept until closed or for `timeout_ms` |
-| | `tooltip` | builder | `.keys` (a shortcut after the text) and `.meta` (a line under it); buttons take `.tooltip_keys(text, keys)` |
+| | `tooltip` | builder | `.keys` (a shortcut after the text) and `.meta` (a line under it); buttons take `.tooltip_keys(text, keys)`; a part of an element (a link in text) takes a hitbox hint instead, drawn alike (specs/08) |
 | Window | `titlebar` | builder | custom titlebar regions for snap layouts, caption buttons, `.menu(items)` behind a hamburger button |
 | | `statusbar` | builder | left and right items; `status_button` (icon-only panel toggles), `status_divider`, `status_item` |
 | | `settings` | builder | preferences in pages: a searchable page column whose chevrons expand the groups, groups of rows (title, description, control); the app owns the controls, the query and the chosen page; the component keeps the expansion and the scroll position. `.cards()` is the outlined-card layout (specs/15): page icons, a page header with the actions on the right, an optional page description |

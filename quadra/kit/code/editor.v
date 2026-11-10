@@ -57,7 +57,10 @@ pub mut:
 	query          ?core.View[input.TextInput]
 	replace_with   ?core.View[input.TextInput]
 mut:
-	rows Rows // the visual rows while wrapped
+	rows     Rows              // the visual rows while wrapped
+	link     ?core.AnyListener // on_link (links.v)
+	hover    LinkHover         // the URL under the pointer
+	link_hbs []int             // its hitboxes at the last prepaint
 }
 
 @[params]

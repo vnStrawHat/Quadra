@@ -205,14 +205,14 @@ pub fn (mut d Div) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 
 pub fn (mut d Div) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	restyles := d.restyles()
-	site := if restyles { cx.begin_patch(d.hitbox, voidptr(d), repaint_div, bounds) } else { -1 }
+	site := if restyles { cx.begin_patch(d.hitbox, prim.hold(d), repaint_div, bounds) } else { -1 }
 	d.paint_box(bounds, restyles, mut cx)
 	cx.end_patch(site)
 }
 
 // repaint_div paints one Div again for a paint patch.
-fn repaint_div(el voidptr, bounds prim.Rect, mut cx core.PaintCx) {
-	mut d := unsafe { &Div(el) }
+fn repaint_div(el prim.Holder, bounds prim.Rect, mut cx core.PaintCx) {
+	mut d := prim.held[Div](el)
 	d.paint_box(bounds, true, mut cx)
 }
 

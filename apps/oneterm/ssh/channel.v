@@ -13,6 +13,7 @@ mut:
 	remote_id      u32
 	window_initial u32
 	consumed       u32
+	rx_window      u32 // bytes the peer may still send: our window, less what came, plus grants
 	mu             &sync.Mutex = sync.new_mutex()
 	cond           &sync.Cond  = unsafe { nil }
 	rx             [][]u8
@@ -33,6 +34,7 @@ fn new_channel(conn &Conn, id u32, window u32) &Channel {
 		conn:           conn
 		id:             id
 		window_initial: window
+		rx_window:      window
 		max_packet:     default_max_packet
 	}
 	ch.cond = sync.new_cond(ch.mu)
@@ -59,13 +61,18 @@ fn (mut ch Channel) window_add(n u32) {
 	ch.mu.unlock()
 }
 
-fn (mut ch Channel) receive(data []u8) {
-	if data.len == 0 {
-		return
-	}
+// receive queues data; past the window it is an error (RFC 4254 5.2), not unbounded growth.
+fn (mut ch Channel) receive(data []u8) ! {
 	ch.mu.@lock()
-	ch.rx << data
-	ch.cond.broadcast()
+	if u64(data.len) > u64(ch.rx_window) {
+		ch.mu.unlock()
+		return error('the server sent more data than the channel window')
+	}
+	if data.len > 0 { // read returns at least one byte per chunk
+		ch.rx_window -= u32(data.len)
+		ch.rx << data
+		ch.cond.broadcast()
+	}
 	ch.mu.unlock()
 }
 
@@ -171,6 +178,7 @@ fn (mut ch Channel) read(mut buf []u8) !int {
 	if ch.consumed >= ch.window_initial / 2 && !ch.closed {
 		grant = ch.consumed
 		ch.consumed = 0
+		ch.rx_window += grant
 	}
 	ch.mu.unlock()
 	if ch.traffic != unsafe { nil } {
@@ -252,7 +260,6 @@ fn (mut ch Channel) request(name string, data []u8, want_reply bool) !bool {
 	return waiter.wait()
 }
 
-// send_eof tells the peer no more data will come.
 fn (mut ch Channel) send_eof() ! {
 	mut w := new_writer(8)
 	w.put_u8(msg_channel_eof)

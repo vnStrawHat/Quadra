@@ -4,7 +4,7 @@ module layout
 import quadra.prim
 
 // measure_text is 320 px of text in 16 px lines, wrapped at the width it gets.
-fn measure_text(_ voidptr, kw f32, _ f32, aw f32, _ f32) prim.Size {
+fn measure_text(_ prim.Holder, kw f32, _ f32, aw f32, _ f32) prim.Size {
 	limit := if kw != unknown { kw } else { aw }
 	if limit >= unbounded || limit >= 320 {
 		return prim.size(320, 16)
@@ -30,7 +30,7 @@ fn test_hidden_overflow_clips_but_keeps_content_height() {
 		overflow_x: .hidden
 		overflow_y: .hidden
 	}, rows)
-	para := t.leaf(Style{}, measure_text, unsafe { nil })
+	para := t.leaf(Style{}, measure_text, prim.Holder{})
 	page := t.node(Style{
 		direction: .column
 	}, [para, table])

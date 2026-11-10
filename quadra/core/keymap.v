@@ -1,6 +1,7 @@
 // Keymap: keystrokes and chords bound to typed actions, scoped by key contexts.
 module core
 
+import quadra.prim
 import quadra.platform
 
 pub struct Keystroke {
@@ -100,7 +101,7 @@ pub struct Binding {
 pub:
 	keys        []Keystroke
 	action_type string
-	action      voidptr
+	action      prim.Holder
 	context     string
 mut:
 	pred ContextPredicate
@@ -127,7 +128,7 @@ pub fn (mut app App) bind[A](keys string, action A, opts BindOptions) ! {
 	app.keymap.bindings << Binding{
 		keys:        seq
 		action_type: typeof[A]().name
-		action:      heap_copy(action)
+		action:      heap_hold(action)
 		context:     opts.context
 		pred:        parse_context(opts.context)
 	}

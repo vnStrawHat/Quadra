@@ -5,6 +5,7 @@ import time
 import quadra.core
 import quadra.native
 import quadra.platform
+import quadra.prim
 
 fn C.GetProcessTimes(h voidptr, c &u64, e &u64, k &u64, u &u64) int
 fn C.GetCurrentProcess() voidptr
@@ -27,9 +28,9 @@ fn main() {
 			time.sleep(3 * time.second)
 			used := cpu_ms() - start
 			println('idle CPU over 3 s: ${used:.1f} ms (${used / 30:.2f}% of one core)')
-			app.post_main(fn (mut app core.App, _ voidptr) {
+			app.post_main_held(fn (mut app core.App, _ prim.Holder) {
 				app.quit()
-			}, unsafe { nil })
+			}, prim.Holder{})
 		}(mut app)
 	}
 	app.run()

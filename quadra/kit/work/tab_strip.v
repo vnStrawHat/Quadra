@@ -115,6 +115,8 @@ pub fn (mut s TabStrip) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 
 pub fn (mut s TabStrip) build_tree(mut cx core.LayoutCx) core.Element {
 	t := kit.theme_of(cx.app)
+	// Probes write into s.rects: fixed length, never appended; a rebuild makes a new array
+	// together with the tree that points into it.
 	s.rects = []prim.Rect{len: s.tabs.len}
 	mut row :=
 		ui.div().flex_row().h_full().grow().overflow_x_scroll().wheel_x().role(.tablist).text_size(t.ui_text(.md))
@@ -175,7 +177,7 @@ fn (s &TabStrip) tab(i int, tab Tab, t &kit.Theme) core.Element {
 	}
 	fill := if on { p.canvas } else { p.tab_bg }
 	mut d := ui.div().id('tab:${tab.id}').test_id('${s.id}-${tab.id}').flex_row().h_full().shrink_0().cursor(.pointer).border_color(p.line_strong).bg(fill).text_color(fill).hover(ui.Patch{
-		text_color: p.text_2
+		text_color: p.text // the close button: full text colour, a muted one read as disabled
 	}).role(.tab).label(tab.title).selected(on).child(content)
 	if !on {
 		d.border_b(1)

@@ -3,6 +3,8 @@ module ssh
 
 const max_traversal_depth = 64
 const max_traversal_entries = 100_000
+// One listing: a server that never ends a directory must not grow the list without bound.
+const max_listing_entries = 1_000_000
 
 // open_handle opens a remote file, honouring limits@openssh.com on open handles.
 fn (mut s Sftp) open_handle(path string, flags u32, attrs Attrs) ![]u8 {
@@ -158,6 +160,9 @@ fn (mut s Sftp) list(path string) ![]DirItem {
 		}
 		mut r := new_reader(reply[5..])
 		count := r.get_u32()!
+		if u64(out.len) + u64(count) > max_listing_entries {
+			return error('the remote folder has more than ${max_listing_entries} entries')
+		}
 		for _ in 0 .. count {
 			name := r.get_str()!
 			r.get_str()! // long name

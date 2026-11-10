@@ -27,8 +27,11 @@ pub fn (d &Doc) col_of(off int) int {
 
 fn display_cols(s string, tab int) int {
 	mut col := 0
-	for r in s.runes() {
-		col = if r == `\t` { (col / tab + 1) * tab } else { col + 1 }
+	mut i := 0
+	for i < s.len {
+		j, w := cell_step(s, i)
+		col = if s[i] == `\t` { (col / tab + 1) * tab } else { col + w }
+		i = j
 	}
 	return col
 }
@@ -41,7 +44,11 @@ pub fn (d &Doc) off_at_col(n int, col int) int {
 	mut i := 0
 	for i < s.len {
 		next := text.next_grapheme(s, i)
-		w := if s[i] == `\t` { (c / d.tab_size + 1) * d.tab_size - c } else { 1 }
+		w := if s[i] == `\t` {
+			(c / d.tab_size + 1) * d.tab_size - c
+		} else {
+			text.grapheme_width(s, i, next)
+		}
 		if c + w > col {
 			if col - c > w / 2 && w > 1 {
 				i = next

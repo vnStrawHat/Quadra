@@ -43,10 +43,10 @@ fn (mut t TextEl) prepaint_select(bounds prim.Rect, mut cx core.PrepaintCx) {
 		cursor:   platform.Cursor.ibeam
 		focus_id: st.focus
 	})
-	cx.on_mouse(hb, .mouse_down, core.AnyListener{ holder: voidptr(t), call: select_down }, false)
-	cx.on_mouse(hb, .mouse_move, core.AnyListener{ holder: voidptr(t), call: select_move }, false)
+	cx.on_mouse(hb, .mouse_down, core.AnyListener{ holder: prim.hold(t), call: select_down }, false)
+	cx.on_mouse(hb, .mouse_move, core.AnyListener{ holder: prim.hold(t), call: select_move }, false)
 	node := cx.insert_key_node(st.focus, '', -1, bounds)
-	cx.on_key(node, .key_down, '', core.AnyListener{ holder: voidptr(t), call: select_key })
+	cx.on_key(node, .key_down, '', core.AnyListener{ holder: prim.hold(t), call: select_key })
 	cx.leave()
 }
 
@@ -97,9 +97,9 @@ fn word_at(s string, i int) (int, int) {
 	return a, b
 }
 
-fn select_down(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	mut t := unsafe { &TextEl(holder) }
-	e := unsafe { &core.MouseDownEvent(event) }
+fn select_down(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	mut t := prim.held[TextEl](holder)
+	e := prim.held[core.MouseDownEvent](event)
 	if e.button != .left || t.sel == unsafe { nil } {
 		return
 	}
@@ -120,9 +120,9 @@ fn select_down(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
 	cx.win.invalidate_paint()
 }
 
-fn select_move(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	mut t := unsafe { &TextEl(holder) }
-	e := unsafe { &core.MouseMoveEvent(event) }
+fn select_move(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	mut t := prim.held[TextEl](holder)
+	e := prim.held[core.MouseMoveEvent](event)
 	if t.sel == unsafe { nil } || !t.sel.dragging {
 		return
 	}
@@ -135,9 +135,9 @@ fn select_move(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
 	cx.win.invalidate_paint()
 }
 
-fn select_key(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	mut t := unsafe { &TextEl(holder) }
-	e := unsafe { &core.KeyDownEvent(event) }
+fn select_key(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	mut t := prim.held[TextEl](holder)
+	e := prim.held[core.KeyDownEvent](event)
 	if t.sel == unsafe { nil } || !e.mods.has(.ctrl) {
 		return
 	}

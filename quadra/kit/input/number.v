@@ -71,9 +71,8 @@ pub fn new_number_input(mut cx core.Cx, opts NumberOptions) core.View[NumberInpu
 		stepper:  opts.stepper
 	})
 	on_change(mut cx, field, core.Listener[string]{core.AnyListener{
-		view:   view.id
-		holder: unsafe { nil }
-		call:   number_typed
+		view: view.id
+		call: number_typed
 	}})
 	return view
 }
@@ -83,9 +82,9 @@ pub fn on_number_change(mut cx core.Cx, n core.View[NumberInput], l core.Listene
 	w.change = l.any
 }
 
-fn number_typed(_ voidptr, view voidptr, event voidptr, mut cx core.Cx) {
-	mut n := unsafe { &NumberInput(view) }
-	s := unsafe { *(&string(event)) }
+fn number_typed(_ prim.Holder, view prim.Holder, event prim.Holder, mut cx core.Cx) {
+	mut n := prim.held[NumberInput](view)
+	s := *prim.held[string](event)
 	if v := strconv.atof64(s) {
 		n.value = v
 		n.emit(mut cx)

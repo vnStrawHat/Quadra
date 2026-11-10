@@ -16,7 +16,7 @@ fn (mut e Editor) paint_line(n int, hits []int, hit int, focused bool, th &kit.T
 	ed := th.code.editor
 	src := d.buf.line(n)
 	dl := display_line(src, d.tab_size)
-	l := cx.text.layout_line(dl.shown, e.style)
+	l := cx.text.layout_mono(dl.shown, e.style, e.cell.width)
 	if l.width > e.widest {
 		e.widest = l.width
 	}

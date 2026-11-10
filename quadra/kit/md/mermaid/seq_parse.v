@@ -94,6 +94,7 @@ fn parse_seq(lines []string, first int) !Seq {
 			}
 		}
 	}
+	check_seq_size(&s)!
 	return s
 }
 

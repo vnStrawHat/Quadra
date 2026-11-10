@@ -153,7 +153,7 @@ pub fn (mut l VariableList) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 	l.scroll = ListScroll{st, prim.max(0, l.total - bounds.height)}
 	hb := cx.insert_hitbox(bounds, core.HitboxOptions{})
 	cx.on_mouse(hb, .scroll, core.AnyListener{
-		holder: voidptr(&l.scroll)
+		holder: prim.hold(&l.scroll)
 		call:   list_scroll
 	}, false)
 	cx.push_hitbox(hb)
@@ -176,7 +176,7 @@ pub fn (mut l VariableList) paint(bounds prim.Rect, mut cx core.PaintCx) {
 		r.el.paint(r.bounds, mut cx)
 	}
 	cx.pop_clip()
-	cx.scroll_thumb(bounds, l.total, l.offset, true, core.ThumbTarget{voidptr(l.scroll.state), set_list_scroll})
+	cx.scroll_thumb(bounds, l.total, l.offset, true, core.ThumbTarget{prim.hold(l.scroll.state), set_list_scroll})
 }
 
 // measure builds row i at width w and records its height.

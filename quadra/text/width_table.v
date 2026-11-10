@@ -1,6 +1,6 @@
 // Width tables, generated from Unicode's East Asian Width and general categories (Unicode
 // 13 data, widened with the emoji blocks added since). Sorted ranges of inclusive pairs.
-module term
+module text
 
 // Two cells: East Asian wide and fullwidth, emoji.
 const wide_ranges = [u32(0x1100), 0x115F, 0x1249, 0x1249, 0x124E, 0x124F, 0x1257, 0x1257, 0x1259,

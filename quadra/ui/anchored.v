@@ -84,7 +84,7 @@ pub fn (mut a Anchored) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 	mut lcx := cx.layout_cx()
 	node := a.content.request_layout(mut lcx)
 	if a.fill {
-		cx.tree.compute(node, win)
+		cx.tree.compute_new(node, win) // new nodes: the window's own keep their results
 	} else {
 		cx.tree.compute_fit(node, win)
 	}

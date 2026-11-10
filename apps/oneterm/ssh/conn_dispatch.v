@@ -52,11 +52,11 @@ fn (mut c Conn) dispatch_channel(kind u8, mut r Reader) ! {
 			ch.window_add(r.get_u32()!)
 		}
 		msg_channel_data {
-			ch.receive(r.get_bytes()!)
+			ch.receive(r.get_bytes()!)!
 		}
 		msg_channel_extended {
 			r.get_u32()!
-			ch.receive(r.get_bytes()!)
+			ch.receive(r.get_bytes()!)!
 		}
 		msg_channel_eof {
 			ch.got_eof()

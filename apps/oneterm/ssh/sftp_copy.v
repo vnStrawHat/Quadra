@@ -3,6 +3,7 @@ module ssh
 
 import io
 import os
+import quadra.prim
 
 const reads_in_flight = 16
 const writes_in_flight = 8
@@ -24,8 +25,8 @@ pub:
 // ctx, so no closure is made per transfer (no closures in apps, specs/14). Zero = no events.
 pub struct OnTransfer {
 pub:
-	ctx voidptr
-	f   fn (ctx voidptr, e TransferEvent) = unsafe { nil }
+	ctx prim.Holder
+	f   fn (ctx prim.Holder, e TransferEvent) = unsafe { nil }
 }
 
 // TreeProgress is the running total of a folder transfer.

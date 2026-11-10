@@ -7,8 +7,8 @@ struct FakeText {
 	chars int
 }
 
-fn measure_fake(ctx voidptr, kw f32, kh f32, aw f32, ah f32) prim.Size {
-	t := unsafe { &FakeText(ctx) }
+fn measure_fake(ctx prim.Holder, kw f32, kh f32, aw f32, ah f32) prim.Size {
+	t := prim.held[FakeText](ctx)
 	full := f32(t.chars * 8)
 	limit := if kw != unknown { kw } else { aw }
 	if limit >= unbounded || full <= limit {
@@ -107,7 +107,7 @@ fn test_justify_variants_and_gap_padding() {
 fn test_column_wraps_text_at_stretched_width() {
 	mut t := Tree{}
 	txt := &FakeText{25} // 200 px unwrapped
-	leaf := t.leaf(Style{}, measure_fake, txt)
+	leaf := t.leaf(Style{}, measure_fake, prim.hold(txt))
 	other := t.node(Style{ height: px(10) }, [])
 	root := t.node(Style{
 		direction: .column
@@ -187,7 +187,7 @@ fn test_measure_cache_limits_work() {
 		parent = child
 	}
 	txt := &FakeText{10}
-	t.add_child(parent, t.leaf(Style{}, measure_fake, txt))
+	t.add_child(parent, t.leaf(Style{}, measure_fake, prim.hold(txt)))
 	t.compute(root, prim.size(300, 300))
 	// Without caching, nested auto columns re-measure exponentially.
 	assert t.measure_calls < 200, '${t.measure_calls} evaluations'
@@ -254,7 +254,7 @@ fn test_max_width_is_the_width_text_is_measured_at() {
 	// A full-width column capped by max_width: its height comes from the capped width.
 	mut t := Tree{}
 	txt := &FakeText{100}
-	leaf := t.leaf(Style{}, measure_fake, voidptr(txt))
+	leaf := t.leaf(Style{}, measure_fake, prim.hold(txt))
 	col := t.node(Style{
 		direction: .column
 		width:     pct(100)
@@ -276,7 +276,7 @@ fn test_sole_grower_is_not_measured_for_its_base() {
 	// header + growing body in a fixed column: the body takes the rest whatever its content.
 	mut t := Tree{}
 	txt := &FakeText{2000}
-	leaf := t.leaf(Style{}, measure_fake, voidptr(txt))
+	leaf := t.leaf(Style{}, measure_fake, prim.hold(txt))
 	body := t.node(Style{
 		grow:      1
 		direction: .column

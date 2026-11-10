@@ -48,6 +48,21 @@ A frame runs only when something is invalid (07-state):
 ## Event dispatch
 - **Mouse**: hit-test the composed hitbox list topmost-first. Handlers on the path run in capture order (root to target) then bubble order (target to root). `cx.stop_propagation()` ends the walk.
 - Core derives hover, press, click, double click, drag threshold (4 px) and mouse capture during drags (`cx.capture_mouse()`). Hover changes are **paint invalidations** unless the hover style changes a layout property.
+- **Modifier-gated cursor**: `HitboxOptions.cursor_mods` makes a hitbox's cursor apply only
+  while those modifiers are held (`Window.mods`: the modifiers of the last mouse or key
+  event). A key event that changes them updates the cursor at once and repaints when the
+  hovered path holds such a hitbox, so a ctrl-hover affordance follows the key with no mouse
+  move.
+- **Hover hints** (`hint.v`): `HitboxOptions.hint` is a tooltip for a part of an element (a
+  link in text, a URL in the editor or the terminal), where the kit's element tooltip cannot
+  attach. Hover tracking keeps `Window.hint`: the deepest hovered hitbox with a hint, its
+  bounds and when the pointer reached it; the same id, text and bounds are the same hint, so a
+  slot reused for another link starts over. A new hint arms one prepaint at `hint_delay_ms`
+  (500, also the kit tooltip's delay); a mouse press or a wheel closes it until the pointer
+  reaches another hitbox or leaves the window. Core only tracks it: the kit's Host draws it
+  (`kit.HintLayer`, specs/08). Nothing is allocated while no hint is hovered; the texts are
+  constants (`hint_ctrl_open` "Ctrl+click to open", `hint_ctrl_follow` "Ctrl+click to
+  follow", `link_hint(url)` picks one with a prefix test).
 - **Keyboard**: along the focus path. The keymap resolves keystrokes into actions using the key contexts on that path, then action handlers run in bubble order. Unbound keys reach `on_key_down`. Text and IME events go to the focused element only.
 - **Discrete events** (click, key, action, change) auto-notify the listening view. **Continuous events** (mouse move, wheel, drag) do not, so handlers call `ecx.notify()` only when state really changed.
 

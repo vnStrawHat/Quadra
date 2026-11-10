@@ -6,6 +6,7 @@
 // ones are free functions: more generic methods on ViewCx[T] trip V (docs/v-notes.md).
 module core
 
+import quadra.prim
 import quadra.platform
 
 struct AfterWith[D] {
@@ -13,8 +14,8 @@ struct AfterWith[D] {
 	f fn (d D, mut app App) = unsafe { nil }
 }
 
-fn call_after_with[D](holder voidptr, _ voidptr, mut cx Cx) {
-	h := unsafe { &AfterWith[D](holder) }
+fn call_after_with[D](holder prim.Holder, _ prim.Holder, mut cx Cx) {
+	h := prim.held[AfterWith[D]](holder)
 	h.f(h.d, mut cx.app)
 }
 
@@ -23,7 +24,7 @@ pub fn (mut app App) after_with[D](ms int, data D, f fn (d D, mut app App)) plat
 	app.escaped_in_render()
 	id := app.plat.set_timer(ms, false)
 	app.timers[id] = TimerEntry{
-		holder: voidptr(&AfterWith[D]{data, f})
+		holder: prim.hold(&AfterWith[D]{data, f})
 		call:   call_after_with[D]
 	}
 	return id
@@ -34,9 +35,9 @@ struct TimerWith[T, D] {
 	f fn (mut v T, d D, mut cx ViewCx[T]) = unsafe { nil }
 }
 
-fn call_timer_with[T, D](holder voidptr, owner voidptr, mut cx Cx) {
-	h := unsafe { &TimerWith[T, D](holder) }
-	mut v := unsafe { &T(owner) }
+fn call_timer_with[T, D](holder prim.Holder, owner prim.Holder, mut cx Cx) {
+	h := prim.held[TimerWith[T, D]](holder)
+	mut v := unsafe { prim.held[T](owner) } // unsafe only quiets a mutability notice
 	mut vcx := ViewCx[T]{
 		Cx: cx
 	}
@@ -48,7 +49,7 @@ fn add_timer_with[T, D](mut cx ViewCx[T], ms int, repeat bool, data D, f fn (mut
 	id := cx.app.plat.set_timer(ms, repeat)
 	cx.app.timers[id] = TimerEntry{
 		owner:  cx.entity
-		holder: voidptr(&TimerWith[T, D]{data, f})
+		holder: prim.hold(&TimerWith[T, D]{data, f})
 		call:   call_timer_with[T, D]
 		repeat: repeat
 	}
@@ -80,9 +81,9 @@ struct ObserveWith[T, O, D] {
 	d D
 }
 
-fn call_observer_with[T, O, D](holder voidptr, owner voidptr, mut cx Cx) {
-	h := unsafe { &ObserveWith[T, O, D](holder) }
-	mut v := unsafe { &T(owner) }
+fn call_observer_with[T, O, D](holder prim.Holder, owner prim.Holder, mut cx Cx) {
+	h := prim.held[ObserveWith[T, O, D]](holder)
+	mut v := unsafe { prim.held[T](owner) } // unsafe only quiets a mutability notice
 	mut vcx := ViewCx[T]{
 		Cx: cx
 	}
@@ -95,7 +96,7 @@ pub fn observe_with[T, O, D](mut cx ViewCx[T], m Model[O], data D, f fn (mut v T
 	cx.app.observers << Observer{
 		owner:  cx.entity
 		target: m.id
-		holder: voidptr(&ObserveWith[T, O, D]{f, m, data})
+		holder: prim.hold(&ObserveWith[T, O, D]{f, m, data})
 		call:   call_observer_with[T, O, D]
 	}
 }
@@ -106,13 +107,13 @@ struct SubscribeWith[T, S, Q, D] {
 	d D
 }
 
-fn call_subscriber_with[T, S, Q, D](holder voidptr, owner voidptr, event voidptr, mut cx Cx) {
-	h := unsafe { &SubscribeWith[T, S, Q, D](holder) }
-	mut v := unsafe { &T(owner) }
+fn call_subscriber_with[T, S, Q, D](holder prim.Holder, owner prim.Holder, event prim.Holder, mut cx Cx) {
+	h := prim.held[SubscribeWith[T, S, Q, D]](holder)
+	mut v := unsafe { prim.held[T](owner) } // unsafe only quiets a mutability notice
 	mut vcx := ViewCx[T]{
 		Cx: cx
 	}
-	h.f(mut v, h.m, unsafe { &Q(event) }, h.d, mut vcx)
+	h.f(mut v, h.m, prim.held[Q](event), h.d, mut vcx)
 }
 
 // subscribe_with is subscribe for a callback that needs data.
@@ -124,7 +125,7 @@ pub fn subscribe_with[T, S, Q, D](mut cx ViewCx[T], m Model[S], data D, f fn (mu
 		owner:      cx.entity
 		target:     m.id
 		event_type: typeof[Q]().name
-		holder:     voidptr(&SubscribeWith[T, S, Q, D]{f, m, data})
+		holder:     prim.hold(&SubscribeWith[T, S, Q, D]{f, m, data})
 		call:       call_subscriber_with[T, S, Q, D]
 	}
 	return cx.app.next_sub

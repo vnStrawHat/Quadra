@@ -2,6 +2,7 @@
 // command lines of a single-instance app.
 module core
 
+import quadra.prim
 import quadra.platform
 
 // CloseRequest is passed to close handlers; call cx.prevent_close() to keep the window.
@@ -151,6 +152,12 @@ fn (mut s NoSurface) resize(_ int, _ int) ! {}
 
 fn (mut s NoSurface) present() ! {}
 
+fn (w &Window) device_size() (int, int) {
+	s := w.pw.size()
+	k := w.pw.scale()
+	return int(s.width * k + 0.5), int(s.height * k + 0.5)
+}
+
 // attach_surface creates the window's GPU surface at its current size.
 fn (mut w Window) attach_surface() ! {
 	dw, dh := w.device_size()
@@ -167,7 +174,7 @@ fn (mut app App) watch_upgrade() {
 	id := app.plat.set_timer(25, true)
 	app.timers[id] = TimerEntry{
 		repeat: true
-		holder: &UpgradeWatch{id}
+		holder: prim.hold(&UpgradeWatch{id})
 		call:   tick_upgrade
 	}
 }
@@ -176,8 +183,8 @@ struct UpgradeWatch {
 	id platform.TimerId
 }
 
-fn tick_upgrade(holder voidptr, _ voidptr, mut cx Cx) {
-	id := unsafe { &UpgradeWatch(holder) }.id
+fn tick_upgrade(holder prim.Holder, _ prim.Holder, mut cx Cx) {
+	id := prim.held[UpgradeWatch](holder).id
 	mut app := cx.app
 	if app.device.try_upgrade() {
 		for mut w in app.windows {

@@ -4,6 +4,7 @@ module main
 import sync
 import time
 import quadra.platform
+import quadra.prim
 import quadra.platform.win
 
 struct Sink {
@@ -19,15 +20,15 @@ fn test_conpty_runs_a_program() {
 		command: 'cmd.exe /c echo quadra-ok'
 		cols:    80
 		rows:    24
-		ctx:     sink
-		on_data: fn (ctx voidptr, data []u8) {
-			mut sink := unsafe { &Sink(ctx) }
+		ctx:     prim.hold(sink)
+		on_data: fn (ctx prim.Holder, data []u8) {
+			mut sink := prim.held[Sink](ctx)
 			sink.mu.@lock()
 			sink.out << data
 			sink.mu.unlock()
 		}
-		on_exit: fn (ctx voidptr, code int) {
-			mut sink := unsafe { &Sink(ctx) }
+		on_exit: fn (ctx prim.Holder, code int) {
+			mut sink := prim.held[Sink](ctx)
 			sink.mu.@lock()
 			sink.code = code
 			sink.mu.unlock()

@@ -86,6 +86,9 @@ fn decode_sec1(der []u8, known ?cng.Curve) !PrivateKey {
 				buf: body
 			}
 			bits := inner.expect(0x03)!
+			if bits.len < 2 { // the unused-bits byte, then the point
+				return error('bad EC public point')
+			}
 			point = bits[1..].clone()
 		}
 	}
@@ -203,6 +206,9 @@ fn pbes2_decrypt(der []u8, pass []u8) ![]u8 {
 	mut kp := kdf.seq()!
 	salt := kp.octets()!
 	iterations := kp.int_val()!
+	if iterations < 1 || iterations > max_pbkdf2_iterations {
+		return error('the key asks for ${iterations} PBKDF2 iterations (at most ${max_pbkdf2_iterations})')
+	}
 	mut sha256_prf := false
 	for kp.has_more() {
 		tag, b := kp.next()!

@@ -5,6 +5,7 @@ import quadra.core
 import quadra.kit
 import quadra.kit.input
 import quadra.kit.term
+import quadra.prim
 import quadra.ui
 
 // FindBar is a terminal's search bar; the query and matches are the terminal's own Finder.
@@ -15,7 +16,7 @@ mut:
 }
 
 fn ext_of(t &term.Terminal) &TermExt {
-	return unsafe { &TermExt(t.hooks.holder) }
+	return prim.held[TermExt](t.hooks.holder)
 }
 
 // toggle_find opens the bar of the active terminal, or closes it when open.

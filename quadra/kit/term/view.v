@@ -107,7 +107,7 @@ fn pty_options(t &Terminal, opts platform.PtyOptions) platform.PtyOptions {
 		...opts
 		cols:    t.screen.cols
 		rows:    t.screen.rows
-		ctx:     t.inbox
+		ctx:     prim.hold(t.inbox)
 		on_data: inbox_data
 		on_exit: inbox_exit
 	}
@@ -127,16 +127,17 @@ fn prepare(mut cx core.Cx, v core.View[Terminal]) &Terminal {
 			t.receive(c, mut cx)
 		})
 	}
+	t.screen.images_off = false // a restart after close shows images again
 	return t
 }
 
-fn inbox_data(ctx voidptr, data []u8) {
-	mut inbox := unsafe { &core.Inbox(ctx) }
+fn inbox_data(ctx prim.Holder, data []u8) {
+	mut inbox := prim.held[core.Inbox](ctx)
 	inbox.push(data)
 }
 
-fn inbox_exit(ctx voidptr, code int) {
-	mut inbox := unsafe { &core.Inbox(ctx) }
+fn inbox_exit(ctx prim.Holder, code int) {
+	mut inbox := prim.held[core.Inbox](ctx)
 	inbox.finish(code)
 }
 
@@ -223,6 +224,8 @@ pub fn (mut t Terminal) send(data []u8) {
 
 // close ends the program (the view stays, showing the last screen).
 pub fn (mut t Terminal) close() {
+	t.parser.drop_sixel()
+	t.screen.close_images()
 	if mut p := t.pty {
 		p.close()
 	}
@@ -230,11 +233,7 @@ pub fn (mut t Terminal) close() {
 
 @[markused]
 pub fn (mut t Terminal) render(mut cx core.ViewCx[Terminal]) core.Element {
-	root := ui.div().id(t.id).test_id(t.id).size_full().cursor(if t.hover.url != '' {
-		platform.Cursor.pointer
-	} else {
-		platform.Cursor.ibeam
-	}).track_focus(t.focus).on_key_down(cx.listener(fn (mut t Terminal, e &core.KeyDownEvent, mut cx core.ViewCx[Terminal]) {
+	root := ui.div().id(t.id).test_id(t.id).size_full().cursor(platform.Cursor.ibeam).track_focus(t.focus).on_key_down(cx.listener(fn (mut t Terminal, e &core.KeyDownEvent, mut cx core.ViewCx[Terminal]) {
 		t.key(e, mut cx)
 	})).on_key_up(cx.listener(fn (mut t Terminal, e &core.KeyUpEvent, mut _ core.ViewCx[Terminal]) {
 		t.key_up(e)

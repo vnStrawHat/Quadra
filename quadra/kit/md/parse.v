@@ -1,8 +1,8 @@
 // Markdown blocks: the CommonMark subset docs, READMEs and notes use (specs/21). Headings,
 // paragraphs, bullet, numbered and task lists (nesting by indent), fenced code, quotes
 // (nested), rules, pipe tables with alignment, display math and YAML front matter. Every
-// block records its source line. Not handled: setext headings, indented code, HTML,
-// reference links, footnotes.
+// block records its source line. HTML comments (blocks and inline) show nothing. Not
+// handled: setext headings, indented code, other HTML, reference links, footnotes.
 module md
 
 pub enum Kind {
@@ -113,6 +113,17 @@ pub fn parse(src string) []Block {
 				lang: lang
 				line: at
 			}
+			continue
+		}
+		if t.starts_with('<!--') && indent < 4 {
+			// An HTML comment block runs to the line holding `-->` and shows nothing; the
+			// text after `-->` on that line is dropped too, as an HTML block's would be.
+			p.flush()
+			mut k := at
+			for k < lines.len && !lines[k].contains('-->') {
+				k++
+			}
+			i = k + 1
 			continue
 		}
 		if t.starts_with('$$') {

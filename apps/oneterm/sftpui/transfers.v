@@ -5,6 +5,7 @@ import os
 import ssh
 import quadra.core
 import quadra.platform
+import quadra.prim
 
 // BatchDone ends a batch; the listing refreshes when its session is still shown.
 struct BatchDone {
@@ -111,7 +112,7 @@ fn run_transfer(mut client Client, mut bus Bus, key u64, dir Direction, name str
 		name:      name
 	})
 	on_event := ssh.OnTransfer{
-		ctx: &TransferPost{bus, key, id}
+		ctx: prim.hold(&TransferPost{bus, key, id})
 		f:   post_transfer_event
 	}
 	mut status := TransferStatus.completed
@@ -144,8 +145,8 @@ struct TransferPost {
 	id  u64
 }
 
-fn post_transfer_event(ctx voidptr, e ssh.TransferEvent) {
-	t := unsafe { &TransferPost(ctx) }
+fn post_transfer_event(ctx prim.Holder, e ssh.TransferEvent) {
+	t := prim.held[TransferPost](ctx)
 	mut bus := t.bus
 	match e.kind {
 		.progress {

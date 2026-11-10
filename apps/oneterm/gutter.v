@@ -159,8 +159,8 @@ fn (mut x TermExt) layers(mut t term.Terminal, th &kit.Theme, mut cx core.ViewCx
 	return box
 }
 
-fn ext_output(holder voidptr, mut t term.Terminal, data []u8) {
-	mut x := unsafe { &TermExt(holder) }
+fn ext_output(holder prim.Holder, mut t term.Terminal, data []u8) {
+	mut x := prim.held[TermExt](holder)
 	x.gutter.stamp(t, data, seconds_of_day())
 }
 

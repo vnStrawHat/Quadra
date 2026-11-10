@@ -34,6 +34,7 @@ mut:
 	dcs_len int
 	held    []u8 // bytes after a synchronized update opened (mode 2026)
 	held_on bool
+	sync_ok int // data before this index holds the end of the open update (hold.v)
 	acc     u32 // UTF-8 decoding
 	need    int
 }
@@ -46,10 +47,10 @@ const max_query = 8 * 1024
 // feed parses data into s.
 pub fn (mut p Parser) feed(mut s Screen, data []u8) {
 	if p.held_on {
-		p.held << data
-		p.release_held(mut s)
+		p.release_held(mut s, data)
 		return
 	}
+	p.sync_ok = -1
 	mut i := 0
 	for i < data.len {
 		b := data[i]
@@ -71,9 +72,7 @@ pub fn (mut p Parser) feed(mut s Screen, data []u8) {
 			}
 			if next >= 0 {
 				i = next
-				if s.sync {
-					p.held_on = true
-					p.feed(mut s, data[i..])
+				if s.sync && p.hold_rest(data, i) {
 					return
 				}
 				continue
@@ -81,9 +80,7 @@ pub fn (mut p Parser) feed(mut s Screen, data []u8) {
 		}
 		p.step(mut s, b)
 		i++
-		if s.sync && p.state == .ground {
-			p.held_on = true
-			p.feed(mut s, data[i..])
+		if s.sync && p.state == .ground && p.hold_rest(data, i) {
 			return
 		}
 	}
@@ -92,16 +89,6 @@ pub fn (mut p Parser) feed(mut s Screen, data []u8) {
 		if s.sweep_count & 63 == 0 {
 			s.sweep_graphics()
 		}
-	}
-}
-
-// release_held parses the held bytes when the end of the update has arrived.
-fn (mut p Parser) release_held(mut s Screen) {
-	if p.held.bytestr().contains('[?2026l') {
-		buf := p.held
-		p.held = []u8{}
-		p.held_on = false
-		p.feed(mut s, buf)
 	}
 }
 

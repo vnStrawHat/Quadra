@@ -4,6 +4,7 @@
 module core
 
 import sync
+import quadra.prim
 
 // Chunk is what the owner receives: the bytes since the last delivery, and the exit code
 // once the producer has finished. `data` is lent for the call: the inbox reuses the buffer.
@@ -69,11 +70,11 @@ pub fn (mut b Inbox) finish(code int) {
 // inbox would stay alive with it, V frees no closure).
 fn (mut b Inbox) post() {
 	mut app := b.app
-	app.post_main(drain_inbox, b)
+	app.post_main_held(drain_inbox, prim.hold(b))
 }
 
-fn drain_inbox(mut _ App, data voidptr) {
-	mut b := unsafe { &Inbox(data) }
+fn drain_inbox(mut _ App, data prim.Holder) {
+	mut b := prim.held[Inbox](data)
 	b.drain()
 }
 
@@ -97,7 +98,7 @@ fn (mut b Inbox) drain() {
 	mut app := b.app
 	if ptr, mut cx := app.enter_owned(b.l.view) {
 		app.probe_begin()
-		b.l.call(b.l.holder, ptr, chunk, mut cx)
+		b.l.call(b.l.holder, ptr, prim.hold(chunk), mut cx)
 		app.probe_end('inbox chunk', b.l.view)
 		app.depth--
 	}

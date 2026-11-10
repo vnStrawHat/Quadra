@@ -100,7 +100,8 @@ fn test_sixel_places_scrolls_and_dies() {
 	// One 6 px band of 2 columns, with a raster size, then text.
 	mut s := screen_with(20, 4, 'ab\x1bPq"1;1;20;40#0;2;100;0;0#0!20~\x1b\\X')
 	assert s.graphics.len == 1 && s.graphics[0].width == 20 && s.graphics[0].height == 40
-	assert s.graphics[0].rgba[0] == 255 && s.graphics[0].rgba[3] == 255
+	px := s.graphics[0].pixels.bytes()
+	assert px[0] == 255 && px[3] == 255
 	assert s.lines[0].extra.images[0].row == 0 && s.lines[1].extra.images[0].row == 1
 	assert s.lines[0].extra.images[0].cols == 2 && s.x == 3 // the X follows at the same row
 	// The image scrolls with the text into the scrollback.
@@ -190,4 +191,31 @@ fn test_c1_prints_nothing_and_widths_cover_the_table() {
 	s := screen_with(10, 2, 'a\xc2\x85b')
 	assert s.line(0) == 'ab'
 	assert width(0x0301) == 0 && width(0x1F600) == 2 && width(u32(`A`)) == 1 && width(0x1160) == 0
+}
+
+fn reds(b &PixelBuf) []u8 {
+	bs := b.bytes()
+	return []u8{len: bs.len / 4, init: bs[index * 4]}
+}
+
+// PixelBuf lays rows out in place (specs/17, Images memory): growth is transparent, cuts drop.
+fn test_pixelbuf_restride_and_scale_keep_pixels() {
+	mut b := PixelBuf{}
+	b.restride(2, 2)
+	for i in 0 .. 4 {
+		b.fill(i, 1, u32(i + 1))
+	}
+	b.fill(3, 2, 9) // past the end: ignored
+	b.restride(3, 3)
+	assert reds(b) == [u8(1), 2, 0, 3, 4, 0, 0, 0, 0]
+	b.restride(1, 2)
+	assert reds(b) == [u8(1), 3]
+	mut s := b.scaled(2, 4)
+	assert reds(s) == [u8(1), 1, 1, 1, 3, 3, 3, 3]
+	mut moved := s.take()
+	assert s.len == 0 && moved.len == 32
+	moved.free()
+	b.free()
+	b.free() // a no-op
+	assert b.bytes().len == 0
 }

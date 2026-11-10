@@ -21,8 +21,16 @@ pub fn new() &NullDevice {
 }
 
 pub fn (mut d NullDevice) upload(u gpu.Upload) ! {
-	d.uploads << u
 	d.st.upload_bytes += u.pixels.len
+	// Owned pixels are freed after this call: keep the upload without them.
+	d.uploads << if u.owned {
+		gpu.Upload{
+			...u
+			pixels: []u8{}
+		}
+	} else {
+		u
+	}
 }
 
 pub fn (mut d NullDevice) new_window_surface(native_handle voidptr, width int, height int) !gpu.Surface {

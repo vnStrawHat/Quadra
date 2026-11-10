@@ -60,7 +60,8 @@ pub fn parse_svg(src string) !Svg {
 			'svg' {
 				if vb := attrs['viewBox'] {
 					n := numbers(vb)
-					if n.len == 4 {
+					if n.len == 4 && n[2] > 0 && n[3] > 0 && finite(n[0]) && finite(n[1])
+						&& finite(n[2]) && finite(n[3]) {
 						svg = Svg{n[0], n[1], n[2], n[3], svg.shapes}
 					}
 				}
@@ -99,8 +100,10 @@ fn parse_attrs(tag string) map[string]string {
 		quote := q[0]
 		start := tag.index_after(quote.ascii_str(), eq) or { break } + 1
 		end := tag.index_after(quote.ascii_str(), start) or { break }
-		key := tag[i..eq].fields().last()
-		out[key] = tag[start..end]
+		names := tag[i..eq].fields()
+		if names.len > 0 { // `="x"` names nothing
+			out[names.last()] = tag[start..end]
+		}
 		i = end + 1
 	}
 	return out

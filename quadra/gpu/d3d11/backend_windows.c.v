@@ -155,7 +155,16 @@ pub fn (mut b Backend) upload(u gpu.Upload) ! {
 	}, u.pixels.data, u32(u.w * bpp))
 	b.st.upload_bytes += u.pixels.len
 	if b.upgrade != unsafe { nil } {
-		b.replay << u
+		// Owned pixels are freed after this call (gpu.free_owned): replay a copy.
+		b.replay << if u.owned {
+			gpu.Upload{
+				...u
+				pixels: u.pixels.clone()
+				owned:  false
+			}
+		} else {
+			u
+		}
 	}
 }
 

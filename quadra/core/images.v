@@ -3,6 +3,7 @@
 module core
 
 import quadra.gpu
+import quadra.prim
 
 pub struct Bitmap {
 pub:
@@ -35,7 +36,7 @@ pub mut:
 	pending int // decodes in flight
 	// sources holds decoded sources by content hash (parsed SVG documents), so elements
 	// rebuilt every frame do not parse their source again.
-	sources map[u64]voidptr
+	sources map[u64]prim.Holder
 }
 
 fn (mut app App) store_bitmap(mut e ImageEntry, b Bitmap) {
@@ -83,7 +84,7 @@ pub fn (mut app App) image_async(key string, load fn () !Bitmap) &ImageEntry {
 			failure = err.msg()
 			Bitmap{}
 		}
-		app.post_main(image_done, &ImageDone{e, bmp, failure})
+		app.post_main_held(image_done, prim.hold(&ImageDone{e, bmp, failure}))
 	}(mut app, e, load)
 	return e
 }
@@ -103,7 +104,7 @@ pub fn (mut app App) image_async_with(key string, arg string, load fn (arg strin
 			failure = err.msg()
 			Bitmap{}
 		}
-		app.post_main(image_done, &ImageDone{e, bmp, failure})
+		app.post_main_held(image_done, prim.hold(&ImageDone{e, bmp, failure}))
 	}(mut app, e, arg, load)
 	return e
 }
@@ -115,8 +116,8 @@ mut:
 	failure string
 }
 
-fn image_done(mut app App, data voidptr) {
-	mut d := unsafe { &ImageDone(data) }
+fn image_done(mut app App, data prim.Holder) {
+	mut d := prim.held[ImageDone](data)
 	app.images.pending--
 	if d.failure == '' {
 		app.store_bitmap(mut d.e, d.bmp)

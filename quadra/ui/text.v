@@ -200,8 +200,8 @@ fn (t &TextEl) fits(max_w f32) bool {
 		&& (max_w <= t.wrap_w || !t.wrapped.width_breaks)
 }
 
-fn measure_text(ctx voidptr, kw f32, _ f32, aw f32, _ f32) prim.Size {
-	mut t := unsafe { &TextEl(ctx) }
+fn measure_text(ctx prim.Holder, kw f32, _ f32, aw f32, _ f32) prim.Size {
+	mut t := prim.held[TextEl](ctx)
 	limit := if kw != layout.unknown { kw } else { aw }
 	max_w := if t.one_line || limit >= layout.unbounded { no_wrap } else { limit }
 	if !t.fits(max_w) {
@@ -257,8 +257,18 @@ pub fn (mut t TextEl) request_layout(mut cx core.LayoutCx) layout.NodeId {
 	}
 	t.resolved = r
 	t.ts = cx.text
-	t.node = cx.tree.leaf(text_leaf_style, measure_text, voidptr(t))
+	t.node = cx.tree.leaf_same(text_leaf_style, measure_text, prim.hold(t), same_text)
 	return t.node
+}
+
+// same_text: two texts measure alike when their content, font and wrapping are the same.
+fn same_text(a prim.Holder, b prim.Holder) bool {
+	x := prim.held[TextEl](a)
+	y := prim.held[TextEl](b)
+	p, q := x.resolved, y.resolved
+	return x.content == y.content && x.one_line == y.one_line && p.family == q.family
+		&& p.size == q.size && p.weight == q.weight && p.italic == q.italic
+		&& p.line_height == q.line_height
 }
 
 pub fn (mut t TextEl) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {

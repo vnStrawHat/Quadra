@@ -9,12 +9,12 @@ pub fn (mut cx PrepaintCx) state[T](init T) &T {
 	id := cx.current_id()
 	mut w := cx.win
 	w.state_used[id] = true
-	if p := w.state[id] {
-		return unsafe { &T(p) }
+	if h := w.state[id] {
+		return prim.held[T](h) // two element types with one id panic outside -prod
 	}
-	p := heap_copy(init)
-	w.state[id] = p
-	return unsafe { &T(p) }
+	h := heap_hold(init)
+	w.state[id] = h
+	return prim.held[T](h)
 }
 
 fn (mut w Window) drop_unused_state() {

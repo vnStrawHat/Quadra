@@ -147,7 +147,7 @@ fn (mut w Window) drag_release(p prim.Point) bool {
 	for i, hb in w.hitboxes {
 		if hb.id == over {
 			ev := DropEvent{payload, p.x, p.y, hb.bounds}
-			w.dispatch(.drop, [i], &ev, true)
+			w.dispatch(.drop, [i], prim.hold(&ev), true)
 			break
 		}
 	}

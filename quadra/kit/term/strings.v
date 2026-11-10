@@ -38,7 +38,15 @@ fn (mut p Parser) end_string(mut s Screen) {
 
 // abort_string is CAN or SUB inside a string: the partial payload is discarded.
 fn (mut p Parser) abort_string() {
-	p.sixel = unsafe { nil }
+	p.drop_sixel()
 	p.query = .none
 	p.state, p.esc_st = .ground, false
+}
+
+// drop_sixel ends a Sixel decode and frees its pixels.
+fn (mut p Parser) drop_sixel() {
+	if p.sixel != unsafe { nil } {
+		p.sixel.free()
+		p.sixel = unsafe { nil }
+	}
 }

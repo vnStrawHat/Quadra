@@ -9,9 +9,10 @@ Where the implementation deliberately differs from specs 00–13, and why. Each 
 ## Images and icons (03, D6)
 - **Icons are SVG**, rasterized by the pure-V `quadra.vector` rasterizer at the exact device size, not an icon font. The same code renders SVG files, works headless on every OS, and keeps strokes crisp at any DPI.
 - **Raster images are decoded with V's `stbi`** (PNG, JPEG, BMP, GIF) on a worker thread, not WIC. Portable and headless-friendly; WIC can be added for WebP/ICO later.
+- **Image files are untrusted input** (`ui/image_decode.v`, specs/08 image caps): the size comes from the header (`stbi_info_from_memory`) before any pixel is decoded, and a file over the caps fails like a corrupt one.
 
 ## Layout (05)
-- **The layout tree is rebuilt every build**, from cached element trees. Clean views skip rendering, text measurement hits the text caches, and layout of a cached subtree is cheap. Persistent incremental layout with relayout boundaries is deferred until profiling shows layout dominating. (Profiled 2026-11-07: typing in the 49-page gallery spent 75 % of layout in text-cache hits; the flat cache fixed that, and the flex pass itself is about 0.1 ms.)
+- **Incremental layout** (2026-11-10; 05 Incremental layout, 07 Invalidation levels). The layout tree stays between builds. A build for notified views renders them deepest first and replaces each one's subtree: its old nodes are filled again in build order and keep their layout where nothing changed, then the new root and its ancestors are asked their old requests until one answers as before. A full layout remains for resize, scale, theme and `Window.invalidate()`. It replaced "the layout tree is rebuilt every build", deferred until profiling showed layout dominating: changing one row's colour among N live rows then spent 75-95 % of the frame in layout, following the tree rather than the change (`bench/statemodel`). p50 of the update plus its frame, clang -prod: a view per row 0.75 to 0.03 ms at 3,000 rows and 2.9 to 0.06 ms at 10,000; one view for every row 1.07 to 0.71 ms and 4.5 to 3.0 ms (its render and the walk that builds and compares the new tree remain); typing in the gallery 0.22 to 0.13 ms. Full layouts cost what they did (docs/benchmarks.md). Not done: prepaint and paint still visit every placed element (clipped rows are skipped), so clean chunks are not reused.
 - **`min-width/height` default to 0**, except children of a scroll container on its main axis, which never shrink (CSS's `min-height: auto` effect where it matters most).
 - `compute_fit` lays out content-sized roots (overlays); `compute` fills the available size (window roots).
 - **App shells need no `min-height: 0`.** Three rules replace CSS's automatic minimum sizes:
@@ -24,7 +25,7 @@ Where the implementation deliberately differs from specs 00–13, and why. Each 
 - **`emit[E]` lives on `Cx`**, and holders for observe/subscribe are built in free generic functions, to avoid a V generics bug (docs/v-notes.md).
 - **View `render` methods must be `pub`**; views declared in `_test.v` files need `@[markused]`.
 - **Timers are discrete events**: a timer callback marks its owner changed, like a click.
-- **Invalidation levels** implemented: render (view changed), prepaint (scroll, focus), paint (hover, press, devtools). The compose level is covered by prepaint for now.
+- **Invalidation levels** implemented: render (view changed: that view's subtree is laid out again, see Layout), full layout (`invalidate`, resize, scale, theme), prepaint (scroll, focus), paint (hover, press, devtools). The compose level is covered by prepaint for now. `cx.update_if` skips the notification of an equal write.
 
 - **`observe` and `spawn_task` are free functions** (`core.observe(mut cx, m, f)`, `core.spawn_task[T, R](mut cx, work, done)`). As methods of `ViewCx[T]` they made V instantiate the other generic methods with their type arguments.
 
@@ -37,7 +38,7 @@ Where the implementation deliberately differs from specs 00–13, and why. Each 
 - The profiler, paint flashing and inspector are an in-window overlay toggled with `ctrl-shift-p`, `ctrl-shift-f` and `ctrl-shift-i`, rather than a separate window.
 
 ## App services (10) and Notes (13)
-- **Tasks run one OS thread each** (`core.spawn_task`); a fixed pool is deferred until apps spawn many at once. Results come back through the app's main-thread queue (`App.post_main`, one closure per app), never a closure per result: V frees no closure, and one made per task kept its result alive for good. Work that needs data uses `core.spawn_task_with[T, D, R](mut cx, data, work, done)`, whose `work` takes the data as an argument, so the caller makes no closure either (apps make none at all: "No closures in apps"). `debounce` ships; `throttle`, `timeout` and `retry` are deferred.
+- **Tasks run one OS thread each** (`core.spawn_task`); a fixed pool is deferred until apps spawn many at once. Results come back through the app's main-thread queue (`App.post_main_held`, one closure per app), never a closure per result: V frees no closure, and one made per task kept its result alive for good. Work that needs data uses `core.spawn_task_with[T, D, R](mut cx, data, work, done)`, whose `work` takes the data as an argument, so the caller makes no closure either (apps make none at all: "No closures in apps"). `debounce` ships; `throttle`, `timeout` and `retry` are deferred.
 - **Directories come from V's `os.config_dir()` and `os.cache_dir()`**, so `quadra.app` has no OS code. `AppInfo.root` (Notes: `--data`) keeps everything in one folder.
 - **Atomic file replace is `platform.replace_file`** (MoveFileExW on Windows), because MSVCRT `rename` fails on an existing target.
 - **With nothing focused, actions go to every handler, topmost first.** App shortcuts work before anything has focus. Key-down events still need focus.
@@ -80,7 +81,8 @@ Where the implementation deliberately differs from specs 00–13, and why. Each 
   - Portability: OS files and backend imports only in backends; no `C.` calls in core, ui, kit, app or layout.
   - No PowerShell.
   - The 300-line rule.
-  - Tests.
+  - The closure caps and the `unsafe` cap (below).
+  - Tests, fuzz tests among them (specs/11).
 
 ## Memory: closure lifetimes
 
@@ -114,8 +116,8 @@ scratch: each prepaint truncates the layout tree back to the nodes of the last b
 from `quadra.core`'s files.
 
 Posting to the main thread is a per-event path too: `core.Inbox` hands its drain to the
-app's main-thread queue (`App.post_main(f, data)`, public: worker threads reach the app with a
-plain function and its data), so an inbox has no closure of its own and a closed tab's inbox
+app's main-thread queue (`App.post_main_held(f, prim.hold(data))`, public: worker threads reach
+the app with a plain function and a checked holder), so an inbox has no closure of its own and a closed tab's inbox
 is collected. The work functions handed to `Lifetime.frame` are plain functions reading a
 per-process slot (`core/frame_work.v`), not a closure per window: a closed window's would have
 kept the window alive.
@@ -164,12 +166,12 @@ What to use instead:
 | Timers | `core.set_timeout_with(mut cx, ms, data, f)`, `core.set_interval_with`, `core.debounce_with`, `App.after_with(ms, data, f)` |
 | Observers, subscriptions | `core.observe_with(mut cx, m, data, f)`, `core.subscribe_with(mut cx, m, data, f)` |
 | Tasks | `core.spawn_task_with[T, D, R](mut cx, data, work, done)`; the result carries what `done` needs |
-| Worker thread to the main thread | `App.post_main(f, data)` |
+| Worker thread to the main thread | `App.post_main_held(f, prim.hold(p))` (checked holders, below) |
 | Overlays and builders | `ModalOptions.body_with` / `footer_with` with `kit.build_with(data, f)` or `kit.view_body(v)`; `kit.hover_card_with`, `kit.open_popup_with`, `kit.menu_button_with` (items built when the menu opens), `ui.list_with`, `ui.uniform_list_with` |
 | Palette commands | `input.Command.on_run` (a `core.Listener[bool]`) |
 | Table cells | a `data.Cells` object (`cell(row, col)` reading the owner's rows), `data.set_rows_from`, `data.set_keyed_rows_from` |
-| Terminals | `term.start_with(mut cx, v, data, spawn, opts)`; `PtyOptions.ctx` is handed back to the plain `on_data` and `on_exit` |
-| Rules, measures, callbacks a library calls | a value or an interface with a method (`kit.Rule`, a `Measure` interface), or `ctx voidptr` plus a plain function for C-style callbacks on other threads |
+| Terminals | `term.start_with(mut cx, v, data, spawn, opts)`; `PtyOptions.ctx` (a `prim.Holder`) is handed back to the plain `on_data` and `on_exit` |
+| Rules, measures, callbacks a library calls | a value or an interface with a method (`kit.Rule`, a `Measure` interface), or a `ctx prim.Holder` plus a plain function for C-style callbacks on other threads (`PtyOptions`, the SSH `Config.on_warning`, `ssh.OnTransfer`) |
 
 `D` is a value type, never a pointer (V 0.5.2 mangles the generic function pointer): wrap a
 pointer in a small struct. Method values (`obj.method` used as a function value) are closures
@@ -190,6 +192,77 @@ repeats them and asserts the live closure count did not grow and `closure_leaks(
 Measured after the change (bench, closures freed per operation): typing in the gallery 86 → 4,
 a full relayout on resize 82 → 0, scrolling the million-row table 14 → 0. Typing went from
 about 750 to 675 µs a keystroke, the table scroll from 458 to 428 µs.
+
+### Checked holders (rule)
+
+`unsafe { &T(p) }` on a `voidptr` compiles whatever T is, and a wrong T corrupts memory
+silently. Every such round trip outside the FFI modules goes through `prim.Holder`:
+
+- `prim.hold(p)` erases a `&T`, `prim.held[T](h)` reads it back. Outside `-prod` the holder
+  also carries `typeof[T]().name`, and a read as another type panics with both names ("a holder
+  of ui.TextEl was read as ui.Div"). `prim.holds[T](h)` asks without panicking; an empty holder
+  reads as nil. `prim.hold_named(p, name)` is for type-erased stores that keep the type name
+  themselves (the model store); nothing checks the name it is given.
+- **Zero cost in release builds.** Under `-prod` a Holder is `{ ptr voidptr }` (a top-level
+  `$if prod` picks the declaration: V has no `$if` inside a struct) and `held` compiles to
+  `return h.ptr;`. `tests/holder_test.v` asserts `sizeof(prim.Holder) == sizeof(voidptr)` and
+  an unchanged `AnyListener` size under `-prod`; a child process checks the debug panic.
+- Checked today: listener holders, the listening view and the event (`AnyListener.call(holder,
+  view, event, cx)`; `App.invoke[E]` holds the event it is given), timers, observers,
+  subscriptions and the events they deliver, task work and results, `Bound`, inbox drains,
+  `App.post_main_held`, keymap actions and `cx.dispatch`, the model store (`Model[T]` reads and
+  renders are tagged with the slot's type), element state (two element types under one id),
+  render arenas, paint patches, layout measure contexts (`MeasureFn`, `SameFn`) and settings
+  encoding, scroll thumbs (`ThumbTarget`), terminal hooks (`Hooks.holder`), PTY callbacks
+  (`PtyOptions.ctx`), the SSH warning and transfer contexts, image loads (`post_main_held`) and
+  the parsed SVG cache (`images.sources`). The first run caught V instantiating
+  `Settings[T].saved` with another settings type.
+- New code never pairs `voidptr(x)` with `unsafe { &T(p) }` for a context or holder: use a
+  typed API (`listener_of`, `handler_with`, the `_with` forms) or take a `prim.Holder`.
+  Hand-written `AnyListener`s (the zero-allocation ones in quadra/ui) hold their element with
+  `prim.hold(el)` and read events with `prim.held[core.MouseDownEvent](event)`.
+- A pointer kept into an array is an index, a heap element, or comes with a comment that says
+  why the array cannot grow while the pointer lives (`RichEl.hits`, `TabStrip.rects`).
+- Left raw: callbacks whose signature a library fixes (gzip's `userdata` in OneTerm's update
+  archive, Win32 `lparam`) and code in the FFI modules. Outside them no non-test code casts a
+  `voidptr` back to a `&T`; the remaining `voidptr`s are identities (map keys, comparisons) and
+  C handles.
+
+## Untrusted input (fuzz tests, the unsafe cap)
+
+Everything a program in a terminal, an SSH or SFTP server, a Markdown or SVG file, a theme or
+a config file or an image can send is untrusted. Its parsers have deterministic fuzz tests
+(specs/11, fuzz tests), and the rules they enforced:
+
+- **A length or count read from input is checked against the bytes left, or a protocol
+  maximum, before anything is allocated or sliced** (`n > buf.len - pos`, never
+  `pos + n > buf.len`: that sum wraps for a length near the int maximum).
+- **Work is linear in the input**: a search starts where the last one stopped (mode 2026's
+  hold), globs and recursion are bounded, nesting depth has a cap.
+- **Every buffer that grows from input has a cap** and a stated reaction past it (parse at
+  once, drop, error). The caps are constants next to the code and named in the module's spec.
+- A crash found by a fuzz test is fixed in the parser with a regression case, never wrapped
+  in `recover`.
+- Caps found this way: terminal mode 2026 hold 4 MiB, Sixel pixels only inside the raster
+  and in the C heap (specs/17, Images memory); SSH packets a whole number of cipher blocks up to 512 KiB, 64 packets held during
+  a key exchange, channel data within our window, 100 keyboard-interactive prompts, 1 000 000
+  SFTP listing entries, 1024 bcrypt rounds and 2 000 000 PBKDF2 iterations in key files
+  (specs/23); TeX nesting 256, Mermaid 1000 nodes, 500 edges, 100 subgraphs, 5000 dummy
+  ranks, links of 64 dashes, 200 actors and 5000 sequence items (specs/21); JSON nesting 256
+  (`tools/patches/v-json2-depth.diff`); image size from the header (specs/08).
+- vlib fixes for untrusted input are toolchain patches applied by `tools/v.sh`:
+  `v-base64-bounds.diff` (a byte above `z` indexed past the decode table) and
+  `v-json2-depth.diff` (stack overflow on deep nesting, an endless loop on a container cut
+  off at the end of the text, error context sliced out of range).
+
+**The unsafe cap.** `tools/check.sh` counts `unsafe` in non-test `.v` files, per occurrence,
+comments stripped, with a cap for `quadra/` and one for `apps/` that only go down (like the
+closure caps). `unsafe { nil }` (a nil pointer field) and `unsafe { self_ }` (the builder
+idiom, specs/14 Elements) do not count. Excluded, because calling C is what they are for: the
+FFI modules `quadra/platform/win`, `quadra/gpu/d3d11`, `quadra/text/dwrite`, `quadra/native`,
+and every `*.c.v` file (`platform/fs_*.c.v`, `testing/pixels_windows.c.v`). On failure the gate
+prints the count and the lines with `unsafe` added since `HEAD`. Prefer one checked helper
+shared by its callers over a new `unsafe` block at each.
 
 ## Performance: GC pins around calls
 
@@ -249,6 +322,12 @@ rules that follow from it (measured in docs/benchmarks.md, "Memory work"):
   allocated a substring and a rune array per character; prepaint ids were two interpolated
   strings per element; `'${v:.2f}'` costs about 220 bytes (a string builder), `ui.number`
   16.
+- **Large pointer-free buffers live in the C heap**, with one owner and an explicit free:
+  terminal image pixels (`term.PixelBuf`, specs/17, Images memory), Argon2id's working memory
+  (`tools/patches/v-argon2-release.diff`). On the collector's heap a block of tens of MiB is kept
+  alive by any stale word pointing into it, fragments the heap and is never returned to the OS.
+  Growth uses realloc, never a collector temporary; the C calls sit in a `.c.v` file (the unsafe
+  cap's FFI rule); the owner type says in a comment who frees it and when.
 - **The heap grows by a third between collections** (`AppOptions.gc_divisor` 3, Boehm's
   default here was 1): about a third less peak memory for a few percent CPU. Incremental
   collection measured worse on every scene and stays off.

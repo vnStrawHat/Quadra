@@ -39,6 +39,32 @@ fn test_save_note() {
 - **Pixel snapshots** (`h.snapshot_png`) run only where the offscreen backend exists, and compare exactly on WARP, which M0 showed to be byte-deterministic across compilers, and with a perceptual threshold on hardware backends. Update both kinds with `tools/snapshots.sh --update`.
 - Harnesses have no global state, so `v test` runs test files in parallel.
 
+## Fuzz tests
+V has no fuzzer, so the parsers of untrusted input (specs/14, untrusted input) have
+deterministic fuzz tests that run with every other test in `tools/check.sh`:
+- `quadra.testing.fuzz`: a seeded generator (splitmix64), `mutate` (bit flips, random bytes,
+  truncation, a chunk repeated up to hundreds of times for deep nesting, splices of two corpus
+  entries, boundary integers as text and as big-endian u32 length fields, invalid UTF-8), and
+  `Watch`, which fails an input slower than its limit (a hang), a heap over the ceiling
+  (256 MB by default) after any input, and a heap that keeps growing over the second half.
+- Importing the module caps the collector's heap of the whole process at 512 MB
+  (`GC_set_max_heap_size`): an input that allocates without bound dies with out of memory at
+  once instead of taking the machine's memory.
+- Each target starts from a corpus of valid inputs (real escape sequences, packets sealed with
+  the real ciphers, keys and images generated in the test, Markdown, SVG and JSON documents)
+  and checks invariants after each input (the terminal grid's shape and cursor, decoded sizes
+  under the caps), with a regression test per bug found.
+- Defaults keep each file to a few seconds. `QUADRA_FUZZ_ITERS=<n>` sets every target's
+  iteration count for long local runs. Run long modes from a built executable under
+  `timeout` (`tools/v.sh -skip-running -o .tmp/x.exe file_test.v`, then
+  `QUADRA_FUZZ_ITERS=60000 timeout 600 .tmp/x.exe`): `timeout` around `v test` ends the
+  shell, not the test process.
+- Targets: `kit/term/fuzz_test.v` (parser and screen, resizes mid-stream, wide characters at
+  the edges), `apps/oneterm/ssh/fuzz_*_test.v` (packet framing for every cipher and MAC,
+  transport, key exchange, auth, channel and agent messages, SFTP replies and paths, key files,
+  known_hosts), `kit/md`, `kit/md/tex`, `kit/md/mermaid`, `vector`, the theme and OneTerm config
+  JSON, `tests/image_decode_test.v` (PNG, JPEG, BMP and GIF headers).
+
 ## CI
 - Windows and Linux runners execute all headless tests. Windows additionally runs the pixel snapshots, from a non-interactive service account to keep the "no login session" guarantee honest.
 - Benchmarks in `bench/` run on every main-branch build. A regression above 10% against the stored baseline fails the job.

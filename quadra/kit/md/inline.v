@@ -1,6 +1,8 @@
 // Markdown inlines: **bold**, *italic* (or _italic_ between words), ~~strikethrough~~,
-// `code`, $math$, [text](url), ![alt](src), <url>, bare http(s) urls, backslash escapes.
+// `code`, $math$, [text](url), ![alt](src), <url>, bare urls (text.find_urls), backslash escapes.
 module md
+
+import quadra.text as txt
 
 pub struct Span {
 pub:
@@ -73,7 +75,21 @@ fn math_end(s string, i int) int {
 pub fn parse_inline(s string) []Span {
 	mut m := Inline{}
 	mut i := 0
+	urls := txt.find_urls(s) // bare urls: the shared detector's document rules
+	mut u := 0
 	for i < s.len {
+		for u < urls.len && urls[u].start < i {
+			u++
+		}
+		if u < urls.len && urls[u].start == i && m.link == '' {
+			m.emit()
+			m.out << Span{
+				...m.span(s[i..urls[u].end])
+				link: urls[u].url
+			}
+			i = urls[u].end
+			continue
+		}
 		c := s[i]
 		if c == `\\` && i + 1 < s.len && !word_char(s[i + 1]) && s[i + 1] != `\n` {
 			m.buf << s[i + 1]
@@ -156,6 +172,12 @@ pub fn parse_inline(s string) []Span {
 				continue
 			}
 		}
+		if c == `<` && s[i..].starts_with('<!--') {
+			if end := s.index_after('-->', i + 4) {
+				i = end + 3 // an HTML comment shows nothing
+				continue
+			}
+		}
 		if c == `<` {
 			end := s.index_after('>', i + 1) or { -1 }
 			if end > 0 && is_url(s[i + 1..end]) {
@@ -168,23 +190,6 @@ pub fn parse_inline(s string) []Span {
 				i = end + 1
 				continue
 			}
-		}
-		if c == `h` && m.link == '' && (i == 0 || !word_char(s[i - 1])) && is_url(s[i..]) {
-			mut end := i
-			for end < s.len && s[end] !in [` `, `\n`, `<`, `>`, `"`] {
-				end++
-			}
-			for end > i && s[end - 1] in [`.`, `,`, `;`, `:`, `!`, `?`, `)`] {
-				end-- // trailing punctuation ends the sentence, not the url
-			}
-			m.emit()
-			url := s[i..end]
-			m.out << Span{
-				...m.span(url)
-				link: url
-			}
-			i = end
-			continue
 		}
 		m.buf << c
 		i++

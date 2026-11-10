@@ -1,6 +1,8 @@
 // Cells, colors and character widths of the terminal grid (specs/17).
 module term
 
+import quadra.text
+
 // Cell is 16 bytes. ch 0 is a blank. Colors: 0 = default, 1 + index for the 256-color
 // palette, true_color | rgb for 24-bit.
 pub struct Cell {
@@ -68,32 +70,8 @@ pub fn rgb_color(r int, g int, b int) u32 {
 	return true_color | (u32(r & 255) << 16) | (u32(g & 255) << 8) | u32(b & 255)
 }
 
-fn in_ranges(r u32, t []u32) bool {
-	if r < t[0] || r > t[t.len - 1] {
-		return false
-	}
-	mut lo, mut hi := 0, t.len / 2 - 1
-	for lo <= hi {
-		m := (lo + hi) / 2
-		if r < t[2 * m] {
-			hi = m - 1
-		} else if r > t[2 * m + 1] {
-			lo = m + 1
-		} else {
-			return true
-		}
-	}
-	return false
-}
-
 // width is the number of cells a code point takes: 0 for combining marks, 2 for East Asian
 // wide characters and emoji, 1 otherwise.
 pub fn width(r u32) int {
-	if r < 0x300 {
-		return 1
-	}
-	if in_ranges(r, zero_ranges) {
-		return 0
-	}
-	return if in_ranges(r, wide_ranges) { 2 } else { 1 }
+	return text.rune_width(r)
 }

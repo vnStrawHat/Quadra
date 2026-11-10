@@ -98,7 +98,7 @@ fn (mut v MarkdownView) item(b Block, t &kit.Theme) core.Element {
 // code_box is a code block (specs/15): the editor tone, a hairline, radius 6, padding 12,
 // the code face at the editor's size and line height.
 fn (v &MarkdownView) code_box(spans []ui.Span, t &kit.Theme) core.Element {
-	return ui.div().p(12).rounded(t.radius_lg).bg(t.p.canvas).border(1).border_color(t.p.line).overflow_x_scroll().line_height(t.mono_line).child(ui.rich_text(spans).size(t.scaled(14)).selectable_in(v.group))
+	return ui.div().p(12).rounded(t.radius_lg).bg(t.p.canvas).border(1).border_color(t.p.line).overflow_x_scroll().line_height(t.mono_line).child(v.rich(spans).size(t.scaled(14)))
 }
 
 // code_spans colors code with the tokenizer for its language.
@@ -124,17 +124,19 @@ fn code_spans(src string, lang string, t &kit.Theme) []ui.Span {
 			out << ui.span('\n').family(t.mono_family)
 		}
 		toks := lexed[k]
+		urls := txt.find_urls(line) // linked in their token's color (specs/21, Links)
+		base := ui.span('').family(t.mono_family)
 		mut at := 0
 		for tok in toks {
 			if tok.start > at {
-				out << ui.span(line[at..tok.start]).family(t.mono_family)
+				add_cut(mut out, line, at, tok.start, urls, base)
 			}
-			out << ui.span(line[tok.start..tok.end]).family(t.mono_family).color(code.syntax_color(&t.code.syntax,
-				tok.kind))
+			add_cut(mut out, line, tok.start, tok.end, urls, base.color(code.syntax_color(&t.code.syntax,
+				tok.kind)))
 			at = tok.end
 		}
 		if at < line.len {
-			out << ui.span(line[at..]).family(t.mono_family)
+			add_cut(mut out, line, at, line.len, urls, base)
 		}
 	}
 	return out

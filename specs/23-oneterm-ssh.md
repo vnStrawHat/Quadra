@@ -61,6 +61,17 @@ Shell: `xterm-256color`, optional `ECHO 0` mode for shell integration, env reque
 
 Forwards (`Local`, `Remote` with server-chosen ports, `Dynamic` SOCKS5 no-auth CONNECT with IPv4, IPv6 and domain): a forward that cannot start is one warning, the shell stays up; a `forwarded-tcpip` for an address not requested is refused.
 
+## Input limits
+
+What a server sends is untrusted (fuzz tests: `fuzz_*_test.v`, specs/11). A received packet is
+1 byte to 512 KiB and a whole number of cipher blocks (RFC 4253 section 6), checked before
+decryption; at most 64 packets are held while a key exchange runs, and only key exchange
+messages may follow a server KEXINIT. Channel data past the window we granted is a protocol
+error. Keyboard-interactive takes at most 100 prompts a round. An SFTP listing holds at most
+1 000 000 entries. Key files: at most 1024 bcrypt rounds and 2 000 000 PBKDF2 iterations;
+base64 is checked against its alphabet before decoding. known_hosts globs match in
+O(pattern × name).
+
 ## SFTP
 
 Version 3 over a `sftp` subsystem channel with an 8 MiB window. One demux thread matches replies to requests, so any number of worker threads can call it.

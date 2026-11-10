@@ -100,7 +100,7 @@ pub fn (mut h Host) render(mut cx core.ViewCx[Host]) core.Element {
 		t.code.editor.selection
 	}
 	mut root :=
-		ui.div().size_full().bg(t.colors.background).text_color(t.colors.foreground).child(cx.child_any(h.root))
+		ui.div().size_full().bg(t.colors.background).text_color(t.colors.foreground).child(cx.child_any(h.root)).child(HintLayer{})
 	for p in ov.popups.filter(it.win == win) {
 		// A transparent full-window layer closes the popup on outside clicks.
 		root.child(ui.anchored(ui.div().size_full().on_mouse_down(core.handler_with(p.id,

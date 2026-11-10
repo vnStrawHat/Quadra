@@ -97,8 +97,16 @@ tabs, a breadcrumb toolbar, muted key labels ("Ctrl+Shift+P"), a spotlight palet
   offers Reload or Keep mine.
 - **Recent files**: the last 10, kept in the app settings (quadra.app settings), with the
   layout and outline visibility per window.
-- **Links**: `http(s)` links open in the browser. A relative link to another `.md` opens it
-  in a tab. `#anchor` links scroll to the heading.
+- **Links**: every preview link (`[text](url)`, `<url>`, bare URLs, and URLs inside inline
+  code and fenced code, which keep their syntax color and get an underline) opens on
+  ctrl-click only (`RichEl.ctrl_links`); the pointer shows only while ctrl is held and a plain
+  click selects text. URLs in the editor do the same (specs/18). `http(s)` and `mailto:` links
+  open in the browser (`text.url_openable`); a link with any other scheme does nothing. A
+  relative link to another `.md` opens it in a tab. `#anchor` links scroll to the heading.
+  Resting on a link shows the hint "Ctrl+click to open" (web and mail links) or "Ctrl+click
+  to follow" (anchors and files), with the tooltip's delay, style and placement; a click, a
+  wheel or leaving the link closes it (a hitbox hint, specs/06 and 08). The editor's URLs
+  show "Ctrl+click to open" the same way.
 - **Images**: `![alt](path)` with a path relative to the file, or an absolute one, shown
   scaled to the column width. Remote images show their alt text and the url (no network).
 
@@ -131,7 +139,9 @@ records its source line, which the outline, the scroll sync and the tests use.
   front matter (hidden from the preview, shown as a muted block when it is the only content).
 - **Inline**: bold, italic, bold-italic, strikethrough (`~~`), code, links, autolinks
   (`<https://...>` and bare `https://...`), inline math, hard breaks (two spaces or `\`).
-- **Not handled**: raw HTML (shown as text), setext headings, indented code, reference
+- **HTML comments** (`<!-- ... -->`, a block of their own or inline) show nothing, as on
+  the common hosts; a comment inside code stays.
+- **Not handled**: other raw HTML (shown as text), setext headings, indented code, reference
   links, footnotes. They are rare in the documents Folio is for and render as plain text.
 - **Headings** get anchors (lowercased, spaces to `-`, punctuation dropped), as most hosts
   make them, for `#anchor` links.
@@ -161,6 +171,9 @@ Windows); without it, the default font.
   the font's largest. Inline math sits on the text baseline inside rich text: rich text gets
   inline boxes (a run with a fixed size and baseline, painted by its element).
 
+- **Nesting**: `tex.max_depth` (256; one `{` level counts two) bounds groups and
+  commands; deeper is an error for the formula, never a stack overflow.
+
 ## Diagrams (`kit/md/mermaid`)
 Mermaid source in ```` ```mermaid ```` fences, drawn natively (no browser, no script).
 - **Flowcharts**: `graph` / `flowchart` with `TD`, `TB`, `BT`, `LR`, `RL`; nodes
@@ -182,6 +195,10 @@ Mermaid source in ```` ```mermaid ```` fences, drawn natively (no browser, no sc
   accent for edges and arrows; it follows the theme. Diagrams wider than the column scroll
   sideways.
 - **Errors**: a line that does not parse shows the source with the line marked.
+- **Limits** (`mermaid/limits.v`, checked at parse time before any layout): 1000 nodes,
+  500 edges (an `&` cross product is checked before it is built; a member repeated in a group
+  is one node), 100 subgraphs, 5000 dummy nodes, links of at most 64 dashes, 200 actors and
+  5000 sequence items. Past a limit the diagram is an error and the source shows.
 
 ## Look
 - **Theme**: two presets in the kit, `dark` (One Dark Pro) and `light` (One Light), following the system

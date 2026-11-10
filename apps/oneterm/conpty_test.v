@@ -4,6 +4,7 @@ module main
 import sync
 import time
 import quadra.platform
+import quadra.prim
 import quadra.platform.win
 
 struct Sink {
@@ -28,14 +29,14 @@ fn test_cmd_reports_its_prompt_and_gets_the_environment() {
 		env:     spec.env
 		cols:    120
 		rows:    30
-		ctx:     sink
-		on_data: fn (ctx voidptr, data []u8) {
-			mut sink := unsafe { &Sink(ctx) }
+		ctx:     prim.hold(sink)
+		on_data: fn (ctx prim.Holder, data []u8) {
+			mut sink := prim.held[Sink](ctx)
 			sink.mu.@lock()
 			sink.out << data
 			sink.mu.unlock()
 		}
-		on_exit: fn (_ voidptr, code int) {}
+		on_exit: fn (_ prim.Holder, code int) {}
 	}) or {
 		eprintln('skipped: ${err}')
 		return

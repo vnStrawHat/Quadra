@@ -64,7 +64,7 @@ pub fn (mut c LineChart) request_layout(mut cx core.LayoutCx) layout.NodeId {
 	return c.node
 }
 
-fn repaint_on_move(_ voidptr, _ voidptr, _ voidptr, mut cx core.Cx) {
+fn repaint_on_move(_ prim.Holder, _ prim.Holder, _ prim.Holder, mut cx core.Cx) {
 	cx.win.invalidate_paint()
 }
 

@@ -203,7 +203,8 @@ pub fn (mut s Screen) reset() {
 	s.urgency, s.modify_other = true, 0
 	s.charsets, s.active_cs, s.single_shift, s.line_drawing = [4]u8{}, 0, -1, false
 	s.keyboard = KeyboardStacks{}
-	s.extras, s.extra_ids, s.graphics = [], map[u64]u16{}, []
+	s.free_graphics()
+	s.extras, s.extra_ids = [], map[u64]u16{}
 	s.title_stack, s.icon_name, s.title = [], '', ''
 	s.over, s.has_over = [261]u32{}, false
 	s.status, s.program_status, s.progress = [], none, Progress{}

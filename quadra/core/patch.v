@@ -8,10 +8,10 @@ import quadra.prim
 import quadra.gpu
 import quadra.text
 
-pub type PatchPaint = fn (el voidptr, bounds prim.Rect, mut cx PaintCx)
+pub type PatchPaint = fn (el prim.Holder, bounds prim.Rect, mut cx PaintCx)
 
 struct PatchSite {
-	el      voidptr
+	el      prim.Holder
 	paint   PatchPaint = unsafe { nil }
 	bounds  prim.Rect
 	start   int
@@ -25,7 +25,7 @@ mut:
 
 // begin_patch starts recording the primitives of a hover-sensitive element (hitbox is the
 // element's hitbox index). Returns a handle for end_patch, or -1 when not recording.
-pub fn (mut cx PaintCx) begin_patch(hitbox int, el voidptr, f PatchPaint, bounds prim.Rect) int {
+pub fn (mut cx PaintCx) begin_patch(hitbox int, el prim.Holder, f PatchPaint, bounds prim.Rect) int {
 	// Under a rotation the patch would need the scene's transforms: paint everything.
 	if cx.repatching || cx.xf.id != 0 || hitbox < 0 || hitbox >= cx.win.hitboxes.len {
 		return -1

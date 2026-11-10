@@ -3,6 +3,7 @@
 module core
 
 import sync.stdatomic
+import quadra.prim
 
 pub type TaskId = u64
 
@@ -41,7 +42,7 @@ pub fn spawn_task[T, R](mut cx ViewCx[T], work fn (tc &TaskCx) !R, done fn (mut 
 	tc := &TaskCx{}
 	app.tasks[id] = TaskEntry{cx.entity, tc}
 	l := listener_of[T, TaskResult[R]](cx.entity, done).any
-	app.start_task(id, tc, voidptr(&WorkHolder[R]{work}), run_work[R], l)
+	app.start_task(id, tc, prim.hold(&WorkHolder[R]{work}), run_work[R], l)
 	return id
 }
 
@@ -56,7 +57,7 @@ pub fn spawn_task_with[T, D, R](mut cx ViewCx[T], data D, work fn (data D, tc &T
 	tc := &TaskCx{}
 	app.tasks[id] = TaskEntry{cx.entity, tc}
 	l := listener_of[T, TaskResult[R]](cx.entity, done).any
-	app.start_task(id, tc, voidptr(&WorkWith[D, R]{data, work}), run_work_with[D, R], l)
+	app.start_task(id, tc, prim.hold(&WorkWith[D, R]{data, work}), run_work_with[D, R], l)
 	return id
 }
 
@@ -65,11 +66,11 @@ struct WorkWith[D, R] {
 	f fn (data D, tc &TaskCx) !R = unsafe { nil }
 }
 
-fn run_work_with[D, R](holder voidptr, tc &TaskCx) voidptr {
-	h := unsafe { &WorkWith[D, R](holder) }
+fn run_work_with[D, R](holder prim.Holder, tc &TaskCx) prim.Holder {
+	h := prim.held[WorkWith[D, R]](holder)
 	zeros := []R{len: 1}
-	v := h.f(h.d, tc) or { return voidptr(err_result[R](zeros[0], err.msg())) }
-	return voidptr(ok_result[R](v))
+	v := h.f(h.d, tc) or { return prim.hold(err_result[R](zeros[0], err.msg())) }
+	return prim.hold(ok_result[R](v))
 }
 
 // The work function is type-erased like listeners (holder + generic fn pointer): V cannot
@@ -78,13 +79,13 @@ struct WorkHolder[R] {
 	f fn (tc &TaskCx) !R = unsafe { nil }
 }
 
-type WorkCall = fn (holder voidptr, tc &TaskCx) voidptr
+type WorkCall = fn (holder prim.Holder, tc &TaskCx) prim.Holder
 
-fn run_work[R](holder voidptr, tc &TaskCx) voidptr {
-	h := unsafe { &WorkHolder[R](holder) }
+fn run_work[R](holder prim.Holder, tc &TaskCx) prim.Holder {
+	h := prim.held[WorkHolder[R]](holder)
 	zeros := []R{len: 1} // a zero R for the error case
-	v := h.f(tc) or { return voidptr(err_result[R](zeros[0], err.msg())) }
-	return voidptr(ok_result[R](v))
+	v := h.f(tc) or { return prim.hold(err_result[R](zeros[0], err.msg())) }
+	return prim.hold(ok_result[R](v))
 }
 
 fn ok_result[R](v R) &TaskResult[R] {
@@ -101,26 +102,26 @@ fn err_result[R](zero R, msg string) &TaskResult[R] {
 	}
 }
 
-fn (mut app App) start_task(id TaskId, tc &TaskCx, holder voidptr, call WorkCall, l AnyListener) {
+fn (mut app App) start_task(id TaskId, tc &TaskCx, holder prim.Holder, call WorkCall, l AnyListener) {
 	// ponytail: one OS thread per task; a fixed worker pool when apps spawn hundreds at once.
-	spawn fn (mut app App, id TaskId, tc &TaskCx, holder voidptr, call WorkCall, l AnyListener) {
+	spawn fn (mut app App, id TaskId, tc &TaskCx, holder prim.Holder, call WorkCall, l AnyListener) {
 		result := call(holder, tc)
-		app.post_main(task_done, &TaskDone{id, l, result})
+		app.post_main_held(task_done, prim.hold(&TaskDone{id, l, result}))
 	}(mut app, id, tc, holder, call, l)
 }
 
 struct TaskDone {
 	id     TaskId
 	l      AnyListener
-	result voidptr
+	result prim.Holder
 }
 
-fn task_done(mut app App, data voidptr) {
-	d := unsafe { &TaskDone(data) }
+fn task_done(mut app App, data prim.Holder) {
+	d := prim.held[TaskDone](data)
 	app.finish_task(d.id, d.l, d.result)
 }
 
-fn (mut app App) finish_task(id TaskId, l AnyListener, result voidptr) {
+fn (mut app App) finish_task(id TaskId, l AnyListener, result prim.Holder) {
 	e := app.tasks[id] or { return } // cancelled: the result is dropped
 	app.tasks.delete(id)
 	if e.tc.cancelled() {

@@ -21,6 +21,7 @@ pub struct Grid {
 mut:
 	t    &Terminal = unsafe { nil }
 	node layout.NodeId
+	hbs  []int // the hovered link's hitboxes (cursor.v)
 }
 
 pub fn (mut g Grid) request_layout(mut cx core.LayoutCx) layout.NodeId {
@@ -68,6 +69,7 @@ pub fn (mut g Grid) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 			p.resize(cols, rows) or {}
 		}
 	}
+	g.link_hitboxes(mut cx)
 }
 
 pub fn (mut g Grid) paint(bounds prim.Rect, mut cx core.PaintCx) {
@@ -92,6 +94,7 @@ pub fn (mut g Grid) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	top := t.top_line()
 	a, b := t.screen.sel.range()
 	mut next_hit := 0
+	lit := g.link_lit(mut cx)
 	for next_hit < t.find.hits.len && t.find.hits[next_hit].line < top {
 		next_hit++
 	}
@@ -117,7 +120,7 @@ pub fn (mut g Grid) paint(bounds prim.Rect, mut cx core.PaintCx) {
 		}
 		g.paint_text(row, y, y + pad + asc, st, pal, cls, mut cx)
 		g.flush_shapes(y, mut cx)
-		if t.hover.url != '' && line >= t.hover.line && line <= t.hover.end_line {
+		if lit && line >= t.hover.line && line <= t.hover.end_line {
 			g.paint_link(line, y + pad + asc, pal, mut cx)
 		}
 	}
@@ -130,13 +133,13 @@ pub fn (mut g Grid) paint(bounds prim.Rect, mut cx core.PaintCx) {
 		return
 	}
 	cx.scroll_thumb_with(bounds, f32(t.screen.scrollback.len() + t.screen.rows) * h, f32(top) * h,
-		true, core.ThumbTarget{voidptr(t), set_term_scroll}, kit.term_thumb(th))
+		true, core.ThumbTarget{prim.hold(t), set_term_scroll}, kit.term_thumb(th))
 }
 
 // set_term_scroll turns a thumb offset (px from the top of the history) into rows back
 // from the live screen.
-fn set_term_scroll(holder voidptr, offset f32, _ bool) {
-	mut t := unsafe { &Terminal(holder) }
+fn set_term_scroll(holder prim.Holder, offset f32, _ bool) {
+	mut t := prim.held[Terminal](holder)
 	n := t.screen.scrollback.len()
 	t.offset = clamp(n - int(offset / t.cell.height + 0.5), 0, n)
 }

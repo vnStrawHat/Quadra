@@ -84,9 +84,9 @@ pub fn (self_ &Split) on_resize(l core.Listener[f32]) &Split {
 	return s
 }
 
-fn split_down(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	s := unsafe { &Split(holder) }
-	e := unsafe { &core.MouseDownEvent(event) }
+fn split_down(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	s := prim.held[Split](holder)
+	e := prim.held[core.MouseDownEvent](event)
 	if e.clicks == 2 {
 		fire(s.resize, f32(0.5), mut cx) // double-click resets to an even split
 		return
@@ -94,9 +94,9 @@ fn split_down(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
 	cx.capture_mouse()
 }
 
-fn split_drag(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	s := unsafe { &Split(holder) }
-	e := unsafe { &core.MouseMoveEvent(event) }
+fn split_drag(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	s := prim.held[Split](holder)
+	e := prim.held[core.MouseMoveEvent](event)
 	if !e.pressed || s.state == unsafe { nil } {
 		return
 	}
@@ -132,11 +132,11 @@ pub fn (mut s Split) request_layout(mut cx core.LayoutCx) layout.NodeId {
 
 	// Handlers are holder + function, not closures: layout runs every frame (specs/14).
 	handle.handlers << ui.Handler{.mouse_down, false, core.AnyListener{
-		holder: voidptr(s)
+		holder: prim.hold(s)
 		call:   split_down
 	}}
 	handle.handlers << ui.Handler{.mouse_move, false, core.AnyListener{
-		holder: voidptr(s)
+		holder: prim.hold(s)
 		call:   split_drag
 	}}
 	if s.vertical {

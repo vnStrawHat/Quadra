@@ -26,7 +26,7 @@ pub fn (cx &Cx) read[T](m Model[T]) &T {
 	mut app := cx.app
 	p := app.store.ptr(m.id, m.gen, 'model')
 	app.track(m.id)
-	return unsafe { &T(p) }
+	return prim.held[T](p)
 }
 
 // try_read returns none for released models instead of panicking.
@@ -38,7 +38,7 @@ pub fn (cx &Cx) try_read[T](m Model[T]) ?&T {
 }
 
 pub fn (cx &Cx) peek[T](m Model[T]) &T {
-	return unsafe { &T(cx.app.store.ptr(m.id, m.gen, 'model')) }
+	return prim.held[T](cx.app.store.ptr(m.id, m.gen, 'model'))
 }
 
 pub fn (mut cx Cx) new_model[T](value T) Model[T] {
@@ -71,7 +71,7 @@ pub fn (mut cx Cx) update[T](m Model[T], f fn (mut v T, mut cx ViewCx[T])) {
 // caller makes no closure (V frees none; a captured secret would stay in memory for good).
 pub fn (mut cx Cx) update_with[T, D](m Model[T], data D, f fn (mut v T, d D, mut cx ViewCx[T])) {
 	mut app := cx.app
-	mut v := unsafe { &T(app.store.ptr(m.id, m.gen, 'model')) }
+	mut v := prim.held[T](app.store.ptr(m.id, m.gen, 'model'))
 	mut vcx := ViewCx[T]{
 		Cx: Cx{
 			app:    app
@@ -86,6 +86,36 @@ pub fn (mut cx Cx) update_with[T, D](m Model[T], data D, f fn (mut v T, d D, mut
 	app.flush()
 }
 
+// update_if is update_with for a callback that reports whether it changed anything: false
+// skips the notification, so writing a value the model already holds renders nothing. The
+// framework cannot see field writes, hence the opt-in (core.assign makes the report easy).
+pub fn (mut cx Cx) update_if[T, D](m Model[T], data D, f fn (mut v T, d D, mut cx ViewCx[T]) bool) {
+	mut app := cx.app
+	mut v := prim.held[T](app.store.ptr(m.id, m.gen, 'model'))
+	mut vcx := ViewCx[T]{
+		Cx: Cx{
+			app:    app
+			win:    cx.win
+			entity: m.id
+		}
+	}
+	app.depth++
+	if f(mut v, data, mut vcx) {
+		app.changed(m.id)
+	}
+	app.depth--
+	app.flush()
+}
+
+// assign sets dst to value and reports whether that changed it (update_if callbacks).
+pub fn assign[V](mut dst V, value V) bool {
+	if dst == value {
+		return false
+	}
+	dst = value
+	return true
+}
+
 // update_silent mutates without notifying (bookkeeping nothing renders).
 pub fn (mut cx Cx) update_silent[T](m Model[T], f fn (mut v T, mut cx ViewCx[T])) {
 	cx.run_update(m, f, false)
@@ -93,7 +123,7 @@ pub fn (mut cx Cx) update_silent[T](m Model[T], f fn (mut v T, mut cx ViewCx[T])
 
 fn (mut cx Cx) run_update[T](m Model[T], f fn (mut v T, mut cx ViewCx[T]), notify bool) {
 	mut app := cx.app
-	mut v := unsafe { &T(app.store.ptr(m.id, m.gen, 'model')) }
+	mut v := prim.held[T](app.store.ptr(m.id, m.gen, 'model'))
 	mut vcx := ViewCx[T]{
 		Cx: Cx{
 			app:    app
@@ -141,7 +171,7 @@ pub fn (mut cx Cx) set_global[T](value T) {
 	name := typeof[T]().name
 	if id := cx.app.globals[name] {
 		unsafe {
-			*(&T(cx.app.store.slots[id].ptr)) = value
+			*(prim.held[T](cx.app.store.holder(id))) = value
 		}
 		cx.app.changed(id)
 		cx.app.flush()
@@ -162,7 +192,7 @@ pub fn (cx &Cx) global[T]() ?&T {
 // peek_global reads a global without recording a dependency.
 pub fn (cx &Cx) peek_global[T]() ?&T {
 	id := cx.app.globals[typeof[T]().name] or { return none }
-	return unsafe { &T(cx.app.store.slots[id].ptr) }
+	return prim.held[T](cx.app.store.holder(id))
 }
 
 // update_global mutates a global in place (readers re-render).
@@ -244,8 +274,7 @@ pub fn (cx &Cx) child_view[T](v View[T]) Element {
 }
 
 fn render_view[T](mut app App, win &Window, id u32) Element {
-	slot := app.store.slots[id]
-	mut v := unsafe { &T(slot.ptr) }
+	mut v := prim.held[T](app.store.holder(id))
 	mut vcx := ViewCx[T]{
 		Cx: Cx{
 			app:    app

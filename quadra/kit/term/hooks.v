@@ -4,20 +4,18 @@ module term
 import quadra.core
 import quadra.prim
 
-pub type KeyHook = fn (holder voidptr, mut t Terminal, e &core.KeyDownEvent, mut cx core.ViewCx[Terminal]) bool
+pub type KeyHook = fn (holder prim.Holder, mut t Terminal, e &core.KeyDownEvent, mut cx core.ViewCx[Terminal]) bool
 
-pub type OverlayHook = fn (holder voidptr, mut t Terminal, mut cx core.ViewCx[Terminal]) ?core.Element
+pub type OverlayHook = fn (holder prim.Holder, mut t Terminal, mut cx core.ViewCx[Terminal]) ?core.Element
 
-pub type RowsHook = fn (holder voidptr, mut t Terminal, top int)
+pub type RowsHook = fn (holder prim.Holder, mut t Terminal, top int)
 
-pub type OutputHook = fn (holder voidptr, mut t Terminal, data []u8)
-
-pub type OutputHook = fn (holder voidptr, mut t Terminal, data []u8)
+pub type OutputHook = fn (holder prim.Holder, mut t Terminal, data []u8)
 
 // Hooks are function pointers with a holder: the app's per-terminal state.
 pub struct Hooks {
 pub:
-	holder  voidptr
+	holder  prim.Holder // prim.hold(state); hooks read it with prim.held[State]
 	key     KeyHook     = unsafe { nil } // sees a key first; true consumes it
 	overlay OverlayHook = unsafe { nil } // drawn over the grid
 	rows    RowsHook    = unsafe { nil } // fills Terminal.classes for this frame

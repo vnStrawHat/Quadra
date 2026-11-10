@@ -29,6 +29,9 @@ pub:
 	w      int
 	h      int
 	pixels []u8
+	// owned pixels live in the C heap and pass to the upload: the window frees them once the
+	// device has copied them (free_owned); a device that keeps an upload copies them.
+	owned bool
 }
 
 struct Shelf {
@@ -78,6 +81,16 @@ pub fn (a &Atlas) page_count() int {
 
 // insert packs a w x h bitmap and queues its upload. One px of padding avoids bleeding.
 pub fn (mut a Atlas) insert(w int, h int, pixels []u8) !AtlasTile {
+	return a.place(w, h, pixels, false)
+}
+
+// insert_owned is insert for pixels in the C heap that the upload takes over (Upload.owned).
+// On an error nothing is queued and the caller still owns them.
+pub fn (mut a Atlas) insert_owned(w int, h int, pixels []u8) !AtlasTile {
+	return a.place(w, h, pixels, true)
+}
+
+fn (mut a Atlas) place(w int, h int, pixels []u8, owned bool) !AtlasTile {
 	if w <= 0 || h <= 0 {
 		return AtlasTile{}
 	}
@@ -86,16 +99,16 @@ pub fn (mut a Atlas) insert(w int, h int, pixels []u8) !AtlasTile {
 	}
 	for p in 0 .. a.pages.len {
 		if t := a.try_page(p, w, h) {
-			return a.finish(t, pixels)
+			return a.finish(t, pixels, owned)
 		}
 	}
 	a.pages << Page{}
 	if t := a.try_page(a.pages.len - 1, w, h) {
-		return a.finish(t, pixels)
+		return a.finish(t, pixels, owned)
 	}
 	a.pages << Page{} // too big for the small first page
 	t := a.try_page(a.pages.len - 1, w, h) or { return error('atlas allocation failed') }
-	return a.finish(t, pixels)
+	return a.finish(t, pixels, owned)
 }
 
 fn (mut a Atlas) try_page(p int, w int, h int) ?AtlasTile {
@@ -129,15 +142,16 @@ fn (mut a Atlas) try_page(p int, w int, h int) ?AtlasTile {
 	return AtlasTile{p, x, y, w, h, f32(x) * inv, f32(y) * inv, f32(x + w) * inv, f32(y + h) * inv}
 }
 
-fn (mut a Atlas) finish(t AtlasTile, pixels []u8) AtlasTile {
-	a.uploads << Upload{a.kind, t.page, t.x, t.y, t.w, t.h, pixels}
+fn (mut a Atlas) finish(t AtlasTile, pixels []u8, owned bool) AtlasTile {
+	a.uploads << Upload{a.kind, t.page, t.x, t.y, t.w, t.h, pixels, owned}
 	a.bytes_uploaded += pixels.len
 	return t
 }
 
-// rewrite replaces the pixels of a tile (same size), for images that reuse a dead tile.
-pub fn (mut a Atlas) rewrite(t AtlasTile, pixels []u8) AtlasTile {
-	return a.finish(t, pixels)
+// rewrite replaces the pixels of a tile (same size), for images that reuse a dead tile;
+// owned as for insert_owned.
+pub fn (mut a Atlas) rewrite(t AtlasTile, pixels []u8, owned bool) AtlasTile {
+	return a.finish(t, pixels, owned)
 }
 
 // take_uploads hands queued uploads to the device and clears the queue.

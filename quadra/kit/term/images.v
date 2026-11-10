@@ -6,7 +6,8 @@ import quadra.core
 import quadra.gpu
 import quadra.prim
 
-// Graphic is a decoded image. rgba is dropped once the view has uploaded it.
+// Graphic is a decoded image. It owns its pixels (C heap, PixelBuf) until the view hands them
+// to the atlas upload; they are freed when the graphic is evicted, swept or dropped.
 @[heap]
 pub struct Graphic {
 pub:
@@ -15,8 +16,8 @@ pub:
 	height int
 	cols   int
 	rows   int
-pub mut:
-	rgba []u8
+mut:
+	pixels PixelBuf
 }
 
 // ImageRef: a row shows image `id`, the part `row` rows down its height, from column col.
@@ -35,9 +36,10 @@ fn cells_for(px int, cell int) int {
 	return (px + cell - 1) / cell
 }
 
-// place_sixel puts a decoded image at the cursor and moves the cursor past its rows.
-fn (mut s Screen) place_sixel(img &Sixel) {
-	if img.img_w == 0 || img.img_h == 0 {
+// place_sixel puts a decoded image at the cursor and moves the cursor past its rows. It takes
+// the image's pixels; the caller frees the decoder.
+fn (mut s Screen) place_sixel(mut img Sixel) {
+	if img.img_w == 0 || img.img_h == 0 || s.images_off {
 		return
 	}
 	cursor_rows := img.band_px / s.cell_h
@@ -50,7 +52,7 @@ fn (mut s Screen) place_sixel(img &Sixel) {
 		height: img.img_h
 		cols:   cols
 		rows:   rows
-		rgba:   img.rgba
+		pixels: img.rgba.take()
 	}
 	s.graphics << g
 	s.evict_graphics()
@@ -77,6 +79,8 @@ fn (mut s Screen) evict_graphics() {
 	}
 	for s.graphics.len > 1 && (s.graphics.len > max_placements || bytes > max_image_bytes) {
 		bytes -= s.graphics[0].width * s.graphics[0].height * 4
+		mut old := s.graphics[0]
+		old.pixels.free()
 		s.graphics.delete(0)
 	}
 }
@@ -101,7 +105,29 @@ fn (mut s Screen) sweep_graphics() {
 	for i in 0 .. s.scrollback.len() {
 		collect_images(s.scrollback.at(i).extra, mut live)
 	}
+	for mut g in s.graphics {
+		if !live[g.id] {
+			g.pixels.free()
+		}
+	}
 	s.graphics = s.graphics.filter(live[it.id])
+}
+
+// free_graphics drops every graphic and frees its pixels (reset, tests).
+pub fn (mut s Screen) free_graphics() {
+	for mut g in s.graphics {
+		g.pixels.free()
+	}
+	s.graphics = []
+}
+
+// close_images frees the pixels not uploaded yet and drops images that arrive later
+// (Terminal.close): an uploaded image keeps showing from its atlas tile.
+fn (mut s Screen) close_images() {
+	for mut g in s.graphics {
+		g.pixels.free()
+	}
+	s.images_off = true
 }
 
 fn collect_images(e &RowExtra, mut live map[u32]bool) {
@@ -130,12 +156,14 @@ pub fn (mut s Screen) cell_px(w int, h int) {
 }
 
 // image_entry is the atlas tile of a graphic, uploading it (premultiplied RGBA) the first
-// time, into a tile a dead graphic of the same size left when one exists.
-fn (mut t Terminal) image_entry(id u32, g &Graphic, mut cx core.PaintCx) ?&core.ImageEntry {
+// time, into a tile a dead graphic of the same size left when one exists. The upload takes
+// the pixels (the window frees them once the device has copied them).
+fn (mut t Terminal) image_entry(id u32, mut g Graphic, mut cx core.PaintCx) ?&core.ImageEntry {
 	if e := t.gfx[id] {
 		return e
 	}
-	w, h, px := fit_atlas(g)
+	g.fit_atlas()
+	w, h, px := g.pixels.w, g.pixels.h, g.pixels.bytes()
 	if px.len == 0 {
 		return none
 	}
@@ -147,39 +175,33 @@ fn (mut t Terminal) image_entry(id u32, g &Graphic, mut cx core.PaintCx) ?&core.
 			break
 		}
 	}
+	mut app := cx.app
 	if e.status != .ready {
-		mut app := cx.app
-		tile := app.text.poly.insert(w, h, px) or { return none }
+		tile := app.text.poly.insert_owned(w, h, px) or {
+			g.pixels.free()
+			return none
+		}
 		e.tile, e.width, e.height, e.status = tile, w, h, core.ImageStatus.ready
 	} else {
-		cx.app.text.poly.rewrite(e.tile, px)
+		app.text.poly.rewrite(e.tile, px, true)
 	}
+	_ = g.pixels.take() // the upload owns the block now
 	t.gfx[id] = e
-	unsafe {
-		g.rgba = []
-	}
 	return e
 }
 
-// fit_atlas scales images past the atlas page down, nearest neighbour.
-fn fit_atlas(g &Graphic) (int, int, []u8) {
+// fit_atlas scales an image past the atlas page down, nearest neighbour, into a new buffer;
+// the original is freed at once.
+fn (mut g Graphic) fit_atlas() {
 	max := 2047
-	if g.width <= max && g.height <= max {
-		return g.width, g.height, g.rgba
+	pw, ph := g.pixels.w, g.pixels.h
+	if pw <= max && ph <= max {
+		return
 	}
-	bigger := if g.width > g.height { g.width } else { g.height }
-	w, h := g.width * max / bigger, g.height * max / bigger
-	mut out := []u8{len: w * h * 4}
-	for y in 0 .. h {
-		sy := y * g.height / h
-		for x in 0 .. w {
-			sx := x * g.width / w
-			for c in 0 .. 4 {
-				out[(y * w + x) * 4 + c] = g.rgba[(sy * g.width + sx) * 4 + c]
-			}
-		}
-	}
-	return w, h, out
+	bigger := if pw > ph { pw } else { ph }
+	scaled := g.pixels.scaled(pw * max / bigger, ph * max / bigger)
+	g.pixels.free()
+	g.pixels = scaled
 }
 
 // sweep_gfx moves the atlas entries of dead graphics to the free list.
@@ -199,8 +221,8 @@ fn (mut t Terminal) sweep_gfx() {
 fn (g &Grid) paint_images(row Row, y f32, mut cx core.PaintCx) {
 	mut t := g.t
 	for r in row.extra.images {
-		gr := t.screen.graphic(r.id) or { continue }
-		e := t.image_entry(r.id, gr, mut cx) or { continue }
+		mut gr := t.screen.graphic(r.id) or { continue }
+		e := t.image_entry(r.id, mut gr, mut cx) or { continue }
 		k_y := t.cell.height / f32(t.screen.cell_h)
 		// Pixel rows of the image in this cell row.
 		a := r.row * t.screen.cell_h

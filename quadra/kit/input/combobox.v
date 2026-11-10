@@ -86,9 +86,9 @@ pub fn on_pick(mut cx core.Cx, c core.View[Combobox], l core.Listener[int]) {
 	w.picked = l.any
 }
 
-fn combo_typed(_ voidptr, view voidptr, event voidptr, mut _ core.Cx) {
-	mut c := unsafe { &Combobox(view) }
-	q := unsafe { *(&string(event)) }
+fn combo_typed(_ prim.Holder, view prim.Holder, event prim.Holder, mut _ core.Cx) {
+	mut c := prim.held[Combobox](view)
+	q := *prim.held[string](event)
 	c.query = q
 	mut scored := []prim.Point{} // x = score, y = index (keeps the sort simple)
 	for i, o in c.options {

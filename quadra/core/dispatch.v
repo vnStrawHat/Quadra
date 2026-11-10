@@ -30,7 +30,7 @@ fn (mut w Window) update_hover() {
 	mut cursor_set := false
 	for i in path {
 		next[w.hitboxes[i].id] = true
-		if !cursor_set && w.hitboxes[i].has_cursor {
+		if !cursor_set && w.hitboxes[i].has_cursor && w.mods.all(w.hitboxes[i].cursor_mods) {
 			cursor = w.hitboxes[i].cursor
 			cursor_set = true
 		}
@@ -48,6 +48,9 @@ fn (mut w Window) update_hover() {
 	repaint := changed.len > 0
 	w.hovered = next.move()
 	w.pw.set_cursor(cursor)
+	if w.note_hint(path) && !w.dirty {
+		w.invalidate_prepaint()
+	}
 	if reprepaint && !w.dirty && !w.in_prepaint {
 		w.invalidate_prepaint()
 	} else if repaint && !w.dirty {
@@ -56,7 +59,7 @@ fn (mut w Window) update_hover() {
 }
 
 // dispatch runs handlers of `kind` along path: capture (root first), then bubble.
-fn (mut w Window) dispatch(kind HandlerKind, path []int, event voidptr, discrete bool) {
+fn (mut w Window) dispatch(kind HandlerKind, path []int, event prim.Holder, discrete bool) {
 	w.stopped = false
 	mut app := w.app
 	for capture in [true, false] {
@@ -67,7 +70,7 @@ fn (mut w Window) dispatch(kind HandlerKind, path []int, event voidptr, discrete
 				if h.kind == kind && h.capture == capture {
 					w.target_bounds = hb.bounds
 					w.dispatching = idx
-					app.invoke(h.listener, event, w, discrete)
+					app.invoke_held(h.listener, event, w, discrete)
 					if w.stopped {
 						return
 					}
@@ -77,8 +80,22 @@ fn (mut w Window) dispatch(kind HandlerKind, path []int, event voidptr, discrete
 	}
 }
 
+// set_mods records the held modifiers. A change flips a modifier-gated cursor at once and
+// repaints when one is under the mouse (its underline follows the key).
+fn (mut w Window) set_mods(m platform.Mods) {
+	if m == w.mods {
+		return
+	}
+	w.mods = m
+	if w.mouse_in && w.hit_path(w.mouse).any(int(w.hitboxes[it].cursor_mods) != 0) {
+		w.update_hover()
+		w.invalidate_paint()
+	}
+}
+
 fn (mut w Window) on_mouse(e platform.MouseEvent) {
 	p := prim.pt(e.x, e.y)
+	w.set_mods(e.mods)
 	match e.action {
 		.move {
 			w.mouse, w.mouse_in = p, true
@@ -94,7 +111,7 @@ fn (mut w Window) on_mouse(e platform.MouseEvent) {
 				return
 			}
 			ev := MouseMoveEvent{e.x, e.y, w.down_path.len > 0, e.mods}
-			w.dispatch(.mouse_move, w.capture_path() or { w.hit_path(p) }, &ev, false)
+			w.dispatch(.mouse_move, w.capture_path() or { w.hit_path(p) }, prim.hold(&ev), false)
 		}
 		.leave {
 			w.mouse_in = false
@@ -102,6 +119,7 @@ fn (mut w Window) on_mouse(e platform.MouseEvent) {
 		}
 		.down {
 			w.mouse, w.mouse_in = p, true
+			w.close_hint()
 			if e.button == .left && w.thumb_down(p) {
 				return
 			}
@@ -134,7 +152,7 @@ fn (mut w Window) on_mouse(e platform.MouseEvent) {
 				w.arm_drag(path, p)
 			}
 			ev := MouseDownEvent{e.x, e.y, e.button, w.click_count, e.mods}
-			w.dispatch(.mouse_down, path, &ev, false)
+			w.dispatch(.mouse_down, path, prim.hold(&ev), false)
 			w.invalidate_if_active_styles(path)
 		}
 		.up {
@@ -147,7 +165,7 @@ fn (mut w Window) on_mouse(e platform.MouseEvent) {
 			}
 			path := w.hit_path(p)
 			ev := MouseUpEvent{e.x, e.y, e.button, e.mods}
-			w.dispatch(.mouse_up, w.capture_path() or { path }, &ev, false)
+			w.dispatch(.mouse_up, w.capture_path() or { path }, prim.hold(&ev), false)
 			w.capture = 0
 			// A click goes to elements under both the press and the release.
 			mut both := []int{}
@@ -162,7 +180,7 @@ fn (mut w Window) on_mouse(e platform.MouseEvent) {
 			w.pressed = map[u64]bool{}
 			if both.len > 0 {
 				click := ClickEvent{e.x, e.y, e.button, w.click_count, e.mods}
-				w.dispatch(.click, both, &click, true)
+				w.dispatch(.click, both, prim.hold(&click), true)
 			}
 			if was_pressed {
 				// Restyle what was pressed, wherever the mouse is now.
@@ -203,7 +221,8 @@ fn (mut w Window) on_wheel(e platform.WheelEvent) {
 		mods:    e.mods
 	}
 	w.note_thumb_activity(prim.pt(e.x, e.y), true)
-	w.dispatch(.scroll, w.hit_path(prim.pt(e.x, e.y)), &ev, false)
+	w.close_hint()
+	w.dispatch(.scroll, w.hit_path(prim.pt(e.x, e.y)), prim.hold(&ev), false)
 }
 
 // capture_path is the path of the capturing hitbox while a drag is captured.

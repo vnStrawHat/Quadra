@@ -4,7 +4,6 @@ module ui
 import hash.fnv1a
 import math
 import os
-import stbi
 import quadra.core
 import quadra.prim
 import quadra.layout
@@ -73,13 +72,13 @@ pub fn (mut s SvgEl) paint(bounds prim.Rect, mut cx core.PaintCx) {
 		mut app := cx.app
 		mut doc := &vector.Svg(unsafe { nil })
 		if p := app.images.sources[src_hash] {
-			doc = unsafe { &vector.Svg(p) }
+			doc = prim.held[vector.Svg](p)
 		} else {
 			parsed := vector.parse_svg(s.src) or { vector.Svg{} }
 			doc = &vector.Svg{
 				...parsed
 			}
-			app.images.sources[src_hash] = voidptr(doc)
+			app.images.sources[src_hash] = prim.hold(doc)
 		}
 		val := *doc
 		s.parsed = val
@@ -147,25 +146,6 @@ pub fn (self_ &ImgEl) rounded(r f32) &ImgEl {
 	mut i := unsafe { self_ }
 	i.radius = r
 	return i
-}
-
-fn decode_file(path string) !core.Bitmap {
-	bytes := os.read_bytes(path)!
-	im := stbi.load_from_memory(bytes.data, bytes.len, desired_channels: 4)!
-	defer {
-		im.free()
-	}
-	n := im.width * im.height * 4
-	mut px := []u8{len: n}
-	src := unsafe { &u8(im.data) }
-	for i := 0; i < n; i += 4 {
-		a := unsafe { src[i + 3] }
-		for k in 0 .. 3 {
-			px[i + k] = u8((u32(unsafe { src[i + k] }) * a + 127) / 255)
-		}
-		px[i + 3] = a
-	}
-	return core.Bitmap{im.width, im.height, px, false}
 }
 
 pub fn (mut i ImgEl) request_layout(mut cx core.LayoutCx) layout.NodeId {

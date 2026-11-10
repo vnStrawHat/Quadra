@@ -143,21 +143,21 @@ fn test_command_palette_runs_the_best_match() {
 		app: h.app
 		win: h.window()
 	}
-	pid := v.id
+	pm := v.model()
 	input.open_command_palette(mut cx, [
 		input.Command{
 			title: 'Mở tệp'
 			keys:  'ctrl-o'
-			run:   fn [pid] (mut cx core.Cx) {
-				mut p := unsafe { &Palette(cx.app.store_ptr(pid)) }
+			run:   fn [pm] (mut cx core.Cx) {
+				mut p := cx.peek(pm)
 				p.ran = 'open'
 			}
 		},
 		input.Command{
 			title: 'Lưu tệp'
 			keys:  'ctrl-s'
-			run:   fn [pid] (mut cx core.Cx) {
-				mut p := unsafe { &Palette(cx.app.store_ptr(pid)) }
+			run:   fn [pm] (mut cx core.Cx) {
+				mut p := cx.peek(pm)
 				p.ran = 'save'
 			}
 		},

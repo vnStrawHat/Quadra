@@ -28,9 +28,9 @@ Implementation spec for the terminal of specs/16. The budgets there set the data
 - Supported: C0 (BEL, BS, HT, LF, VT, FF, CR, SO, SI), ESC (7, 8, D, E, H, M, Z, c, =, >, n, o, N, O, charset designators for G0 to G3, `# 8`), CSI (CUU/CUD/CUF/CUB/CNL/CPL/CHA/CUP/HVP/VPA, ED, EL, ECH, ICH, DCH, IL, DL, SU, SD, DECSTBM, SGR, DSR 5/6, DECXCPR, DA1/2/3, DECSET/DECRST, DECRQM, DECSTR, SCOSC/SCORC, HTS/TBC/CHT/CBT, `? 5 W`, REP, DECSCUSR, `t` 14/18/22/23, kitty keyboard (`? u`, `= u`, `> u`, `< u`), modifyOtherKeys (`> 4 m`, `? 4 m`), XTVERSION, DECRQCRA), DCS (Sixel, DECRQSS, XTGETTCAP), OSC 0/1/2, 4, 7, 8, 9, 9;4, 10/11/12, 17, 19, 22, 50, 52, 104, 110/111/112, 133, 7501.
 - SGR: 1, 2, 3, 4 (with 4:0-5), 5, 6 (one blink flag), 7, 8, 9, 21 (cancel bold), 22-25, 27-29, 30-37, 38 (5 and 2, semicolon and colon forms), 39, 40-47, 48, 49, 53, 55, 58, 59, 90-97, 100-107.
 - DEC private modes: 1, 3 (acts, reports not supported), 5 (reverse video), 6, 7, 9 (X10 mouse), 12, 25, 45 (reverse wrap), 47, 1000, 1002, 1003, 1004 (focus reports), 1005, 1006, 1007, 1015, 1042, 1047, 1048, 1049, 2004, 2026 (synchronized update), 2027 (grapheme clusters), 9001 (win32 input, accepted and inert). ANSI modes: 4 (IRM), 20 (LNM, tracked and inert).
-- Mode 2026 (synchronized update): while it is open the parser holds the bytes back and the screen stays at the last complete frame; `? 2026 l` releases them, and so does a 150 ms timeout.
+- Mode 2026 (synchronized update): while it is open the parser holds the bytes back and the screen stays at the last complete frame; `? 2026 l` releases them, and so does a 150 ms timeout or a hold past `max_sync_hold` (4 MiB). Each byte is searched for the end once (`hold.v`), so an update that never closes costs linear time.
 - Replies go back to the PTY in byte order. DA1 is `CSI ? 62 ; 4 ; 22 c` (VT220, Sixel, ANSI color). XTVERSION names `Screen.product_name`. Unknown sequences are consumed and ignored.
-- Wide characters (East Asian wide, emoji) take two cells; tables of ranges (`width_table.v`, generated from Unicode's East Asian Width and general categories) decide width, per scalar by default, matching `PSEUDOCONSOLE_GLYPH_WIDTH_WCSWIDTH`. C1 controls decoded from UTF-8 print nothing. With mode 2027 set the print path measures grapheme clusters: ZWJ sequences, skin tones and flags share one wide cell, VS16 widens the base and VS15 narrows it.
+- Wide characters (East Asian wide, emoji) take two cells; tables of ranges (`quadra/text/width_table.v`, shared through `text.rune_width`, generated from Unicode's East Asian Width and general categories) decide width, per scalar by default, matching `PSEUDOCONSOLE_GLYPH_WIDTH_WCSWIDTH`. C1 controls decoded from UTF-8 print nothing. With mode 2027 set the print path measures grapheme clusters: ZWJ sequences, skin tones and flags share one wide cell, VS16 widens the base and VS15 narrows it.
 - A string (OSC, DCS, APC) ends with ST, BEL or ESC; CAN and SUB abort it. DCS payloads are capped at 16 MiB, query payloads at 8 KiB.
 
 ## Sequences the app reads (TerminalInfo)
@@ -52,14 +52,22 @@ Queries: `Terminal.zone_at(pos)`, `Terminal.row_zone(line)`, `Terminal.input_sta
 `Screen.over` holds overrides for palette 0-255 (OSC 4), foreground, background, cursor (10, 11, 12), selection background and foreground (17, 19). Resets are 104 (all or by index), 110, 111, 112 (17 and 19 have none); RIS clears the whole table. `?` queries go through a queue answered after the chunk by the view, which owns the theme fallback, in `rgb:RRRR/GGGG/BBBB`, ended like the question. The grid paints with `Screen.over` over the theme. Reverse video (mode 5) swaps the default foreground and background at paint time.
 
 ## Sixel
-DCS `q` opens a decoder (`sixel.v`, VT340 palette and semantics, registers 0-255, up to 4096 px each way). When the string ends the image goes to `Screen.graphics`, and every row it crosses gets an `ImageRef` in `Row.extra`: which image, which part. The cursor moves down the image's height in bands of six pixels, scrolling like line feeds. Cell pixels come from the view (`Screen.cell_px`), default 10x20. A graphic dies when no row refers to it any more; the view then reuses its atlas tile. Limits: 256 images and 64 MiB of pixels per screen, oldest out first; the view downscales past 2047 px to fit the atlas.
+DCS `q` opens a decoder (`sixel.v`, VT340 palette and semantics, registers 0-255, up to 4096 px each way). When the string ends the image goes to `Screen.graphics`, and every row it crosses gets an `ImageRef` in `Row.extra`: which image, which part. The cursor moves down the image's height in bands of six pixels, scrolling like line feeds. Cell pixels come from the view (`Screen.cell_px`), default 10x20. A graphic dies when no row refers to it any more; the view then reuses its atlas tile. Limits: 256 images and 64 MiB of pixels per screen, oldest out first; the view downscales past 2047 px to fit the atlas. The decode buffer is RGBA already: an image that fills it becomes the graphic without a copy.
+
+**Images memory.** Pixels live in the C heap (`PixelBuf` in `pixelbuf.c.v`: malloc, realloc, free), never in the collector's: a block of up to 64 MiB on the conservative collector stays alive while any stale word points into it and fragments the heap (a run of 4096 px images grew it to about 450 MiB with one image alive). The decoder grows its buffer with realloc (doubling, capped at 4096 rows) and changes the row stride in place; `flush` compacts to the image size in place and shrinks the block. A `PixelBuf` has one owner at a time and is never copied by value: the decoder, then the `Graphic`, then the atlas upload. Free points:
+- the view uploads a graphic with `Atlas.insert_owned` (or `rewrite(tile, pixels, true)`): the `Upload` carries the pixels, and the window frees them right after `device.upload` copied them (`gpu.free_owned`). A device that keeps uploads (D3D11's replay during WARP-first start-up) copies owned pixels; the null device drops them. A graphic past the atlas page is scaled into a new buffer and the original is freed at once;
+- a graphic evicted (256 images, 64 MiB), swept (no row refers to it: scrolled out of the history, erased, reset) or dropped by `Screen.free_graphics`;
+- a decode cut short (over the DCS cap, CAN or SUB, a new DCS), or that makes no image;
+- `Terminal.close()`: the parser's decode and the pixels of graphics not uploaded yet (an uploaded one keeps showing from its atlas tile); images that arrive after close are dropped.
+
+Measured with 50 images of 2048 px each way in a row (`fuzz_test.v`, debug build): collector heap +195 MiB before, +0 now (the test allows 32); private bytes 156 → 352 MiB, kept after the images were dropped, before; 160 → 208 → 144 MiB now.
 
 ## Mouse and keyboard protocols
 Mouse: X10 (press only), normal, button and any-motion reporting, in the default, UTF-8 (1005), SGR (1006) and urxvt (1015) encodings; `? 1004` sends `CSI I`/`CSI O` on focus change. Keyboard: the kitty flag stack (progressive enhancement, per screen), modifyOtherKeys, otherwise the legacy table. Release events go through `Div.on_key_up`, only for a key whose press was sent.
 
 ## Resize
-- Columns change: the normal screen reflows wrapped lines (rows marked `wrapped` join and re-split). The alternate screen truncates or pads.
-- Rows shrink: lines above the cursor move to scrollback. Rows grow: lines come back from scrollback.
+- Columns change: the normal screen reflows wrapped lines (rows marked `wrapped` join and re-split). The alternate screen truncates or pads. At one column a wide character takes a row alone, without its spacer, as print puts it.
+- Rows shrink: lines above the cursor move to scrollback; with the cursor on the top row, the rows below it go instead. Rows grow: lines come back from scrollback.
 - The PTY is resized after the grid.
 
 ## View
@@ -76,7 +84,7 @@ Mouse: X10 (press only), normal, button and any-motion reporting, in the default
 - Keys: the kitty and modifyOtherKeys protocols take their keys first (printable keys too with kitty flag 8, which then suppresses the text event); otherwise printable text as UTF-8; Enter `\r`, Backspace `0x7f`, Tab, Esc; arrows `ESC [ A` (or `ESC O A` in application mode); Home/End/PgUp/PgDn/Insert/Delete/F1–F12 as xterm; ctrl+letter as C0; alt prefixes ESC; shift or ctrl+Enter as `CSI 13 ; m u`. Mouse reporting goes to the program except with shift held (shift keeps local selection).
 
 ## App hooks
-`Terminal.hooks` is a struct of closure-free function pointers with a `holder` (the ThumbTarget shape), so the framework gains no closure:
+`Terminal.hooks` is a struct of closure-free function pointers with a `holder` (the ThumbTarget shape), so the framework gains no closure. The holder is a checked `prim.Holder` (specs/14): the app sets `holder: prim.hold(state)` and each hook reads it back with `prim.held[State](holder)`:
 
 | Hook | When | Purpose |
 |---|---|---|
@@ -91,7 +99,7 @@ Mouse: X10 (press only), normal, button and any-motion reporting, in the default
 
 ## Delivery
 - The PTY's reader thread pushes chunks into a `core.Inbox`. The inbox posts one drain to the main thread while none is pending; the drain swaps the buffer, feeds the parser and marks the session changed. Output bursts therefore cost one render per frame at most.
-- Nothing on the path allocates per read: the reader lends its 64 KiB buffer to `PtyOptions.on_data`, a plain function that gets `PtyOptions.ctx` (the inbox) back, so a terminal makes no closure (valid for the call; a consumer that keeps bytes copies them), the inbox appends it to its buffer under the lock, and a drain swaps that buffer with a spare it gets back once the listener returns (`Chunk.data` is lent the same way). A buffer grown past 4 MiB by a burst is left to the collector, and so is one over 256 KiB that carried less than an eighth of its size (the burst is over) and both once the program has exited. Under a 55 MiB/s stream the collector then runs about once a second instead of fifteen times, and each of its stop-the-world pauses would also stop the reader and back the program up.
+- Nothing on the path allocates per read: the reader lends its 64 KiB buffer to `PtyOptions.on_data`, a plain function that gets `PtyOptions.ctx` (the inbox, a checked `prim.Holder`) back, so a terminal makes no closure (valid for the call; a consumer that keeps bytes copies them), the inbox appends it to its buffer under the lock, and a drain swaps that buffer with a spare it gets back once the listener returns (`Chunk.data` is lent the same way). A buffer grown past 4 MiB by a burst is left to the collector, and so is one over 256 KiB that carried less than an eighth of its size (the burst is over) and both once the program has exited. Under a 55 MiB/s stream the collector then runs about once a second instead of fifteen times, and each of its stop-the-world pauses would also stop the reader and back the program up.
 - `FakePty` pushes synchronously, so harness tests need no waiting.
 
 ## ConPTY host

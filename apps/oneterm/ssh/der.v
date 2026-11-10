@@ -32,7 +32,7 @@ fn (mut d Der) next() !(u8, []u8) {
 			d.pos++
 		}
 	}
-	if n < 0 || d.pos + n > d.buf.len {
+	if n < 0 || n > d.buf.len - d.pos { // not d.pos + n: it wraps for n near the int maximum
 		return error('truncated DER')
 	}
 	body := d.buf[d.pos..d.pos + n]

@@ -19,8 +19,8 @@ mut:
 	ts   &text.TextSystem = unsafe { nil }
 }
 
-fn measure_field(ctx voidptr, kw f32, _ f32, aw f32, _ f32) prim.Size {
-	mut f := unsafe { &Field(ctx) }
+fn measure_field(ctx prim.Holder, kw f32, _ f32, aw f32, _ f32) prim.Size {
+	mut f := prim.held[Field](ctx)
 	v := f.v
 	lh := v.style.line_px()
 	if !v.multiline {
@@ -46,7 +46,7 @@ pub fn (mut f Field) request_layout(mut cx core.LayoutCx) layout.NodeId {
 	f.node = cx.tree.leaf(layout.Style{
 		grow:  1
 		width: layout.pct(100)
-	}, measure_field, voidptr(f))
+	}, measure_field, prim.hold(f))
 	return f.node
 }
 

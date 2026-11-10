@@ -118,9 +118,9 @@ pub fn (mut m Menu) request_layout(mut cx core.LayoutCx) layout.NodeId {
 	return m.div.request_layout(mut cx)
 }
 
-fn menu_keys(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	mut m := unsafe { &Menu(holder) }
-	e := unsafe { &core.KeyDownEvent(event) }
+fn menu_keys(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	mut m := prim.held[Menu](holder)
+	e := prim.held[core.KeyDownEvent](event)
 	n := m.items.len
 	mut step := 0
 	match e.key {
@@ -176,7 +176,7 @@ pub fn (mut m Menu) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 	cx.leave()
 	m.div.focus_id = stable_focus(mut cx, 'menu${m.key}')
 	m.div.keys << ui.KeySpec{.key_down, '', core.AnyListener{
-		holder: voidptr(m)
+		holder: prim.hold(m)
 		call:   menu_keys
 	}}
 	if !m.state.focused && m.grab {

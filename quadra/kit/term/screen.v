@@ -102,6 +102,7 @@ pub mut:
 	last_exit      ?int
 	// images
 	graphics     []&Graphic
+	images_off   bool // after Terminal.close: new images are dropped
 	next_graphic u32
 	sweep_count  u32
 	cell_w       int = 10 // device px of a cell (image placement), set by the view

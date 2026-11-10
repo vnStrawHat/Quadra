@@ -8,6 +8,7 @@ import ssh
 import sessionui
 import store
 import quadra.core
+import quadra.prim
 
 // WarnBox collects `Config.on_warning` messages raised on worker threads.
 @[heap]
@@ -134,9 +135,9 @@ fn (o &OneTerm) config_of(req &sessionui.ConnectRequest, cancel &ssh.Cancel, mut
 			max:     o.cfg.ssh.keepalive_max
 		}
 		cancel:            cancel
-		warning_ctx:       box
-		on_warning:        fn (ctx voidptr, msg string) {
-			mut b := unsafe { &WarnBox(ctx) }
+		warning_ctx:       prim.hold(box)
+		on_warning:        fn (ctx prim.Holder, msg string) {
+			mut b := prim.held[WarnBox](ctx)
 			b.push(msg)
 		}
 	}

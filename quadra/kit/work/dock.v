@@ -125,7 +125,7 @@ fn (mut d DockTarget) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 		drop_kind: dock_kind
 	})
 	cx.on_mouse(d.hitbox, .drop, core.AnyListener{
-		holder: voidptr(d)
+		holder: prim.hold(d)
 		call:   dock_drop
 	}, false)
 	cx.leave()
@@ -150,9 +150,9 @@ fn (mut d DockTarget) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	})
 }
 
-fn dock_drop(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	d := unsafe { &DockTarget(holder) }
-	e := unsafe { &core.DropEvent(event) }
+fn dock_drop(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	d := prim.held[DockTarget](holder)
+	e := prim.held[core.DropEvent](event)
 	from, tab := dock_parts(e.payload)
 	kit.fire(d.dock, DockEvent{tab, from, d.group, zone_at(e.bounds, e.x, e.y), -1}, mut cx)
 }

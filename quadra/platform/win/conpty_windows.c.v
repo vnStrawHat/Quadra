@@ -5,6 +5,7 @@ module win
 import os
 import sync
 import quadra.platform
+import quadra.prim
 
 type FnCreatePC = fn (size u32, input voidptr, output voidptr, flags u32, out &voidptr) int
 
@@ -161,7 +162,7 @@ fn env_block(extra map[string]string) []u16 {
 	return block
 }
 
-fn read_loop(h voidptr, ctx voidptr, on_data fn (ctx voidptr, data []u8)) {
+fn read_loop(h voidptr, ctx prim.Holder, on_data fn (ctx prim.Holder, data []u8)) {
 	mut buf := []u8{len: 65536}
 	for {
 		mut got := u32(0)
@@ -176,7 +177,7 @@ fn read_loop(h voidptr, ctx voidptr, on_data fn (ctx voidptr, data []u8)) {
 
 // wait_loop waits for the program, then closes the pseudo console (which ends the reader
 // once the last output is read) and reports the exit code after the data.
-fn wait_loop(mut p ConPty, reader thread, ctx voidptr, on_exit fn (ctx voidptr, code int)) {
+fn wait_loop(mut p ConPty, reader thread, ctx prim.Holder, on_exit fn (ctx prim.Holder, code int)) {
 	C.WaitForSingleObject(p.process, -1)
 	mut code := u32(0)
 	C.GetExitCodeProcess(p.process, &code)

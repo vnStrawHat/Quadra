@@ -58,25 +58,25 @@ pub fn tracked(mut b Builder, mut cx LayoutCx) Element {
 		return b.build_tree(mut cx)
 	}
 	t.pending = b
-	t.cx = unsafe { &cx }
+	t.cx = unsafe { &cx } // the caller's frame: read by run_build only, cleared below
 	t.out = none
 	t.active = true
 	mut lt := if t.phase == .layout { t.layout } else { t.prepaint }
 	// Layout builds fill the pass arena; prepaint builds (rows, overlays) use the heap.
 	mut u := ArenaUse{}
-	if t.phase == .layout {
-		u = t.pass.take()
+	if t.phase == .layout && !w.relay.active {
+		u = t.pass.take() // an incremental pass keeps the pass arenas: clean views hold them
 	}
 	saved := use_arena(u)
 	mut cur := unsafe { frame_work }
 	cur.t = t
 	lt.frame(run_build) or {
 		use_arena(saved)
-		t.active = false
+		t.active, t.cx = false, unsafe { nil }
 		return b.build_tree(mut cx)
 	}
 	use_arena(saved)
-	t.active = false
+	t.active, t.cx = false, unsafe { nil }
 	t.frames[int(t.phase)]++
 	t.pending = none
 	return t.out or { b.build_tree(mut cx) }

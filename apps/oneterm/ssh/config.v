@@ -1,6 +1,8 @@
 // What a connection needs (specs/23). Everything is plain data built by the UI.
 module ssh
 
+import quadra.prim
+
 pub const max_jump_hops = 4
 
 pub const default_agent_pipe = r'\\.\pipe\openssh-ssh-agent'
@@ -149,6 +151,6 @@ pub mut:
 	cancel            &Cancel = new_cancel()
 	// a forward or agent problem (a toast), on a worker thread: on_warning(warning_ctx, msg),
 	// data instead of a closure (no closures in apps, specs/14)
-	on_warning  fn (ctx voidptr, msg string) = unsafe { nil }
-	warning_ctx voidptr
+	on_warning  fn (ctx prim.Holder, msg string) = unsafe { nil }
+	warning_ctx prim.Holder
 }

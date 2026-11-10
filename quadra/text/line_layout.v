@@ -1,6 +1,8 @@
 // Single-line layout and caret mapping.
 module text
 
+import math
+
 pub struct PositionedGlyph {
 pub:
 	face    FaceId
@@ -49,6 +51,50 @@ fn (mut ts TextSystem) line(s string, st TextStyle, owned bool) &LineLayout {
 	l := ts.build_line(text, st)
 	ts.lines.put(text, key, 0, l)
 	return l
+}
+
+// layout_mono is layout_line on a monospace grid of cell_w (specs/04): every grapheme starts
+// at display_width(s[..i]) × cell_w and a non-ASCII one is centred in its cells, so fallback
+// glyphs never shift the columns after them. A pure ASCII line is the plain layout.
+pub fn (mut ts TextSystem) layout_mono(s string, st TextStyle, cell_w f32) &LineLayout {
+	if cell_w <= 0 || s.is_pure_ascii() {
+		return ts.line(s, st, true)
+	}
+	key := pair(u32(ts.face_for(st)), st.size)
+	k2 := u64(math.f32_bits(cell_w)) | u64(1) << 32 // never 0, the plain layout's slot
+	if l := ts.lines.get(s, key, k2) {
+		ts.stats.line_hits++
+		return l
+	}
+	mut l := ts.build_line(s, st)
+	snap_to_grid(mut l, cell_w)
+	ts.lines.put(s, key, k2, l)
+	return l
+}
+
+// snap_to_grid moves l's stops onto columns and each grapheme's glyphs with its first stop.
+fn snap_to_grid(mut l LineLayout, cell_w f32) {
+	s := l.text
+	mut col := 0
+	mut gi := 0
+	for k in 0 .. l.stops.len - 1 {
+		a, b := l.stops[k], l.stops[k + 1]
+		w := grapheme_width(s, a.index, b.index)
+		x := f32(col) * cell_w
+		mut dx := x - a.x
+		if b.index - a.index > 1 || s[a.index] >= 0x80 { // not a lone ASCII byte: centre it
+			dx += (f32(w) * cell_w - (b.x - a.x)) / 2
+		}
+		for gi < l.glyphs.len && l.glyphs[gi].cluster < b.index {
+			g := l.glyphs[gi]
+			l.glyphs[gi] = PositionedGlyph{g.face, g.id, g.x + dx, g.y, g.cluster}
+			gi++
+		}
+		l.stops[k] = CaretStop{a.index, x}
+		col += w
+	}
+	l.width = f32(col) * cell_w
+	l.stops[l.stops.len - 1] = CaretStop{s.len, l.width}
 }
 
 fn (mut ts TextSystem) build_line(s string, st TextStyle) &LineLayout {

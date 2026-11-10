@@ -92,6 +92,7 @@ fn parse_flow(dir string, lines []string, first int) !Flow {
 			}
 		}
 	}
+	check_size(&f)!
 	return f
 }
 
@@ -112,11 +113,7 @@ fn (mut f Flow) statement(mut sc Scan, sub int) ! {
 		}
 		l := sc.link() or { return error('expected a link at `${sc.s[sc.i..]}`') }
 		next := f.group(mut sc, sub)!
-		for a in cur {
-			for b in next {
-				f.edges << FEdge{a, b, l.label, l.stroke, l.head, l.tail, l.minlen}
-			}
-		}
+		f.add_edges(cur, next, l)!
 		cur = next.clone()
 	}
 }
@@ -127,7 +124,10 @@ fn (mut f Flow) group(mut sc Scan, sub int) ![]int {
 		sc.ws()
 		if sc.i < sc.s.len && sc.s[sc.i] == `&` {
 			sc.i++
-			out << f.node(mut sc, sub)!
+			v := f.node(mut sc, sub)!
+			if v !in out { // `b & b` is one node, not two parallel links
+				out << v
+			}
 			continue
 		}
 		return out
@@ -294,5 +294,5 @@ fn (mut sc Scan) link() ?Link {
 	} else {
 		mb.len - if head == .none { 2 } else { 1 }
 	}
-	return Link{label, stroke, head, tail, if minlen < 1 { 1 } else { minlen }}
+	return Link{label, stroke, head, tail, link_len(minlen)}
 }

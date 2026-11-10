@@ -62,17 +62,36 @@ Callbacks during the flush can update further models; their effects join the sam
 
 | Level | Triggered by | Work done |
 |---|---|---|
-| **Render** | a read model changed, a discrete event on the view, `notify()` | re-run `render()` for that view only, diff its layout nodes by position and id |
-| **Layout** | a layout style change, text content change, child set change, window resize | re-layout from the nearest relayout boundary |
+| **Render** | a read model changed, a discrete event on the view, `notify()` | re-run `render()` for that view only; its new tree takes the old one's layout nodes by position, and parts with unchanged layout inputs keep their layout |
+| **Layout** | a layout style change, text content change, child set change | re-layout from the nearest relayout boundary (05, Incremental layout) |
+| **Full layout** | window resize, scale change, theme switch, `Window.invalidate()` (kit components whose tree depends on state outside a view) | render dirty views, lay out the whole window |
 | **Paint** | hover/active/focus-visible patches of paint-only properties, caret blink, paint animations, image arrival | re-run prepaint and paint for that chunk only |
 | **Compose** | scroll offset, overlay position, chunk move | recompose the scene, no element code runs |
 
 Style properties are classified as layout or paint once, at compile time, in `layout.Style` and `ui.PaintStyle`. A hover patch that only touches paint fields can never cause a re-render.
 
+How a build for notified views works (`core/relayout.v`):
+- **Placements.** A `ViewElement` laid out by a build remembers its layout node, the
+  inherited text style and how many views are above it; the view's slot points at it. A
+  notified view is queued on its window (`Window.notify_view`).
+- **Deepest first.** The queued views that are placed in the window's layout tree render in
+  order of depth, deepest first, and each new tree replaces the old subtree
+  (`Tree.replace`). A parent that renders later finds its clean children already up to date:
+  a child placed again with the same inherited text style, not rendered since its
+  placement, keeps its subtree without being walked.
+- **Views placed by prepaint** (virtual list rows, overlays) have no placement: prepaint,
+  which every build runs, lays them out and renders them.
+- **A full layout instead** when the window size, scale or base text style changed, a view
+  is placed twice, a placement is no longer in the tree, kept builds wait to be freed,
+  garbage or closure frames of incremental passes piled up, or the climbs grew too long.
+- **Equal writes.** The framework cannot see field writes, so a write of the value a model
+  already holds still notifies. `cx.update_if(m, data, f)` notifies only when `f` returns
+  true; `core.assign(mut field, value)` writes and reports a change.
+
 ## View cache
 Every view is a cache boundary with this cached state:
 - the last element tree (needed to repaint without re-rendering),
-- its layout subtree in the persistent layout tree,
+- its layout subtree in the persistent layout tree (its placement, above),
 - its chunk: primitives, hitboxes, handlers, focus targets and semantics in local coordinates,
 - its inputs key: available size from the parent, inherited text style hash, theme generation.
 
@@ -109,7 +128,10 @@ again (`core/arena.v`).
   last is reset at the end of a pass, when the pass that replaced it has rebuilt every
   holder. `keep_build` (an overlay opened from a build) or a pin during the pass drops the
   current and the previous pass arenas instead. The arena pin is separate from the closure
-  pin of a frame: an escape during a render pins the arena being filled (the view's or the
+  pin of a frame. An incremental pass (Invalidation levels) builds kit trees on the heap and
+  leaves the pass arenas and the layout lifetime alone: clean views still hold trees built
+  in them, which the next full layout replaces and frees. An escape during a render pins the
+  arena being filled (the view's or the
   pass's) and those of the views rendered so far in the build (a nested view's tree is part
   of the tree that escaped); an escape from a handler, or `keep_build`, pins every arena
   that holds a tree.

@@ -1,27 +1,19 @@
 // URL detection: the click-time scan of a wrapped row group, and the coloring mask (specs/22).
+// The rules are the shared detector's (quadra/text, url.v), the same as the editor's and
+// Markdown's: a deliberate departure from the original (specs/22, Links).
 module term
 
-const url_window = 5 // rows searched on either side of the pointer for a wrapped URL
-const url_prefixes = ['https://', 'http://', 'ftp://', 'www.']
+import quadra.text
 
-fn is_trailing_punct(r rune) bool {
-	return r in [`)`, `]`, `}`, `>`, `.`, `,`, `;`, `:`, `!`, `?`, `'`, `"`, `\``]
+const url_window = 5 // rows searched on either side of the pointer for a wrapped URL
+
+// is_white is char::is_whitespace of the original.
+fn is_white(r rune) bool {
+	return text.is_white(r)
 }
 
 fn visible_rune(c Cell) rune {
 	return if c.ch == 0 || c.ch == 9 { ` ` } else { rune(c.ch) }
-}
-
-fn starts_with_at(chars []rune, at int, p string) bool {
-	if at + p.len > chars.len {
-		return false
-	}
-	for i in 0 .. p.len {
-		if chars[at + i] != rune(p[i]) {
-			return false
-		}
-	}
-	return true
 }
 
 // plain_url_at finds the plain-text URL through a cell, following soft wraps.
@@ -60,35 +52,21 @@ fn (t &Terminal) plain_url_at(p Pos) ?Link {
 		return none
 	}
 	for begin := click; begin >= 0; begin-- {
-		for prefix in url_prefixes {
-			if !starts_with_at(chars, begin, prefix) {
-				continue
-			}
-			mut end := begin + prefix.len
-			for end < chars.len && !is_white(chars[end]) {
-				end++
-			}
-			if click >= end {
-				continue
-			}
-			for end > begin + prefix.len && is_trailing_punct(chars[end - 1]) {
-				end--
-			}
-			if end <= begin + prefix.len {
-				continue
-			}
-			mut url := chars[begin..end].string()
-			if url.starts_with('www.') {
-				url = 'https://${url}'
-			}
-			a, b := cols[begin], cols[end - 1]
-			return Link{
-				line:     a.line
-				c0:       a.col
-				c1:       b.col + 1
-				url:      url
-				end_line: b.line
-			}
+		plen, run := text.url_run(chars, begin)
+		if plen == 0 || click >= run {
+			continue
+		}
+		end := text.url_trim(chars, begin + plen, run)
+		if end <= begin + plen {
+			continue
+		}
+		a, b := cols[begin], cols[end - 1]
+		return Link{
+			line:     a.line
+			c0:       a.col
+			c1:       b.col + 1
+			url:      text.url_text(chars[begin..end])
+			end_line: b.line
 		}
 	}
 	return none
@@ -125,25 +103,13 @@ fn (t &Terminal) scan_row(row Row) []bool {
 			i++
 			continue
 		}
-		mut matched := false
-		for prefix in url_prefixes {
-			if !starts_with_at(chars, i, prefix) {
-				continue
+		plen, end := text.url_run(chars, i)
+		if plen > 0 && end > i + plen {
+			for k in i .. end {
+				mask[k] = true
 			}
-			mut end := i + prefix.len
-			for end < n && !is_white(chars[end]) {
-				end++
-			}
-			if end > i + prefix.len {
-				for k in i .. end {
-					mask[k] = true
-				}
-				i = end
-				matched = true
-				break
-			}
-		}
-		if !matched {
+			i = end
+		} else {
 			i++
 		}
 	}
@@ -166,7 +132,7 @@ pub fn (t &Terminal) link_cols(rows []Row) []Link {
 				if c.flags & f_spacer != 0 {
 					continue
 				}
-				if is_white(visible_rune(c)) {
+				if text.url_stop(visible_rune(c)) {
 					stop = true
 					break
 				}
@@ -182,7 +148,10 @@ pub fn (t &Terminal) link_cols(rows []Row) []Link {
 		}
 	}
 	mut out := []Link{}
+	mut carry := 0 // the parentheses a URL running on to the next row left open
 	for r, row in rows {
+		mut open := carry
+		carry = 0
 		mask := masks[r]
 		n := mask.len
 		mut col := 0
@@ -196,21 +165,40 @@ pub fn (t &Terminal) link_cols(rows []Row) []Link {
 				col++
 			}
 			end := col
+			if begin > 0 {
+				open = 0
+			}
 			if end >= n && row.wrapped { // the URL runs on: its end is on a later row
+				carry = open + cell_parens(row.cells, begin, end)
 				out << Link{r, begin, end, '', r, '', false}
 				continue
 			}
 			mut stripped := end
 			for stripped > begin + 1 {
 				c := row.cells[stripped - 1]
-				if c.flags & f_spacer != 0 || is_trailing_punct(visible_rune(c)) {
-					stripped--
-				} else {
+				ch := visible_rune(c)
+				if c.flags & f_spacer == 0 && (!text.url_trailing(ch) || (ch == `)`
+					&& open + cell_parens(row.cells, begin, stripped - 1) > 0)) {
 					break
 				}
+				stripped--
 			}
+			open = 0
 			out << Link{r, begin, stripped, '', r, '', false}
 		}
 	}
 	return out
+}
+
+// cell_parens is text.paren_depth over cells a..b: a `)` closing a `(` stays in the URL.
+fn cell_parens(cells []Cell, a int, b int) int {
+	mut depth := 0
+	for c in cells[a..b] {
+		if c.ch == `(` {
+			depth++
+		} else if c.ch == `)` {
+			depth--
+		}
+	}
+	return depth
 }

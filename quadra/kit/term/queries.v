@@ -58,6 +58,7 @@ fn (mut p Parser) dcs_hook(mut s Screen, final u8) {
 	p.dcs_len, p.esc_st = 0, false
 	p.query = .none
 	if final == `q` && p.inter == 0 && p.private == 0 {
+		p.drop_sixel()
 		p.sixel = new_sixel()
 		p.state = .dcs
 	} else if final == `q` && p.inter == `$` {
@@ -76,7 +77,7 @@ fn (mut p Parser) dcs_hook(mut s Screen, final u8) {
 fn (mut p Parser) dcs_put(b u8) {
 	p.dcs_len++
 	if p.dcs_len > max_dcs {
-		p.sixel = unsafe { nil }
+		p.drop_sixel()
 		p.query = .none
 		return
 	}
@@ -90,8 +91,8 @@ fn (mut p Parser) dcs_put(b u8) {
 fn (mut p Parser) dcs_end(mut s Screen) {
 	if p.sixel != unsafe { nil } {
 		p.sixel.flush()
-		s.place_sixel(p.sixel)
-		p.sixel = unsafe { nil }
+		s.place_sixel(mut p.sixel) // takes the pixels; drop_sixel frees what it left
+		p.drop_sixel()
 		return
 	}
 	if p.query == .none || p.payload.len >= max_query {

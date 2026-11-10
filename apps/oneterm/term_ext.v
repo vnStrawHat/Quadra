@@ -1,6 +1,5 @@
 // TermExt: what OneTerm adds to one terminal (specs/22, P3): completion, the semantic classes,
-// the log file. The terminal reaches it through closure-free hooks; it travels with a dragged
-// terminal.
+// the log file. Reached through closure-free hooks; it travels with a dragged terminal.
 module main
 
 import time
@@ -10,6 +9,7 @@ import termlog
 import quadra.core
 import quadra.kit
 import quadra.kit.term
+import quadra.prim
 
 @[heap]
 pub struct TermExt {
@@ -83,7 +83,7 @@ fn (mut o OneTerm) attach_ext(mut s Space, logging bool, identity string, mut cx
 	s.ext = x
 	mut t := cx.peek(s.view.model())
 	t.set_hooks(term.Hooks{
-		holder:  voidptr(x)
+		holder:  prim.hold(x)
 		key:     ext_key
 		overlay: ext_overlay
 		rows:    ext_rows
@@ -97,19 +97,19 @@ fn (mut o OneTerm) attach_ext(mut s Space, logging bool, identity string, mut cx
 	}
 }
 
-fn ext_key(holder voidptr, mut t term.Terminal, e &core.KeyDownEvent, mut cx core.ViewCx[term.Terminal]) bool {
-	mut x := unsafe { &TermExt(holder) }
+fn ext_key(holder prim.Holder, mut t term.Terminal, e &core.KeyDownEvent, mut cx core.ViewCx[term.Terminal]) bool {
+	mut x := prim.held[TermExt](holder)
 	return x.key(mut t, e, mut cx)
 }
 
-fn ext_overlay(holder voidptr, mut t term.Terminal, mut cx core.ViewCx[term.Terminal]) ?core.Element {
-	mut x := unsafe { &TermExt(holder) }
+fn ext_overlay(holder prim.Holder, mut t term.Terminal, mut cx core.ViewCx[term.Terminal]) ?core.Element {
+	mut x := prim.held[TermExt](holder)
 	x.update(mut t, mut cx)
 	return x.layers(mut t, kit.theme(cx), mut cx)
 }
 
-fn ext_rows(holder voidptr, mut t term.Terminal, top int) {
-	mut x := unsafe { &TermExt(holder) }
+fn ext_rows(holder prim.Holder, mut t term.Terminal, top int) {
+	mut x := prim.held[TermExt](holder)
 	x.fill_classes(mut t, top)
 }
 

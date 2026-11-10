@@ -101,9 +101,9 @@ pub fn (mut l UniformList) request_layout(mut cx core.LayoutCx) layout.NodeId {
 	return l.node
 }
 
-fn list_scroll(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	mut s := unsafe { &ListScroll(holder) }
-	e := unsafe { &core.ScrollEvent(event) }
+fn list_scroll(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	mut s := prim.held[ListScroll](holder)
+	e := prim.held[core.ScrollEvent](event)
 	ny := prim.clamp(s.state.y - e.dy, 0, s.max_y)
 	if ny != s.state.y {
 		s.state.y = ny
@@ -137,7 +137,7 @@ pub fn (mut l UniformList) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 	l.scroll = ListScroll{st, max_y}
 	hb := cx.insert_hitbox(bounds, core.HitboxOptions{})
 	cx.on_mouse(hb, .scroll, core.AnyListener{
-		holder: voidptr(&l.scroll)
+		holder: prim.hold(&l.scroll)
 		call:   list_scroll
 	}, false)
 	cx.push_hitbox(hb)
@@ -167,11 +167,11 @@ pub fn (mut l UniformList) paint(bounds prim.Rect, mut cx core.PaintCx) {
 		r.el.paint(r.bounds, mut cx)
 	}
 	cx.pop_clip()
-	cx.scroll_thumb(bounds, f32(l.count) * l.row_h, l.offset, true, core.ThumbTarget{voidptr(l.scroll.state), set_list_scroll})
+	cx.scroll_thumb(bounds, f32(l.count) * l.row_h, l.offset, true, core.ThumbTarget{prim.hold(l.scroll.state), set_list_scroll})
 }
 
-fn set_list_scroll(holder voidptr, offset f32, _ bool) {
-	mut st := unsafe { &ListState(holder) }
+fn set_list_scroll(holder prim.Holder, offset f32, _ bool) {
+	mut st := prim.held[ListState](holder)
 	st.y = offset
 }
 

@@ -228,14 +228,6 @@ fn default_port(scheme string) int {
 	}
 }
 
-// is_white is char::is_whitespace of the original.
-fn is_white(r rune) bool {
-	c := u32(r)
-	return c == 32 || (c >= 9 && c <= 13) || c == 0x85 || c == 0xa0 || c == 0x1680
-		|| (c >= 0x2000 && c <= 0x200a) || c == 0x2028 || c == 0x2029 || c == 0x202f
-		|| c == 0x205f || c == 0x3000
-}
-
 // url_confirmation_text is the dialog's question: the label against the real target, so a
 // mismatch can be seen.
 pub fn url_confirmation_text(url string, display string) string {

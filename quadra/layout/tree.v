@@ -11,15 +11,19 @@ pub const unbounded = f32(1.0e30)
 
 // MeasureFn reports the intrinsic content size of a leaf (text, images).
 // known_* are fixed content sizes or `unknown`; avail_* are limits or `unbounded`.
-pub type MeasureFn = fn (ctx voidptr, known_w f32, known_h f32, avail_w f32, avail_h f32) prim.Size
+// ctx is the element's checked holder (prim.held, specs/14).
+pub type MeasureFn = fn (ctx prim.Holder, known_w f32, known_h f32, avail_w f32, avail_h f32) prim.Size
+
+// SameFn reports whether two leaf contexts measure alike for every request (same text and
+// font): incremental layout then takes the old leaf's layout over without measuring.
+pub type SameFn = fn (old prim.Holder, fresh prim.Holder) bool
 
 struct CacheEntry {
-	kw    f32
-	kh    f32
-	aw    f32
-	ah    f32
-	out   prim.Size
-	valid bool
+	kw  f32
+	kh  f32
+	aw  f32
+	ah  f32
+	out prim.Size
 }
 
 struct Node {
@@ -27,11 +31,19 @@ mut:
 	style    Style
 	children []NodeId
 	measure  MeasureFn = unsafe { nil }
-	ctx      voidptr
+	ctx      prim.Holder
 	rect     prim.Rect // border box, relative to the parent's border box
 	content  prim.Size // extent of the children, for scrolling
 	cache    [cache_slots]CacheEntry
-	next     int
+	// incremental layout (relayout.v)
+	parent NodeId = -1 // -2 - id: replace() put node id in its place
+	owner  u32
+	valid  u8   // bit i: cache[i] holds a result
+	next   u8   // the entry the next result goes to
+	pslot  u8   // the cache entry of the last perform request
+	done   bool // performed at that request: the rects below are that layout's
+	probed bool // measured since that perform (a leaf's element may hold the probe's wrap)
+	lost   bool // the cache overwrote an answer: what the parent was told is not all known
 }
 
 // cache_slots measure results are kept per node: flex asks a child for its base size, its
@@ -45,12 +57,19 @@ mut:
 	flex_items [][]FlexItem
 	flex_lines [][]FlexLine
 	depth      int
+	recycle    []NodeId   // nodes to fill again, next last (relayout.v)
+	sames      []SamePair // the SameFn of each measure function given one (leaf_same)
+	same_last  MeasureFn = unsafe { nil } // the last one registered
+	avail      prim.Size // the last compute's available size
 pub mut:
 	measure_calls int // statistics: number of layout_node evaluations not served by the cache
+	owner         u32 // stamped on new nodes: the view being laid out (relayout.v)
+	climb_work    int // children of the ancestors replace() laid out again
 }
 
 pub fn (mut t Tree) clear() {
 	t.nodes.clear()
+	t.recycle.clear()
 	t.measure_calls = 0
 }
 
@@ -64,31 +83,6 @@ pub fn (mut t Tree) truncate(n int) {
 	if n < t.nodes.len {
 		t.nodes.trim(n)
 	}
-}
-
-pub fn (mut t Tree) node(style Style, children []NodeId) NodeId {
-	t.nodes << Node{
-		style:    style
-		children: children
-	}
-	return t.nodes.len - 1
-}
-
-pub fn (mut t Tree) leaf(style Style, measure MeasureFn, ctx voidptr) NodeId {
-	t.nodes << Node{
-		style:   style
-		measure: measure
-		ctx:     ctx
-	}
-	return t.nodes.len - 1
-}
-
-pub fn (mut t Tree) add_child(parent NodeId, child NodeId) {
-	t.nodes[parent].children << child
-}
-
-pub fn (mut t Tree) set_children(parent NodeId, children []NodeId) {
-	t.nodes[parent].children = children
 }
 
 pub fn (t &Tree) style(id NodeId) &Style {
@@ -110,9 +104,21 @@ pub fn (t &Tree) content_size(id NodeId) prim.Size {
 // compute lays out the tree under root for the given available size.
 // The root takes its style size, or fills the available space when auto.
 pub fn (mut t Tree) compute(root NodeId, available prim.Size) {
-	for mut n in t.nodes {
-		n.cache = [cache_slots]CacheEntry{}
+	for mut n in t.nodes { // from scratch: every result is forgotten
+		n.valid, n.next, n.done, n.probed, n.lost = 0, 0, false, false, false
 	}
+	t.avail = available
+	t.layout_root(root, available)
+}
+
+// compute_new is compute for a tree built since clear(): nothing to forget.
+pub fn (mut t Tree) compute_new(root NodeId, available prim.Size) {
+	t.avail = available
+	t.layout_root(root, available)
+}
+
+// layout_root lays out a root filling the available size (compute, replace).
+fn (mut t Tree) layout_root(root NodeId, available prim.Size) {
 	s := t.nodes[root].style
 	mut w := s.width.resolve(available.width)
 	mut h := s.height.resolve(available.height)
@@ -153,19 +159,50 @@ pub fn (mut t Tree) compute_fixed(root NodeId, w f32, h f32) {
 	t.nodes[root].rect = prim.rect(0, 0, w, h)
 }
 
+@[inline]
+fn has(mask u8, i int) bool {
+	return mask & (u8(1) << i) != 0
+}
+
 fn (t &Tree) cached(id NodeId, kw f32, kh f32, aw f32, ah f32) ?prim.Size {
-	for e in t.nodes[id].cache {
-		if e.valid && e.kw == kw && e.kh == kh && e.aw == aw && e.ah == ah {
+	n := unsafe { &t.nodes[id] }
+	for i in 0 .. cache_slots {
+		e := unsafe { &n.cache[i] }
+		if has(n.valid, i) && e.kw == kw && e.kh == kh && e.aw == aw && e.ah == ah {
 			return e.out
 		}
 	}
 	return none
 }
 
-fn (mut t Tree) store(id NodeId, kw f32, kh f32, aw f32, ah f32, out prim.Size) {
+// store records a result; a perform's becomes the node's last perform, whose entry is never
+// the one replaced. Only a perform can find its request there: a measure stores after a miss.
+fn (mut t Tree) store(id NodeId, kw f32, kh f32, aw f32, ah f32, out prim.Size, perform bool) {
 	mut n := &t.nodes[id]
-	n.cache[n.next] = CacheEntry{kw, kh, aw, ah, out, true}
-	n.next = (n.next + 1) % cache_slots
+	n.probed = !perform
+	if perform {
+		for i in 0 .. cache_slots {
+			e := unsafe { &n.cache[i] }
+			if has(n.valid, i) && e.kw == kw && e.kh == kh && e.aw == aw && e.ah == ah {
+				n.cache[i] = CacheEntry{kw, kh, aw, ah, out}
+				n.pslot, n.done = u8(i), true
+				return
+			}
+		}
+	}
+	if n.done && n.next == n.pslot {
+		n.next = u8((int(n.next) + 1) % cache_slots)
+	}
+	i := int(n.next)
+	if has(n.valid, i) {
+		n.lost = true
+	}
+	n.cache[i] = CacheEntry{kw, kh, aw, ah, out}
+	n.valid |= u8(1) << i
+	n.next = u8((i + 1) % cache_slots)
+	if perform {
+		n.pslot, n.done = u8(i), true
+	}
 }
 
 // layout_node returns the border-box size of a node. kw/kh are sizes fixed by the
@@ -180,6 +217,16 @@ fn (mut t Tree) layout_node(id NodeId, kw_ f32, kh_ f32, aw_ f32, ah_ f32, perfo
 	if !perform {
 		if out := t.cached(id, kw_, kh_, aw, ah) {
 			return out
+		}
+	} else {
+		// Laid out at this request before and nothing below changed since: every rect under
+		// it still holds (a position-only change moves it, its parent sets its rect).
+		n := unsafe { &t.nodes[id] }
+		if n.done && !n.probed {
+			e := n.cache[n.pslot]
+			if e.kw == kw_ && e.kh == kh_ && e.aw == aw && e.ah == ah {
+				return e.out
+			}
 		}
 	}
 	t.measure_calls++
@@ -199,7 +246,7 @@ fn (mut t Tree) layout_node(id NodeId, kw_ f32, kh_ f32, aw_ f32, ah_ f32, perfo
 	} else {
 		out = t.layout_flex(id, s, kw, kh, aw, ah, perform)
 	}
-	t.store(id, kw_, kh_, aw, ah, out)
+	t.store(id, kw_, kh_, aw, ah, out, perform)
 	return out
 }
 

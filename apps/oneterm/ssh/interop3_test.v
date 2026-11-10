@@ -4,6 +4,7 @@ module ssh
 import os
 import time
 import quadra.native.sys
+import quadra.prim
 import quadra.platform.win
 
 type FnCreateNamedPipeW = fn (name &u16, open_mode u32, pipe_mode u32, max_instances u32, out_size u32, in_size u32, timeout u32, sec voidptr) voidptr
@@ -73,9 +74,9 @@ fn test_agent_auth_and_forwarding() {
 	cfg.agent_pipe = test_pipe
 	cfg.agent_forwarding = true
 	mut warned := &EventLog{}
-	cfg.warning_ctx = warned
-	cfg.on_warning = fn (ctx voidptr, m string) {
-		mut warned := unsafe { &EventLog(ctx) }
+	cfg.warning_ctx = prim.hold(warned)
+	cfg.on_warning = fn (ctx prim.Holder, m string) {
+		mut warned := prim.held[EventLog](ctx)
 		warned.warnings << m
 	}
 	mut s := connect(cfg) or { panic(err) }

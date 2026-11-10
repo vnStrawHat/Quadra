@@ -22,25 +22,30 @@ fn host_port(host string, port int) string {
 	return '[${host}]:${port}'
 }
 
+// glob_match matches * and ? with one backtrack point, in O(pattern * name): the recursive
+// form was exponential in the stars of a hostile pattern.
 fn glob_match(pattern string, name string) bool {
-	if pattern == '' {
-		return name == ''
-	}
-	if pattern[0] == `*` {
-		for i in 0 .. name.len + 1 {
-			if glob_match(pattern[1..], name[i..]) {
-				return true
-			}
+	mut p, mut n := 0, 0
+	mut star, mut mark := -1, 0
+	for n < name.len {
+		if p < pattern.len && (pattern[p] == `?` || pattern[p] == name[n]) {
+			p++
+			n++
+		} else if p < pattern.len && pattern[p] == `*` {
+			star, mark = p, n
+			p++
+		} else if star >= 0 {
+			p = star + 1
+			mark++
+			n = mark
+		} else {
+			return false
 		}
-		return false
 	}
-	if name == '' {
-		return false
+	for p < pattern.len && pattern[p] == `*` {
+		p++
 	}
-	if pattern[0] == `?` || pattern[0] == name[0] {
-		return glob_match(pattern[1..], name[1..])
-	}
-	return false
+	return p == pattern.len
 }
 
 fn hashed_matches(pattern string, name string) bool {
@@ -48,8 +53,8 @@ fn hashed_matches(pattern string, name string) bool {
 	if parts.len != 4 {
 		return false
 	}
-	salt := base64.decode(parts[2])
-	want := base64.decode(parts[3])
+	salt := b64_decode(parts[2])
+	want := b64_decode(parts[3])
 	if salt.len == 0 || want.len != 20 {
 		return false
 	}
@@ -101,7 +106,7 @@ fn known_keys(path string, host_name string) ![]KnownKey {
 		if fields.len < 3 || !patterns_match(fields[0], host_name) {
 			continue
 		}
-		blob := base64.decode(fields[2])
+		blob := b64_decode(fields[2])
 		key := parse_host_key(blob) or {
 			return error('known_hosts entry for ${host_name} is malformed: ${err}')
 		}

@@ -59,7 +59,7 @@ fn parse_pem(text string) !Pem {
 			continue
 		}
 		if line.starts_with('-----END ') {
-			body := base64.decode(b64.join(''))
+			body := b64_decode(b64.join(''))
 			if body.len == 0 {
 				return error('empty PEM body')
 			}
@@ -74,6 +74,18 @@ fn parse_pem(text string) !Pem {
 		}
 	}
 	return error('no PEM key found')
+}
+
+// b64_decode is base64.decode for untrusted text: empty unless every byte is in the alphabet.
+// vlib's decoder indexes a 123-entry table with each byte, so `{` and above (any non-ASCII byte
+// of a mangled file) panicked, or read past the table in a release build.
+fn b64_decode(s string) []u8 {
+	for c in s {
+		if !(c.is_alnum() || c == `+` || c == `/` || c == `=`) {
+			return []
+		}
+	}
+	return base64.decode(s)
 }
 
 fn decode_openssh(blob []u8, pass []u8) !PrivateKey {

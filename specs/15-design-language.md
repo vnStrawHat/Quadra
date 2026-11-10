@@ -271,7 +271,7 @@ same rule: no backdrop, an outside click closes them.
 - **Tabs:** 32 tall, 4 padding, label 14 in `text_2` on `panel` (inactive) and `text` on
   `canvas` (active), 1 px `line_strong` seams on the side away from the active tab, no
   hover fill. The dirty mark is a 6 px `accent` dot, always shown; the close button (18,
-  14 icon, muted) shows on hover.
+  14 icon, in `text`) shows on hover.
 - **Picker / command palette:** 544 wide (palette 608), at most 384 tall, level 2. Query
   row 36 tall with 10 padding over a 1 px `line`; rows as list rows; matches `accent_text`;
   shortcuts muted on the right; an optional footer with a top `line`.

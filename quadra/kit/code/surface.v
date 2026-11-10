@@ -59,6 +59,7 @@ pub fn (mut s Surface) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 		cx.register_text(e.doc.buf.line(k), prim.rect(e.bounds.x, e.line_y(k), e.bounds.width,
 			e.cell.height * f32(rows)))
 	}
+	e.link_hitboxes(mut cx)
 }
 
 // visible is the range of lines with a row that intersects the view.
@@ -112,14 +113,15 @@ pub fn (mut s Surface) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	}
 	e.paint_bracket(first, last, th, mut cx)
 	e.paint_cursors(focused, first, last, th, mut cx)
+	e.paint_link(th, mut cx)
 	cx.pop_clip()
 	e.paint_gutter(bounds, first, last, focused, th, mut cx)
 	// The thumb spans what clamp_scroll allows: the rows plus two of overscroll.
-	cx.scroll_thumb(e.bounds, f32(e.row_count() + 2) * e.cell.height, e.scroll.y, true, core.ThumbTarget{voidptr(e), set_editor_scroll})
+	cx.scroll_thumb(e.bounds, f32(e.row_count() + 2) * e.cell.height, e.scroll.y, true, core.ThumbTarget{prim.hold(e), set_editor_scroll})
 }
 
-fn set_editor_scroll(holder voidptr, offset f32, _ bool) {
-	mut e := unsafe { &Editor(holder) }
+fn set_editor_scroll(holder prim.Holder, offset f32, _ bool) {
+	mut e := prim.held[Editor](holder)
 	e.scroll = prim.Point{e.scroll.x, offset}
 	e.clamp_scroll()
 }
@@ -191,7 +193,7 @@ fn (mut e Editor) paint_cursors(focused bool, first int, last int, th &kit.Theme
 		y := e.row_y(r)
 		if c.anchor == p.anchor && c.head == p.head {
 			if e.preedit != '' {
-				pl := cx.text.layout_line(e.preedit, e.style)
+				pl := cx.text.layout_mono(e.preedit, e.style, e.cell.width)
 				cx.quad(gpu.Quad{
 					bounds:     prim.rect(x, y, pl.width, e.cell.height)
 					background: th.p.canvas

@@ -18,21 +18,25 @@ fn display_line(s string, tab int) DisplayLine {
 	mut out := []u8{cap: s.len + 16}
 	mut dcol := []int{len: s.len + 1}
 	mut col := 0
-	for i := 0; i < s.len; i++ {
-		dcol[i] = out.len
-		c := s[i]
-		if c == `\t` {
+	mut i := 0
+	for i < s.len {
+		if s[i] == `\t` {
+			dcol[i] = out.len
 			n := tab - col % tab
 			for _ in 0 .. n {
 				out << ` `
 			}
 			col += n
+			i++
 			continue
 		}
-		out << c
-		if c < 0x80 || c >= 0xC0 { // count runes, not continuation bytes
-			col++
+		j, w := cell_step(s, i) // columns by display width
+		for k in i .. j {
+			dcol[k] = out.len
+			out << s[k]
 		}
+		col += w
+		i = j
 	}
 	dcol[s.len] = out.len
 	return DisplayLine{

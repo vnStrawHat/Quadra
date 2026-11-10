@@ -4,6 +4,7 @@ module win
 
 import time
 import quadra.platform
+import quadra.prim
 
 struct ExitBox {
 	exited chan int
@@ -16,9 +17,9 @@ fn test_a_shell_closed_at_once_still_exits() {
 			command: 'cmd.exe /K chcp 65001 >nul'
 			cols:    80
 			rows:    24
-			ctx:     &ExitBox{exited}
-			on_exit: fn (ctx voidptr, code int) {
-				b := unsafe { &ExitBox(ctx) }
+			ctx:     prim.hold(&ExitBox{exited})
+			on_exit: fn (ctx prim.Holder, code int) {
+				b := prim.held[ExitBox](ctx)
 				b.exited <- code
 			}
 		}) or {

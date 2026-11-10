@@ -125,7 +125,9 @@ fn (mut s Screen) regrow(grid []Row, cx int, cy int, rows int) ([]Row, int, int)
 	mut y := cy
 	cols := grid[0].cells.len
 	for g.len > rows { // drop blank rows below the cursor first, then push the top away
-		if g.len - 1 > y && !row_used(g.last()) {
+		// With the cursor on the top row, rows below it go: pushing the top away would take
+		// the cursor off the grid (y went negative).
+		if g.len - 1 > y && (!row_used(g.last()) || y <= 0) {
 			g.pop()
 			continue
 		}
@@ -190,7 +192,8 @@ fn merge_extra(a &RowExtra, b &RowExtra) &RowExtra {
 }
 
 // split cuts a logical line into rows of cols cells (a wide character never straddles) and
-// tells where each row starts in the line.
+// tells where each row starts in the line. At one column a wide character fills a row alone,
+// without its spacer, as print puts it there (waiting for a second column never ended).
 fn (l &LogicalLine) split(cols int) ([]Row, []int) {
 	mut out := []Row{}
 	mut starts := []int{}
@@ -201,7 +204,7 @@ fn (l &LogicalLine) split(cols int) ([]Row, []int) {
 		mut x := 0
 		for i < l.cells.len && x < cols {
 			c := l.cells[i]
-			if c.flags & f_wide != 0 && x == cols - 1 {
+			if c.flags & f_wide != 0 && x == cols - 1 && x > 0 {
 				break
 			}
 			row.cells[x] = c
@@ -212,6 +215,10 @@ fn (l &LogicalLine) split(cols int) ([]Row, []int) {
 			}
 			i++
 			x++
+			if cols == 1 && c.flags & f_wide != 0 && i < l.cells.len
+				&& l.cells[i].flags & f_spacer != 0 {
+				i++
+			}
 		}
 		row.wrapped = i < l.cells.len
 		if out.len == 0 {

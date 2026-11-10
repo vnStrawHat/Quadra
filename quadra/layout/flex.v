@@ -111,6 +111,7 @@ fn (mut t Tree) layout_flex(id NodeId, s &Style, kw f32, kh f32, aw f32, ah f32,
 		}
 	}
 	for c in children {
+		t.nodes[c].parent = id // set here, where the child is touched anyway (relayout.v)
 		cs := unsafe { &t.nodes[c].style }
 		if cs.display == .none {
 			t.nodes[c].rect = prim.Rect{}

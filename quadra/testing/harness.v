@@ -105,19 +105,15 @@ pub fn (mut h Harness) move_to(x f32, y f32) {
 }
 
 pub fn (mut h Harness) click_at(x f32, y f32) {
-	h.move_to(x, y)
-	h.inject(platform.MouseEvent{
-		action: .down
-		button: .left
-		x:      x
-		y:      y
-	})
-	h.inject(platform.MouseEvent{
-		action: .up
-		button: .left
-		x:      x
-		y:      y
-	})
+	h.click_mods(x, y, platform.Mods.zero())
+}
+
+// click_mods clicks with modifier keys held from the move on (ctrl-click opens a link).
+pub fn (mut h Harness) click_mods(x f32, y f32, mods platform.Mods) {
+	h.inject(platform.MouseEvent{ action: .move, x: x, y: y, mods: mods })
+	for a in [platform.MouseAction.down, .up] {
+		h.inject(platform.MouseEvent{ action: a, button: .left, x: x, y: y, mods: mods })
+	}
 }
 
 // click clicks the center of the element with the given test id.

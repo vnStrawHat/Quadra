@@ -167,6 +167,7 @@ pub fn (mut app App) render_any(id u32, win &Window) Element {
 	}
 	w.stats.renders[id] = w.stats.renders[id] + 1
 	app.store.slots[id].dirty = false
+	app.store.slots[id].renders++
 	el := app.render_tracked(id, win, slot.render)
 	app.store.slots[id].cached = el
 	return el

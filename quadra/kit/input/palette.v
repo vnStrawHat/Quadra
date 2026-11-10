@@ -60,9 +60,9 @@ pub fn open_command_palette(mut cx core.Cx, commands []Command) {
 	w.modal = id
 }
 
-fn palette_typed(_ voidptr, view voidptr, event voidptr, mut _ core.Cx) {
-	mut p := unsafe { &Palette(view) }
-	q := unsafe { *(&string(event)) }
+fn palette_typed(_ prim.Holder, view prim.Holder, event prim.Holder, mut _ core.Cx) {
+	mut p := prim.held[Palette](view)
+	q := *prim.held[string](event)
 	p.query = q
 	mut scored := []prim.Point{}
 	for i, c in p.commands {

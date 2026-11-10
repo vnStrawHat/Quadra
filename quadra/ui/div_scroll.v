@@ -33,9 +33,9 @@ mut:
 	wheel_x bool
 }
 
-fn scroll_handler(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	mut t := unsafe { &ScrollTarget(holder) }
-	e := unsafe { &core.ScrollEvent(event) }
+fn scroll_handler(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	mut t := prim.held[ScrollTarget](holder)
+	e := prim.held[core.ScrollEvent](event)
 	// Shift+wheel scrolls horizontally on mice without a horizontal wheel; so does the plain
 	// wheel where the Div opted in (wheel_x).
 	sideways := e.mods.has(.shift) || t.wheel_x
@@ -57,7 +57,7 @@ fn (d &Div) paint_thumbs(bounds prim.Rect, mut cx core.PaintCx) {
 		return
 	}
 	content := cx.win.tree.content_size(d.node)
-	target := core.ThumbTarget{voidptr(d.scroll_target.state), set_div_scroll}
+	target := core.ThumbTarget{prim.hold(d.scroll_target.state), set_div_scroll}
 	if d.style.overflow_y == .scroll {
 		cx.scroll_thumb(bounds, content.height, d.scroll.y, true, target)
 	}
@@ -66,8 +66,8 @@ fn (d &Div) paint_thumbs(bounds prim.Rect, mut cx core.PaintCx) {
 	}
 }
 
-fn set_div_scroll(holder voidptr, offset f32, vertical bool) {
-	mut st := unsafe { &ScrollState(holder) }
+fn set_div_scroll(holder prim.Holder, offset f32, vertical bool) {
+	mut st := prim.held[ScrollState](holder)
 	if vertical {
 		st.y = offset
 	} else {

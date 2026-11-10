@@ -2,13 +2,20 @@
 // parsing goes on, so a formula with a typo still shows what it can.
 module tex
 
+import strings
+
 struct Parser {
 	toks []Tok
 mut:
-	pos  int
-	font Font
-	err  string
+	pos   int
+	font  Font
+	err   string
+	depth int // lists and atoms being parsed, see max_depth
 }
+
+// max_depth caps the nesting of lists and atoms (one `{` level is two): a deeper formula is an
+// error, not a stack overflow, in the parser and in the layout that walks the same tree.
+const max_depth = 256
 
 // parse turns TeX math into a node list; the error is the first problem found.
 pub fn parse(src string) ([]Node, string) {
@@ -26,6 +33,17 @@ fn (mut p Parser) fail(msg string) {
 	if p.err == '' {
 		p.err = msg
 	}
+}
+
+// too_deep fails a formula nested past max_depth and skips to its end, so nothing more is
+// parsed and every caller unwinds at once.
+fn (mut p Parser) too_deep() bool {
+	if p.depth <= max_depth {
+		return false
+	}
+	p.fail('formula nested too deeply')
+	p.pos = p.toks.len - 1
+	return true
 }
 
 fn (mut p Parser) skip_spaces() {
@@ -59,6 +77,13 @@ fn stops(t Tok, until TokKind) bool {
 // list parses atoms with their scripts until a stop token (left in place).
 fn (mut p Parser) list(until TokKind) []Node {
 	mut out := []Node{}
+	p.depth++
+	defer {
+		p.depth--
+	}
+	if p.too_deep() {
+		return out
+	}
 	for {
 		t := p.peek()
 		if stops(t, until) {
@@ -180,7 +205,7 @@ fn (mut p Parser) raw() string {
 	}
 	p.pos++
 	mut depth := 1
-	mut s := ''
+	mut s := strings.new_builder(16) // not `s +=`: quadratic on a long argument
 	for p.toks[p.pos].kind != .eof {
 		t := p.toks[p.pos]
 		p.pos++
@@ -189,20 +214,26 @@ fn (mut p Parser) raw() string {
 		} else if t.kind == .rbrace {
 			depth--
 			if depth == 0 {
-				return s
+				return s.str()
 			}
 		}
-		s += if t.kind == .cmd {
-			if t.text.len == 1 { t.text } else { '\\' + t.text }
-		} else {
-			t.text
+		if t.kind == .cmd && t.text.len != 1 {
+			s.write_u8(`\\`)
 		}
+		s.write_string(t.text)
 	}
 	p.fail('missing }')
-	return s
+	return s.str()
 }
 
 fn (mut p Parser) atom() ?Node {
+	p.depth++
+	defer {
+		p.depth--
+	}
+	if p.too_deep() {
+		return none
+	}
 	t := p.next()
 	match t.kind {
 		.lbrace {

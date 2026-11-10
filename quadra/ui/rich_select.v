@@ -55,7 +55,7 @@ pub fn (mut g SelectGroup) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 	g.st = st
 	g.els.clear()
 	node := cx.insert_key_node(st.focus, '', -1, bounds)
-	cx.on_key(node, .key_down, '', core.AnyListener{ holder: voidptr(g), call: group_key })
+	cx.on_key(node, .key_down, '', core.AnyListener{ holder: prim.hold(g), call: group_key })
 	cx.leave()
 }
 
@@ -136,8 +136,8 @@ fn (mut r RichEl) join(bounds prim.Rect, mut cx core.PrepaintCx) int {
 		cursor:   platform.Cursor.ibeam
 		focus_id: g.st.focus
 	})
-	cx.on_mouse(hb, .mouse_down, core.AnyListener{ holder: voidptr(r), call: group_down }, false)
-	cx.on_mouse(hb, .mouse_move, core.AnyListener{ holder: voidptr(r), call: group_move }, false)
+	cx.on_mouse(hb, .mouse_down, core.AnyListener{ holder: prim.hold(r), call: group_down }, false)
+	cx.on_mouse(hb, .mouse_move, core.AnyListener{ holder: prim.hold(r), call: group_move }, false)
 	return hb
 }
 
@@ -180,9 +180,9 @@ fn (mut r RichEl) index_at(x f32, y f32) int {
 	return 0
 }
 
-fn group_down(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	mut r := unsafe { &RichEl(holder) }
-	e := unsafe { &core.MouseDownEvent(event) }
+fn group_down(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	mut r := prim.held[RichEl](holder)
+	e := prim.held[core.MouseDownEvent](event)
 	if e.button != .left || r.group.st == unsafe { nil } {
 		return
 	}
@@ -205,9 +205,9 @@ fn group_down(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
 	cx.win.invalidate_paint()
 }
 
-fn group_move(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	r := unsafe { &RichEl(holder) }
-	e := unsafe { &core.MouseMoveEvent(event) }
+fn group_move(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	r := prim.held[RichEl](holder)
+	e := prim.held[core.MouseMoveEvent](event)
 	g := r.group
 	if g.st == unsafe { nil } || !g.st.dragging {
 		return
@@ -222,9 +222,9 @@ fn group_move(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
 	cx.win.invalidate_paint()
 }
 
-fn group_key(holder voidptr, _ voidptr, event voidptr, mut cx core.Cx) {
-	g := unsafe { &SelectGroup(holder) }
-	e := unsafe { &core.KeyDownEvent(event) }
+fn group_key(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	g := prim.held[SelectGroup](holder)
+	e := prim.held[core.KeyDownEvent](event)
 	if g.st == unsafe { nil } || !e.mods.has(.ctrl) {
 		return
 	}

@@ -47,6 +47,14 @@ grep -q 'quadra patch (closure trace)' "$closure" ||
 # on the collector's heap stale words kept it alive, so a vault unlock kept 64 MiB.
 grep -q 'quadra patch (argon2 release)' "$ROOT/.tools/v/vlib/crypto/argon2/argon2.v" ||
 	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-argon2-release.diff"
+# base64 decoding indexed its table with every input byte unchecked: a byte above `z` (an OSC 52
+# payload from any program in a terminal) panicked or read out of bounds in -prod.
+grep -q 'quadra patch (base64 bounds)' "$ROOT/.tools/v/vlib/encoding/base64/base64.c.v" ||
+	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-base64-bounds.diff"
+# x.json2 checks and decodes by recursion, one call per level: deep nesting in any JSON file
+# (a theme, a config, sessions.json) overflowed the stack. It now fails past 256 levels.
+grep -q 'quadra patch (json2 depth)' "$ROOT/.tools/v/vlib/x/json2/decode.v" ||
+	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-json2-depth.diff"
 # MSVC drops intermediate `*.tmp.obj` files into the working directory; remove them after each run.
 status=0
 "$ROOT/.tools/v/v.exe" "$@" || status=$?

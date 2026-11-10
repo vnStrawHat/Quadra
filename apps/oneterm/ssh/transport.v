@@ -6,7 +6,8 @@ import sync
 import time
 
 const client_version = 'SSH-2.0-OneTerm_V_0.6.11'
-const max_packet_len = 512 * 1024
+const max_packet_len = 512 * 1024 // see check_packet_len
+const max_deferred = 64 // only kex messages may follow a server KEXINIT (RFC 4253 7.1)
 const rekey_bytes = u64(1) << 30
 const rekey_after = 3600 * time.second
 
@@ -125,9 +126,7 @@ fn (mut t Transport) handshake() ! {
 fn (mut t Transport) read_raw() ![]u8 {
 	mut first := t.read_exact(t.dec.first_len())!
 	plen := t.dec.read_len(t.recv_seq, first)!
-	if plen < 1 || plen > max_packet_len {
-		return error('bad packet length ${plen}')
-	}
+	check_packet_len(t.dec, plen)!
 	total := 4 + plen + t.dec.mac_len()
 	mut wire := []u8{cap: total}
 	wire << first
@@ -196,6 +195,9 @@ fn (mut t Transport) read_kex_packet() ![]u8 {
 			return pkt
 		}
 		if !t.handle_common(pkt)! {
+			if t.deferred.len >= max_deferred {
+				return error('the server sent too many packets during a key exchange')
+			}
 			t.deferred << pkt.clone()
 		}
 	}

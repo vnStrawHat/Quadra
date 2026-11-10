@@ -40,6 +40,19 @@ fn build_packet(payload []u8, s Sealer) []u8 {
 	return pkt
 }
 
+// check_packet_len rejects a received packet length before anything is read or sliced: in range,
+// and whole cipher blocks (RFC 4253 6; the length field counts unless sent apart), which also
+// makes every packet at least one block long, as CTR slices it before checking the MAC.
+fn check_packet_len(s Sealer, plen int) ! {
+	if plen < 1 || plen > max_packet_len {
+		return error('bad packet length ${plen}')
+	}
+	covered := if s.length_excluded() { plen } else { 4 + plen }
+	if covered % s.pad_unit() != 0 {
+		return error('bad packet length ${plen}: not a whole number of blocks')
+	}
+}
+
 struct PlainSealer {}
 
 fn (s PlainSealer) first_len() int {

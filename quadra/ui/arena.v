@@ -3,6 +3,7 @@
 module ui
 
 import quadra.core
+import quadra.prim
 
 const arena_divs = 0
 const arena_texts = 1
@@ -22,10 +23,10 @@ fn new_div() &Div {
 	k := a.used[arena_divs]
 	a.used[arena_divs] = k + 1
 	if k < a.pools[arena_divs].len {
-		return unsafe { &Div(a.pools[arena_divs][k]) }
+		return prim.held[Div](a.pools[arena_divs][k])
 	}
 	d := &Div{}
-	a.pools[arena_divs] << voidptr(d)
+	a.pools[arena_divs] << prim.hold(d)
 	return d
 }
 
@@ -40,7 +41,7 @@ fn new_text(s string) &TextEl {
 	k := a.used[arena_texts]
 	a.used[arena_texts] = k + 1
 	if k < a.pools[arena_texts].len {
-		mut t := unsafe { &TextEl(a.pools[arena_texts][k]) }
+		mut t := prim.held[TextEl](a.pools[arena_texts][k])
 		t.content = s
 		return t
 	}
@@ -48,7 +49,7 @@ fn new_text(s string) &TextEl {
 		content: s
 		pooled:  true
 	}
-	a.pools[arena_texts] << voidptr(t)
+	a.pools[arena_texts] << prim.hold(t)
 	return t
 }
 
@@ -65,7 +66,7 @@ fn new_svg(src string, size f32) &SvgEl {
 	k := a.used[arena_svgs]
 	a.used[arena_svgs] = k + 1
 	if k < a.pools[arena_svgs].len {
-		mut s := unsafe { &SvgEl(a.pools[arena_svgs][k]) }
+		mut s := prim.held[SvgEl](a.pools[arena_svgs][k])
 		same := s.src.len == src.len && (unsafe { s.src.str == src.str } || s.src == src)
 		if !same {
 			s.parsed, s.hash, s.key = none, 0, ''
@@ -78,7 +79,7 @@ fn new_svg(src string, size f32) &SvgEl {
 		w:   size
 		h:   size
 	}
-	a.pools[arena_svgs] << voidptr(s)
+	a.pools[arena_svgs] << prim.hold(s)
 	return s
 }
 
@@ -87,7 +88,7 @@ fn new_svg(src string, size f32) &SvgEl {
 // append) and its state patches, reset, for the next states_mut().
 fn reset_arena(mut a core.Arena) {
 	for i in 0 .. a.used[arena_divs] {
-		mut d := unsafe { &Div(a.pools[arena_divs][i]) }
+		mut d := prim.held[Div](a.pools[arena_divs][i])
 		mut kids := unsafe { d.children }
 		unsafe { vmemset(kids.data, 0, kids.len * int(sizeof(core.Element))) }
 		kids.clear()
@@ -109,7 +110,7 @@ fn reset_arena(mut a core.Arena) {
 		d.children, d.handlers, d.keys, d.spare = kids, hs, ks, spare
 	}
 	for i in 0 .. a.used[arena_texts] {
-		mut t := unsafe { &TextEl(a.pools[arena_texts][i]) }
+		mut t := prim.held[TextEl](a.pools[arena_texts][i])
 		own := t.own // a number's wrap buffers, refilled by the next use
 		unsafe {
 			*t = TextEl{}
@@ -117,7 +118,7 @@ fn reset_arena(mut a core.Arena) {
 		t.own, t.pooled = own, true
 	}
 	for i in 0 .. a.used[arena_svgs] {
-		mut s := unsafe { &SvgEl(a.pools[arena_svgs][i]) }
+		mut s := prim.held[SvgEl](a.pools[arena_svgs][i])
 		// the source and what depends on it only: new_svg compares the next source
 		src, parsed, hash, key, kw, kh, kc := s.src, s.parsed, s.hash, s.key, s.kw, s.kh, s.kcolor
 		unsafe {

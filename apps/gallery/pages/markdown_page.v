@@ -42,9 +42,10 @@ pub fn (mut p MarkdownPage) render(mut cx core.ViewCx[MarkdownPage]) core.Elemen
 	doc := md.view(sample_md).on_link(cx.listener(fn (mut p MarkdownPage, url &string, mut _ core.ViewCx[MarkdownPage]) {
 		p.clicked = *url
 	}))
+	said := if p.clicked == '' { 'Ctrl-click a link' } else { 'Clicked: ${p.clicked}' }
 	return page('Markdown',
 		'Release notes, READMEs and help text: headings, lists, code, quotes, tables and links.', [
 		demo('Release notes', col([ui.div().w(560).child(doc),
-			hint(t, 'Clicked: ${p.clicked}')]), 'md.view(src).on_link(l)'),
+			hint(t, said)]), 'md.view(src).on_link(l)'),
 	])
 }

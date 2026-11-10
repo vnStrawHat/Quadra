@@ -18,25 +18,23 @@ mut:
 
 // row_breaks appends the display offsets where the rows of line s start (0 first), breaking
 // after the last space that fits in cols, or inside a word longer than a row. Spaces may
-// hang past the edge.
-// ponytail: one column per rune; wide (CJK) characters and clusters count as one.
+// hang past the edge. Columns are display widths (a wide character takes two).
 fn row_breaks(s string, cols int, mut out []int) {
 	out << 0
 	if cols <= 0 {
 		return
 	}
 	mut start, mut col, mut brk, mut since := 0, 0, 0, 0
-	for i := 0; i < s.len; i++ {
-		c := s[i]
-		if c >= 0x80 && c < 0xC0 {
-			continue
-		}
-		if c == ` ` {
+	mut i := 0
+	for i < s.len {
+		j, w := cell_step(s, i)
+		if s[i] == ` ` {
 			col++
-			brk, since = i + 1, 0
+			brk, since = j, 0
+			i = j
 			continue
 		}
-		if col >= cols {
+		if col + w > cols && col > 0 {
 			if brk > start {
 				start, col = brk, since
 			} else {
@@ -45,9 +43,20 @@ fn row_breaks(s string, cols int, mut out []int) {
 			brk = start
 			out << start
 		}
-		col++
-		since++
+		col += w
+		since += w
+		i = j
 	}
+}
+
+// cell_step is the end of the grapheme at i and its display width (one byte per ASCII
+// character not followed by a combining mark).
+fn cell_step(s string, i int) (int, int) {
+	if s[i] < 0x80 && (i + 1 >= s.len || s[i + 1] < 0x80) {
+		return i + 1, 1
+	}
+	j := text.next_grapheme(s, i)
+	return j, text.grapheme_width(s, i, j)
 }
 
 // sync_rows rebuilds the row table when the text, the width or the tab size changed.
@@ -152,7 +161,7 @@ fn (e &Editor) caret(ts &text.TextSystem, off int) (f32, int) {
 	n := d.buf.line_of(off)
 	dl := display_line(d.buf.line(n), d.tab_size)
 	mut sys := unsafe { ts }
-	l := sys.layout_line(dl.shown, e.style)
+	l := sys.layout_mono(dl.shown, e.style, e.cell.width)
 	k := dl.to_shown(off - d.buf.line_start(n))
 	r := e.row_at_col(n, k)
 	rs, _ := e.row_span(n, r)
@@ -190,17 +199,6 @@ fn frac(v f32) f32 {
 	}
 }
 
-// runes_in counts the characters in s[a..b].
-fn runes_in(s string, a int, b int) int {
-	mut n := 0
-	for i in a .. math.min(b, s.len) {
-		if s[i] < 0x80 || s[i] >= 0xC0 {
-			n++
-		}
-	}
-	return n
-}
-
 // move_rows moves every cursor by dn visual rows, keeping its column inside the row.
 fn (mut e Editor) move_rows(dn int, extend bool) {
 	e.sync_rows()
@@ -213,7 +211,7 @@ fn (mut e Editor) move_rows(dn int, extend bool) {
 		r := e.row_at_col(n, k)
 		if c.goal < 0 {
 			rs, _ := e.row_span(n, r)
-			c.goal = runes_in(dl.shown, rs, k)
+			c.goal = text.display_width(dl.shown.substr_unsafe(rs, k))
 		}
 		t := r + dn
 		c.head = if t < 0 {
@@ -240,8 +238,11 @@ fn (e &Editor) off_in_row(r int, col int) int {
 	end := if re < dl.shown.len { text.prev_grapheme(dl.shown, re) } else { dl.shown.len }
 	mut i, mut c := rs, 0
 	for i < end && c < col {
-		i = text.next_grapheme(dl.shown, i)
-		c++
+		j, w := cell_step(dl.shown, i)
+		if c + w > col && col - c <= w / 2 { // the half rule of off_at_col
+			break
+		}
+		i, c = j, c + w
 	}
 	return d.buf.line_start(n) + dl.to_src(i)
 }

@@ -2,11 +2,13 @@
 // the outermost update, event or timer callback returns (specs/07-state.md).
 module core
 
+import quadra.prim
+
 struct Observer {
 	owner  u32
 	target u32
-	holder voidptr
-	call   fn (holder voidptr, owner voidptr, mut cx Cx) = unsafe { nil }
+	holder prim.Holder
+	call   fn (holder prim.Holder, owner prim.Holder, mut cx Cx) = unsafe { nil }
 }
 
 struct Subscription {
@@ -14,14 +16,14 @@ struct Subscription {
 	owner      u32
 	target     u32
 	event_type string
-	holder     voidptr
-	call       fn (holder voidptr, owner voidptr, event voidptr, mut cx Cx) = unsafe { nil }
+	holder     prim.Holder
+	call       fn (holder prim.Holder, owner prim.Holder, event prim.Holder, mut cx Cx) = unsafe { nil }
 }
 
 struct PendingEvent {
 	source     u32
 	event_type string
-	data       voidptr
+	data       prim.Holder
 }
 
 const max_flush_iterations = 10000
@@ -94,16 +96,12 @@ fn (mut app App) deliver(ev PendingEvent) {
 // enter_owned opens an effect scope for a live owner model and returns its pointer and
 // context (none when the owner is gone). The caller runs its callback, then `app.depth--`.
 // No closure on this path: V never frees closures, and this runs on every notification.
-fn (mut app App) enter_owned(owner u32) ?(voidptr, Cx) {
+fn (mut app App) enter_owned(owner u32) ?(prim.Holder, Cx) {
 	if owner != 0 && (int(owner) >= app.store.slots.len || !app.store.slots[owner].alive) {
 		return none
 	}
-	mut ptr := unsafe { nil }
-	if owner != 0 {
-		ptr = app.store.slots[owner].ptr
-	}
 	app.depth++
-	return ptr, Cx{
+	return app.store.holder(owner), Cx{
 		app:    app
 		entity: owner
 	}
@@ -115,7 +113,7 @@ fn (mut app App) invalidate_view(id u32) {
 	}
 	app.store.slots[id].dirty = true
 	if mut w := app.window_of_view(id) {
-		w.invalidate()
+		w.notify_view(id)
 	} else {
 		for mut w in app.windows {
 			w.invalidate()
@@ -137,9 +135,9 @@ struct ObserveHolder[T, O] {
 	m Model[O]
 }
 
-fn call_observer[T, O](holder voidptr, owner voidptr, mut cx Cx) {
-	h := unsafe { &ObserveHolder[T, O](holder) }
-	mut v := unsafe { &T(owner) }
+fn call_observer[T, O](holder prim.Holder, owner prim.Holder, mut cx Cx) {
+	h := prim.held[ObserveHolder[T, O]](holder)
+	mut v := unsafe { prim.held[T](owner) } // unsafe only quiets a mutability notice
 	mut vcx := ViewCx[T]{
 		Cx: cx
 	}
@@ -150,7 +148,7 @@ fn make_observer[T, O](owner u32, m Model[O], f fn (mut v T, m Model[O], mut cx 
 	return Observer{
 		owner:  owner
 		target: m.id
-		holder: voidptr(&ObserveHolder[T, O]{f, m})
+		holder: prim.hold(&ObserveHolder[T, O]{f, m})
 		call:   call_observer[T, O]
 	}
 }
@@ -168,13 +166,13 @@ struct SubscribeHolder[T, S, Q] {
 	m Model[S]
 }
 
-fn call_subscriber[T, S, Q](holder voidptr, owner voidptr, event voidptr, mut cx Cx) {
-	h := unsafe { &SubscribeHolder[T, S, Q](holder) }
-	mut v := unsafe { &T(owner) }
+fn call_subscriber[T, S, Q](holder prim.Holder, owner prim.Holder, event prim.Holder, mut cx Cx) {
+	h := prim.held[SubscribeHolder[T, S, Q]](holder)
+	mut v := unsafe { prim.held[T](owner) } // unsafe only quiets a mutability notice
 	mut vcx := ViewCx[T]{
 		Cx: cx
 	}
-	h.f(mut v, h.m, unsafe { &Q(event) }, mut vcx)
+	h.f(mut v, h.m, prim.held[Q](event), mut vcx)
 }
 
 fn make_subscription[T, S, Q](id u64, owner u32, m Model[S], f fn (mut v T, m Model[S], e &Q, mut cx ViewCx[T])) Subscription {
@@ -183,7 +181,7 @@ fn make_subscription[T, S, Q](id u64, owner u32, m Model[S], f fn (mut v T, m Mo
 		owner:      owner
 		target:     m.id
 		event_type: typeof[Q]().name
-		holder:     voidptr(&SubscribeHolder[T, S, Q]{f, m})
+		holder:     prim.hold(&SubscribeHolder[T, S, Q]{f, m})
 		call:       call_subscriber[T, S, Q]
 	}
 }
@@ -202,6 +200,6 @@ pub fn (mut cx Cx) unsubscribe(id u64) {
 
 // emit queues a typed event from the current model to its subscribers.
 pub fn (mut cx Cx) emit[E](e E) {
-	cx.app.pending << PendingEvent{cx.entity, typeof[E]().name, heap_copy(e)}
+	cx.app.pending << PendingEvent{cx.entity, typeof[E]().name, heap_hold(e)}
 	cx.app.flush()
 }

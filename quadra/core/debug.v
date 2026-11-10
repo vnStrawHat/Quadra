@@ -7,6 +7,28 @@ import quadra.gpu
 import quadra.platform
 import quadra.text
 
+pub struct WindowStats {
+pub mut:
+	frames        int
+	builds        int         // render + layout + prepaint + paint
+	prepaints     int         // prepaint + paint (scrolling)
+	paints        int         // paint only (focus, timers)
+	patches       int         // hover/press restyles patched into the last scene
+	cache_hits    int         // views reused without rendering
+	renders       map[u32]int // per view id
+	last_build_us i64
+	phase_us      [4]i64 // last build: render, layout, prepaint, paint
+	phase_bytes   [4]u64 // bytes allocated by each phase of the last build
+	first_present u64    // time.sys_mono_now() when the first frame was presented
+	last_frame_us i64
+	present_us    i64 // Present of the last frame (blocks while the queue is full)
+	draw_calls    int
+	instances     int
+	layout_nodes  int
+	relayouts     int // builds that laid out only what notified views changed (relayout.v)
+	relaid        int // nodes above the replaced subtrees laid out again by the last of them
+}
+
 pub struct DebugFlags {
 pub mut:
 	profiler  bool

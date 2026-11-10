@@ -1,4 +1,4 @@
-// Sixel decoder (specs/17): pixels accumulate in a growable buffer; finish makes RGBA.
+// Sixel decoder (specs/17): RGBA pixels accumulate in a growable C-heap buffer (PixelBuf).
 module term
 
 pub const sixel_max_dim = 4096
@@ -23,10 +23,9 @@ mut:
 	raster_h int
 	state    SixelState
 	args     []int
-	pixels   []u32
-	stride   int
+	pixels   PixelBuf // while decoding: pixels.w is the row stride
 pub mut:
-	rgba    []u8 // after flush
+	rgba    PixelBuf // after flush, until place_sixel takes it
 	img_w   int
 	img_h   int
 	band_px int
@@ -187,23 +186,25 @@ fn (mut s Sixel) raster_command() {
 }
 
 fn (mut s Sixel) sixel(bits u8, count int) {
+	// With a raster size, flush cuts the image to it: pixels past it are never stored (a
+	// 20x40 image painting `!9999~` bands made a 4096 px square decode buffer).
+	max_w := if s.raster_w > 0 { s.raster_w } else { sixel_max_dim }
+	max_h := if s.raster_h > 0 { s.raster_h } else { sixel_max_dim }
 	y0 := s.band * 6
 	if y0 >= sixel_max_dim {
 		return
 	}
 	x_end := if s.x + count > sixel_max_dim { sixel_max_dim } else { s.x + count }
 	y_end := if y0 + 6 > sixel_max_dim { sixel_max_dim } else { y0 + 6 }
-	if bits != 0 && x_end > s.x {
-		s.ensure_size(x_end, y_end)
-		color := s.palette[s.color]
+	paint_x := if x_end > max_w { max_w } else { x_end }
+	paint_y := if y_end > max_h { max_h } else { y_end }
+	if bits != 0 && paint_x > s.x && paint_y > y0 {
+		s.ensure_size(paint_x, paint_y)
+		c := s.palette[s.color]
 		for bit in 0 .. 6 {
 			y := y0 + bit
-			if bits & (u8(1) << bit) == 0 || y >= y_end {
-				continue
-			}
-			row := y * s.stride
-			for x in s.x .. x_end {
-				s.pixels[row + x] = color
+			if bits & (u8(1) << bit) != 0 && y < paint_y {
+				s.pixels.fill(y * s.pixels.w + s.x, paint_x - s.x, c)
 			}
 		}
 	}
@@ -216,34 +217,27 @@ fn (mut s Sixel) sixel(bits u8, count int) {
 	}
 }
 
+// ensure_size makes room for h rows of w pixels, doubling the block (realloc) up to 4096
+// rows. The buffer is RGBA already: flush hands it over in place.
 fn (mut s Sixel) ensure_size(w int, h int) {
 	s.ensure_stride(w)
-	need := h * s.stride
-	if s.pixels.len < need {
-		s.pixels << []u32{len: need - s.pixels.len}
+	if s.pixels.h < h {
+		need := h * s.pixels.w * 4
+		if need > s.pixels.cap {
+			limit := sixel_max_dim * s.pixels.w * 4
+			mut room := if s.pixels.cap * 2 > need { s.pixels.cap * 2 } else { need }
+			s.pixels.reserve(if room > limit { limit } else { room })
+		}
+		s.pixels.h, s.pixels.len = h, need // the bytes past len are zero (PixelBuf)
 	}
 }
 
 fn (mut s Sixel) ensure_stride(w int) {
-	if w <= s.stride {
+	if w <= s.pixels.w {
 		return
 	}
-	mut nw := if s.stride * 2 > w { s.stride * 2 } else { w }
-	nw = clamp(nw, 64, sixel_max_dim)
-	if s.stride == 0 {
-		s.stride = nw
-		return
-	}
-	rows := s.pixels.len / s.stride
-	mut px := []u32{len: rows * nw}
-	for y in 0 .. rows {
-		src := y * s.stride
-		dst := y * nw
-		for x in 0 .. s.stride {
-			px[dst + x] = s.pixels[src + x]
-		}
-	}
-	s.pixels, s.stride = px, nw
+	nw := if s.pixels.w * 2 > w { s.pixels.w * 2 } else { w }
+	s.pixels.restride(clamp(nw, 64, sixel_max_dim), s.pixels.h)
 }
 
 // flush ends the string: the pending argument runs and the image becomes RGBA.
@@ -259,23 +253,16 @@ fn (mut s Sixel) flush() {
 	s.img_w, s.img_h = w, h
 	s.band_px = s.band * 6
 	if w == 0 || h == 0 {
+		s.pixels.free()
 		return
 	}
-	s.rgba = []u8{len: w * h * 4}
-	rows := if s.stride == 0 { 0 } else { s.pixels.len / s.stride }
-	copy_w := if w < s.stride { w } else { s.stride }
-	y_end := if h < rows { h } else { rows }
-	for y in 0 .. y_end {
-		src := y * s.stride
-		dst := y * w * 4
-		for x in 0 .. copy_w {
-			px := s.pixels[src + x]
-			if px != 0 {
-				s.rgba[dst + x * 4] = u8(px)
-				s.rgba[dst + x * 4 + 1] = u8(px >> 8)
-				s.rgba[dst + x * 4 + 2] = u8(px >> 16)
-				s.rgba[dst + x * 4 + 3] = u8(px >> 24)
-			}
-		}
-	}
+	s.pixels.restride(w, h) // in place: cut or padded to the image, w pixels a row
+	s.pixels.shrink()
+	s.rgba = s.pixels.take()
+}
+
+// free gives back the decoder's pixels (a decode cut short, or what place_sixel left).
+fn (mut s Sixel) free() {
+	s.pixels.free()
+	s.rgba.free()
 }

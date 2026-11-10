@@ -89,6 +89,28 @@ if [ -n "$app_closures" ]; then
 	fail=1
 fi
 
+# 3d. `unsafe` outside the FFI code (specs/14, unsafe cap): every block is a place the compiler
+#     no longer checks, so the counts only go down. Counted per occurrence in non-test .v files,
+#     comments stripped; `unsafe { nil }` (a nil pointer field) and `unsafe { self_ }` (the
+#     builder idiom) do not count. The FFI modules and every *.c.v file are excluded: calling C
+#     is what they are for.
+unsafe_cap_quadra=130
+unsafe_cap_apps=77
+unsafe_ffi='^(quadra/(platform/win|gpu/d3d11|text/dwrite|native)/|.*\.c\.v$)'
+unsafe_count() {
+	find "$1" -name '*.v' ! -name '*_test.v' | grep -Ev "$unsafe_ffi" | xargs sed -e 's://.*$::' \
+		-e 's/unsafe { nil }//g' -e 's/unsafe { self_ }//g' | grep -oE '\bunsafe\b' | wc -l
+}
+for tree in quadra apps; do
+	cap_var="unsafe_cap_$tree"
+	n=$(unsafe_count "$tree")
+	if [ "$n" -gt "${!cap_var}" ]; then
+		say "check: $n uses of unsafe in $tree/ (cap ${!cap_var}); see specs/14, unsafe cap. Added since HEAD:"
+		git diff -U0 HEAD -- "$tree" | grep -E '^\+[^+].*\bunsafe\b' | grep -vE 'unsafe \{ (nil|self_) \}' | head -20 || true
+		fail=1
+	fi
+done
+
 # 4. Programs no test builds (bench, tools): type-check them so API changes reach them too.
 for prog in bench bench/*/ bench/compare/run; do
 	[ -f "${prog%/}/main.v" ] || continue

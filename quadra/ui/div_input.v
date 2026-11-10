@@ -178,8 +178,9 @@ fn (mut d Div) prepaint_input(bounds prim.Rect, mut cx core.PrepaintCx) (int, in
 			cx.push_hitbox(d.hitbox)
 			d.own_scroll_hitbox = true
 		}
+		// A field of d: d lives until the next render, and every prepaint rebuilds handlers.
 		cx.on_mouse(d.hitbox, .scroll, core.AnyListener{
-			holder: voidptr(&d.scroll_target)
+			holder: prim.hold(&d.scroll_target)
 			call:   scroll_handler
 		}, false)
 	}

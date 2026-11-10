@@ -5,6 +5,7 @@ import net
 import os
 import rand
 import time
+import quadra.prim
 
 fn test_sftp_round_trip() {
 	dir, port := gate() or { return }
@@ -22,9 +23,9 @@ fn test_sftp_round_trip() {
 	os.write_file_array(local_up, data) or { panic(err) }
 	mut log := &EventLog{}
 	c.upload(1, local_up, '${root}/a.bin', OnTransfer{
-		ctx: log
-		f:   fn (ctx voidptr, e TransferEvent) {
-			mut log := unsafe { &EventLog(ctx) }
+		ctx: prim.hold(log)
+		f:   fn (ctx prim.Holder, e TransferEvent) {
+			mut log := prim.held[EventLog](ctx)
 			log.events << e
 		}
 	}) or { panic(err) }
@@ -79,9 +80,9 @@ fn test_sftp_large_transfer_across_rekeys_and_folders() {
 	back := os.join_path(dir, 'tree_back')
 	os.rmdir_all(back) or {}
 	c.download(11, root, back, OnTransfer{
-		ctx: seen
-		f:   fn (ctx voidptr, e TransferEvent) {
-			mut seen := unsafe { &EventLog(ctx) }
+		ctx: prim.hold(seen)
+		f:   fn (ctx prim.Holder, e TransferEvent) {
+			mut seen := prim.held[EventLog](ctx)
 			if e.kind == .discovering {
 				seen.files = e.files
 			}
@@ -182,9 +183,9 @@ fn test_forwards_local_dynamic_remote() {
 		}),
 	]
 	mut warned := &EventLog{}
-	cfg.warning_ctx = warned
-	cfg.on_warning = fn (ctx voidptr, m string) {
-		mut warned := unsafe { &EventLog(ctx) }
+	cfg.warning_ctx = prim.hold(warned)
+	cfg.on_warning = fn (ctx prim.Holder, m string) {
+		mut warned := prim.held[EventLog](ctx)
 		warned.warnings << m
 	}
 	mut s := connect(cfg) or { panic(err) }

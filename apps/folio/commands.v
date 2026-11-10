@@ -5,6 +5,7 @@ import os
 import quadra.core
 import quadra.kit
 import quadra.kit.input
+import quadra.text
 import quadra.ui
 
 pub enum Cmd {
@@ -246,10 +247,10 @@ fn (mut f Folio) reveal_line(line int, mut cx core.ViewCx[Folio]) {
 	cx.win.invalidate_prepaint()
 }
 
-// follow_link opens web links in the browser, Markdown files in Folio and #anchors in
-// this document.
+// follow_link opens web and mail links in the browser, Markdown files in Folio and #anchors
+// in this document. A link with any other scheme (file:, ms-*:, a custom handler) does nothing.
 fn (mut f Folio) follow_link(url string, mut cx core.ViewCx[Folio]) {
-	if url.starts_with('http://') || url.starts_with('https://') || url.starts_with('mailto:') {
+	if text.url_openable(url) {
 		cx.open_external(url)
 		return
 	}
@@ -263,6 +264,11 @@ fn (mut f Folio) follow_link(url string, mut cx core.ViewCx[Folio]) {
 		return
 	}
 	target := url.all_before('#')
+	if colon := target.index(':') { // one letter is a drive: `C:/notes/a.md`
+		if colon > 1 && !target[..colon].contains('/') && !target[..colon].contains_u8(`\\`) {
+			return
+		}
+	}
 	base := if f.cur().path == '' { os.getwd() } else { os.dir(f.cur().path) }
 	path := if os.is_abs_path(target) { target } else { os.join_path(base, target) }
 	if os.is_file(path) {

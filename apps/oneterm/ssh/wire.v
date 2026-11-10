@@ -94,7 +94,8 @@ fn (r Reader) left() int {
 }
 
 fn (mut r Reader) need(n int) ! {
-	if n < 0 || r.pos + n > r.buf.len {
+	// n > left, not pos + n > len: a length near the int maximum wrapped the sum negative
+	if n < 0 || n > r.buf.len - r.pos {
 		return error('truncated packet')
 	}
 }

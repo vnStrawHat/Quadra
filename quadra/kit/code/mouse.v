@@ -1,6 +1,6 @@
 // Mouse: click places the cursor, drag selects (by character, word or line after a double
-// or triple click), ctrl-click adds a cursor, alt-drag selects a column, shift-click
-// extends, and a click in the gutter selects lines.
+// or triple click), ctrl-click adds a cursor (on a URL it opens it, links.v), alt-drag
+// selects a column, shift-click extends, and a click in the gutter selects lines.
 module code
 
 import math
@@ -20,7 +20,7 @@ pub fn (mut e Editor) offset_at(ts &text.TextSystem, x f32, y f32) int {
 	n := e.row_line(r)
 	dl := display_line(d.buf.line(n), d.tab_size)
 	mut sys := unsafe { ts }
-	l := sys.layout_line(dl.shown, e.style)
+	l := sys.layout_mono(dl.shown, e.style, e.cell.width)
 	ra, rb := e.row_span(n, r)
 	mut k := math.max(ra, l.index_for_x(x - e.bounds.x + e.scroll.x + l.x_for_index(ra)))
 	if rb < dl.shown.len && k >= rb { // past a wrapped row's end: stay on the row
@@ -43,6 +43,9 @@ fn (d &Doc) next_line_start(n int) int {
 
 fn (mut e Editor) mouse_down(ev &core.MouseDownEvent, mut cx core.ViewCx[Editor]) {
 	if ev.button != .left {
+		return
+	}
+	if ev.mods.has(.ctrl) && !ev.mods.has(.alt) && e.ctrl_click(ev, mut cx) {
 		return
 	}
 	e.focus.focus(mut cx.Cx)
@@ -76,6 +79,9 @@ fn (mut e Editor) mouse_down(ev &core.MouseDownEvent, mut cx core.ViewCx[Editor]
 fn (mut e Editor) mouse_drag(ev &core.MouseMoveEvent, mut cx core.ViewCx[Editor]) {
 	if !ev.pressed || e.drag == .none {
 		e.drag = .none
+		if !ev.pressed {
+			e.hover_link(ev.x, ev.y, mut cx)
+		}
 		return
 	}
 	mut d := e.doc

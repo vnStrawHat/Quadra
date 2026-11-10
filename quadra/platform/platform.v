@@ -193,9 +193,9 @@ pub:
 	rows    int = 24
 	// ctx is handed back to on_data and on_exit: plain functions with their data, no closure
 	// per terminal (V frees none, specs/14)
-	ctx     voidptr
-	on_data fn (ctx voidptr, data []u8) = unsafe { nil } // reader thread; data is lent for the call: copy to keep it
-	on_exit fn (ctx voidptr, code int)  = unsafe { nil } // reader thread, once, after the last data
+	ctx     prim.Holder
+	on_data fn (ctx prim.Holder, data []u8) = unsafe { nil } // reader thread; data is lent for the call: copy to keep it
+	on_exit fn (ctx prim.Holder, code int)  = unsafe { nil } // reader thread, once, after the last data
 }
 
 // merged_env is the `parent` environment with `extra` applied, as sorted KEY=value lines (names

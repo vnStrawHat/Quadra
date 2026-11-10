@@ -6,6 +6,7 @@ import os
 import time
 import x.json2
 import quadra.core
+import quadra.prim
 import quadra.platform
 
 pub const save_delay_ms = 500
@@ -31,7 +32,7 @@ pub struct SaveState {
 pub:
 	path    string
 	version int
-	encode  fn (value voidptr) string = unsafe { nil }
+	encode  fn (value prim.Holder) string = unsafe { nil }
 mut:
 	timer   u64
 	pending string
@@ -70,8 +71,10 @@ pub fn load_settings[T](mut cx core.Cx, dir string, name string, default T, opts
 
 // encode_value is stored as a function pointer: json.encode inside a method of the generic
 // Settings[T] gets instantiated with the wrong T when several settings types exist.
-fn encode_value[T](value voidptr) string {
-	return json.encode(*unsafe { &T(value) })
+// The method passes the store's holder (non-generic): a typed read there gets the wrong T as
+// well, which a checked holder caught (specs/14).
+fn encode_value[T](value prim.Holder) string {
+	return json.encode(*prim.held[T](value))
 }
 
 fn decode_settings[T](path string, _ T, opts SettingsOptions[T]) !T {
@@ -108,7 +111,7 @@ pub fn update_with[T, D](mut cx core.Cx, s Settings[T], data D, f fn (mut v T, d
 
 fn (s Settings[T]) saved(mut cx core.Cx) {
 	mut st := s.state
-	text := st.encode(voidptr(cx.peek(s.model)))
+	text := st.encode(cx.app.model_holder(s.model.id, s.model.gen))
 	schedule_save(mut cx.app, mut st, text)
 }
 

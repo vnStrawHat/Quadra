@@ -1,5 +1,6 @@
 // Window: the frame pipeline with its invalidation levels and platform events.
-//   render  : a view changed        -> render dirty views, layout, prepaint, paint
+//   render  : a view changed        -> render dirty views, lay out what changed (relayout.v),
+//                                      prepaint, paint; invalidate() or a resize: full layout
 //   prepaint: scroll, overlay moves -> prepaint and paint with the existing layout
 //   paint   : hover, press, focus   -> paint only
 module core
@@ -9,26 +10,6 @@ import quadra.prim
 import quadra.gpu
 import quadra.layout
 import quadra.platform
-
-pub struct WindowStats {
-pub mut:
-	frames        int
-	builds        int         // render + layout + prepaint + paint
-	prepaints     int         // prepaint + paint (scrolling)
-	paints        int         // paint only (focus, timers)
-	patches       int         // hover/press restyles patched into the last scene
-	cache_hits    int         // views reused without rendering
-	renders       map[u32]int // per view id
-	last_build_us i64
-	phase_us      [4]i64 // last build: render, layout, prepaint, paint
-	phase_bytes   [4]u64 // bytes allocated by each phase of the last build
-	first_present u64    // time.sys_mono_now() when the first frame was presented
-	last_frame_us i64
-	present_us    i64 // Present of the last frame (blocks while the queue is full)
-	draw_calls    int
-	instances     int
-	layout_nodes  int
-}
 
 @[heap]
 pub struct Window {
@@ -61,8 +42,10 @@ pub mut:
 	a11y_sent       bool // the platform has had a tree since a11y went on (a11y.v)
 	mouse           prim.Point
 	mouse_in        bool
+	mods            platform.Mods // held at the last mouse or key event (cursor_mods)
 	hovered         map[u64]bool
 	pressed         map[u64]bool
+	hint            HoverHint // the hovered hitbox's hint, drawn by the kit (hint.v)
 	debug           DebugFlags
 mut:
 	down_path      []u64
@@ -84,7 +67,7 @@ mut:
 	needs_paint    bool
 	pending_keys   []Keystroke
 	deferred       []Deferred
-	state          map[u64]voidptr
+	state          map[u64]prim.Holder
 	state_used     map[u64]bool
 	fresh_views    []prim.Rect         // bounds of views rendered this frame (paint flashing)
 	close_handlers map[u32]AnyListener // per view: may call cx.prevent_close()
@@ -100,6 +83,7 @@ mut:
 	tracking       Tracking   // closure lifetimes of layout and prepaint builds
 	layout_len     int        // layout nodes made by the last build (prepaint adds scratch nodes)
 	thumbs         ThumbState // auto-hiding scroll thumbs (scrollbar.v)
+	relay          Relayout   // incremental builds (relayout.v)
 }
 
 pub fn (w &Window) size() prim.Size {
@@ -110,8 +94,10 @@ pub fn (w &Window) scale() f32 {
 	return w.pw.scale()
 }
 
+// invalidate builds the window again with a full layout.
 pub fn (mut w Window) invalidate() {
 	w.dirty = true
+	w.relay.full = true
 	w.pw.request_frame()
 }
 
@@ -124,12 +110,6 @@ pub fn (mut w Window) invalidate_paint() {
 	w.needs_paint = true
 	w.full_paint = true
 	w.pw.request_frame()
-}
-
-fn (w &Window) device_size() (int, int) {
-	s := w.pw.size()
-	k := w.pw.scale()
-	return int(s.width * k + 0.5), int(s.height * k + 0.5)
 }
 
 // draw_frame runs the cheapest pipeline that covers what changed, then draws and presents.
@@ -168,6 +148,7 @@ pub fn (mut w Window) draw_frame() {
 	}
 	for u in app.text.take_uploads() {
 		app.device.upload(u) or { eprintln('quadra: atlas upload failed: ${err}') }
+		gpu.free_owned(u) // the device has copied the pixels
 	}
 	app.device.draw(mut w.surface, &w.scene, w.clear_color) or {
 		eprintln('quadra: draw failed: ${err}')
@@ -193,26 +174,27 @@ fn (mut w Window) build() {
 	mut app := w.app
 	w.fresh_views.clear()
 	b0 := gc_heap_usage().total_bytes
-	mut root := app.render_any(w.root.id, w)
-	t_render := sw.elapsed().microseconds()
-	b_render := gc_heap_usage().total_bytes
-	w.tree.clear()
-	mut lcx := LayoutCx{
-		app:        app
-		win:        w
-		tree:       &w.tree
-		text:       app.text
-		text_style: app.base_text_style()
+	// Notifications from here on are for the next build.
+	views := w.relay.views
+	w.relay.views = []u32{}
+	mut full := w.relay.full
+	w.relay.full = false
+	mut t_render := i64(0)
+	mut b_render := b0
+	if !full {
+		t_render = w.relayout(views, mut app) or {
+			full = true
+			0
+		}
 	}
-	w.begin_pass(.layout)
-	node := root.request_layout(mut lcx)
-	w.tracking.phase = .idle
-	w.tree.compute(node, w.pw.size())
+	if full {
+		mut root := app.render_any(w.root.id, w)
+		t_render = sw.elapsed().microseconds()
+		b_render = gc_heap_usage().total_bytes
+		w.layout_all(mut root)
+	}
 	t_layout := sw.elapsed().microseconds()
 	b_layout := gc_heap_usage().total_bytes
-	w.root_el = root
-	w.root_node = node
-	w.layout_len = w.tree.len()
 	w.prepaint_phase()
 	t_prepaint := sw.elapsed().microseconds()
 	b_prepaint := gc_heap_usage().total_bytes
@@ -223,7 +205,11 @@ fn (mut w Window) build() {
 		u64(b_paint - b_prepaint)]!
 	w.stats.phase_us = [t_render, t_layout - t_render, t_prepaint - t_layout, t_paint - t_prepaint]!
 	app.text.end_frame()
-	w.end_pass(.layout) // the previous tree is gone: free what building it allocated
+	if full {
+		w.end_pass(.layout) // the previous tree is gone: free what building it allocated
+	} else {
+		w.end_relayout()
+	}
 	w.stats.builds++
 	w.stats.layout_nodes = w.tree.len()
 	w.stats.last_build_us = sw.elapsed().microseconds()

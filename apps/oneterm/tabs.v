@@ -6,6 +6,7 @@ import quadra.kit
 import quadra.kit.term
 import quadra.kit.work
 import quadra.platform
+import quadra.prim
 import termlog
 import ssh
 import os
@@ -110,7 +111,7 @@ fn spawn_tab(w TabSpawn, opts platform.PtyOptions) !platform.Pty {
 		app:   w.app
 		inner: w.make.run(platform.PtyOptions{
 			...opts
-			ctx:     tap
+			ctx:     prim.hold(tap)
 			on_data: tap_data
 			on_exit: tap_exit
 		})!
@@ -123,20 +124,20 @@ fn spawn_tab(w TabSpawn, opts platform.PtyOptions) !platform.Pty {
 
 struct LogTap {
 	log     &termlog.TerminalLogController = unsafe { nil }
-	ctx     voidptr
-	on_data fn (ctx voidptr, data []u8) = unsafe { nil }
-	on_exit fn (ctx voidptr, code int)  = unsafe { nil }
+	ctx     prim.Holder
+	on_data fn (ctx prim.Holder, data []u8) = unsafe { nil }
+	on_exit fn (ctx prim.Holder, code int)  = unsafe { nil }
 }
 
-fn tap_data(ctx voidptr, data []u8) {
-	t := unsafe { &LogTap(ctx) }
+fn tap_data(ctx prim.Holder, data []u8) {
+	t := prim.held[LogTap](ctx)
 	mut log := t.log
 	log.process(data) // the printable output goes to the log file
 	t.on_data(t.ctx, data)
 }
 
-fn tap_exit(ctx voidptr, code int) {
-	t := unsafe { &LogTap(ctx) }
+fn tap_exit(ctx prim.Holder, code int) {
+	t := prim.held[LogTap](ctx)
 	t.on_exit(t.ctx, code)
 }
 

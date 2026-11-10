@@ -32,3 +32,13 @@ fn test_inlines() {
 	assert parse_inline('2 * 3 * 4').map(it.text) == ['2 * 3 * 4']
 	assert parse_inline('\\*not\\*').map(it.text) == ['*not*']
 }
+
+fn test_html_comments_show_nothing() {
+	b :=
+		parse('a\n\n<!-- one\ntwo -->\n<!-- x --> gone\nb <!-- hidden --> c\n\n```\n<!-- kept -->\n```\n')
+	assert b.map(it.kind) == [Kind.paragraph, .paragraph, .code]
+	assert b[1].text == 'b <!-- hidden --> c'
+	assert parse_inline(b[1].text).map(it.text).join('') == 'b  c'
+	assert b[2].text == '<!-- kept -->'
+	assert parse_inline('`<!-- x -->`')[0].text == '<!-- x -->'
+}

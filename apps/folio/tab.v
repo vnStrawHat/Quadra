@@ -73,6 +73,9 @@ fn (mut f Folio) add_tab(path string, d Disk, mut cx core.ViewCx[Folio]) &Tab {
 			t.text = d.text()
 		}
 	}))
+	code.on_link(mut cx.Cx, ed, cx.listener(fn (mut f Folio, url &string, mut cx core.ViewCx[Folio]) {
+		f.follow_link(*url, mut cx) // ctrl-click on a URL in the editor
+	}))
 	t := &Tab{
 		id:     id
 		editor: ed

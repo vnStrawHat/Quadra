@@ -41,9 +41,19 @@ fn new_sftp(mut ch Channel) !&Sftp {
 	init.put_u8(fx_init)
 	init.put_u32(3)
 	ch.write(init.buf)!
-	body := read_frame(mut ch)!
-	if body[0] != fx_version {
-		return error('expected SFTP VERSION, got message ${body[0]}')
+	has_limits := parse_version(read_frame(mut ch)!)!
+	spawn s.demux()
+	if has_limits {
+		s.query_limits()
+	}
+	spawn s.load_id_names()
+	return s
+}
+
+// parse_version reads SSH_FXP_VERSION; true when the server has limits@openssh.com.
+fn parse_version(body []u8) !bool {
+	if body.len < 5 || body[0] != fx_version { // the type and the u32 version
+		return error('expected SFTP VERSION, got ${body.len} bytes')
 	}
 	mut has_limits := false
 	mut r := new_reader(body[5..])
@@ -54,12 +64,7 @@ fn new_sftp(mut ch Channel) !&Sftp {
 			has_limits = true
 		}
 	}
-	spawn s.demux()
-	if has_limits {
-		s.query_limits()
-	}
-	spawn s.load_id_names()
-	return s
+	return has_limits
 }
 
 fn read_frame(mut ch Channel) ![]u8 {

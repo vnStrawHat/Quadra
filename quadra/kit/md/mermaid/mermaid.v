@@ -44,6 +44,10 @@ pub fn diagram(src string) &Diagram {
 		return d
 	}
 	words := lines[i].trim_space().trim_right(';').fields()
+	if words.len == 0 { // a header of only `;`
+		d.err = 'no diagram kind'
+		return d
+	}
 	d.kind = words[0]
 	match words[0] {
 		'graph', 'flowchart' {

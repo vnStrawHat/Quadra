@@ -8,6 +8,7 @@ import quadra.core
 import quadra.prim
 import quadra.kit
 import quadra.layout
+import quadra.text as txt
 import quadra.ui
 
 // Positions is where the blocks of the last layout are: their tops relative to the view's
@@ -199,14 +200,49 @@ fn (mut v MarkdownView) spans(s string, t &kit.Theme) []ui.Span {
 		}
 		if sp.link != '' {
 			u = u.link(sp.link).color(t.p.accent_text)
+		} else if sp.code {
+			add_cut(mut out, sp.text, 0, sp.text.len, txt.find_urls(sp.text), u) // urls in code
+			continue
 		}
 		out << u
 	}
 	return out
 }
 
+// add_cut adds line[a..b] in the style of `st`, cut where urls start and end, so each url
+// piece links to its url and keeps its color (code, specs/21).
+fn add_cut(mut out []ui.Span, line string, a int, b int, urls []txt.UrlSpan, st ui.Span) {
+	mut x := a
+	for u in urls {
+		if u.end <= x || u.start >= b {
+			continue
+		}
+		if u.start > x {
+			out << ui.Span{
+				...st
+				text: line[x..u.start]
+			}
+			x = u.start
+		}
+		y := if u.end < b { u.end } else { b }
+		out << ui.Span{
+			...st
+			text: line[x..y]
+			link: u.url
+		}
+		x = y
+	}
+	if x < b {
+		out << ui.Span{
+			...st
+			text: line[x..b]
+		}
+	}
+}
+
+// rich is a block's text: one selection with the others, links on ctrl-click (user content).
 fn (v &MarkdownView) rich(spans []ui.Span) &ui.RichEl {
-	r := ui.rich_text(spans).selectable_in(v.group)
+	r := ui.rich_text(spans).selectable_in(v.group).ctrl_links()
 	if l := v.link {
 		return r.on_link(core.Listener[string]{ any: l })
 	}

@@ -183,6 +183,53 @@ hover change was 12.4 → 18.2 µs with both builds spread over 11–25 µs (a c
 landing in the 200 hovers or not); a hover mostly repaints a patch, which this work
 did not touch.
 
+## Incremental layout (2026-11-10)
+`bench/statemodel` changes one row's colour among N live (not virtualized) rows and times
+the update plus the frame that settles it. Before, layout was 75-95 % of that frame although
+only a background changed: every build rebuilt the layout tree and laid it all out. Now a
+build for notified views lays out only what their new trees change (specs/05, Incremental
+layout; specs/07, Invalidation levels). clang -prod, fake text, p50 over 200 updates,
+medians of 3 runs, both builds on the same machine in the same session:
+
+| Rows | One view for all rows | A view per row | Equal write |
+|---|---|---|---|
+| 1,000 | 0.34 → 0.23 ms | 0.25 → 0.02 ms | 0.24 → 0.00 ms |
+| 3,000 | 1.07 → 0.71 ms | 0.75 → 0.03 ms | 0.77 → 0.00 ms |
+| 10,000 | 4.5 → 3.0 ms | 2.9 → 0.06 ms | 2.9 → 0.00 ms |
+
+- **A view per row**: the row renders, its two nodes are filled again and keep their layout
+  (`layout evaluations 0`), prepaint and paint run. At 10,000 rows what is left is mostly
+  prepaint and paint walking the list's children to skip the clipped ones (about 30 µs each).
+- **One view for all rows**: render (90 µs at 3,000 rows) and the walk that builds the new
+  tree into the old nodes while comparing them (layout 400 µs instead of 810) remain.
+- **Equal write**: `cx.update_if(m, data, f)` with `core.assign` skips the notification, so
+  no build runs. With a plain `notify()` an equal write costs what a paint-only change does.
+
+`bench` (main.v), 12 interleaved runs of each build (min / median, µs; the machine was
+shared, so medians spread by about 5 % even where no code changed, as the text rows show):
+
+| Benchmark | Before | After |
+|---|---|---|
+| Typing a character in the gallery | 216 / 225 | 124 / 129 |
+| Window resize of the gallery, full relayout | 197 / 210 | 196 / 218 |
+| Full build, 1000-button grid | 1148 / 1182 | 1127 / 1221 |
+| Gallery first render | 1813 / 2198 | 1902 / 2198 |
+| Hover change, 1000-button grid | 11.4 / 12.0 | 11.7 / 12.3 |
+| Scroll a 2000-row list | 16.9 / 18.0 | 16.6 / 17.5 |
+| Scroll the 1,000,000-row table | 193 / 207 | 189 / 202 |
+| Flex layout, 10k nodes | 3746 / 3813 | 3633 / 3811 |
+| Grid layout, 10k cells | 3923 / 4046 | 3760 / 3930 |
+| Text wrap 100 KB, warm (code unchanged) | 135 / 141 | 135 / 141 |
+
+Full layouts cost what they did. A node is 8 bytes smaller than before although it holds
+the incremental state (parent, owner, last perform, flags): the cache's valid flags became a
+bitmask. Parents are written where layout touches a child anyway, not when a node is made
+(10,000 children of one grid made that a cache miss each). Two traps found on the way:
+passing the 184-byte `Style` by value to the recycling branch of `Tree.node` made every node
+build copy it (400 µs on 10,000 nodes; it takes a pointer now), and a second struct holding
+the fixed cache array made V emit it before the array's typedef (a C error that depends on
+use order; `answers` returns a copy of the node instead).
+
 ## OneTerm idle allocation (2026-11-10)
 OneTerm idle in the harness, measured by `apps/oneterm/leak_gate_test.v` (run it with
 `tools/v.sh -cc msvc -stats test apps/oneterm/leak_gate_test.v`; it prints the numbers and fails

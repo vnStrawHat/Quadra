@@ -12,12 +12,14 @@
 // collector instead. Handlers, prepaint builds (list rows, overlays) and tests use the heap.
 module core
 
+import quadra.prim
+
 // Arena is a pool of elements. quadra.ui owns the element types: a pool holds pointers to its
-// elements (kinds: 0 divs, 1 texts, 2 svgs), `used` counts those the current render took.
+// elements in checked holders (kinds: 0 divs, 1 texts, 2 svgs), `used` counts those the current render took.
 @[heap]
 pub struct Arena {
 pub mut:
-	pools [3][]voidptr
+	pools [3][]prim.Holder
 	used  [3]int
 }
 

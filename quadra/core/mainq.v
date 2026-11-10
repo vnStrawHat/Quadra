@@ -4,10 +4,11 @@
 module core
 
 import sync
+import quadra.prim
 
 struct MainCall {
-	f    fn (mut app App, data voidptr) = unsafe { nil }
-	data voidptr
+	f    fn (mut app App, data prim.Holder) = unsafe { nil }
+	data prim.Holder
 }
 
 @[heap]
@@ -27,9 +28,9 @@ fn (mut app App) init_main_queue() {
 	}
 }
 
-// post_main runs f(app, data) on the main thread; any thread may call it. The way worker
-// threads reach the app without a closure (specs/14).
-pub fn (mut app App) post_main(f fn (mut app App, data voidptr), data voidptr) {
+// post_main_held runs f(app, data) on the main thread; any thread may call it. The way
+// worker threads reach the app without a closure; data is a checked holder (specs/14).
+pub fn (mut app App) post_main_held(f fn (mut app App, data prim.Holder), data prim.Holder) {
 	mut q := app.mainq
 	q.mu.@lock()
 	q.calls << MainCall{f, data}

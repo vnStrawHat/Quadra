@@ -3,6 +3,7 @@
 module core
 
 import quadra.core.life
+import quadra.prim
 
 pub struct Model[T] {
 pub:
@@ -59,6 +60,15 @@ mut:
 	arena_free  &Arena = unsafe { nil }
 	arena_build bool
 	arena_pin   bool
+	// views: the last layout placement (relayout.v): its element, window, full-layout epoch
+	// and pass, the render it laid out; multi: placed twice in one pass
+	placed        &ViewElement = unsafe { nil }
+	placed_win    u32
+	placed_epoch  u32
+	placed_build  int
+	placed_render u32
+	renders       u32
+	multi         bool
 }
 
 struct Store {
@@ -88,6 +98,8 @@ fn (mut s Store) alloc(ptr voidptr, owner u32, type_name string) (u32, u32) {
 	slot.window = 0
 	slot.dirty = true
 	slot.cached = none
+	slot.placed = unsafe { nil }
+	slot.placed_epoch = 0
 	if owner != 0 {
 		s.slots[owner].owned << id
 	}
@@ -98,11 +110,22 @@ fn (s &Store) live(id u32, gen u32) bool {
 	return id > 0 && int(id) < s.slots.len && s.slots[id].alive && s.slots[id].gen == gen
 }
 
-fn (s &Store) ptr(id u32, gen u32, what string) voidptr {
+fn (s &Store) ptr(id u32, gen u32, what string) prim.Holder {
 	if !s.live(id, gen) {
 		panic('quadra: stale ${what} handle ${id}#${gen}')
 	}
-	return s.slots[id].ptr
+	return s.holder(id)
+}
+
+// holder gives slot id's value as a checked holder (slot 0: empty), tagged with the type the
+// slot was made for: a Model[T] or listener of another type panics outside -prod.
+@[inline]
+fn (s &Store) holder(id u32) prim.Holder {
+	mut name := ''
+	$if !prod {
+		name = s.slots[id].type_name
+	}
+	return prim.hold_named(s.slots[id].ptr, name)
 }
 
 pub fn (app &App) is_alive(id u32, gen u32) bool {
@@ -124,6 +147,11 @@ fn heap_copy[T](value T) voidptr {
 	p := unsafe { malloc(int(sizeof(T))) }
 	unsafe { vmemcpy(p, &value, int(sizeof(T))) }
 	return p
+}
+
+// heap_hold is heap_copy in a checked holder.
+fn heap_hold[T](value T) prim.Holder {
+	return prim.hold_named(heap_copy(value), typeof[T]().name)
 }
 
 // release frees a model and, depth-first, everything it owns, with its subscriptions.
@@ -149,6 +177,7 @@ fn (mut app App) release_id(id u32) {
 	slot.readers = map[u32]bool{}
 	slot.reads = []u32{}
 	slot.cached = none
+	slot.placed = unsafe { nil }
 	app.store.free << id
 }
 
@@ -182,9 +211,10 @@ fn (mut app App) end_tracking() {
 	app.rendering.pop()
 }
 
-// store_ptr gives the raw value of a live model (escape hatch for tests and bridges).
-pub fn (app &App) store_ptr(id u32) voidptr {
-	return app.store.slots[id].ptr
+// model_holder gives a live model's value as a checked holder, for type-erased code that
+// reads it back with prim.held (app.Settings).
+pub fn (app &App) model_holder(id u32, gen u32) prim.Holder {
+	return app.store.ptr(id, gen, 'model')
 }
 
 // self_model is the handle of the model this context acts for.

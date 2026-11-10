@@ -2,6 +2,7 @@
 module term
 
 import quadra.core
+import quadra.platform
 import quadra.prim
 import quadra.gpu
 import quadra.kit
@@ -102,4 +103,41 @@ fn (g &Grid) paint_link(line int, baseline f32, pal &kit.TerminalColors, mut cx 
 			f32(c1 - c0) * t.cell.width, 1)
 		background: pal.foreground
 	})
+}
+
+// link_hitboxes give the hovered link, one per row it covers, the pointer while ctrl is held
+// and the hint "Ctrl+click to open", as in the editor (specs/22, Links). No hint while a
+// program reads the mouse: a ctrl-click is the program's then.
+fn (mut g Grid) link_hitboxes(mut cx core.PrepaintCx) {
+	g.hbs.clear()
+	t := g.t
+	if t.hover.url == '' || t.cell.height <= 0 {
+		return
+	}
+	hint := if t.screen.mouse == .off { core.hint_ctrl_open } else { '' }
+	top := t.top_line()
+	cx.enter('links') // keyed: the rows' slots never shift the grid's siblings
+	for line in t.hover.line .. t.hover.end_line + 1 {
+		r := line - top
+		if r < 0 || r >= t.screen.rows {
+			continue
+		}
+		c0 := if line == t.hover.line { t.hover.c0 } else { 0 }
+		c1 := if line == t.hover.end_line { t.hover.c1 } else { t.screen.cols }
+		cx.enter('')
+		g.hbs << cx.insert_hitbox(prim.rect(t.bounds.x + f32(c0) * t.cell.width, t.bounds.y +
+			f32(r) * t.cell.height, f32(c1 - c0) * t.cell.width, t.cell.height), core.HitboxOptions{
+			cursor:         platform.Cursor.pointer
+			cursor_mods:    platform.Mods.ctrl
+			hint:           hint
+			hover_prepaint: true
+		})
+		cx.leave()
+	}
+	cx.leave()
+}
+
+// link_lit: the hovered link is underlined while ctrl is held over it.
+fn (g &Grid) link_lit(mut cx core.PaintCx) bool {
+	return g.hbs.len > 0 && cx.win.mods.has(.ctrl) && g.hbs.any(cx.is_hovered(it))
 }

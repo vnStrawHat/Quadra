@@ -99,6 +99,7 @@ mut:
 	wrap_w f32
 	node   layout.NodeId
 	link   ?core.AnyListener
+	ctrl   bool // links open on ctrl-click only (ctrl_links)
 	hits   []LinkHit
 	group  &SelectGroup = unsafe { nil } // rich_select.v
 	member int       // the index in the group at the last prepaint
@@ -132,13 +133,21 @@ pub fn (self_ &RichEl) on_link(l core.Listener[string]) &RichEl {
 	return r
 }
 
+// ctrl_links makes links open on ctrl-click only, for user content: the pointer shows only
+// while ctrl is held, and a plain click selects like any text (specs/08).
+pub fn (self_ &RichEl) ctrl_links() &RichEl {
+	mut r := unsafe { self_ }
+	r.ctrl = true
+	return r
+}
+
 fn (r &RichEl) fits(max_w f32) bool {
 	return r.laid != unsafe { nil } && r.laid.width <= max_w
 		&& (max_w <= r.wrap_w || !r.laid.width_breaks)
 }
 
-fn measure_rich(ctx voidptr, kw f32, _ f32, aw f32, _ f32) prim.Size {
-	mut r := unsafe { &RichEl(ctx) }
+fn measure_rich(ctx prim.Holder, kw f32, _ f32, aw f32, _ f32) prim.Size {
+	mut r := prim.held[RichEl](ctx)
 	limit := if kw != layout.unknown { kw } else { aw }
 	max_w := if limit >= layout.unbounded { f32(1.0e9) } else { limit }
 	if !r.fits(max_w) {
@@ -173,7 +182,7 @@ pub fn (mut r RichEl) request_layout(mut cx core.LayoutCx) layout.NodeId {
 		}
 	}
 	r.ts = cx.text
-	r.node = cx.tree.leaf(text_leaf_style, measure_rich, voidptr(r))
+	r.node = cx.tree.leaf(text_leaf_style, measure_rich, prim.hold(r))
 	return r.node
 }
 
@@ -207,27 +216,44 @@ fn (mut r RichEl) link_hits(bounds prim.Rect, mut cx core.PrepaintCx) {
 	mut rects := []prim.Rect{}
 	for line in rt.lines {
 		for p in line.pieces {
-			if r.spans[p.run].link != '' {
-				r.hits << LinkHit{r, r.spans[p.run].link}
-				rects << prim.rect(bounds.x + p.x, bounds.y + line.y, p.width, line.height)
+			url := r.spans[p.run].link
+			if url == '' {
+				continue
 			}
+			x := bounds.x + p.x
+			// The pieces of one link on a row (tokens of a URL in code) are one hitbox.
+			if rects.len > 0 && r.hits.last().url == url && rects.last().y == bounds.y + line.y
+				&& prim.max(rects.last().right() - x, x - rects.last().right()) < 0.5 {
+				rects[rects.len - 1].width = x + p.width - rects.last().x
+				continue
+			}
+			r.hits << LinkHit{r, url}
+			rects << prim.rect(x, bounds.y + line.y, p.width, line.height)
 		}
 	}
-	for k, rect in rects { // the hits array is complete: pointers into it stay valid
+	mods := if r.ctrl { platform.Mods.ctrl } else { platform.Mods.zero() }
+	for k, rect in rects { // r.hits: new each prepaint, complete now: pointers into it stay valid
 		cx.enter('link${k}')
+		hint := if r.ctrl { core.link_hint(r.hits[k].url) } else { '' }
 		hb := cx.insert_hitbox(rect, core.HitboxOptions{
-			cursor: platform.Cursor.pointer
+			cursor:      platform.Cursor.pointer
+			cursor_mods: mods
+			hint:        hint
 		})
 		cx.on_mouse(hb, .click, core.AnyListener{
-			holder: voidptr(&r.hits[k])
+			holder: prim.hold(&r.hits[k])
 			call:   rich_link_click
 		}, false)
 		cx.leave()
 	}
 }
 
-fn rich_link_click(holder voidptr, _ voidptr, _ voidptr, mut cx core.Cx) {
-	h := unsafe { &LinkHit(holder) }
+fn rich_link_click(holder prim.Holder, _ prim.Holder, event prim.Holder, mut cx core.Cx) {
+	h := prim.held[LinkHit](holder)
+	ev := prim.held[core.ClickEvent](event)
+	if h.el.ctrl && !ev.mods.has(.ctrl) {
+		return
+	}
 	if l := h.el.link {
 		url := h.url
 		cx.app.invoke(l, &url, cx.win, true)

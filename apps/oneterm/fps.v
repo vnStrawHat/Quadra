@@ -61,8 +61,8 @@ fn (mut o OneTerm) tick_gpu(mut cx core.ViewCx[OneTerm]) {
 		return
 	}
 	o.hud.busy = true
-	core.spawn_task_with[OneTerm, voidptr, f32](mut cx, voidptr(o.hud.probe), fn (p voidptr, _ &core.TaskCx) !f32 {
-		mut probe := unsafe { &sys.GpuUsage(p) }
+	core.spawn_task_with(mut cx, GpuOpen{o.hud.probe}, fn (g GpuOpen, _ &core.TaskCx) !f32 {
+		mut probe := g.probe
 		return probe.sample() or { return error('no sample') }
 	}, fn (mut o OneTerm, r &core.TaskResult[f32], mut cx core.ViewCx[OneTerm]) {
 		o.hud.busy = false

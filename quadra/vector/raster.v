@@ -49,18 +49,21 @@ pub fn (mut c Coverage) fill(lines []Polyline) {
 
 // accumulate_line adds the signed area contribution of one edge (font-rs style).
 fn accumulate_line(mut acc []f32, stride int, h int, p0 prim.Point, p1 prim.Point) {
-	if p0.y == p1.y {
+	// A NaN or an infinity turns a row or column range into about 2^31 steps: such an edge
+	// adds nothing.
+	if p0.y == p1.y || !finite(p0.x) || !finite(p0.y) || !finite(p1.x) || !finite(p1.y) {
 		return
 	}
 	dir := f32(if p0.y < p1.y { 1 } else { -1 })
 	a, b := if p0.y < p1.y { p0, p1 } else { p1, p0 }
 	dxdy := (b.x - a.x) / (b.y - a.y)
 	mut x := a.x
-	y0 := int(prim.max(0, f32(math.floor(a.y))))
+	// Clamped before the conversion: int() of a float past 2^31 is INT_MIN, a 2^31-row loop.
+	y0 := int(prim.clamp(f32(math.floor(a.y)), 0, f32(h)))
 	if a.y < 0 {
 		x -= a.y * dxdy
 	}
-	for y in y0 .. int(prim.min(f32(h), f32(math.ceil(b.y)))) {
+	for y in y0 .. int(prim.clamp(f32(math.ceil(b.y)), 0, f32(h))) {
 		linestart := y * stride
 		dy := prim.min(f32(y + 1), b.y) - prim.max(f32(y), a.y)
 		xnext := x + dxdy * dy
@@ -98,6 +101,12 @@ fn accumulate_line(mut acc []f32, stride int, h int, p0 prim.Point, p1 prim.Poin
 	}
 }
 
+// finite is false for NaN and the infinities (an input from untrusted path data).
+@[inline]
+fn finite(v f32) bool {
+	return v - v == 0
+}
+
 @[inline]
 fn add(mut acc []f32, i int, v f32, _ int) {
 	if i >= 0 && i < acc.len {
@@ -121,10 +130,15 @@ pub fn (mut c Coverage) stroke(lines []Polyline, width f32) {
 }
 
 fn (mut c Coverage) capsule(a prim.Point, b prim.Point, hw f32) {
-	x0 := int(prim.max(0, prim.min(a.x, b.x) - hw - 1))
-	y0 := int(prim.max(0, prim.min(a.y, b.y) - hw - 1))
-	x1 := int(prim.min(f32(c.width - 1), prim.max(a.x, b.x) + hw + 1))
-	y1 := int(prim.min(f32(c.height - 1), prim.max(a.y, b.y) + hw + 1))
+	if !finite(a.x) || !finite(a.y) || !finite(b.x) || !finite(b.y) || !finite(hw) {
+		return
+	}
+	// The box is clamped to the bitmap as floats: int() of a float past 2^31 is INT_MIN.
+	w, h := f32(c.width - 1), f32(c.height - 1)
+	x0 := int(prim.clamp(prim.min(a.x, b.x) - hw - 1, 0, w))
+	y0 := int(prim.clamp(prim.min(a.y, b.y) - hw - 1, 0, h))
+	x1 := int(prim.clamp(prim.max(a.x, b.x) + hw + 1, -1, w))
+	y1 := int(prim.clamp(prim.max(a.y, b.y) + hw + 1, -1, h))
 	abx, aby := b.x - a.x, b.y - a.y
 	len2 := abx * abx + aby * aby
 	for y in y0 .. y1 + 1 {

@@ -90,22 +90,42 @@ Implementation spec for the editor of specs/16. Budgets there: open a 10 MB file
 - One element. Paint walks the visible lines only. Each line has one cached line layout. The
   text is painted per token by a glyph range of that layout (`PaintCx.glyphs_range`), so
   colors never re-shape.
+- Monospace grid: the line layout comes from `TextSystem.layout_mono(shown, style, cell_w)`,
+  so every grapheme starts at `col × cell_w`, with `col` counted by `text.display_width`
+  (wide CJK and emoji 2 cells, combining marks 0, everything else 1), and a column-aligned
+  table stays aligned whatever font a glyph falls back to. A glyph narrower or wider than its
+  cells is centred in them; a wider one overflows into its neighbours (no clip: a clip per
+  glyph costs a draw state each and cuts strokes). A pure ASCII line (one byte scan) is the
+  plain `layout_line`; any other line is snapped once when its layout is built and cached
+  the same way, so a clean line allocates nothing per frame. ASCII glyphs keep their
+  shaping (ligatures included) and only move with their grapheme. Every x mapping (caret,
+  selection, click, find highlights, URL underline, bracket, IME position) reads that one
+  layout; the column counts that do not (the goal column of up/down, column selection, tab
+  stops, soft wrap) count `display_width` too, so they agree with it.
 - Gutter: line numbers right-aligned in the mono face (the cursor lines brighter), then a
   diff mark column (add, change, remove from `Editor.marks`).
 - Under the text: current-line band, selections, find matches, the matching bracket. Above
   it: indent guides, optional whitespace marks, cursors (bar, blinking via
   `request_paint_after`).
-- Tabs are drawn to the next tab stop (`Doc.tab_size`). Long lines scroll horizontally; the
+- Tabs are drawn to the next tab stop (`Doc.tab_size`, columns counted by display width). Long lines scroll horizontally; the
   view keeps the primary cursor visible. Soft wrap is opt-in (below).
 - Mouse: click places the cursor, drag selects, double-click selects a word, triple-click a
   line, ctrl-click adds a cursor, alt-drag selects a column, shift-click extends. The wheel
   scrolls; shift-wheel scrolls sideways.
+- URLs (`text.find_urls`, document rules, openable ones only): found on the line under the
+  pointer when it moves, never for the whole document or per frame. While ctrl is held over
+  one it is underlined and the pointer shows (a hitbox with `cursor_mods`); resting on it
+  without ctrl shows the hint "Ctrl+click to open" (`HitboxOptions.hint`, specs/08). Ctrl-click on a
+  URL opens it and neither moves nor adds a cursor; ctrl-click anywhere else still adds a
+  cursor, and a plain click or drag on a URL places the cursor and selects as anywhere.
+  `code.on_link(mut cx, ed, l)` hands the URL to the app (Folio follows it like a preview
+  link); without a hook the editor opens it in the browser.
 - IME: the composition is drawn inline at the primary cursor, underlined, and the IME
   window is placed there.
 
 ### Soft wrap
 - `EditorOptions.wrap` / `Editor.wrap` (off by default; prose documents turn it on). A line
-  shows as visual rows broken at the text width (one column per character, mono face),
+  shows as visual rows broken at the text width (columns by display width, mono face),
   after the last space that fits; a word longer than a row breaks inside it; spaces may
   hang past the edge. Continuation rows are not indented; no horizontal scroll.
 - A row table (`wrap.v`: the first row of each line, the start of each row) is rebuilt when

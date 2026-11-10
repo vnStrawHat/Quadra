@@ -1,12 +1,13 @@
 // Timers owned by models: cancelled automatically when the owner is released.
 module core
 
+import quadra.prim
 import quadra.platform
 
 struct TimerEntry {
 	owner  u32
-	holder voidptr
-	call   fn (holder voidptr, owner voidptr, mut cx Cx) = unsafe { nil }
+	holder prim.Holder
+	call   fn (holder prim.Holder, owner prim.Holder, mut cx Cx) = unsafe { nil }
 	repeat bool
 	cb     ?fn (mut app App) // owner-less timers (framework internals)
 	// repaint: a paint-only animation tick for this window (no closure per frame).
@@ -29,9 +30,9 @@ struct TimerHolder[T] {
 	f fn (mut v T, mut cx ViewCx[T]) = unsafe { nil }
 }
 
-fn call_timer[T](holder voidptr, owner voidptr, mut cx Cx) {
-	h := unsafe { &TimerHolder[T](holder) }
-	mut v := unsafe { &T(owner) }
+fn call_timer[T](holder prim.Holder, owner prim.Holder, mut cx Cx) {
+	h := prim.held[TimerHolder[T]](holder)
+	mut v := unsafe { prim.held[T](owner) } // unsafe only quiets a mutability notice
 	mut vcx := ViewCx[T]{
 		Cx: cx
 	}
@@ -43,7 +44,7 @@ fn (mut cx ViewCx[T]) add_timer(ms int, repeat bool, f fn (mut v T, mut cx ViewC
 	id := cx.app.plat.set_timer(ms, repeat)
 	cx.app.timers[id] = TimerEntry{
 		owner:  cx.entity
-		holder: voidptr(&TimerHolder[T]{f})
+		holder: prim.hold(&TimerHolder[T]{f})
 		call:   call_timer[T]
 		repeat: repeat
 	}

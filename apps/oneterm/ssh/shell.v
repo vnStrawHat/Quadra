@@ -3,6 +3,7 @@ module ssh
 
 import sync
 import quadra.platform
+import quadra.prim
 
 const write_budget = 4 * 1024 * 1024
 
@@ -123,7 +124,7 @@ fn (mut p ShellPty) writer() {
 	}
 }
 
-fn (mut p ShellPty) pump(ctx voidptr, on_data fn (ctx voidptr, data []u8), on_exit fn (ctx voidptr, code int)) {
+fn (mut p ShellPty) pump(ctx prim.Holder, on_data fn (ctx prim.Holder, data []u8), on_exit fn (ctx prim.Holder, code int)) {
 	mut buf := []u8{len: 64 * 1024}
 	for {
 		n := p.ch.read(mut buf) or { break }

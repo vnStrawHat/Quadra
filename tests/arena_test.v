@@ -4,6 +4,7 @@
 module main
 
 import quadra.core
+import quadra.kit
 import quadra.prim
 import quadra.testing
 import quadra.ui
@@ -168,4 +169,50 @@ fn test_number_formats_like_interpolation() {
 		assert ui.number(y, 3).content == '${y:.3f}', '${y}'
 		assert ui.number(y, 1).content == '${y:.1f}', '${y}'
 	}
+}
+
+struct Built {
+mut:
+	n int
+}
+
+struct MenuSrc {
+	built &Built = unsafe { nil }
+}
+
+fn lazy_items(s MenuSrc) []kit.MenuItem {
+	mut b := s.built
+	b.n++
+	return [kit.MenuItem{
+		label: 'Lazy item'
+	}]
+}
+
+struct LazyMenuView {
+	src MenuSrc
+}
+
+@[markused]
+pub fn (mut v LazyMenuView) render(mut cx core.ViewCx[LazyMenuView]) core.Element {
+	return ui.div().child(kit.menu_button_with('lazy-menu', 'Menu', v.src, lazy_items))
+}
+
+fn test_lazy_menu_builds_items_when_it_opens() {
+	mut h := testing.new_harness()!
+	kit.install(mut h.app)!
+	mut built := &Built{}
+	v := h.open(LazyMenuView{ src: MenuSrc{built} })!
+	for _ in 0 .. 3 {
+		mut cx := core.Cx{
+			app:    h.app
+			entity: v.id
+		}
+		cx.notify()
+		h.frame()
+	}
+	assert built.n == 0
+	h.click('lazy-menu')!
+	h.frame()
+	assert built.n == 1
+	assert h.has_text('Lazy item')
 }

@@ -67,6 +67,25 @@ pub fn (mut cx Cx) update[T](m Model[T], f fn (mut v T, mut cx ViewCx[T])) {
 	cx.run_update(m, f, true)
 }
 
+// update_with is update for a callback that needs data: f takes it as an argument, so the
+// caller makes no closure (V frees none; a captured secret would stay in memory for good).
+pub fn (mut cx Cx) update_with[T, D](m Model[T], data D, f fn (mut v T, d D, mut cx ViewCx[T])) {
+	mut app := cx.app
+	mut v := unsafe { &T(app.store.ptr(m.id, m.gen, 'model')) }
+	mut vcx := ViewCx[T]{
+		Cx: Cx{
+			app:    app
+			win:    cx.win
+			entity: m.id
+		}
+	}
+	app.depth++
+	f(mut v, data, mut vcx)
+	app.changed(m.id)
+	app.depth--
+	app.flush()
+}
+
 // update_silent mutates without notifying (bookkeeping nothing renders).
 pub fn (mut cx Cx) update_silent[T](m Model[T], f fn (mut v T, mut cx ViewCx[T])) {
 	cx.run_update(m, f, false)

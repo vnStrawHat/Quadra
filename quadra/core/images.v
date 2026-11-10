@@ -77,23 +77,53 @@ pub fn (mut app App) image_async(key string, load fn () !Bitmap) &ImageEntry {
 	mut e := &ImageEntry{}
 	app.images.entries[key] = e
 	app.images.pending++
-	spawn fn (mut app App, mut e ImageEntry, load fn () !Bitmap) {
+	spawn fn (mut app App, e &ImageEntry, load fn () !Bitmap) {
 		mut failure := ''
 		bmp := load() or {
 			failure = err.msg()
 			Bitmap{}
 		}
-		app.plat.post(fn [mut app, mut e, bmp, failure] () {
-			app.images.pending--
-			if failure == '' {
-				app.store_bitmap(mut e, bmp)
-			} else {
-				e.status, e.error = .failed, failure
-			}
-			for mut w in app.windows {
-				w.invalidate()
-			}
-		})
-	}(mut app, mut e, load)
+		app.post_main(image_done, &ImageDone{e, bmp, failure})
+	}(mut app, e, load)
 	return e
+}
+
+// image_async_with is image_async for a loader that needs an argument (a path), without a
+// closure: elements call it at every layout, and V frees no closure made there.
+pub fn (mut app App) image_async_with(key string, arg string, load fn (arg string) !Bitmap) &ImageEntry {
+	if e := app.images.entries[key] {
+		return e
+	}
+	mut e := &ImageEntry{}
+	app.images.entries[key] = e
+	app.images.pending++
+	spawn fn (mut app App, e &ImageEntry, arg string, load fn (arg string) !Bitmap) {
+		mut failure := ''
+		bmp := load(arg) or {
+			failure = err.msg()
+			Bitmap{}
+		}
+		app.post_main(image_done, &ImageDone{e, bmp, failure})
+	}(mut app, e, arg, load)
+	return e
+}
+
+struct ImageDone {
+mut:
+	e       &ImageEntry = unsafe { nil }
+	bmp     Bitmap
+	failure string
+}
+
+fn image_done(mut app App, data voidptr) {
+	mut d := unsafe { &ImageDone(data) }
+	app.images.pending--
+	if d.failure == '' {
+		app.store_bitmap(mut d.e, d.bmp)
+	} else {
+		d.e.status, d.e.error = .failed, d.failure
+	}
+	for mut w in app.windows {
+		w.invalidate()
+	}
 }

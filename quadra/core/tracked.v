@@ -35,14 +35,15 @@ mut:
 	free     bool         // free_kept: dispose `kept` at the end of the next layout
 	phase    Phase
 	active   bool
-	// The single work closure handed to Lifetime.frame: made once per window (a closure
-	// per call would itself leak), it runs `pending` with `cx`.
-	work    fn () = unsafe { nil }
+	// what the frame's work function (run_build) builds, with `cx`
 	pending ?Builder
 	cx      &LayoutCx = unsafe { nil }
 	out     ?Element
 	// views rendered by this build (their previous renders are freed at its end)
 	rendered []u32
+	// element arenas (arena.v): views that took one since the last build, the layout pass's
+	arena_views []u32
+	pass        PassArenas
 }
 
 // tracked builds b's tree; closures created while building belong to the current pass.
@@ -56,22 +57,25 @@ pub fn tracked(mut b Builder, mut cx LayoutCx) Element {
 	if t.phase == .idle || t.active {
 		return b.build_tree(mut cx)
 	}
-	if t.work == unsafe { nil } {
-		t.work = fn [mut t] () {
-			if mut p := t.pending {
-				t.out = p.build_tree(mut t.cx)
-			}
-		}
-	}
 	t.pending = b
 	t.cx = unsafe { &cx }
 	t.out = none
 	t.active = true
 	mut lt := if t.phase == .layout { t.layout } else { t.prepaint }
-	lt.frame(t.work) or {
+	// Layout builds fill the pass arena; prepaint builds (rows, overlays) use the heap.
+	mut u := ArenaUse{}
+	if t.phase == .layout {
+		u = t.pass.take()
+	}
+	saved := use_arena(u)
+	mut cur := unsafe { frame_work }
+	cur.t = t
+	lt.frame(run_build) or {
+		use_arena(saved)
 		t.active = false
 		return b.build_tree(mut cx)
 	}
+	use_arena(saved)
 	t.active = false
 	t.frames[int(t.phase)]++
 	t.pending = none
@@ -99,6 +103,7 @@ fn (mut w Window) end_pass(p Phase) {
 		t.free = false
 	}
 	if p == .layout {
+		t.pass.settle(pinned)
 		if pinned {
 			t.kept << t.layout // an overlay holds closures it built
 			t.layout = life.new()
@@ -136,7 +141,6 @@ fn (mut w Window) release_tracking() {
 
 struct RenderJob {
 mut:
-	work   fn ()   = unsafe { nil }
 	app    &App    = unsafe { nil }
 	win    &Window = unsafe { nil }
 	id     u32
@@ -153,13 +157,7 @@ struct DeadLife {
 fn (mut app App) render_tracked(id u32, win &Window, render RenderFn) Element {
 	mut j := &app.rjob
 	if j.active != 0 || win.tracking.active {
-		return heap_render(mut app, win, id, render)
-	}
-	if j.work == unsafe { nil } {
-		j.work = fn [mut j] () {
-			mut a := j.app
-			j.out = j.render(mut a, j.win, j.id)
-		}
+		return app.nested_render(id, win, render)
 	}
 	if app.store.slots[id].lifetime == unsafe { nil } {
 		app.store.slots[id].lifetime = life.new()
@@ -172,15 +170,17 @@ fn (mut app App) render_tracked(id u32, win &Window, render RenderFn) Element {
 	j.out = none
 	j.active = id
 	arena := app.take_arena(id)
-	saved := set_render_arena(arena)
-	lt.frame(j.work) or {
-		set_render_arena(saved)
+	saved := use_arena(ArenaUse{ arena: arena, owner: id })
+	mut cur := unsafe { frame_work }
+	cur.j = j
+	lt.frame(run_render) or {
+		use_arena(saved)
 		app.give_back(id, arena)
 		j.active = 0
 		return heap_render(mut app, win, id, render)
 	}
-	set_render_arena(saved)
-	app.put_arena(id, arena)
+	use_arena(saved)
+	app.put_arena(id, arena, win)
 	j.active = 0
 	mut w := unsafe { win }
 	w.tracking.rendered << id
@@ -193,6 +193,7 @@ fn (mut app App) render_tracked(id u32, win &Window, render RenderFn) Element {
 fn (mut app App) escaped() {
 	if app.rjob.active != 0 {
 		app.store.slots[app.rjob.active].pinned = true
+		app.pin_arenas(false)
 		return
 	}
 	for mut s in app.store.slots {
@@ -200,6 +201,7 @@ fn (mut app App) escaped() {
 			s.pinned = true
 		}
 	}
+	app.pin_arenas(true)
 }
 
 // keep_build keeps what the window's latest layout and prepaint passes built until free_kept.
@@ -209,6 +211,10 @@ pub fn (mut cx Cx) keep_build() {
 	if cx.win != unsafe { nil } {
 		mut w := cx.win
 		w.tracking.pinned = [true, true, true]!
+	}
+	if cx.app != unsafe { nil } {
+		mut app := cx.app
+		app.pin_arenas(true) // views rendered inside those builds hold part of the kept trees
 	}
 }
 
@@ -229,16 +235,17 @@ fn (mut app App) escaped_in_render() {
 	if app.rjob.active != 0 {
 		app.store.slots[app.rjob.active].pinned = true
 	}
+	app.pin_arenas(false)
 }
 
 // settle_renders frees the previous renders of the views this build rendered.
 fn (mut app App) settle_renders(mut w Window) {
+	app.settle_arenas(mut w)
 	for id in w.tracking.rendered {
 		if int(id) >= app.store.slots.len || !app.store.slots[id].alive {
 			continue
 		}
 		mut s := &app.store.slots[id]
-		settle_arena(mut s, s.pinned)
 		if s.lifetime == unsafe { nil } {
 			continue
 		}

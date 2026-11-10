@@ -52,11 +52,13 @@ mut:
 	lifetime  &life.Life = unsafe { nil } // views: closures of their renders (tracked.v)
 	pinned    bool // the current render's closures may have escaped: never free them
 	// views: render arenas (arena.v): the latest render's, the one it replaced in this
-	// build, the free one; arena_build: a render of this build took an arena
+	// build, the free one; arena_build: a render of this build took an arena; arena_pin:
+	// something may hold elements of the view's arenas (App.escaped)
 	arena       &Arena = unsafe { nil }
 	arena_old   &Arena = unsafe { nil }
 	arena_free  &Arena = unsafe { nil }
 	arena_build bool
+	arena_pin   bool
 }
 
 struct Store {

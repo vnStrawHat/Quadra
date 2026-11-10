@@ -33,3 +33,8 @@ pub fn (mut x Life) dispose() {
 pub fn live_closures() int {
 	return closure.live_closures()
 }
+
+// trace prints a backtrace at every closure creation while on (QUADRA_TRACE_CLOSURES).
+pub fn trace(on bool) {
+	closure.trace(on)
+}

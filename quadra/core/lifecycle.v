@@ -167,16 +167,25 @@ fn (mut app App) watch_upgrade() {
 	id := app.plat.set_timer(25, true)
 	app.timers[id] = TimerEntry{
 		repeat: true
-		cb:     fn [id] (mut app App) {
-			if app.device.try_upgrade() {
-				for mut w in app.windows {
-					w.invalidate_paint() // the draw attaches the swap chain (after_frame)
-				}
-			}
-			if !app.device.upgrading() {
-				app.plat.cancel_timer(id)
-				app.timers.delete(id)
-			}
+		holder: &UpgradeWatch{id}
+		call:   tick_upgrade
+	}
+}
+
+struct UpgradeWatch {
+	id platform.TimerId
+}
+
+fn tick_upgrade(holder voidptr, _ voidptr, mut cx Cx) {
+	id := unsafe { &UpgradeWatch(holder) }.id
+	mut app := cx.app
+	if app.device.try_upgrade() {
+		for mut w in app.windows {
+			w.invalidate_paint() // the draw attaches the swap chain (after_frame)
 		}
+	}
+	if !app.device.upgrading() {
+		app.plat.cancel_timer(id)
+		app.timers.delete(id)
 	}
 }

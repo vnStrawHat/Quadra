@@ -26,7 +26,6 @@ mut:
 	delivered bool // the exit was delivered
 	app       &App = unsafe { nil }
 	l         AnyListener
-	task      fn () = unsafe { nil } // the drain, built once: posting allocates nothing
 }
 
 // new_inbox makes an inbox whose chunks reach on_chunk on the main thread, with the view or
@@ -35,17 +34,11 @@ pub fn new_inbox[T](mut cx ViewCx[T], on_chunk fn (mut v T, c &Chunk, mut cx Vie
 	return make_inbox(cx.app, listener_of[T, Chunk](cx.entity, on_chunk).any)
 }
 
-// make_inbox builds the drain closure outside the generic function (V cannot infer T
-// around a closure there).
 fn make_inbox(app &App, l AnyListener) &Inbox {
-	mut ib := &Inbox{
+	return &Inbox{
 		app: app
 		l:   l
 	}
-	ib.task = fn [mut ib] () {
-		ib.drain()
-	}
-	return ib
 }
 
 // push may be called from any thread.
@@ -72,8 +65,16 @@ pub fn (mut b Inbox) finish(code int) {
 	}
 }
 
+// post hands the drain to the app's main-thread queue: no closure per inbox (a closed tab's
+// inbox would stay alive with it, V frees no closure).
 fn (mut b Inbox) post() {
-	b.app.plat.post(b.task)
+	mut app := b.app
+	app.post_main(drain_inbox, b)
+}
+
+fn drain_inbox(mut _ App, data voidptr) {
+	mut b := unsafe { &Inbox(data) }
+	b.drain()
 }
 
 fn (mut b Inbox) drain() {
@@ -95,7 +96,9 @@ fn (mut b Inbox) drain() {
 	chunk := &Chunk{data, exited, b.exit_code}
 	mut app := b.app
 	if ptr, mut cx := app.enter_owned(b.l.view) {
+		app.probe_begin()
 		b.l.call(b.l.holder, ptr, chunk, mut cx)
+		app.probe_end('inbox chunk', b.l.view)
 		app.depth--
 	}
 	if b.l.view != 0 && app.store.slots[b.l.view].alive {

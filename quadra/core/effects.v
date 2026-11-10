@@ -64,7 +64,9 @@ fn (mut app App) flush() {
 		}
 		for o in app.observers.filter(it.target == id) {
 			if ptr, mut cx := app.enter_owned(o.owner) {
+				app.probe_begin()
 				o.call(o.holder, ptr, mut cx)
+				app.probe_end('observer', o.owner)
 				app.depth--
 			}
 		}
@@ -81,7 +83,9 @@ fn (mut app App) flush() {
 fn (mut app App) deliver(ev PendingEvent) {
 	for s in app.subs.filter(it.target == ev.source && it.event_type == ev.event_type) {
 		if ptr, mut cx := app.enter_owned(s.owner) {
+			app.probe_begin()
 			s.call(s.holder, ptr, ev.data, mut cx)
+			app.probe_end('subscriber', s.owner)
 			app.depth--
 		}
 	}

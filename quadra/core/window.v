@@ -153,6 +153,10 @@ pub fn (mut w Window) draw_frame() {
 	}
 	mut app := w.app
 	if !w.surface_ok {
+		dw, dh := w.device_size()
+		if dw <= 0 || dh <= 0 {
+			return
+		}
 		w.attach_surface() or {
 			// No GPU surface means nothing can ever be drawn: close the window rather than
 			// leave an invisible one running (the last window closing quits the app).

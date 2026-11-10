@@ -45,6 +45,33 @@ pub fn spawn_task[T, R](mut cx ViewCx[T], work fn (tc &TaskCx) !R, done fn (mut 
 	return id
 }
 
+// spawn_task_with is spawn_task for work that needs data: work takes it as an argument, so
+// the caller makes no closure. V never frees a closure: one per periodic task leaks for good,
+// with what it captured (specs/14).
+pub fn spawn_task_with[T, D, R](mut cx ViewCx[T], data D, work fn (data D, tc &TaskCx) !R, done fn (mut v T, r &TaskResult[R], mut cx ViewCx[T])) TaskId {
+	mut app := cx.app
+	app.escaped_in_render()
+	app.next_task++
+	id := app.next_task
+	tc := &TaskCx{}
+	app.tasks[id] = TaskEntry{cx.entity, tc}
+	l := listener_of[T, TaskResult[R]](cx.entity, done).any
+	app.start_task(id, tc, voidptr(&WorkWith[D, R]{data, work}), run_work_with[D, R], l)
+	return id
+}
+
+struct WorkWith[D, R] {
+	d D
+	f fn (data D, tc &TaskCx) !R = unsafe { nil }
+}
+
+fn run_work_with[D, R](holder voidptr, tc &TaskCx) voidptr {
+	h := unsafe { &WorkWith[D, R](holder) }
+	zeros := []R{len: 1}
+	v := h.f(h.d, tc) or { return voidptr(err_result[R](zeros[0], err.msg())) }
+	return voidptr(ok_result[R](v))
+}
+
 // The work function is type-erased like listeners (holder + generic fn pointer): V cannot
 // spawn generic functions or build generic closures reliably.
 struct WorkHolder[R] {
@@ -78,10 +105,19 @@ fn (mut app App) start_task(id TaskId, tc &TaskCx, holder voidptr, call WorkCall
 	// ponytail: one OS thread per task; a fixed worker pool when apps spawn hundreds at once.
 	spawn fn (mut app App, id TaskId, tc &TaskCx, holder voidptr, call WorkCall, l AnyListener) {
 		result := call(holder, tc)
-		app.plat.post(fn [mut app, id, l, result] () {
-			app.finish_task(id, l, result)
-		})
+		app.post_main(task_done, &TaskDone{id, l, result})
 	}(mut app, id, tc, holder, call, l)
+}
+
+struct TaskDone {
+	id     TaskId
+	l      AnyListener
+	result voidptr
+}
+
+fn task_done(mut app App, data voidptr) {
+	d := unsafe { &TaskDone(data) }
+	app.finish_task(d.id, d.l, d.result)
 }
 
 fn (mut app App) finish_task(id TaskId, l AnyListener, result voidptr) {
@@ -91,7 +127,9 @@ fn (mut app App) finish_task(id TaskId, l AnyListener, result voidptr) {
 		return
 	}
 	if ptr, mut cx := app.enter_owned(l.view) {
+		app.probe_begin()
 		l.call(l.holder, ptr, result, mut cx)
+		app.probe_end('task completion', l.view)
 		app.depth--
 	}
 	// A completion is a discrete event for its owner, like a click.

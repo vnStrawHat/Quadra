@@ -71,7 +71,9 @@ fn (mut app App) on_timer_fired(id platform.TimerId) {
 		app.timers.delete(id)
 	}
 	if cb := entry.cb {
+		app.probe_begin()
 		cb(mut app)
+		app.probe_end('timer', 0)
 		app.flush()
 		return
 	}
@@ -92,7 +94,9 @@ fn (mut app App) on_timer_fired(id platform.TimerId) {
 		return
 	}
 	if ptr, mut cx := app.enter_owned(entry.owner) {
+		app.probe_begin()
 		entry.call(entry.holder, ptr, mut cx)
+		app.probe_end('timer', entry.owner)
 		app.depth--
 	}
 	// A timer is a discrete event for its owner, like a click.

@@ -36,6 +36,12 @@ pub fn (cx &ViewCx[T]) listener[E](f fn (mut v T, e &E, mut cx ViewCx[T])) Liste
 // render returns (virtual list rows): capture the id, never the context, because a
 // `mut cx` parameter points into a stack frame that is gone by then.
 pub fn listener_of[T, E](entity u32, f fn (mut v T, e &E, mut cx ViewCx[T])) Listener[E] {
+	if entity == max_u32 {
+		// Never runs: a direct call keeps V's unused-code pass from dropping call_listener,
+		// which is otherwise reached only through the function pointer below (docs/v-notes.md).
+		mut cx := Cx{}
+		call_listener[T, E](unsafe { nil }, unsafe { nil }, unsafe { nil }, mut cx)
+	}
 	return Listener[E]{AnyListener{
 		view:   entity
 		holder: voidptr(&ListenerHolder[T, E]{f})
@@ -127,7 +133,9 @@ pub fn (mut app App) invoke(l AnyListener, event voidptr, win &Window, discrete 
 		entity: l.view
 	}
 	app.depth++
+	app.probe_begin()
 	l.call(l.holder, view, event, mut cx)
+	app.probe_end('handler', l.view)
 	if discrete && l.view != 0 {
 		app.changed(l.view)
 	}

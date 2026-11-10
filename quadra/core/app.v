@@ -70,6 +70,8 @@ mut:
 	rjob              RenderJob           // render tracking (tracked.v)
 	dead_lives        []DeadLife          // closures of released views, freed after their window rebuilds
 	trim              Trim                // memory given back after a burst (trim.v)
+	mainq             &MainQueue = unsafe { nil } // results from worker threads (mainq.v)
+	leakcheck         LeakCheck // closures leaked by dispatches, outside -prod (leakcheck.v)
 }
 
 pub fn new_app(b Backends, opts AppOptions) !&App {
@@ -87,6 +89,7 @@ pub fn new_app(b Backends, opts AppOptions) !&App {
 		quit_on_last_window: opts.quit_on_last_window
 		text_style:          opts.text_style
 	}
+	app.init_main_queue()
 	app.plat.set_sink(mut app)
 	return app
 }

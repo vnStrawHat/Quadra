@@ -223,3 +223,44 @@ fn test_duplicating_a_local_terminal_into_a_split_starts_it_there() {
 	assert tab.spaces.all(it.view.id != 0)
 	h.frame()
 }
+
+fn test_the_session_dialog_inputs_are_one_control_height() {
+	mut h, _, v := wrig('heights', fn (mut _ store.SessionStore) {})!
+	run_do(mut h, v, Do{.toggle_dock, ''})
+	h.click('session-add')!
+	h.frame()
+	for id in ['session-label', 'session-host', 'session-port', 'session-username',
+		'session-auth-password'] {
+		r := h.find(id) or { panic('no ${id}') }
+		assert r.height == 32, id // the original's medium input, as the buttons
+	}
+	h.press('escape')!
+	h.frame()
+	run_do(mut h, v, Do{.quick_connect, ''})
+	for id in ['quick-host', 'quick-port', 'quick-username', 'connect-auth-password'] {
+		r := h.find(id) or { panic('no ${id}') }
+		assert r.height == 32, id
+	}
+}
+
+// The expanded browser covers the terminals and the dock (specs/22, a departure the user
+// chose); collapsing brings the dock back at the width it had.
+fn test_the_expanded_sftp_browser_covers_the_workspace() {
+	mut h, _, v := wrig('zoom', fn (mut _ store.SessionStore) {})!
+	run_do(mut h, v, Do{.toggle_dock, ''})
+	dock := h.find('right-dock') or { panic('no dock') }
+	term_area := h.find('terminal-area') or { panic('no terminal area') }
+	h.click('sftp-expand')!
+	h.frame()
+	full := h.find('right-dock') or { panic('no dock') }
+	assert full.x == term_area.x && full.y == term_area.y
+	assert full.x + full.width == dock.x + dock.width && full.height == dock.height
+	assert h.find('terminal-area') == none && h.find('dock-handle') == none
+	panel := h.find('sftp-panel') or { panic('no browser') }
+	assert panel.x <= term_area.x + 1 && panel.width >= term_area.width + dock.width - 2
+	h.click('sftp-expand')!
+	h.frame()
+	back := h.find('right-dock') or { panic('no dock') }
+	assert back == dock
+	assert h.find('terminal-area') or { panic('no terminal area') } == term_area
+}

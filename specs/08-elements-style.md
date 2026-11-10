@@ -8,7 +8,7 @@ Module `quadra.ui`. Primitive elements on top of `core.Element`. Everything in `
 |---|---|
 | `div()` | Flex or grid container: box styling, children, events, focus, scrolling, semantics |
 | `text(s)` | Text leaf: wraps by default, `.truncate()`, `.selectable()`, inherits text style |
-| `rich_text(spans)` | Mixed styles and links in one paragraph: `span(s).bold().italic().color(c).size(v).family(f).link(url)`, `.on_link(l)`. Words glued across spans never break. Not yet: inline icons, selection |
+| `rich_text(spans)` | Mixed styles and links in one paragraph: `span(s).bold().italic().color(c).size(v).family(f).link(url)`, `.on_link(l)`. Words glued across spans never break. `.selectable_in(group)`: one selection over every rich text of a `ui.select_group()` (prepaint the group before its members), with drag across members, double-click word, triple-click member, shift-click, ctrl-a, ctrl-c (members joined by `\n`). Not yet: inline icons, selecting inline boxes |
 | `icon(name)` | Kit icon from the bundled icon font (mono, tinted by color) |
 | `svg(src)` | SVG from asset or bytes, rasterized at device size, cached |
 | `img(src)` | Image from asset, path, bytes or URL; `.fit(.cover \| .contain \| .fill)`, async with placeholder |
@@ -39,7 +39,7 @@ ui.div().apply(card).bg(t.surface).child(...)
 | Size | `w(l)` `h(l)` `size(l)` `w_full()` `h_full()` `min_w` `max_w` `min_h` `max_h` `aspect(r)` |
 | Spacing | `p` `px` `py` `pt/pr/pb/pl` and `m*` |
 | Position | `absolute()` `top/right/bottom/left(n)` `inset(n)` `z(n)` (paint order among siblings) |
-| Box | `bg(c)` `border(n)` `border_color(c)` `rounded(n)` `rounded_full()` `shadow(level)` `opacity(f)` `ring(w, c)` (a band `w` wide just outside the border box, its corners the box's plus `w`; only the band is painted, so a translucent fill stays as it is; a clipping ancestor cuts it) |
+| Box | `bg(c)` `border(n)` `border_color(c)` `rounded(n)` `rounded_full()` `shadow(level)` `opacity(f)` `ring(w, c)` (a band `w` wide just outside the border box, its corners the box's plus `w`; only the band is painted, so a translucent fill stays as it is; one whole-pixel width on every side; an ancestor that clips that axis cuts it) |
 | Motion | `translate(x, y)` `scale(k)` `rotate(deg)` (about the center, paint only: layout and hit testing keep the box; text is rasterized again at the scaled size in quarter px steps), `transition(ms)` `transition_with(ms, easing)`: background, border color, opacity, translate, scale and rotation ease to new values, from a state patch (`Patch.translate`, `.scale`, `.rotate`) or a new render. The first paint shows the target at once; a new target starts from the current value. `animate(m)` plays a timeline from the first paint: `ui.tween(ms, patch)` and `ui.tween_with(ms, easing, patch)` ease towards a patch, `ui.pause(ms)` waits, `a + b` runs b after a, `ui.parallel(a, b, ...)` runs them together (a later one wins a property both set), `m.repeat(n)` `m.forever()` `m.alternate()`. Each step starts from where the property is; the end values stay after the last step; restart by changing the element's key |
 | Text (inherited) | `text_size` `text_color` `font_weight` `font(family)` `line_height` `tabular_nums()` |
 | Overflow | `overflow_hidden()` `overflow_y_scroll()` `overflow_x_scroll()` |
@@ -52,6 +52,12 @@ ui.div().apply(card).bg(t.surface).child(...)
 - State styles take `Style` values, not closures. Core knows at build time whether a patch is paint-only (07-state).
 - Lengths: numbers are logical px; `pct(n)`, `auto`, `fill`, and track sizes such as `fr(1)` and `minmax(200, fr(1))`.
 - `test_id` is free in release builds: the harness queries it, and it is stripped with `-d quadra_no_test_ids`.
+
+## Device pixels
+Layout stays in fractional logical px; painting puts boxes on the device pixel grid. Every quad painted without a rotation or a scale transform has its edges rounded to whole device pixels in window space (ties toward zero, so a 1 px edge at 150 % stays 1 dp, and two edges at the same position always land on the same pixel) and each border width rounded the same way, at least 1 dp when it is above 0. Clip rects grow outward to whole pixels so they never cut a snapped edge. So a box at y 138.4 paints from 138 with crisp 1 px borders instead of two half-covered rows; a ring, border or separator looks the same on every side and at every scale. Glyphs and terminal cells are snapped as before; lines, strokes, shadows and anything under a rotation or scale (animations) stay exact. The cost is four roundings per quad.
+
+## Clipping
+A div clips only the axes it does not leave visible: `overflow_y_scroll()` clips at its top and bottom but not at its sides, so a child's focus ring, shadow or ring band can show beside a vertical scroller (and above or below a horizontal one). `overflow_hidden()` clips both.
 
 ## Scrolling
 A div with `overflow_*_scroll()` and an `id` keeps its offset in element state and gets its own chunk. Wheel input scrolls by lines, touchpad input scrolls by pixels with momentum supplied by the OS. Scrolling is a compose-level change. Styled scrollbars come from `kit.scroll_area`.

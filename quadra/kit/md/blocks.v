@@ -23,13 +23,13 @@ fn (mut v MarkdownView) block(b Block, t &kit.Theme, mut cx core.LayoutCx) core.
 		if b.lang == 'mermaid' {
 			return v.diagram_block(b.text, t)
 		}
-		return code_box(code_spans(b.text, b.lang, t), t)
+		return v.code_box(code_spans(b.text, b.lang, t), t)
 	}
 	if b.kind == .math {
 		return v.math_block(b.text, t)
 	}
 	if b.kind == .front {
-		return code_box(code_spans(b.text, 'yaml', t), t)
+		return v.code_box(code_spans(b.text, 'yaml', t), t)
 	}
 	if b.kind == .quote {
 		mut quote :=
@@ -97,22 +97,33 @@ fn (mut v MarkdownView) item(b Block, t &kit.Theme) core.Element {
 
 // code_box is a code block (specs/15): the editor tone, a hairline, radius 6, padding 12,
 // the code face at the editor's size and line height.
-fn code_box(spans []ui.Span, t &kit.Theme) core.Element {
-	return ui.div().p(12).rounded(t.radius_lg).bg(t.p.canvas).border(1).border_color(t.p.line).overflow_x_scroll().line_height(t.mono_line).child(ui.rich_text(spans).size(t.scaled(14)))
+fn (v &MarkdownView) code_box(spans []ui.Span, t &kit.Theme) core.Element {
+	return ui.div().p(12).rounded(t.radius_lg).bg(t.p.canvas).border(1).border_color(t.p.line).overflow_x_scroll().line_height(t.mono_line).child(ui.rich_text(spans).size(t.scaled(14)).selectable_in(v.group))
 }
 
 // code_spans colors code with the tokenizer for its language.
 fn code_spans(src string, lang string, t &kit.Theme) []ui.Span {
-	tk := code.tokenizer_for('x.${lang}')
-	mut out := []ui.Span{}
+	tk := code.tokenizer_for(lang) // a fence info string: a name, alias or extension
+	mut lines := src.split('\n')
+	// Tokenize first: the span count is then known and the array is made once.
+	mut lexed := [][]code.Token{cap: lines.len}
+	mut n := lines.len
 	mut state := 0
-	for k, raw in src.split('\n') {
-		line := raw.replace('\t', '    ')
+	for k, raw in lines {
+		if raw.contains_u8(`\t`) {
+			lines[k] = raw.replace('\t', '    ')
+		}
+		toks, next := tk.tokenize(lines[k], state)
+		state = next
+		lexed << toks
+		n += toks.len * 2 + 1
+	}
+	mut out := []ui.Span{cap: n}
+	for k, line in lines {
 		if k > 0 {
 			out << ui.span('\n').family(t.mono_family)
 		}
-		toks, next := tk.tokenize(line, state)
-		state = next
+		toks := lexed[k]
 		mut at := 0
 		for tok in toks {
 			if tok.start > at {

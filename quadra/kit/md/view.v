@@ -1,7 +1,7 @@
 // Markdown view: md.view(src) renders parsed blocks with the kit theme (blocks.v). Text is
 // rich text (links call on_link), code is highlighted by its language's tokenizer, math and
 // Mermaid diagrams are drawn natively (embeds.v). track() reports where each block is, for
-// outlines and scroll sync.
+// outlines and scroll sync. The text is one selection across blocks (ui.SelectGroup).
 module md
 
 import quadra.core
@@ -67,10 +67,11 @@ pub struct MarkdownView {
 mut:
 	link  ?core.AnyListener
 	base  string // the document's folder: relative image paths start there
-	pos   &Positions = unsafe { nil }
-	memo  &Memo      = unsafe { nil }
-	scale f32        = 1
-	col   &ui.Div    = unsafe { nil }
+	pos   &Positions      = unsafe { nil }
+	memo  &Memo           = unsafe { nil }
+	scale f32             = 1
+	col   &ui.Div         = unsafe { nil }
+	group &ui.SelectGroup = unsafe { nil } // every block's text, for selecting
 }
 
 // view parses src at layout time.
@@ -123,6 +124,7 @@ pub fn (mut v MarkdownView) request_layout(mut cx core.LayoutCx) layout.NodeId {
 pub fn (mut v MarkdownView) build_tree(mut cx core.LayoutCx) core.Element {
 	t := kit.theme_of(cx.app)
 	blocks := parse(v.src)
+	v.group = ui.select_group()
 	mut col :=
 		ui.div().flex_col().w_full().text_color(t.p.text).text_size(v.body_size(t)).line_height(1.5)
 	mut lines := []int{cap: blocks.len}
@@ -164,6 +166,9 @@ pub fn (mut v MarkdownView) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 		v.pos.tops = kids.map(cx.tree.rect(it).y)
 		v.pos.height = bounds.height
 	}
+	if v.group != unsafe { nil } {
+		v.group.prepaint(bounds, mut cx)
+	}
 	v.Lazy.prepaint(bounds, mut cx)
 }
 
@@ -201,7 +206,7 @@ fn (mut v MarkdownView) spans(s string, t &kit.Theme) []ui.Span {
 }
 
 fn (v &MarkdownView) rich(spans []ui.Span) &ui.RichEl {
-	r := ui.rich_text(spans)
+	r := ui.rich_text(spans).selectable_in(v.group)
 	if l := v.link {
 		return r.on_link(core.Listener[string]{ any: l })
 	}

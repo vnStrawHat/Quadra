@@ -74,10 +74,12 @@ fn (mut d Div) enter_group(mut cx core.PrepaintCx) int {
 }
 
 fn (d &Div) paint_ring(bounds prim.Rect, r prim.Corners, mut cx core.PaintCx) {
-	w := d.states.ring_w
+	// One whole-pixel width on every side, from the box's snapped edge outward: no row opens
+	// between band and border and no side is wider at a fractional scale (specs/08).
+	w := cx.snapped_width(d.states.ring_w)
+	i := cx.snapped(bounds)
 	cx.quad(gpu.Quad{
-		bounds:        prim.rect(bounds.x - w, bounds.y - w, bounds.width + w * 2, bounds.height +
-			w * 2)
+		bounds:        prim.rect(i.x - w, i.y - w, i.width + w * 2, i.height + w * 2)
 		border_widths: prim.edges(w)
 		border_color:  d.states.ring_color
 		radii:         prim.Corners{r.top_left + w, r.top_right + w, r.bottom_right + w,

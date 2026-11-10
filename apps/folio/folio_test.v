@@ -1,6 +1,7 @@
 // Folio flows in the harness: open, the three layouts, live edit, outline, save, the close
-// prompt, outside changes, the toolbar. Files live under .tmp (tools/v.sh points the temp
-// folder there). Tabs and the session are in tabs_test.v.
+// prompt, outside changes, the toolbar, the outline's width, the breadcrumb on one line,
+// selecting and copying in the preview (the headless clipboard only). Files live under
+// .tmp (tools/v.sh points the temp folder there). Tabs and the session are in tabs_test.v.
 module main
 
 import os
@@ -158,4 +159,78 @@ fn test_toolbar_formats_and_keeps_the_editor_focused() {
 	assert r.t().text.contains('> ## | Name')
 	r.h.press('ctrl-3')!
 	assert r.h.find('fmt-bold') == none // Preview has no editor, no formatting
+}
+
+fn test_outline_edge_drags_its_width() {
+	mut r := start('outline-width', doc)!
+	r.h.press('ctrl-shift-o')!
+	before := (r.h.find('outline') or { panic('no outline') }).width
+	hd := r.h.find('outline-handle') or { panic('no handle') }
+	x, y := hd.x + hd.width / 2, hd.y + hd.height / 2
+	r.h.drag(x, y, x + 100, y, true)
+	after := (r.h.find('outline') or { panic('no outline') }).width
+	assert after > before + 90 && after < before + 110
+	cx := core.Cx{
+		app: r.h.app
+	}
+	assert r.f().prefs.get(cx).outline_w == after // a setting: kept for the next start
+	r.h.drag(x + 100, y, x + 2000, y, true)
+	assert (r.h.find('outline') or { panic('no outline') }).width == outline_w_max
+	// A double-click on the edge goes back to the default width.
+	r.h.advance(1000)
+	edge := r.h.find('outline-handle') or { panic('no handle') }
+	r.h.click_at(edge.x + 2, y)
+	r.h.click_at(edge.x + 2, y)
+	assert (r.h.find('outline') or { panic('no outline') }).width == outline_w_default
+}
+
+fn test_breadcrumb_stays_on_one_line_when_narrow() {
+	long := '# A heading long enough to need more room than the toolbar leaves it\n\ntext\n'
+	mut r := start('crumbs', long)!
+	r.h.press('ctrl-3')! // Preview: no formatting tools, room to spare
+	one := (r.h.find('breadcrumb') or { panic('no breadcrumb') }).height
+	for w in [f32(800), 560] {
+		r.h.resize(w, 600)
+		for keys in ['ctrl-1', 'ctrl-2', 'ctrl-3'] {
+			r.h.press(keys)!
+			b := r.h.find('breadcrumb') or { panic('no breadcrumb') }
+			assert b.height == one, '${keys} at ${w}'
+		}
+	}
+}
+
+fn test_new_document_opens_in_raw() {
+	mut r := start('new-raw', doc)!
+	assert r.h.find('preview') != none // Split
+	r.h.press('ctrl-n')!
+	assert r.f().tabs.len == 2 && r.t().path == ''
+	assert r.h.find('preview') == none && r.h.find('editor-pane') != none
+}
+
+fn copied(mut h testing.Harness) string {
+	h.plat.clipboard_write('')
+	h.press('ctrl-c') or { panic(err) }
+	return h.plat.clipboard_read() or { '' }
+}
+
+fn test_preview_selects_across_blocks_and_copies() {
+	mut r := start('select', doc)!
+	r.h.press('ctrl-3')!
+	head := r.h.find('h-title') or { panic('no heading') }
+	para := r.h.text_bounds('Some text.') or { panic('no paragraph') }
+	ch := f32(9.6) // the fake backend: every grapheme 0.6 em, at the 16 px reading size
+	y := para.y + para.height / 2
+	// From the heading's start into the paragraph below it.
+	r.h.drag(head.x + 1, head.y + head.height / 2, para.x + ch * 4 + 1, y, true)
+	assert copied(mut r.h) == 'Title\nSome'
+	// A double-click takes the word, ctrl-a the whole preview.
+	r.h.advance(1000)
+	r.h.click_at(para.x + ch * 2.5, y)
+	r.h.click_at(para.x + ch * 2.5, y)
+	assert copied(mut r.h) == 'Some'
+	r.h.press('ctrl-a')!
+	assert copied(mut r.h) == 'Title\nSome text.\nSecond\nMore.\nThird\nEnd.'
+	// Clicking elsewhere drops the preview's focus: ctrl-c no longer copies from it.
+	r.h.click('breadcrumb')!
+	assert copied(mut r.h) == ''
 }

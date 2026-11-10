@@ -8,6 +8,18 @@ import quadra.platform
 import quadra.ui
 import sessionui
 
+// settings_window: the original's 1000 x 700, at most 90 % of the display, centred.
+const settings_window = platform.WindowOptions{
+	title:           'OneTerm Settings'
+	custom_titlebar: true
+	width:           1000
+	height:          700
+	min_width:       480
+	min_height:      400
+	centered:        true
+	fit:             0.9
+}
+
 const default_font_label = 'Default (theme)'
 
 // font_value is what a Family row stores: the theme font is ''.

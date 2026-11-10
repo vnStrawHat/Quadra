@@ -49,10 +49,12 @@ pub fn prepare(mut a core.App, root string) !(platform.WindowOptions, OneTerm) {
 	return platform.WindowOptions{
 		title:           window_title(elevation)
 		custom_titlebar: true
-		width:           1600
+		width:           1600 // at most 85 % of the display, centred, as the original
 		height:          1000
 		min_width:       640
 		min_height:      480
+		centered:        true
+		fit:             0.85
 	}, OneTerm{
 		cfg:         cfg
 		ui:          ui_cfg

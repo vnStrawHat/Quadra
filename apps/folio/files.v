@@ -69,6 +69,7 @@ fn (mut f Folio) load(mut t Tab, path string, d Disk, mut cx core.ViewCx[Folio])
 
 fn (mut f Folio) new_doc(mut cx core.ViewCx[Folio]) {
 	f.add_tab('', Disk{}, mut cx)
+	f.set_layout(.raw, mut cx) // a new document is for writing
 }
 
 fn (mut f Folio) focus_editor(mut cx core.ViewCx[Folio]) {

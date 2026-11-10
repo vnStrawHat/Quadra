@@ -1,5 +1,7 @@
 module md
 
+import quadra.kit
+
 fn test_lines_tasks_math_front_matter() {
 	src := '---\ntitle: x\n---\n# A\n\n- [ ] open\n- [x] done\n\n$$\n\\frac{a}{b}\n$$\n\n$$ x^2 $$\n```math\ny\n```\n> > deep\n> top\n'
 	b := parse(src)
@@ -42,4 +44,17 @@ fn test_new_inlines() {
 	assert url.len == 1 && url[0].link == 'https://x.io/a'
 	nested := parse_inline('[a [b] c](u)')
 	assert nested.len == 1 && nested[0].text == 'a [b] c' && nested[0].link == 'u'
+}
+
+fn test_python_fence_is_colored() {
+	b := parse('```python title=x
+def f(): # c
+    return "s"
+```')
+	assert b[0].kind == .code
+	t := kit.dark()
+	s := code_spans(b[0].text, b[0].lang, &t)
+	colored := s.filter(it.patch.color == t.code.syntax.keyword
+		|| it.patch.color == t.code.syntax.str || it.patch.color == t.code.syntax.comment)
+	assert colored.map(it.text) == ['def', '# c', 'return', '"s"']
 }

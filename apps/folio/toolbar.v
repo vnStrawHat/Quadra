@@ -117,9 +117,10 @@ fn (f &Folio) breadcrumb(t &kit.Theme) core.Element {
 		ui.div().test_id('breadcrumb').flex_row().items_center().gap(6).px(4).min_w(0).overflow_hidden()
 	for i, c in crumbs {
 		if i > 0 {
-			row.child(ui.text('›').color(t.p.text_3))
+			row.child(ui.div().shrink_0().child(ui.text('›').color(t.p.text_3)))
 		}
-		row.child(ui.text(c).color(if i == crumbs.len - 1 { t.p.text } else { t.p.text_2 }))
+		// One line in every layout: a crumb that does not fit ends with …
+		row.child(ui.text(c).truncate().color(if i == crumbs.len - 1 { t.p.text } else { t.p.text_2 }))
 	}
 	return row
 }

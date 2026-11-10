@@ -169,7 +169,6 @@ fn (mut d VaultDialog) submit(mut cx core.ViewCx[VaultDialog]) {
 	cx.touch_global[kit.Overlays]()
 	cx.notify()
 	core.spawn_task_with[VaultDialog, vault.VaultJob, vault.JobResult](mut cx, job, run_vault_job, fn (mut d VaultDialog, r &core.TaskResult[vault.JobResult], mut cx core.ViewCx[VaultDialog]) {
-		cx.app.trim_now() // Argon2id's 64 MiB goes back to the OS now
 		d.finish(r, mut cx)
 	})
 }
@@ -232,7 +231,6 @@ fn (mut d VaultDialog) run_followup(mut cx core.ViewCx[VaultDialog]) {
 	cx.update_with(p.view.model(), job, fn (mut p SessionPanel, job vault.VaultJob, mut cx core.ViewCx[SessionPanel]) {
 		core.spawn_task_with[SessionPanel, vault.VaultJob, vault.JobResult](mut cx, job,
 			run_vault_job, fn (mut p SessionPanel, r &core.TaskResult[vault.JobResult], mut cx core.ViewCx[SessionPanel]) {
-			cx.app.trim_now()
 			if r.ok {
 				p.vault.apply(r.value) or {}
 			}

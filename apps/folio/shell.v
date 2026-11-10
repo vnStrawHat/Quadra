@@ -52,6 +52,9 @@ pub fn (mut f Folio) render(mut cx core.ViewCx[Folio]) core.Element {
 			center.child(f.outside_banner(t, mut cx))
 		}
 		body.child(center.child(f.main_area(lay, p, t, mut cx)))
+		if p.outline {
+			body.child(f.outline_handle(p, t, mut cx)) // last: over the panes it overhangs
+		}
 	} else {
 		body.child(f.empty_state(p, t, mut cx))
 	}

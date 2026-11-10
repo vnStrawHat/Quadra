@@ -98,7 +98,12 @@ fn (cx &PaintCx) mask() gpu.ContentMask {
 
 // push_clip clips everything painted until pop_clip to a (rounded) rect in logical px.
 pub fn (mut cx PaintCx) push_clip(r prim.Rect, radius f32) {
-	dev := cx.dev(r)
+	mut dev := cx.dev(r)
+	if cx.snaps() { // grow to whole pixels: a snapped edge inside is never cut (specs/08)
+		x, y := f32(math.floor(dev.x)), f32(math.floor(dev.y))
+		dev = prim.rect(x, y, f32(math.ceil(dev.x + dev.width)) - x, f32(math.ceil(dev.y +
+			dev.height)) - y)
+	}
 	parent := cx.masks.last()
 	// A clip in another space than its parent's keeps its own rect (specs/03, "Rotation").
 	same := parent.xform == cx.xf.id
@@ -132,12 +137,21 @@ pub fn (mut cx PaintCx) quad_kept(q gpu.Quad) {
 
 pub fn (mut cx PaintCx) quad(q gpu.Quad) {
 	s := cx.scale * cx.xf.k
+	mut b := cx.dev(q.bounds)
+	mut bw := q.border_widths.scale(s)
+	if cx.snaps() {
+		x, y := snap_px(b.x), snap_px(b.y)
+		b = prim.rect(x, y, math.max(snap_px(b.x + b.width) - x, 0),
+			math.max(snap_px(b.y + b.height) - y, 0))
+		bw =
+			prim.Edges{snap_stroke(bw.top), snap_stroke(bw.right), snap_stroke(bw.bottom), snap_stroke(bw.left)}
+	}
 	cx.scene.quad(gpu.Quad{
-		bounds:         cx.dev(q.bounds)
+		bounds:         b
 		background:     cx.fade(q.background)
 		gradient_to:    if g := q.gradient_to { ?prim.Color(cx.fade(g)) } else { none }
 		gradient_angle: q.gradient_angle
-		border_widths:  q.border_widths.scale(s)
+		border_widths:  bw
 		border_color:   cx.fade(q.border_color)
 		radii:          q.radii.scale(s)
 	}, cx.mask())

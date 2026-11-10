@@ -82,7 +82,7 @@ fn (s &Settings) cards_nav(t &Theme) &ui.Div {
 					card_row('${s.id}-group-${i}-${g}', title, on_g, SettingsNav{s.st, s.picked, i, g, false}, t)
 				sub.child(r.child(ui.text(title)))
 			}
-			item.child(ui.div().pl(14).child(sub))
+			item.child(ui.div().flex_col().pl(14).child(sub)) // the rows span the column
 		}
 		list.child(item)
 	}

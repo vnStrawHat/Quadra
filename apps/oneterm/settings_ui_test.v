@@ -256,3 +256,14 @@ fn test_the_about_page_shows_the_identity() {
 	assert h.has_text('OneTerm') && h.has_text('Version ${version}')
 	assert h.has_text('A Terminal application for SSH / SFTP / Local Shell')
 }
+
+fn test_a_group_row_in_the_column_is_as_wide_as_a_page_row() {
+	mut h, _ := settings_rig('sidebar')!
+	for page in [0, 2] { // Key Bindings' long group titles once hid the difference
+		h.click('settings-page-${page}')!
+		h.frame()
+		row := h.find('settings-page-${page}') or { panic('no page row') }
+		g := h.find('settings-group-${page}-1') or { panic('no group row') }
+		assert g.x + g.width == row.x + row.width // the rule and its 10 px inset, then full width
+	}
+}

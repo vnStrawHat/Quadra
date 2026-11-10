@@ -127,25 +127,15 @@ pub fn (mut o OneTerm) render(mut cx core.ViewCx[OneTerm]) core.Element {
 	if o.vault.is_screen_locked() {
 		return o.lock_view(t, mut cx)
 	}
-	tab := o.current()
-	mut leaves := map[string]core.Element{}
-	for s in tab.spaces {
-		leaves[s.id] = o.space_el(tab, s, t, mut cx)
-	}
-	panes := work.panes('spaces', tab.root, leaves).on_resize(cx.listener(fn (mut o OneTerm, r &work.PaneResize, mut _ core.ViewCx[OneTerm]) {
-		mut tab := o.current()
-		tab.root = tab.root.with_ratio(r.path, r.ratio)
-	}))
-	body := ui.div().grow().min_h(0).min_w(0).child(panes)
-	mut center := ui.div().flex_col().grow().min_w(0).h_full()
-	if o.ui.vertical_tabs.enabled {
-		center.child(ui.div().flex_row().grow().min_h(0).child(o.rail(t, mut cx)).child(body))
+	mut area := ui.div().flex_row().grow().min_h(0)
+	dock := o.dock_open && !is_restricted()
+	if dock && o.sftp_expanded { // the expanded browser covers the terminals (specs/22)
+		area.child(o.right_dock(t, true, mut cx))
 	} else {
-		center.child(o.strip(mut cx)).child(body)
-	}
-	mut area := ui.div().flex_row().grow().min_h(0).child(center)
-	if o.dock_open && !is_restricted() {
-		area.child(o.right_dock(t, mut cx))
+		area.child(o.center_area(t, mut cx))
+		if dock {
+			area.child(o.right_dock(t, false, mut cx))
+		}
 	}
 	title := kit.titlebar('').controls(o.title_items(t))
 	root :=

@@ -4,6 +4,19 @@ module ui
 import quadra.core
 import quadra.prim
 
+// clip_box is what a clipping Div clips to: an axis it leaves visible keeps the parent's
+// extent, so a ring beside a vertical scroller still shows (specs/08, Clipping).
+fn (d &Div) clip_box(bounds prim.Rect, parent prim.Rect) prim.Rect {
+	mut r := bounds
+	if d.style.overflow_x == .visible {
+		r.x, r.width = parent.x, parent.width
+	}
+	if d.style.overflow_y == .visible {
+		r.y, r.height = parent.y, parent.height
+	}
+	return r
+}
+
 // ScrollState is kept in element state, keyed by the Div's id path.
 pub struct ScrollState {
 pub mut:
@@ -62,17 +75,16 @@ fn set_div_scroll(holder voidptr, offset f32, vertical bool) {
 	}
 }
 
+// overflow_y_scroll scrolls and clips vertically; the sides stay visible (specs/08, Clipping).
 pub fn (self_ &Div) overflow_y_scroll() &Div {
 	mut d := unsafe { self_ }
 	d.style.overflow_y = .scroll
-	d.style.overflow_x = .hidden
 	return d
 }
 
 pub fn (self_ &Div) overflow_x_scroll() &Div {
 	mut d := unsafe { self_ }
 	d.style.overflow_x = .scroll
-	d.style.overflow_y = .hidden
 	return d
 }
 

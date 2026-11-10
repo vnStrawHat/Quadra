@@ -7,6 +7,7 @@ import vault
 import quadra.core
 import quadra.kit.term
 import quadra.platform
+import quadra.prim
 import quadra.testing
 
 @[heap]
@@ -215,4 +216,15 @@ fn test_fps_hud_and_rail() {
 	commit_now(mut h, mut o)
 	collapsed := h.find('rail') or { panic('no rail') }
 	assert collapsed.width == 44
+}
+
+fn test_the_window_opens_at_the_original_size_centred() {
+	mut h := testing.new_harness()!
+	opts, _ := prepare(mut h.app, '.tmp/oneterm-ws-winsize')!
+	assert opts.width == 1600 && opts.height == 1000 && opts.centered && opts.fit == f32(0.85)
+	assert opts.min_width == 640 && opts.min_height == 480 && !opts.placement.valid
+	s := platform.fit_size(opts.width, opts.height, prim.size(1366, 768), opts.fit)
+	assert s.width == f32(1366) * 0.85 && s.height == f32(768) * 0.85
+	big := platform.fit_size(opts.width, opts.height, prim.size(2560, 1440), opts.fit)
+	assert big.width == 1600 && big.height == 1000
 }

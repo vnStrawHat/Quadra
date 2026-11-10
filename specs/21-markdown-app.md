@@ -38,7 +38,9 @@ the panels (`chrome` in the palette), panels one step lighter than the text area
 tabs, a breadcrumb toolbar, muted key labels ("Ctrl+Shift+P"), a spotlight palette.
 - **Titlebar** (custom, kit.titlebar): the app menu (≡) and the folder of the shown file,
   like a project name, then the window buttons. Double-click and drag behave as the OS bar.
-- **Outline** (left, 220 px, hidden by default, toggled with ctrl-shift-o or the status bar button): the
+- **Outline** (left, 220 px, hidden by default, toggled with ctrl-shift-o or the status bar button;
+  its right edge drags it 140 to 480 px wide, a double-click goes back to 220, and the width is
+  kept in the settings): the
   headings as a tree with indent guides, one line each (a long one ends with …). The section at the reading line (120 px into the
   preview, or five lines into the editor in Raw) is marked and follows scrolling. A click
   scrolls the editor (Raw, Split) and the preview (Split, Preview) to the heading. A
@@ -47,7 +49,8 @@ tabs, a breadcrumb toolbar, muted key labels ("Ctrl+Shift+P"), a spotlight palet
   unsaved changes and a close button (shown on hover, middle click closes too); drag
   reorders; + starts a new document.
 - **Toolbar**: a breadcrumb on the left (the file, then the headings down to the section
-  being read); on the right the formatting tools (Raw and Split) and the layout buttons
+  being read), always on one line in every layout: a crumb that does not fit ends with …;
+  on the right the formatting tools (Raw and Split) and the layout buttons
   (Raw, Split, Preview).
 - **Editor** (kit.code editor): Markdown highlighting (headings, emphasis, code, links,
   lists, quotes, math, fences), line numbers, soft wrap on, find and replace (ctrl-f, ctrl-h)
@@ -66,6 +69,10 @@ tabs, a breadcrumb toolbar, muted key labels ("Ctrl+Shift+P"), a spotlight palet
 - **Preview**: the rendered document in a reading column (max 1120 px wide with 40 px side
   padding, centered), scrolled independently. In Split, scrolling the editor moves the preview so
   the block at the editor's top line is at the preview's top (one way: editor → preview).
+  The text is selectable across blocks (ui SelectGroup, specs/08): drag, double-click a
+  word, triple-click a block, shift-click extends, ctrl-a selects the whole preview,
+  ctrl-c copies (blocks joined by a newline; list markers, checkboxes, math and diagrams
+  are not copied).
 - **Status bar**: the outline button on the left; the cursor's line:column (not in
   Preview), words and reading time (230 words a minute), the language.
 - **Empty state** (no tab): a welcome page (specs/15): actions with their keys (New, Open, Command palette)
@@ -76,6 +83,8 @@ tabs, a breadcrumb toolbar, muted key labels ("Ctrl+Shift+P"), a spotlight palet
   dropping files on the window, the command line (`folio a.md b.md`), or a recent file.
   Each file opens in a tab after the shown one; a file already open shows its tab; an
   untouched new document is replaced. ctrl-shift-n opens a new, empty window.
+- **New document** (ctrl-n, the + on the tab bar, the welcome page): an empty tab, and the
+  window switches to Raw, the layout for writing.
 - **Session**: the open files and the shown one are kept in the settings and opened again
   at the next start (when no file is given).
 - **Save**: ctrl-s writes in place (UTF-8, line endings kept as read); ctrl-shift-s saves as.
@@ -114,7 +123,10 @@ tabs, a breadcrumb toolbar, muted key labels ("Ctrl+Shift+P"), a spotlight palet
 The kit's Markdown module (`kit/md`) grows to cover what everyday documents use. Each block
 records its source line, which the outline, the scroll sync and the tests use.
 - **Blocks**: ATX headings, paragraphs, bullet, numbered and task lists (`- [ ]`,
-  `- [x]`, shown as checkboxes, read-only), fenced code (highlighted by language), quotes
+  `- [x]`, shown as checkboxes, read-only), fenced code (highlighted by the fence's language
+  name, alias or extension through `code.tokenizer_for`, specs/18: about 30 languages;
+  attributes like `{.class}` or `title=x` are ignored; tokenized once per build, the span
+  array made once), quotes
   (nested), rules, pipe tables with alignment (columns share the width by their content and keep their longest word whole, up to 160 px), images, math blocks, Mermaid blocks, YAML
   front matter (hidden from the preview, shown as a muted block when it is the only content).
 - **Inline**: bold, italic, bold-italic, strikethrough (`~~`), code, links, autolinks

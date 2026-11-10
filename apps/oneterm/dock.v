@@ -190,7 +190,8 @@ fn section(title string, actions []core.Element, content core.Element, t &kit.Th
 	return ui.div().flex_col().size_full().child(header).child(ui.div().grow().min_h(0).child(content))
 }
 
-fn (mut o OneTerm) right_dock(t &kit.Theme, mut cx core.ViewCx[OneTerm]) core.Element {
+// right_dock is the dock; full: the expanded browser over the whole workspace, no handle.
+fn (mut o OneTerm) right_dock(t &kit.Theme, full bool, mut cx core.ViewCx[OneTerm]) core.Element {
 	w := clamp_right_dock_width(o.dock_pref, cx.win.size().width)
 	bottom := section('SFTP Browser', [sftpui.expand_button(mut cx.Cx, o.sftp_view)],
 		o.sftp_panel(), t)
@@ -206,6 +207,9 @@ fn (mut o OneTerm) right_dock(t &kit.Theme, mut cx core.ViewCx[OneTerm]) core.El
 			o.save_docks()
 			cx.notify()
 		})))
+	}
+	if full {
+		return ui.div().test_id('right-dock').flex_col().grow().min_w(0).h_full().bg(t.p.canvas).child(content)
 	}
 	// A 5 px band centred on the dock's left border; its transparent line carries the pill.
 	handle := ui.div().id('dock-handle').test_id('dock-handle').group().absolute().top(0).bottom(0).left(-3).w(5).flex_row().justify_center().cursor(.resize_ew).child(kit.resize_line(false,

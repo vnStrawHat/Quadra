@@ -6,6 +6,27 @@ import quadra.kit
 import quadra.kit.work
 import quadra.ui
 
+// center_area is the terminal side of the workspace: the strip (or the rail) over the Spaces.
+fn (mut o OneTerm) center_area(t &kit.Theme, mut cx core.ViewCx[OneTerm]) core.Element {
+	tab := o.current()
+	mut leaves := map[string]core.Element{}
+	for s in tab.spaces {
+		leaves[s.id] = o.space_el(tab, s, t, mut cx)
+	}
+	panes := work.panes('spaces', tab.root, leaves).on_resize(cx.listener(fn (mut o OneTerm, r &work.PaneResize, mut _ core.ViewCx[OneTerm]) {
+		mut tab := o.current()
+		tab.root = tab.root.with_ratio(r.path, r.ratio)
+	}))
+	body := ui.div().grow().min_h(0).min_w(0).child(panes)
+	mut center := ui.div().test_id('terminal-area').flex_col().grow().min_w(0).h_full()
+	if o.ui.vertical_tabs.enabled {
+		center.child(ui.div().flex_row().grow().min_h(0).child(o.rail(t, mut cx)).child(body))
+	} else {
+		center.child(o.strip(mut cx)).child(body)
+	}
+	return center
+}
+
 fn (o &OneTerm) space_el(tab &TermTab, s &Space, t &kit.Theme, mut cx core.ViewCx[OneTerm]) core.Element {
 	content := if s.view.id != 0 {
 		core.Element(cx.child_view(s.view))

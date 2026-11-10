@@ -5,7 +5,6 @@ import json
 import quadra.core
 import quadra.kit
 import quadra.kit.input
-import quadra.platform
 import quadra.ui
 import sessionui
 
@@ -26,14 +25,7 @@ pub mut:
 
 fn (mut o OneTerm) open_settings(mut cx core.ViewCx[OneTerm]) {
 	o.themes = theme_list(o.dir)
-	_ := cx.app.open_window(platform.WindowOptions{
-		title:           'OneTerm Settings'
-		custom_titlebar: true
-		width:           1000
-		height:          700
-		min_width:       480
-		min_height:      400
-	}, SettingsWin{
+	_ := cx.app.open_window(settings_window, SettingsWin{
 		one: cx.self_model()
 	}) or {
 		kit.notify(mut cx.Cx, .error, 'Settings', err.msg())

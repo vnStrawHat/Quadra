@@ -195,8 +195,16 @@ pub fn (mut v TextInput) render(mut cx core.ViewCx[TextInput]) core.Element {
 	} else {
 		v.id
 	}).sem_value(if v.password { '' } else { v.buf.text }).disabled(v.disabled)
-	if v.height > 0 && !v.multiline {
-		d.h(v.height).py(0).min_h(0)
+	// A roomy field is a control of the md height, as the buttons beside it.
+	fixed := if v.height > 0 {
+		v.height
+	} else if roomy && !v.bare && !v.fill {
+		t.height(.md)
+	} else {
+		f32(0)
+	}
+	if fixed > 0 && !v.multiline {
+		d.h(fixed).py(0).min_h(0)
 	}
 	if roomy && focused && !v.invalid && !v.fill && !v.bare {
 		d.ring(3, t.p.border_focused.alpha(0.5)) // on any focus, as the border

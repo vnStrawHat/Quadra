@@ -5,9 +5,13 @@ import os
 import quadra.core
 import quadra.kit
 import quadra.kit.md
+import quadra.prim
 import quadra.ui
 
 const preview_pad = f32(32) // the preview column's top padding
+const outline_w_min = f32(140)
+const outline_w_max = f32(480)
+const outline_w_default = f32(220)
 
 fn (mut f Folio) main_area(lay Layout, p &Prefs, t &kit.Theme, mut cx core.ViewCx[Folio]) core.Element {
 	mut tab := f.cur()
@@ -106,6 +110,30 @@ fn (mut f Folio) outline_panel(p &Prefs, t &kit.Theme, mut cx core.ViewCx[Folio]
 	search :=
 		ui.div().flex_row().items_center().gap(6).h(32).px(8).shrink_0().border_b(1).border_color(t.p.line_strong).child(kit.icon(kit.icon_search).size(14).color(t.p.text_2)).child(ui.div().grow().child(cx.child_view(f.filter)))
 	return ui.div().test_id('outline').flex_col().w(p.outline_w).shrink_0().h_full().bg(t.p.panel).border_r(1).border_color(t.p.line_strong).child(search).child(list)
+}
+
+// outline_handle drags the outline's right edge: a 5 px band centred on its border,
+// carrying the resize pill; a double-click goes back to the default width. The width is a
+// setting, so it is kept.
+fn (mut f Folio) outline_handle(p &Prefs, t &kit.Theme, mut cx core.ViewCx[Folio]) core.Element {
+	return ui.div().test_id('outline-handle').group().absolute().top(0).bottom(0).left(p.outline_w - 3).w(5).flex_row().justify_center().cursor(.resize_ew).child(kit.resize_line(false,
+		prim.transparent, t)).on_mouse_down(cx.listener(fn (mut f Folio, e &core.MouseDownEvent, mut cx core.ViewCx[Folio]) {
+		if e.clicks == 2 {
+			f.set_outline_w(outline_w_default, mut cx)
+			return
+		}
+		cx.capture_mouse()
+	})).on_mouse_move(cx.listener(fn (mut f Folio, e &core.MouseMoveEvent, mut cx core.ViewCx[Folio]) {
+		if e.pressed {
+			f.set_outline_w(e.x, mut cx) // the outline starts at the window's left edge
+		}
+	}))
+}
+
+fn (mut f Folio) set_outline_w(w f32, mut cx core.ViewCx[Folio]) {
+	f.prefs_with(mut cx.Cx, kit_clamp(w, outline_w_min, outline_w_max), fn (mut p Prefs, w f32, mut _ core.ViewCx[Prefs]) {
+		p.outline_w = w
+	})
 }
 
 // Hint is one action of the empty state.

@@ -206,7 +206,8 @@ same rule: no backdrop, an outside click closes them.
   `solid_buttons` (a solid `accent` primary, danger at 20 / 30 / 40 % with `error` text,
   outlined buttons on `line` at 30 / 50 / 70 %, ghost hover `panel_hover` at 50 %, disabled
   text at 50 %; padding 4 / 8 / 10 / 12, gap 8 from md; icon squares hold 12 / 14 / 16
-  icons), `roomy_inputs` (padding 10 × 8, gap 6, placeholder `text_2`; a focused input also gets a 3 px `border_focused` 50 % ring outside its border, on any focus), `roomy_menus` (rows 26 tall and 2 apart, text 12 from
+  icons), `roomy_inputs` (single-line inputs the md control height tall, 32 at rem 16, the text
+  centred in it; padding 10 × 8, gap 6, placeholder `text_2`; a focused input also gets a 3 px `border_focused` 50 % ring outside its border, on any focus), `roomy_menus` (rows 26 tall and 2 apart, text 12 from
   the edge, min width 128, max 500, `radius_md`, a 1 px `text` 10 % ring instead of the
   border, 2 px separators 2 off their rows, 12 icons, the check in the row color, the
   shortcut 12 `text_2` 12 after the label, disabled `text_2`, 14 px section labels,
@@ -315,7 +316,8 @@ same rule: no backdrop, an outside click closes them.
     Hover `press` at 80 %; the chosen row `press` with a medium (500) label. Clicking a row
     picks the page and opens its groups; the chevron alone toggles them. The groups list
     under the row, 4 apart, inside a 1 px `line_strong` rule on the left (14 in, then 10
-    to the rows), 2 above and below; they are page rows without icons. A picked group is
+    to the rows), 2 above and below; they are page rows without icons, as wide as the column
+    allows (their hover fills the row, not the label). A picked group is
     the chosen row (its page row is not), and the group scrolls to the top of the page.
   - Page header: padding 16, a 1 px `line` under it; the title at 16 (26 line) on the left, the
     header actions on the right (gap 4); an optional page description under it, 14

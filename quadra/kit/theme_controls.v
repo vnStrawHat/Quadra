@@ -17,8 +17,8 @@ pub mut:
 	// buttons: a solid accent primary, danger and outlined fills that tint by state, padding
 	// xs 4 / sm 8 / md 10 / lg 12, gap 8 from md, icon squares with 12 / 14 / 16 icons
 	solid_buttons bool
-	// text inputs: padding 10 x 8, gap 6, `text_2` placeholder, a 3 px `border_focused` 50 %
-	// ring outside the border while focused
+	// text inputs: single-line ones height(.md) tall (32), padding 10 x 8, gap 6, `text_2`
+	// placeholder, a 3 px `border_focused` 50 % ring outside the border while focused
 	roomy_inputs bool
 	// menus: 26 rows 2 apart, text 12 from the edge, min width 128, radius_md with a ring
 	// instead of a border, 2 px separators, 12 icons, checks in the row color, muted shortcuts

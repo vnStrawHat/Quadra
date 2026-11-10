@@ -85,7 +85,7 @@ mut:
 	url string
 }
 
-// ponytail: not selectable yet (TextEl is); add when rich text shows copyable documents.
+// Rich text is selectable as a member of a SelectGroup (rich_select.v).
 @[heap]
 pub struct RichEl {
 pub mut:
@@ -100,6 +100,11 @@ mut:
 	node   layout.NodeId
 	link   ?core.AnyListener
 	hits   []LinkHit
+	group  &SelectGroup = unsafe { nil } // rich_select.v
+	member int       // the index in the group at the last prepaint
+	bounds prim.Rect // and the bounds
+	plain  string    // the spans' text
+	offs   []int     // where each span starts in plain
 }
 
 pub fn rich_text(spans []Span) &RichEl {
@@ -180,10 +185,23 @@ fn (mut r RichEl) layout_at(w f32) &txt.RichText {
 }
 
 pub fn (mut r RichEl) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
-	cx.register_text(r.spans.map(it.text).join(''), bounds)
-	if r.link == none {
-		return
+	r.plain = r.spans.map(it.text).join('')
+	cx.register_text(r.plain, bounds)
+	joined := r.group != unsafe { nil } && r.group.st != unsafe { nil }
+	if joined {
+		cx.enter('')
+		cx.push_hitbox(r.join(bounds, mut cx)) // links bubble a press to the selection
 	}
+	if r.link != none {
+		r.link_hits(bounds, mut cx)
+	}
+	if joined {
+		cx.pop_hitbox()
+		cx.leave()
+	}
+}
+
+fn (mut r RichEl) link_hits(bounds prim.Rect, mut cx core.PrepaintCx) {
 	rt := r.layout_at(bounds.width)
 	r.hits = []LinkHit{}
 	mut rects := []prim.Rect{}
@@ -218,6 +236,9 @@ fn rich_link_click(holder voidptr, _ voidptr, _ voidptr, mut cx core.Cx) {
 
 pub fn (mut r RichEl) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	rt := r.layout_at(bounds.width)
+	if r.group != unsafe { nil } {
+		r.paint_group_selection(bounds, rt, mut cx)
+	}
 	clip := cx.clip_rect()
 	for line in rt.lines {
 		top := bounds.y + line.y

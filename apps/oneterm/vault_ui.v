@@ -186,7 +186,6 @@ pub fn (mut d VaultDialog) render(mut cx core.ViewCx[VaultDialog]) core.Element 
 fn (mut o OneTerm) start_vault_job(job vault.VaultJob, m core.Model[OneTerm], mut cx core.Cx) {
 	cx.update_with(m, job, fn (mut o OneTerm, job vault.VaultJob, mut cx core.ViewCx[OneTerm]) {
 		core.spawn_task_with[OneTerm, vault.VaultJob, vault.JobResult](mut cx, job, run_vault_job, fn (mut o OneTerm, r &core.TaskResult[vault.JobResult], mut cx core.ViewCx[OneTerm]) {
-			cx.app.trim_now() // Argon2id's 64 MiB goes back to the OS now, not after a quiet period
 			o.finish_vault(r, mut cx)
 		})
 	})

@@ -173,7 +173,7 @@ pub fn (mut d Div) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 		d.prepaint_transition(mut cx)
 	}
 	if d.clips() {
-		cx.push_clip(bounds)
+		cx.push_clip(d.clip_box(bounds, cx.clip()))
 	}
 	saved := cx.text_style
 	cx.text_style = d.text.apply(saved)
@@ -258,7 +258,11 @@ fn (mut d Div) paint_box(bounds prim.Rect, restyles bool, mut cx core.PaintCx) {
 		cx.quad(q)
 	}
 	if d.clips() {
-		cx.push_clip(bounds, v.radii.top_left)
+		mut radius := f32(0) // rounded only when both axes clip
+		if d.style.overflow_x != .visible && d.style.overflow_y != .visible {
+			radius = v.radii.top_left
+		}
+		cx.push_clip(d.clip_box(bounds, cx.clip_rect()), radius)
 	}
 	saved := cx.text_style
 	cx.text_style = tp.apply(saved)

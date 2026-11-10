@@ -4,6 +4,7 @@
 module main
 
 import os
+import time
 import vault
 import quadra.kit.term
 import quadra.native.sys
@@ -25,14 +26,32 @@ fn test_a_vault_unlock_keeps_no_argon2_memory() {
 	one.vault = vault.load_at_start(dir, false)
 	h.open(one, width: 1000, height: 700)!
 	h.frame()
+	r := h.find('lock-input') or { panic('no lock input') }
+	assert r.height == 32 // the original's medium input
 	h.app.trim_now()
 	locked := private_mb()
 	h.type_text('correct-horse')
 	h.press('enter')!
-	h.wait_tasks()!
-	h.frame()
+	// No long main-thread step while the job runs or when its result lands: the unlock
+	// once ran two full collections on that frame.
+	mut longest := i64(0)
+	for _ in 0 .. 1000 {
+		time.sleep(2 * time.millisecond)
+		sw := time.new_stopwatch()
+		h.plat.run_posted()
+		h.frame()
+		step := sw.elapsed().microseconds()
+		if step > longest {
+			longest = step
+		}
+		if h.app.tasks_running() == 0 {
+			break
+		}
+	}
+	assert h.app.tasks_running() == 0, 'the unlock job did not finish'
 	unlocked := private_mb()
-	eprintln('oneterm vault memory: private ws locked ${locked} MB, unlocked ${unlocked} MB')
+	eprintln('oneterm vault memory: private ws locked ${locked} MB, unlocked ${unlocked} MB; longest step ${longest} us')
+	assert longest < 50_000
 	assert !one.vault.is_screen_locked()
 	assert locked < 48 // vault.init's Argon2 run is gone too
 	assert unlocked < locked + 16 // not + 64

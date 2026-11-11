@@ -2,9 +2,10 @@
 //! opened it, keeps Tab inside itself, closes on a press outside or on Escape, and gives the
 //! focus back to what had it. Menus, selects, popovers and dialogs are this, with content.
 
+use quadra_layout::Display;
 use quadra_reactive::{Signal, on_cleanup};
 use quadra_tree::{Along, NodeId, Side};
-use quadra_ui::{Div, MountCx, NodeRef, Place, View, column, overlay, show};
+use quadra_ui::{Div, MountCx, NodeRef, Place, View, column, div, overlay, show};
 
 use crate::action::{Cancel, POPUP};
 use crate::{size, token};
@@ -83,5 +84,6 @@ where
 {
     let shown =
         move || Open { open, level, place: place.clone(), opener: opener.clone(), content: content() };
-    show(move || open.get(), shown)
+    // The region takes no room where it stands, not even a gap: what it shows is above.
+    show(move || open.get(), shown).container(div().display(Display::None))
 }

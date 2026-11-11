@@ -5,11 +5,11 @@
 use std::rc::Rc;
 
 use quadra::{
-    Align, Div, NodeRef, Signal, Theme, WindowOptions, column, div, row, signal, text, use_context,
+    Align, Div, NodeRef, Signal, Theme, WindowOptions, column, div, dynamic, row, signal, text, use_context,
 };
 use quadra_kit::{
-    MenuItem, Size, Variant, button, checkbox, dark, dialog, icon, icon_button, icons, input, light, menu,
-    radio_group, segmented, select, size, switch, token, tooltip,
+    MenuItem, Size, Variant, button, checkbox, dark, dialog, icon, icon_button, icons, input, light, list,
+    menu, radio_group, segmented, select, size, switch, tabs, token, tooltip,
 };
 
 /// A section: its title, then its rows.
@@ -116,6 +116,19 @@ fn overlays() -> Div {
     section("Overlays").child(controls).child(menu(open, &opener, items)).child(ask)
 }
 
+fn lists() -> Div {
+    let (page, view, file) = (signal(0usize), signal(0usize), signal(Some(2usize)));
+    let pages = line()
+        .gap(24.0)
+        .child(tabs(["Files", "Search", "History"], page))
+        .child(tabs(["List", "Grid"], view).pill());
+    let name = |i: Signal<usize>| text(move || format!("notes-{:03}.md", i.get()));
+    let files = list(|| 200, file, name).empty("No files");
+    let framed = div().size(240.0, 117.0).border(1.0).border_color(token::LINE).child(files);
+    let chosen = text(move || file.get().map_or("none".to_string(), |i| format!("row {i}")));
+    section("Tabs and lists").child(pages).child(line().align_items(Align::Start).child(framed).child(chosen))
+}
+
 fn main() -> quadra::Result<()> {
     let view = || {
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
@@ -127,16 +140,17 @@ fn main() -> quadra::Result<()> {
         let name = text(move || if is_dark.get() { "One Dark Pro" } else { "One Light" });
         let name = name.size(size::TEXT_LG.size).weight(size::WEIGHT_STRONG);
         let head = line().child(name).child(button("Other theme").size(Size::Sm).on_click(swap));
-        quadra_kit::root()
-            .padding(24.0)
-            .gap(20.0)
-            .child(head)
-            .child(buttons())
-            .child(icons())
-            .child(inputs())
-            .child(choices())
-            .child(overlays())
+        // `GALLERY_PAGE=2` starts on the third page: for a picture of it.
+        let first = std::env::var("GALLERY_PAGE").ok().and_then(|page| page.parse().ok());
+        let page = signal(first.unwrap_or(0usize));
+        let shown = dynamic(move || match page.get() {
+            0 => column().gap(20.0).child(buttons()).child(icons()),
+            1 => column().gap(20.0).child(inputs()).child(choices()),
+            _ => column().gap(20.0).child(overlays()).child(lists()),
+        });
+        let pages = tabs(["Buttons", "Forms", "Overlays and lists"], page);
+        quadra_kit::root().padding(24.0).gap(20.0).child(head).child(pages).child(shown)
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
-    app.window(WindowOptions::new("Quadra gallery").size(680.0, 860.0), view)?.run()
+    app.window(WindowOptions::new("Quadra gallery").size(680.0, 560.0), view)?.run()
 }

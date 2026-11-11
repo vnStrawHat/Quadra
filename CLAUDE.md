@@ -141,7 +141,8 @@ selection controls (`checkbox`, `switch`, `radio_group`, `segmented`; `outline` 
 focus mark of what has no border), and popups (`popup.rs`: focus in and back, Escape, a
 press outside; `popover`, `menu`, `select`), the tooltip (no node of its own: handlers on
 the view's node, a timer, an overlay opened by hand) and the dialog (`Place::Top`), and
-shadows (`.elevation(1|2)`, a paint value). Next: lists and tabs, panels and the titlebar; the components in the order of specs/13, each with its
+shadows (`.elevation(1|2)`, a paint value), `tabs` and `list` (boxes have `.display(..)` and
+one-sided borders now). Next: scrollbars, panels and the titlebar; the components in the order of specs/13, each with its
 section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

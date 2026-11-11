@@ -164,6 +164,20 @@ As built so far:
   group is one stop of Tab. Radios are rings of 12 px with a dot; segmented cells belong to
   one outlined control, the chosen one tinted with an accent label (`.size(..)`: 22 px with
   12 px labels, or 28 and 32 with 14).
+- **`tabs(labels, chosen)`** is the names of a few pages in a row, with the index of the
+  chosen one in a signal; the caller shows its page. A tab is 28 px tall with 8 px beside
+  its label, muted until the pointer is over it; the chosen one has the accent's label. A
+  line runs under the row, or with `.pill()` the chosen tab is tinted and there is none.
+  The row is one stop of Tab and the arrows go round it, as in a radio group (the same
+  code: `choice::chooser`). To a reader: a tab list of tabs, one selected.
+- **`list(count, selected, row)`** is any number of rows of one height (23 px, or
+  `.row_height(32.0)`), mounted as they show (`uniform_list`). `row` builds what a row holds
+  from its index, a signal. `selected` holds the selected row if any: a click writes it, and
+  with the focus in the list the arrows move it and stop at the ends, Home and End go to
+  them (key context `action::LIST`), the list scrolling to keep it in view. A double click
+  or Enter is `.on_activate(|row| ..)`. A row is as wide as the list, 6 px beside what it
+  holds, filled under the pointer and with `press` when selected. `.empty(words)` is what a
+  list with no rows says.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).
@@ -172,8 +186,9 @@ As built so far:
   its own selection. A field shows its placeholder while it holds nothing, composing counted.
 - A component that builds a view from properties it was given passes them on as they are:
   `Prop<T>` is itself something a setter takes.
-- The example `gallery` of the kit shows the components in a real window in either theme;
-  it becomes the gallery app when there are pages to have.
+- The example `gallery` of the kit shows the components in a real window in either theme,
+  on pages chosen by tabs; it becomes the gallery app when it is compared with the
+  reference screenshots.
 
 ## Overlays in the kit
 
@@ -198,6 +213,8 @@ the popup closes the focus goes back to what had it.
   column is there only when a row has an icon or a check.
 - `select(options, chosen)`: a filled button that shows the chosen option, and a menu of the
   options with a check on it.
+- The region a popup is shown in is not displayed (`.display(Display::None)`): where the
+  popup stands in the flow it takes no room, not even a gap of the box around it.
 - The text values of the window's root hold in overlays too (a popup's text has the
   window's face and colour): an overlay has no parent, and is above the root.
 - `tooltip("Save the file", view).keys("Ctrl-S")`: the words show below the view, centred,

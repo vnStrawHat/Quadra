@@ -31,6 +31,23 @@ impl Action for MovePrevious {
     const NAME: &'static str = "kit::move_previous";
 }
 
+/// The key context of a list: the arrows move its selection and stop at the ends.
+pub const LIST: &str = "list";
+
+/// To the first of many, and to the last: Home and End in a list.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveFirst;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveLast;
+
+impl Action for MoveFirst {
+    const NAME: &'static str = "kit::move_first";
+}
+
+impl Action for MoveLast {
+    const NAME: &'static str = "kit::move_last";
+}
+
 /// The key context of a popup: a menu, a popover, a dialog.
 pub const POPUP: &str = "popup";
 /// The key context of the rows of a menu.
@@ -58,10 +75,13 @@ pub fn keymap() -> Keymap {
         keymap.bind_in(CHOICE, keys, MovePrevious).expect(well_formed);
     }
     keymap.bind_in(POPUP, "escape", Cancel).expect(well_formed);
-    keymap.bind_in(MENU, "down", MoveNext).expect(well_formed);
-    keymap.bind_in(MENU, "up", MovePrevious).expect(well_formed);
-    for keys in ["enter", "space"] {
-        keymap.bind_in(MENU, keys, Confirm).expect(well_formed);
+    for context in [MENU, LIST] {
+        keymap.bind_in(context, "down", MoveNext).expect(well_formed);
+        keymap.bind_in(context, "up", MovePrevious).expect(well_formed);
+        keymap.bind_in(context, "enter", Confirm).expect(well_formed);
     }
+    keymap.bind_in(MENU, "space", Confirm).expect(well_formed);
+    keymap.bind_in(LIST, "home", MoveFirst).expect(well_formed);
+    keymap.bind_in(LIST, "end", MoveLast).expect(well_formed);
     keymap
 }

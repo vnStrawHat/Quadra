@@ -2,7 +2,7 @@
 //! property writes one, a state variant is a list of them, and a role of the theme is one
 //! that stands for another colour under another theme.
 
-use quadra_layout::{Align, Direction, Justify, Length, Overflow};
+use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow};
 use quadra_prim::{Corners, Edges};
 
 use crate::node::Style;
@@ -29,7 +29,14 @@ pub enum Patch {
     Margin(f32),
     /// The width of the border on every side.
     Border(f32),
+    /// The width of the border on one side.
+    BorderTop(f32),
+    BorderRight(f32),
+    BorderBottom(f32),
+    BorderLeft(f32),
     Direction(Direction),
+    /// Laid out as a row or column, as a grid, or not at all.
+    Display(Display),
     Justify(Justify),
     AlignItems(Align),
     Wrap(bool),
@@ -89,7 +96,12 @@ impl Patch {
                 Patch::PaddingY(v) => (l.padding.top, l.padding.bottom) = (v, v),
                 Patch::Margin(v) => l.margin = Edges::all(v),
                 Patch::Border(v) => l.border = Edges::all(v),
+                Patch::BorderTop(v) => l.border.top = v,
+                Patch::BorderRight(v) => l.border.right = v,
+                Patch::BorderBottom(v) => l.border.bottom = v,
+                Patch::BorderLeft(v) => l.border.left = v,
                 Patch::Direction(v) => l.direction = v,
+                Patch::Display(v) => l.display = v,
                 Patch::Justify(v) => l.justify = v,
                 Patch::AlignItems(v) => l.align_items = v,
                 Patch::Wrap(v) => l.wrap = v,

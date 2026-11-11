@@ -92,12 +92,7 @@ impl Choice {
             let option = option.role(Role::Radio).checked(on).cursor(Cursor::Pointer);
             parts.push(AnyView::new(option.on_click(move |_| chosen.set(i))));
         }
-        // The group is what Tab reaches; the arrows move the choice, round the ends.
-        let step = move |by: usize| chosen.update(|at| *at = (*at + by) % count.max(1));
-        let group = div().role(Role::Group).focusable().key_context(CHOICE);
-        let group = group.on_action::<MoveNext>(move |_| step(1));
-        let group = group.on_action::<MovePrevious>(move |_| step(count.saturating_sub(1)));
-        let group = group.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
+        let group = chooser(Role::Group, count, chosen);
         let group =
             group.disabled(self.disabled).when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
         let group = match (self.segmented, self.horizontal) {
@@ -110,6 +105,16 @@ impl Choice {
         };
         group.children(parts)
     }
+}
+
+/// The box around a few options of which one is chosen: it is what Tab reaches, and the
+/// arrows move the choice, round the ends.
+pub(crate) fn chooser(role: Role, count: usize, chosen: Signal<usize>) -> Div {
+    let step = move |by: usize| chosen.update(|at| *at = (*at + by) % count.max(1));
+    let group = div().role(role).focusable().key_context(CHOICE);
+    let group = group.on_action::<MoveNext>(move |_| step(1));
+    let group = group.on_action::<MovePrevious>(move |_| step(count.saturating_sub(1)));
+    group.focus_visible(|s| s.outline(token::BORDER_FOCUSED))
 }
 
 impl View for Choice {

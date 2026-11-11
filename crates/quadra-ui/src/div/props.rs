@@ -1,7 +1,7 @@
 //! The style values of a box: each a setter of the box, taking a constant or something
 //! reactive, and a setter of what a state changes, taking a constant.
 
-use quadra_layout::{Align, Direction, Justify, Length, Overflow};
+use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow};
 use quadra_tree::{Paint, Patch};
 
 use super::Div;
@@ -55,7 +55,15 @@ props! {
     margin: f32 => Margin;
     /// The width of the border on every side.
     border: f32 => Border;
+    /// The width of the border on one side: a line under a bar, a seam beside a pane.
+    border_top: f32 => BorderTop;
+    border_right: f32 => BorderRight;
+    border_bottom: f32 => BorderBottom;
+    border_left: f32 => BorderLeft;
     direction: Direction => Direction;
+    /// `Display::None` takes the box and what it holds out of the layout and the picture,
+    /// mounted as it is.
+    display: Display => Display;
     justify: Justify => Justify;
     align_items: Align => AlignItems;
     wrap: bool => Wrap;

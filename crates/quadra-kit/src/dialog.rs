@@ -52,6 +52,7 @@ where
             let head = div().padding_x(12.0).padding_y(8.0).child(headline);
             let middle = div().padding_x(12.0).padding_y(4.0).text_color(token::TEXT_2).child(body());
             let mut foot = row().gap(4.0).padding(8.0).justify(Justify::End);
+            foot = foot.border_top(1.0).border_color(token::LINE);
             for (label, variant, act) in actions.iter() {
                 let act = act.clone();
                 let press = move || {
@@ -60,9 +61,8 @@ where
                 };
                 foot = foot.child(button(label.clone()).variant(*variant).size(Size::Sm).on_click(press));
             }
-            let seam = div().height(1.0).bg(token::LINE);
             let page = column().width(440.0).role(Role::Dialog).label(title.clone());
-            page.child(head).child(middle).child(div().height(8.0)).child(seam).child(foot)
+            page.child(head).child(middle).child(div().height(8.0)).child(foot)
         };
         popup(open, (Place::Top(80.0), 2), None, content).mount(cx)
     }

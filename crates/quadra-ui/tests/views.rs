@@ -150,3 +150,22 @@ fn removing_the_root_frees_everything_the_views_made() {
     let after = stats();
     assert_eq!((after.nodes, after.scopes), (before.nodes + 1, before.scopes)); // only `n` is left
 }
+
+#[test]
+fn a_box_that_is_not_displayed_takes_no_room_and_stays_mounted() {
+    use quadra_layout::Display;
+    let shown = signal(false);
+    let last = quadra_ui::NodeRef::new();
+    let mut h = Harness::new();
+    let middle = div().height(20.0).display(move || if shown.get() { Display::Flex } else { Display::None });
+    let middle = middle.border_top(2.0).child(text("kept"));
+    let page = column().gap(10.0).child(div().height(20.0)).child(middle);
+    mount_root(&mut h.tree, page.child(div().height(20.0).node_ref(&last)));
+    h.frame();
+    // Not even a gap of the column is its: the third box follows the first.
+    let last = last.get().unwrap();
+    assert_eq!((h.tree.rect(last).y, all_texts(&mut h)), (30.0, vec!["kept".to_string()]));
+    shown.set(true);
+    h.frame();
+    assert_eq!(h.tree.rect(last).y, 60.0);
+}

@@ -178,6 +178,22 @@ As built so far:
   or Enter is `.on_activate(|row| ..)`. A row is as wide as the list, 6 px beside what it
   holds, filled under the pointer and with `press` when selected. `.empty(words)` is what a
   list with no rows says.
+- **What shows and does nothing** (`display.rs`) is functions that give boxes and texts:
+  `heading(words, level)` (23, 18, 16 px, then the size of text; regular weight), `label`
+  (12 px, muted), `badge(words, tone)` and `tag(words)` (chips of 16 and 18 px in 10 px mono
+  text; a badge is a faint tint of its tone), `kbd("ctrl-s")` and `key_label` (shortcuts are
+  written "Ctrl-Shift-P", the modifiers in the order Ctrl, Win, Alt, Shift), `avatar(name,
+  side)` (the initials on a colour that is the name's own; images later), `card()` with
+  `card_head(title, more)`, `divider()` and `vdivider()`.
+- **`accordion().item(title, open, || body)`**: sections under one another in one outline.
+  A head is 28 px, a chevron then the title, and a button to a reader, expanded or not; a
+  click, Enter or Space writes the signal that says whether its section is open. The body
+  is built each time it opens.
+- **`split(first, second, share)`**: two panes side by side, or `.stacked()`, and a seam of
+  one pixel in a grip of 6 with the cursor of a resize. `share` is the first pane's part
+  of the whole, a signal: dragging the seam writes it, never leaving a pane under
+  `.least(px)` (80), and a double click makes the panes even. What does not fit in a pane
+  is cut.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

@@ -52,6 +52,10 @@ props! {
     padding_x: f32 => PaddingX;
     /// Top and bottom padding.
     padding_y: f32 => PaddingY;
+    padding_top: f32 => PaddingTop;
+    padding_right: f32 => PaddingRight;
+    padding_bottom: f32 => PaddingBottom;
+    padding_left: f32 => PaddingLeft;
     margin: f32 => Margin;
     /// The width of the border on every side.
     border: f32 => Border;
@@ -67,6 +71,7 @@ props! {
     justify: Justify => Justify;
     align_items: Align => AlignItems;
     wrap: bool => Wrap;
+    overflow_x: Overflow => OverflowX;
     overflow_y: Overflow => OverflowY;
     /// The background colour.
     bg: Paint => Background;

@@ -25,6 +25,8 @@ pub const TEXT_MD: Type = Type { size: 14.0, line: 23.0 };
 pub const TEXT_LG: Type = Type { size: 16.0, line: 26.0 };
 /// Headlines of dialogs and pages.
 pub const TEXT_XL: Type = Type { size: 18.0, line: 26.0 };
+/// Display: the first heading of a page.
+pub const TEXT_2XL: Type = Type { size: 23.0, line: 29.0 };
 
 /// The heights of controls, at the compact density, which is the reference.
 pub const H_XS: f32 = 18.0;

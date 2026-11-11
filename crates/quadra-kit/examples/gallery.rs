@@ -8,8 +8,9 @@ use quadra::{
     Align, Div, NodeRef, Signal, Theme, WindowOptions, column, div, dynamic, row, signal, text, use_context,
 };
 use quadra_kit::{
-    MenuItem, Size, Variant, button, checkbox, dark, dialog, icon, icon_button, icons, input, light, list,
-    menu, radio_group, segmented, select, size, switch, tabs, token, tooltip,
+    MenuItem, Size, Tone, Variant, accordion, avatar, badge, button, card, card_head, checkbox, dark, dialog,
+    divider, heading, icon, icon_button, icons, input, kbd, light, list, menu, radio_group, segmented,
+    select, size, split, switch, tabs, tag, token, tooltip,
 };
 
 /// A section: its title, then its rows.
@@ -129,6 +130,32 @@ fn lists() -> Div {
     section("Tabs and lists").child(pages).child(line().align_items(Align::Start).child(framed).child(chosen))
 }
 
+fn parts() -> Div {
+    let (general, advanced, share) = (signal(true), signal(false), signal(0.4f32));
+    let chips = line()
+        .child(badge("neutral", Tone::Neutral))
+        .child(badge("primary", Tone::Primary))
+        .child(badge("ok", Tone::Success))
+        .child(badge("warning", Tone::Warning))
+        .child(badge("error", Tone::Danger))
+        .child(badge("info", Tone::Info))
+        .child(tag("v1.2"))
+        .child(kbd("ctrl-shift-p"))
+        .child(avatar("Ada Lovelace", 24.0));
+    let about = card().width(260.0).child(card_head("Card", "What belongs together")).child(divider());
+    let about = about.child(text("A bordered box on the panel's plane."));
+    let sections =
+        accordion()
+            .item("General", general, || text("Name and language"))
+            .item("Advanced", advanced, || text("Proxy and certificates"));
+    let panes =
+        split(div().padding(8.0).child(text("First")), div().padding(8.0).child(text("Second")), share);
+    let framed = div().size(330.0, 90.0).border(1.0).border_color(token::LINE).child(panes);
+    let boxes =
+        line().align_items(Align::Start).gap(16.0).child(about).child(column().width(330.0).child(sections));
+    section("Parts").child(heading("Heading", 2)).child(chips).child(boxes).child(framed)
+}
+
 fn main() -> quadra::Result<()> {
     let view = || {
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
@@ -146,9 +173,10 @@ fn main() -> quadra::Result<()> {
         let shown = dynamic(move || match page.get() {
             0 => column().gap(20.0).child(buttons()).child(icons()),
             1 => column().gap(20.0).child(inputs()).child(choices()),
+            3 => column().gap(20.0).child(parts()),
             _ => column().gap(20.0).child(overlays()).child(lists()),
         });
-        let pages = tabs(["Buttons", "Forms", "Overlays and lists"], page);
+        let pages = tabs(["Buttons", "Forms", "Overlays and lists", "Parts"], page);
         quadra_kit::root().padding(24.0).gap(20.0).child(head).child(pages).child(shown)
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;

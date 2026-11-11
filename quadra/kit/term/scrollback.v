@@ -156,10 +156,18 @@ pub fn unpack(l Line, cols int) Row {
 	return row
 }
 
+pub const max_scrollback = 1_000_000
+const grapheme_max = 16 // code points of one cluster, the base included
+
+// set_scrollback sets how many lines the history keeps.
+pub fn (mut s Screen) set_scrollback(n int) {
+	s.scrollback.max = clamp(n, 0, max_scrollback)
+}
+
 fn (mut r Row) add_mark(col int, s string) {
 	for i, m in r.marks {
 		if m.col == col {
-			if m.s.len < 64 { // a cluster cannot grow without bound
+			if m.s.runes().len < grapheme_max - 1 { // the base is one of the 16
 				r.marks[i] = Mark{col, m.s + s}
 			}
 			return

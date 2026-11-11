@@ -224,11 +224,32 @@ fn csi_u(key platform.Key, mods platform.Mods, action KeyAction, flags u8) ?[]u8
 					alt = ':${int(sh)}'
 				}
 			}
-			seq = if field2 == '' { '\x1b[${code}${alt}u' } else { '\x1b[${code}${alt};${field2}u' }
+			mut fields := ['${code}${alt}', field2, kitty_text_field(code, mods, action, flags)]
+			for fields.last() == '' {
+				fields.pop()
+			}
+			seq = '\x1b[${fields.join(';')}u'
 		}
 	}
 
 	return seq.bytes()
+}
+
+// kitty_text_field is the associated text of a code-point report: nothing without the flag and
+// report-all, on a release, with ctrl or alt, or for a control code. Quadra's keys carry one
+// scalar, so the original's 32-scalar cap cannot be reached.
+fn kitty_text_field(code int, mods platform.Mods, action KeyAction, flags u8) string {
+	if flags & kitty_text == 0 || flags & kitty_all_as_esc == 0 || action == .release
+		|| mods.has(.ctrl) || mods.has(.alt) || code < 32
+		|| (code >= 0x7f && code <= 0x9f) {
+		return ''
+	}
+	if mods.has(.shift) && code < 127 {
+		if sh := shifted_char(u8(code)) {
+			return '${int(sh)}'
+		}
+	}
+	return '${code}'
 }
 
 fn modify_other(key platform.Key, mods platform.Mods, level int) ?[]u8 {

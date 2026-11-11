@@ -3,7 +3,8 @@
 OneTerm is a terminal application for local shells and SSH/SFTP. This spec rewrites it in V
 on Quadra, in `apps/oneterm`. The Rust original (v0.6.11) is the behavioural reference; where
 this spec is silent, the original decides. The workbench follows the One design language
-(specs/15). The terminal engine is `kit/term` (specs/17), upgraded so every Quadra app gains.
+(specs/15). The terminal engine is `kit/term` (specs/17), upgraded so every Quadra app gains;
+its limits are the original's (specs/17, Limits).
 
 ## Phases
 

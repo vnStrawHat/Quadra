@@ -142,5 +142,5 @@ fn test_color_queries_and_sixel_through_the_view() {
 		fake.output('x\r\n') // one chunk per frame: the sweep runs every 64 chunks
 		h.frame()
 	}
-	assert t.screen.graphics.len == 0 && t.gfx.len == 0 && t.gfx_free.len == 1
+	assert t.screen.graphics.len == 0 && t.gfx.len == 0
 }

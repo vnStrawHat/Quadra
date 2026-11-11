@@ -114,26 +114,21 @@ fn marks_at(row term.Row, col int) string {
 	return out
 }
 
-// link_key renumbers implicit links by first appearance, like the file does.
-fn link_key(e term.CellExtra, s &term.Screen, mut seen map[u32]string) string {
+// link_key is a cell's link as the file spells it, minus the number of an implicit link:
+// the recordings give each occurrence its own, the original (its deviation D17) and Quadra
+// one per URI.
+fn link_key(e term.CellExtra, s &term.Screen) string {
 	if e.link == 0 {
 		return '-'
 	}
 	t := s.links[e.link - 1]
-	mut id := percent_encode(t.id)
-	if t.id == '' {
-		if u32(e.link) !in seen {
-			seen[u32(e.link)] = '#${seen.len}'
-		}
-		id = seen[u32(e.link)]
-	}
+	id := if t.id == '' { '#' } else { percent_encode(t.id) }
 	return '${id}~${percent_encode(t.url)}'
 }
 
 // first_difference compares the grid with grid.expect and returns the first mismatch, or ''.
 fn first_difference(s &term.Screen, expect string) string {
 	blank := term.Cell{}
-	mut seen := map[u32]string{}
 	for line in expect.split_into_lines() {
 		if !line.starts_with('row ') {
 			continue
@@ -154,7 +149,8 @@ fn first_difference(s &term.Screen, expect string) string {
 			want_ch := f[0].all_before('+').parse_uint(16, 32) or { 0 }
 			want_fg, want_bg := color_of(f[2]), color_of(f[3])
 			want_marks := if f[0].contains('+') { '+' + f[0].all_after('+') } else { '' }
-			want_ul, want_link := f[4], f[5]
+			want_ul := f[4]
+			want_link := if f[5].starts_with('#') { '#~' + f[5].all_after('~') } else { f[5] }
 			for _ in 0 .. count {
 				c := if col < row.cells.len { row.cells[col] } else { blank }
 				last := col == s.cols - 1
@@ -169,7 +165,7 @@ fn first_difference(s &term.Screen, expect string) string {
 						'i${e.ul - 1}'
 					}
 				}
-				got_link := link_key(e, s, mut seen)
+				got_link := link_key(e, s)
 				got_marks := if col < row.cells.len { marks_at(row, col) } else { '' }
 				if ul != want_ul || got_link != want_link || got_marks != want_marks {
 					return 'row ${index} col ${col}: underline ${ul} link ${got_link} marks ${got_marks}, want ${run[

@@ -177,6 +177,10 @@ pub:
 
 // Pty is a running program on a pseudo terminal. Output arrives through PtyOptions.on_data
 // on a reader thread.
+// What a PTY or SSH shell queues for its writer thread; a write past either fails and is dropped.
+pub const pty_write_budget = 4 << 20
+pub const pty_write_items = 256
+
 pub interface Pty {
 mut:
 	write(data []u8) !

@@ -41,7 +41,7 @@ fn (mut p Parser) dcs_entry(mut s Screen, b u8) {
 		}
 		p.params[p.np - 1] = p.params[p.np - 1] * 10 + int(b - `0`)
 	} else if b == `;` {
-		if p.np < 16 {
+		if p.np < p.params.len {
 			p.np++
 		}
 	} else if b >= 0x20 && b <= 0x2f {

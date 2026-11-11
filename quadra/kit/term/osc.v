@@ -32,6 +32,7 @@ pub struct TerminalInfo {
 pub:
 	kind     InfoKind
 	text     string // notification body, pointer name, icon name
+	warn     bool   // notification: a warning from the terminal itself
 	progress Progress
 	mark     u8   // shell_mark: which of mark_a..mark_d
 	exit     ?int // shell_mark: the D exit code
@@ -51,17 +52,19 @@ fn (mut s Screen) emit(ev TerminalInfo) {
 
 // osc_dispatch handles one complete OSC string. A trailing ST or BEL is already gone.
 fn (mut p Parser) osc_dispatch(mut s Screen) {
-	parts := p.osc.bytestr().split(';')
+	// Short payloads split fully, as the original's dispatch re-splits its last parameter; a
+	// large one stops at 16 so it cannot make millions of strings.
+	parts := p.osc.bytestr().split_nth(';', if p.osc_big { max_osc_params } else { 0 })
 	match parts[0] {
 		'0', '2' {
 			if parts.len >= 2 {
-				s.title = parts[1..].join(';').trim_space()
+				s.title = clean_text(parts[1..].join(';').trim_space(), max_title, true)
 				s.title_count++
 			}
 		}
 		'1' {
 			if parts.len >= 2 {
-				s.icon_name = parts[1..].join(';').trim_space()
+				s.icon_name = clean_text(parts[1..].join(';').trim_space(), max_title, true)
 				s.emit(TerminalInfo{ kind: .icon_name, text: s.icon_name })
 			}
 		}
@@ -69,8 +72,11 @@ fn (mut p Parser) osc_dispatch(mut s Screen) {
 			p.osc_palette(mut s, parts)
 		}
 		'7' {
-			if parts.len >= 2 {
-				s.cwd = osc_path(parts[1..].join(';'))
+			if parts.len >= 2 && !p.osc_cut {
+				cwd := clean_text(osc_path(parts[1..].join(';')), max_cwd, false)
+				if cwd != '' {
+					s.cwd = cwd
+				}
 			}
 		}
 		'8' {
@@ -79,7 +85,7 @@ fn (mut p Parser) osc_dispatch(mut s Screen) {
 			}
 		}
 		'9' {
-			s.osc_nine(parts)
+			s.osc_nine(parts, p.osc_cut)
 		}
 		'10', '11', '12' {
 			p.osc_dynamic(mut s, parts)
@@ -115,12 +121,15 @@ fn (mut p Parser) osc_dispatch(mut s Screen) {
 }
 
 // osc_nine is OSC 9: ConEmu progress under sub-code 4, a notification otherwise.
-fn (mut s Screen) osc_nine(parts []string) {
+fn (mut s Screen) osc_nine(parts []string, cut bool) {
 	if parts.len < 2 || (parts.len == 2 && parts[1] == '') {
 		return
 	}
 	if parts[1] != '4' {
 		s.emit(TerminalInfo{ kind: .notification, text: parts[1..].join(';') })
+		return
+	}
+	if cut { // a cut number is a wrong number
 		return
 	}
 	percent0 := clamp((if parts.len > 3 { parts[3].int() } else { 0 }), 0, 100)

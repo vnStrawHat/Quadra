@@ -1,5 +1,6 @@
 // Texture atlases (pure V): shelf packing into fixed-size pages, with uploads queued
-// for the device. ponytail: no eviction yet; pages are added until memory says stop.
+// for the device. Pages are added until memory says stop; a released tile frees its shelf
+// once the shelf is empty (terminal images are the only tiles that die).
 module gpu
 
 pub enum AtlasKind {
@@ -39,6 +40,7 @@ mut:
 	y      int
 	height int
 	x      int
+	live   int // tiles in use
 }
 
 struct Page {
@@ -124,6 +126,14 @@ fn (mut a Atlas) try_page(p int, w int, h int) ?AtlasTile {
 			}
 		}
 	}
+	if best < 0 { // an emptied shelf that fits, before a new one
+		for i, s in page.shelves {
+			if s.live == 0 && s.height >= need_h && need_w <= size
+				&& (best < 0 || s.height < page.shelves[best].height) {
+				best = i
+			}
+		}
+	}
 	if best < 0 {
 		if page.next_y + need_h > size || need_w > size {
 			return none
@@ -138,6 +148,7 @@ fn (mut a Atlas) try_page(p int, w int, h int) ?AtlasTile {
 	mut s := &page.shelves[best]
 	x, y := s.x, s.y
 	s.x += need_w
+	s.live++
 	inv := 1 / f32(size)
 	return AtlasTile{p, x, y, w, h, f32(x) * inv, f32(y) * inv, f32(x + w) * inv, f32(y + h) * inv}
 }
@@ -152,6 +163,27 @@ fn (mut a Atlas) finish(t AtlasTile, pixels []u8, owned bool) AtlasTile {
 // owned as for insert_owned.
 pub fn (mut a Atlas) rewrite(t AtlasTile, pixels []u8, owned bool) AtlasTile {
 	return a.finish(t, pixels, owned)
+}
+
+// release gives a tile back. Its shelf opens again once no live tile is left on it; empty
+// shelves at the end of the page are removed.
+pub fn (mut a Atlas) release(t AtlasTile) {
+	if t.w <= 0 || t.page < 0 || t.page >= a.pages.len {
+		return
+	}
+	mut page := &a.pages[t.page]
+	for mut s in page.shelves {
+		if s.y == t.y {
+			s.live = if s.live > 0 { s.live - 1 } else { 0 }
+			if s.live == 0 {
+				s.x = 0
+			}
+			break
+		}
+	}
+	for page.shelves.len > 0 && page.shelves.last().live == 0 {
+		page.next_y = page.shelves.pop().y
+	}
 }
 
 // take_uploads hands queued uploads to the device and clears the queue.

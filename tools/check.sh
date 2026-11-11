@@ -92,11 +92,11 @@ fi
 # 3d. `unsafe` outside the FFI code (specs/14, unsafe cap): every block is a place the compiler
 #     no longer checks, so the counts only go down. Counted per occurrence in non-test .v files,
 #     comments stripped; `unsafe { nil }` (a nil pointer field) and `unsafe { self_ }` (the
-#     builder idiom) do not count. The FFI modules and every *.c.v file are excluded: calling C
-#     is what they are for.
-unsafe_cap_quadra=130
+#     builder idiom) do not count. The FFI modules and the per-OS *.c.v files are excluded:
+#     calling C is what they are for.
+unsafe_cap_quadra=144
 unsafe_cap_apps=77
-unsafe_ffi='^(quadra/(platform/win|gpu/d3d11|text/dwrite|native)/|.*\.c\.v$)'
+unsafe_ffi='^(quadra/(platform/win|gpu/d3d11|text/dwrite|native)/|.*_(windows|nix|linux|macos|darwin)\.c\.v$)'
 unsafe_count() {
 	find "$1" -name '*.v' ! -name '*_test.v' | grep -Ev "$unsafe_ffi" | xargs sed -e 's://.*$::' \
 		-e 's/unsafe { nil }//g' -e 's/unsafe { self_ }//g' | grep -oE '\bunsafe\b' | wc -l

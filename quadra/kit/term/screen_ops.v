@@ -212,6 +212,7 @@ pub fn (mut s Screen) reset() {
 	s.insert, s.last_ch = false, 0
 	s.saved, s.alt_saved = Saved{}, Saved{}
 	s.stops, s.links = [], []
+	s.link_ids = map[string]u16{}
 	s.alt_scroll = true
 	s.erase_display(2)
 	s.scrollback.clear()

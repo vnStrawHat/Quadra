@@ -148,7 +148,7 @@ fn test_sync_update_holds_the_screen_until_it_ends() {
 	assert t.screen.line(0) == 'abcdef' && !t.parser.held_on
 	t.feed('\x1b[?2026hz'.bytes())
 	t.flush_sync()
-	assert t.screen.line(0).ends_with('z') && !t.screen.sync
+	assert t.screen.line(0).ends_with('z') && t.screen.sync && !t.parser.held_on // frames resume
 }
 
 fn kitty_enc(k platform.Key, m platform.Mods, a KeyAction, input KeyInput) string {

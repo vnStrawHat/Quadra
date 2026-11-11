@@ -30,6 +30,8 @@ pub:
 }
 
 const max_placements = 256
+const max_gpu_images = 64
+const max_gpu_bytes = 64 << 20
 const max_image_bytes = 64 << 20
 
 fn cells_for(px int, cell int) int {
@@ -156,8 +158,8 @@ pub fn (mut s Screen) cell_px(w int, h int) {
 }
 
 // image_entry is the atlas tile of a graphic, uploading it (premultiplied RGBA) the first
-// time, into a tile a dead graphic of the same size left when one exists. The upload takes
-// the pixels (the window frees them once the device has copied them).
+// time. The upload takes the pixels (the window frees them once the device has copied them);
+// an image evicted later has none left and paints nothing.
 fn (mut t Terminal) image_entry(id u32, mut g Graphic, mut cx core.PaintCx) ?&core.ImageEntry {
 	if e := t.gfx[id] {
 		return e
@@ -167,27 +169,36 @@ fn (mut t Terminal) image_entry(id u32, mut g Graphic, mut cx core.PaintCx) ?&co
 	if px.len == 0 {
 		return none
 	}
-	mut e := &core.ImageEntry{}
-	for i in 0 .. t.gfx_free.len {
-		if t.gfx_free[i].tile.w == w && t.gfx_free[i].tile.h == h {
-			e = t.gfx_free[i]
-			t.gfx_free.delete(i)
-			break
-		}
-	}
 	mut app := cx.app
-	if e.status != .ready {
-		tile := app.text.poly.insert_owned(w, h, px) or {
-			g.pixels.free()
-			return none
-		}
-		e.tile, e.width, e.height, e.status = tile, w, h, core.ImageStatus.ready
-	} else {
-		app.text.poly.rewrite(e.tile, px, true)
+	tile := app.text.poly.insert_owned(w, h, px) or {
+		g.pixels.free()
+		return none
 	}
+	mut e := &core.ImageEntry{}
+	e.tile, e.width, e.height, e.status = tile, w, h, core.ImageStatus.ready
 	_ = g.pixels.take() // the upload owns the block now
 	t.gfx[id] = e
+	t.evict_gfx()
 	return e
+}
+
+// evict_gfx keeps the uploaded images within the limits, oldest out (map order is insertion
+// order). An evicted image paints nothing; earlier sprites of this frame may still show its
+// tile, so the tile goes back to the atlas at the next paint.
+fn (mut t Terminal) evict_gfx() {
+	mut bytes := 0
+	for _, e in t.gfx {
+		bytes += e.width * e.height * 4
+	}
+	for id in t.gfx.keys() {
+		if t.gfx.len <= max_gpu_images && bytes <= max_gpu_bytes {
+			break
+		}
+		e := t.gfx[id] or { continue }
+		bytes -= e.width * e.height * 4
+		t.gfx.delete(id)
+		t.gfx_dead << e
+	}
 }
 
 // fit_atlas scales an image past the atlas page down, nearest neighbour, into a new buffer;
@@ -204,17 +215,39 @@ fn (mut g Graphic) fit_atlas() {
 	g.pixels = scaled
 }
 
-// sweep_gfx moves the atlas entries of dead graphics to the free list.
-fn (mut t Terminal) sweep_gfx() {
+// sweep_gfx returns to the atlas the tiles of evicted images and of dead graphics.
+fn (mut t Terminal) sweep_gfx(mut cx core.PaintCx) {
+	mut app := cx.app
+	for e in t.gfx_dead {
+		app.text.poly.release(e.tile)
+	}
+	t.gfx_dead.clear()
 	for id, e in t.gfx {
 		if t.screen.graphic(id) == none {
 			t.gfx.delete(id)
-			t.gfx_free << e
-			if t.gfx_free.len > 32 {
-				t.gfx_free.delete(0)
-			}
+			app.text.poly.release(e.tile)
 		}
 	}
+}
+
+// with_release ties a new terminal to its view: dropping the view ends the session and gives
+// back what lives outside the collector's heap.
+fn with_release(mut cx core.Cx, v core.View[Terminal]) core.View[Terminal] {
+	cx.on_release(v.model(), cx.peek(v.model()))
+	return v
+}
+
+// release is core.Releasable: close, and the atlas tiles.
+pub fn (mut t Terminal) release(mut app core.App) {
+	t.close()
+	for _, e in t.gfx {
+		app.text.poly.release(e.tile)
+	}
+	for e in t.gfx_dead {
+		app.text.poly.release(e.tile)
+	}
+	t.gfx = map[u32]&core.ImageEntry{}
+	t.gfx_dead = []
 }
 
 // paint_images draws one row's bands of the images that cross it, in cell order.

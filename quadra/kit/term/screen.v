@@ -69,7 +69,12 @@ pub mut:
 	grapheme              bool // mode 2027
 	sync                  bool // mode 2026
 	product_name          string = 'Quadra'
-	product_version       int    = 10
+	sync_hold             bool           // mode 2026: bytes are held back (the mode can outlast the hold)
+	sync_replay           bool           // held bytes are being parsed: an `h` among them starts no hold
+	sync_ended            bool           // an `l` since the view last looked: the watchdog starts over
+	sync_opens            u32            // holds started or refreshed
+	link_ids              map[string]u16 // links by id and url
+	product_version       int = 10
 	modify_other          int
 	keyboard              KeyboardStacks
 	allow_screen_readback bool // answers DECRQCRA; off by default
@@ -134,11 +139,11 @@ pub fn (s &Screen) alt_scroll_on() bool {
 
 pub fn new_screen(cols int, rows int) &Screen {
 	mut s := &Screen{
-		cols: cols
-		rows: rows
+		cols: clamp(cols, 1, max_cols)
+		rows: clamp(rows, 1, max_rows)
 	}
-	s.lines = []Row{len: rows, init: blank_row(cols, 0)}
-	s.bottom = rows - 1
+	s.lines = []Row{len: s.rows, init: blank_row(s.cols, 0)}
+	s.bottom = s.rows - 1
 	return s
 }
 

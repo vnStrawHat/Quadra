@@ -16,7 +16,7 @@ fn (mut p Parser) fast_csi(mut s Screen, data []u8, at int) int {
 	}
 	p.need = 0
 	p.np, p.sub, p.private, p.inter, p.ignore = 0, 0, 0, 0, false
-	p.params = [16]int{}
+	p.params = [32]int{}
 	mut v := 0 // the parameter being read
 	for k in at + 2 .. j {
 		b := data[k]
@@ -33,7 +33,7 @@ fn (mut p Parser) fast_csi(mut s Screen, data []u8, at int) int {
 			if p.np == 0 {
 				p.np = 1
 			}
-			if p.np >= 16 {
+			if p.np >= p.params.len {
 				p.ignore = true
 				continue
 			}
@@ -45,7 +45,7 @@ fn (mut p Parser) fast_csi(mut s Screen, data []u8, at int) int {
 		} else if b >= 0x3c {
 			p.private = b
 		} else {
-			p.inter = b // 0x20..0x2f
+			p.inter = if p.inter == 0 { b } else { u8(0xff) } // 0x20..0x2f
 		}
 	}
 	p.state = .ground

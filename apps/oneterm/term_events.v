@@ -37,7 +37,7 @@ fn (mut o OneTerm) on_terminal_info(m core.Model[term.Terminal], e &term.Termina
 	mut s := o.space_of(m) or { return }
 	match e.kind {
 		.notification {
-			toast(mut cx, .info, 'OneTerm', e.text)
+			toast(mut cx, if e.warn { .warning } else { .info }, 'OneTerm', e.text)
 		}
 		.progress {
 			s.progress = e.progress

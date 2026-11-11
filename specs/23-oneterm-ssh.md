@@ -63,6 +63,8 @@ Forwards (`Local`, `Remote` with server-chosen ports, `Dynamic` SOCKS5 no-auth C
 
 ## Input limits
 
+The terminal's own limits are in specs/17, Limits.
+
 What a server sends is untrusted (fuzz tests: `fuzz_*_test.v`, specs/11). A received packet is
 1 byte to 512 KiB and a whole number of cipher blocks (RFC 4253 section 6), checked before
 decryption; at most 64 packets are held while a key exchange runs, and only key exchange

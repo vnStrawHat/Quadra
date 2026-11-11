@@ -47,10 +47,9 @@ pub mut:
 	preedit     string                   // IME text being composed
 	eat_text    bool                     // a CSI u key was sent: drop the text event that follows it
 	gfx         map[u32]&core.ImageEntry // uploaded images
-	gfx_free    []&core.ImageEntry       // tiles of dead images, reused for same-size ones
-	sync_timer  bool                     // the update-timeout timer is running
-	toast_at    [10]i64                  // OSC 9 rate limit
-	toast_n     u64
+	gfx_dead    []&core.ImageEntry       // evicted in a paint: tiles released at the next
+	sync        SyncClock                // mode 2026
+	notices     NoticeGate
 	hooks       Hooks        // what the app adds (specs/17, App hooks)
 	classes     [][]u8       // per visible row: one class byte per column, from hooks.rows
 	tints       []CellTint   // class byte -> style, sized by the app
@@ -74,17 +73,17 @@ pub:
 
 pub fn new_terminal(mut cx core.Cx, opts TerminalOptions) core.View[Terminal] {
 	mut s := new_screen(opts.cols, opts.rows)
-	s.scrollback.max = opts.scrollback
+	s.set_scrollback(opts.scrollback)
 	s.allow_osc52 = opts.allow_osc52
 	s.allow_osc52_read = opts.allow_osc52_read
-	s.product_name = opts.product
-	return cx.new_view(Terminal{
+	s.product_name = clean_product(opts.product, s.product_name)
+	return with_release(mut cx, cx.new_view(Terminal{
 		b:          opts.behavior
 		id:         opts.id
 		screen:     s
 		focus:      cx.focus_handle()
 		quiet_exit: opts.quiet_exit
-	})
+	}))
 }
 
 // start runs a program on a PTY from make (the platform spawn_pty, or a FakePty spawner).

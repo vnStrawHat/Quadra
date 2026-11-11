@@ -60,8 +60,8 @@ pub fn (mut g Grid) prepaint(bounds prim.Rect, mut cx core.PrepaintCx) {
 	x0 := f32(math.round((bounds.x + e.left) * scale)) / scale
 	y0 := f32(math.round((bounds.y + e.top) * scale)) / scale
 	t.bounds = prim.rect(x0, y0, bounds.width - e.left - e.right, bounds.height - e.top - e.bottom)
-	cols := clamp(int(t.bounds.width / t.cell.width), 0, 2048)
-	rows := clamp(int(t.bounds.height / t.cell.height), 0, 1024)
+	cols := clamp(int(t.bounds.width / t.cell.width), 0, max_cols)
+	rows := clamp(int(t.bounds.height / t.cell.height), 0, max_rows)
 	if cols > 0 && rows > 0 && (cols != t.screen.cols || rows != t.screen.rows) {
 		t.screen.resize(cols, rows)
 		t.offset = clamp(t.offset, 0, t.screen.scrollback.len())
@@ -78,7 +78,7 @@ pub fn (mut g Grid) paint(bounds prim.Rect, mut cx core.PaintCx) {
 	th := kit.theme_of(cx.app)
 	pal_v := t.screen.paint_palette(th.code.terminal)
 	pal := &pal_v
-	t.sweep_gfx()
+	t.sweep_gfx(mut cx)
 	if t.hooks.rows != unsafe { nil } {
 		t.hooks.rows(t.hooks.holder, mut t, t.top_line())
 	}

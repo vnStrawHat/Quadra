@@ -2,6 +2,9 @@
 // cut or padded (specs/17).
 module term
 
+pub const max_cols = 2048
+pub const max_rows = 1024
+
 struct LogicalLine {
 mut:
 	cells []Cell
@@ -9,8 +12,12 @@ mut:
 	extra &RowExtra = unsafe { nil }
 }
 
-pub fn (mut s Screen) resize(cols int, rows int) {
-	if cols < 1 || rows < 1 || (cols == s.cols && rows == s.rows) {
+pub fn (mut s Screen) resize(want_cols int, want_rows int) {
+	if want_cols < 1 || want_rows < 1 {
+		return
+	}
+	cols, rows := clamp(want_cols, 1, max_cols), clamp(want_rows, 1, max_rows)
+	if cols == s.cols && rows == s.rows {
 		return
 	}
 	if cols != s.cols { // a reflow changes every row under the selection

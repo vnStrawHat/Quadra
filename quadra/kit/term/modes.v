@@ -75,6 +75,11 @@ pub fn (mut s Screen) set_dec_mode(mode int, on bool) {
 		}
 		2026 {
 			s.sync = on
+			s.sync_hold = on && !s.sync_replay
+			s.sync_ended = s.sync_ended || !on
+			if s.sync_hold {
+				s.sync_opens++
+			}
 		}
 		2027 {
 			s.grapheme = on

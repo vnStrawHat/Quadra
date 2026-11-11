@@ -111,8 +111,8 @@ pub fn (mut h Host) render(mut cx core.ViewCx[Host]) core.Element {
 	for m in ov.modals.filter(it.win == win) {
 		root.child(ui.anchored(modal_frame(m, t, cx.win.size())).fill_window().layer(1000 + m.id))
 	}
-	toasts := ov.toasts.filter(it.win == win)
-	notices := ov.notices.filter(it.win == win)
+	toasts := newest(ov.toasts.filter(it.win == win))
+	notices := newest(ov.notices.filter(it.win == win))
 	if t.ctl.tinted_notices {
 		if toasts.len + notices.len > 0 {
 			root.child(tinted_stack(notices, toasts, t, cx.win.size()))
@@ -160,4 +160,11 @@ pub fn dismiss_top(mut cx core.Cx) bool {
 		}
 	}
 	return false
+}
+
+const max_shown_notices = 10
+
+// newest is what a stack shows: the last ten, the rest wait for room.
+fn newest[T](all []T) []T {
+	return if all.len > max_shown_notices { all[all.len - max_shown_notices..] } else { all }
 }

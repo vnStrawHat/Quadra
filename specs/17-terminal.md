@@ -28,10 +28,46 @@ Implementation spec for the terminal of specs/16. The budgets there set the data
 - Supported: C0 (BEL, BS, HT, LF, VT, FF, CR, SO, SI), ESC (7, 8, D, E, H, M, Z, c, =, >, n, o, N, O, charset designators for G0 to G3, `# 8`), CSI (CUU/CUD/CUF/CUB/CNL/CPL/CHA/CUP/HVP/VPA, ED, EL, ECH, ICH, DCH, IL, DL, SU, SD, DECSTBM, SGR, DSR 5/6, DECXCPR, DA1/2/3, DECSET/DECRST, DECRQM, DECSTR, SCOSC/SCORC, HTS/TBC/CHT/CBT, `? 5 W`, REP, DECSCUSR, `t` 14/18/22/23, kitty keyboard (`? u`, `= u`, `> u`, `< u`), modifyOtherKeys (`> 4 m`, `? 4 m`), XTVERSION, DECRQCRA), DCS (Sixel, DECRQSS, XTGETTCAP), OSC 0/1/2, 4, 7, 8, 9, 9;4, 10/11/12, 17, 19, 22, 50, 52, 104, 110/111/112, 133, 7501.
 - SGR: 1, 2, 3, 4 (with 4:0-5), 5, 6 (one blink flag), 7, 8, 9, 21 (cancel bold), 22-25, 27-29, 30-37, 38 (5 and 2, semicolon and colon forms), 39, 40-47, 48, 49, 53, 55, 58, 59, 90-97, 100-107.
 - DEC private modes: 1, 3 (acts, reports not supported), 5 (reverse video), 6, 7, 9 (X10 mouse), 12, 25, 45 (reverse wrap), 47, 1000, 1002, 1003, 1004 (focus reports), 1005, 1006, 1007, 1015, 1042, 1047, 1048, 1049, 2004, 2026 (synchronized update), 2027 (grapheme clusters), 9001 (win32 input, accepted and inert). ANSI modes: 4 (IRM), 20 (LNM, tracked and inert).
-- Mode 2026 (synchronized update): while it is open the parser holds the bytes back and the screen stays at the last complete frame; `? 2026 l` releases them, and so does a 150 ms timeout or a hold past `max_sync_hold` (4 MiB). Each byte is searched for the end once (`hold.v`), so an update that never closes costs linear time.
+- Mode 2026 (synchronized update): the original applies the bytes and suppresses frames; Quadra paints the live screen, so it holds the bytes back instead (a deliberate difference of mechanism, the timing is the original's). `? 2026 h` sets the mode and starts a hold; each further `h` refreshes it, also one that arrives held back. A hold that lapses 150 ms after the last `h` (or passes 4 MiB) releases the bytes and frames resume, while the mode stays set and DECRQM still reports it. A watchdog armed by the first `h` and never refreshed forces the mode off after 1 s. `l` clears the hold and the watchdog.
 - Replies go back to the PTY in byte order. DA1 is `CSI ? 62 ; 4 ; 22 c` (VT220, Sixel, ANSI color). XTVERSION names `Screen.product_name`. Unknown sequences are consumed and ignored.
 - Wide characters (East Asian wide, emoji) take two cells; tables of ranges (`quadra/text/width_table.v`, shared through `text.rune_width`, generated from Unicode's East Asian Width and general categories) decide width, per scalar by default, matching `PSEUDOCONSOLE_GLYPH_WIDTH_WCSWIDTH`. C1 controls decoded from UTF-8 print nothing. With mode 2027 set the print path measures grapheme clusters: ZWJ sequences, skin tones and flags share one wide cell, VS16 widens the base and VS15 narrows it.
-- A string (OSC, DCS, APC) ends with ST, BEL or ESC; CAN and SUB abort it. DCS payloads are capped at 16 MiB, query payloads at 8 KiB.
+- A string (OSC, DCS, APC) ends with ST, BEL or ESC; CAN and SUB abort it.
+
+## Limits
+
+Every bound on what a program can make the terminal hold. Values are the original's; each has a test at and just past the limit (`kit/term/limits_test.v`, `tests/term_limits_test.v`) and the fuzz tests cover the paths.
+
+| What | Limit | At the limit |
+|---|---|---|
+| CSI / DCS parameters (values and sub-parameters) | 32 | sequence ignored |
+| Intermediates (CSI private marker included, ESC too) | 2 | a third: ignored |
+| OSC payload | 2048 B; the separators of the first 16 parameters do not count | truncated, still dispatched |
+| OSC 52 and 7501 payload (claimed by the first `;`) | 8 MiB | truncated; the buffer does not stay that big |
+| OSC parameters | 16 | the rest stays joined in the last, with its `;` |
+| Truncated OSC 7, OSC 9;4 | | refused: a cut path or number is wrong, a cut title is still a title |
+| Title, icon name | 4 KiB | C0 (except tab, CR, LF), DEL, C1, BiDi removed, cut on a UTF-8 boundary |
+| Notification | 8 KiB | as title; empty: not shown |
+| Notification rate | 10 per fixed 1 s window | dropped, sanitized first so an empty one costs nothing |
+| Notifications of one chunk | 5, oldest dropped | a warning says how many |
+| Notifications on screen | 10, the newest | the rest wait |
+| Working directory | 8 KiB | as title, tab, CR and LF removed too; empty: kept as before |
+| OSC 52 decoded | 256 KiB | refused |
+| Hyperlink | 2083 B URI, 65535 entries | no link, the text still prints; the same URI (with the same id, or none) shares an entry |
+| Grapheme cluster | 16 code points | truncated |
+| Product name | 64 B | control bytes dropped, cut on a character; empty: the default |
+| Grid | 2048 columns, 1024 rows | clamped |
+| Scrollback | 1 000 000 lines | clamped |
+| Synchronized update | 150 ms, 1 s watchdog, 4 MiB held | see Parser |
+| DCS payload, query payload | 16 MiB, 8 KiB | dropped |
+| Sixel | 4096 px a side, 64 MiB, 256 placements | image dropped, oldest placement evicted |
+| Images on the GPU | 64, 64 MiB of pixels, oldest out in upload order | an evicted image paints nothing; its tile returns to the atlas |
+| Title stack, keyboard flag stack, XTGETTCAP | 16, 8, 16 names of 128 B | oldest out, oldest out, dropped |
+| Kitty associated text | one scalar: Quadra's keys carry no longer text, so the original's 32 cannot be reached | field dropped for a control scalar |
+| Paste, URL opened | 1 MiB, 256 KiB | refused |
+| Writes to a PTY or SSH shell | 4 MiB queued, 256 writes | error, the write is dropped; the UI thread never blocks |
+| PTY pipes | 1 MiB each way | |
+
+Not ported, nothing to bound: the marks cap (Quadra's marks live on rows, bounded by the scrollback, and are not released early), the content and grapheme arenas and the cluster carry (cells keep their marks directly, 16 code points each), the engine's internal capacities (poll, lock sample, diagnostics, glyph, tunnel). The contrast cache is 64 fixed slots. The table behind a cell's link and underline color holds 65535 combinations; the original sweeps unused ones when it fills, Quadra drops the decoration on new ones (the text still prints) until a reset.
 
 ## Sequences the app reads (TerminalInfo)
 The engine stores what it parses on `Screen` and queues `Screen.events`; the view drains the queue after every chunk and emits one `TerminalInfo` per event. The fields stay on the screen for code without a view.
@@ -106,7 +142,7 @@ Mouse: X10 (press only), normal, button and any-motion reporting, in the default
 Two hosts serve a pseudo console: the system one (`kernel32!CreatePseudoConsole`, served by the inbox `conhost.exe`) and the redistributable Windows Terminal pair, `conpty.dll` with `x64/OpenConsole.exe` beside it. The inbox host swallows Sixel DCS strings and lags the redistributable by months, so the pair is preferred.
 - `spawn_conpty` looks for `conpty.dll` in the directory of the running executable. When the file exists, loads by absolute path (`LoadLibraryExW` with `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32`, never a search of `PATH` or the current directory) and exports `CreatePseudoConsole`, `ResizePseudoConsole` and `ClosePseudoConsole`, those three come from it; anything else (no file, a load failure, a missing export) falls back to kernel32 for all three. The DLL starts `x64\OpenConsole.exe` from its own directory. The attribute-list functions always come from kernel32. A handle is resized and closed through the host that created it.
 - The file is not hashed at run time: the build step that stages it verifies it (OneTerm, specs/22).
-- The output pipe is created with a 1 MiB buffer, as the original does, so the host is less often blocked on a full pipe; the input pipe keeps the default.
+- Both pipes are created with a 1 MiB buffer, as the original does. `write` queues (Limits) and one writer thread does the blocking `WriteFile`, so a program that stops reading never blocks the UI thread.
 - The bundled host gets `PSEUDOCONSOLE_GLYPH_WIDTH_WCSWIDTH` (0x10), the width rule the parser uses, so it never depends on that host's default. The system host gets no flags: an older inbox host may reject bits it does not know.
 - **Close**: `Pty.close` closes the pseudo console, which asks its program to exit. A program whose start-up had not finished by then never sees that request and never exits (its console host lingers with it), so a thread of its own waits up to 2 s on a duplicate of the process handle, then terminates that program with a line on stderr. Only this process's own child, through its own handle; a program that ends by itself skips the wait.
 - `Platform.pty_host()` names the host the next `spawn_pty` gets: `conpty: bundled`, `conpty: system`, `''` without a PTY (headless). `win.resolve_conpty(dir)` is the same choice against an explicit directory, for tests.

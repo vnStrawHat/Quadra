@@ -5,8 +5,6 @@ import sync
 import quadra.platform
 import quadra.prim
 
-const write_budget = 4 * 1024 * 1024
-
 @[heap]
 pub struct ShellPty {
 mut:
@@ -46,7 +44,7 @@ pub fn (mut p ShellPty) write(data []u8) ! {
 	if data.len == 0 {
 		return
 	}
-	if p.queued + data.len > write_budget {
+	if p.queue.len >= platform.pty_write_items || p.queued + data.len > platform.pty_write_budget {
 		return error('SSH write queue is full')
 	}
 	p.queue << data.clone()

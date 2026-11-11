@@ -45,7 +45,7 @@ fn (mut s Screen) intern_extra(e CellExtra) u16 {
 	if id := s.extra_ids[key] {
 		return id
 	}
-	if s.extras.len >= 0xfffe {
+	if s.extras.len >= 0xffff {
 		return 0
 	}
 	s.extras << e
@@ -54,8 +54,10 @@ fn (mut s Screen) intern_extra(e CellExtra) u16 {
 	return id
 }
 
+const max_links = 65535
+
 // set_link is OSC 8. Params hold `id=...` among `:`-separated pairs; an empty url ends the
-// link. The same explicit id and url share an entry; without an id every link is its own.
+// link. The same id and url share an entry, and so does the same url without an id.
 fn (mut s Screen) set_link(params string, url string) {
 	mut e := s.extra_of(s.pen.pad)
 	mut link := 0
@@ -67,12 +69,12 @@ fn (mut s Screen) set_link(params string, url string) {
 				break
 			}
 		}
-		if id != '' {
-			link = s.links.index(LinkTarget{id, url}) + 1
-		}
-		if link == 0 && s.links.len < 0xfffe {
+		key := '${id.len}:${id}${url}'
+		link = int(s.link_ids[key])
+		if link == 0 && s.links.len < max_links {
 			s.links << LinkTarget{id, url}
 			link = s.links.len
+			s.link_ids[key] = u16(link)
 		}
 	}
 	e = CellExtra{

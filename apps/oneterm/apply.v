@@ -165,7 +165,7 @@ pub fn (mut o OneTerm) apply(mut cx core.Cx) {
 					x.sem.enabled = semantic
 					x.keys = []u64{len: x.keys.len, init: ~u64(0)}
 				}
-				t.screen.scrollback.max = o.cfg.scroll.scrollback_history
+				t.screen.set_scrollback(o.cfg.scroll.scrollback_history)
 				t.screen.allow_osc52_read = o.cfg.security.allow_clipboard_read
 				cx.touch(s.view.model())
 			}

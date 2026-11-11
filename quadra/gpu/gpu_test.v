@@ -100,6 +100,29 @@ fn test_atlas_packs_and_adds_pages() {
 	}
 }
 
+fn test_released_tiles_open_their_shelf_again() {
+	mut a := new_atlas(.mono, 64)
+	one := a.insert(15, 15, []u8{len: 225})!
+	two := a.insert(15, 15, []u8{len: 225})!
+	high := a.insert(15, 31, []u8{len: 465})!
+	a.release(one)
+	third := a.insert(15, 15, []u8{len: 225})! // the shelf still has a live tile: no reuse
+	assert third.x == two.x + 16 && third.y == one.y
+	a.release(two)
+	a.release(third)
+	again := a.insert(10, 10, []u8{len: 100})! // an emptied shelf takes any bitmap that fits
+	assert again.x == 0 && again.y == one.y
+	a.release(high)
+	assert a.pages[0].next_y == high.y // the last shelf is gone
+	a.release(again)
+	assert a.pages[0].shelves.len == 0 && a.pages[0].next_y == 0
+	for _ in 0 .. 100 { // churn stays on one page
+		t := a.insert(40, 40, []u8{len: 1600})!
+		a.release(t)
+	}
+	assert a.page_count() == 1
+}
+
 fn test_the_first_atlas_page_is_small() {
 	mut a := new_atlas(.poly, 2048)
 	small := a.insert(10, 10, []u8{})!

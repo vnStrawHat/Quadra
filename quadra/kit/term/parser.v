@@ -16,13 +16,16 @@ enum State {
 pub struct Parser {
 mut:
 	state   State
-	params  [16]int
-	sub     u32 // bit i: param i followed a ':' (sub-parameter)
-	np      int // params seen (0 = none)
-	private u8  // '?', '>', '<' or '='
-	inter   u8  // intermediate byte
+	params  [32]int // values and sub-parameters; more ignores the sequence
+	sub     u32     // bit i: param i followed a ':' (sub-parameter)
+	np      int     // params seen (0 = none)
+	private u8      // '?', '>', '<' or '='
+	inter   u8      // intermediate byte; 0xff: more than one, which nothing matches
 	ignore  bool
 	osc     []u8
+	osc_big bool // the OSC number was claimed large (osc_put)
+	osc_sep int  // separators kept out of the cap (osc_put)
+	osc_cut bool // payload bytes past the cap were lost
 	esc_st  bool // ESC seen inside a string: ST ends it
 	bel     bool // the string that just ended used BEL (a reply uses the same)
 	ul_op   int  // what SGR did to the underline color: 1 set, 2 reset
@@ -39,7 +42,9 @@ mut:
 	need    int
 }
 
-pub const max_osc = 1 << 20
+pub const osc_inline = 2048
+pub const osc_large = 8 << 20
+const max_osc_params = 16
 pub const max_osc52 = 256 * 1024
 pub const max_dcs = 16 << 20
 const max_query = 8 * 1024
@@ -72,7 +77,7 @@ pub fn (mut p Parser) feed(mut s Screen, data []u8) {
 			}
 			if next >= 0 {
 				i = next
-				if s.sync && p.hold_rest(data, i) {
+				if s.sync_hold && p.hold_rest(data, i) {
 					return
 				}
 				continue
@@ -80,7 +85,7 @@ pub fn (mut p Parser) feed(mut s Screen, data []u8) {
 		}
 		p.step(mut s, b)
 		i++
-		if s.sync && p.state == .ground && p.hold_rest(data, i) {
+		if s.sync_hold && p.state == .ground && p.hold_rest(data, i) {
 			return
 		}
 	}
@@ -167,7 +172,7 @@ fn (mut p Parser) utf8(mut s Screen, b u8) {
 
 fn (mut p Parser) escape(mut s Screen, b u8) {
 	if b >= 0x20 && b <= 0x2f {
-		p.inter = b
+		p.inter = if p.inter == 0 { b } else { u8(0xff) }
 		p.state = .esc_inter
 		return
 	}
@@ -187,15 +192,15 @@ fn (mut p Parser) escape(mut s Screen, b u8) {
 	match b {
 		`[` {
 			p.state, p.np, p.sub, p.private, p.inter, p.ignore = .csi, 0, 0, 0, 0, false
-			p.params = [16]int{}
+			p.params = [32]int{}
 		}
 		`]` {
 			p.state, p.esc_st = .osc, false
-			p.osc.clear()
+			p.osc_start()
 		}
 		`P` {
 			p.state, p.esc_st, p.np, p.sub, p.private, p.inter = .dcs_entry, false, 0, 0, 0, 0
-			p.params = [16]int{}
+			p.params = [32]int{}
 			p.ignore = false
 		}
 		`X`, `^`, `_` {
@@ -261,7 +266,7 @@ fn (mut p Parser) csi_byte(mut s Screen, b u8) {
 		if p.np == 0 {
 			p.np = 1
 		}
-		if p.np >= 16 {
+		if p.np >= p.params.len {
 			p.ignore = true
 			return
 		}
@@ -272,7 +277,7 @@ fn (mut p Parser) csi_byte(mut s Screen, b u8) {
 	} else if b >= 0x3c && b <= 0x3f {
 		p.private = b
 	} else if b >= 0x20 && b <= 0x2f {
-		p.inter = b
+		p.inter = if p.inter == 0 { b } else { u8(0xff) }
 	} else if b >= 0x40 && b <= 0x7e {
 		p.state = .ground
 		if !p.ignore {

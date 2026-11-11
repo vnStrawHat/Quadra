@@ -260,7 +260,8 @@ comments stripped, with a cap for `quadra/` and one for `apps/` that only go dow
 closure caps). `unsafe { nil }` (a nil pointer field) and `unsafe { self_ }` (the builder
 idiom, specs/14 Elements) do not count. Excluded, because calling C is what they are for: the
 FFI modules `quadra/platform/win`, `quadra/gpu/d3d11`, `quadra/text/dwrite`, `quadra/native`,
-and every `*.c.v` file (`platform/fs_*.c.v`, `testing/pixels_windows.c.v`). On failure the gate
+and the per-OS `*_windows.c.v`, `_nix`, `_linux`, `_macos`, `_darwin` files. Any other `*.c.v` counts
+(`kit/term/pixelbuf.c.v`, `gpu/owned.c.v`: C-heap memory, not bindings). On failure the gate
 prints the count and the lines with `unsafe` added since `HEAD`. Prefer one checked helper
 shared by its callers over a new `unsafe` block at each.
 

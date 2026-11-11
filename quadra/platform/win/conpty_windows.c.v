@@ -75,6 +75,9 @@ mut:
 	process voidptr
 	mu      &sync.Mutex = sync.new_mutex()
 	closed  bool
+	queue   [][]u8 // for the writer thread
+	queued  int
+	wake    &sync.Semaphore = sync.new_semaphore()
 }
 
 fn coord(cols int, rows int) u32 {
@@ -85,7 +88,7 @@ pub fn spawn_conpty(opts platform.PtyOptions) !platform.Pty {
 	api := pc_api() or { return error('ConPTY needs Windows 10 1809 or later: ${err}') }
 	mut in_read, mut in_write := unsafe { nil }, unsafe { nil }
 	mut out_read, mut out_write := unsafe { nil }, unsafe { nil }
-	if !C.CreatePipe(&in_read, &in_write, unsafe { nil }, 0)
+	if !C.CreatePipe(&in_read, &in_write, unsafe { nil }, 1 << 20)
 		|| !C.CreatePipe(&out_read, &out_write, unsafe { nil }, 1 << 20) {
 		return error('CreatePipe failed: ${C.GetLastError()}')
 	}
@@ -137,6 +140,7 @@ pub fn spawn_conpty(opts platform.PtyOptions) !platform.Pty {
 		output:  out_read
 		process: pi.process
 	}
+	spawn p.writer()
 	reader := spawn read_loop(out_read, opts.ctx, opts.on_data)
 	spawn wait_loop(mut p, reader, opts.ctx, opts.on_exit)
 	return p
@@ -198,10 +202,35 @@ pub fn (mut p ConPty) write(data []u8) ! {
 	if p.closed || data.len == 0 {
 		return
 	}
-	mut done := u32(0)
-	if !C.WriteFile(p.input, data.data, u32(data.len), &done, unsafe { nil }) {
-		return error('WriteFile failed: ${C.GetLastError()}')
+	if p.queue.len >= platform.pty_write_items || p.queued + data.len > platform.pty_write_budget {
+		return error('PTY write queue is full')
 	}
+	p.queue << data.clone()
+	p.queued += data.len
+	p.wake.post()
+}
+
+// writer does the blocking writes, so a program that stops reading never stalls the UI
+// thread; it owns the input handle and closes it when the session closes.
+fn (mut p ConPty) writer() {
+	for {
+		p.wake.wait()
+		p.mu.@lock()
+		closed := p.closed
+		mut item := []u8{}
+		if p.queue.len > 0 {
+			item = p.queue.first()
+			p.queue.delete(0)
+			p.queued -= item.len
+		}
+		p.mu.unlock()
+		mut done := u32(0)
+		if closed || (item.len > 0
+			&& !C.WriteFile(p.input, item.data, u32(item.len), &done, unsafe { nil })) {
+			break
+		}
+	}
+	C.CloseHandle(p.input)
 }
 
 pub fn (mut p ConPty) resize(cols int, rows int) ! {
@@ -240,7 +269,7 @@ fn (mut p ConPty) shut(reap bool) {
 	}
 	p.mu.unlock()
 	p.api.close(p.hpc)
-	C.CloseHandle(p.input)
+	p.wake.post()
 	if own != unsafe { nil } {
 		spawn reap_child(own)
 	}

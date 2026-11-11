@@ -44,6 +44,7 @@ mut:
 	owner     u32
 	owned     []u32
 	render    RenderFn = unsafe { nil }
+	on_gone   ?Releasable // told when the model is released
 	window    u32
 	readers   map[u32]bool // views that read this model during their last render
 	reads     []u32        // models this view read during its last render
@@ -154,6 +155,18 @@ fn heap_hold[T](value T) prim.Holder {
 	return prim.hold_named(heap_copy(value), typeof[T]().name)
 }
 
+// Releasable is a model holding what the collector does not free (a session, C memory, atlas
+// tiles): release runs when the model is released, by any path.
+pub interface Releasable {
+mut:
+	release(mut app App)
+}
+
+// on_release tells r when m is released (Slot.on_gone); one per model.
+pub fn (mut cx Cx) on_release[T](m Model[T], r Releasable) {
+	cx.app.store.slots[m.id].on_gone = r
+}
+
 // release frees a model and, depth-first, everything it owns, with its subscriptions.
 fn (mut app App) release_id(id u32) {
 	if id == 0 || int(id) >= app.store.slots.len || !app.store.slots[id].alive {
@@ -173,6 +186,10 @@ fn (mut app App) release_id(id u32) {
 	app.retire_life(id)
 	mut slot := &app.store.slots[id]
 	slot.alive = false
+	if mut r := slot.on_gone { // last: what it runs may re-enter the store
+		slot.on_gone = none
+		r.release(mut app)
+	}
 	slot.ptr = unsafe { nil }
 	slot.readers = map[u32]bool{}
 	slot.reads = []u32{}

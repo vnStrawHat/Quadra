@@ -42,6 +42,9 @@ pub struct PaintStyle {
     /// A line of one pixel along the node's edge, over what the node paints and taking no
     /// room: a mark of the focus.
     pub outline: Color,
+    /// How far above the window the node is: 0 casts no shadow, 1 that of a menu, 2 that of
+    /// a dialog.
+    pub elevation: u8,
 }
 
 /// A node's style. Border widths are layout values, so they are in `layout`.

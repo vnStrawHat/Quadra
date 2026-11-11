@@ -200,8 +200,20 @@ the popup closes the focus goes back to what had it.
   options with a check on it.
 - The text values of the window's root hold in overlays too (a popup's text has the
   window's face and colour): an overlay has no parent, and is above the root.
-- Not yet: shadows (the two elevations), submenus, a menu that scrolls, the context menu,
-  tooltip, dialog, drawer, toast, command palette.
+- `tooltip("Save the file", view).keys("Ctrl-S")`: the words show below the view, centred,
+  once the pointer has rested on it for half a second, and go when it leaves or presses. A
+  tooltip never has the focus. It adds no node: the tooltip's node is the view's own, the
+  handlers are put on it, and the bubble is an overlay opened by hand.
+- `dialog(open, "Delete the file?", || body).action("Cancel", Variant::Ghost, f)..`: a popup
+  440 px wide, centred, 80 px under the top of the window (`Place::Top`), with no backdrop:
+  a title, the body in the second text colour, a seam, and the buttons at the right of its
+  foot. A button runs what it was given and closes the dialog; Escape and a press outside
+  give it up.
+- Elevation is a paint value of a box (`.elevation(1)`): a level above the window casts the
+  shadows of the design language (behaviour/15) under the box, two for the level of menus,
+  popovers and tooltips, four for that of dialogs. A change of level is a paint change.
+- Not yet: submenus, a menu that scrolls, the context menu, drawer, toast, command palette;
+  a tooltip told to assistive technology as the description of its view.
 
 ## Crates
 

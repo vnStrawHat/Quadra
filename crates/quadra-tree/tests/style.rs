@@ -166,3 +166,18 @@ fn a_box_with_no_fill_until_hovered_is_filled_in_place() {
     assert_eq!((stats.nodes_painted, stats.layers_patched, stats.layers_rebuilt), (1, 1, 0));
     assert_eq!(drawn.instances_uploaded, 1);
 }
+
+#[test]
+fn a_level_above_the_window_casts_its_shadows_under_the_box() {
+    let mut p = page();
+    let mut uploaded = Vec::new();
+    for level in [1, 2, 0] {
+        p.w.tree.patch_style(p.plain, Patch::Elevation(level));
+        let (stats, drawn) = p.w.frame();
+        assert_eq!((stats.nodes_laid_out, stats.nodes_painted), (0, 1)); // paint only
+        uploaded.push(drawn.instances_uploaded);
+    }
+    // The layer is the two boxes, and under the first: two shadows at a menu's level, four
+    // at a dialog's, none on the ground.
+    assert_eq!(uploaded, [4, 6, 2]);
+}

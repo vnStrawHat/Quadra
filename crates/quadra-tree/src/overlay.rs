@@ -38,6 +38,8 @@ pub enum Anchor {
     /// Its corner at a point of the window, wherever that leaves it: what follows the
     /// pointer in a drag goes out of the window with it.
     Free(Point),
+    /// Centred across the window, this far down from its top: pickers and dialogs.
+    Top(f32),
 }
 
 pub(crate) struct Overlay {
@@ -81,6 +83,7 @@ fn place(anchor: Anchor, target: Option<Rect>, size: Size, window: Size) -> Poin
             beside(p.x, p.x, size.width, window.width, true),
             beside(p.y, p.y, size.height, window.height, true),
         ),
+        (Anchor::Top(down), _) => ((window.width - size.width) / 2.0, down),
         _ => ((window.width - size.width) / 2.0, (window.height - size.height) / 2.0),
     };
     Point::new(inside(x, size.width, window.width).round(), inside(y, size.height, window.height).round())

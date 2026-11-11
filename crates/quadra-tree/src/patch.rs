@@ -40,6 +40,8 @@ pub enum Patch {
     Radius(f32),
     /// A line of one pixel along the edge, taking no room.
     Outline(Paint),
+    /// The shadow of a level above the window: 0 none, 1 a menu's, 2 a dialog's.
+    Elevation(u8),
     /// The colour of the text in the node and under it.
     TextColor(Paint),
     /// Its size, in pixels.
@@ -63,6 +65,7 @@ impl Patch {
             Patch::BorderColor(v) => p.border_color = theme.resolve(v),
             Patch::Radius(v) => p.radii = Corners::all(v),
             Patch::Outline(v) => p.outline = theme.resolve(v),
+            Patch::Elevation(v) => p.elevation = v,
             Patch::TextColor(v) => t.color = Some(theme.resolve(v)),
             Patch::TextSize(v) => t.size = Some(v),
             Patch::FontWeight(v) => t.weight = Some(v),
@@ -100,7 +103,7 @@ impl Patch {
     pub(crate) fn part(self) -> Part {
         use Patch::*;
         match self {
-            Background(_) | BorderColor(_) | Radius(_) | Outline(_) => Part::Paint,
+            Background(_) | BorderColor(_) | Radius(_) | Outline(_) | Elevation(_) => Part::Paint,
             TextColor(_) | TextSize(_) | FontWeight(_) | Italic(_) | LineHeight(_) => Part::Text,
             PlaceholderColor(_) | SelectionColor(_) | CaretColor(_) => Part::Text,
             _ => Part::Layout,

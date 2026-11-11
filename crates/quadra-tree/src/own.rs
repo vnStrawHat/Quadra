@@ -2,13 +2,21 @@
 //! emits, and the line along its edge that marks the focus.
 
 use quadra_layout::{Display, LayoutTree};
-use quadra_prim::{Edges, Rect};
-use quadra_render::{Clip, Instance, Quad};
+use quadra_prim::{Color, Edges, Rect};
+use quadra_render::{Clip, Instance, Quad, Shadow};
 
 use crate::fonts::Fonts;
 use crate::inherit::{TextAt, refresh};
 use crate::node::Node;
 use crate::widget::PaintCx;
+
+/// The shadows of the levels above the window (specs/behaviour/15, "Elevation"): how far
+/// down each one is, how blurred, and how black.
+const SHADOWS: [&[(f32, f32, f32)]; 3] = [
+    &[],
+    &[(2.0, 3.0, 0.12), (1.0, 0.0, 0.06)],
+    &[(2.0, 3.0, 0.12), (3.0, 6.0, 0.08), (6.0, 12.0, 0.04), (1.0, 0.0, 0.12)],
+];
 
 /// Paints one node's own instances: the background and border from its style, then its
 /// widget. A node that is not displayed paints nothing. The caller has checked that the node
@@ -32,6 +40,11 @@ pub(crate) fn paint_own(
     let mut cx = PaintCx { rect, scale, visible: band, clip: Clip::NONE, keep, fonts, out };
     let (background, border_color, radii, outline) =
         (node.paint.background, node.paint.border_color, node.paint.radii, node.paint.outline);
+    // What is above the window casts its shadows first: they are under its own box.
+    for &(down, blur, alpha) in SHADOWS[(node.paint.elevation as usize).min(2)] {
+        let bounds = rect.translate(0.0, down);
+        cx.shadow(Shadow { bounds, radii, blur, color: Color::BLACK.alpha(alpha) });
+    }
     cx.quad(Quad {
         bounds: rect,
         background,

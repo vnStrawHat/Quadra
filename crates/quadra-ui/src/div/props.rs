@@ -67,6 +67,8 @@ props! {
     radius: f32 => Radius;
     /// A line of one pixel along the box's edge, taking no room: a mark of the focus.
     outline: Paint => Outline;
+    /// The shadow of a level above the window: 1 for a menu, 2 for a dialog.
+    elevation: u8 => Elevation;
     /// The colour of the text in the box and in what it holds: a colour, or a role.
     text_color: Paint => TextColor;
     /// The size of that text, in pixels.

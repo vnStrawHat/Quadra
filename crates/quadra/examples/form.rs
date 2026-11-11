@@ -36,7 +36,7 @@ fn main() -> quadra::Result<()> {
             let items = items.border_color(Color::rgb(0xC0C0C0));
             let items = items.bg(Color::WHITE).children(["Quadra", "Việt Nam", "World"].map(item));
             let place = Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);
-            overlay(place, items).on_outside_press(move || open.set(false))
+            overlay(place, items).opener(&anchor).on_outside_press(move || open.set(false))
         };
 
         let line = row().gap(8.0).align_items(quadra::Align::Center);

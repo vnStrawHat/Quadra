@@ -5,7 +5,7 @@ use std::any::Any;
 use quadra_a11y::Semantics;
 use quadra_layout::Known;
 use quadra_prim::{Edges, Rect, Size};
-use quadra_render::{Clip, Instance, Quad, push_quad};
+use quadra_render::{Clip, Instance, Quad, Shadow, push_quad};
 use quadra_text::TextSystem;
 
 use crate::fonts::Fonts;
@@ -104,6 +104,13 @@ impl PaintCx<'_> {
         if self.keep && self.out.len() == before {
             self.out.push(quad.instance(&self.clip)); // nothing to see, and a place kept
         }
+    }
+
+    /// Paints a shadow given in logical pixels.
+    pub fn shadow(&mut self, shadow: Shadow) {
+        let (bounds, radii) = (self.device(shadow.bounds), shadow.radii.scale(self.scale));
+        let shadow = Shadow { bounds, radii, blur: shadow.blur * self.scale, ..shadow };
+        self.out.push(shadow.instance(&self.clip));
     }
 
     /// Appends an instance that is already in device pixels.

@@ -8,8 +8,8 @@ use quadra::{
     Align, Div, NodeRef, Signal, Theme, WindowOptions, column, div, row, signal, text, use_context,
 };
 use quadra_kit::{
-    MenuItem, Size, Variant, button, checkbox, dark, icon, icon_button, icons, input, light, menu,
-    radio_group, segmented, select, size, switch, token,
+    MenuItem, Size, Variant, button, checkbox, dark, dialog, icon, icon_button, icons, input, light, menu,
+    radio_group, segmented, select, size, switch, token, tooltip,
 };
 
 /// A section: its title, then its rows.
@@ -89,8 +89,9 @@ fn choices() -> Div {
 }
 
 fn overlays() -> Div {
-    // `GALLERY_OPEN=1` shows the menu at once: for a picture of it.
-    let (open, opener) = (signal(std::env::var_os("GALLERY_OPEN").is_some()), NodeRef::new());
+    // `GALLERY_OPEN=menu` or `=dialog` shows that one at once: for a picture of it.
+    let shown = std::env::var("GALLERY_OPEN").unwrap_or_default();
+    let (open, asking, opener) = (signal(shown == "menu"), signal(shown == "dialog"), NodeRef::new());
     let (wrap, size) = (signal(true), signal(1usize));
     let items = move || {
         vec![
@@ -106,7 +107,13 @@ fn overlays() -> Div {
     let edit = button("Edit").icon(icons::CHEVRON_DOWN).on_click(move || open.update(|open| *open = !*open));
     let edit = div().node_ref(&opener).child(edit);
     let sizes = select(["Small", "Medium", "Large"], size);
-    section("Overlays").child(line().child(edit).child(sizes)).child(menu(open, &opener, items))
+    let save = tooltip("Save the file", icon_button(icons::SAVE, "Save")).keys("Ctrl-S");
+    let delete = button("Delete").variant(Variant::Danger).on_click(move || asking.set(true));
+    let ask = dialog(asking, "Delete the file?", || text("It cannot be brought back."))
+        .action("Cancel", Variant::Ghost, || {})
+        .action("Delete", Variant::Danger, || {});
+    let controls = line().child(edit).child(sizes).child(save).child(delete);
+    section("Overlays").child(controls).child(menu(open, &opener, items)).child(ask)
 }
 
 fn main() -> quadra::Result<()> {

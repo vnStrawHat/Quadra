@@ -5,11 +5,13 @@
 //! on nodes), paragraphs (text nodes) and layers (painted output kept and patched).
 
 mod frame;
+mod layers;
 mod node;
 mod paint;
 mod shared;
 mod text;
 mod tree;
+mod verify;
 mod widget;
 
 pub use frame::FrameStats;

@@ -78,11 +78,14 @@ Also committed, each at its first stage: `quadra-render` (layers, display lists,
 backend) and `quadra-tree` (nodes, widgets, the update, layout and paint passes on one layer,
 `Tree::verify_paint`). `docs/progress.md` says what each still lacks.
 
-Next, in order: child layers and the compose pass in `quadra-tree` (a scroll container's
-content is a layer; scrolling changes one constant; markers in the parent's list);
-`quadra-testing` (the harness of specs/12) and `quadra-ui` (views, properties, control flow:
-specs/05), enough for the four programs of R1; then the structural budgets of specs/14 as
-tests, and the native crate (Win32, D3D11, DirectWrite) for the comparison bench.
+`quadra-tree` also has child layers and the compose pass: a node can be a layer, placed by a
+transform; a scroll container's content is such a node, and scrolling is its offset.
+
+Next, in order: `quadra-testing` (the harness of specs/12) and `quadra-ui` (views, properties,
+control flow: specs/05), enough for the four programs of R1; then the structural budgets of
+specs/14 as tests; then the native crate (Win32, D3D11, DirectWrite) and the comparison bench.
+Still missing below that: style variants and tokens (specs/13), the scroll widget and virtual
+lists, input (specs/09), semantics (specs/12), atlases and glyph tiles.
 
 `quadra-term` is **on hold** by the user's decision: do not build it until told. The apps come
 after Quadra is complete.

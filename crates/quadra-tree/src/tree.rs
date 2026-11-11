@@ -10,6 +10,7 @@ use quadra_render::{Instance, LayerId, Scene};
 use quadra_text::TextSystem;
 
 use crate::frame::FrameStats;
+use crate::layers::LayerState;
 use crate::node::{NOT_PAINTED, Node, NodeId, PaintStyle, Style, flag};
 use crate::paint::Patch;
 use crate::shared::{Handle, Shared};
@@ -33,6 +34,12 @@ pub struct Tree {
     pub(crate) relayout: bool,
     /// Some node has a paint flag.
     pub(crate) repaint: bool,
+    /// The scale changed: every layer paints everything.
+    pub(crate) repaint_all: bool,
+    /// Layers whose constants must be worked out again.
+    pub(crate) recompose: Vec<NodeId>,
+    /// Layers waiting to be painted, during the paint pass.
+    pub(crate) todo: Vec<NodeId>,
     pub(crate) stats: FrameStats,
     // Reused by every pass.
     pub(crate) scratch: Vec<Instance>,
@@ -60,6 +67,9 @@ impl Tree {
             scale: 1.0,
             relayout: false,
             repaint: false,
+            repaint_all: false,
+            recompose: Vec::new(),
+            todo: Vec::new(),
             stats: FrameStats::default(),
             scratch: Vec::new(),
             patches: Vec::new(),
@@ -111,6 +121,7 @@ impl Tree {
             len: 0,
             own: 0,
             fresh: NOT_PAINTED,
+            layer: None,
             scope: None,
         };
         if index as usize == self.nodes.len() {
@@ -158,9 +169,21 @@ impl Tree {
     /// Makes `id` the node that fills the window.
     pub fn set_root(&mut self, id: NodeId) {
         self.node(id);
+        if self.root == Some(id) {
+            return;
+        }
+        // The root is the layer the scene draws first; a node that was the root is one no more.
+        if let Some(old) = self.root.filter(|&old| self.is_alive(old)) {
+            self.nodes[old.index as usize].layer = None;
+        }
+        if let Some(state) = self.nodes[id.index as usize].layer.take() {
+            self.scene.remove_layer(state.id);
+        }
+        self.nodes[id.index as usize].layer = Some(Box::new(LayerState::new(self.root_layer)));
+        self.scene.layer_mut(self.root_layer).set(&[]);
         self.root = Some(id);
         self.relayout = true;
-        self.mark(id, flag::RELIST);
+        self.mark(id, flag::PAINT | flag::SUBTREE | flag::RELIST);
     }
 
     pub fn parent(&self, id: NodeId) -> Option<NodeId> {
@@ -193,6 +216,9 @@ impl Tree {
             }
             // In a new place: positions in a layer are absolute, so all of it is painted.
             self.nodes[child.index as usize].parent = Some(parent);
+            if let Some(state) = self.nodes[child.index as usize].layer.as_mut() {
+                state.marked = false; // its marker is not in this parent's list yet
+            }
             self.mark(child, flag::PAINT | flag::SUBTREE);
         }
         self.nodes[parent.index as usize].children = children.to_vec();
@@ -227,6 +253,9 @@ impl Tree {
         node.alive = false;
         node.generation = node.generation.wrapping_add(1);
         node.widget = None;
+        if let Some(state) = node.layer.take().filter(|s| s.id != self.root_layer) {
+            self.scene.remove_layer(state.id);
+        }
         scopes.extend(node.scope.take());
         self.free.push(id.index);
         for child in std::mem::take(&mut node.children) {

@@ -36,6 +36,11 @@ A layer is a subtree with its own display list and constants:
 
 Changing a constant is the compose pass: one small write, no instance touched.
 
+A layer's space starts at its root's border box. So a layer that moves keeps every instance:
+its place is part of its transform, and only that changes. A scroll container's content is a
+node of its own, a layer cut to the container's padding box; the scroll offset is added to
+its place.
+
 A node becomes a layer root when it is: a window root or overlay root; scroll content; a
 virtual list; a surface widget; a node with a transform or an opacity that is animating or not
 the identity; a node marked `.layer()`. A node stops being one when the reason ends. Promotion

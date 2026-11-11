@@ -83,10 +83,12 @@ Order and looping are in 02. What each does:
 - **Style**: for each flagged node, resolves base style, state variants and tokens into the
   resolved style (13).
 - **Layout**: 06.
-- **Compose**: for each flagged layer, recomputes its transform, clip and opacity from the
-  nodes that define them, then tells the renderer the new constants. No widget code runs.
 - **Paint**: for each flagged node, calls `Widget::paint` and replaces the node's range in its
-  layer (07). Clean subtrees are not visited.
+  layer (07). Clean subtrees are not visited. A layer met on the way is one marker; its own
+  content is painted in a pass of its own if it has flagged nodes.
+- **Compose**: for each layer whose place, offset or opacity changed, recomputes its
+  transform, cut and opacity. No widget code runs. It comes after paint, because the paint
+  walk is what finds the layers that moved with something above them.
 - **Accessibility**: for each flagged node, calls `Widget::semantics` and adds the node to an
   incremental update. Skipped entirely while nothing listens (12).
 

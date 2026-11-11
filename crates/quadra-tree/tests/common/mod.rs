@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use quadra_layout::{Direction, Length};
 use quadra_prim::{Color, Size};
-use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, SurfaceId, SurfaceTarget};
+use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
 use quadra_text::{FakeBackend, TextStyle, TextSystem};
 use quadra_tree::{FrameStats, NodeId, PaintStyle, Style, Text, Tree};
 
@@ -36,8 +36,11 @@ impl Window {
         self.renderer.draw(self.surface, self.tree.scene_mut(), Color::WHITE).unwrap();
         assert_eq!(self.tree.verify_paint(), None);
         let scene = self.tree.scene();
-        let root = scene.roots()[0];
-        assert_eq!(self.renderer.uploaded(scene.id(), root), Some(scene.layer(root).instances()));
+        for step in self.renderer.steps() {
+            if let Step::Layer { id, .. } = *step {
+                assert_eq!(self.renderer.uploaded(scene.id(), id), Some(scene.layer(id).instances()));
+            }
+        }
         assert!(!self.tree.needs_frame(), "a frame leaves nothing to do");
         (stats, self.renderer.stats())
     }

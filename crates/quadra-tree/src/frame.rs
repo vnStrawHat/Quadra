@@ -29,6 +29,8 @@ pub struct FrameStats {
     pub layers_patched: u32,
     /// Layers whose display list was rebuilt.
     pub layers_rebuilt: u32,
+    /// Layers whose transform, cut or opacity changed.
+    pub layers_composed: u32,
 }
 
 /// Gives the layout engine the content size of leaves: it asks their widgets.
@@ -48,7 +50,7 @@ impl Measure for Measurer<'_> {
 impl Tree {
     /// True when a frame would do something: nothing flagged, nothing queued means no frame.
     pub fn needs_frame(&self) -> bool {
-        self.relayout || self.repaint || self.shared.wake.get()
+        self.relayout || self.repaint || !self.recompose.is_empty() || self.shared.wake.get()
     }
 
     /// Runs the passes for a window of `size` logical pixels at `scale` device pixels each,
@@ -61,13 +63,12 @@ impl Tree {
         }
         if scale != self.scale {
             // Snapping and glyph sizes depend on the scale: everything is painted again.
-            if let Some(root) = self.root {
-                self.mark(root, flag::PAINT | flag::SUBTREE);
-            }
+            (self.repaint, self.repaint_all) = (true, true);
         }
         (self.size, self.scale) = (size, scale);
         self.layout_pass();
         self.paint_pass();
+        self.compose_pass();
         self.stats
     }
 
@@ -153,6 +154,32 @@ impl Tree {
         }
     }
 
+    /// Flags a node whose rect a layout changed.
+    fn rect_changed(&mut self, id: NodeId, moved: bool, resized: bool) {
+        let node = &self.nodes[id.index as usize];
+        if node.layer.is_some() {
+            // A layer that moved keeps its instances: its transform changes.
+            if moved {
+                self.recompose.push(id);
+            }
+            if resized {
+                self.mark(id, flag::PAINT);
+            }
+        } else {
+            // Positions in a layer are absolute: a node that moved takes its subtree along.
+            self.mark(id, if moved { flag::PAINT | flag::SUBTREE } else { flag::PAINT });
+        }
+        if resized {
+            // A layer cut to this node's box is cut anew.
+            for k in 0..self.nodes[id.index as usize].children.len() {
+                let child = self.nodes[id.index as usize].children[k];
+                if self.nodes[child.index as usize].layer.as_ref().is_some_and(|s| s.clip_to_parent) {
+                    self.recompose.push(child);
+                }
+            }
+        }
+    }
+
     /// The layout pass: lays out what changed, then flags for paint the nodes whose rect did.
     fn layout_pass(&mut self) {
         let Some(root) = self.root.filter(|_| std::mem::take(&mut self.relayout)) else { return };
@@ -170,8 +197,7 @@ impl Tree {
         for change in &changes {
             let index = self.owners[change.id.index()];
             let id = NodeId { index, generation: self.nodes[index as usize].generation };
-            // Positions in a layer are absolute: a node that moved takes its subtree along.
-            self.mark(id, if change.moved { flag::PAINT | flag::SUBTREE } else { flag::PAINT });
+            self.rect_changed(id, change.moved, change.resized);
         }
         self.changes = changes;
     }

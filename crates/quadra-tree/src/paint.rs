@@ -1,6 +1,7 @@
 //! The paint pass (specs/07, "Display lists"): nodes flagged for paint emit their instances
-//! again; the layer takes them in place when every count is unchanged, and is rebuilt by
-//! copying clean ranges otherwise.
+//! again; their layer takes them in place when every count is unchanged, and is rebuilt by
+//! copying clean ranges otherwise. A node that is a layer stands in its parent's list as one
+//! marker, and its own content is painted into its own layer.
 
 use quadra_layout::{Display, LayoutTree};
 use quadra_prim::{Point, Rect};
@@ -18,14 +19,22 @@ pub(crate) struct Patch {
     to: u32,
 }
 
-/// The parts of the tree the pass works on, borrowed apart from the scene.
+/// The parts of the tree the pass works on for one layer, borrowed apart from the scene.
 struct Painter<'a> {
     nodes: &'a mut [Node],
     layout: &'a LayoutTree,
     scratch: &'a mut Vec<Instance>,
     patches: &'a mut Vec<Patch>,
     stats: &'a mut FrameStats,
+    /// Layers found on the way that have something to paint.
+    todo: &'a mut Vec<NodeId>,
+    /// Layers found on the way whose place changed.
+    moved: &'a mut Vec<NodeId>,
+    /// The node whose layer is being painted.
+    root: NodeId,
     scale: f32,
+    /// The scale changed: everything is painted, in every layer.
+    all: bool,
     /// Every repainted node emitted as many instances as it had, and no list of children
     /// changed: the layer can be overwritten in place.
     same: bool,
@@ -33,7 +42,13 @@ struct Painter<'a> {
 
 /// Paints one node's own instances: the background and border from its style, then its
 /// widget. A node that is not displayed paints nothing.
-fn paint_own(node: &mut Node, layout: &LayoutTree, rect: Rect, scale: f32, out: &mut Vec<Instance>) {
+pub(crate) fn paint_own(
+    node: &mut Node,
+    layout: &LayoutTree,
+    rect: Rect,
+    scale: f32,
+    out: &mut Vec<Instance>,
+) {
     let style = layout.style(node.layout);
     if style.display == Display::None {
         return;
@@ -59,6 +74,11 @@ impl Painter<'_> {
         self.layout.style(self.nodes[i].layout).display == Display::None
     }
 
+    /// A layer other than the one being painted: here it is one marker.
+    fn child_layer(&self, id: NodeId) -> bool {
+        id != self.root && self.nodes[id.index as usize].layer.is_some()
+    }
+
     /// Walks the flagged paths. Nodes to repaint emit into the scratch buffer; `abs` is the
     /// node's start in the layer as it is now.
     fn collect(&mut self, id: NodeId, origin: Point, abs: u32, force: bool) {
@@ -66,6 +86,9 @@ impl Painter<'_> {
         let flags = self.nodes[i].flags;
         if !force && flags == 0 {
             return;
+        }
+        if self.child_layer(id) {
+            return self.collect_marker(id, abs, force);
         }
         let rect = self.layout.rect(self.nodes[i].layout).translate(origin.x, origin.y);
         let force = force || flags & flag::SUBTREE != 0;
@@ -91,9 +114,39 @@ impl Painter<'_> {
         }
     }
 
+    /// A child layer met in the walk: here it is one marker, and its own content is left to its
+    /// own pass. The marker is written when it appears or goes (a hidden layer has none), and
+    /// again whenever what is around it is painted again: that may be another list than before.
+    fn collect_marker(&mut self, id: NodeId, abs: u32, force: bool) {
+        let i = id.index as usize;
+        let shown = !self.hidden(i);
+        let Some(state) = self.nodes[i].layer.as_mut() else { return };
+        let was = std::mem::replace(&mut state.marked, shown);
+        if was != shown || force {
+            let from = self.scratch.len() as u32;
+            if shown {
+                self.scratch.push(Instance::marker(state.id));
+            }
+            let to = self.scratch.len() as u32;
+            self.nodes[i].fresh = (from, to);
+            self.same &= was == shown;
+            self.patches.push(Patch { at: abs, from, to });
+        }
+        if shown && (self.all || self.nodes[i].flags != 0) {
+            self.todo.push(id);
+        }
+        if shown && force {
+            self.moved.push(id); // something above it moved: its place in this layer changed
+        }
+    }
+
     /// After an in-place update: the flags of the walked paths are done.
     fn clear(&mut self, id: NodeId) {
         let i = id.index as usize;
+        if self.child_layer(id) {
+            self.nodes[i].fresh = NOT_PAINTED; // its flags are for its own pass
+            return;
+        }
         if self.nodes[i].flags == 0 && self.nodes[i].fresh == NOT_PAINTED {
             return;
         }
@@ -109,16 +162,26 @@ impl Painter<'_> {
         let i = id.index as usize;
         let node = &self.nodes[i];
         let (fresh, old_own, old_len) = (node.fresh, node.own as usize, node.len as usize);
-        if node.flags == 0 && fresh == NOT_PAINTED {
+        let repainted = fresh != NOT_PAINTED;
+        if self.child_layer(id) {
+            if repainted {
+                next.push(&self.scratch[fresh.0 as usize..fresh.1 as usize]);
+                (self.nodes[i].own, self.nodes[i].fresh) = (fresh.1 - fresh.0, NOT_PAINTED);
+                return fresh.1 - fresh.0;
+            }
+            next.copy(old_abs..old_abs + old_len);
+            return old_len as u32;
+        }
+        if node.flags == 0 && !repainted {
             next.copy(old_abs..old_abs + old_len);
             return old_len as u32;
         }
         let start = next.len();
-        if fresh == NOT_PAINTED {
-            next.copy(old_abs..old_abs + old_own);
-        } else {
+        if repainted {
             next.push(&self.scratch[fresh.0 as usize..fresh.1 as usize]);
             self.nodes[i].own = fresh.1 - fresh.0;
+        } else {
+            next.copy(old_abs..old_abs + old_own);
         }
         if !self.hidden(i) {
             for k in 0..self.nodes[i].children.len() {
@@ -136,78 +199,66 @@ impl Painter<'_> {
 }
 
 impl Tree {
+    /// Paints every layer that has flagged nodes, the root's first: a layer's pass finds the
+    /// child layers that have work.
     pub(crate) fn paint_pass(&mut self) {
         let Some(root) = self.root.filter(|_| std::mem::take(&mut self.repaint)) else { return };
+        let all = std::mem::take(&mut self.repaint_all);
+        let mut todo = std::mem::take(&mut self.todo);
+        todo.push(root);
+        while let Some(layer_root) = todo.pop() {
+            self.paint_layer(layer_root, all, &mut todo);
+        }
+        self.todo = todo;
+    }
+
+    fn paint_layer(&mut self, root: NodeId, all: bool, todo: &mut Vec<NodeId>) {
+        let i = root.index as usize;
+        // As the root of its own layer the node starts at zero; as a child it is one marker.
+        // The two sets of numbers are swapped in for the pass and back out after it.
+        let Some((layer_id, len, own)) = self.nodes[i].layer.as_ref().map(|s| (s.id, s.len, s.own)) else {
+            return;
+        };
+        let as_child = (self.nodes[i].start, self.nodes[i].len, self.nodes[i].own);
+        (self.nodes[i].start, self.nodes[i].len, self.nodes[i].own) = (0, len, own);
         self.scratch.clear();
         self.patches.clear();
+        let origin = self.layout.rect(self.nodes[i].layout).origin();
         let mut painter = Painter {
             nodes: &mut self.nodes,
             layout: &self.layout,
             scratch: &mut self.scratch,
             patches: &mut self.patches,
             stats: &mut self.stats,
+            todo,
+            moved: &mut self.recompose,
+            root,
             scale: self.scale,
+            all,
             same: true,
         };
-        painter.collect(root, Point::ZERO, 0, false);
-        let layer = self.scene.layer_mut(self.root_layer);
+        // The layer's space starts at its root's border box.
+        painter.collect(root, Point::new(-origin.x, -origin.y), 0, all);
+        let layer = self.scene.layer_mut(layer_id);
         if painter.same {
-            for patch in painter.patches.iter().filter(|p| p.to > p.from) {
-                layer.patch(patch.at as usize, &painter.scratch[patch.from as usize..patch.to as usize]);
-            }
-            painter.stats.layers_patched += painter.patches.iter().any(|p| p.to > p.from) as u32;
+            let patches = painter.patches.iter().filter(|p| p.to > p.from);
+            patches
+                .clone()
+                .for_each(|p| layer.patch(p.at as usize, &painter.scratch[p.from as usize..p.to as usize]));
+            painter.stats.layers_patched += (patches.count() > 0) as u32;
             painter.clear(root);
         } else {
             let mut next = layer.rebuild();
             let len = painter.rebuild(root, 0, &mut next);
             next.finish();
-            painter.nodes[root.index as usize].len = len;
+            painter.nodes[i].len = len;
             painter.stats.layers_rebuilt += 1;
         }
-    }
-
-    /// Paints the whole tree from scratch and compares it with what the incremental passes
-    /// left in the layer, and each node's range with where its instances are. Returns the
-    /// first difference, or `None`: the check that incremental paint is exact. Call it after
-    /// a frame.
-    pub fn verify_paint(&mut self) -> Option<String> {
-        let mut fresh = Vec::new();
-        let mut wrong = None;
-        if let Some(root) = self.root {
-            self.verify_node(root, Point::ZERO, 0, &mut fresh, &mut wrong);
-        }
-        let layer = self.scene.layer(self.root_layer).instances();
-        if layer.len() != fresh.len() {
-            return Some(format!("the layer has {} instances, from scratch {}", layer.len(), fresh.len()));
-        }
-        let differs = layer.iter().zip(&fresh).position(|(a, b)| a != b);
-        differs.map(|at| format!("instance {at} differs from the one painted from scratch")).or(wrong)
-    }
-
-    fn verify_node(
-        &mut self,
-        id: NodeId,
-        origin: Point,
-        parent_start: usize,
-        out: &mut Vec<Instance>,
-        wrong: &mut Option<String>,
-    ) {
-        let i = id.index as usize;
-        let rect = self.layout.rect(self.nodes[i].layout).translate(origin.x, origin.y);
-        let start = out.len();
-        paint_own(&mut self.nodes[i], &self.layout, rect, self.scale, out);
-        let own = out.len() - start;
-        if self.layout.style(self.nodes[i].layout).display != Display::None {
-            for k in 0..self.nodes[i].children.len() {
-                self.verify_node(self.nodes[i].children[k], rect.origin(), start, out, wrong);
-            }
-        }
-        let node = &self.nodes[i];
-        let expected = ((start - parent_start) as u32, (out.len() - start) as u32, own as u32);
-        if (node.start, node.len, node.own) != expected && wrong.is_none() {
-            let have = (node.start, node.len, node.own);
-            *wrong =
-                Some(format!("node {i}: range (start, len, own) is {have:?}, from scratch {expected:?}"));
+        let node = &mut self.nodes[i];
+        let own = (node.len, node.own);
+        (node.start, node.len, node.own) = as_child;
+        if let Some(state) = node.layer.as_mut() {
+            (state.len, state.own) = own;
         }
     }
 }

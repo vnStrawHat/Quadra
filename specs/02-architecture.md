@@ -75,8 +75,8 @@ A window draws a frame only when something is flagged. One frame:
 1. update     run queued bindings; they write node properties, which set flags
 2. style      resolve styles of nodes whose state or tokens changed; diff decides layout or paint
 3. layout     lay out dirty subtrees from their boundaries; realize virtual rows
-4. compose    recompute layer transforms, clips and scroll offsets that changed
-5. paint      repaint dirty nodes into their layers' display lists
+4. paint      repaint dirty nodes into their layers' display lists
+5. compose    recompute layer transforms, clips and scroll offsets that changed
 6. a11y       send semantic updates, if assistive technology listens
 7. draw       upload dirty ranges, draw the layers, present
 ```
@@ -101,7 +101,7 @@ OS event ─► dispatch (hit test, focus path) ─► handler ─► signal.set
                                                               │ batch ends
                                effects run ◄──────────────────┤
                                bindings queued ◄──────────────┘
-frame ─► update ─► style ─► layout ─► compose ─► paint ─► a11y ─► draw ─► present
+frame ─► update ─► style ─► layout ─► paint ─► compose ─► a11y ─► draw ─► present
 background work ─► future or inbox ─► UI thread ─► signal.set
 ```
 

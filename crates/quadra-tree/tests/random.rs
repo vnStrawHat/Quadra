@@ -5,7 +5,7 @@ mod common;
 
 use common::{Window, block_style};
 use quadra_layout::{Direction, Display, Length};
-use quadra_prim::Color;
+use quadra_prim::{Color, Point};
 use quadra_tree::PaintStyle;
 
 /// A small deterministic generator: the sequences are the same on every run.
@@ -36,7 +36,7 @@ fn random_changes_always_match_a_paint_from_scratch() {
         for step in 0..200 {
             let b = boxes[rng.below(boxes.len())];
             let leaf = leaves[rng.below(leaves.len())];
-            match rng.below(9) {
+            match rng.below(11) {
                 0 => {
                     let background = Color::rgb(rng.below(0xFFFFFF) as u32);
                     w.tree.set_paint_style(leaf, PaintStyle { background, ..PaintStyle::default() });
@@ -67,6 +67,17 @@ fn random_changes_always_match_a_paint_from_scratch() {
                     let display = if rng.below(3) == 0 { Display::None } else { Display::Flex };
                     let style = quadra_layout::Style { display, ..w.tree.layout_style(b).clone() };
                     w.tree.set_layout_style(b, style);
+                }
+                8 => {
+                    if w.tree.is_layer(b) {
+                        w.tree.remove_layer(b);
+                    } else {
+                        w.tree.make_layer(b, rng.below(2) == 0);
+                    }
+                }
+                9 => {
+                    let offset = Point::new(rng.below(40) as f32 - 20.0, rng.below(40) as f32 * 0.5);
+                    w.tree.set_layer_offset(b, offset); // nothing on a box that is no layer
                 }
                 7 => {
                     // A leaf moves to another box.

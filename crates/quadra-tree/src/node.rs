@@ -4,6 +4,7 @@ use quadra_layout::LayoutId;
 use quadra_prim::{Color, Corners};
 use quadra_reactive::Scope;
 
+use crate::layers::LayerState;
 use crate::widget::Widget;
 
 /// A node of a [`crate::Tree`]: an index and a generation, so a stale id is detected.
@@ -60,6 +61,8 @@ pub(crate) struct Node {
     pub own: u32,
     /// Where this pass's instances are in the scratch buffer, or `NOT_PAINTED`.
     pub fresh: (u32, u32),
+    /// Set when the node is a layer: it and what is under it have a display list of their own.
+    pub layer: Option<Box<LayerState>>,
     /// The scope that ends with this node: its bindings, handlers and tasks.
     pub scope: Option<Scope>,
 }

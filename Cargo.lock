@@ -32,6 +32,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-platform"
+version = "0.1.0"
+dependencies = [
+ "quadra-prim",
+]
+
+[[package]]
 name = "quadra-prim"
 version = "0.1.0"
 

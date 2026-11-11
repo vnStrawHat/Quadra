@@ -7,29 +7,29 @@ lives in that OS's native crate.
 
 ```rust
 pub trait Platform {
-    fn run(&mut self, app: &mut dyn PlatformHandler) -> Result<()>;   // the message loop
-    fn quit(&mut self);
-    fn open_window(&mut self, options: &WindowOptions) -> Result<Box<dyn PlatformWindow>>;
+    fn run(&self, app: &mut dyn PlatformHandler) -> Result<()>;   // the message loop
+    fn quit(&self);
+    fn open_window(&self, options: &WindowOptions) -> Result<Box<dyn PlatformWindow>>;
     fn waker(&self) -> Waker;                    // Send: wakes the loop from any thread
-    fn set_timer(&mut self, after: Duration, repeat: bool) -> TimerId;
-    fn cancel_timer(&mut self, id: TimerId);
+    fn set_timer(&self, after: Duration, repeat: bool) -> TimerId;
+    fn cancel_timer(&self, id: TimerId);
     fn now(&self) -> Instant;                    // virtual in the headless platform
     fn displays(&self) -> Vec<Display>;
     fn appearance(&self) -> Appearance;          // dark, accent, high contrast, text scale
-    fn clipboard(&mut self) -> &mut dyn Clipboard;
+    fn clipboard(&self) -> &dyn Clipboard;
 }
 
-pub trait PlatformWindow {
+pub trait PlatformWindow {                       // dropping it closes the window
     fn id(&self) -> WindowId;
     fn handle(&self) -> WindowHandle;            // what a renderer needs to make a surface
     fn size(&self) -> Size;                      // logical pixels
     fn scale(&self) -> f32;
     fn placement(&self) -> Placement;
-    fn set_title(&mut self, title: &str);
-    fn set_cursor(&mut self, cursor: Cursor);
-    fn request_frame(&mut self);
-    fn set_text_input(&mut self, state: Option<TextInputState>);   // accepts text, caret rect
-    fn minimize(&mut self);  fn toggle_maximize(&mut self);  fn close(&mut self);
+    fn set_title(&self, title: &str);
+    fn set_cursor(&self, cursor: Cursor);
+    fn request_frame(&self);
+    fn set_text_input(&self, state: Option<TextInputState>);   // accepts text, caret rect
+    fn minimize(&self);  fn toggle_maximize(&self);
 }
 
 pub trait PlatformHandler {
@@ -43,8 +43,18 @@ pub trait PlatformHandler {
 
 - `WindowHandle` is an enum with one variant per windowing system (`Win32 { hwnd }`,
   `Headless`), defined in `quadra-platform`. No untyped pointer crosses the boundary.
-- `PlatformEvent` covers pointer, wheel, key, text and composition, focus, resize, scale
-  change, close request, appearance change, file drop.
+- `PlatformEvent` covers pointer, wheel, key, text and composition, focus, resize (one event
+  carries the size and the scale: a change of either is the same work), close request,
+  appearance change, file drop.
+- **Every method takes `&self`.** The handler calls the platform and its windows from inside
+  `run`, so nothing can hold them exclusively; implementations keep their state in cells. All of
+  it lives on the UI thread; only `Waker` is `Send`.
+- **The handler is never entered twice.** An OS call made by a handler can make the OS deliver
+  an event at once (setting a title, moving a window). The platform queues such an event and
+  delivers it when the handler returns. `hit_test`, which must answer at once, answers
+  `Client` in that case.
+- A window is owned by whoever holds its box. Dropping it closes the OS window; a close the
+  user asks for arrives as an event, and the app decides.
 - Errors are returned, not printed (01, R18).
 
 ## What is not in `Platform`

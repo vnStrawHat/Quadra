@@ -70,6 +70,11 @@ impl Harness {
         self.tree.key(key, 0, mods, false, false);
     }
 
+    /// Types text, as the keyboard or an input method commits it.
+    pub fn type_text(&mut self, text: &str) {
+        self.tree.text(text);
+    }
+
     /// Moves the pointer to a point, presses the main button and releases it.
     pub fn click(&mut self, x: f32, y: f32) {
         self.pointer(PointerInput::Move, x, y);

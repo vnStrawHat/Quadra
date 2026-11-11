@@ -6,6 +6,7 @@
 
 mod action;
 mod dispatch;
+mod field;
 mod focus;
 mod fonts;
 mod frame;
@@ -24,11 +25,12 @@ mod widget;
 
 pub use action::{Action, FocusNext, FocusPrevious};
 pub use dispatch::PointerInput;
+pub use field::{TextCommand, TextField};
 pub use focus::KeyEvent;
 pub use fonts::{Fonts, GlyphKey, GlyphMeta, GlyphTile, SUBPIXEL_STEPS};
 pub use frame::{FrameStats, PassTimes};
 pub use input::{PointerEvent, PointerKind};
-pub use keymap::{Keymap, KeymapError, Keystroke};
+pub use keymap::{Keymap, KeymapError, Keystroke, TEXT_CONTEXT};
 pub use node::{NodeId, PaintStyle, Style};
 pub use shared::Handle;
 pub use style::{Patch, State};

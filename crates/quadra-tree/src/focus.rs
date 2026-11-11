@@ -70,6 +70,24 @@ impl Tree {
         self.add_handler(id, Handler::Focus(Box::new(f)));
     }
 
+    /// Runs `f` with the text typed while the node has the focus: committed characters, never
+    /// control keys.
+    pub fn on_text(&mut self, id: NodeId, f: impl FnMut(&str) + 'static) {
+        self.add_handler(id, Handler::Text(Box::new(f)));
+    }
+
+    /// Takes text typed in the window: it goes to the focused node, if that takes text.
+    pub fn text(&mut self, text: &str) {
+        let Some(focus) = self.focus.filter(|&id| self.is_alive(id)) else { return };
+        batch(|| {
+            for handler in &mut self.nodes[focus.index as usize].handlers {
+                if let Handler::Text(run) = handler {
+                    run(text);
+                }
+            }
+        });
+    }
+
     /// The node that has the focus.
     pub fn focused(&self) -> Option<NodeId> {
         self.focus

@@ -80,6 +80,8 @@ pub(crate) enum Handler {
     },
     /// Focus came to the node (true) or left it.
     Focus(Box<dyn FnMut(bool)>),
+    /// Text was typed while the node had the focus.
+    Text(Box<dyn FnMut(&str)>),
     /// An action of a type reached the node.
     Action {
         of: TypeId,

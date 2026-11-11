@@ -197,6 +197,13 @@ impl Paragraph {
         self.stops[after.saturating_sub(1)].1
     }
 
+    /// The byte offset of the caret stop nearest an x along the endless line: where a click
+    /// puts the caret.
+    pub fn index_at(&self, x: f32) -> usize {
+        let nearest = self.stops.iter().min_by(|a, b| (a.1 - x).abs().total_cmp(&(b.1 - x).abs()));
+        nearest.map_or(0, |&(at, _)| at)
+    }
+
     /// Breaks the paragraph into lines no wider than `max_width` (infinite: only at newlines)
     /// and returns its size: the widest line and the height of all of them.
     pub fn wrap(&mut self, ts: &mut TextSystem, max_width: f32) -> Size {

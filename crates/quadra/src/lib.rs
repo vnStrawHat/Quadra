@@ -30,7 +30,7 @@ pub use quadra_tree::{
 };
 pub use quadra_ui::{
     AnyView, Div, NodeRef, Refine, Region, View, column, div, dynamic, each, each_frame, row, scroll, show,
-    text, uniform_list,
+    text, text_input, uniform_list,
 };
 
 /// An app on the backends of this operating system: Win32 windows, the D3D11 renderer and

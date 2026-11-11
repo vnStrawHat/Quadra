@@ -7,7 +7,13 @@ use std::rc::Rc;
 
 use quadra_platform::{Key, Mods};
 
+use quadra_text::Motion;
+
 use crate::action::{Action, AnyAction, FocusNext, FocusPrevious};
+use crate::field::TextCommand;
+
+/// The key context of a text field: where the editing keys are bound.
+pub const TEXT_CONTEXT: &str = "text";
 
 /// One key with the modifiers held.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -127,6 +133,7 @@ impl Default for Keymap {
         let tab = Keystroke { key: Key::Tab, mods: Mods::NONE };
         keymap.push(vec![tab], None, FocusNext);
         keymap.push(vec![Keystroke { mods: Mods::SHIFT, ..tab }], None, FocusPrevious);
+        keymap.text_bindings();
         keymap
     }
 }
@@ -134,6 +141,41 @@ impl Default for Keymap {
 impl Keymap {
     pub fn new() -> Keymap {
         Keymap::default()
+    }
+
+    /// What the keys do in a text field (the context "text"): the caret, the selection,
+    /// deleting, undo.
+    fn text_bindings(&mut self) {
+        use TextCommand::{Delete, Move, Redo, SelectAll, Undo};
+        let moves = [
+            ("left", Motion::Left),
+            ("right", Motion::Right),
+            ("ctrl-left", Motion::WordLeft),
+            ("ctrl-right", Motion::WordRight),
+            ("home", Motion::Start),
+            ("end", Motion::End),
+        ];
+        let mut all: Vec<(String, TextCommand)> = Vec::new();
+        for (keys, motion) in moves {
+            all.push((keys.to_string(), Move(motion, false)));
+            all.push((format!("shift-{keys}"), Move(motion, true)));
+        }
+        let rest = [
+            ("backspace", Delete(Motion::Left)),
+            ("shift-backspace", Delete(Motion::Left)),
+            ("delete", Delete(Motion::Right)),
+            ("ctrl-backspace", Delete(Motion::WordLeft)),
+            ("ctrl-delete", Delete(Motion::WordRight)),
+            ("ctrl-a", SelectAll),
+            ("ctrl-z", Undo),
+            ("ctrl-y", Redo),
+            ("ctrl-shift-z", Redo),
+        ];
+        all.extend(rest.map(|(keys, command)| (keys.to_string(), command)));
+        for (keys, command) in all {
+            let stroke = Keystroke::parse(&keys).expect("the built-in bindings are well formed");
+            self.push(vec![stroke], Some(Rc::from(TEXT_CONTEXT)), command);
+        }
     }
 
     fn push(&mut self, keys: Vec<Keystroke>, context: Option<Rc<str>>, action: impl Action) {

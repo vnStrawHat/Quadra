@@ -95,12 +95,13 @@ bench's counter counts real clicks. Styles have state variants (`.hover(..)`, `.
 scrolls `scroll` and `uniform_list`, nested ones included. Focus and keys are in
 (`quadra-tree/src/focus.rs`: press to focus, Tab inside a focus scope, the ring, keys along
 the focus path, `NodeRef::focus`), and so are actions and the keymap (`action.rs`,
-`keymap.rs`; `App::keymap`; Tab is a binding). **The text input is in progress**: its edit
-buffer is done (`quadra-text/src/edit.rs`). Next for it: text events from the platform to the
-focused node (`Tree::text`), a `TextField` widget in `quadra-tree` (caret, selection,
-horizontal scroll), the `text_input(value)` view with its actions and default bindings and
-pointer selection, then the clipboard (platform trait, headless and Win32; never test the
-real one), timers (`quadra-async`, for the caret's blink) and IME (specs/09; behaviour/02).
+`keymap.rs`; `App::keymap`; Tab is a binding). **The text input works** (`text_input(value)` in
+`quadra-ui/src/input.rs`, the `TextField` widget and `TextCommand` in
+`quadra-tree/src/field.rs`, the buffer in `quadra-text/src/edit.rs`; `crates/quadra/examples/form.rs`
+shows it in a real window). Still missing for it, in this order: the clipboard (platform
+trait, headless and Win32; never test the real one) with copy, cut and paste; timers
+(`quadra-async`, specs/11) for the caret's blink; IME composition (specs/09; behaviour/02;
+the V code is `quadra/platform/win/ime_windows.c.v`).
 After the text input: overlays, semantics (specs/12), rows of different heights.
 `quadra-async` (specs/11) when the first thing needs a timer or a task.
 

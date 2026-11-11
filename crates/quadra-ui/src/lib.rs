@@ -17,6 +17,7 @@
 
 mod div;
 mod flow;
+mod input;
 mod list;
 mod node_ref;
 mod prop;
@@ -26,6 +27,7 @@ mod view;
 
 pub use div::{Div, Refine, column, div, row};
 pub use flow::{Region, dynamic, each, mount_in, show};
+pub use input::{TextInput, text_input};
 pub use list::uniform_list;
 pub use node_ref::NodeRef;
 pub use prop::{IntoProp, Prop};

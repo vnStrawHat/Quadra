@@ -1,7 +1,7 @@
 //! The text widget: a node that owns a paragraph (specs/08, "Paragraphs").
 
 use quadra_layout::Known;
-use quadra_prim::{Color, Corners, Rect, Size};
+use quadra_prim::{Color, Corners, Point, Rect, Size};
 use quadra_render::{Kind, Sprite};
 use quadra_text::{GlyphFormat, Paragraph, TextStyle};
 
@@ -74,40 +74,51 @@ impl Widget for Text {
     fn paint(&mut self, cx: &mut PaintCx) {
         let Some(paragraph) = &self.paragraph else { return };
         self.tiles.clear();
-        let (ascent, descent) = paragraph.metrics();
-        let (size, line_px, scale) = (paragraph.style().size, paragraph.style().line_px(), cx.scale);
-        for line in paragraph.lines() {
-            let top = cx.rect.y + line.y;
-            if cx.visible.is_some_and(|band| top > band.bottom() || top + line_px < band.y) {
-                continue; // outside what its layer paints
+        paint_glyphs(cx, paragraph, cx.rect.origin(), self.color, &mut self.tiles);
+    }
+}
+
+/// Paints the lines of a paragraph whose top-left corner is at `origin`, in logical pixels of
+/// the layer, and keeps the tiles of what it painted in `tiles`. Lines outside the part of
+/// the layer that is painted are skipped.
+pub(crate) fn paint_glyphs(
+    cx: &mut PaintCx,
+    paragraph: &Paragraph,
+    origin: Point,
+    color: Color,
+    tiles: &mut Vec<GlyphTile>,
+) {
+    let (ascent, descent) = paragraph.metrics();
+    let (size, line_px, scale) = (paragraph.style().size, paragraph.style().line_px(), cx.scale);
+    for line in paragraph.lines() {
+        let top = origin.y + line.y;
+        if cx.visible.is_some_and(|band| top > band.bottom() || top + line_px < band.y) {
+            continue; // outside what its layer paints
+        }
+        // Baselines sit on whole pixels; along the line a glyph keeps a quarter-pixel phase.
+        let baseline = ((top + (line_px - ascent - descent) / 2.0 + ascent) * scale).round();
+        let (glyphs, start) = paragraph.line_glyphs(line);
+        for g in glyphs {
+            let x = (origin.x + g.x - start) * scale;
+            let phase = ((x - x.floor()) * SUBPIXEL_STEPS as f32) as u8;
+            let Some(tile) = cx.fonts.glyph(g.face, g.id, size * scale, phase) else { continue };
+            if tile.rect.w == 0 {
+                continue; // no ink: a space
             }
-            // Baselines sit on whole pixels; along the line a glyph keeps a quarter-pixel phase.
-            let baseline =
-                ((cx.rect.y + line.y + (line_px - ascent - descent) / 2.0 + ascent) * scale).round();
-            let (glyphs, origin) = paragraph.line_glyphs(line);
-            for g in glyphs {
-                let x = (cx.rect.x + g.x - origin) * scale;
-                let phase = ((x - x.floor()) * SUBPIXEL_STEPS as f32) as u8;
-                let Some(tile) = cx.fonts.glyph(g.face, g.id, size * scale, phase) else { continue };
-                if tile.rect.w == 0 {
-                    continue; // no ink: a space
-                }
-                let (left, top) =
-                    (x.floor() + tile.meta.left, baseline - (g.y * scale).round() + tile.meta.top);
-                let sprite = Sprite {
-                    bounds: Rect::new(left, top, tile.rect.w as f32, tile.rect.h as f32),
-                    uv: tile.uv,
-                    slice: tile.rect.slice,
-                    color: self.color,
-                    radii: Corners::default(),
-                    // A colour glyph is an image: its pixels are not coverage of the text colour.
-                    glyph: tile.meta.format != GlyphFormat::Color,
-                };
-                let coverage = tile.meta.format == GlyphFormat::Coverage;
-                let instance = sprite.instance(if coverage { Kind::Mono } else { Kind::Poly }, &cx.clip);
-                cx.push(instance);
-                self.tiles.push(tile);
-            }
+            let (left, top) = (x.floor() + tile.meta.left, baseline - (g.y * scale).round() + tile.meta.top);
+            let sprite = Sprite {
+                bounds: Rect::new(left, top, tile.rect.w as f32, tile.rect.h as f32),
+                uv: tile.uv,
+                slice: tile.rect.slice,
+                color,
+                radii: Corners::default(),
+                // A colour glyph is an image: its pixels are not coverage of the text colour.
+                glyph: tile.meta.format != GlyphFormat::Color,
+            };
+            let coverage = tile.meta.format == GlyphFormat::Coverage;
+            let instance = sprite.instance(if coverage { Kind::Mono } else { Kind::Poly }, &cx.clip);
+            cx.push(instance);
+            tiles.push(tile);
         }
     }
 }

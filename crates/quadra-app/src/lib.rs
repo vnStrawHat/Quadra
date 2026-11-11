@@ -249,7 +249,11 @@ impl<R: Renderer> PlatformHandler for App<R> {
                     w.tree.set_active(active);
                 }
             }
-            PlatformEvent::Text(_) => {} // text comes with the text input (specs/09)
+            PlatformEvent::Text(text) => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.text(&text);
+                }
+            }
         });
         self.request_frames();
     }

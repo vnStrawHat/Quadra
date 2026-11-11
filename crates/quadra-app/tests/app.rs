@@ -119,3 +119,35 @@ fn a_lost_device_is_made_again_and_everything_is_drawn_again() {
     assert_eq!(app.renderer.tiles_uploaded().0, tiles + 5); // every glyph again, the "o" too
     assert!(errors.borrow().is_empty()); // recovered: nothing to report
 }
+
+#[test]
+fn pointer_events_of_a_window_reach_the_handlers_of_its_view() {
+    use quadra_platform::{Mods, MouseButton, PointerKind};
+    use quadra_prim::Point;
+    use quadra_ui::div;
+
+    let platform = HeadlessPlatform::new();
+    let mut app = app(&platform);
+    let count = signal(0);
+    let view = move || {
+        let button = div().size(100.0, 40.0).on_click(move |_| count.update(|n| *n += 1));
+        column().child(button).child(text(move || count.get().to_string()))
+    };
+    let window = app.open_window(WindowOptions::new("clicks").size(400.0, 300.0), view).unwrap();
+    platform.step(&mut app);
+    let frames = app.renderer.stats().frames;
+    let at = |kind| PlatformEvent::Pointer {
+        kind,
+        button: MouseButton::Left,
+        at: Point::new(50.0, 20.0),
+        mods: Mods::NONE,
+    };
+    for kind in [PointerKind::Move, PointerKind::Down, PointerKind::Up] {
+        platform.push(window, at(kind));
+    }
+    platform.step(&mut app); // the events, then the frame their handler made necessary
+    assert_eq!((count.get_untracked(), app.renderer.stats().frames), (1, frames + 1));
+    platform.push(window, at(PointerKind::Move));
+    assert!(platform.step(&mut app)); // delivered,
+    assert_eq!(app.renderer.stats().frames, frames + 1); // and nothing to draw
+}

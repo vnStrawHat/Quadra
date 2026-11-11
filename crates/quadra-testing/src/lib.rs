@@ -7,10 +7,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use quadra_prim::{Color, Size};
+use std::time::{Duration, Instant};
+
+use quadra_platform::{Mods, MouseButton};
+use quadra_prim::{Color, Point, Size};
 use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
 use quadra_text::FakeBackend;
-use quadra_tree::{Fonts, FrameStats, Tree};
+use quadra_tree::{Fonts, FrameStats, PointerInput, Tree};
 
 pub struct Harness {
     pub tree: Tree,
@@ -22,6 +25,8 @@ pub struct Harness {
     /// The window's size in logical pixels, and its scale. Change them to resize.
     pub size: Size,
     pub scale: f32,
+    /// The time input happens at: moved by [`Harness::advance`], never by the clock.
+    pub now: Instant,
 }
 
 impl Default for Harness {
@@ -39,7 +44,25 @@ impl Harness {
         let surface =
             renderer.create_surface(SurfaceTarget::Offscreen, size).expect("the null renderer has surfaces");
         let tree = Tree::new(fonts.clone());
-        Harness { tree, renderer, fonts, surface, size: Size::new(800.0, 600.0), scale: 1.0 }
+        let (size, now) = (Size::new(800.0, 600.0), Instant::now());
+        Harness { tree, renderer, fonts, surface, size, scale: 1.0, now }
+    }
+
+    /// Moves the harness's time forward.
+    pub fn advance(&mut self, by: Duration) {
+        self.now += by;
+    }
+
+    /// A pointer event of the window, with the main button and no modifier.
+    pub fn pointer(&mut self, input: PointerInput, x: f32, y: f32) {
+        self.tree.pointer(input, MouseButton::Left, Point::new(x, y), Mods::NONE, self.now);
+    }
+
+    /// Moves the pointer to a point, presses the main button and releases it.
+    pub fn click(&mut self, x: f32, y: f32) {
+        self.pointer(PointerInput::Move, x, y);
+        self.pointer(PointerInput::Down, x, y);
+        self.pointer(PointerInput::Up, x, y);
     }
 
     /// Runs one frame and draws it, and returns what the tree visited and what the renderer

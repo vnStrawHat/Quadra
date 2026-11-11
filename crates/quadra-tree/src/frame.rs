@@ -118,6 +118,10 @@ impl Tree {
         times.paint = lap();
         self.compose_pass();
         times.compose = lap();
+        if self.input.pointer.is_some() {
+            // What is under the pointer may have moved away from it, or come under it.
+            batch(|| self.rehover());
+        }
         self.times = times;
         self.stats
     }

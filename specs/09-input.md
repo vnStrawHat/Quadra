@@ -41,6 +41,8 @@ Handlers are closures on nodes (05). A node with no handler for an event kind is
   is computed again. Nodes entering and leaving get `hovered` set or cleared and enter or leave
   events.
 - Pointer-down sets `active` on the path; release clears it.
+- While a node holds the pointer (capture), hover stays as it was; it catches up at the
+  release.
 - A state bit sets the `STYLE` flag only on a node that has a style variant for it (04). A
   window of plain content costs nothing to hover over.
 - The cursor is the `cursor` style of the first node on the path that sets one.

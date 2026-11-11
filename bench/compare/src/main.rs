@@ -74,11 +74,14 @@ fn animate(mut frame: impl FnMut(u32) + 'static) {
 
 fn counter() -> AnyView {
     let n = signal(0);
-    let button = |label: &str| {
+    let button = |label: &str, change: fn(&mut i32)| {
         let label = text(label.to_string()).size(13.0);
-        div().padding_x(12.0).padding_y(4.0).radius(6.0).bg(Color::rgb(0xe8e8e8)).child(label)
+        let face = div().padding_x(12.0).padding_y(4.0).radius(6.0).bg(Color::rgb(0xe8e8e8));
+        face.child(label).on_click(move |_| n.update(change))
     };
-    let buttons = row().gap(8.0).child(button("−")).child(button("Reset")).child(button("+"));
+    let (less, reset, more) =
+        (button("−", |n| *n -= 1), button("Reset", |n| *n = 0), button("+", |n| *n += 1));
+    let buttons = row().gap(8.0).child(less).child(reset).child(more);
     let number = text(move || n.get().to_string()).size(56.0).weight(700);
     let page = full().direction(Direction::Column).align_items(Align::Center).justify(Justify::Center);
     AnyView::new(page.gap(16.0).child(number).child(buttons))

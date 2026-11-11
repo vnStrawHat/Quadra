@@ -11,6 +11,7 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }
 quadra-render = { path = "../quadra-render" }
 quadra-text = { path = "../quadra-text" }

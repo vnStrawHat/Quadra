@@ -87,11 +87,13 @@ scroll with culling, frame callbacks); `quadra-platform` (traits, the headless p
 DirectWrite). Its shader is `shaders/prims.hlsl`, compiled by `tools/build_shaders.sh` (needs
 the Windows SDK's fxc) into committed `.cso` files. Its tests use windows that are never shown.
 
-**Next: phase R2, interaction** (specs/00, Phases; specs/09): hit testing and pointer dispatch
-over the tree first (the counter's buttons do nothing yet), then hover and press with style
-variants (specs/13), focus, keys and actions, text input and IME, wheel scrolling, overlays,
-semantics (specs/12), rows of different heights. `quadra-async` (specs/11) when the first
-thing needs a timer or a task.
+**Phase R2, interaction, is in progress** (specs/00, Phases; specs/09). Done: pointer input,
+from the platform's events through hit testing and dispatch (capture, bubble, stop, pointer
+capture, hover, press, clicks with counts) to `on_click` and `on_pointer` on views; the
+bench's counter counts real clicks. Next, in this order: style variants so hover and press
+show (specs/13, with tokens), wheel scrolling, focus and keys with actions and the keymap,
+text input and IME, overlays, semantics (specs/12), rows of different heights.
+`quadra-async` (specs/11) when the first thing needs a timer or a task.
 
 Room left that the numbers show (`tools/bench.sh grid`): 200 ns a binding in the grid (a
 reactive property boxes a closure on every run, see the `ponytail:` note in

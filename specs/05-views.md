@@ -114,6 +114,11 @@ A handler is a boxed closure stored on the node and dropped with it. Its argumen
 event data and the dispatch controls: `stop()`, `capture_pointer()`, `prevent_default()`,
 `window()`, `node()` (09).
 
+`on_click` is a click with the main button. `on_pointer(kind, ..)` is the general form: a
+press, a release, a move, the pointer entering or leaving, a click with any button. A handler
+is never given the tree: it writes signals, and what it wants of the tree it asks through the
+tree's handle, which the next frame applies.
+
 ## Control flow
 
 Because a component runs once, a plain `if` or `for` in it chooses once. Structure that changes

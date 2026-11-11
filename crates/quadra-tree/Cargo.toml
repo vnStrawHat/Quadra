@@ -14,5 +14,6 @@ workspace = true
 quadra-prim = { path = "../quadra-prim" }
 quadra-reactive = { path = "../quadra-reactive" }
 quadra-layout = { path = "../quadra-layout" }
+quadra-platform = { path = "../quadra-platform" }
 quadra-text = { path = "../quadra-text" }
 quadra-render = { path = "../quadra-render" }

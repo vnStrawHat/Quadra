@@ -4,67 +4,24 @@
 //!
 //! Input dispatch, tasks and timers join with their crates (specs/09, specs/11).
 
+mod report;
+
 use std::cell::RefCell;
-use std::fmt;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use quadra_platform::{
-    Platform, PlatformError, PlatformEvent, PlatformHandler, PlatformWindow, TimerId, WindowHandle, WindowId,
+    Platform, PlatformEvent, PlatformHandler, PlatformWindow, PointerKind, TimerId, WindowHandle, WindowId,
     WindowOptions,
 };
 use quadra_prim::Color;
 use quadra_reactive::{Scope, batch};
-use quadra_render::{DeviceSize, RenderError, RenderStats, Renderer, SurfaceId, SurfaceTarget};
+use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
-use quadra_tree::{Fonts, FrameStats, PassTimes, Tree};
+use quadra_tree::{Fonts, PointerInput, Tree};
 use quadra_ui::{View, mount_with};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum AppError {
-    Platform(PlatformError),
-    Render(RenderError),
-    /// The text backend could not start, in its own words.
-    Text(String),
-}
-
-impl fmt::Display for AppError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AppError::Platform(e) => e.fmt(f),
-            AppError::Render(e) => e.fmt(f),
-            AppError::Text(what) => write!(f, "the text backend failed: {what}"),
-        }
-    }
-}
-
-impl std::error::Error for AppError {}
-
-impl From<PlatformError> for AppError {
-    fn from(e: PlatformError) -> AppError {
-        AppError::Platform(e)
-    }
-}
-
-impl From<RenderError> for AppError {
-    fn from(e: RenderError) -> AppError {
-        AppError::Render(e)
-    }
-}
-
-pub type Result<T> = std::result::Result<T, AppError>;
-
-/// A frame that was handed to the display: what it visited and how long each part took.
-#[derive(Clone, Copy, Debug)]
-pub struct FrameReport {
-    pub window: WindowId,
-    pub stats: FrameStats,
-    pub passes: PassTimes,
-    pub render: RenderStats,
-    /// Uploading and drawing, as far as the CPU is concerned.
-    pub draw: Duration,
-    pub present: Duration,
-}
+pub use report::{AppError, FrameReport, Result};
 
 type FrameHook = Box<dyn FnMut(&FrameReport)>;
 
@@ -251,7 +208,19 @@ impl<R: Renderer> PlatformHandler for App<R> {
                 }
             }
             PlatformEvent::CloseRequested => self.close(window),
-            _ => {} // dispatch over the tree comes with input (specs/09)
+            PlatformEvent::Pointer { kind, button, at, mods } => {
+                let input = match kind {
+                    PointerKind::Move => PointerInput::Move,
+                    PointerKind::Down => PointerInput::Down,
+                    PointerKind::Up => PointerInput::Up,
+                    PointerKind::Leave => PointerInput::Leave,
+                };
+                let now = self.platform.now();
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.pointer(input, button, at, mods, now);
+                }
+            }
+            _ => {} // keys, text and the wheel come with focus and scrolling (specs/09)
         });
         self.request_frames();
     }

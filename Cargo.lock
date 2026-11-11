@@ -21,6 +21,7 @@ dependencies = [
  "quadra-platform",
  "quadra-prim",
  "quadra-reactive",
+ "quadra-tree",
  "quadra-ui",
 ]
 
@@ -96,6 +97,7 @@ dependencies = [
 name = "quadra-testing"
 version = "0.1.0"
 dependencies = [
+ "quadra-platform",
  "quadra-prim",
  "quadra-render",
  "quadra-text",
@@ -114,6 +116,7 @@ name = "quadra-tree"
 version = "0.1.0"
 dependencies = [
  "quadra-layout",
+ "quadra-platform",
  "quadra-prim",
  "quadra-reactive",
  "quadra-render",
@@ -125,6 +128,7 @@ name = "quadra-ui"
 version = "0.1.0"
 dependencies = [
  "quadra-layout",
+ "quadra-platform",
  "quadra-prim",
  "quadra-reactive",
  "quadra-render",

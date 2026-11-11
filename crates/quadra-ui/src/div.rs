@@ -1,20 +1,23 @@
 //! The box view: a node that is its style and its children (specs/05).
 
 use quadra_layout::{Align, Direction, Justify, Length, Overflow};
+use quadra_platform::MouseButton;
 use quadra_prim::{Color, Corners, Edges};
-use quadra_tree::{Handle, NodeId, PaintStyle, Style};
+use quadra_tree::{Handle, NodeId, PaintStyle, PointerEvent, PointerKind, Style};
 
 use crate::prop::{IntoProp, Prop};
 use crate::view::{AnyView, MountCx, View};
 
 /// Makes a binding for one node once it is mounted.
 type Binder = Box<dyn FnOnce(NodeId, &Handle)>;
+type PointerFn = Box<dyn FnMut(&mut PointerEvent)>;
 
 #[derive(Default)]
 pub struct Div {
     style: Style,
     children: Vec<AnyView>,
     binders: Vec<Binder>,
+    handlers: Vec<(PointerKind, PointerFn)>,
 }
 
 /// A box. Its children are laid out in a row unless a direction says otherwise.
@@ -133,6 +136,23 @@ impl Div {
         self.width(width).height(height)
     }
 
+    /// Runs `f` when the box, or something in it, is clicked with the main button. The
+    /// handler writes signals; it ends with the node (specs/05, "Handlers").
+    pub fn on_click(self, mut f: impl FnMut(&mut PointerEvent) + 'static) -> Self {
+        self.on_pointer(PointerKind::Click, move |e| {
+            if e.button == MouseButton::Left {
+                f(e)
+            }
+        })
+    }
+
+    /// Runs `f` for pointer events of a kind that reach the box: a press, a release, a move,
+    /// the pointer entering or leaving, a click with any button.
+    pub fn on_pointer(mut self, kind: PointerKind, f: impl FnMut(&mut PointerEvent) + 'static) -> Self {
+        self.handlers.push((kind, Box::new(f)));
+        self
+    }
+
     pub fn child(mut self, view: impl View + 'static) -> Self {
         self.children.push(AnyView::new(view));
         self
@@ -151,6 +171,9 @@ impl View for Div {
         cx.tree.set_children(id, &children);
         for bind in self.binders {
             bind(id, &cx.handle);
+        }
+        for (kind, run) in self.handlers {
+            cx.tree.on_pointer(id, kind, run);
         }
         id
     }

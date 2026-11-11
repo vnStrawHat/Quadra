@@ -4,6 +4,7 @@ use quadra_layout::LayoutId;
 use quadra_prim::{Color, Corners};
 use quadra_reactive::Scope;
 
+use crate::input::PointerHandler;
 use crate::layers::LayerState;
 use crate::widget::Widget;
 
@@ -65,4 +66,6 @@ pub(crate) struct Node {
     pub layer: Option<Box<LayerState>>,
     /// The scope that ends with this node: its bindings, handlers and tasks.
     pub scope: Option<Scope>,
+    /// What runs when pointer events reach the node (specs/09).
+    pub handlers: Vec<PointerHandler>,
 }

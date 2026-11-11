@@ -194,7 +194,8 @@ that opened it and closes when that scope ends or its `open` signal turns false.
 An overlay is open while its view is mounted, so it is opened and closed like any other part:
 `show(open, || overlay(Place::Beside(anchor, Side::Below, Along::Start, 4.0), menu))`. Where
 it stands in the flow it takes no room. It is placed beside the node of a `NodeRef`, at a
-point of the window, in its middle, or centred a distance under its top (`Place::Top`).
+point of the window, in its middle, centred a distance under its top (`Place::Top`) or over
+its bottom (`Place::Bottom`), or in its bottom right corner (`Place::BottomRight`).
 
 A box is taken out of the flow of the box around it with `.absolute()`, and placed against
 that box by `.left(..)`, `.top(..)`, `.right(..)` and `.bottom(..)`, each a constant or

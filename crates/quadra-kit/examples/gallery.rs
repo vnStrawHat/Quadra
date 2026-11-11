@@ -9,11 +9,12 @@ use quadra::{
     use_context,
 };
 use quadra_kit::{
-    MenuItem, NavItem, Rule, Size, Status, Tone, Variant, accordion, avatar, badge, breadcrumb, button, card,
-    card_head, checkbox, context_menu, dark, dialog, divider, field, heading, icon, icon_button, icons,
-    input, kbd, light, list, menu, number_input, progress, progress_busy, radio_group, segmented, select,
-    sidebar, size, skeleton, slider, spinner, split, status_button, status_divider, status_item,
-    status_label, statusbar, switch, tabs, tag, textarea, titlebar, token, toolbar, tooltip, validate,
+    MenuItem, NavItem, Notice, Notices, Rule, Size, Status, Tone, Variant, accordion, avatar, badge,
+    breadcrumb, button, card, card_head, checkbox, context_menu, dark, dialog, divider, field, heading, icon,
+    icon_button, icons, input, kbd, light, list, menu, notices, number_input, progress, progress_busy,
+    radio_group, segmented, select, sidebar, size, skeleton, slider, spinner, split, status_button,
+    status_divider, status_item, status_label, statusbar, switch, tabs, tag, textarea, titlebar, token,
+    toolbar, tooltip, validate,
 };
 
 /// A section: its title, then its rows.
@@ -116,9 +117,20 @@ fn choices() -> Div {
     section("Selection").child(boxes).child(one_of)
 }
 
-fn overlays() -> Div {
-    // `GALLERY_OPEN=menu` or `=dialog` shows that one at once: for a picture of it.
+fn overlays(all: Notices) -> Div {
+    // `GALLERY_OPEN=menu`, `=dialog` or `=notice` shows that one at once: for a picture of it.
     let shown = std::env::var("GALLERY_OPEN").unwrap_or_default();
+    let tell = move || {
+        let card = Notice::new("Upload failed").body("The server did not answer.").tone(Tone::Danger);
+        all.notify(card.action("Dismiss", || {}).primary("Retry", || {}));
+    };
+    let toast = move || {
+        all.toast(Tone::Success, "Copied to the clipboard");
+    };
+    if shown == "notice" {
+        tell();
+        toast();
+    }
     let (open, asking, opener) = (signal(shown == "menu"), signal(shown == "dialog"), NodeRef::new());
     let (wrap, size) = (signal(true), signal(1usize));
     let items = move || {
@@ -144,6 +156,7 @@ fn overlays() -> Div {
         .action("Cancel", Variant::Ghost, || {})
         .action("Delete", Variant::Danger, || {});
     let controls = line().child(edit).child(sizes).child(save).child(delete);
+    let controls = controls.child(button("Notify").on_click(tell)).child(button("Toast").on_click(toast));
     let other = div().padding(12.0).border(1.0).border_color(token::LINE).radius(size::RADIUS_LG);
     let other = other.child(text("A menu for the other button").color(token::TEXT_2));
     let other = context_menu(other, || vec![MenuItem::new("Rename"), MenuItem::new("Delete")]);
@@ -211,7 +224,7 @@ const PAGES: [(&str, &str, &str); 5] = [
 fn main() -> quadra::Result<()> {
     let view = || {
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
-        let (is_dark, folded) = (signal(true), signal(false));
+        let (is_dark, folded, all) = (signal(true), signal(false), notices().above(30.0));
         let swap = move || {
             is_dark.update(|dark| *dark = !*dark);
             theme.set(Rc::new(if is_dark.get_untracked() { dark() } else { light() }.theme()));
@@ -222,7 +235,7 @@ fn main() -> quadra::Result<()> {
         let shown = dynamic(move || match page.get() {
             "buttons" => column().gap(20.0).child(buttons()).child(icons()),
             "forms" => column().gap(20.0).child(inputs()).child(choices()).child(numbers()),
-            "overlays" => column().gap(20.0).child(overlays()).child(lists()),
+            "overlays" => column().gap(20.0).child(overlays(all)).child(lists()),
             "parts" => column().gap(20.0).child(parts()),
             _ => column().gap(20.0).child(navigation()),
         });
@@ -244,7 +257,7 @@ fn main() -> quadra::Result<()> {
             .right(status_item(Some(icons::CHECK), "Ready"));
         let bar = titlebar("Quadra gallery").menu(|| vec![MenuItem::new("About"), MenuItem::new("Quit")]);
         let middle = row().grow(1.0).child(places).child(column().grow(1.0).child(tools).child(content));
-        quadra_kit::root().child(bar).child(middle).child(status)
+        quadra_kit::root().child(bar).child(middle).child(status).child(all.host())
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
     app.window(WindowOptions::new("Quadra gallery").size(900.0, 640.0).custom_frame(), view)?.run()

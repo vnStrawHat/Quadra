@@ -310,8 +310,20 @@ the popup closes the focus goes back to what had it.
 - Elevation is a paint value of a box (`.elevation(1)`): a level above the window casts the
   shadows of the design language (behaviour/15) under the box, two for the level of menus,
   popovers and tooltips, four for that of dialogs. A change of level is a paint change.
-- Not yet: drawer, toast, command palette; the menu key for a context menu; a tooltip
-  told to assistive technology as the description of its view.
+- **Notifications and toasts** (`notice.rs`). The app holds a `Notices` (`notices()`, made
+  where the window's view is built; a copy is the same one), mounts `.host()` once in the
+  window, where it takes no room, and tells it what to show from anywhere:
+  `.notify(Notice::new(title).body(..).tone(..).action(label, f).primary(label, f)
+  .lasts(time))` is a card of 448 px on the panel's plane at the level of dialogs, with the
+  icon of its tone, a close button, and its buttons at the right, each of which does what it
+  says and closes the card. Cards stack in the bottom right corner, 12 px from the edges
+  (`.above(30.0)` lifts them over a status bar), the newest the lowest, 8 px apart, and
+  stay until closed unless they say how long they last. `.toast(tone, words)` is a line
+  with its icon at the bottom centre for ten seconds. The stacks are overlays that take
+  neither the focus nor a press outside them (`Place::BottomRight`, `Place::Bottom`).
+- Not yet: drawer, command palette; the menu key for a context menu; a toast that waits
+  while the pointer is on it; a tooltip told to assistive technology as the description of
+  its view.
 
 ## Crates
 

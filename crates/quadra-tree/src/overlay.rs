@@ -40,6 +40,11 @@ pub enum Anchor {
     Free(Point),
     /// Centred across the window, this far down from its top: pickers and dialogs.
     Top(f32),
+    /// Centred across the window, this far up from its bottom: toasts.
+    Bottom(f32),
+    /// In the bottom right corner of the window, this far from its right edge and from its
+    /// bottom: notifications.
+    BottomRight(f32, f32),
 }
 
 pub(crate) struct Overlay {
@@ -84,6 +89,10 @@ fn place(anchor: Anchor, target: Option<Rect>, size: Size, window: Size) -> Poin
             beside(p.y, p.y, size.height, window.height, true),
         ),
         (Anchor::Top(down), _) => ((window.width - size.width) / 2.0, down),
+        (Anchor::Bottom(up), _) => ((window.width - size.width) / 2.0, window.height - size.height - up),
+        (Anchor::BottomRight(left, up), _) => {
+            (window.width - size.width - left, window.height - size.height - up)
+        }
         _ => ((window.width - size.width) / 2.0, (window.height - size.height) / 2.0),
     };
     Point::new(inside(x, size.width, window.width).round(), inside(y, size.height, window.height).round())

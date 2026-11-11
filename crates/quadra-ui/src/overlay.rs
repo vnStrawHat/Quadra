@@ -21,6 +21,10 @@ pub enum Place {
     Center,
     /// Centred across the window, this far down from its top.
     Top(f32),
+    /// Centred across the window, this far up from its bottom.
+    Bottom(f32),
+    /// In the bottom right corner, this far from the right edge and from the bottom.
+    BottomRight(f32, f32),
 }
 
 pub struct OverlayView {
@@ -64,6 +68,8 @@ impl View for OverlayView {
             Place::At(point) => Anchor::At(point),
             Place::Center => Anchor::Center,
             Place::Top(down) => Anchor::Top(down),
+            Place::Bottom(up) => Anchor::Bottom(up),
+            Place::BottomRight(left, up) => Anchor::BottomRight(left, up),
         };
         cx.tree.open_overlay(root, anchor);
         if let Some(mut outside) = self.outside {

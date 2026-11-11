@@ -4,9 +4,9 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use quadra_platform::{Mods, MouseButton};
+use quadra_platform::{Clipboard, Mods, MouseButton};
 use quadra_prim::Color;
-use quadra_reactive::Signal;
+use quadra_reactive::{Signal, use_context};
 use quadra_text::TextStyle;
 use quadra_tree::{NodeId, PointerEvent, PointerKind, Style, TEXT_CONTEXT, TextCommand, TextField, Tree};
 
@@ -36,6 +36,11 @@ impl TextInput {
         self.color = color;
         self
     }
+}
+
+/// Text for a field of one line: its line breaks become spaces.
+fn one_line(text: &str) -> String {
+    text.replace("\r\n", " ").replace(['\r', '\n'], " ")
 }
 
 /// Changes the field in place. `f` says whether it changed the text: then the value is
@@ -76,12 +81,30 @@ impl View for TextInput {
 
         let writer = cx.handle.clone();
         cx.tree.on_text(id, move |typed| {
-            let typed = typed.replace(['\r', '\n'], " "); // one line
+            let typed = one_line(typed);
             writer.with(move |tree| edit(tree, id, value, |field| field.buffer.insert(&typed)));
         });
+        // The clipboard of the window the input is in, if its context has one.
+        let clipboard = use_context::<Rc<dyn Clipboard>>();
         let writer = cx.handle.clone();
         cx.tree.on_action::<TextCommand>(id, move |&command| {
-            writer.with(move |tree| edit(tree, id, value, |field| field.run(command)));
+            let clipboard = clipboard.clone();
+            writer.with(move |tree| {
+                edit(tree, id, value, |field| {
+                    let selected = field.buffer.selected_text();
+                    match (command, &clipboard) {
+                        (TextCommand::Copy | TextCommand::Cut, Some(clipboard)) if !selected.is_empty() => {
+                            clipboard.write_text(selected)
+                        }
+                        (TextCommand::Paste, Some(clipboard)) => {
+                            let pasted = clipboard.read_text().unwrap_or_default();
+                            return field.buffer.insert(&one_line(&pasted));
+                        }
+                        _ => {}
+                    }
+                    field.run(command)
+                })
+            });
         });
         let writer = cx.handle.clone();
         cx.tree.on_focus(id, move |gained| {

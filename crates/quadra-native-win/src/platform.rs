@@ -9,8 +9,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use quadra_platform::{
-    Platform, PlatformError, PlatformEvent, PlatformHandler, PlatformWindow, TimerId, Waker, WindowId,
-    WindowOptions,
+    Clipboard, Platform, PlatformError, PlatformEvent, PlatformHandler, PlatformWindow, TimerId, Waker,
+    WindowId, WindowOptions,
 };
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::HiDpi::{DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, SetProcessDpiAwarenessContext};
@@ -21,6 +21,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::w;
 
+use crate::clipboard::WinClipboard;
 use crate::pacing::Pacing;
 use crate::window::{self, WindowState};
 
@@ -283,5 +284,9 @@ impl Platform for WinPlatform {
 
     fn now(&self) -> Instant {
         Instant::now()
+    }
+
+    fn clipboard(&self) -> Rc<dyn Clipboard> {
+        Rc::new(WinClipboard(self.0.message_window.get().0 as isize))
     }
 }

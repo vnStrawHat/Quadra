@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 
 use quadra_prim::Size;
 
+use crate::clipboard::{Clipboard, MemoryClipboard};
 use crate::event::PlatformEvent;
 use crate::platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
 use crate::window::{PlatformWindow, WindowHandle, WindowId, WindowOptions};
@@ -38,6 +39,7 @@ struct Inner {
     timers: RefCell<Vec<Timer>>,
     woken: Arc<AtomicBool>,
     quit: Cell<bool>,
+    clipboard: Rc<MemoryClipboard>,
 }
 
 #[derive(Clone)]
@@ -62,6 +64,7 @@ impl HeadlessPlatform {
             timers: RefCell::new(Vec::new()),
             woken: Arc::new(AtomicBool::new(false)),
             quit: Cell::new(false),
+            clipboard: Rc::default(),
         }))
     }
 
@@ -191,6 +194,10 @@ impl Platform for HeadlessPlatform {
 
     fn now(&self) -> Instant {
         self.0.start + self.0.clock.get()
+    }
+
+    fn clipboard(&self) -> Rc<dyn Clipboard> {
+        self.0.clipboard.clone()
     }
 }
 

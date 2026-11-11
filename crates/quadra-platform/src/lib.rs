@@ -4,12 +4,14 @@
 //! Nothing here names an operating system concept; what is specific to one OS lives in that
 //! OS's native crate.
 
+mod clipboard;
 mod event;
 mod headless;
 mod keys;
 mod platform;
 mod window;
 
+pub use clipboard::{Clipboard, MemoryClipboard};
 pub use event::{Mods, MouseButton, PlatformEvent, PointerKind};
 pub use headless::HeadlessPlatform;
 pub use keys::Key;

@@ -22,6 +22,10 @@ pub enum TextCommand {
     SelectAll,
     Undo,
     Redo,
+    /// The clipboard is the view's to reach: the field only removes what a cut took.
+    Copy,
+    Cut,
+    Paste,
 }
 
 impl Action for TextCommand {
@@ -64,6 +68,8 @@ impl TextField {
             TextCommand::SelectAll => self.buffer.select_all(),
             TextCommand::Undo => return self.buffer.undo(),
             TextCommand::Redo => return self.buffer.redo(),
+            TextCommand::Cut => return self.buffer.delete(Motion::Right),
+            TextCommand::Copy | TextCommand::Paste => {}
         }
         false
     }

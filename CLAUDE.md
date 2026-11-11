@@ -98,8 +98,9 @@ the focus path, `NodeRef::focus`), and so are actions and the keymap (`action.rs
 `keymap.rs`; `App::keymap`; Tab is a binding). **The text input works** (`text_input(value)` in
 `quadra-ui/src/input.rs`, the `TextField` widget and `TextCommand` in
 `quadra-tree/src/field.rs`, the buffer in `quadra-text/src/edit.rs`; `crates/quadra/examples/form.rs`
-shows it in a real window). Still missing for it, in this order: the clipboard (platform
-trait, headless and Win32; never test the real one) with copy, cut and paste; timers
+shows it in a real window). Copy, cut and paste go through the clipboard the app provides as
+context (`Platform::clipboard`; the Win32 one in `quadra-native-win/src/clipboard.rs` is
+never run by a test, and must not be). Still missing for it, in this order: timers
 (`quadra-async`, specs/11) for the caret's blink; IME composition (specs/09; behaviour/02;
 the V code is `quadra/platform/win/ime_windows.c.v`).
 After the text input: overlays, semantics (specs/12), rows of different heights.

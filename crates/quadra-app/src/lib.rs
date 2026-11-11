@@ -15,7 +15,7 @@ use quadra_platform::{
     WindowOptions,
 };
 use quadra_prim::Color;
-use quadra_reactive::{Scope, batch};
+use quadra_reactive::{Scope, batch, provide};
 use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
 use quadra_tree::{Fonts, Keymap, PointerInput, Tree};
@@ -115,7 +115,10 @@ impl<R: Renderer> App<R> {
         let scope = self.root.run(Scope::child);
         let mut tree = Tree::new(self.fonts.clone());
         tree.set_keymap(self.keymap.clone());
-        scope.run(|| mount_with(&mut tree, view));
+        scope.run(|| {
+            provide(self.platform.clipboard()); // what a text input copies to and pastes from
+            mount_with(&mut tree, view)
+        });
         window.request_frame();
         let id = window.id();
         self.windows.push(AppWindow { scope, tree, surface, window });

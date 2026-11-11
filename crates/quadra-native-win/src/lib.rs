@@ -5,6 +5,7 @@
 //! operating system. Every block says what makes it sound.
 
 mod atlas;
+mod clipboard;
 mod dwrite;
 mod gpu;
 mod input;

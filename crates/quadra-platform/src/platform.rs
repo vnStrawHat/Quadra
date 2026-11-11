@@ -1,9 +1,11 @@
 //! The platform: the message loop, windows, timers, the clock.
 
 use std::fmt;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use crate::clipboard::Clipboard;
 use crate::event::PlatformEvent;
 use crate::window::{PlatformWindow, WindowId, WindowOptions};
 
@@ -47,6 +49,8 @@ pub trait Platform {
     /// A timer that fires once after `after`, or again every `after`.
     fn set_timer(&self, after: Duration, repeat: bool) -> TimerId;
     fn cancel_timer(&self, id: TimerId);
+    /// The clipboard. The headless platform's is a variable in memory.
+    fn clipboard(&self) -> Rc<dyn Clipboard>;
     /// The time, which only moves forward. The headless platform's is moved by its test.
     fn now(&self) -> Instant;
 }

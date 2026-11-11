@@ -146,7 +146,7 @@ impl Keymap {
     /// What the keys do in a text field (the context "text"): the caret, the selection,
     /// deleting, undo.
     fn text_bindings(&mut self) {
-        use TextCommand::{Delete, Move, Redo, SelectAll, Undo};
+        use TextCommand::{Copy, Cut, Delete, Move, Paste, Redo, SelectAll, Undo};
         let moves = [
             ("left", Motion::Left),
             ("right", Motion::Right),
@@ -170,6 +170,12 @@ impl Keymap {
             ("ctrl-z", Undo),
             ("ctrl-y", Redo),
             ("ctrl-shift-z", Redo),
+            ("ctrl-c", Copy),
+            ("ctrl-insert", Copy),
+            ("ctrl-x", Cut),
+            ("shift-delete", Cut),
+            ("ctrl-v", Paste),
+            ("shift-insert", Paste),
         ];
         all.extend(rest.map(|(keys, command)| (keys.to_string(), command)));
         for (keys, command) in all {

@@ -16,7 +16,7 @@ pub trait Platform {
     fn now(&self) -> Instant;                    // virtual in the headless platform
     fn displays(&self) -> Vec<Display>;
     fn appearance(&self) -> Appearance;          // dark, accent, high contrast, text scale
-    fn clipboard(&self) -> &dyn Clipboard;
+    fn clipboard(&self) -> Rc<dyn Clipboard>;    // plain text
 }
 
 pub trait PlatformWindow {                       // dropping it closes the window
@@ -56,6 +56,9 @@ pub trait PlatformHandler {
 - A window is owned by whoever holds its box. Dropping it closes the OS window; a close the
   user asks for arrives as an event, and the app decides.
 - Errors are returned, not printed (01, R18).
+- The app provides the platform's clipboard as context to each window's view; a text input
+  takes it from there. No test reaches the real clipboard: the headless platform's is a
+  variable, and the Win32 one is never run by a test.
 
 ## What is not in `Platform`
 

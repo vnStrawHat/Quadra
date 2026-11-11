@@ -7,6 +7,7 @@ mod bars;
 mod button;
 mod choice;
 mod combobox;
+mod date;
 mod dialog;
 mod display;
 mod field;
@@ -32,6 +33,7 @@ mod status;
 mod table;
 mod tabs;
 mod theme;
+mod time;
 mod titlebar;
 mod toggle;
 pub mod token;
@@ -46,6 +48,7 @@ pub use bars::{
 pub use button::{Button, Size, Variant, button, icon_button};
 pub use choice::{Choice, radio_group, segmented};
 pub use combobox::{Combobox, combobox};
+pub use date::{Date, DatePicker, calendar, date_picker};
 pub use dialog::{Dialog, dialog};
 pub use display::{
     Tone, avatar, badge, card, card_head, divider, heading, kbd, key_label, label, tag, vdivider,
@@ -70,6 +73,7 @@ pub use status::{Status, status_label, status_mark};
 pub use table::{CellKind, Column, Table, age_text, table};
 pub use tabs::{Tabs, tabs};
 pub use theme::{KitTheme, Mode, ThemeError, dark, light, theme_from_json};
+pub use time::{TimeInput, TimeOfDay, time_input};
 pub use titlebar::{Titlebar, titlebar};
 pub use toggle::{Toggle, checkbox, switch};
 pub use tooltip::{Tooltip, tooltip};

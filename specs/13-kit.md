@@ -239,6 +239,19 @@ As built so far:
   px of them. Typing opens the list; the focus stays in the input, the arrows go round the
   options, Enter or a click takes the highlighted one (`.on_pick(|index| ..)`) and writes
   it to the value, Escape or a press elsewhere closes the list.
+- **Dates** (`date.rs`). A `Date` is a year, a month and a day, written day, month, year
+  (`05/03/2026`); it knows the days of its month and its day of the week. `calendar(value)`
+  is a month on an overlay's plane: arrows to the months around, the names of the days from
+  Monday, and the days in weeks of seven, each a cell of 32 by 28 that a click chooses; the
+  chosen day is tinted with an accent label. The arrows change the month that shows, not
+  the date. `date_picker(value)` is a field of 180 px that shows the date and opens that
+  calendar in a popup; a day chosen closes it. Not yet: today (the platform has no local
+  time), the arrows of the keyboard over the days, names in the app's language.
+- **`time_input(value)`** edits a `TimeOfDay` in a field of 120 px: hours and minutes are
+  two parts that take the focus each, sliders to a reader. The arrows step the part with
+  the focus, round its ends (`.minute_step(..)` for the minutes), Home and End go to its
+  ends, and digits type it: two in a row make a number of two when that is a value of the
+  part.
 - **`number_input(value)`** is an input that holds a number (`.range(..)`, `.step(..)`,
   `.decimals(..)`), 160 px with a pair of chevrons that step it, or with `.stepper()` one
   frame of 128 by 32: a minus, the value in the middle, a plus. The up and down arrows step

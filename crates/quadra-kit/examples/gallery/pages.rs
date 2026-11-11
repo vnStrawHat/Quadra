@@ -5,11 +5,12 @@ use std::rc::Rc;
 
 use quadra::{Align, Div, NodeRef, Signal, column, div, row, signal, text};
 use quadra_kit::{
-    CellKind, Column, MenuItem, Notice, Notices, Rule, Size, Status, Tone, TreeNode, Variant, accordion,
-    avatar, badge, breadcrumb, button, card, card_head, checkbox, combobox, context_menu, dialog, divider,
-    field, heading, icon, icon_button, icons, input, kbd, list, menu, number_input, progress, progress_busy,
-    radio_group, range_slider, segmented, select, size, skeleton, slider, spinner, split, status_label,
-    switch, table, tabs, tag, textarea, token, tooltip, tree, validate,
+    CellKind, Column, Date, MenuItem, Notice, Notices, Rule, Size, Status, TimeOfDay, Tone, TreeNode,
+    Variant, accordion, avatar, badge, breadcrumb, button, calendar, card, card_head, checkbox, combobox,
+    context_menu, date_picker, dialog, divider, field, heading, icon, icon_button, icons, input, kbd, list,
+    menu, number_input, progress, progress_busy, radio_group, range_slider, segmented, select, size,
+    skeleton, slider, spinner, split, status_label, switch, table, tabs, tag, textarea, time_input, token,
+    tooltip, tree, validate,
 };
 
 /// A section: its title, then its rows.
@@ -97,6 +98,14 @@ of text"
     let fields =
         line().align_items(Align::Start).gap(16.0).child(named).child(field("Notes", textarea(notes, 3)));
     section("Numbers and fields").child(sliders).child(steps).child(fields)
+}
+
+pub fn dates() -> Div {
+    let (day, time) = (signal(Date::new(2026, 11, 11)), signal(TimeOfDay::new(9, 30)));
+    let fields = column().gap(8.0).child(date_picker(day)).child(time_input(time).minute_step(5));
+    let fields = fields.child(text(move || format!("{} at {}", day.get(), time.get())).color(token::TEXT_2));
+    section("Dates and times")
+        .child(line().align_items(Align::Start).gap(16.0).child(calendar(day)).child(fields))
 }
 
 pub fn choices() -> Div {

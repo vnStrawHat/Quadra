@@ -125,6 +125,12 @@ impl Div {
         self.on_mount(move |tree, id| tree.on_key(id, false, f))
     }
 
+    /// Runs `f` with the text typed while the box has the focus: committed characters, never
+    /// control keys.
+    pub fn on_text(self, f: impl FnMut(&str) + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_text(id, f))
+    }
+
     /// Runs `f` with true when the focus comes to the box, and with false when it leaves.
     pub fn on_focus(self, f: impl FnMut(bool) + 'static) -> Self {
         self.on_mount(move |tree, id| tree.on_focus(id, f))

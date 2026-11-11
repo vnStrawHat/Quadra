@@ -64,6 +64,9 @@ fn rows_are_as_tall_as_what_they_hold_and_follow_one_another() {
     let content = h.tree.children(h.tree.root().unwrap())[0];
     let measured: f32 = (0..32).map(height_of).sum();
     assert_eq!(h.tree.rect(content).height, measured + ESTIMATE * (1000 - 32) as f32);
+    // What a row built fills its box across the list, though it asked for no width.
+    let row = h.tree.children(h.tree.children(content)[0])[0];
+    assert_eq!(h.tree.rect(row).width, 800.0);
 }
 
 #[test]

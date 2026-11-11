@@ -1,6 +1,6 @@
 //! What shows data: the table, the tree, and a thousand cells to move the pointer over.
 
-use quadra::{Align, Div, Justify, column, div, row, signal, text};
+use quadra::{Align, Div, Justify, Signal, column, div, row, signal, text, virtual_list};
 use quadra_kit::{Column, TreeNode, fonts, icons, size, table, token, tree};
 
 use crate::common::{demo, framed, hint, line, page, stack};
@@ -57,6 +57,52 @@ pub fn tree_page() -> Div {
             line().align_items(Align::Start).child(files).child(said),
             "tree(|| roots, chosen)",
         )],
+    )
+}
+
+const WORDS: [&str; 17] = [
+    "deploy",
+    "rollout",
+    "pod",
+    "node",
+    "ready",
+    "scaled",
+    "restarted",
+    "pulled",
+    "image",
+    "config",
+    "map",
+    "secret",
+    "volume",
+    "mounted",
+    "probe",
+    "failed",
+    "passed",
+];
+
+/// What the event of a row says: more or fewer words, by its number.
+fn feed_text(i: usize) -> String {
+    let words = (0..4 + (i * 7919) % 40).map(|k| WORDS[(i + k * 31) % WORDS.len()]);
+    words.collect::<Vec<_>>().join(" ")
+}
+
+pub fn variable_list_page() -> Div {
+    let feed = virtual_list(
+        || 100_000,
+        52.0,
+        signal(0.0),
+        |i: Signal<usize>| {
+            let number = text(move || format!("#{}", i.get())).color(token::TEXT_3).size(size::TEXT_XS.size);
+            let event = column().gap(2.0).padding_x(12.0).padding_y(8.0).border_bottom(1.0);
+            event.border_color(token::LINE).child(number).child(text(move || feed_text(i.get())))
+        },
+    );
+    let about = "100,000 rows whose height is their wrapped text. Rows are measured as they appear; \
+                 scrolling up never moves what is on screen.";
+    page(
+        "Variable list",
+        about,
+        [demo("Event feed", framed(feed).height(360.0), "virtual_list(|| n, 52.0, scroll_y, |i| row)")],
     )
 }
 

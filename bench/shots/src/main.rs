@@ -28,8 +28,8 @@ type Shots = App<D3d11Renderer>;
 const SIZE: (f32, f32) = (1200.0, 800.0);
 
 /// The pages that open something, and the test id of what opens it: a click, but a hover for
-/// the tooltip, and a right click on the page for the context menu.
-const OPENERS: [(&str, &str); 9] = [
+/// the tooltip and the hover card, and a right click on the page for the context menu.
+const OPENERS: [(&str, &str); 11] = [
     ("menu", "mn-file"),
     ("select", "sel-ns"),
     ("date-picker", "dp-date"),
@@ -38,6 +38,8 @@ const OPENERS: [(&str, &str); 9] = [
     ("toast", "to-info"),
     ("palette", "pal-open"),
     ("tooltip", "tt-btn"),
+    ("hover-card", "hc-trigger"),
+    ("drawer", "drawer-right"),
     ("context-menu", ""),
 ];
 
@@ -77,7 +79,8 @@ fn open(platform: &HeadlessPlatform, app: &mut Shots, window: WindowId, page: &s
         return true;
     }
     let Some(at) = inside(app, window, opener) else { return false };
-    let button = if page == "tooltip" { MouseButton::None } else { MouseButton::Left };
+    let rests = page == "tooltip" || page == "hover-card";
+    let button = if rests { MouseButton::None } else { MouseButton::Left };
     point(platform, window, at, button);
     if let Some(at) = inside(app, window, "to-err").filter(|_| page == "toast") {
         pass(platform, app, 75);

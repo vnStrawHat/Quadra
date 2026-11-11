@@ -7,11 +7,11 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use quadra_async::{Timer, timeout};
-use quadra_reactive::{Scope, on_cleanup, signal};
+use quadra_reactive::{Scope, signal};
 use quadra_tree::{Along, Anchor, NodeId, PointerEvent, PointerKind, Role, Side};
 use quadra_ui::{MountCx, View, div, row, text};
 
-use crate::popup::surface;
+use crate::popup::{hang, surface};
 use crate::token;
 
 /// How long the pointer rests before the tooltip shows.
@@ -70,45 +70,22 @@ impl<V: View + 'static> View for Tooltip<V> {
         cx.tree.on_pointer(of, PointerKind::Down, move |_| away());
 
         // The bubble is an overlay opened by hand, above the view and centred on it.
-        let (words, open) = (Rc::new((self.tip, self.keys, self.meta)), Rc::new(Cell::new(None)));
-        let (writer, last) = (cx.handle.clone(), open.clone());
-        cx.handle.bind(move || {
-            let (on, words, open) = (shown.get(), words.clone(), open.clone());
-            writer.with(move |tree| {
-                if let Some(old) = open.take() {
-                    tree.close_overlay(old);
+        let words = (self.tip, self.keys, self.meta);
+        let anchor = Anchor::Beside { node: of, side: Side::Above, along: Along::Center, gap: 6.0 };
+        hang(cx, of, shown, anchor, move || {
+            let line = row().gap(16.0).padding_x(8.0).padding_y(4.0).child(text(words.0.clone()));
+            let line = match &words.1 {
+                Some(keys) => line.child(text(keys.clone()).color(token::TEXT_2)),
+                None => line,
+            };
+            let bubble = surface(1).role(Role::Tooltip).max_width(288.0).child(line);
+            match &words.2 {
+                Some(meta) => {
+                    let more = text(meta.clone()).size(12.0).color(token::TEXT_2);
+                    bubble.child(div().padding_x(8.0).padding_bottom(4.0).child(more))
                 }
-                if !on || !tree.is_alive(of) || !owner.is_alive() {
-                    return;
-                }
-                let scope = owner.run(Scope::child);
-                let line = row().gap(16.0).padding_x(8.0).padding_y(4.0).child(text(words.0.clone()));
-                let line = match &words.1 {
-                    Some(keys) => line.child(text(keys.clone()).color(token::TEXT_2)),
-                    None => line,
-                };
-                let bubble = surface(1).role(Role::Tooltip).max_width(288.0).child(line);
-                let bubble = match &words.2 {
-                    Some(meta) => {
-                        let more = text(meta.clone()).size(12.0).color(token::TEXT_2);
-                        bubble.child(div().padding_x(8.0).padding_bottom(4.0).child(more))
-                    }
-                    None => bubble,
-                };
-                let root = scope.run(|| bubble.mount(&mut MountCx::new(tree)));
-                tree.set_scope(root, scope);
-                let anchor = Anchor::Beside { node: of, side: Side::Above, along: Along::Center, gap: 6.0 };
-                tree.open_overlay(root, anchor);
-                open.set(Some(root));
-            });
-        });
-        let handle = cx.handle.clone();
-        on_cleanup(move || {
-            handle.with(move |tree| {
-                if let Some(root) = last.take() {
-                    tree.close_overlay(root);
-                }
-            })
+                None => bubble,
+            }
         });
         of
     }

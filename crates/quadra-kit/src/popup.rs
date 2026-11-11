@@ -2,11 +2,13 @@
 //! opened it, keeps Tab inside itself, closes on a press outside or on Escape, and gives the
 //! focus back to what had it. Menus, selects, popovers and dialogs are this, with content.
 
-use quadra_layout::Display;
+use std::cell::Cell;
 use std::rc::Rc;
 
+use quadra_layout::{Display, Length};
+use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, on_cleanup};
-use quadra_tree::{Along, NodeId, Side, Tree};
+use quadra_tree::{Along, Anchor, NodeId, Side, Tree};
 use quadra_ui::{Div, MountCx, NodeRef, Place, Region, View, column, div, overlay, show};
 
 use crate::action::{Cancel, POPUP};
@@ -36,11 +38,44 @@ impl From<Signal<bool>> for Shown {
     }
 }
 
+/// An edge of the window a drawer lies along.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Edge {
+    Left,
+    Right,
+    Bottom,
+}
+
+/// Where a popup stands: its place, its level above the window, and the edge of the window
+/// it lies along over all of its length, if it does.
+#[derive(Clone)]
+pub(crate) struct Stand {
+    place: Place,
+    level: u8,
+    along: Option<Edge>,
+}
+
+impl From<(Place, u8)> for Stand {
+    fn from((place, level): (Place, u8)) -> Stand {
+        Stand { place, level, along: None }
+    }
+}
+
+impl From<Edge> for Stand {
+    fn from(edge: Edge) -> Stand {
+        let place = match edge {
+            Edge::Left => Place::At(Point::ZERO),
+            Edge::Right => Place::BottomRight(0.0, 0.0),
+            Edge::Bottom => Place::Bottom(0.0),
+        };
+        Stand { place, level: 2, along: Some(edge) }
+    }
+}
+
 /// A popup while it is open.
 struct Open<V> {
     close: Rc<dyn Fn()>,
-    level: u8,
-    place: Place,
+    stand: Stand,
     opener: Option<NodeRef>,
     content: V,
 }
@@ -49,9 +84,17 @@ impl<V: View + 'static> View for Open<V> {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (close, outside, panel_ref) = (self.close.clone(), self.close, NodeRef::new());
         // The panel can have the focus itself, for a popup that holds nothing that can.
-        let panel = surface(self.level).focus_scope().tab_index(-1).key_context(POPUP).node_ref(&panel_ref);
+        let Stand { place, level, along } = self.stand;
+        let panel = surface(level).focus_scope().tab_index(-1).key_context(POPUP).node_ref(&panel_ref);
+        // Along an edge: as long as the window there (an overlay is laid out in its size),
+        // and square.
+        let panel = match along {
+            Some(Edge::Bottom) => panel.width(Length::Fill).radius(0.0),
+            Some(_) => panel.height(Length::Fill).radius(0.0),
+            None => panel,
+        };
         let panel = panel.on_action::<Cancel>(move |_| close()).child(self.content);
-        let shown = overlay(self.place, panel).on_outside_press(move || outside());
+        let shown = overlay(place, panel).on_outside_press(move || outside());
         let shown = match &self.opener {
             Some(opener) => shown.opener(opener),
             None => shown,
@@ -90,10 +133,10 @@ where
 }
 
 /// A popup at a place of the caller's choosing (beside a node on another side, at a point,
-/// under the top of the window) and at a level above the window.
+/// under the top of the window) and at a level above the window, or along an edge of it.
 pub(crate) fn popup<V, F>(
     open: impl Into<Shown>,
-    (place, level): (Place, u8),
+    stand: impl Into<Stand>,
     opener: Option<NodeRef>,
     content: F,
 ) -> Region
@@ -101,10 +144,10 @@ where
     V: View + 'static,
     F: Fn() -> V + 'static,
 {
-    let Shown { is, close } = open.into();
+    let (Shown { is, close }, stand) = (open.into(), stand.into());
     let shown = move || {
-        let (close, place, opener) = (close.clone(), place.clone(), opener.clone());
-        Open { close, level, place, opener, content: content() }
+        let (close, stand, opener) = (close.clone(), stand.clone(), opener.clone());
+        Open { close, stand, opener, content: content() }
     };
     // The region takes no room where it stands, not even a gap: what it shows is above.
     show(move || is(), shown).container(div().display(Display::None))
@@ -125,9 +168,49 @@ pub(crate) fn open_now<V: View + 'static>(
     let later = handle.clone();
     let close: Rc<dyn Fn()> = Rc::new(move || later.with(move |_| scope.dispose()));
     scope.run(|| {
-        let view = Open { close: close.clone(), level: 1, place, opener: None, content: content(close) };
+        let stand = Stand::from((place, 1));
+        let view = Open { close: close.clone(), stand, opener: None, content: content(close) };
         // What stands for the popup in the flow stands nowhere: it goes with the popup.
         let node = view.mount(&mut MountCx::new(tree));
         on_cleanup(move || handle.with(move |tree| tree.remove(node)));
+    });
+}
+
+/// Shows what `build` gives as an overlay against `anchor` while `shown` is true, opened by
+/// hand: for what adds no node around the view `of` it is about (a tooltip, a hover card).
+/// It is built in a scope of its own each time it shows, and goes with the scope it was
+/// asked in.
+pub(crate) fn hang<V: View + 'static>(
+    cx: &mut MountCx,
+    of: NodeId,
+    shown: Signal<bool>,
+    anchor: Anchor,
+    build: impl Fn() -> V + 'static,
+) {
+    let (owner, open, build) = (Scope::current(), Rc::new(Cell::new(None)), Rc::new(build));
+    let (writer, last) = (cx.handle.clone(), open.clone());
+    cx.handle.bind(move || {
+        let (on, build, open) = (shown.get(), build.clone(), open.clone());
+        writer.with(move |tree| {
+            if let Some(old) = open.take() {
+                tree.close_overlay(old);
+            }
+            if !on || !tree.is_alive(of) || !owner.is_alive() {
+                return;
+            }
+            let scope = owner.run(Scope::child);
+            let root = scope.run(|| build().mount(&mut MountCx::new(tree)));
+            tree.set_scope(root, scope);
+            tree.open_overlay(root, anchor);
+            open.set(Some(root));
+        });
+    });
+    let handle = cx.handle.clone();
+    on_cleanup(move || {
+        handle.with(move |tree| {
+            if let Some(root) = last.take() {
+                tree.close_overlay(root);
+            }
+        })
     });
 }

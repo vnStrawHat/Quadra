@@ -1,9 +1,10 @@
 //! What opens above the window: menus, tooltips, popovers, dialogs, questions and notices.
 
-use quadra::{Align, Div, Justify, column, row, signal, text};
+use quadra::{Align, AnyView, Div, Justify, Role, column, div, row, signal, text};
 use quadra_kit::{
-    MenuItem, Notice, Tone, Variant, button, checkbox, confirm, context_menu, dialog, icon_button, icons,
-    menu_button, popover_button, size, token, tooltip,
+    Edge, MenuItem, Notice, Size, Tone, Variant, badge, button, checkbox, confirm, context_menu,
+    description_list, dialog, drawer, hover_card, icon_button, icons, menu_button, popover_button, size,
+    token, tooltip,
 };
 
 use crate::common::{demo, hint, line, page};
@@ -113,11 +114,52 @@ pub fn popover_page() -> Div {
     )
 }
 
+pub fn hover_card_page() -> Div {
+    let name = "api-7d9f8c6b5-x2k9q";
+    let pod = div().role(Role::Link).test_id("hc-trigger").child(text(name).color(token::ACCENT));
+    let card = hover_card(pod, move || {
+        let logs = button("Open logs").size(Size::Sm);
+        let title = text(name).weight(size::WEIGHT_STRONG);
+        column().gap(4.0).width(240.0).child(title).child(text("Running on node-2 · 3 restarts")).child(logs)
+    });
+    let about = "Details about a link or a name after a 400 ms hover. It stays open while the pointer is \
+                 over it, so its links can be clicked.";
+    page("Hover card", about, [demo("Pod", card, "hover_card(trigger, || content)")])
+}
+
+pub fn drawer_page() -> Div {
+    let body = || {
+        description_list([
+            ("Status", AnyView::new(badge("Running", Tone::Success))),
+            ("Node", AnyView::new(text("pool-a-3"))),
+            ("Restarts", AnyView::new(text("2"))),
+        ])
+    };
+    let mut sides = line();
+    for (edge, name, reach) in
+        [(Edge::Right, "Right", 360.0), (Edge::Left, "Left", 360.0), (Edge::Bottom, "Bottom", 240.0)]
+    {
+        let open = signal(false);
+        let variant = if edge == Edge::Right { Variant::Primary } else { Variant::Secondary };
+        let opener = button(name).variant(variant).on_click(move || open.set(true));
+        let opener = if edge == Edge::Right { opener.test_id("drawer-right") } else { opener };
+        sides = sides.child(opener).child(drawer(open, edge, "Pod api-7d9f8c", body).size(reach));
+    }
+    let about = "A panel over the window along an edge, for details and settings. Escape or a click \
+                 outside closes it.";
+    page(
+        "Drawer",
+        about,
+        [demo("Sides", sides, "drawer(open, Edge::Right, \"Pod api-7d9f8c\", || body).size(360.0)")],
+    )
+}
+
 pub fn dialog_page() -> Div {
     let open = signal(false);
     let ask = button("Scale deployment…").variant(Variant::Primary).test_id("dl-open");
     let scale = dialog(open, "Scale deployment", || text("api will be scaled from 3 to 5 replicas."));
-    let about = "A modal task hanging near the top of the window. Escape, a click outside and the close                  button dismiss it.";
+    let about = "A modal task hanging near the top of the window. Escape, a click outside and the close \
+                 button dismiss it.";
     page(
         "Dialog",
         about,

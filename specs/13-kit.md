@@ -374,21 +374,35 @@ the popup closes the focus goes back to what had it.
   the menus together. A menu taller than 450 px shows that much and scrolls; the highlight
   the arrows move is brought into view.
 - `context_menu(view, || items)` gives a view a menu that opens under the pointer, by the
-  gap of a popup (4 px), on a click with the other button, where it fits in the window. It adds no node around the
-  view (as the tooltip): the popup is opened by hand, from the handler
-  (`popup::open_now`), and goes with the scope of the view if it is still open then.
+  gap of a popup (4 px), on a click with the other button, where it fits in the window. It
+  adds no node around the view (as the tooltip): the popup is opened by hand, from the
+  handler (`popup::open_now`), and goes with the scope of the view if it is still open then.
 - The width a popup is said to have is that of its plane, border and all: what it holds
   asks for 2 px less (`popup::EDGE`). A menu is 200 px at least so.
 - The region a popup is shown in is not displayed (`.display(Display::None)`): where the
   popup stands in the flow it takes no room, not even a gap of the box around it.
 - The text values of the window's root hold in overlays too (a popup's text has the
   window's face and colour): an overlay has no parent, and is above the root.
-- `tooltip("Save the file", view).keys("Ctrl-S")`: the words show above the view (below it where there is no room), centred and 6 px off it,
-  once the pointer has rested on it for half a second, and go when it leaves or presses. A
-  tooltip never has the focus. It adds no node: the tooltip's node is the view's own, the
-  handlers are put on it, and the bubble is an overlay opened by hand.
+- `tooltip("Save the file", view).keys("Ctrl-S")`: the words show above the view (below it
+  where there is no room), centred and 6 px off it, once the pointer has rested on it for
+  half a second, and go when it leaves or presses. A tooltip never has the focus. It adds
+  no node: the tooltip's node is the view's own, the handlers are put on it, and the bubble
+  is an overlay opened by hand (`popup::hang`: an overlay against an anchor while a signal
+  is true, in a scope of its own under that of the view).
+- `hover_card(view, || content)`: more about a name or a link, on the plane of a popover
+  (12 px in, 8 px between its parts), under the view at its start and 6 px off it, once the
+  pointer has rested on the view for 400 ms. It stays while the pointer is on the view or on
+  the card, so what the card holds can be pressed, and for 150 ms after it left both: the
+  time to cross the gap. It never has the focus, and adds no node, as the tooltip.
+- `drawer(open, Edge::Right, "Pod api", || body)`: a dialog that lies along an edge of the
+  window (`Edge::Left`, `Right`, `Bottom`) over all of its length, with square corners:
+  the title and the cross of a dialog over the body. `.size(px)` is how far it reaches into
+  the window (360 at first). Escape, the cross and a press outside give it up. A popup
+  that lies along an edge has the length of the window on that axis (`Length::Fill` on the
+  root of the overlay, which is laid out in the window's size).
 - `dialog(open, "Delete the file?", || body).action("Cancel", Variant::Ghost, f)..`: a popup
-  440 px wide with its border, centred, 80 px under the top of the window (`Place::Top`), with no backdrop:
+  440 px wide with its border, centred, 80 px under the top of the window (`Place::Top`),
+  with no backdrop:
   a title of 16 px with a quiet cross of 22 px at its end, the body in the second text
   colour, and, when it has actions, a seam and the buttons at the right of its foot. A
   button runs what it was given and closes the dialog; the cross, Escape and a press outside
@@ -419,7 +433,7 @@ the popup closes the focus goes back to what had it.
   best match is first and highlighted. The letters that matched are in the accent
   (`marked`: a row of texts). The arrows go round the matches with the focus still in the
   query, Enter or a click runs one after the palette has closed and given the focus back.
-- Not yet: drawer; a picker of other things than commands; the menu key for a context menu; a toast that waits
+- Not yet: a drawer that slides in; a picker of other things than commands; the menu key for a context menu; a toast that waits
   while the pointer is on it; a tooltip told to assistive technology as the description of
   its view.
 

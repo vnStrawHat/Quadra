@@ -1,4 +1,5 @@
-//! The dialog (specs/behaviour/15, "Dialog"): a question the user answers before going on.
+//! The dialog (specs/behaviour/15, "Dialog"): a question the user answers before going on,
+//! and the drawer, which is one along an edge of the window.
 //! It hangs 80 px from the top of the window, centred, with no backdrop: the cross at the end
 //! of its title, Escape or a press outside gives it up.
 
@@ -8,11 +9,11 @@ use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{MountCx, Place, View, column, div, row, text};
+use quadra_ui::{Div, MountCx, Place, View, column, div, row, text};
 
 use crate::button::{Variant, button};
 use crate::icon::icon;
-use crate::popup::{EDGE, popup};
+use crate::popup::{EDGE, Edge, popup};
 use crate::{icons, size, token};
 
 type Act = Rc<dyn Fn()>;
@@ -42,6 +43,64 @@ impl<F> Dialog<F> {
     }
 }
 
+/// The title of a dialog, and the quiet cross at its end that gives the dialog up.
+fn head(title: &str, open: Signal<bool>) -> Div {
+    let cross = row().size(22.0, 22.0).align_items(Align::Center).justify(Justify::Center);
+    let cross = cross.radius(size::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
+    let cross = cross.cursor(Cursor::Pointer).role(Role::Button).label("Close");
+    let cross = cross.on_click(move |_| open.set(false));
+    let cross = cross.child(icon(icons::X).size(14.0).color(token::TEXT_2));
+    let headline = div().grow(1.0).child(text(title.to_string()).size(size::TEXT_LG.size));
+    let head = row().align_items(Align::Center).gap(4.0).padding_x(12.0).padding_top(8.0);
+    head.padding_bottom(4.0).child(headline).child(cross)
+}
+
+pub struct Drawer<F> {
+    open: Signal<bool>,
+    edge: Edge,
+    title: String,
+    size: f32,
+    body: F,
+}
+
+/// A dialog that lies along an edge of the window, over all of its length, while `open` is
+/// true: a title over what `body` builds. It reaches 360 px into the window.
+pub fn drawer<V, F>(open: Signal<bool>, edge: Edge, title: impl Into<String>, body: F) -> Drawer<F>
+where
+    V: View + 'static,
+    F: Fn() -> V + 'static,
+{
+    Drawer { open, edge, title: title.into(), size: 360.0, body }
+}
+
+impl<F> Drawer<F> {
+    /// How far the drawer reaches into the window, with its border.
+    pub fn size(mut self, px: f32) -> Self {
+        self.size = px;
+        self
+    }
+}
+
+impl<V, F> View for Drawer<F>
+where
+    V: View + 'static,
+    F: Fn() -> V + 'static,
+{
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        let Drawer { open, edge, title, size, body } = self;
+        let content = move || {
+            let page = column().grow(1.0).role(Role::Dialog).label(title.clone());
+            let page = match edge {
+                Edge::Bottom => page.height(size - EDGE),
+                _ => page.width(size - EDGE),
+            };
+            let middle = div().grow(1.0).padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2);
+            page.child(head(&title, open)).child(middle.child(body()))
+        };
+        popup(open, edge, None, content).mount(cx)
+    }
+}
+
 /// A question with two answers: `yes` does `on_yes`, Cancel does nothing, and both close the
 /// dialog.
 pub fn confirm(
@@ -64,14 +123,7 @@ where
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (open, title, body, actions) = (self.open, self.title, self.body, Rc::new(self.actions));
         let content = move || {
-            let cross = row().size(22.0, 22.0).align_items(Align::Center).justify(Justify::Center);
-            let cross = cross.radius(size::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
-            let cross = cross.cursor(Cursor::Pointer).role(Role::Button).label("Close");
-            let cross = cross.on_click(move |_| open.set(false));
-            let cross = cross.child(icon(icons::X).size(14.0).color(token::TEXT_2));
-            let headline = div().grow(1.0).child(text(title.clone()).size(size::TEXT_LG.size));
-            let head = row().align_items(Align::Center).gap(4.0).padding_x(12.0).padding_top(8.0);
-            let head = head.padding_bottom(4.0).child(headline).child(cross);
+            let head = head(&title, open);
             let middle = div().padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2).child(body());
             let page = column().width(440.0 - EDGE).role(Role::Dialog).label(title.clone());
             let page = page.child(head).child(middle);

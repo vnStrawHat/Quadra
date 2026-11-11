@@ -159,6 +159,9 @@ The arguments: how many rows, the height a row counts with until it is measured,
 that says how far the list is scrolled, and what builds a row from its index.
 
 - The list is a layer and a layout boundary. It keeps a pool of mounted rows.
+- The box of a row lies across the list, and what the row builds fills it, whatever width it
+  asked for (the list makes it grow): a line under a row goes from edge to edge, and text
+  in it wraps at the list's width.
 - When a row leaves the viewport its nodes are kept and given to the next row entering: the
   list writes the row's `index`, and the row's bindings update. Steady scrolling mounts
   nothing and allocates nothing.

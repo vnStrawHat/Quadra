@@ -94,6 +94,9 @@ impl<V: View> List<V> {
                 let signal = signal(index);
                 let mut cx = MountCx::new(tree);
                 let child = (self.row)(signal).mount(&mut cx);
+                // What the row built fills its box across the list.
+                let fills = quadra_layout::Style { grow: 1.0, ..cx.tree.layout_style(child).clone() };
+                cx.tree.set_layout_style(child, fills);
                 let wrapper = cx.tree.insert(Style { layout: self.place(index), ..Style::default() });
                 cx.tree.set_children(wrapper, &[child]);
                 if let Some(measured) = self.measured.clone() {

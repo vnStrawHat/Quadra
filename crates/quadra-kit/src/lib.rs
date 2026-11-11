@@ -34,6 +34,7 @@ mod titlebar;
 mod toggle;
 pub mod token;
 mod tooltip;
+mod tree;
 
 pub use accordion::{Accordion, accordion};
 pub use action::keymap;
@@ -68,3 +69,4 @@ pub use theme::{KitTheme, Mode, ThemeError, dark, light, theme_from_json};
 pub use titlebar::{Titlebar, titlebar};
 pub use toggle::{Toggle, checkbox, switch};
 pub use tooltip::{Tooltip, tooltip};
+pub use tree::{Tree, TreeNode, tree};

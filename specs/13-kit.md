@@ -265,6 +265,18 @@ As built so far:
   numbers them, in a signal the caller may own (`.selected(..)`). Not yet: scrolling
   sideways and pinned columns, hidden columns, a cursor on cells, cells that flash when
   they change.
+- **`tree(roots, chosen)`** shows things inside things (`TreeNode::new(id, label)
+  .icon(..).children(..)`) as rows of 26 px: 20 px in for each level, with a faint guide for
+  each, then a chevron if the thing holds something, its icon and its label. `roots` is
+  asked again when what it reads changes; the rows that show are mounted (`uniform_list`),
+  and a row is built again only when the thing at its place is another one, or opens.
+  `chosen` holds the id of the selected thing: a click selects, and on what holds something
+  a second click or a double one opens or closes it. With the focus in the tree the arrows
+  move the selection, Home and End go to the ends, the right arrow opens what is closed
+  then goes into it, the left one closes what is open then goes out to what holds it, and
+  Enter and Space open and close (key context `action::TREE`). The ids of the open things
+  are a signal the caller may own (`.open(..)`). To a reader: a tree of items, expanded or
+  collapsed. Not yet: children that are asked for when a thing opens, several selected.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

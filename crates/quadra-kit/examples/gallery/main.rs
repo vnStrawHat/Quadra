@@ -13,7 +13,7 @@ use quadra_kit::{
 };
 
 use pages::{
-    buttons, choices, data, icons as icon_page, inputs, lists, navigation, numbers, overlays, parts,
+    buttons, choices, data, files, icons as icon_page, inputs, lists, navigation, numbers, overlays, parts,
 };
 
 /// The pages: what each is known by, its name in the sidebar, and its icon.
@@ -42,7 +42,7 @@ fn main() -> quadra::Result<()> {
             "forms" => column().gap(20.0).child(inputs()).child(choices()).child(numbers()),
             "overlays" => column().gap(20.0).child(overlays(all)).child(lists()),
             "parts" => column().gap(20.0).child(parts()),
-            "data" => column().gap(20.0).child(data()),
+            "data" => column().gap(20.0).child(data()).child(files()),
             _ => column().gap(20.0).child(navigation()),
         });
         let name = move || PAGES.iter().find(|known| known.0 == page.get()).map_or("", |known| known.1);

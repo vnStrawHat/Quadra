@@ -48,6 +48,10 @@ impl Action for MoveLast {
     const NAME: &'static str = "kit::move_last";
 }
 
+/// The key context of a tree: the keys of a list, and the right and left arrows that open
+/// and close, as in a menu.
+pub const TREE: &str = "tree";
+
 /// The key context of a table: the keys of a list, a page at a time, a selection that grows
 /// with Shift, and a copy.
 pub const TABLE: &str = "table";
@@ -157,7 +161,7 @@ pub fn keymap() -> Keymap {
         keymap.bind_in(CHOICE, keys, MovePrevious).expect(well_formed);
     }
     keymap.bind_in(POPUP, "escape", Cancel).expect(well_formed);
-    for context in [MENU, LIST, TABLE] {
+    for context in [MENU, LIST, TABLE, TREE] {
         keymap.bind_in(context, "down", MoveNext).expect(well_formed);
         keymap.bind_in(context, "up", MovePrevious).expect(well_formed);
         keymap.bind_in(context, "enter", Confirm).expect(well_formed);
@@ -167,10 +171,12 @@ pub fn keymap() -> Keymap {
     keymap.bind_in(TABLE, "shift-down", ExtendNext).expect(well_formed);
     keymap.bind_in(TABLE, "shift-up", ExtendPrevious).expect(well_formed);
     keymap.bind_in(TABLE, "ctrl-c", Copy).expect(well_formed);
-    keymap.bind_in(MENU, "space", Confirm).expect(well_formed);
-    keymap.bind_in(MENU, "right", MoveInto).expect(well_formed);
-    keymap.bind_in(MENU, "left", MoveOut).expect(well_formed);
-    for context in [LIST, SLIDER, TABLE] {
+    for context in [MENU, TREE] {
+        keymap.bind_in(context, "space", Confirm).expect(well_formed);
+        keymap.bind_in(context, "right", MoveInto).expect(well_formed);
+        keymap.bind_in(context, "left", MoveOut).expect(well_formed);
+    }
+    for context in [LIST, SLIDER, TABLE, TREE] {
         keymap.bind_in(context, "home", MoveFirst).expect(well_formed);
         keymap.bind_in(context, "end", MoveLast).expect(well_formed);
     }

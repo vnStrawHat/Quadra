@@ -1,14 +1,15 @@
 //! The sections of the gallery's pages: each shows a group of the kit's components.
 
+use std::collections::HashSet;
 use std::rc::Rc;
 
 use quadra::{Align, Div, NodeRef, Signal, column, div, row, signal, text};
 use quadra_kit::{
-    CellKind, Column, MenuItem, Notice, Notices, Rule, Size, Status, Tone, Variant, accordion, avatar, badge,
-    breadcrumb, button, card, card_head, checkbox, context_menu, dialog, divider, field, heading, icon,
-    icon_button, icons, input, kbd, list, menu, number_input, progress, progress_busy, radio_group,
-    segmented, select, size, skeleton, slider, spinner, split, status_label, switch, table, tabs, tag,
-    textarea, token, tooltip, validate,
+    CellKind, Column, MenuItem, Notice, Notices, Rule, Size, Status, Tone, TreeNode, Variant, accordion,
+    avatar, badge, breadcrumb, button, card, card_head, checkbox, context_menu, dialog, divider, field,
+    heading, icon, icon_button, icons, input, kbd, list, menu, number_input, progress, progress_busy,
+    radio_group, segmented, select, size, skeleton, slider, spinner, split, status_label, switch, table,
+    tabs, tag, textarea, token, tooltip, tree, validate,
 };
 
 /// A section: its title, then its rows.
@@ -230,4 +231,18 @@ pub fn data() -> Div {
     let framed = div().height(340.0).border(1.0).border_color(token::LINE).child(pods);
     let picked = text(move || format!("{} selected", chosen.with(Vec::len))).color(token::TEXT_2);
     section("Table").child(framed).child(picked)
+}
+
+pub fn files() -> Div {
+    let file = |name: &str| TreeNode::new(name, name).icon(icons::FILE_TEXT);
+    let roots = move || {
+        let kit = TreeNode::new("kit", "kit").icon(icons::FOLDER);
+        let kit = kit.children(["button.rs", "menu.rs", "table.rs", "tree.rs"].map(file));
+        let src = TreeNode::new("src", "src").icon(icons::FOLDER).children([kit, file("main.rs")]);
+        let pages = (1..=200).map(|i| file(&format!("page-{i:03}.md")));
+        vec![src, TreeNode::new("docs", "docs").icon(icons::FOLDER).children(pages), file("README.md")]
+    };
+    let (chosen, open) = (signal(Some("kit".to_string())), signal(HashSet::from(["src".to_string()])));
+    let framed = div().size(300.0, 220.0).border(1.0).border_color(token::LINE);
+    section("Tree").child(framed.child(tree(roots, chosen).open(open)))
 }

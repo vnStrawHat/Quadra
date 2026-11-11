@@ -129,7 +129,11 @@ rectangles at present are not used in the first release.
   a reused rectangle.
 - Each atlas has a byte budget. Beyond it, least-recently-used free tiles are dropped first;
   if everything is in use the atlas grows past the budget and reports it.
-- Images above the tile limit get their own texture and an `Image` item.
+- Images above the tile limit get their own texture and a marker of their own kind.
+- An atlas is keyed by whoever uses it (a glyph cache by face, glyph, size and phase) and a
+  tile carries what its owner knows about it (a glyph's offsets). The packing and the
+  upload queue do not depend on either: that part is what a renderer is given
+  (`Renderer::sync_atlas`).
 
 ## Resources and failure
 

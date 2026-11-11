@@ -8,6 +8,7 @@ use quadra_prim::{Color, Rect};
 
 use crate::instance::Instance;
 use crate::layer::{Dirty, LayerId};
+use crate::packing::AtlasCore;
 use crate::renderer::{DeviceSize, Pixels, RenderError, RenderStats, Renderer, SurfaceId, SurfaceTarget};
 use crate::scene::{Scene, SceneId, Step};
 
@@ -19,6 +20,9 @@ pub struct NullRenderer {
     steps: Vec<Step>,
     stats: RenderStats,
     lost: bool,
+    /// Tiles and bytes of atlas pixels taken since the renderer was made.
+    tiles_uploaded: u64,
+    tile_bytes: u64,
 }
 
 impl NullRenderer {
@@ -40,6 +44,11 @@ impl NullRenderer {
     /// The steps of the last frame drawn.
     pub fn steps(&self) -> &[Step] {
         &self.steps
+    }
+
+    /// Atlas tiles and bytes uploaded since the renderer was made.
+    pub fn tiles_uploaded(&self) -> (u64, u64) {
+        (self.tiles_uploaded, self.tile_bytes)
     }
 
     /// How many layers the renderer holds buffers for.
@@ -94,6 +103,17 @@ impl Renderer for NullRenderer {
         if let Some(slot) = self.surfaces.get_mut(surface.0 as usize) {
             *slot = None;
         }
+    }
+
+    fn sync_atlas(&mut self, atlas: &mut AtlasCore) -> Result<(), RenderError> {
+        if self.lost {
+            return Err(RenderError::DeviceLost);
+        }
+        for upload in atlas.take_uploads() {
+            self.tiles_uploaded += 1;
+            self.tile_bytes += upload.pixels.len() as u64;
+        }
+        Ok(())
     }
 
     fn draw(&mut self, surface: SurfaceId, scene: &mut Scene, _clear: Color) -> Result<(), RenderError> {

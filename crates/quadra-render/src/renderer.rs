@@ -4,6 +4,7 @@ use std::fmt;
 
 use quadra_prim::Color;
 
+use crate::packing::AtlasCore;
 use crate::scene::{Scene, SceneId};
 
 /// A size in device pixels.
@@ -74,6 +75,11 @@ pub trait Renderer {
     fn create_surface(&mut self, target: SurfaceTarget, size: DeviceSize) -> Result<SurfaceId, RenderError>;
     fn resize_surface(&mut self, surface: SurfaceId, size: DeviceSize) -> Result<(), RenderError>;
     fn drop_surface(&mut self, surface: SurfaceId);
+
+    /// Brings an atlas texture in step: copies the pixels queued since the last call, with
+    /// more slices or a fresh texture if the atlas grew or was cleared. Call it before the
+    /// draw that uses the tiles.
+    fn sync_atlas(&mut self, atlas: &mut AtlasCore) -> Result<(), RenderError>;
 
     /// Draws the scene: uploads what its layers say changed, frees what it dropped, and runs
     /// its steps. The scene's layers are clean afterwards.

@@ -88,6 +88,14 @@ leaves unset follow its own colours (the table of behaviour/15 says which follow
 `KitTheme::theme()` is what a tree styles with. The sections of code, the terminal and
 charts are checked to hold colours and are not kept yet: their roles come with their crates.
 
+An app uses the kit with `quadra_kit::install(app, &theme)`, which loads the bundled faces
+(`fonts::UI`, `fonts::MONO`; eight files, 1.6 MB of the binary) and gives the app the theme,
+and with `quadra_kit::root()` as the box at the root of each window: the canvas, and the UI
+text (face, 14 on 23, the theme's text colour) for everything in the window. The numbers of
+the design language (type scale, control heights, radii, weights) are constants in
+`quadra_kit::size`; a theme does not vary them yet. Not yet: the UI face shaped without
+contextual alternates.
+
 ## Components
 
 A component is a builder type with a function to create it:

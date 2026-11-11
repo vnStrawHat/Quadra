@@ -89,6 +89,12 @@ impl<R: Renderer> App<R> {
         self
     }
 
+    /// Registers bundled fonts with the text system, and returns the family of each file.
+    pub fn load_fonts(&mut self, files: &[&[u8]]) -> Result<Vec<String>> {
+        let loaded = self.fonts.borrow_mut().text.backend().load_fonts(files);
+        loaded.map_err(AppError::Text)
+    }
+
     /// The theme the roles in styles get their colours from (specs/13), in every window. A
     /// view changes it by writing the `Signal<Rc<Theme>>` of its context.
     pub fn theme(self, theme: Theme) -> App<R> {

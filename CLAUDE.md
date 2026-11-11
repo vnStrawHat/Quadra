@@ -129,7 +129,10 @@ is a `Signal<Rc<Theme>>` in the context of views), and the crate `quadra-kit` ha
 of the roles (`quadra_kit::token`) and the themes (`dark()`, `light()`, `theme_from_json`;
 the files are in `crates/quadra-kit/themes/`). Text values hold down the tree
 (`quadra-tree/src/inherit.rs`: `TextValues`, `Widget::inherit`, the tree's `text_epoch`; a
-text has no style of its own). Next: tokens for radii and spacing, style transitions
+text has no style of its own). The kit has its fonts (`quadra_kit::fonts`), its numbers
+(`size`), `install(app, &theme)` and `root()`; `crates/quadra-kit/examples/themes.rs` shows
+both themes in a real window. Next: icons (they need vector paths: nothing of `vector` is
+ported yet), the button, a gallery app with a page a component, tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`
 (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range

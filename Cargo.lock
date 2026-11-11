@@ -129,8 +129,16 @@ dependencies = [
 name = "quadra-kit"
 version = "0.1.0"
 dependencies = [
+ "quadra",
+ "quadra-app",
+ "quadra-platform",
  "quadra-prim",
+ "quadra-reactive",
+ "quadra-render",
+ "quadra-testing",
+ "quadra-text",
  "quadra-tree",
+ "quadra-ui",
  "serde_json",
 ]
 

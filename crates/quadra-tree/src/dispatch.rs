@@ -17,6 +17,8 @@ use crate::tree::Tree;
 /// Two clicks count as a double click within this time and this distance of each other.
 const MULTI_CLICK: Duration = Duration::from_millis(500);
 const MULTI_CLICK_DISTANCE: f32 = 4.0;
+/// What one line of the wheel scrolls, in logical pixels.
+const WHEEL_LINE: f32 = 40.0;
 
 /// What the OS reports of the pointer (the platform's kinds, named here so the tree's input
 /// can be driven without a platform event).
@@ -57,6 +59,20 @@ impl Tree {
         });
     }
 
+    /// Takes a wheel event of the window: `delta` in lines, or in pixels when `precise` (a
+    /// touchpad). It goes up from what is under the pointer: a scroll container takes what it
+    /// can scroll, and the rest goes on to the ones around it.
+    pub fn wheel(&mut self, delta: Point, precise: bool, at: Point, mods: Mods) {
+        batch(|| {
+            (self.input.mods, self.input.pointer) = (mods, Some(at));
+            self.rehover();
+            let Some(target) = self.hit_test(at) else { return };
+            let by = if precise { 1.0 } else { WHEEL_LINE };
+            let delta = Point::new(delta.x * by, delta.y * by);
+            self.send(PointerEvent { delta, ..self.event(PointerKind::Wheel, target) });
+        });
+    }
+
     fn release(&mut self, button: MouseButton, at: Point, now: Instant) {
         let under = self.hit_test(at);
         self.set_states(State::ACTIVE, false);
@@ -90,20 +106,30 @@ impl Tree {
         button: MouseButton,
         clicks: u8,
     ) -> PointerEvent {
+        let event = PointerEvent { button, clicks, ..self.event(kind, target) };
+        self.send(event)
+    }
+
+    /// An event for a node at the pointer's place, with nothing else said.
+    fn event(&self, kind: PointerKind, target: NodeId) -> PointerEvent {
         let at = self.input.pointer.unwrap_or(Point::ZERO);
-        let mut event = PointerEvent {
+        PointerEvent {
             kind,
-            button,
+            button: MouseButton::None,
             at,
             local: at,
             mods: self.input.mods,
-            clicks,
+            clicks: 0,
+            delta: Point::ZERO,
             target,
             node: target,
             stopped: false,
             captured: None,
-        };
-        let path = self.path(target);
+        }
+    }
+
+    fn send(&mut self, mut event: PointerEvent) -> PointerEvent {
+        let path = self.path(event.target);
         for capture in [true, false] {
             let along = (0..path.len()).map(|i| if capture { path[path.len() - 1 - i] } else { path[i] });
             for node in along {
@@ -164,19 +190,7 @@ impl Tree {
 
     /// An enter or a leave: for one node, not along a path.
     fn visit(&mut self, kind: PointerKind, node: NodeId) {
-        let at = self.input.pointer.unwrap_or(Point::ZERO);
-        let mut event = PointerEvent {
-            kind,
-            button: MouseButton::None,
-            at,
-            local: at,
-            mods: self.input.mods,
-            clicks: 0,
-            target: node,
-            node,
-            stopped: false,
-            captured: None,
-        };
+        let mut event = self.event(kind, node);
         self.run_handlers(node, false, &mut event);
     }
 }

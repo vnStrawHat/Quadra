@@ -78,3 +78,38 @@ fn a_box_shows_hover_and_press_without_running_app_code() {
     h.frame();
     assert_eq!((h.tree.paint_style(node).background, ran.get_untracked()), (base, 1)); // built once
 }
+
+#[test]
+fn the_wheel_scrolls_what_is_under_the_pointer_and_what_is_left_goes_outwards() {
+    use quadra_ui::{scroll, uniform_list};
+    let (outer_y, inner_y, list_y) = (signal(0.0f32), signal(0.0f32), signal(0.0f32));
+    // A page that scrolls, with a small scroll area and a virtual list in it.
+    let inner = scroll(inner_y, div().size(200.0, 300.0)).container(div().size(200.0, 100.0));
+    let rows = uniform_list(|| 1000, 20.0, list_y, |i| text(move || i.get().to_string()));
+    let page = column()
+        .child(inner)
+        .child(rows.container(div().size(200.0, 200.0)))
+        .child(div().size(200.0, 2000.0));
+    let mut h = Harness::new();
+    mount_root(&mut h.tree, scroll(outer_y, page));
+    h.frame();
+
+    h.wheel(50.0, 50.0, -1.0); // one line towards the end, over the small area
+    assert_eq!((inner_y.get_untracked(), outer_y.get_untracked()), (40.0, 0.0));
+    let (stats, drawn) = h.frame();
+    assert_eq!((stats.nodes_painted, stats.layers_composed, drawn.instances_uploaded), (0, 1, 0));
+
+    // It has 200 px to scroll. Five lines ask for 200 more than the 160 left: the page takes the rest.
+    h.wheel(50.0, 50.0, -5.0);
+    assert_eq!((inner_y.get_untracked(), outer_y.get_untracked()), (200.0, 40.0));
+    h.frame();
+    // The page moved up 40 px: the list is under the pointer at 150 + ... and scrolls alone.
+    h.wheel(50.0, 100.0, -2.0);
+    assert_eq!((list_y.get_untracked(), outer_y.get_untracked()), (80.0, 40.0));
+    h.frame();
+    h.wheel(50.0, 100.0, 3.0); // back past its start: 80 of the 120 are its own, 40 the page's
+    assert_eq!((list_y.get_untracked(), outer_y.get_untracked()), (0.0, 0.0));
+    h.frame();
+    h.wheel(50.0, 100.0, 1.0); // nothing can scroll further: nothing changes, no frame
+    assert!(h.frame_if_needed().is_none());
+}

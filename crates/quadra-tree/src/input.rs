@@ -21,6 +21,8 @@ pub enum PointerKind {
     Leave,
     /// A press and its release on the same node, or on nodes under it.
     Click,
+    /// The wheel turned, or two fingers moved: `delta` says how far to scroll.
+    Wheel,
 }
 
 /// What a pointer handler is given: the event, and the controls of its dispatch.
@@ -35,6 +37,9 @@ pub struct PointerEvent {
     pub mods: Mods,
     /// For a click: 1, or 2 for a double click, and so on.
     pub clicks: u8,
+    /// For the wheel: how far to scroll, in pixels. Positive `y` is towards the start of the
+    /// content. A handler that scrolls takes what it used off it; what is left goes on up.
+    pub delta: Point,
     /// The node the event is for: the deepest one under the pointer, or the one that captured.
     pub target: NodeId,
     /// The node the handler is on.

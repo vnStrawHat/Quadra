@@ -58,6 +58,12 @@ impl Harness {
         self.tree.pointer(input, MouseButton::Left, Point::new(x, y), Mods::NONE, self.now);
     }
 
+    /// Turns the wheel by lines at a point: positive is away from the user, towards the
+    /// start of the content.
+    pub fn wheel(&mut self, x: f32, y: f32, lines: f32) {
+        self.tree.wheel(Point::new(0.0, lines), false, Point::new(x, y), Mods::NONE);
+    }
+
     /// Moves the pointer to a point, presses the main button and releases it.
     pub fn click(&mut self, x: f32, y: f32) {
         self.pointer(PointerInput::Move, x, y);

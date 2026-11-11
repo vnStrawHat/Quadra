@@ -220,7 +220,12 @@ impl<R: Renderer> PlatformHandler for App<R> {
                     w.tree.pointer(input, button, at, mods, now);
                 }
             }
-            _ => {} // keys, text and the wheel come with focus and scrolling (specs/09)
+            PlatformEvent::Wheel { delta, precise, at, mods } => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.wheel(delta, precise, at, mods);
+                }
+            }
+            _ => {} // keys and text come with focus (specs/09)
         });
         self.request_frames();
     }

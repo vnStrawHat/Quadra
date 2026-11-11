@@ -3,7 +3,7 @@
 use quadra_layout::{Direction, Overflow};
 use quadra_prim::Point;
 use quadra_reactive::{Signal, memo};
-use quadra_tree::NodeId;
+use quadra_tree::{NodeId, PointerEvent, PointerKind};
 
 use crate::div::div;
 use crate::flow::Region;
@@ -15,6 +15,20 @@ use crate::view::{MountCx, View};
 ///
 /// The viewport fills its container (see [`Region::container`]); give that a size or let it
 /// grow.
+/// What a scroll container does with the wheel: it scrolls as far as its content goes and
+/// takes that off the event. What is left is for a scroll container around it; when nothing
+/// is left the event stops.
+pub(crate) fn wheel_scrolls(e: &mut PointerEvent, scroll_y: Signal<f32>, top: f32, end: f32) {
+    let to = (top - e.delta.y).clamp(0.0, end);
+    if to != top {
+        scroll_y.set(to);
+        e.delta.y -= top - to;
+    }
+    if e.delta.y == 0.0 {
+        e.stop();
+    }
+}
+
 pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
     let bind = move |viewport: NodeId, cx: &mut MountCx| {
         let scrolls = quadra_layout::Style {
@@ -28,7 +42,11 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
         cx.tree.cull_layer(content);
         cx.tree.set_children(viewport, &[content]);
         let (outer, inner) = (cx.tree.size_signal(viewport), cx.tree.size_signal(content));
-        let top = memo(move || scroll_y.get().clamp(0.0, (inner.get().height - outer.get().height).max(0.0)));
+        let end = memo(move || (inner.get().height - outer.get().height).max(0.0));
+        let top = memo(move || scroll_y.get().clamp(0.0, end.get()));
+        cx.tree.on_pointer(viewport, PointerKind::Wheel, move |e| {
+            wheel_scrolls(e, scroll_y, top.get(), end.get())
+        });
         let writer = cx.handle.clone();
         cx.handle.bind(move || {
             let y = top.get();

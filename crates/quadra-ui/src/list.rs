@@ -13,10 +13,11 @@ use std::rc::Rc;
 use quadra_layout::{Direction, Insets, Length, Overflow, Position};
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, memo, signal};
-use quadra_tree::{NodeId, Style, Tree};
+use quadra_tree::{NodeId, PointerKind, Style, Tree};
 
 use crate::div::div;
 use crate::flow::Region;
+use crate::scroll::wheel_scrolls;
 use crate::view::{MountCx, View};
 
 /// Rows kept mounted above and below the viewport, so a small scroll shows no gap.
@@ -71,9 +72,10 @@ pub fn uniform_list<V: View + 'static>(
         let size = tree.size_signal(viewport);
         let total = memo(count);
         // Where the list really is: never past its end.
-        let top = memo(move || {
-            let end = (total.get() as f32 * row_height - size.get().height).max(0.0);
-            scroll_y.get().clamp(0.0, end)
+        let end = memo(move || (total.get() as f32 * row_height - size.get().height).max(0.0));
+        let top = memo(move || scroll_y.get().clamp(0.0, end.get()));
+        tree.on_pointer(viewport, PointerKind::Wheel, move |e| {
+            wheel_scrolls(e, scroll_y, top.get(), end.get())
         });
         let range = memo(move || {
             let (n, y) = (total.get(), top.get());

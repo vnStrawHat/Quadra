@@ -30,6 +30,9 @@ The path is the target and its ancestors.
 - **Click** is synthesized on release, for nodes on both the press path and the release path.
   Double and triple clicks are counted by time and distance.
 - **Wheel** bubbles until a scroll container consumes it; what it cannot consume continues up.
+  A line of the wheel is 40 logical pixels; a touchpad reports pixels. The event carries how
+  far to scroll, and a container takes off it what it scrolled, so a list at its end hands
+  the rest to the page around it within the same event.
 - Every dispatch runs in a batch (03). Handlers write signals; nothing is redrawn until the
   frame.
 

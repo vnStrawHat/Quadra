@@ -6,6 +6,7 @@ use quadra_reactive::Scope;
 
 use crate::input::PointerHandler;
 use crate::layers::LayerState;
+use crate::style::{State, Styled};
 use crate::widget::Widget;
 
 /// A node of a [`crate::Tree`]: an index and a generation, so a stale id is detected.
@@ -68,4 +69,8 @@ pub(crate) struct Node {
     pub scope: Option<Scope>,
     /// What runs when pointer events reach the node (specs/09).
     pub handlers: Vec<PointerHandler>,
+    /// The states that are set (specs/04, "State bits").
+    pub state: State,
+    /// Its own style and what its states change of it, when it has variants.
+    pub styled: Option<Box<Styled>>,
 }

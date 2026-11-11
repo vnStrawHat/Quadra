@@ -69,8 +69,8 @@ div().bg(token::SURFACE).radius(6.0).padding(8.0)
     .disabled(|s| s.opacity(0.5))
 ```
 
-The closures passed to `hover` and the others run once, at mount, and produce partial styles
-stored on the node. Hovering sets a state bit; the style pass applies the variant. No app code
+The closures passed to `hover` and the others (`when(state, ..)` is the general form) run
+once, when the view is built, and produce partial styles stored on the node. Hovering sets a state bit; the style pass applies the variant. No app code
 runs on hover. Values such as `token::SURFACE` are theme tokens, resolved in the style pass
 (13).
 

@@ -1,0 +1,105 @@
+//! Styles with state variants (specs/05, "Style and states"; specs/13): a state that changes
+//! on a node with a variant for it resolves the node's style again, and the difference decides
+//! what follows. A state nothing styles costs nothing.
+
+mod common;
+
+use common::Window;
+use quadra_platform::{Mods, MouseButton};
+use quadra_prim::{Color, Point};
+use quadra_tree::{NodeId, Patch, PointerInput, State};
+
+const GRAY: u32 = 0x808080;
+const LIGHT: u32 = 0xA0A0A0;
+const DARK: u32 = 0x404040;
+
+struct Page {
+    w: Window,
+    plain: NodeId,
+    button: NodeId,
+}
+
+/// Two 100 x 40 boxes in a column: a plain one, and below it a button that is lighter under
+/// the pointer and darker while pressed.
+fn page() -> Page {
+    let mut w = Window::new();
+    let (plain, button) = (w.block(100.0, 40.0, 0x202020), w.block(100.0, 40.0, GRAY));
+    w.tree.set_variant(button, State::HOVER, vec![Patch::Background(Color::rgb(LIGHT))]);
+    w.tree.set_variant(button, State::ACTIVE, vec![Patch::Background(Color::rgb(DARK))]);
+    let root = w.column(&[plain, button]);
+    w.tree.set_root(root);
+    w.frame();
+    Page { w, plain, button }
+}
+
+impl Page {
+    fn send(&mut self, input: PointerInput, x: f32, y: f32) {
+        let now = std::time::Instant::now();
+        self.w.tree.pointer(input, MouseButton::Left, Point::new(x, y), Mods::NONE, now);
+    }
+
+    fn background(&self, node: NodeId) -> Color {
+        self.w.tree.paint_style(node).background
+    }
+}
+
+#[test]
+fn hover_and_press_show_through_the_style_pass_and_cost_one_node() {
+    let mut p = page();
+    p.send(PointerInput::Move, 50.0, 20.0); // over the plain box: a state nothing styles
+    assert!(p.w.tree.state(p.plain).contains(State::HOVER) && !p.w.tree.needs_frame());
+
+    p.send(PointerInput::Move, 50.0, 60.0);
+    let (stats, drawn) = p.w.frame();
+    assert_eq!(p.background(p.button), Color::rgb(LIGHT));
+    // specs/14, "Pointer enters a button": one node styled, none laid out, one painted.
+    assert_eq!((stats.nodes_styled, stats.nodes_laid_out, stats.nodes_painted), (1, 0, 1));
+    assert_eq!((stats.layers_patched, drawn.instances_uploaded), (1, 1));
+
+    p.send(PointerInput::Down, 50.0, 60.0); // pressed and hovered: the later state wins
+    p.w.frame();
+    assert_eq!(p.background(p.button), Color::rgb(DARK));
+    p.send(PointerInput::Up, 50.0, 60.0);
+    p.w.frame();
+    assert_eq!(p.background(p.button), Color::rgb(LIGHT));
+    p.send(PointerInput::Leave, 0.0, 0.0);
+    let (stats, _) = p.w.frame();
+    assert_eq!((p.background(p.button), stats.nodes_styled), (Color::rgb(GRAY), 1));
+}
+
+#[test]
+fn a_nodes_own_style_changes_under_its_variants() {
+    let mut p = page();
+    p.send(PointerInput::Move, 50.0, 60.0);
+    p.w.frame();
+    // Its own background changes while it is hovered: the hover colour still shows.
+    p.w.tree.patch_style(p.button, Patch::Background(Color::rgb(0x112233)));
+    assert!(!p.w.tree.needs_frame()); // resolved to the same style: nothing to do
+    p.w.tree.patch_style(p.button, Patch::Width(quadra_layout::Length::Px(160.0)));
+    let (stats, _) = p.w.frame();
+    assert!(stats.nodes_laid_out > 0 && p.w.tree.rect(p.button).width == 160.0);
+    assert_eq!(p.background(p.button), Color::rgb(LIGHT));
+    p.send(PointerInput::Leave, 0.0, 0.0);
+    p.w.frame();
+    assert_eq!(p.background(p.button), Color::rgb(0x112233));
+}
+
+#[test]
+fn a_variant_may_change_layout_and_a_state_may_be_a_property() {
+    let mut p = page();
+    let wider = vec![Patch::Width(quadra_layout::Length::Px(140.0)), Patch::Radius(8.0)];
+    p.w.tree.set_variant(p.button, State::SELECTED, wider);
+    p.w.tree.set_state(p.button, State::SELECTED, true);
+    let (stats, _) = p.w.frame();
+    assert!(stats.nodes_styled == 1 && stats.nodes_laid_out > 0);
+    assert_eq!((p.w.tree.rect(p.button).width, p.background(p.button)), (140.0, Color::rgb(GRAY)));
+    p.w.tree.set_state(p.button, State::SELECTED, true); // set again: nothing
+    assert!(!p.w.tree.needs_frame());
+    p.w.tree.set_state(p.button, State::SELECTED, false);
+    p.w.frame();
+    assert_eq!(p.w.tree.rect(p.button).width, 100.0);
+    // A state without a variant changes nothing, on any node.
+    p.w.tree.set_state(p.button, State::DISABLED, true);
+    p.w.tree.set_state(p.plain, State::SELECTED, true);
+    assert!(!p.w.tree.needs_frame());
+}

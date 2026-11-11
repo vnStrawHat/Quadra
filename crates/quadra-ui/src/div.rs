@@ -2,8 +2,8 @@
 
 use quadra_layout::{Align, Direction, Justify, Length, Overflow};
 use quadra_platform::MouseButton;
-use quadra_prim::{Color, Corners, Edges};
-use quadra_tree::{Handle, NodeId, PaintStyle, PointerEvent, PointerKind, Style};
+use quadra_prim::Color;
+use quadra_tree::{Handle, NodeId, Patch, PointerEvent, PointerKind, State, Style};
 
 use crate::prop::{IntoProp, Prop};
 use crate::view::{AnyView, MountCx, View};
@@ -18,6 +18,7 @@ pub struct Div {
     children: Vec<AnyView>,
     binders: Vec<Binder>,
     handlers: Vec<(PointerKind, PointerFn)>,
+    variants: Vec<(State, Vec<Patch>)>,
 }
 
 /// A box. Its children are laid out in a row unless a direction says otherwise.
@@ -33,102 +34,94 @@ pub fn column() -> Div {
     div().direction(Direction::Column)
 }
 
-/// Declares setters for layout values: each takes a constant or something reactive.
-macro_rules! layout_props {
-    ($($(#[$doc:meta])* $name:ident: $ty:ty => |$s:ident, $v:ident| $set:expr;)*) => {$(
-        $(#[$doc])*
-        pub fn $name<M>(mut self, value: impl IntoProp<$ty, M>) -> Self {
-            self.layout_prop(value.into_prop(), |$s, $v| $set);
-            self
-        }
-    )*};
+/// What a state changes of a box's style: the setters of the box, taking constants (specs/05,
+/// "Style and states").
+#[derive(Default)]
+pub struct Refine(Vec<Patch>);
+
+/// Declares the style values: each is a setter of the box, taking a constant or something
+/// reactive, and a setter of a refinement, taking a constant.
+macro_rules! props {
+    ($($(#[$doc:meta])* $name:ident: $ty:ty => $patch:ident;)*) => {
+        impl Div {$(
+            $(#[$doc])*
+            pub fn $name<M>(mut self, value: impl IntoProp<$ty, M>) -> Self {
+                self.prop(value.into_prop(), Patch::$patch);
+                self
+            }
+        )*}
+
+        impl Refine {$(
+            $(#[$doc])*
+            pub fn $name(mut self, value: impl Into<$ty>) -> Self {
+                self.0.push(Patch::$patch(value.into()));
+                self
+            }
+        )*}
+    };
 }
 
-macro_rules! paint_props {
-    ($($(#[$doc:meta])* $name:ident: $ty:ty => |$s:ident, $v:ident| $set:expr;)*) => {$(
-        $(#[$doc])*
-        pub fn $name<M>(mut self, value: impl IntoProp<$ty, M>) -> Self {
-            self.paint_prop(value.into_prop(), |$s, $v| $set);
-            self
-        }
-    )*};
+props! {
+    width: Length => Width;
+    height: Length => Height;
+    min_width: Length => MinWidth;
+    min_height: Length => MinHeight;
+    max_width: Length => MaxWidth;
+    max_height: Length => MaxHeight;
+    /// How much of the free space the box takes.
+    grow: f32 => Grow;
+    shrink: f32 => Shrink;
+    /// The space between children, on both axes.
+    gap: f32 => Gap;
+    /// The same padding on every side.
+    padding: f32 => Padding;
+    /// Left and right padding.
+    padding_x: f32 => PaddingX;
+    /// Top and bottom padding.
+    padding_y: f32 => PaddingY;
+    margin: f32 => Margin;
+    /// The width of the border on every side.
+    border: f32 => Border;
+    direction: Direction => Direction;
+    justify: Justify => Justify;
+    align_items: Align => AlignItems;
+    wrap: bool => Wrap;
+    overflow_y: Overflow => OverflowY;
+    /// The background colour.
+    bg: Color => Background;
+    border_color: Color => BorderColor;
+    /// The same radius on every corner.
+    radius: f32 => Radius;
 }
 
 impl Div {
-    fn layout_prop<T: 'static>(&mut self, prop: Prop<T>, set: fn(&mut quadra_layout::Style, T)) {
+    /// A constant goes into the style the node is mounted with; something reactive becomes a
+    /// binding that writes that one value when it changes.
+    fn prop<T: 'static>(&mut self, prop: Prop<T>, patch: fn(T) -> Patch) {
         match prop {
-            Prop::Value(value) => set(&mut self.style.layout, value),
+            Prop::Value(value) => drop(patch(value).apply(&mut self.style)),
             Prop::Reactive(read) => self.binders.push(Box::new(move |id, handle| {
                 let writer = handle.clone();
-                handle.bind(move || {
-                    let value = read();
-                    // ponytail: one boxed write per run; a typed write per property if the
-                    // grid bench shows it.
-                    writer.with(move |tree| {
-                        if tree.is_alive(id) {
-                            let mut style = tree.layout_style(id).clone();
-                            set(&mut style, value);
-                            tree.set_layout_style(id, style);
-                        }
-                    });
-                });
+                handle.bind(move || writer.patch_style(id, patch(read())));
             })),
         }
     }
 
-    fn paint_prop<T: 'static>(&mut self, prop: Prop<T>, set: fn(&mut PaintStyle, T)) {
-        match prop {
-            Prop::Value(value) => set(&mut self.style.paint, value),
-            Prop::Reactive(read) => self.binders.push(Box::new(move |id, handle| {
-                let writer = handle.clone();
-                handle.bind(move || {
-                    let value = read();
-                    writer.with(move |tree| {
-                        if tree.is_alive(id) {
-                            let mut style = tree.paint_style(id);
-                            set(&mut style, value);
-                            tree.set_paint_style(id, style);
-                        }
-                    });
-                });
-            })),
-        }
+    /// What the box looks like while a state is set: the values `refine` sets are applied
+    /// over the box's own. `refine` runs once, here; no app code runs when the state changes.
+    pub fn when(mut self, state: State, refine: impl FnOnce(Refine) -> Refine) -> Self {
+        self.variants.push((state, refine(Refine::default()).0));
+        self
     }
 
-    layout_props! {
-        width: Length => |s, v| s.width = v;
-        height: Length => |s, v| s.height = v;
-        min_width: Length => |s, v| s.min_width = v;
-        min_height: Length => |s, v| s.min_height = v;
-        max_width: Length => |s, v| s.max_width = v;
-        max_height: Length => |s, v| s.max_height = v;
-        /// How much of the free space the box takes.
-        grow: f32 => |s, v| s.grow = v;
-        shrink: f32 => |s, v| s.shrink = v;
-        /// The space between children, on both axes.
-        gap: f32 => |s, v| (s.gap_row, s.gap_col) = (v, v);
-        /// The same padding on every side.
-        padding: f32 => |s, v| s.padding = Edges::all(v);
-        /// Left and right padding.
-        padding_x: f32 => |s, v| (s.padding.left, s.padding.right) = (v, v);
-        /// Top and bottom padding.
-        padding_y: f32 => |s, v| (s.padding.top, s.padding.bottom) = (v, v);
-        margin: f32 => |s, v| s.margin = Edges::all(v);
-        /// The width of the border on every side.
-        border: f32 => |s, v| s.border = Edges::all(v);
-        direction: Direction => |s, v| s.direction = v;
-        justify: Justify => |s, v| s.justify = v;
-        align_items: Align => |s, v| s.align_items = v;
-        wrap: bool => |s, v| s.wrap = v;
-        overflow_y: Overflow => |s, v| s.overflow_y = v;
+    /// While the pointer is over the box.
+    pub fn hover(self, refine: impl FnOnce(Refine) -> Refine) -> Self {
+        self.when(State::HOVER, refine)
     }
 
-    paint_props! {
-        /// The background colour.
-        bg: Color => |s, v| s.background = v;
-        border_color: Color => |s, v| s.border_color = v;
-        /// The same radius on every corner.
-        radius: f32 => |s, v| s.radii = Corners::all(v);
+    /// While the box is pressed.
+    pub fn active(self, refine: impl FnOnce(Refine) -> Refine) -> Self {
+        self.when(State::ACTIVE, refine)
     }
 
     /// A fixed width and height in pixels.
@@ -174,6 +167,9 @@ impl View for Div {
         }
         for (kind, run) in self.handlers {
             cx.tree.on_pointer(id, kind, run);
+        }
+        for (state, patches) in self.variants {
+            cx.tree.set_variant(id, state, patches);
         }
         id
     }

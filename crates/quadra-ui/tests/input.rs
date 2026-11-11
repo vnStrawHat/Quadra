@@ -54,3 +54,27 @@ fn a_pointer_over_plain_content_asks_for_no_frame_and_hover_drives_what_reads_it
     h.frame();
     assert!(!over.get_untracked());
 }
+
+#[test]
+fn a_box_shows_hover_and_press_without_running_app_code() {
+    let (base, over, down) = (Color::rgb(0xE8E8E8), Color::rgb(0xD8D8D8), Color::rgb(0xC0C0C0));
+    let ran = signal(0);
+    let button = move || {
+        ran.update(|n| *n += 1);
+        div().size(80.0, 30.0).bg(base).radius(6.0).hover(|s| s.bg(over)).active(|s| s.bg(down).radius(4.0))
+    };
+    let mut h = Harness::new();
+    mount_root(&mut h.tree, column().child(button()));
+    h.frame();
+    let node = h.tree.children(h.tree.root().unwrap())[0];
+    h.pointer(PointerInput::Move, 40.0, 15.0);
+    let (stats, _) = h.frame();
+    assert_eq!((h.tree.paint_style(node).background, stats.bindings_run, stats.nodes_styled), (over, 0, 1));
+    h.pointer(PointerInput::Down, 40.0, 15.0);
+    h.frame();
+    assert_eq!((h.tree.paint_style(node).background, h.tree.paint_style(node).radii.top_left), (down, 4.0));
+    h.pointer(PointerInput::Up, 40.0, 15.0);
+    h.pointer(PointerInput::Move, 400.0, 300.0);
+    h.frame();
+    assert_eq!((h.tree.paint_style(node).background, ran.get_untracked()), (base, 1)); // built once
+}

@@ -16,6 +16,7 @@ use crate::layers::LayerState;
 use crate::node::{NOT_PAINTED, Node, NodeId, PaintStyle, Style, flag};
 use crate::paint::Patch;
 use crate::shared::{Handle, Shared};
+use crate::style::State;
 use crate::widget::Widget;
 
 pub struct Tree {
@@ -44,6 +45,8 @@ pub struct Tree {
     pub(crate) culled: Vec<NodeId>,
     /// The pointer: where it is, what it is over, what it pressed.
     pub(crate) input: InputState,
+    /// Nodes whose state changed and that have a style variant for it.
+    pub(crate) restyle: Vec<NodeId>,
     /// Layers waiting to be painted, during the paint pass.
     pub(crate) todo: Vec<NodeId>,
     /// By node index: the signal that follows the node's size (`Tree::size_signal`).
@@ -81,6 +84,7 @@ impl Tree {
             recompose: Vec::new(),
             culled: Vec::new(),
             input: InputState::default(),
+            restyle: Vec::new(),
             todo: Vec::new(),
             sizes: HashMap::new(),
             stats: FrameStats::default(),
@@ -138,6 +142,8 @@ impl Tree {
             layer: None,
             scope: None,
             handlers: Vec::new(),
+            state: State::NONE,
+            styled: None,
         };
         if index as usize == self.nodes.len() {
             self.nodes.push(node);

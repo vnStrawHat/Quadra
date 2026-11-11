@@ -90,14 +90,13 @@ the Windows SDK's fxc) into committed `.cso` files. Its tests use windows that a
 **Phase R2, interaction, is in progress** (specs/00, Phases; specs/09). Done: pointer input,
 from the platform's events through hit testing and dispatch (capture, bubble, stop, pointer
 capture, hover, press, clicks with counts) to `on_click` and `on_pointer` on views; the
-bench's counter counts real clicks. Next, in this order: style variants so hover and press
-show (specs/13, with tokens), wheel scrolling, focus and keys with actions and the keymap,
+bench's counter counts real clicks. Styles have state variants (`.hover(..)`, `.active(..)`,
+`Patch` and `State` in `quadra-tree/src/style.rs`); tokens and themes are R3. Next, in this
+order: wheel scrolling, focus and keys with actions and the keymap,
 text input and IME, overlays, semantics (specs/12), rows of different heights.
 `quadra-async` (specs/11) when the first thing needs a timer or a task.
 
-Room left that the numbers show (`tools/bench.sh grid`): 200 ns a binding in the grid (a
-reactive property boxes a closure on every run, see the `ponytail:` note in
-`quadra-ui/src/div.rs`); a flex item is measured once per height its column offers though its
+Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its
 height does not depend on it; a new painted band visits every node of its layer.
 
 Habits that cost time when forgotten:

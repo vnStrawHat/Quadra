@@ -17,6 +17,14 @@ them in a fixed order: base, then `hover`, `focus`, `focus_visible`, `active`, `
 `checked`, `expanded`, `drop_target`, `disabled`, each applied if its bit is set. Inherited text
 values come from the parent's resolved style.
 
+A partial style is a list of values, each one case of an enum with a case per setter
+(`Patch::Background(colour)`, `Patch::Padding(8.0)`): plain data, a few words each. The same
+value is what a reactive property writes when its source changes, so a property bound to a
+signal allocates nothing per change. A node without variants keeps only its resolved style; a
+node with variants also keeps its own style, which is what a property writes, and resolves
+again when that or a state changes. A state that changes on a node with no variant for it
+does nothing at all.
+
 ## Tokens
 
 A colour, radius, spacing, font or duration in a style is a literal or a **token**:

@@ -11,6 +11,7 @@ use quadra_reactive::batch;
 
 use crate::input::{PointerEvent, PointerKind};
 use crate::node::NodeId;
+use crate::style::State;
 use crate::tree::Tree;
 
 /// Two clicks count as a double click within this time and this distance of each other.
@@ -48,6 +49,7 @@ impl Tree {
                     self.rehover();
                     let Some(target) = self.hit_test(at) else { return };
                     self.input.pressed = self.path(target);
+                    self.set_states(State::ACTIVE, true);
                     self.input.capture = self.dispatch(PointerKind::Down, target, button, 0).captured;
                 }
                 PointerInput::Up => self.release(button, at, now),
@@ -57,6 +59,7 @@ impl Tree {
 
     fn release(&mut self, button: MouseButton, at: Point, now: Instant) {
         let under = self.hit_test(at);
+        self.set_states(State::ACTIVE, false);
         let pressed = std::mem::take(&mut self.input.pressed);
         if let Some(target) = self.input.capture.take().or(under) {
             self.dispatch(PointerKind::Up, target, button, 0);
@@ -143,10 +146,19 @@ impl Tree {
         }
         let was = std::mem::replace(&mut self.input.hover, now.clone());
         for &node in was.iter().filter(|n| !now.contains(n)) {
+            self.set_state(node, State::HOVER, false);
             self.visit(PointerKind::Leave, node);
         }
         for &node in now.iter().rev().filter(|n| !was.contains(n)) {
+            self.set_state(node, State::HOVER, true);
             self.visit(PointerKind::Enter, node);
+        }
+    }
+
+    /// Sets or clears a state on the path of the press.
+    fn set_states(&mut self, state: State, on: bool) {
+        for i in 0..self.input.pressed.len() {
+            self.set_state(self.input.pressed[i], state, on);
         }
     }
 

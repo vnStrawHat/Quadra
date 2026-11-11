@@ -23,7 +23,7 @@ mod scroll;
 mod text;
 mod view;
 
-pub use div::{Div, column, div, row};
+pub use div::{Div, Refine, column, div, row};
 pub use flow::{Region, dynamic, each, mount_in, show};
 pub use list::uniform_list;
 pub use prop::{IntoProp, Prop};

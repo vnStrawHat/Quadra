@@ -10,12 +10,15 @@ use std::rc::Rc;
 use quadra_reactive::{Deferred, deferred};
 
 use crate::node::{NodeId, PaintStyle};
+use crate::style::Patch;
 use crate::tree::Tree;
 
 pub(crate) enum Op {
     Text(NodeId, String),
     Layout(NodeId, Box<quadra_layout::Style>),
     Paint(NodeId, PaintStyle),
+    /// One value of a node's own style: what a reactive property writes.
+    Patch(NodeId, Patch),
     /// Anything else: mounting, removing, a widget of the caller's own.
     With(Box<dyn FnOnce(&mut Tree)>),
 }
@@ -52,6 +55,11 @@ impl Handle {
 
     pub fn set_paint_style(&self, node: NodeId, style: PaintStyle) {
         self.push(Op::Paint(node, style));
+    }
+
+    /// Changes one value of a node's own style.
+    pub fn patch_style(&self, node: NodeId, patch: Patch) {
+        self.push(Op::Patch(node, patch));
     }
 
     /// Runs `f` at the start of each frame, in the frame's batch, until it returns false.

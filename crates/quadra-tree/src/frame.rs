@@ -8,7 +8,7 @@ use quadra_prim::Size;
 use quadra_reactive::batch;
 use quadra_text::TextSystem;
 
-use crate::node::{Node, NodeId, PaintStyle, flag};
+use crate::node::{Node, NodeId, flag};
 use crate::shared::Op;
 use crate::text::Text;
 use crate::tree::Tree;
@@ -21,6 +21,8 @@ pub struct FrameStats {
     pub bindings_run: u32,
     /// Property writes applied.
     pub writes: u32,
+    /// Nodes whose style was resolved again because a state changed.
+    pub nodes_styled: u32,
     /// Requests a layout node had to work out.
     pub nodes_laid_out: u32,
     /// Leaves measured.
@@ -65,6 +67,7 @@ impl Tree {
         self.relayout
             || self.repaint
             || !self.recompose.is_empty()
+            || !self.restyle.is_empty()
             || self.shared.wake.get()
             || self.animating()
     }
@@ -106,6 +109,7 @@ impl Tree {
         // is done again. After four rounds the rest waits for the next frame.
         for _ in 0..4 {
             self.update();
+            self.style_pass();
             times.update += lap();
             self.layout_pass();
             times.layout += lap();
@@ -154,6 +158,7 @@ impl Tree {
             Op::Text(node, text) => self.set_text(node, &text),
             Op::Layout(node, style) => self.set_layout_style(node, *style),
             Op::Paint(node, style) => self.set_paint_style(node, style),
+            Op::Patch(node, patch) => self.patch_style(node, patch),
             Op::With(f) => f(self),
         }
     }
@@ -163,30 +168,6 @@ impl Tree {
     pub fn set_text(&mut self, id: NodeId, text: &str) {
         if self.widget_mut::<Text>(id).is_some_and(|t| t.set_text(text)) {
             self.mark_layout(id);
-            self.mark(id, flag::PAINT);
-        }
-    }
-
-    /// Replaces a node's layout style. Nothing happens if it is equal or the node is gone.
-    pub fn set_layout_style(&mut self, id: NodeId, style: quadra_layout::Style) {
-        let Some(node) = self.get(id) else { return };
-        let layout = node.layout;
-        let old = self.layout.style(layout);
-        if *old != style {
-            // Border widths and the frame the content sits in are painted from this style.
-            // Showing or hiding changes how many instances the subtree has: ranges move.
-            let shown = if old.display != style.display { flag::RELIST } else { 0 };
-            self.layout.set_style(layout, style);
-            self.relayout = true;
-            self.mark(id, flag::PAINT | flag::SUBTREE | shown);
-        }
-    }
-
-    /// Replaces a node's paint style. Nothing happens if it is equal or the node is gone.
-    pub fn set_paint_style(&mut self, id: NodeId, style: PaintStyle) {
-        let Some(node) = self.get_mut(id) else { return };
-        if node.paint != style {
-            node.paint = style;
             self.mark(id, flag::PAINT);
         }
     }

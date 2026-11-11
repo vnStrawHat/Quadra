@@ -36,6 +36,18 @@ pub struct ShapedGlyph {
     pub cluster: u32,
 }
 
+/// A rasterized glyph: 8-bit coverage, or RGBA when `color`. `left` and `top` place its
+/// top-left corner against the pen position on the baseline.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct GlyphBitmap {
+    pub left: i32,
+    pub top: i32,
+    pub width: u32,
+    pub height: u32,
+    pub color: bool,
+    pub pixels: Vec<u8>,
+}
+
 /// What shapes text: everything but colour and decoration, which only paint.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextStyle {
@@ -79,4 +91,8 @@ pub trait TextBackend {
     /// Shapes a word. Characters the face lacks come back in fallback faces: each glyph names
     /// its own face.
     fn shape(&mut self, text: &str, face: FaceId, size: f32) -> Vec<ShapedGlyph>;
+
+    /// Rasterizes a glyph at a size in device pixels, its pen `phase` quarters of a pixel
+    /// to the right. A glyph with no ink is a bitmap of no size.
+    fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap>;
 }

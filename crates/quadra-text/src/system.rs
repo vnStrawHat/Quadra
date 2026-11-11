@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::types::{FaceId, FontKey, ShapedGlyph, TextBackend, TextStyle};
+use crate::types::{FaceId, FontKey, GlyphBitmap, ShapedGlyph, TextBackend, TextStyle};
 
 /// A shaped token: a word, or a run of one separator.
 #[derive(Debug, Default, PartialEq)]
@@ -115,6 +115,11 @@ impl TextSystem {
         self.words.put(key, token.into(), word.clone());
         self.stats.words_shaped += 1;
         word
+    }
+
+    /// A glyph's bitmap, from the backend: not cached here, the glyph atlas keeps tiles.
+    pub fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap> {
+        self.backend.rasterize(face, glyph, size, phase)
     }
 
     /// The counters since the last call, which resets them.

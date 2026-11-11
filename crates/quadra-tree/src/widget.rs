@@ -7,6 +7,8 @@ use quadra_prim::{Edges, Rect, Size};
 use quadra_render::{Clip, Instance, Quad, push_quad};
 use quadra_text::TextSystem;
 
+use crate::fonts::Fonts;
+
 /// A node's behaviour. Every method has a default: a widget implements what it does. Most
 /// nodes have no widget at all: a box is its style.
 pub trait Widget: Any {
@@ -37,6 +39,8 @@ pub struct PaintCx<'a> {
     /// Device pixels per logical pixel.
     pub scale: f32,
     pub clip: Clip,
+    /// Where glyph tiles come from.
+    pub fonts: &'a mut Fonts,
     pub(crate) out: &'a mut Vec<Instance>,
 }
 

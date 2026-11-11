@@ -9,22 +9,20 @@
 //! every frame. The numbers are not comparable with a real window's yet: no glyph is
 //! rasterized and nothing reaches a GPU.
 
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_prim::{Color, Size};
 use quadra_reactive::signal;
 use quadra_render::{DeviceSize, NullRenderer, Renderer, SurfaceTarget};
-use quadra_text::{FakeBackend, TextSystem};
-use quadra_tree::{FrameStats, Tree};
+use quadra_text::FakeBackend;
+use quadra_tree::{Fonts, FrameStats, Tree};
 use quadra_ui::{View, column, div, mount_root, row, text, uniform_list};
 
 const FRAMES: u32 = 600;
 
 fn run(name: &str, view: impl View, mut change: impl FnMut(u32)) {
-    let text_system = Rc::new(RefCell::new(TextSystem::new(Box::new(FakeBackend::new()))));
-    let mut tree = Tree::new(text_system);
+    let fonts = Fonts::new(Box::new(FakeBackend::new()));
+    let mut tree = Tree::new(fonts.clone());
     let mut renderer = NullRenderer::new();
     let surface =
         renderer.create_surface(SurfaceTarget::Offscreen, DeviceSize { width: 800, height: 600 }).unwrap();
@@ -33,6 +31,7 @@ fn run(name: &str, view: impl View, mut change: impl FnMut(u32)) {
     let start = Instant::now();
     mount_root(&mut tree, view);
     tree.frame(size, 1.0);
+    renderer.sync_atlas(fonts.borrow_mut().glyphs.core_mut()).unwrap();
     renderer.draw(surface, tree.scene_mut(), Color::WHITE).unwrap();
     let first = start.elapsed().as_secs_f64() * 1e3;
 
@@ -46,6 +45,7 @@ fn run(name: &str, view: impl View, mut change: impl FnMut(u32)) {
     for n in 0..FRAMES {
         change(100 + n);
         let stats = tree.frame(size, 1.0);
+        renderer.sync_atlas(fonts.borrow_mut().glyphs.core_mut()).unwrap();
         renderer.draw(surface, tree.scene_mut(), Color::WHITE).unwrap();
         total.bindings_run += stats.bindings_run;
         total.nodes_laid_out += stats.nodes_laid_out;

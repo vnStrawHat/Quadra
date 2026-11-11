@@ -7,6 +7,7 @@ use quadra_layout::{Display, LayoutTree};
 use quadra_prim::{Point, Rect};
 use quadra_render::{Clip, Instance, Quad, Rebuild};
 
+use crate::fonts::Fonts;
 use crate::frame::FrameStats;
 use crate::node::{NOT_PAINTED, Node, NodeId, flag};
 use crate::tree::Tree;
@@ -30,6 +31,7 @@ struct Painter<'a> {
     todo: &'a mut Vec<NodeId>,
     /// Layers found on the way whose place changed.
     moved: &'a mut Vec<NodeId>,
+    fonts: &'a mut Fonts,
     /// The node whose layer is being painted.
     root: NodeId,
     scale: f32,
@@ -47,13 +49,14 @@ pub(crate) fn paint_own(
     layout: &LayoutTree,
     rect: Rect,
     scale: f32,
+    fonts: &mut Fonts,
     out: &mut Vec<Instance>,
 ) {
     let style = layout.style(node.layout);
     if style.display == Display::None {
         return;
     }
-    let mut cx = PaintCx { rect, scale, clip: Clip::NONE, out };
+    let mut cx = PaintCx { rect, scale, clip: Clip::NONE, fonts, out };
     let (background, border_color, radii) =
         (node.paint.background, node.paint.border_color, node.paint.radii);
     cx.quad(Quad {
@@ -94,7 +97,7 @@ impl Painter<'_> {
         let force = force || flags & flag::SUBTREE != 0;
         if force || flags & flag::PAINT != 0 {
             let from = self.scratch.len() as u32;
-            paint_own(&mut self.nodes[i], self.layout, rect, self.scale, self.scratch);
+            paint_own(&mut self.nodes[i], self.layout, rect, self.scale, self.fonts, self.scratch);
             let to = self.scratch.len() as u32;
             self.nodes[i].fresh = (from, to);
             self.stats.nodes_painted += 1;
@@ -206,13 +209,16 @@ impl Tree {
         let all = std::mem::take(&mut self.repaint_all);
         let mut todo = std::mem::take(&mut self.todo);
         todo.push(root);
+        let fonts = self.fonts.clone();
+        let mut fonts = fonts.borrow_mut();
         while let Some(layer_root) = todo.pop() {
-            self.paint_layer(layer_root, all, &mut todo);
+            self.paint_layer(layer_root, all, &mut todo, &mut fonts);
         }
+        drop(fonts);
         self.todo = todo;
     }
 
-    fn paint_layer(&mut self, root: NodeId, all: bool, todo: &mut Vec<NodeId>) {
+    fn paint_layer(&mut self, root: NodeId, all: bool, todo: &mut Vec<NodeId>, fonts: &mut Fonts) {
         let i = root.index as usize;
         // As the root of its own layer the node starts at zero; as a child it is one marker.
         // The two sets of numbers are swapped in for the pass and back out after it.
@@ -232,6 +238,7 @@ impl Tree {
             stats: &mut self.stats,
             todo,
             moved: &mut self.recompose,
+            fonts,
             root,
             scale: self.scale,
             all,

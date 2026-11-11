@@ -5,6 +5,7 @@ use quadra_prim::{Color, Corners, Rect, Size};
 use quadra_render::{Kind, Sprite};
 use quadra_text::{Paragraph, TextStyle};
 
+use crate::fonts::{GlyphTile, SUBPIXEL_STEPS};
 use crate::widget::{MeasureCx, PaintCx, Widget};
 
 pub struct Text {
@@ -15,11 +16,14 @@ pub struct Text {
     /// text or the style changed.
     paragraph: Option<Paragraph>,
     stale: bool,
+    /// The tiles of the glyphs last painted. Holding them keeps them in the atlas: the
+    /// instances in the layer point at their rectangles.
+    tiles: Vec<GlyphTile>,
 }
 
 impl Text {
     pub fn new(text: impl Into<String>, style: TextStyle, color: Color) -> Text {
-        Text { text: text.into(), style, color, paragraph: None, stale: false }
+        Text { text: text.into(), style, color, paragraph: None, stale: false, tiles: Vec::new() }
     }
 
     pub fn text(&self) -> &str {
@@ -69,26 +73,35 @@ impl Widget for Text {
 
     fn paint(&mut self, cx: &mut PaintCx) {
         let Some(paragraph) = &self.paragraph else { return };
+        self.tiles.clear();
         let (ascent, descent) = paragraph.metrics();
-        let (size, line_px) = (paragraph.style().size, paragraph.style().line_px());
+        let (size, line_px, scale) = (paragraph.style().size, paragraph.style().line_px(), cx.scale);
         for line in paragraph.lines() {
-            let baseline = cx.rect.y + line.y + (line_px - ascent - descent) / 2.0 + ascent;
+            // Baselines sit on whole pixels; along the line a glyph keeps a quarter-pixel phase.
+            let baseline =
+                ((cx.rect.y + line.y + (line_px - ascent - descent) / 2.0 + ascent) * scale).round();
             let (glyphs, origin) = paragraph.line_glyphs(line);
-            for g in glyphs.iter().filter(|g| g.id != b' ' as u16 && g.id != b'\t' as u16) {
-                // ponytail: every glyph is a box of half an em by 0.7 em, as the fake backend
-                // rasterizes. Real tiles come with the atlases (specs/07, specs/08).
-                let x = cx.rect.x + g.x - origin;
-                let bounds = cx.device(Rect::new(x, baseline - size * 0.7 - g.y, size * 0.5, size * 0.7));
+            for g in glyphs {
+                let x = (cx.rect.x + g.x - origin) * scale;
+                let phase = ((x - x.floor()) * SUBPIXEL_STEPS as f32) as u8;
+                let Some(tile) = cx.fonts.glyph(g.face, g.id, size * scale, phase) else { continue };
+                if tile.rect.w == 0 {
+                    continue; // no ink: a space
+                }
+                let (left, top) =
+                    (x.floor() + tile.meta.left, baseline - (g.y * scale).round() + tile.meta.top);
                 let sprite = Sprite {
-                    bounds,
-                    uv: [0.0; 4],
-                    slice: 0,
+                    bounds: Rect::new(left, top, tile.rect.w as f32, tile.rect.h as f32),
+                    uv: tile.uv,
+                    slice: tile.rect.slice,
                     color: self.color,
                     radii: Corners::default(),
                     glyph: true,
                 };
-                let instance = sprite.instance(Kind::Mono, &cx.clip);
+                let instance =
+                    sprite.instance(if tile.meta.color { Kind::Poly } else { Kind::Mono }, &cx.clip);
                 cx.push(instance);
+                self.tiles.push(tile);
             }
         }
     }

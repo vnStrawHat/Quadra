@@ -5,6 +5,7 @@ use quadra_layout::Display;
 use quadra_prim::Point;
 use quadra_render::Instance;
 
+use crate::fonts::Fonts;
 use crate::node::NodeId;
 use crate::paint::paint_own;
 use crate::tree::Tree;
@@ -14,6 +15,8 @@ impl Tree {
     /// the instances, each node's range, and each layer's constants. Returns the first
     /// difference, or `None`. Call it after a frame.
     pub fn verify_paint(&mut self) -> Option<String> {
+        let fonts = self.fonts.clone();
+        let fonts = &mut *fonts.borrow_mut();
         let mut layers = Vec::from_iter(self.root);
         let mut wrong = None;
         while let Some(root) = layers.pop() {
@@ -30,6 +33,7 @@ impl Tree {
                 root,
                 Point::new(-origin.x, -origin.y),
                 0,
+                fonts,
                 &mut fresh,
                 &mut layers,
                 &mut wrong,
@@ -60,6 +64,7 @@ impl Tree {
         root: NodeId,
         origin: Point,
         parent_start: usize,
+        fonts: &mut Fonts,
         out: &mut Vec<Instance>,
         layers: &mut Vec<NodeId>,
         wrong: &mut Option<String>,
@@ -77,12 +82,12 @@ impl Tree {
             own = out.len() - start;
         } else {
             let rect = self.layout.rect(self.nodes[i].layout).translate(origin.x, origin.y);
-            paint_own(&mut self.nodes[i], &self.layout, rect, self.scale, out);
+            paint_own(&mut self.nodes[i], &self.layout, rect, self.scale, fonts, out);
             own = out.len() - start;
             if shown {
                 for k in 0..self.nodes[i].children.len() {
                     let child = self.nodes[i].children[k];
-                    self.verify_node(child, root, rect.origin(), start, out, layers, wrong);
+                    self.verify_node(child, root, rect.origin(), start, fonts, out, layers, wrong);
                 }
             }
         }

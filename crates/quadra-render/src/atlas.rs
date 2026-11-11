@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
 
+use crate::hasher::FastBuild;
 use crate::packing::{AtlasCore, AtlasKind, TileRect};
 
 /// A rectangle of an atlas and what its owner knows about it (a glyph's offsets).
@@ -44,7 +45,7 @@ pub struct AtlasStats {
 
 pub struct Atlas<K, M> {
     core: AtlasCore,
-    tiles: HashMap<K, Entry<M>>,
+    tiles: HashMap<K, Entry<M>, FastBuild>,
     clock: u64,
     budget: usize,
     over_budget: bool,
@@ -56,7 +57,7 @@ impl<K: Hash + Eq + Clone, M> Atlas<K, M> {
     pub fn new(kind: AtlasKind, slice_size: u32, budget: usize) -> Atlas<K, M> {
         Atlas {
             core: AtlasCore::new(kind, slice_size),
-            tiles: HashMap::new(),
+            tiles: HashMap::default(),
             clock: 0,
             budget,
             over_budget: false,

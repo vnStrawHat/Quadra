@@ -9,14 +9,15 @@ use std::rc::Rc;
 
 use quadra_prim::{Color, Size};
 use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
-use quadra_text::{FakeBackend, TextSystem};
-use quadra_tree::{FrameStats, Tree};
+use quadra_text::FakeBackend;
+use quadra_tree::{Fonts, FrameStats, Tree};
 
 pub struct Harness {
     pub tree: Tree,
     pub renderer: NullRenderer,
-    /// The text system the tree shapes with: its counters are part of what a test may assert.
-    pub text: Rc<RefCell<TextSystem>>,
+    /// The text system and glyph atlases the tree uses: their counters are part of what a
+    /// test may assert.
+    pub fonts: Rc<RefCell<Fonts>>,
     surface: SurfaceId,
     /// The window's size in logical pixels, and its scale. Change them to resize.
     pub size: Size,
@@ -32,13 +33,13 @@ impl Default for Harness {
 impl Harness {
     /// A window of 800 x 600 logical pixels at scale 1.
     pub fn new() -> Harness {
-        let text = Rc::new(RefCell::new(TextSystem::new(Box::new(FakeBackend::new()))));
+        let fonts = Fonts::new(Box::new(FakeBackend::new()));
         let mut renderer = NullRenderer::new();
         let size = DeviceSize { width: 800, height: 600 };
         let surface =
             renderer.create_surface(SurfaceTarget::Offscreen, size).expect("the null renderer has surfaces");
-        let tree = Tree::new(text.clone());
-        Harness { tree, renderer, text, surface, size: Size::new(800.0, 600.0), scale: 1.0 }
+        let tree = Tree::new(fonts.clone());
+        Harness { tree, renderer, fonts, surface, size: Size::new(800.0, 600.0), scale: 1.0 }
     }
 
     /// Runs one frame and draws it, and returns what the tree visited and what the renderer
@@ -51,6 +52,9 @@ impl Harness {
             height: (self.size.height * self.scale).round() as u32,
         };
         self.renderer.resize_surface(self.surface, device).expect("the surface exists");
+        // One statement: the fonts must be free again before the paint check below.
+        let synced = self.renderer.sync_atlas(self.fonts.borrow_mut().glyphs.core_mut());
+        synced.expect("the null renderer takes tiles");
         self.renderer
             .draw(self.surface, self.tree.scene_mut(), Color::WHITE)
             .expect("the null renderer draws");

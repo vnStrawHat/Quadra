@@ -8,12 +8,13 @@ use std::rc::Rc;
 use quadra_layout::{Direction, Length};
 use quadra_prim::{Color, Size};
 use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
-use quadra_text::{FakeBackend, TextStyle, TextSystem};
-use quadra_tree::{FrameStats, NodeId, PaintStyle, Style, Text, Tree};
+use quadra_text::{FakeBackend, TextStyle};
+use quadra_tree::{Fonts, FrameStats, NodeId, PaintStyle, Style, Text, Tree};
 
 pub struct Window {
     pub tree: Tree,
     pub renderer: NullRenderer,
+    pub fonts: Rc<RefCell<Fonts>>,
     surface: SurfaceId,
     pub size: Size,
     pub scale: f32,
@@ -21,18 +22,20 @@ pub struct Window {
 
 impl Window {
     pub fn new() -> Window {
-        let text = Rc::new(RefCell::new(TextSystem::new(Box::new(FakeBackend::new()))));
+        let fonts = Fonts::new(Box::new(FakeBackend::new()));
         let mut renderer = NullRenderer::new();
         let surface = renderer
             .create_surface(SurfaceTarget::Offscreen, DeviceSize { width: 800, height: 600 })
             .unwrap();
-        Window { tree: Tree::new(text), renderer, surface, size: Size::new(800.0, 600.0), scale: 1.0 }
+        let tree = Tree::new(fonts.clone());
+        Window { tree, fonts, renderer, surface, size: Size::new(800.0, 600.0), scale: 1.0 }
     }
 
     /// Runs a frame and draws it. The layer must be what a paint from scratch gives, and the
     /// renderer's copy must be the layer.
     pub fn frame(&mut self) -> (FrameStats, RenderStats) {
         let stats = self.tree.frame(self.size, self.scale);
+        self.renderer.sync_atlas(self.fonts.borrow_mut().glyphs.core_mut()).unwrap();
         self.renderer.draw(self.surface, self.tree.scene_mut(), Color::WHITE).unwrap();
         assert_eq!(self.tree.verify_paint(), None);
         let scene = self.tree.scene();

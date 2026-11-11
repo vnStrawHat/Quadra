@@ -7,6 +7,24 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-11 — the scenes with glyph tiles (on 0e95923 plus the uncommitted glyph tiles)
+
+The same run as below, now that text is painted from atlas tiles: every glyph looks its tile up
+by face, glyph, device size and subpixel phase, and the text node keeps the handles.
+
+| Scene | A frame | With the standard hasher |
+|---|---|---|
+| list | 0.007 ms | 0.008 ms |
+| grid | 0.443 ms | 0.509 ms |
+| document | 0.663 ms | 0.934 ms |
+
+The lookup is the cost: 15,600 glyphs a frame in `document`. The atlas now hashes its keys with
+a multiply-and-rotate hasher instead of the standard one, which is built to resist chosen keys
+and took a third of the frame. What is left is about 42 ns a glyph. `document` at 0.66 ms of
+CPU before any GPU work is already near the V build's whole frame (0.69 ms): painting only the
+lines near the visible part, as the V build does, is the likely answer, to decide with the real
+backend.
+
 ## 2026-11-11 — the comparison scenes without a window (on c92b93f plus the uncommitted `quadra-ui`)
 
 `tools/cargo.sh run --release -p quadra-ui --example scenes`

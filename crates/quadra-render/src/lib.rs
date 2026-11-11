@@ -6,6 +6,7 @@
 //! layer says changed.
 
 mod atlas;
+mod hasher;
 mod instance;
 mod layer;
 mod null;
@@ -14,6 +15,7 @@ mod renderer;
 mod scene;
 
 pub use atlas::{Atlas, AtlasStats, Tile, TileRef};
+pub use hasher::{FastBuild, FastHasher};
 pub use instance::{
     Clip, FLAG_BORDER, FLAG_GLYPH, FLAG_GRADIENT, Instance, Kind, Line, LineMode, Quad, Shadow, Sprite,
     push_quad,

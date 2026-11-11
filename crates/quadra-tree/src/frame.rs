@@ -192,8 +192,9 @@ impl Tree {
         let Some(root) = self.root.filter(|_| std::mem::take(&mut self.relayout)) else { return };
         let root = self.nodes[root.index as usize].layout;
         {
-            let mut text = self.text.borrow_mut();
-            let mut measurer = Measurer { nodes: &mut self.nodes, owners: &self.owners, text: &mut text };
+            let mut fonts = self.fonts.borrow_mut();
+            let mut measurer =
+                Measurer { nodes: &mut self.nodes, owners: &self.owners, text: &mut fonts.text };
             self.layout.layout(root, RootSize::Fill(self.size), &mut measurer);
         }
         let stats = self.layout.take_stats();

@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use crate::grapheme::next_grapheme;
-use crate::types::{FaceId, FaceMetrics, FontKey, ShapedGlyph, TextBackend};
+use crate::types::{FaceId, FaceMetrics, FontKey, GlyphBitmap, ShapedGlyph, TextBackend};
 
 pub struct FakeBackend {
     families: Vec<Rc<str>>,
@@ -75,5 +75,15 @@ impl TextBackend for FakeBackend {
             i = next_grapheme(text, i);
         }
         out
+    }
+
+    /// A solid box of half an em by 0.7 em standing on the baseline; nothing for a space.
+    fn rasterize(&mut self, _: FaceId, glyph: u16, size: f32, _phase: u8) -> Option<GlyphBitmap> {
+        if glyph == b' ' as u16 || glyph == b'\t' as u16 {
+            return Some(GlyphBitmap::default());
+        }
+        let (width, height) = ((size * 0.5).round() as u32, (size * 0.7).round() as u32);
+        let pixels = vec![255; (width * height) as usize];
+        Some(GlyphBitmap { left: 0, top: -(height as i32), width, height, color: false, pixels })
     }
 }

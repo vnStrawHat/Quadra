@@ -91,12 +91,18 @@ node's size.
 The structural budgets of specs/14 that can be met so far are tests
 (`crates/quadra-ui/tests/budgets.rs`, `tests/list.rs`).
 
-Next, in order: the native crate (Win32 window, D3D11, DirectWrite) with atlases and glyph
-tiles, then the comparison bench against the V baseline: that is the go/no-go of phase R1.
+Atlases (`quadra-render`) and glyph tiles (`quadra-tree::Fonts`: the text system plus the
+coverage and colour atlases, shared by an app's windows) are in: text is painted from tiles
+the text node holds handles to.
+
+Next, in order: the native crate `quadra-native-win` (the first with the `windows` dependency
+and `unsafe`): a Win32 window and message loop, the D3D11 renderer (the HLSL of the V
+repository's `quadra/gpu/d3d11/shaders/prims.hlsl`, changed for per-layer constants and
+texture arrays; shaders are compiled with `fxc` from the Windows SDK), the DirectWrite text
+backend; then the comparison bench against the V baseline: that is the go/no-go of phase R1.
 Still missing below that: style variants and tokens (specs/13), input (specs/09), semantics
-(specs/12), rows of different heights. An open question from the first numbers: whether paint
-should skip what is far outside the visible part of a layer (docs/benchmarks.md, the document
-scene).
+(specs/12), rows of different heights. An open question from the numbers: whether paint should
+skip what is far outside the visible part of a layer (docs/benchmarks.md, the document scene).
 
 Always read the gate's exit status, not its output through a pipe:
 `tools/check.sh prod > .tmp/check.log 2>&1 && git commit ...`.

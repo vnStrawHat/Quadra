@@ -8,8 +8,8 @@ use quadra_layout::{LayoutTree, RectChange};
 use quadra_prim::{Point, Rect, Size};
 use quadra_reactive::{Signal, signal};
 use quadra_render::{Instance, LayerId, Scene};
-use quadra_text::TextSystem;
 
+use crate::fonts::Fonts;
 use crate::frame::FrameStats;
 use crate::layers::LayerState;
 use crate::node::{NOT_PAINTED, Node, NodeId, PaintStyle, Style, flag};
@@ -25,7 +25,7 @@ pub struct Tree {
     pub(crate) owners: Vec<u32>,
     pub(crate) scene: Scene,
     pub(crate) root_layer: LayerId,
-    pub(crate) text: Rc<RefCell<TextSystem>>,
+    pub(crate) fonts: Rc<RefCell<Fonts>>,
     pub(crate) shared: Rc<Shared>,
     pub(crate) root: Option<NodeId>,
     /// The size and scale of the last frame.
@@ -51,8 +51,9 @@ pub struct Tree {
 }
 
 impl Tree {
-    /// A tree whose text is shaped by `text`, which every window of an app shares.
-    pub fn new(text: Rc<RefCell<TextSystem>>) -> Tree {
+    /// A tree whose text is shaped and painted with `fonts`, which every window of an app
+    /// shares.
+    pub fn new(fonts: Rc<RefCell<Fonts>>) -> Tree {
         let mut scene = Scene::new();
         let root_layer = scene.add_layer();
         scene.set_roots(&[root_layer]);
@@ -63,7 +64,7 @@ impl Tree {
             owners: Vec::new(),
             scene,
             root_layer,
-            text,
+            fonts,
             shared: Rc::default(),
             root: None,
             size: Size::ZERO,

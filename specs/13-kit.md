@@ -146,6 +146,16 @@ As built so far:
   is `Drawing` in the tree, and `drawing(svg)` the view for any drawing. A button takes
   `.icon(body)` before its label (14 px, 16 in the two larger sizes), and
   `icon_button(body, name)` is a ghost of 22 px with the icon alone, named for a reader.
+- **`input(value)`**: the field of `quadra-ui` in a frame (the field's fill, a hairline
+  border, 8 by 6 px around a line of text, at least 32 high, 240 wide unless told):
+  `.placeholder(..)`, `.password()`, `.icon(body)` before the text, `.invalid(..)`,
+  `.disabled(..)`, `.width(..)`, `.on_submit(..)`, `.test_id(..)`. The border is where the
+  focus shows; a value that is not accepted has the colour of errors with the focus or
+  without (the state `INVALID`, applied after every other); a disabled field is a step back
+  and takes neither the focus nor text. A reader hears the placeholder as its name.
+- **Colours of fields are text values** (`placeholder_color`, `selection_color`,
+  `caret_color` on boxes, roles if wanted): the kit's root sets them for the window, an input
+  its own selection. A field shows its placeholder while it holds nothing, composing counted.
 - A component that builds a view from properties it was given passes them on as they are:
   `Prop<T>` is itself something a setter takes.
 - The example `gallery` of the kit shows the components in a real window in either theme;

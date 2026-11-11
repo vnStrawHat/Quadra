@@ -108,6 +108,12 @@ props! {
     italic: bool => Italic;
     /// The height of its lines, as a multiple of the size.
     line_height: f32 => LineHeight;
+    /// What stands in the fields of the box where text is to be typed.
+    placeholder_color: Paint => PlaceholderColor;
+    /// The fill behind selected text in the box.
+    selection_color: Paint => SelectionColor;
+    /// The carets of the fields in the box.
+    caret_color: Paint => CaretColor;
 }
 
 impl Refine {

@@ -61,11 +61,13 @@ pub struct TextField {
     /// Where the caret wants to be while it moves up and down: it keeps its x through lines
     /// that are too short for it.
     goal_x: Option<f32>,
-    /// The style and the colour that hold at its node.
+    /// The style and the colours that hold at its node: of the text, of what stands where
+    /// text is to be typed, of the fill behind selected text, and of the caret.
     style: TextStyle,
-    color: Color,
-    /// Behind the selected text.
-    pub selection: Color,
+    colors: [Color; 4],
+    /// What stands in the field while it holds nothing.
+    pub placeholder: String,
+    hint: Option<Paragraph>,
     /// It has the focus: the caret shows.
     pub focused: bool,
     /// The caret's blink: shown now, and touched since the blink last turned (then it
@@ -92,8 +94,9 @@ impl TextField {
             width: f32::INFINITY,
             goal_x: None,
             style: TextStyle::default(),
-            color: Color::BLACK,
-            selection: crate::text::SELECTION,
+            colors: [Color::BLACK; 4],
+            placeholder: String::new(),
+            hint: None,
             focused: false,
             caret_on: true,
             touched: false,
@@ -194,7 +197,21 @@ impl TextField {
             }
             none => none.insert(Paragraph::new(text, shown, self.style.clone())),
         };
-        paragraph.wrap(text, if self.multiline { self.width } else { f32::INFINITY });
+        let width = if self.multiline { self.width } else { f32::INFINITY };
+        paragraph.wrap(text, width);
+        // The placeholder is laid out the same way, while there is one to show.
+        self.hint = match (self.hint.take(), self.placeholder.is_empty()) {
+            (_, true) => None,
+            (Some(mut hint), _) => {
+                hint.set_text(text, &self.placeholder);
+                hint.set_style(text, &self.style);
+                Some(hint)
+            }
+            (None, _) => Some(Paragraph::new(text, self.placeholder.as_str(), self.style.clone())),
+        };
+        if let Some(hint) = &mut self.hint {
+            hint.wrap(text, width);
+        }
     }
 
     /// Where the caret is, from the field's corner, as the text is laid out now.

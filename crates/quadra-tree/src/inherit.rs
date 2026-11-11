@@ -11,8 +11,8 @@ use quadra_text::TextStyle;
 use crate::node::{Node, NodeId};
 use crate::tree::Tree;
 
-/// The bit of the colour among the values: the one that shapes nothing.
-const COLOR: u8 = 1;
+/// The bits of the values that shape text: a change of any other only paints.
+const SHAPES: u16 = 0b11111;
 
 /// What a node says of the text in it and under it. A value that is not set is the one of
 /// the node around it.
@@ -26,6 +26,12 @@ pub struct TextValues {
     /// A multiple of the size.
     pub line_height: Option<f32>,
     pub color: Option<Color>,
+    /// What stands where text is to be typed. Unset: the text's colour at half strength.
+    pub placeholder: Option<Color>,
+    /// Behind selected text.
+    pub selection: Option<Color>,
+    /// The caret of a field. Unset: the text's colour.
+    pub caret: Option<Color>,
 }
 
 impl TextValues {
@@ -41,37 +47,46 @@ impl TextValues {
         self.italic = self.italic.or(outer.italic);
         self.line_height = self.line_height.or(outer.line_height);
         self.color = self.color.or(outer.color);
+        self.placeholder = self.placeholder.or(outer.placeholder);
+        self.selection = self.selection.or(outer.selection);
+        self.caret = self.caret.or(outer.caret);
     }
 
-    /// A bit for each value that is set: `COLOR` for the colour.
-    fn set_bits(&self) -> u8 {
+    /// A bit for each value that is set: the five that shape text first (`SHAPES`), then
+    /// the colours.
+    fn set_bits(&self) -> u16 {
         let bits = [
-            self.color.is_some(),
             self.family.is_some(),
             self.size.is_some(),
             self.weight.is_some(),
             self.italic.is_some(),
             self.line_height.is_some(),
+            self.color.is_some(),
+            self.placeholder.is_some(),
+            self.selection.is_some(),
+            self.caret.is_some(),
         ];
-        bits.iter().enumerate().fold(0, |all, (i, &set)| all | (set as u8) << i)
+        bits.iter().enumerate().fold(0, |all, (i, &set)| all | (set as u16) << i)
     }
 
     /// A bit for each value that is not the same in `other`.
-    fn differs(&self, other: &TextValues) -> u8 {
+    fn differs(&self, other: &TextValues) -> u16 {
         let bits = [
-            self.color != other.color,
             self.family != other.family,
             self.size != other.size,
             self.weight != other.weight,
             self.italic != other.italic,
             self.line_height != other.line_height,
+            self.color != other.color,
+            self.placeholder != other.placeholder,
+            self.selection != other.selection,
+            self.caret != other.caret,
         ];
-        bits.iter().enumerate().fold(0, |all, (i, &set)| all | (set as u8) << i)
+        bits.iter().enumerate().fold(0, |all, (i, &set)| all | (set as u16) << i)
     }
 
     fn complete(&self) -> bool {
-        let shape = self.family.is_some() && self.size.is_some() && self.weight.is_some();
-        shape && self.italic.is_some() && self.line_height.is_some() && self.color.is_some()
+        self.set_bits() == (1 << 9) - 1
     }
 }
 
@@ -80,11 +95,18 @@ impl TextValues {
 pub struct Inherited {
     pub style: TextStyle,
     pub color: Color,
+    pub placeholder: Color,
+    pub selection: Color,
+    pub caret: Color,
 }
+
+/// Behind selected text where no node says another colour.
+const SELECTION: Color = Color::rgba(0x3366FF4D);
 
 impl Default for Inherited {
     fn default() -> Inherited {
-        Inherited { style: TextStyle::default(), color: Color::BLACK }
+        let (style, color) = (TextStyle::default(), Color::BLACK);
+        Inherited { style, color, placeholder: color.alpha(0.5), selection: SELECTION, caret: color }
     }
 }
 
@@ -99,6 +121,7 @@ pub(crate) fn inherit(nodes: &[Node], index: usize) -> Inherited {
         at = nodes[i].parent.map(|parent| parent.index as usize);
     }
     let base = Inherited::default();
+    let color = values.color.unwrap_or(base.color);
     Inherited {
         style: TextStyle {
             family: values.family.unwrap_or(base.style.family),
@@ -107,7 +130,10 @@ pub(crate) fn inherit(nodes: &[Node], index: usize) -> Inherited {
             italic: values.italic.unwrap_or(base.style.italic),
             line_height: values.line_height.unwrap_or(base.style.line_height),
         },
-        color: values.color.unwrap_or(base.color),
+        color,
+        placeholder: values.placeholder.unwrap_or(color.alpha(color.a * 0.5)),
+        selection: values.selection.unwrap_or(base.selection),
+        caret: values.caret.unwrap_or(color),
     }
 }
 
@@ -158,7 +184,7 @@ impl Tree {
             }
             under.extend(node.children.iter().map(|&child| (child, changed)));
             if node.widget.is_some() {
-                if changed & !COLOR != 0 {
+                if changed & SHAPES != 0 {
                     self.mark_layout(at);
                 }
                 self.mark_paint(at);

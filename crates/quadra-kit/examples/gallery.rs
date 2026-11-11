@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use quadra::{Align, Div, Signal, Theme, WindowOptions, column, row, signal, text, use_context};
-use quadra_kit::{Size, Variant, button, dark, icon, icon_button, icons, light, size, token};
+use quadra_kit::{Size, Variant, button, dark, icon, icon_button, icons, input, light, size, token};
 
 /// A section: its title, then its rows.
 fn section(title: &'static str) -> Div {
@@ -51,6 +51,20 @@ fn icons() -> Div {
     section("Icons").child(line().gap(24.0).children(sizes)).child(line().child(ok).child(wrong))
 }
 
+fn inputs() -> Div {
+    let (name, query, secret) =
+        (signal("Quadra".to_string()), signal(String::new()), signal("secret".to_string()));
+    let wrong = signal("not a number".to_string());
+    let first = line()
+        .child(input(name).placeholder("Name"))
+        .child(input(query).placeholder("Search").icon(icons::SEARCH));
+    let second = line()
+        .child(input(secret).password().placeholder("Password").width(160.0))
+        .child(input(wrong).invalid(true).width(160.0))
+        .child(input(signal(String::new())).placeholder("Disabled").disabled(true).width(160.0));
+    section("Inputs").child(first).child(second)
+}
+
 fn main() -> quadra::Result<()> {
     let view = || {
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
@@ -62,8 +76,8 @@ fn main() -> quadra::Result<()> {
         let name = text(move || if is_dark.get() { "One Dark Pro" } else { "One Light" });
         let name = name.size(size::TEXT_LG.size).weight(size::WEIGHT_STRONG);
         let head = line().child(name).child(button("Other theme").size(Size::Sm).on_click(swap));
-        quadra_kit::root().padding(24.0).gap(20.0).child(head).child(buttons()).child(icons())
+        quadra_kit::root().padding(24.0).gap(20.0).child(head).child(buttons()).child(icons()).child(inputs())
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
-    app.window(WindowOptions::new("Quadra gallery").size(640.0, 420.0), view)?.run()
+    app.window(WindowOptions::new("Quadra gallery").size(640.0, 540.0), view)?.run()
 }

@@ -62,6 +62,11 @@ impl Div {
         })
     }
 
+    /// What the box holds is not accepted, or is: a style can follow it (`State::INVALID`).
+    pub fn invalid<M>(self, invalid: impl IntoProp<bool, M>) -> Self {
+        self.with_value(invalid.into_prop(), |tree, id, on| tree.set_state(id, State::INVALID, on))
+    }
+
     pub fn expanded<M>(self, expanded: impl IntoProp<bool, M>) -> Self {
         self.with_value(expanded.into_prop(), |tree, id, on| {
             set(tree, id, State::EXPANDED, on, |says, on| says.expanded = Some(on))

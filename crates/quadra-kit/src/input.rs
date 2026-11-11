@@ -1,0 +1,123 @@
+//! The text input of the kit (specs/behaviour/15, "Text input"): the field of `quadra-ui` in
+//! a frame. The frame's border says where the focus is and whether the value is accepted.
+
+use quadra_layout::Align;
+use quadra_platform::Cursor;
+use quadra_reactive::Signal;
+use quadra_tree::{NodeId, State};
+use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, text_input};
+
+use crate::icon::icon;
+use crate::{size, token};
+
+pub struct Input {
+    value: Signal<String>,
+    placeholder: String,
+    password: bool,
+    invalid: Prop<bool>,
+    disabled: Prop<bool>,
+    width: f32,
+    lead: Option<&'static str>,
+    test_id: Option<&'static str>,
+    submit: Option<Submit>,
+}
+
+/// What runs with the text when Enter is pressed.
+type Submit = Box<dyn FnMut(&str)>;
+
+/// A field of one line that edits `value`, 240 px wide unless told otherwise.
+pub fn input(value: Signal<String>) -> Input {
+    Input {
+        value,
+        placeholder: String::new(),
+        password: false,
+        invalid: Prop::Value(false),
+        disabled: Prop::Value(false),
+        width: 240.0,
+        lead: None,
+        test_id: None,
+        submit: None,
+    }
+}
+
+impl Input {
+    /// What stands in the field while it is empty, and what a reader calls it.
+    pub fn placeholder(mut self, text: &str) -> Self {
+        self.placeholder = text.to_string();
+        self
+    }
+
+    /// A dot for each character, and nothing of it copied.
+    pub fn password(mut self) -> Self {
+        self.password = true;
+        self
+    }
+
+    /// The value is not accepted: the border says so, with the focus or without.
+    pub fn invalid<M>(mut self, invalid: impl IntoProp<bool, M>) -> Self {
+        self.invalid = invalid.into_prop();
+        self
+    }
+
+    pub fn disabled<M>(mut self, disabled: impl IntoProp<bool, M>) -> Self {
+        self.disabled = disabled.into_prop();
+        self
+    }
+
+    pub fn width(mut self, px: f32) -> Self {
+        self.width = px;
+        self
+    }
+
+    /// An icon before the text: one of [`crate::icons`].
+    pub fn icon(mut self, body: &'static str) -> Self {
+        self.lead = Some(body);
+        self
+    }
+
+    pub fn test_id(mut self, id: &'static str) -> Self {
+        self.test_id = Some(id);
+        self
+    }
+
+    /// Runs `f` with the text when Enter is pressed in the field.
+    pub fn on_submit(mut self, f: impl FnMut(&str) + 'static) -> Self {
+        self.submit = Some(Box::new(f));
+        self
+    }
+
+    fn build(self) -> Div {
+        let field = text_input(self.value).placeholder(&self.placeholder);
+        let field = if self.password { field.password() } else { field };
+        let field = match self.submit {
+            Some(submit) => field.on_submit(submit),
+            None => field,
+        };
+        // The name for tests is the field's: the frame means nothing to a reader.
+        let field = match self.test_id {
+            Some(id) => field.test_id(id),
+            None => field,
+        };
+        let frame = row().align_items(Align::Center).gap(4.0).width(self.width).min_height(32.0);
+        let frame = frame.padding_x(8.0).padding_y(6.0).radius(size::RADIUS_LG).border(1.0);
+        let frame = frame.bg(token::INPUT_BG).border_color(token::LINE).cursor(Cursor::Text);
+        let frame = frame.selection_color(token::ACCENT_TINT);
+        // The border is where the focus shows; a value that is not accepted keeps the
+        // colour of errors with the focus or without; a disabled field is a step back.
+        let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
+        let frame = frame.disabled(self.disabled);
+        let frame = frame.when(State::DISABLED, |s| s.bg(token::PANEL).text_color(token::TEXT_DISABLED));
+        let frame = frame.invalid(self.invalid).when(State::INVALID, |s| s.border_color(token::ERROR));
+        let frame = match self.lead {
+            Some(body) => frame.child(icon(body).color(token::TEXT_2)),
+            None => frame,
+        };
+        frame.child(field)
+    }
+}
+
+impl View for Input {
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        self.build().mount(cx)
+    }
+}

@@ -46,6 +46,10 @@ pub enum Patch {
     Italic(bool),
     /// The height of a line, as a multiple of the size.
     LineHeight(f32),
+    /// What stands where text is to be typed, the fill behind selected text, and the caret.
+    PlaceholderColor(Paint),
+    SelectionColor(Paint),
+    CaretColor(Paint),
 }
 
 impl Patch {
@@ -61,6 +65,9 @@ impl Patch {
             Patch::FontWeight(v) => t.weight = Some(v),
             Patch::Italic(v) => t.italic = Some(v),
             Patch::LineHeight(v) => t.line_height = Some(v),
+            Patch::PlaceholderColor(v) => t.placeholder = Some(theme.resolve(v)),
+            Patch::SelectionColor(v) => t.selection = Some(theme.resolve(v)),
+            Patch::CaretColor(v) => t.caret = Some(theme.resolve(v)),
             layout => match layout {
                 Patch::Width(v) => l.width = v,
                 Patch::Height(v) => l.height = v,
@@ -92,6 +99,7 @@ impl Patch {
         match self {
             Background(_) | BorderColor(_) | Radius(_) => Part::Paint,
             TextColor(_) | TextSize(_) | FontWeight(_) | Italic(_) | LineHeight(_) => Part::Text,
+            PlaceholderColor(_) | SelectionColor(_) | CaretColor(_) => Part::Text,
             _ => Part::Layout,
         }
     }
@@ -100,10 +108,13 @@ impl Patch {
     /// another theme.
     pub fn themed(self) -> bool {
         use Patch::*;
-        matches!(
-            self,
-            Background(Paint::Token(..)) | BorderColor(Paint::Token(..)) | TextColor(Paint::Token(..))
-        )
+        let (Background(paint) | BorderColor(paint) | TextColor(paint)) = self else {
+            let (PlaceholderColor(paint) | SelectionColor(paint) | CaretColor(paint)) = self else {
+                return false;
+            };
+            return matches!(paint, Paint::Token(..));
+        };
+        matches!(paint, Paint::Token(..))
     }
 }
 

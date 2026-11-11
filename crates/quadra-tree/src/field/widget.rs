@@ -31,7 +31,7 @@ impl Widget for TextField {
 
     fn paint(&mut self, cx: &mut PaintCx) {
         let (_, caret_index, composed, selected) = self.shown();
-        let color = self.color;
+        let [color, placeholder, selection, caret_color] = self.colors;
         let Some(paragraph) = &self.paragraph else { return };
         let (rect, line_px) = (cx.rect, self.style.line_px());
         let (line, caret) = paragraph.place(caret_index);
@@ -59,11 +59,15 @@ impl Widget for TextField {
         } else {
             for span in boxes(selected) {
                 let bounds = Rect::new(left + span.x, rect.y + span.y, span.width, tall);
-                cx.quad(Quad { bounds, background: self.selection, ..Quad::default() });
+                cx.quad(Quad { bounds, background: selection, ..Quad::default() });
             }
         }
         self.tiles.clear();
-        paint_glyphs(cx, paragraph, Point::new(left, rect.y), color, &mut self.tiles);
+        // An empty field shows its placeholder, until something is typed or composed.
+        match self.hint.as_ref().filter(|_| paragraph.text().is_empty()) {
+            Some(hint) => paint_glyphs(cx, hint, Point::new(left, rect.y), placeholder, &mut self.tiles),
+            None => paint_glyphs(cx, paragraph, Point::new(left, rect.y), color, &mut self.tiles),
+        }
         if self.focused {
             // One device pixel wide at least, on a whole pixel: a caret is never blurred.
             let x = ((left + caret) * cx.scale).round() / cx.scale;
@@ -71,7 +75,7 @@ impl Widget for TextField {
             let bounds = cx.device(Rect::new(x, rect.y + top, width, tall));
             // Always one instance, clear while the blink hides it: a blink overwrites it in
             // place and moves nothing else of the layer.
-            let background = if self.caret_on { color } else { Color::TRANSPARENT };
+            let background = if self.caret_on { caret_color } else { Color::TRANSPARENT };
             cx.push(Quad { bounds, background, ..Quad::default() }.instance(&cx.clip));
         }
         cx.clip = outer;
@@ -79,7 +83,7 @@ impl Widget for TextField {
     }
 
     fn inherit(&mut self, inherited: &Inherited) {
-        self.color = inherited.color;
+        self.colors = [inherited.color, inherited.placeholder, inherited.selection, inherited.caret];
         self.style.clone_from(&inherited.style);
     }
 
@@ -92,5 +96,8 @@ impl Widget for TextField {
             says.role = Role::TextInput;
         }
         says.value = Some(self.shown().0.into_owned()); // of a password, the dots
+        if says.name.is_empty() {
+            says.name.clone_from(&self.placeholder); // what it asks for, when nothing names it
+        }
     }
 }

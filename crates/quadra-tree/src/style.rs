@@ -29,6 +29,8 @@ impl State {
     pub const EXPANDED: State = State(128);
     pub const DROP_TARGET: State = State(256);
     pub const DISABLED: State = State(512);
+    /// What the node holds is not accepted: a field whose value is wrong.
+    pub const INVALID: State = State(1024);
 
     pub fn contains(self, other: State) -> bool {
         self.0 & other.0 == other.0

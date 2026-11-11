@@ -11,15 +11,12 @@ use crate::fonts::{GlyphTile, SUBPIXEL_STEPS};
 use crate::inherit::Inherited;
 use crate::widget::{MeasureCx, PaintCx, Widget};
 
-/// Behind selected text.
-// ponytail: one colour here and in the text field; a token of the theme in R3.
-pub(crate) const SELECTION: Color = Color::rgba(0x3366FF4D);
-
 pub struct Text {
     text: String,
-    /// The style and the colour that hold at its node.
+    /// The style and the colours that hold at its node.
     style: TextStyle,
     color: Color,
+    selection: Color,
     /// Shaped at the first measure, when the text system is at hand, and again only when the
     /// text or the style changed.
     paragraph: Option<Paragraph>,
@@ -35,7 +32,8 @@ pub struct Text {
 impl Text {
     pub fn new(text: impl Into<String>) -> Text {
         let (text, style, color) = (text.into(), TextStyle::default(), Color::BLACK);
-        Text { text, style, color, paragraph: None, stale: false, selected: (0, 0), tiles: Vec::new() }
+        let (selected, selection) = ((0, 0), Color::TRANSPARENT);
+        Text { text, style, color, selection, paragraph: None, stale: false, selected, tiles: Vec::new() }
     }
 
     /// The offset in the text nearest a point from the node's corner.
@@ -115,14 +113,14 @@ impl Widget for Text {
         let (from, to) = (self.selected.0.min(self.selected.1), self.selected.0.max(self.selected.1));
         for span in paragraph.spans(from..to, self.style.size * 0.3) {
             let bounds = span.translate(cx.rect.x, cx.rect.y);
-            cx.quad(Quad { bounds, background: SELECTION, ..Quad::default() });
+            cx.quad(Quad { bounds, background: self.selection, ..Quad::default() });
         }
         self.tiles.clear();
         paint_glyphs(cx, paragraph, cx.rect.origin(), self.color, &mut self.tiles);
     }
 
     fn inherit(&mut self, inherited: &Inherited) {
-        self.color = inherited.color;
+        (self.color, self.selection) = (inherited.color, inherited.selection);
         if self.style != inherited.style {
             self.style.clone_from(&inherited.style);
             self.stale = true;

@@ -5,6 +5,7 @@
 //! on nodes), paragraphs (text nodes) and layers (painted output kept and patched).
 
 mod dispatch;
+mod focus;
 mod fonts;
 mod frame;
 mod input;
@@ -20,6 +21,7 @@ mod verify;
 mod widget;
 
 pub use dispatch::PointerInput;
+pub use focus::KeyEvent;
 pub use fonts::{Fonts, GlyphKey, GlyphMeta, GlyphTile, SUBPIXEL_STEPS};
 pub use frame::{FrameStats, PassTimes};
 pub use input::{PointerEvent, PointerKind};

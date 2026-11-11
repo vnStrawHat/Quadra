@@ -225,7 +225,17 @@ impl<R: Renderer> PlatformHandler for App<R> {
                     w.tree.wheel(delta, precise, at, mods);
                 }
             }
-            _ => {} // keys and text come with focus (specs/09)
+            PlatformEvent::Key { key, code, mods, down, repeat } => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.key(key, code, mods, down, repeat);
+                }
+            }
+            PlatformEvent::Focus(active) => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.set_active(active);
+                }
+            }
+            PlatformEvent::Text(_) => {} // text comes with the text input (specs/09)
         });
         self.request_frames();
     }

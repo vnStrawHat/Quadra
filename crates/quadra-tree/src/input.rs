@@ -7,6 +7,7 @@ use quadra_layout::{Display, Overflow};
 use quadra_platform::{Mods, MouseButton};
 use quadra_prim::Point;
 
+use crate::focus::KeyEvent;
 use crate::node::NodeId;
 use crate::tree::Tree;
 
@@ -61,11 +62,21 @@ impl PointerEvent {
     }
 }
 
-pub(crate) struct PointerHandler {
-    pub kind: PointerKind,
-    /// Runs on the way down from the root, before the handlers on the way up.
-    pub capture: bool,
-    pub run: Box<dyn FnMut(&mut PointerEvent)>,
+/// What a node does when events reach it. `capture`: on the way down from the root, before
+/// the handlers on the way up.
+pub(crate) enum Handler {
+    Pointer {
+        kind: PointerKind,
+        capture: bool,
+        run: Box<dyn FnMut(&mut PointerEvent)>,
+    },
+    Key {
+        down: bool,
+        capture: bool,
+        run: Box<dyn FnMut(&mut KeyEvent)>,
+    },
+    /// Focus came to the node (true) or left it.
+    Focus(Box<dyn FnMut(bool)>),
 }
 
 /// What the tree remembers of the pointer between events.
@@ -87,7 +98,7 @@ impl Tree {
     /// Runs `f` for pointer events of a kind that reach the node on their way up from the
     /// target. The handler ends with the node.
     pub fn on_pointer(&mut self, id: NodeId, kind: PointerKind, f: impl FnMut(&mut PointerEvent) + 'static) {
-        self.add_handler(id, PointerHandler { kind, capture: false, run: Box::new(f) });
+        self.add_handler(id, Handler::Pointer { kind, capture: false, run: Box::new(f) });
     }
 
     /// As [`Tree::on_pointer`], on the way down from the root: before every other handler.
@@ -97,10 +108,10 @@ impl Tree {
         kind: PointerKind,
         f: impl FnMut(&mut PointerEvent) + 'static,
     ) {
-        self.add_handler(id, PointerHandler { kind, capture: true, run: Box::new(f) });
+        self.add_handler(id, Handler::Pointer { kind, capture: true, run: Box::new(f) });
     }
 
-    fn add_handler(&mut self, id: NodeId, handler: PointerHandler) {
+    pub(crate) fn add_handler(&mut self, id: NodeId, handler: Handler) {
         if let Some(node) = self.get_mut(id) {
             node.handlers.push(handler);
         }

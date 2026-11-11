@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use std::time::{Duration, Instant};
 
-use quadra_platform::{Mods, MouseButton};
+use quadra_platform::{Key, Mods, MouseButton};
 use quadra_prim::{Color, Point, Size};
 use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
 use quadra_text::FakeBackend;
@@ -62,6 +62,12 @@ impl Harness {
     /// start of the content.
     pub fn wheel(&mut self, x: f32, y: f32, lines: f32) {
         self.tree.wheel(Point::new(0.0, lines), false, Point::new(x, y), Mods::NONE);
+    }
+
+    /// Presses a key and releases it, with modifiers held.
+    pub fn key(&mut self, key: Key, mods: Mods) {
+        self.tree.key(key, 0, mods, true, false);
+        self.tree.key(key, 0, mods, false, false);
     }
 
     /// Moves the pointer to a point, presses the main button and releases it.

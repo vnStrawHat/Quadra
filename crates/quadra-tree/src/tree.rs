@@ -47,6 +47,11 @@ pub struct Tree {
     pub(crate) input: InputState,
     /// Nodes whose state changed and that have a style variant for it.
     pub(crate) restyle: Vec<NodeId>,
+    /// The node keys go to, and whether the window itself has the keyboard.
+    pub(crate) focus: Option<NodeId>,
+    pub(crate) active: bool,
+    /// The focus came by the keyboard: it shows its ring.
+    pub(crate) focus_ring: bool,
     /// Layers waiting to be painted, during the paint pass.
     pub(crate) todo: Vec<NodeId>,
     /// By node index: the signal that follows the node's size (`Tree::size_signal`).
@@ -85,6 +90,9 @@ impl Tree {
             culled: Vec::new(),
             input: InputState::default(),
             restyle: Vec::new(),
+            focus: None,
+            active: true,
+            focus_ring: false,
             todo: Vec::new(),
             sizes: HashMap::new(),
             stats: FrameStats::default(),
@@ -142,6 +150,8 @@ impl Tree {
             layer: None,
             scope: None,
             handlers: Vec::new(),
+            focusable: false,
+            focus_scope: false,
             state: State::NONE,
             styled: None,
         };

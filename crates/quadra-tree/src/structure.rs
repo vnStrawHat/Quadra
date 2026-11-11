@@ -45,6 +45,7 @@ impl Tree {
     /// they owned never run again.
     pub fn remove(&mut self, id: NodeId) {
         let Some((parent, layout)) = self.get(id).map(|n| (n.parent, n.layout)) else { return };
+        self.focus_leaves(id);
         if let Some(parent) = parent {
             self.nodes[parent.index as usize].children.retain(|&c| c != id);
             self.mark(parent, flag::RELIST);
@@ -67,6 +68,7 @@ impl Tree {
         node.generation = node.generation.wrapping_add(1);
         node.widget = None;
         node.handlers = Vec::new();
+        (node.focusable, node.focus_scope) = (false, false);
         (node.state, node.styled) = (crate::State::NONE, None);
         self.sizes.remove(&id.index);
         if let Some(state) = node.layer.take().filter(|s| s.id != self.root_layer) {

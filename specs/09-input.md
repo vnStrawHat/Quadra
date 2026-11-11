@@ -61,6 +61,9 @@ Handlers are closures on nodes (05). A node with no handler for an event kind is
 - Focus moves emit focus and blur events and flag accessibility.
 - When the focused node is removed, focus goes to its nearest focusable ancestor, or to the
   node its focus scope names as fallback.
+- A window that does not have the keyboard shows no focus: the states are cleared, the node is
+  remembered, and both come back with the window.
+- App code focuses a node through its `NodeRef` (04); the focus moves in the next frame.
 
 ## Keys, contexts and actions
 

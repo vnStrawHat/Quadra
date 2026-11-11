@@ -9,7 +9,7 @@ use quadra_platform::{Mods, MouseButton};
 use quadra_prim::Point;
 use quadra_reactive::batch;
 
-use crate::input::{PointerEvent, PointerKind};
+use crate::input::{Handler, PointerEvent, PointerKind};
 use crate::node::NodeId;
 use crate::style::State;
 use crate::tree::Tree;
@@ -52,6 +52,8 @@ impl Tree {
                     let Some(target) = self.hit_test(at) else { return };
                     self.input.pressed = self.path(target);
                     self.set_states(State::ACTIVE, true);
+                    let path = self.input.pressed.clone();
+                    self.focus_on_press(&path);
                     self.input.capture = self.dispatch(PointerKind::Down, target, button, 0).captured;
                 }
                 PointerInput::Up => self.release(button, at, now),
@@ -144,16 +146,20 @@ impl Tree {
 
     /// Runs the node's handlers for the event's kind, if it has any.
     fn run_handlers(&mut self, id: NodeId, capture: bool, event: &mut PointerEvent) {
-        let wanted = |h: &crate::input::PointerHandler| h.kind == event.kind && h.capture == capture;
+        let kind = event.kind;
+        let wanted = |h: &Handler| matches!(h, Handler::Pointer { kind: k, capture: c, .. } if *k == kind && *c == capture);
         if !self.get(id).is_some_and(|node| node.handlers.iter().any(wanted)) {
             return;
         }
         let origin = self.window_rect(id).origin();
         (event.node, event.local) = (id, Point::new(event.at.x - origin.x, event.at.y - origin.y));
-        let kind = event.kind;
         for handler in &mut self.nodes[id.index as usize].handlers {
-            if handler.kind == kind && handler.capture == capture && !event.stopped {
-                (handler.run)(event);
+            if let Handler::Pointer { kind: k, capture: c, run } = handler
+                && *k == kind
+                && *c == capture
+                && !event.stopped
+            {
+                run(event);
             }
         }
     }

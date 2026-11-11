@@ -11,7 +11,7 @@ use quadra_prim::{Color, Corners, Edges};
 use crate::node::{NodeId, PaintStyle, Style, flag};
 use crate::tree::Tree;
 
-/// The states of a node that a style can follow. Dispatch sets the first four (specs/09); the
+/// The states of a node that a style can follow. Dispatch sets the first five (specs/09); the
 /// others are properties. Variants are applied in this order, a later one over an earlier.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct State(u16);
@@ -19,14 +19,17 @@ pub struct State(u16);
 impl State {
     pub const NONE: State = State(0);
     pub const HOVER: State = State(1);
-    pub const FOCUS: State = State(2);
-    pub const FOCUS_VISIBLE: State = State(4);
-    pub const ACTIVE: State = State(8);
-    pub const SELECTED: State = State(16);
-    pub const CHECKED: State = State(32);
-    pub const EXPANDED: State = State(64);
-    pub const DROP_TARGET: State = State(128);
-    pub const DISABLED: State = State(256);
+    /// The focus is on the node or on something under it.
+    pub const FOCUS_WITHIN: State = State(2);
+    pub const FOCUS: State = State(4);
+    /// The focus is on the node and came by the keyboard: it shows a ring.
+    pub const FOCUS_VISIBLE: State = State(8);
+    pub const ACTIVE: State = State(16);
+    pub const SELECTED: State = State(32);
+    pub const CHECKED: State = State(64);
+    pub const EXPANDED: State = State(128);
+    pub const DROP_TARGET: State = State(256);
+    pub const DISABLED: State = State(512);
 
     pub fn contains(self, other: State) -> bool {
         self.0 & other.0 == other.0

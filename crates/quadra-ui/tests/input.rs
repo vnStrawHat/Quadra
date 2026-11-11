@@ -113,3 +113,50 @@ fn the_wheel_scrolls_what_is_under_the_pointer_and_what_is_left_goes_outwards() 
     h.wheel(50.0, 100.0, 1.0); // nothing can scroll further: nothing changes, no frame
     assert!(h.frame_if_needed().is_none());
 }
+
+#[test]
+fn a_form_is_walked_with_tab_and_its_fields_hear_keys() {
+    use quadra_platform::{Key, Mods};
+    use quadra_ui::NodeRef;
+    let (typed, ring) = (signal(String::new()), Color::rgb(0x3366FF));
+    let field = |name: &'static str| {
+        let on_key = move |e: &mut quadra_tree::KeyEvent| {
+            typed.update(|t| t.push_str(&format!("{name}:{:?} ", e.key)))
+        };
+        div().size(100.0, 20.0).focusable().on_key_down(on_key).focus_visible(|s| s.border_color(ring))
+    };
+    let second = NodeRef::new();
+    let form = column().child(field("a")).child(div().size(100.0, 20.0)).child(field("b").node_ref(&second));
+    let mut h = Harness::new();
+    mount_root(&mut h.tree, form);
+    h.frame();
+    let nodes = h.tree.children(h.tree.root().unwrap()).to_vec();
+    assert_eq!(second.get(), Some(nodes[2]));
+
+    h.key(Key::Tab, Mods::NONE);
+    h.key(Key::X, Mods::NONE);
+    let (stats, _) = h.frame();
+    // The Tab went to the root, where the focus was not yet; the X to the field. One node
+    // was styled: the field shows its ring.
+    assert_eq!((typed.get_untracked().as_str(), stats.nodes_styled), ("a:X ", 1));
+    assert_eq!(h.tree.paint_style(nodes[0]).border_color, ring);
+    h.key(Key::Tab, Mods::NONE); // past the box that cannot have the focus
+    h.key(Key::Y, Mods::NONE);
+    h.frame();
+    assert_eq!(typed.get_untracked(), "a:X a:Tab b:Y "); // a key is heard where the focus is
+    assert_eq!(
+        (h.tree.focused(), h.tree.paint_style(nodes[0]).border_color),
+        (Some(nodes[2]), Color::default())
+    );
+
+    h.click(50.0, 10.0); // a click focuses without the ring
+    h.frame();
+    assert_eq!(
+        (h.tree.focused(), h.tree.paint_style(nodes[0]).border_color),
+        (Some(nodes[0]), Color::default())
+    );
+    second.focus(); // from app code: in the next frame
+    assert_eq!(h.tree.focused(), Some(nodes[0]));
+    h.frame();
+    assert_eq!(h.tree.focused(), Some(nodes[2]));
+}

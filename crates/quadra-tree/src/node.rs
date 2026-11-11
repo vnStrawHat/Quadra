@@ -4,7 +4,7 @@ use quadra_layout::LayoutId;
 use quadra_prim::{Color, Corners};
 use quadra_reactive::Scope;
 
-use crate::input::PointerHandler;
+use crate::input::Handler;
 use crate::layers::LayerState;
 use crate::style::{State, Styled};
 use crate::widget::Widget;
@@ -68,7 +68,11 @@ pub(crate) struct Node {
     /// The scope that ends with this node: its bindings, handlers and tasks.
     pub scope: Option<Scope>,
     /// What runs when pointer events reach the node (specs/09).
-    pub handlers: Vec<PointerHandler>,
+    pub handlers: Vec<Handler>,
+    /// It can have the focus (specs/09, "Focus").
+    pub focusable: bool,
+    /// Tab and Shift+Tab stay among what is under it: a dialog, a menu.
+    pub focus_scope: bool,
     /// The states that are set (specs/04, "State bits").
     pub state: State,
     /// Its own style and what its states change of it, when it has variants.

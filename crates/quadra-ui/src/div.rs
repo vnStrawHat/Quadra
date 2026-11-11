@@ -3,21 +3,24 @@
 use quadra_layout::{Align, Direction, Justify, Length, Overflow};
 use quadra_platform::MouseButton;
 use quadra_prim::Color;
-use quadra_tree::{Handle, NodeId, Patch, PointerEvent, PointerKind, State, Style};
+use quadra_tree::{Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Tree};
+
+use crate::node_ref::NodeRef;
 
 use crate::prop::{IntoProp, Prop};
 use crate::view::{AnyView, MountCx, View};
 
 /// Makes a binding for one node once it is mounted.
 type Binder = Box<dyn FnOnce(NodeId, &Handle)>;
-type PointerFn = Box<dyn FnMut(&mut PointerEvent)>;
+/// Something to do with the node once it is mounted: a handler to attach, a flag to set.
+type Mount = Box<dyn FnOnce(&mut Tree, NodeId)>;
 
 #[derive(Default)]
 pub struct Div {
     style: Style,
     children: Vec<AnyView>,
     binders: Vec<Binder>,
-    handlers: Vec<(PointerKind, PointerFn)>,
+    mounts: Vec<Mount>,
     variants: Vec<(State, Vec<Patch>)>,
 }
 
@@ -119,6 +122,21 @@ impl Div {
         self.when(State::HOVER, refine)
     }
 
+    /// While the box has the focus.
+    pub fn focus(self, refine: impl FnOnce(Refine) -> Refine) -> Self {
+        self.when(State::FOCUS, refine)
+    }
+
+    /// While the box has a focus that came by the keyboard: where a focus ring is drawn.
+    pub fn focus_visible(self, refine: impl FnOnce(Refine) -> Refine) -> Self {
+        self.when(State::FOCUS_VISIBLE, refine)
+    }
+
+    /// While the box or something in it has the focus.
+    pub fn focus_within(self, refine: impl FnOnce(Refine) -> Refine) -> Self {
+        self.when(State::FOCUS_WITHIN, refine)
+    }
+
     /// While the box is pressed.
     pub fn active(self, refine: impl FnOnce(Refine) -> Refine) -> Self {
         self.when(State::ACTIVE, refine)
@@ -141,8 +159,42 @@ impl Div {
 
     /// Runs `f` for pointer events of a kind that reach the box: a press, a release, a move,
     /// the pointer entering or leaving, a click with any button.
-    pub fn on_pointer(mut self, kind: PointerKind, f: impl FnMut(&mut PointerEvent) + 'static) -> Self {
-        self.handlers.push((kind, Box::new(f)));
+    pub fn on_pointer(self, kind: PointerKind, f: impl FnMut(&mut PointerEvent) + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_pointer(id, kind, f))
+    }
+
+    /// Runs `f` for key presses that reach the box: it has the focus, or something in it has.
+    pub fn on_key_down(self, f: impl FnMut(&mut KeyEvent) + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_key(id, true, f))
+    }
+
+    pub fn on_key_up(self, f: impl FnMut(&mut KeyEvent) + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_key(id, false, f))
+    }
+
+    /// Runs `f` with true when the focus comes to the box, and with false when it leaves.
+    pub fn on_focus(self, f: impl FnMut(bool) + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_focus(id, f))
+    }
+
+    /// Lets the box have the focus: a click on it focuses it, and Tab stops at it.
+    pub fn focusable(self) -> Self {
+        self.on_mount(|tree, id| tree.set_focusable(id, true))
+    }
+
+    /// Keeps Tab and Shift+Tab among what is in the box: a dialog, a menu.
+    pub fn focus_scope(self) -> Self {
+        self.on_mount(|tree, id| tree.set_focus_scope(id, true))
+    }
+
+    /// Fills `node` with the box's node when it is mounted: how app code reaches it later.
+    pub fn node_ref(self, node: &NodeRef) -> Self {
+        let node = node.clone();
+        self.on_mount(move |tree, id| node.fill(id, tree.handle()))
+    }
+
+    fn on_mount(mut self, f: impl FnOnce(&mut Tree, NodeId) + 'static) -> Self {
+        self.mounts.push(Box::new(f));
         self
     }
 
@@ -165,8 +217,8 @@ impl View for Div {
         for bind in self.binders {
             bind(id, &cx.handle);
         }
-        for (kind, run) in self.handlers {
-            cx.tree.on_pointer(id, kind, run);
+        for mount in self.mounts {
+            mount(cx.tree, id);
         }
         for (state, patches) in self.variants {
             cx.tree.set_variant(id, state, patches);

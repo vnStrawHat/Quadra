@@ -18,6 +18,7 @@
 mod div;
 mod flow;
 mod list;
+mod node_ref;
 mod prop;
 mod scroll;
 mod text;
@@ -26,6 +27,7 @@ mod view;
 pub use div::{Div, Refine, column, div, row};
 pub use flow::{Region, dynamic, each, mount_in, show};
 pub use list::uniform_list;
+pub use node_ref::NodeRef;
 pub use prop::{IntoProp, Prop};
 pub use scroll::scroll;
 pub use text::{TextView, text};

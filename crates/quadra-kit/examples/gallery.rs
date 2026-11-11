@@ -11,9 +11,9 @@ use quadra::{
 use quadra_kit::{
     MenuItem, NavItem, Rule, Size, Status, Tone, Variant, accordion, avatar, badge, breadcrumb, button, card,
     card_head, checkbox, dark, dialog, divider, field, heading, icon, icon_button, icons, input, kbd, light,
-    list, menu, number_input, radio_group, segmented, select, sidebar, size, slider, split, status_button,
-    status_divider, status_item, status_label, statusbar, switch, tabs, tag, textarea, titlebar, token,
-    toolbar, tooltip, validate,
+    list, menu, number_input, progress, progress_busy, radio_group, segmented, select, sidebar, size,
+    skeleton, slider, spinner, split, status_button, status_divider, status_item, status_label, statusbar,
+    switch, tabs, tag, textarea, titlebar, token, toolbar, tooltip, validate,
 };
 
 /// A section: its title, then its rows.
@@ -180,7 +180,9 @@ fn parts() -> Div {
     let framed = div().size(330.0, 90.0).border(1.0).border_color(token::LINE).child(panes);
     let boxes =
         line().align_items(Align::Start).gap(16.0).child(about).child(column().width(330.0).child(sections));
-    section("Parts").child(heading("Heading", 2)).child(chips).child(boxes).child(framed)
+    let under_way = line().gap(16.0).child(progress(0.6)).child(progress_busy()).child(spinner());
+    let under_way = under_way.child(skeleton(120.0, 16.0));
+    section("Parts").child(heading("Heading", 2)).child(chips).child(under_way).child(boxes).child(framed)
 }
 
 fn navigation() -> Div {

@@ -240,6 +240,14 @@ As built so far:
   what the first broken `Rule` says (`Required`, `MinLen`, `MaxLen`, `Email`): plain data.
   `textarea(value, rows)` is the text area of `quadra-ui` in the frame of an input, at
   least that many lines tall.
+- **What is under way** (`progress.rs`). `progress(part)` is a bar of 6 px on the chrome
+  plane, filled with the accent as far as `part` (0 to 1, a constant or reactive), and a
+  progress bar with its percentage to a reader. `progress_busy()` is the bar for what has
+  no end in sight: a third of it crosses the track every 1.4 s. `spinner()` is an open ring
+  that turns once in 0.9 s, in the colour of the text around it. `skeleton(width, height)`
+  is a block that stands for what is on its way, and pulses. In the three that move, what
+  moves is a layer and each frame writes one constant of it (an offset, a turn, an
+  opacity): nothing is laid out, painted or uploaded, at the exact place of every frame.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

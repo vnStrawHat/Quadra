@@ -16,6 +16,8 @@ pub(crate) struct LayerState {
     /// Added to the node's place: a scroll offset, a slide. Logical pixels.
     pub offset: Point,
     pub opacity: f32,
+    /// How far the layer is turned about its middle, in degrees.
+    pub turn: f32,
     /// Cut to the parent's padding box: the content of a scroll container.
     pub clip_to_parent: bool,
     /// Its marker stands in the list of the layer around it.
@@ -36,6 +38,7 @@ impl LayerState {
             id,
             offset: Point::ZERO,
             opacity: 1.0,
+            turn: 0.0,
             clip_to_parent: false,
             marked: false,
             culls: false,
@@ -144,6 +147,16 @@ impl Tree {
         }
     }
 
+    /// Turns a layer about its middle, by degrees: a spinner. Nothing is painted, and the
+    /// pointer goes by where the layer would be unturned.
+    pub fn set_layer_turn(&mut self, id: NodeId, degrees: f32) {
+        let Some(state) = self.get_mut(id).and_then(|n| n.layer.as_mut()) else { return };
+        if state.turn != degrees {
+            state.turn = degrees;
+            self.recompose.push(id);
+        }
+    }
+
     /// The compose pass: gives the renderer the constants of the layers whose place, offset or
     /// opacity changed. No widget code runs.
     pub(crate) fn compose_pass(&mut self) {
@@ -191,6 +204,12 @@ impl Tree {
             let (right, bottom) = ((padding_box.right() * s).round(), (padding_box.bottom() * s).round());
             Rect::new(left, top, (right - left).max(0.0), (bottom - top).max(0.0))
         });
-        LayerConstants { transform: Affine::translate(x, y), scissor, opacity: state.opacity }
+        let mut transform = Affine::translate(x, y);
+        if state.turn != 0.0 {
+            let size = self.layout.rect(node.layout).size();
+            let middle = Point::new(size.width * s / 2.0, size.height * s / 2.0);
+            transform = transform.then(Affine::rotate_about(state.turn, middle));
+        }
+        LayerConstants { transform, scissor, opacity: state.opacity }
     }
 }

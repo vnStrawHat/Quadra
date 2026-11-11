@@ -16,6 +16,18 @@ semantic children attach to the nearest semantic ancestor.
 - Bounds come from layout and layers at the time they are asked for.
 - A stable `test_id` may be set on any node. It is exposed to assistive technology as the
   automation id and to tests as a selector.
+- What a node says of itself is what was set on it, completed by its widget: a text is a
+  `Text` named by its text, an input a `TextInput` with its value. A view sets the rest:
+  `.role(Role::Button)`, `.label(..)`, `.test_id(..)`, and the states `.checked(..)`,
+  `.selected(..)`, `.disabled(..)`, `.expanded(..)`, each of which is at once what the node
+  says and the state its style follows (13).
+- A button, a link, an item, a checkbox and the like with no name are named by the text they
+  hold, and that text is then part of them, not a node of its own.
+- A click asked for semantically runs the click handlers on the node's path with no pointer
+  and no hit test. Focus is the tree's own. The other actions go to what the node registered
+  for them (an input sets its value).
+- A change is sent as the subtree of the semantic node it happened in: a text, a state, a
+  list of children, a rect, a scroll offset. Focus goes with every update.
 
 ## Accessibility
 

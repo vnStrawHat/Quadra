@@ -191,6 +191,7 @@ impl Tree {
         if let Some(node) = self.get(id) {
             self.layout.mark_dirty(node.layout);
             self.relayout = true;
+            self.semantics_changed(id); // what it holds changed: its text, its value
         }
     }
 
@@ -203,6 +204,7 @@ impl Tree {
 
     /// Flags a node whose rect a layout changed.
     fn rect_changed(&mut self, id: NodeId, moved: bool, resized: bool) {
+        self.semantics_changed(id); // its bounds, and those of what is under it
         let node = &self.nodes[id.index as usize];
         if node.layer.is_some() {
             // A layer that moved keeps its instances: its transform changes.

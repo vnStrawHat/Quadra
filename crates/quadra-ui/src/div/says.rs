@@ -1,0 +1,76 @@
+//! What a box is to a user (specs/12): its role, its name, its states. A state that a style
+//! can follow too (checked, selected, disabled, expanded) is set once here for both.
+
+use quadra_tree::{NodeId, Role, Semantics, State, Tree};
+
+use super::Div;
+use crate::prop::{IntoProp, Prop};
+
+impl Div {
+    /// Something to do with a value on the node, when it is mounted and, for a reactive
+    /// value, each time it changes.
+    fn with_value<T: 'static>(mut self, prop: Prop<T>, apply: fn(&mut Tree, NodeId, T)) -> Self {
+        match prop {
+            Prop::Value(value) => self.on_mount(move |tree, id| apply(tree, id, value)),
+            Prop::Reactive(read) => {
+                self.binders.push(Box::new(move |id, handle| {
+                    let writer = handle.clone();
+                    handle.bind(move || {
+                        let value = read();
+                        writer.with(move |tree| apply(tree, id, value));
+                    });
+                }));
+                self
+            }
+        }
+    }
+
+    /// What the box is: a button, a checkbox, a list. A box without a role means nothing by
+    /// itself, and what it holds belongs to the box around it.
+    pub fn role(self, role: Role) -> Self {
+        self.on_mount(move |tree, id| tree.update_semantics(id, |says| says.role = role))
+    }
+
+    /// What the box is called. Buttons, links, items and the like are called by the text
+    /// they hold when no name is given.
+    pub fn label<M>(self, name: impl IntoProp<String, M>) -> Self {
+        self.with_value(name.into_prop(), |tree, id, name| tree.update_semantics(id, |says| says.name = name))
+    }
+
+    /// A name that does not change with the language or the content, for tests and tools.
+    pub fn test_id(self, id: &'static str) -> Self {
+        self.on_mount(move |tree, node| {
+            tree.update_semantics(node, |says| says.test_id = Some(id.to_string()))
+        })
+    }
+
+    pub fn checked<M>(self, checked: impl IntoProp<bool, M>) -> Self {
+        self.with_value(checked.into_prop(), |tree, id, on| {
+            set(tree, id, State::CHECKED, on, |says, on| says.checked = Some(on))
+        })
+    }
+
+    pub fn selected<M>(self, selected: impl IntoProp<bool, M>) -> Self {
+        self.with_value(selected.into_prop(), |tree, id, on| {
+            set(tree, id, State::SELECTED, on, |says, on| says.selected = on)
+        })
+    }
+
+    pub fn disabled<M>(self, disabled: impl IntoProp<bool, M>) -> Self {
+        self.with_value(disabled.into_prop(), |tree, id, on| {
+            set(tree, id, State::DISABLED, on, |says, on| says.disabled = on)
+        })
+    }
+
+    pub fn expanded<M>(self, expanded: impl IntoProp<bool, M>) -> Self {
+        self.with_value(expanded.into_prop(), |tree, id, on| {
+            set(tree, id, State::EXPANDED, on, |says, on| says.expanded = Some(on))
+        })
+    }
+}
+
+/// A state of a node, for what it says of itself and for its style at once.
+fn set(tree: &mut Tree, id: NodeId, state: State, on: bool, says: fn(&mut Semantics, bool)) {
+    tree.update_semantics(id, |s| says(s, on));
+    tree.set_state(id, state, on);
+}

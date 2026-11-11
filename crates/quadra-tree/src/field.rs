@@ -5,6 +5,7 @@
 use std::borrow::Cow;
 use std::ops::Range;
 
+use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
 use quadra_prim::{Color, Point, Rect, Size};
 use quadra_render::Quad;
@@ -178,5 +179,12 @@ impl Widget for TextField {
 
     fn caret(&self) -> Option<Rect> {
         self.caret_at
+    }
+
+    fn semantics(&self, says: &mut Semantics) {
+        if says.role == Role::None {
+            says.role = Role::TextInput;
+        }
+        says.value = Some(self.buffer.text().to_string());
     }
 }

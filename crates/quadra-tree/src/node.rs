@@ -2,6 +2,7 @@
 
 use std::rc::Rc;
 
+use quadra_a11y::Semantics;
 use quadra_layout::LayoutId;
 use quadra_prim::{Color, Corners};
 use quadra_reactive::Scope;
@@ -77,6 +78,8 @@ pub(crate) struct Node {
     pub focus_scope: bool,
     /// Its name as a context of key bindings (specs/09).
     pub key_context: Option<Rc<str>>,
+    /// What it is to a user, when that was said (specs/12).
+    pub semantics: Option<Box<Semantics>>,
     /// The states that are set (specs/04, "State bits").
     pub state: State,
     /// Its own style and what its states change of it, when it has variants.

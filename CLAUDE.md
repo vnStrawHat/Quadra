@@ -105,8 +105,12 @@ caret that blinks on a timer (`quadra-async`: `timeout`, `interval`; `Harness::m
 shows it in a real window. One manual check is open: composing with a real input method
 (Vietnamese Telex) on a desktop.
 Overlays are in (`quadra-tree/src/overlay.rs`, `overlay(place, view)` in `quadra-ui`; the
-example has a menu). Next, in this order: semantics with the accessibility bridge
-(specs/12, `accesskit`), rows of different heights, tab index, cursors, the rest of
+example has a menu). The semantic tree is in (`quadra-a11y`; `quadra-tree/src/semantics.rs`;
+`.role(..)`, `.label(..)`, the state setters; the harness finds controls with `get_by_role`
+and the like and drives them with semantic actions: prefer these in new tests). Next, in
+this order: the bridge to the OS (`accesskit` and `accesskit_windows` in `quadra-native-win`,
+admitted by specs/01 R15 and `tools/check_deps.py`; the tree's `listen` and
+`take_semantic_update` are its side here), rows of different heights, tab index, cursors, the rest of
 `quadra-async` (tasks, the pool, inboxes) when the first thing needs it.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its

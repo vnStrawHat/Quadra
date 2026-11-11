@@ -2,6 +2,7 @@
 
 use std::any::Any;
 
+use quadra_a11y::Semantics;
 use quadra_layout::Known;
 use quadra_prim::{Edges, Rect, Size};
 use quadra_render::{Clip, Instance, Quad, push_quad};
@@ -25,6 +26,9 @@ pub trait Widget: Any {
 
     /// Emits the node's own instances, on top of the background the tree painted.
     fn paint(&mut self, _cx: &mut PaintCx) {}
+
+    /// Completes what the node says of itself to a user: a text names itself by its text.
+    fn semantics(&self, _says: &mut Semantics) {}
 
     /// Where text would be typed, from the node's top-left corner, for a widget that takes
     /// text: an input method opens beside it.

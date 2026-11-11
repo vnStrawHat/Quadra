@@ -1,5 +1,6 @@
 //! The text widget: a node that owns a paragraph (specs/08, "Paragraphs").
 
+use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
 use quadra_prim::{Color, Corners, Point, Rect, Size};
 use quadra_render::{Kind, Sprite};
@@ -75,6 +76,15 @@ impl Widget for Text {
         let Some(paragraph) = &self.paragraph else { return };
         self.tiles.clear();
         paint_glyphs(cx, paragraph, cx.rect.origin(), self.color, &mut self.tiles);
+    }
+
+    fn semantics(&self, says: &mut Semantics) {
+        if says.role == Role::None {
+            says.role = Role::Text;
+        }
+        if says.name.is_empty() {
+            says.name.clone_from(&self.text);
+        }
     }
 }
 

@@ -131,7 +131,7 @@ impl Tree {
         }
     }
 
-    fn send(&mut self, mut event: PointerEvent) -> PointerEvent {
+    pub(crate) fn send(&mut self, mut event: PointerEvent) -> PointerEvent {
         let path = self.path(event.target);
         for capture in [true, false] {
             let along = (0..path.len()).map(|i| if capture { path[path.len() - 1 - i] } else { path[i] });

@@ -11,7 +11,9 @@ use quadra_platform::{Clipboard, Mods, MouseButton};
 use quadra_prim::Color;
 use quadra_reactive::{Scope, Signal, use_context};
 use quadra_text::TextStyle;
-use quadra_tree::{NodeId, PointerEvent, PointerKind, Style, TEXT_CONTEXT, TextCommand, TextField, Tree};
+use quadra_tree::{
+    NodeId, PointerEvent, PointerKind, SemanticAction, Style, TEXT_CONTEXT, TextCommand, TextField, Tree,
+};
 
 use crate::view::{MountCx, View};
 
@@ -130,6 +132,20 @@ impl View for TextInput {
                 })
             });
         });
+        // Assistive technology, or a test, sets the whole value: one step of undo.
+        let writer = cx.handle.clone();
+        cx.tree.on_semantic(id, move |action| {
+            let SemanticAction::SetValue(text) = action else { return false };
+            let text = one_line(text);
+            writer.with(move |tree| {
+                edit(tree, id, value, |field| {
+                    field.buffer.select_all();
+                    field.buffer.insert(&text) || field.buffer.delete(quadra_text::Motion::Right)
+                })
+            });
+            true
+        });
+
         // While it has the focus the caret blinks, on a timer that lives as long as the focus
         // (in a scope of its own). Without timers in the context it simply stays shown.
         let (owner, blinks) = (Scope::current(), use_context::<Rc<Timers>>().is_some());

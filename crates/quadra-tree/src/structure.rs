@@ -39,6 +39,7 @@ impl Tree {
         self.layout.set_children(self.nodes[parent.index as usize].layout, &layouts);
         self.relayout = true;
         self.mark(parent, flag::RELIST);
+        self.semantics_changed(parent);
     }
 
     /// Removes a node and everything under it. Their scopes end: bindings, handlers and tasks
@@ -49,6 +50,7 @@ impl Tree {
         if let Some(parent) = parent {
             self.nodes[parent.index as usize].children.retain(|&c| c != id);
             self.mark(parent, flag::RELIST);
+            self.semantics_changed(parent);
         }
         if self.root == Some(id) {
             self.root = None;
@@ -70,6 +72,7 @@ impl Tree {
         node.widget = None;
         node.handlers = Vec::new();
         (node.focusable, node.focus_scope, node.key_context) = (false, false, None);
+        node.semantics = None;
         (node.state, node.styled) = (crate::State::NONE, None);
         self.sizes.remove(&id.index);
         if let Some(state) = node.layer.take().filter(|s| s.id != self.root_layer) {

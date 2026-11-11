@@ -7,6 +7,8 @@ use quadra_tree::{Action, Handle, KeyEvent, NodeId, Patch, PointerEvent, Pointer
 
 use crate::node_ref::NodeRef;
 
+mod says;
+
 use crate::prop::{IntoProp, Prop};
 use crate::view::{AnyView, MountCx, View};
 
@@ -19,7 +21,7 @@ type Mount = Box<dyn FnOnce(&mut Tree, NodeId)>;
 pub struct Div {
     style: Style,
     children: Vec<AnyView>,
-    binders: Vec<Binder>,
+    pub(crate) binders: Vec<Binder>,
     mounts: Vec<Mount>,
     variants: Vec<(State, Vec<Patch>)>,
 }
@@ -205,7 +207,7 @@ impl Div {
         self.on_mount(move |tree, id| node.fill(id, tree.handle()))
     }
 
-    fn on_mount(mut self, f: impl FnOnce(&mut Tree, NodeId) + 'static) -> Self {
+    pub(crate) fn on_mount(mut self, f: impl FnOnce(&mut Tree, NodeId) + 'static) -> Self {
         self.mounts.push(Box::new(f));
         self
     }

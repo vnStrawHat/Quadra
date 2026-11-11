@@ -128,6 +128,7 @@ impl Tree {
         if state.offset != offset {
             state.offset = offset;
             self.recompose.push(id);
+            self.semantics_changed(id); // what is under it is elsewhere in the window
         }
     }
 

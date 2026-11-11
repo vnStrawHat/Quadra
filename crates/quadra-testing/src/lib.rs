@@ -4,6 +4,8 @@
 //!
 //! Finding and driving controls through the semantic tree joins when semantics and input do.
 
+mod find;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -20,6 +22,8 @@ use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, Surfa
 use quadra_text::FakeBackend;
 use quadra_tree::{Fonts, FrameStats, NodeId, PointerInput, Tree};
 use quadra_ui::{View, mount_with};
+
+pub use find::Found;
 
 pub struct Harness {
     pub tree: Tree,

@@ -11,6 +11,7 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+quadra-a11y = { path = "../quadra-a11y" }
 quadra-async = { path = "../quadra-async" }
 quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }

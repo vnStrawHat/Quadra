@@ -40,6 +40,20 @@ impl<F> Dialog<F> {
     }
 }
 
+/// A question with two answers: `yes` does `on_yes`, Cancel does nothing, and both close the
+/// dialog.
+pub fn confirm(
+    open: Signal<bool>,
+    title: impl Into<String>,
+    message: impl Into<String>,
+    yes: impl Into<String>,
+    on_yes: impl Fn() + 'static,
+) -> impl View {
+    let message = message.into();
+    let ask = dialog(open, title, move || text(message.clone()));
+    ask.action("Cancel", Variant::Secondary, || {}).action(yes, Variant::Primary, on_yes)
+}
+
 impl<V, F> View for Dialog<F>
 where
     V: View + 'static,

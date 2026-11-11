@@ -9,7 +9,7 @@ use std::time::Duration;
 use quadra_async::{Timer, timeout};
 use quadra_reactive::{Scope, on_cleanup, signal};
 use quadra_tree::{Along, Anchor, NodeId, PointerEvent, PointerKind, Role, Side};
-use quadra_ui::{MountCx, View, row, text};
+use quadra_ui::{MountCx, View, div, row, text};
 
 use crate::popup::surface;
 use crate::token;
@@ -20,18 +20,27 @@ const REST: Duration = Duration::from_millis(500);
 pub struct Tooltip<V> {
     tip: String,
     keys: Option<String>,
+    meta: Option<String>,
     of: V,
 }
 
 /// Gives a view a tooltip: `tip` shows below it once the pointer has rested on it.
 pub fn tooltip<V: View + 'static>(tip: impl Into<String>, of: V) -> Tooltip<V> {
-    Tooltip { tip: tip.into(), keys: None, of }
+    Tooltip { tip: tip.into(), keys: None, meta: None, of }
 }
 
 impl<V> Tooltip<V> {
     /// The shortcut that does the same, muted, after the text: "Ctrl-S".
     pub fn keys(mut self, keys: impl Into<String>) -> Self {
         self.keys = Some(keys.into());
+        self
+    }
+}
+
+impl<V> Tooltip<V> {
+    /// A line under the text that says more, smaller and muted.
+    pub fn meta(mut self, words: impl Into<String>) -> Self {
+        self.meta = Some(words.into());
         self
     }
 }
@@ -61,7 +70,7 @@ impl<V: View + 'static> View for Tooltip<V> {
         cx.tree.on_pointer(of, PointerKind::Down, move |_| away());
 
         // The bubble is an overlay opened by hand, below the view and centred on it.
-        let (words, open) = (Rc::new((self.tip, self.keys)), Rc::new(Cell::new(None)));
+        let (words, open) = (Rc::new((self.tip, self.keys, self.meta)), Rc::new(Cell::new(None)));
         let (writer, last) = (cx.handle.clone(), open.clone());
         cx.handle.bind(move || {
             let (on, words, open) = (shown.get(), words.clone(), open.clone());
@@ -79,6 +88,13 @@ impl<V: View + 'static> View for Tooltip<V> {
                     None => line,
                 };
                 let bubble = surface(1).role(Role::Tooltip).max_width(288.0).child(line);
+                let bubble = match &words.2 {
+                    Some(meta) => {
+                        let more = text(meta.clone()).size(12.0).color(token::TEXT_2);
+                        bubble.child(div().padding_x(8.0).padding_bottom(4.0).child(more))
+                    }
+                    None => bubble,
+                };
                 let root = scope.run(|| bubble.mount(&mut MountCx::new(tree)));
                 tree.set_scope(root, scope);
                 let anchor = Anchor::Beside { node: of, side: Side::Below, along: Along::Center, gap: 4.0 };

@@ -49,15 +49,15 @@ pub use button::{Button, Size, Variant, button, icon_button};
 pub use choice::{Choice, radio_group, segmented};
 pub use combobox::{Combobox, combobox};
 pub use date::{Date, DatePicker, calendar, date_picker};
-pub use dialog::{Dialog, dialog};
+pub use dialog::{Dialog, confirm, dialog};
 pub use display::{
-    Tone, avatar, badge, card, card_head, divider, heading, kbd, key_label, label, tag, vdivider,
+    Tone, avatar, badge, card, card_head, divider, heading, kbd, key_hint, key_label, label, tag, vdivider,
 };
 pub use field::{Field, Rule, field, textarea, validate};
 pub use icon::icon;
 pub use input::{Input, input};
 pub use list::{List, list};
-pub use menu::{ContextMenu, MenuItem, context_menu, menu};
+pub use menu::{ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_button, menubar};
 pub use notice::{Notice, Notices, notices};
 pub use number::{NumberInput, number_input};
 pub use palette::{Command, command_palette, fuzzy, fuzzy_hits, marked};

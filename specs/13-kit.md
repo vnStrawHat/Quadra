@@ -138,6 +138,15 @@ As built so far:
   `error_tint_hover`: the tint 8 % towards its colour unless a theme says). The label is a
   text that takes the button's text colour. To a reader it is a button named by its label,
   pressed or not when it is a toggle.
+- **Smaller things.** A button shows a spinner before its label and does nothing while
+  `.loading(..)` says so (it is disabled then). A checkbox shows a dash while
+  `.indeterminate(..)` says some of what it stands for is checked. An input with
+  `.clearable()` has a cross at its end while it holds text, and a click on it empties it.
+  A tooltip takes `.meta(words)`, a smaller muted line under its text. `key_hint(keys,
+  does)` is the keys in a small tinted box, then what they do, in small mono italics.
+  `confirm(open, title, message, yes, on_yes)` is a dialog with Cancel and one answer.
+  `menu_button(label, || items)` is a ghost button that opens a menu under itself, and
+  `menubar([..])` a bar of 32 px of them.
 - **Icons.** `icon(icons::CHECK)` shows one of the kit's Lucide outlines (`quadra_kit::icons`,
   87 of them; ISC, `LICENSE-lucide.txt`), 14 px unless `.size(..)` says, in the colour of the
   text around it unless `.color(..)` says. A body is read once (`quadra-vector`); its mask is

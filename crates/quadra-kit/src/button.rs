@@ -6,13 +6,15 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use quadra_layout::{Align, Justify};
+use quadra_layout::{Align, Display, Justify};
 use quadra_platform::Cursor;
+use quadra_reactive::memo;
 use quadra_tree::{NodeId, Paint, Role, State};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, text};
+use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, row, show, text};
 
 use crate::action::{CONTROL, Confirm};
 use crate::icon::icon;
+use crate::progress::spinner;
 use crate::{size, token};
 
 /// What a button looks like.
@@ -60,6 +62,7 @@ pub struct Button {
     toggled: Option<Prop<bool>>,
     full: bool,
     muted: bool,
+    loading: Option<Prop<bool>>,
     test_id: Option<&'static str>,
     click: Option<Box<dyn FnMut()>>,
 }
@@ -82,6 +85,7 @@ pub fn button<M>(label: impl IntoProp<String, M>) -> Button {
         toggled: None,
         full: false,
         muted: false,
+        loading: None,
         test_id: None,
         click: None,
     }
@@ -132,6 +136,13 @@ impl Button {
     /// As wide as the box it is in.
     pub fn full(mut self) -> Self {
         self.full = true;
+        self
+    }
+
+    /// While `loading` is true the button shows a spinner before its label and does nothing:
+    /// what it started is under way.
+    pub fn loading<M>(mut self, loading: impl IntoProp<bool, M>) -> Self {
+        self.loading = Some(loading.into_prop());
         self
     }
 
@@ -199,7 +210,22 @@ impl Button {
         };
         // Disabled: as it is at rest, whatever the pointer does, in the colour of what is off.
         let off = |s: quadra_ui::Refine| s.bg(fill).border_color(border).text_color(token::TEXT_DISABLED);
-        let face = face.disabled(self.disabled).when(State::DISABLED, off);
+        // Busy is disabled, with a spinner where an icon goes.
+        let (face, busy) = match self.loading {
+            Some(loading) => {
+                let busy = match loading {
+                    Prop::Value(busy) => memo(move || busy),
+                    Prop::Reactive(read) => memo(read),
+                };
+                let idle = match self.disabled {
+                    Prop::Value(off) => Box::new(move || off) as Box<dyn Fn() -> bool>,
+                    Prop::Reactive(read) => read,
+                };
+                (face.disabled(move || busy.get() || idle()), Some(busy))
+            }
+            None => (face.disabled(self.disabled), None),
+        };
+        let face = face.when(State::DISABLED, off);
         let face = if self.full { face.grow(1.0) } else { face };
         let face = match self.test_id {
             Some(id) => face.test_id(id),
@@ -217,6 +243,15 @@ impl Button {
         };
         let face = match self.name {
             Some(name) => face.label(name),
+            None => face,
+        };
+        let face = match busy {
+            Some(busy) => {
+                let turning =
+                    show(move || busy.get(), move || spinner().size(if small { 14.0 } else { 16.0 }));
+                let room = move || if busy.get() { Display::Flex } else { Display::None };
+                face.child(turning.container(div().display(room)))
+            }
             None => face,
         };
         // The icon is 14 px, 16 in the two larger sizes, in the colour of the label.

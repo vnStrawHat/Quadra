@@ -7,10 +7,10 @@ use quadra::{Align, Div, NodeRef, Signal, column, div, row, signal, text};
 use quadra_kit::{
     CellKind, Column, Date, MenuItem, Notice, Notices, Rule, Size, Status, TimeOfDay, Tone, TreeNode,
     Variant, accordion, avatar, badge, breadcrumb, button, calendar, card, card_head, checkbox, combobox,
-    context_menu, date_picker, dialog, divider, field, heading, icon, icon_button, icons, input, kbd, list,
-    menu, number_input, progress, progress_busy, radio_group, range_slider, segmented, select, size,
-    skeleton, slider, spinner, split, status_label, switch, table, tabs, tag, textarea, time_input, token,
-    tooltip, tree, validate,
+    context_menu, date_picker, dialog, divider, field, heading, icon, icon_button, icons, input, kbd,
+    key_hint, list, menu, number_input, progress, progress_busy, radio_group, range_slider, segmented,
+    select, size, skeleton, slider, spinner, split, status_label, switch, table, tabs, tag, textarea,
+    time_input, token, tooltip, tree, validate,
 };
 
 /// A section: its title, then its rows.
@@ -45,7 +45,9 @@ pub fn buttons() -> Div {
         .child(button("Search").icon(icons::SEARCH))
         .child(button("Delete").variant(Variant::Danger).size(Size::Sm).icon(icons::TRASH_2))
         .child(icon_button(icons::SETTINGS, "Settings"))
-        .child(icon_button(icons::X, "Close"));
+        .child(icon_button(icons::X, "Close"))
+        .child(button("Saving").loading(true))
+        .child(key_hint("ctrl-shift-p", "all commands"));
     section("Buttons").child(by_variant).child(by_size).child(off).child(states).child(with_icons)
 }
 
@@ -63,7 +65,7 @@ pub fn inputs() -> Div {
     let wrong = signal("not a number".to_string());
     let first = line()
         .child(input(name).placeholder("Name"))
-        .child(input(query).placeholder("Search").icon(icons::SEARCH));
+        .child(input(query).placeholder("Search").icon(icons::SEARCH).clearable());
     let second = line()
         .child(input(secret).password().placeholder("Password").width(160.0))
         .child(input(wrong).invalid(true).width(160.0))
@@ -116,6 +118,7 @@ pub fn choices() -> Div {
         .child(checkbox(wrap).label("Word wrap"))
         .child(checkbox(numbers).label("Line numbers"))
         .child(checkbox(signal(true)).label("Disabled").disabled(true))
+        .child(checkbox(signal(false)).label("Some").indeterminate(true))
         .child(switch(live).label("Live"))
         .child(switch(quiet).label("Quiet"));
     let one_of = line()

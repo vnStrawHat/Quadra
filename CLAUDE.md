@@ -153,7 +153,8 @@ their own frame (`WindowOptions::custom_frame`, `PlatformHandler::hit_test`, `.w
 submenus, scrolling and `context_menu` (`menu/rows.rs`; `popup::open_now` opens a popup from a handler), and
 notifications and toasts (`notices()`, `Notice`), and the command palette (`palette.rs`: `fuzzy`, `marked`).
 `quadra-text` normalizes (`normalize_nfc` on insert, `fold_diacritics`; tables from `tools/gen_nfc.py`). The kit
-has `table` (sort, column widths, selection, copy; no sideways scrolling yet) and `tree`, `range_slider`, `combobox`, `calendar`, `date_picker`, `time_input`. Next: drawer; scrolling sideways;
+has `table` (sort, column widths, selection, copy; no sideways scrolling yet) and `tree`, `range_slider`, `combobox`, `calendar`, `date_picker`, `time_input`, and the smaller
+things (`loading`, `indeterminate`, `clearable`, `key_hint`, `confirm`, `menu_button`, `menubar`). Next: drawer; scrolling sideways;
 rich text; local time and the app's language (i18n); the components in the order of specs/13, each with its
 section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,

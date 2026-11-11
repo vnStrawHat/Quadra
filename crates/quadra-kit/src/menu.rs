@@ -5,14 +5,17 @@ mod rows;
 
 use std::rc::Rc;
 
+use quadra_layout::Align;
 use quadra_platform::MouseButton;
 use quadra_prim::Point;
-use quadra_reactive::{Scope, Signal};
+use quadra_reactive::{Scope, Signal, signal};
 use quadra_tree::{NodeId, PointerKind};
-use quadra_ui::{MountCx, NodeRef, Place, View};
+use quadra_ui::{Div, MountCx, NodeRef, Place, View, div, row};
 
 pub(crate) use self::rows::{Ends, rows};
+use crate::button::{Size, Variant, button};
 use crate::popup::{open_now, popover};
+use crate::token;
 
 /// A row of a menu, or the line between two groups of rows.
 #[derive(Clone, Default)]
@@ -132,4 +135,39 @@ where
         });
         of
     }
+}
+
+pub struct MenuButton {
+    label: String,
+    items: Rc<dyn Fn() -> Vec<MenuItem>>,
+    size: Size,
+}
+
+/// A ghost button that opens a menu under itself. `items` is asked each time it opens.
+pub fn menu_button(label: impl Into<String>, items: impl Fn() -> Vec<MenuItem> + 'static) -> MenuButton {
+    MenuButton { label: label.into(), items: Rc::new(items), size: Size::Md }
+}
+
+impl MenuButton {
+    pub fn size(mut self, size: Size) -> Self {
+        self.size = size;
+        self
+    }
+}
+
+impl View for MenuButton {
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        let (open, opener, items) = (signal(false), NodeRef::new(), self.items);
+        let face = button(self.label).variant(Variant::Ghost).size(self.size);
+        let face = face.on_click(move || open.update(|open| *open = !*open));
+        let under = menu(open, &opener, move || items());
+        div().shrink(0.0).child(div().node_ref(&opener).child(face)).child(under).mount(cx)
+    }
+}
+
+/// The bar of an app's menus: 32 px on the chrome plane over a strong line.
+pub fn menubar(menus: impl IntoIterator<Item = MenuButton>) -> Div {
+    let bar = row().align_items(Align::Center).gap(4.0).padding_x(4.0).height(32.0).shrink(0.0);
+    let bar = bar.bg(token::CHROME).border_bottom(1.0).border_color(token::LINE_STRONG);
+    bar.children(menus.into_iter().map(|menu| menu.size(Size::Sm)).collect::<Vec<_>>())
 }

@@ -4,11 +4,11 @@
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, State};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, text_input};
+use quadra_tree::{NodeId, Role, State};
+use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, show, text_input};
 
 use crate::icon::icon;
-use crate::{size, token};
+use crate::{icons, size, token};
 
 pub struct Input {
     value: Signal<String>,
@@ -18,6 +18,7 @@ pub struct Input {
     disabled: Prop<bool>,
     width: f32,
     lead: Option<&'static str>,
+    clears: bool,
     test_id: Option<&'static str>,
     submit: Option<Submit>,
 }
@@ -35,6 +36,7 @@ pub fn input(value: Signal<String>) -> Input {
         disabled: Prop::Value(false),
         width: 240.0,
         lead: None,
+        clears: false,
         test_id: None,
         submit: None,
     }
@@ -75,6 +77,12 @@ impl Input {
         self
     }
 
+    /// A cross at the end of the field while it holds text: a click on it empties the field.
+    pub fn clearable(mut self) -> Self {
+        self.clears = true;
+        self
+    }
+
     pub fn test_id(mut self, id: &'static str) -> Self {
         self.test_id = Some(id);
         self
@@ -112,7 +120,17 @@ impl Input {
             Some(body) => frame.child(icon(body).color(token::TEXT_2)),
             None => frame,
         };
-        frame.child(field)
+        let (frame, value) = (frame.child(field), self.value);
+        if !self.clears {
+            return frame;
+        }
+        let cross = move || {
+            let cross = row().align_items(Align::Center).cursor(Cursor::Pointer).text_color(token::TEXT_2);
+            let cross =
+                cross.role(Role::Button).label("Clear".to_string()).hover(|s| s.text_color(token::TEXT));
+            cross.on_click(move |_| value.set(String::new())).child(icon(icons::X).size(12.0))
+        };
+        frame.child(show(move || !value.with(String::is_empty), cross))
     }
 }
 

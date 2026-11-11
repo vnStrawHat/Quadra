@@ -7,7 +7,7 @@ use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, Role, State};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, row, show, text};
+use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, dynamic, row, show, text};
 
 use crate::action::{CONTROL, Confirm};
 use crate::icon::icon;
@@ -18,12 +18,14 @@ pub struct Toggle {
     is_switch: bool,
     label: Option<Prop<String>>,
     disabled: Prop<bool>,
+    mixed: Prop<bool>,
     test_id: Option<&'static str>,
 }
 
 /// A box that is checked or not: `checked` holds which, and a click, Space or Enter turns it.
 pub fn checkbox(checked: Signal<bool>) -> Toggle {
-    Toggle { on: checked, is_switch: false, label: None, disabled: Prop::Value(false), test_id: None }
+    let (disabled, mixed) = (Prop::Value(false), Prop::Value(false));
+    Toggle { on: checked, is_switch: false, label: None, disabled, mixed, test_id: None }
 }
 
 /// A switch that is on or off: `on` holds which.
@@ -36,12 +38,15 @@ type Off = Rc<dyn Fn() -> bool>;
 
 /// A box 16 px square with a hairline border; the check is the accent, or the colour of
 /// what is off.
-fn check_box(on: Signal<bool>, off: Off) -> Div {
+fn check_box(on: Signal<bool>, off: Off, mixed: Off) -> Div {
     let mark = move || Paint::from(if off() { token::TEXT_DISABLED } else { token::ACCENT_TEXT });
     let edge = div().size(16.0, 16.0).shrink(0.0).align_items(Align::Center).justify(Justify::Center);
     let edge = edge.radius(size::RADIUS_SM).border(1.0).border_color(token::LINE_STRONG);
     let edge = edge.text_color(mark).hover(|s| s.border_color(token::LINE_STRONG.alpha(0.7)));
-    edge.child(show(move || on.get(), || icon(icons::CHECK)))
+    // A check when it is checked; a dash while it is neither.
+    let dash = mixed.clone();
+    let mark = move || icon(if mixed() { icons::MINUS } else { icons::CHECK });
+    edge.child(show(move || on.get() || dash(), move || dynamic(mark.clone())))
 }
 
 /// A track of 32 by 20 px inside a ring one pixel off it, 38 by 26 in all, with a knob of
@@ -78,6 +83,13 @@ impl Toggle {
         self
     }
 
+    /// While `mixed` is true a checkbox shows a dash: some of what it stands for is
+    /// checked, and some is not.
+    pub fn indeterminate<M>(mut self, mixed: impl IntoProp<bool, M>) -> Self {
+        self.mixed = mixed.into_prop();
+        self
+    }
+
     pub fn test_id(mut self, id: &'static str) -> Self {
         self.test_id = Some(id);
         self
@@ -85,13 +97,17 @@ impl Toggle {
 
     fn build(self) -> Div {
         let on = self.on;
+        let mixed: Off = match self.mixed {
+            Prop::Value(mixed) => Rc::new(move || mixed),
+            Prop::Reactive(read) => Rc::new(read),
+        };
         let turn = move || on.update(|on| *on = !*on);
         let off: Off = match self.disabled {
             Prop::Value(off) => Rc::new(move || off),
             Prop::Reactive(read) => Rc::new(read),
         };
         let part = off.clone();
-        let control = if self.is_switch { switch_track(on, part) } else { check_box(on, part) };
+        let control = if self.is_switch { switch_track(on, part) } else { check_box(on, part, mixed) };
         let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).radius(size::RADIUS_SM);
         let face = face.role(if self.is_switch { Role::Switch } else { Role::Checkbox }).checked(on);
         let face = face.focusable().key_context(CONTROL).cursor(Cursor::Pointer);

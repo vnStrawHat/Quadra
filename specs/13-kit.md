@@ -138,6 +138,14 @@ As built so far:
   `error_tint_hover`: the tint 8 % towards its colour unless a theme says). The label is a
   text that takes the button's text colour. To a reader it is a button named by its label,
   pressed or not when it is a toggle.
+- **Icons.** `icon(icons::CHECK)` shows one of the kit's Lucide outlines (`quadra_kit::icons`,
+  87 of them; ISC, `LICENSE-lucide.txt`), 14 px unless `.size(..)` says, in the colour of the
+  text around it unless `.color(..)` says. A body is read once (`quadra-vector`); its mask is
+  rasterized once for each size in device pixels and kept as a tile of the coverage atlas
+  beside the glyphs (`Fonts::mask`, `TileKey::Mask`); showing it is one instance. The widget
+  is `Drawing` in the tree, and `drawing(svg)` the view for any drawing. A button takes
+  `.icon(body)` before its label (14 px, 16 in the two larger sizes), and
+  `icon_button(body, name)` is a ghost of 22 px with the icon alone, named for a reader.
 - A component that builds a view from properties it was given passes them on as they are:
   `Prop<T>` is itself something a setter takes.
 - The example `gallery` of the kit shows the components in a real window in either theme;

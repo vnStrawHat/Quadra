@@ -27,6 +27,14 @@ pub struct GlyphKey {
     pub phase: u8,
 }
 
+/// What a tile of the atlases is of: a glyph, or the mask of a drawing at a size in device
+/// pixels.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum TileKey {
+    Glyph(GlyphKey),
+    Mask { shape: u64, width: u32, height: u32 },
+}
+
 /// Where a glyph's bitmap sits against the pen position on the baseline.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GlyphMeta {
@@ -43,8 +51,8 @@ pub type GlyphTile = TileRef<GlyphMeta>;
 pub struct Fonts {
     pub text: TextSystem,
     /// Coverage glyphs.
-    pub glyphs: Atlas<GlyphKey, GlyphMeta>,
-    pub color_glyphs: Atlas<GlyphKey, GlyphMeta>,
+    pub glyphs: Atlas<TileKey, GlyphMeta>,
+    pub color_glyphs: Atlas<TileKey, GlyphMeta>,
 }
 
 impl Fonts {
@@ -61,7 +69,7 @@ impl Fonts {
     /// first time it is asked for. A glyph with no ink has a tile of no size. `None` when the
     /// backend cannot rasterize it or it is larger than an atlas slice.
     pub fn glyph(&mut self, face: FaceId, id: u16, size: f32, phase: u8) -> Option<GlyphTile> {
-        let key = GlyphKey { face, id, size: size.to_bits(), phase };
+        let key = TileKey::Glyph(GlyphKey { face, id, size: size.to_bits(), phase });
         if let Some(tile) = self.glyphs.get(&key).or_else(|| self.color_glyphs.get(&key)) {
             return Some(tile);
         }
@@ -70,6 +78,25 @@ impl Fonts {
         let coverage = bitmap.format == GlyphFormat::Coverage;
         let atlas = if coverage { &mut self.glyphs } else { &mut self.color_glyphs };
         atlas.insert(key, bitmap.width, bitmap.height, &bitmap.pixels, meta)
+    }
+
+    /// The tile of the mask of a drawing at a size in device pixels: `render` gives its
+    /// coverage, a byte a pixel, the first time it is asked for. A mask of no size has a
+    /// tile of no size. `None` when it is larger than an atlas slice.
+    pub fn mask(
+        &mut self,
+        shape: u64,
+        width: u32,
+        height: u32,
+        render: impl FnOnce() -> Vec<u8>,
+    ) -> Option<GlyphTile> {
+        let key = TileKey::Mask { shape, width, height };
+        if let Some(tile) = self.glyphs.get(&key) {
+            return Some(tile);
+        }
+        let meta = GlyphMeta { left: 0.0, top: 0.0, format: GlyphFormat::Coverage };
+        let pixels = if width == 0 || height == 0 { Vec::new() } else { render() };
+        self.glyphs.insert(key, width, height, &pixels, meta)
     }
 
     /// Forgets every tile: the GPU lost them. Text paints again and rasterizes what it needs.

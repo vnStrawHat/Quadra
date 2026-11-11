@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use quadra::{Align, Div, Signal, Theme, WindowOptions, column, row, signal, text, use_context};
-use quadra_kit::{Size, Variant, button, dark, light, size, token};
+use quadra_kit::{Size, Variant, button, dark, icon, icon_button, icons, light, size, token};
 
 /// A section: its title, then its rows.
 fn section(title: &'static str) -> Div {
@@ -34,7 +34,21 @@ fn buttons() -> Div {
     let toggle = button("Word wrap").variant(Variant::Ghost).toggled(wrap);
     let toggle = toggle.on_click(move || wrap.update(|on| *on = !*on));
     let states = line().child(toggle).child(text(move || if wrap.get() { "on" } else { "off" }));
-    section("Buttons").child(by_variant).child(by_size).child(off).child(states)
+    let with_icons = line()
+        .child(button("Save").variant(Variant::Primary).icon(icons::SAVE))
+        .child(button("Search").icon(icons::SEARCH))
+        .child(button("Delete").variant(Variant::Danger).size(Size::Sm).icon(icons::TRASH_2))
+        .child(icon_button(icons::SETTINGS, "Settings"))
+        .child(icon_button(icons::X, "Close"));
+    section("Buttons").child(by_variant).child(by_size).child(off).child(states).child(with_icons)
+}
+
+fn icons() -> Div {
+    let all = [icons::CHECK, icons::CHEVRON_DOWN, icons::FOLDER, icons::FILE_TEXT, icons::BELL, icons::EYE];
+    let sizes = [10.0, 12.0, 14.0, 16.0].map(|px| line().children(all.map(|body| icon(body).size(px))));
+    let ok = icon(icons::CIRCLE_CHECK).size(16.0).color(token::OK);
+    let wrong = icon(icons::CIRCLE_X).size(16.0).color(token::ERROR);
+    section("Icons").child(line().gap(24.0).children(sizes)).child(line().child(ok).child(wrong))
 }
 
 fn main() -> quadra::Result<()> {
@@ -48,8 +62,8 @@ fn main() -> quadra::Result<()> {
         let name = text(move || if is_dark.get() { "One Dark Pro" } else { "One Light" });
         let name = name.size(size::TEXT_LG.size).weight(size::WEIGHT_STRONG);
         let head = line().child(name).child(button("Other theme").size(Size::Sm).on_click(swap));
-        quadra_kit::root().padding(24.0).gap(20.0).child(head).child(buttons())
+        quadra_kit::root().padding(24.0).gap(20.0).child(head).child(buttons()).child(icons())
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
-    app.window(WindowOptions::new("Quadra gallery").size(640.0, 360.0), view)?.run()
+    app.window(WindowOptions::new("Quadra gallery").size(640.0, 420.0), view)?.run()
 }

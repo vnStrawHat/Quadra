@@ -137,3 +137,39 @@ fn a_click_and_the_keyboard_do_the_same_and_a_disabled_button_does_nothing() {
     let on = p.look("wrap");
     assert_eq!((on.0, on.2), (p.is(token::PRESS), p.is(token::ACCENT_TEXT)));
 }
+
+#[test]
+fn a_button_shows_an_icon_before_its_label_or_alone() {
+    use quadra_kit::{icon_button, icons};
+
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(|| {
+        let save = button("Save").size(Size::Sm).icon(icons::SAVE).test_id("save");
+        let large = button("Open").size(Size::Lg).icon(icons::FOLDER).test_id("open");
+        let close = icon_button(icons::X, "Close").test_id("close");
+        quadra_kit::root().child(row().gap(8.0).child(save).child(large).child(close))
+    });
+    let (stats, _) = h.frame();
+    // A reader hears the label, or the name of a button that has none.
+    assert!(
+        h.semantics().contains("Button \"Save\" #save") && h.semantics().contains("Button \"Close\" #close")
+    );
+    let size = |h: &mut Harness, id: &str, child: usize| {
+        let button = h.get_by_test_id(id).node();
+        let part = h.tree.children(button)[child];
+        (h.tree.rect(button).size(), h.tree.rect(part))
+    };
+    // 14 px in a small button, after its border and its 4 px, and 4 px before the label; 16
+    // in the two larger sizes.
+    let (save, icon) = size(&mut h, "save", 0);
+    assert_eq!((icon.x.round(), icon.width, icon.height), (5.0, 14.0, 14.0));
+    assert!((save.width - (2.0 + 4.0 + 14.0 + 4.0 + 4.0 * 8.4 + 4.0)).abs() < 0.01, "{save:?}");
+    assert_eq!(size(&mut h, "open", 0).1.width, 16.0);
+    // Alone it sits in the middle of a square of 22.
+    let (close, x) = size(&mut h, "close", 0);
+    assert_eq!((close, x.x, x.y), (quadra_prim::Size::new(22.0, 22.0), 4.0, 4.0));
+    // An icon is one instance: a tile of the atlas in the colour of the label.
+    // The canvas, two faces (a ghost at rest has none), three icons, and eight letters.
+    assert_eq!(stats.instances_written, 1 + 2 + 3 + 8);
+}

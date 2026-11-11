@@ -140,6 +140,7 @@ dependencies = [
  "quadra-text",
  "quadra-tree",
  "quadra-ui",
+ "quadra-vector",
  "serde_json",
 ]
 
@@ -224,6 +225,7 @@ dependencies = [
  "quadra-reactive",
  "quadra-render",
  "quadra-text",
+ "quadra-vector",
 ]
 
 [[package]]
@@ -239,6 +241,7 @@ dependencies = [
  "quadra-testing",
  "quadra-text",
  "quadra-tree",
+ "quadra-vector",
 ]
 
 [[package]]

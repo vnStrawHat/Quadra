@@ -167,6 +167,18 @@ impl Svg {
         svg
     }
 
+    /// A number for what the drawing looks like as a mask: what a cache of rasterized
+    /// drawings goes by.
+    pub fn hash(&self) -> u64 {
+        let mix = |h: u64, v: u64| (h ^ v).wrapping_mul(1099511628211);
+        let view = [self.view.0, self.view.1, self.view.2, self.view.3];
+        let start = view.iter().fold(1469598103934665603, |h, v| mix(h, v.to_bits() as u64));
+        self.shapes.iter().fold(start, |h, shape| {
+            let painted = shape.fill.is_some() as u64 | (shape.stroke.is_some() as u64) << 1;
+            mix(mix(mix(h, shape.path.hash()), painted), shape.stroke_width.to_bits() as u64)
+        })
+    }
+
     /// The scale and the offset that fit the drawing's box into a bitmap, centred.
     fn fit(&self, width: usize, height: usize) -> (f32, Point) {
         let (x, y, w, h) = self.view;

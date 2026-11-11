@@ -7,6 +7,7 @@
 mod action;
 mod dispatch;
 mod drag;
+mod drawing;
 mod field;
 mod focus;
 mod fonts;
@@ -32,9 +33,10 @@ mod widget;
 
 pub use action::{Action, FocusNext, FocusPrevious};
 pub use dispatch::PointerInput;
+pub use drawing::Drawing;
 pub use field::{TextCommand, TextField};
 pub use focus::KeyEvent;
-pub use fonts::{Fonts, GlyphKey, GlyphMeta, GlyphTile, SUBPIXEL_STEPS};
+pub use fonts::{Fonts, GlyphKey, GlyphMeta, GlyphTile, SUBPIXEL_STEPS, TileKey};
 pub use frame::{FrameStats, PassTimes};
 pub use inherit::{Inherited, TextValues};
 pub use input::{PointerEvent, PointerKind};

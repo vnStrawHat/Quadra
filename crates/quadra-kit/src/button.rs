@@ -12,6 +12,7 @@ use quadra_tree::{NodeId, Paint, Role, State};
 use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, text};
 
 use crate::action::{CONTROL, Confirm};
+use crate::icon::icon;
 use crate::{size, token};
 
 /// What a button looks like.
@@ -49,7 +50,10 @@ impl Size {
 }
 
 pub struct Button {
-    label: Prop<String>,
+    /// Without one the button is its icon, and `name` is what a reader calls it.
+    label: Option<Prop<String>>,
+    name: Option<&'static str>,
+    icon: Option<&'static str>,
     variant: Variant,
     size: Size,
     disabled: Prop<bool>,
@@ -59,10 +63,18 @@ pub struct Button {
     click: Option<Box<dyn FnMut()>>,
 }
 
+/// A button that is only an icon: a ghost, 22 px square. `name` is what a reader calls it.
+pub fn icon_button(body: &'static str, name: &'static str) -> Button {
+    let plain = button("").variant(Variant::Ghost).size(Size::Sm).icon(body);
+    Button { label: None, name: Some(name), ..plain }
+}
+
 /// A button with a label: a constant, or something reactive.
 pub fn button<M>(label: impl IntoProp<String, M>) -> Button {
     Button {
-        label: label.into_prop(),
+        label: Some(label.into_prop()),
+        name: None,
+        icon: None,
         variant: Variant::default(),
         size: Size::default(),
         disabled: Prop::Value(false),
@@ -127,6 +139,12 @@ impl Button {
         self
     }
 
+    /// An icon before the label: one of [`crate::icons`].
+    pub fn icon(mut self, body: &'static str) -> Self {
+        self.icon = Some(body);
+        self
+    }
+
     /// What the button does: on a click, and on Enter or Space while it has the focus.
     pub fn on_click(mut self, f: impl FnMut() + 'static) -> Self {
         self.click = Some(Box::new(f));
@@ -138,7 +156,11 @@ impl Button {
         let bordered = border != Paint::default();
         let small = matches!(self.size, Size::Xs | Size::Sm);
         let face = row().align_items(Align::Center).justify(Justify::Center).gap(4.0).shrink(0.0);
-        let face = face.height(self.size.height()).padding_x(if small { 4.0 } else { 8.0 });
+        // An icon alone sits in a square; a label has 4 or 8 px beside it.
+        let face = match self.label {
+            Some(_) => face.height(self.size.height()).padding_x(if small { 4.0 } else { 8.0 }),
+            None => face.size(self.size.height(), self.size.height()),
+        };
         let face = face.radius(size::RADIUS_MD).bg(fill).text_color(label);
         let face = face.role(Role::Button).focusable().key_context(CONTROL).cursor(Cursor::Pointer);
         let face = match self.size {
@@ -182,7 +204,19 @@ impl Button {
             }
             None => face,
         };
-        face.child(text(self.label))
+        let face = match self.name {
+            Some(name) => face.label(name),
+            None => face,
+        };
+        // The icon is 14 px, 16 in the two larger sizes, in the colour of the label.
+        let face = match self.icon {
+            Some(body) => face.child(icon(body).size(if small { 14.0 } else { 16.0 })),
+            None => face,
+        };
+        match self.label {
+            Some(label) => face.child(text(label)),
+            None => face,
+        }
     }
 }
 

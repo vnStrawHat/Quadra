@@ -4,12 +4,15 @@
 pub mod action;
 mod button;
 pub mod fonts;
+mod icon;
+pub mod icons;
 mod root;
 pub mod size;
 mod theme;
 pub mod token;
 
 pub use action::keymap;
-pub use button::{Button, Size, Variant, button};
+pub use button::{Button, Size, Variant, button, icon_button};
+pub use icon::icon;
 pub use root::{install, root};
 pub use theme::{KitTheme, Mode, ThemeError, dark, light, theme_from_json};

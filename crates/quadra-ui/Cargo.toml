@@ -18,6 +18,7 @@ quadra-layout = { path = "../quadra-layout" }
 quadra-platform = { path = "../quadra-platform" }
 quadra-text = { path = "../quadra-text" }
 quadra-tree = { path = "../quadra-tree" }
+quadra-vector = { path = "../quadra-vector" }
 
 [dev-dependencies]
 quadra-render = { path = "../quadra-render" }

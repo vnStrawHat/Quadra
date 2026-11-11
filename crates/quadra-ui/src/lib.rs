@@ -16,6 +16,7 @@
 //! that read it, which sets the text of one node.
 
 mod div;
+mod drawing;
 mod flow;
 mod input;
 mod list;
@@ -28,6 +29,7 @@ mod tween;
 mod view;
 
 pub use div::{Div, Refine, column, div, row};
+pub use drawing::{DrawingView, drawing};
 pub use flow::{Region, dynamic, each, mount_in, show};
 pub use input::{TextInput, text_area, text_input};
 pub use list::{ListView, uniform_list, virtual_list};

@@ -1,0 +1,178 @@
+//! The table (specs/behaviour/09, "Data"): rows mounted as they show, columns sorted by a
+//! click on their title and made wider by dragging their edge, rows selected by the pointer
+//! and the keys, and copied.
+
+use std::rc::Rc;
+
+use quadra_kit::{CellKind, Column, age_text, dark, table};
+use quadra_platform::{Key, Mods, MouseButton};
+use quadra_prim::Point;
+use quadra_reactive::{Signal, signal};
+use quadra_testing::Harness;
+use quadra_tree::{PointerInput, Role};
+
+struct Page {
+    h: Harness,
+    /// Name, CPU, status and age in seconds of each pod.
+    pods: Signal<Vec<(String, f64, &'static str, i64)>>,
+    chosen: Signal<Vec<usize>>,
+}
+
+/// A thousand pods: the CPU of pod `i` is `(i * 37) % 100`, so sorting by it moves rows.
+fn page() -> Page {
+    let pod = |i: usize| {
+        let status = ["Running", "Pending", "Failed"][i % 3];
+        (format!("pod-{i:04}"), ((i * 37) % 100) as f64, status, 30 + 50 * i as i64)
+    };
+    let (pods, chosen) = (signal((0..1000).map(pod).collect::<Vec<_>>()), signal(Vec::new()));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    h.mount(move || {
+        let columns = [
+            Column::new("Name").width(200.0),
+            Column::new("CPU").numeric().width(80.0),
+            Column::new("Status").kind(CellKind::Status),
+            Column::new("Age").kind(CellKind::Age).width(80.0),
+        ];
+        let cell = move |row: usize, column: usize| {
+            pods.with(|pods| match (&pods[row], column) {
+                (pod, 0) => pod.0.clone(),
+                (pod, 1) => pod.1.to_string(),
+                (pod, 2) => pod.2.to_string(),
+                (pod, _) => pod.3.to_string(),
+            })
+        };
+        quadra_kit::root().child(table(columns, move || pods.with(Vec::len), cell).selected(chosen))
+    });
+    h.frame();
+    Page { h, pods, chosen }
+}
+
+impl Page {
+    fn settle(&mut self) {
+        self.h.frame();
+        while self.h.frame_if_needed().is_some() {}
+    }
+
+    /// The names of the pods in the rows that show, the highest first.
+    fn names(&mut self) -> Vec<String> {
+        let rows = self.h.query(|n| n.semantics.role == Role::Row);
+        let mut shown: Vec<(f32, String)> = Vec::new();
+        for row in rows.into_iter().skip(1) {
+            let name = self.h.tree.children(self.h.tree.children(row)[0])[0];
+            let text = self.h.tree.widget_mut::<quadra_tree::Text>(name).unwrap().text().to_string();
+            shown.push((self.h.tree.window_rect(row).y, text));
+        }
+        shown.sort_by(|a, b| a.0.total_cmp(&b.0));
+        shown.into_iter().map(|(_, name)| name).collect()
+    }
+
+    fn click(&mut self, x: f32, y: f32, mods: Mods) {
+        for input in [PointerInput::Move, PointerInput::Down, PointerInput::Up] {
+            self.h.tree.pointer(input, MouseButton::Left, Point::new(x, y), mods, self.h.now());
+        }
+        self.settle();
+    }
+
+    fn key(&mut self, key: Key, mods: Mods) {
+        self.h.key(key, mods);
+        self.settle();
+    }
+}
+
+#[test]
+fn rows_show_as_their_columns_say_and_are_sorted_by_a_click_on_a_title() {
+    let mut p = page();
+    let tree = p.h.semantics();
+    for line in ["Table", "Cell \"Name\"", "Cell \"pod-0000\"", "Cell \"Running\"", "Cell \"30s\""] {
+        assert!(tree.contains(line), "{line} is not in:\n{tree}");
+    }
+    // The header is 28 px and a row 26: of a thousand rows, those of the window are mounted.
+    let rows = p.h.query(|n| n.semantics.role == Role::Row);
+    let (head, first) = (p.h.tree.window_rect(rows[0]), p.h.tree.window_rect(rows[1]));
+    assert_eq!((head.height, first.y, first.height, rows.len() < 40), (28.0, 28.0, 26.0, true));
+    assert_eq!(p.names()[..3], ["pod-0000", "pod-0001", "pod-0002"]);
+    assert_eq!(
+        [age_text(45), age_text(720), age_text(10_800), age_text(518_400)],
+        ["45s", "12m", "3h", "6d"]
+    );
+
+    // A click on a title sorts from the least; another, from the most; numbers as numbers.
+    p.h.get_by_role(Role::Cell, "CPU").click();
+    p.settle();
+    assert_eq!(p.names()[..3], ["pod-0000", "pod-0100", "pod-0200"]); // 0 % CPU, in the order given
+    p.h.get_by_role(Role::Cell, "CPU").click();
+    p.settle();
+    assert_eq!(p.names()[0], "pod-0927"); // the last of those at 99 %: the order turned round
+    p.h.get_by_role(Role::Cell, "Name").click();
+    p.settle();
+    assert_eq!(p.names()[..2], ["pod-0000", "pod-0001"]);
+    // What the cells say changes: they follow, and so does the order.
+    p.pods.update(|pods| pods[5].0 = "a-first".to_string());
+    p.settle();
+    assert_eq!(p.names()[..2], ["a-first", "pod-0000"]);
+}
+
+#[test]
+fn rows_are_selected_by_the_pointer_and_the_keys_and_copied() {
+    let mut p = page();
+    let y = |row: f32| 28.0 + 26.0 * row + 13.0;
+    p.click(50.0, y(2.0), Mods::NONE);
+    assert_eq!(p.chosen.get_untracked(), [2]);
+    p.click(50.0, y(4.0), Mods::CTRL); // with Ctrl: one more, or one less
+    p.click(50.0, y(2.0), Mods::CTRL);
+    assert_eq!(p.chosen.get_untracked(), [4]);
+    p.click(50.0, y(7.0), Mods::SHIFT); // with Shift: from the last one clicked to this one
+    assert_eq!(p.chosen.get_untracked(), [2, 3, 4, 5, 6, 7]);
+    assert!(p.h.semantics().contains("Row [selected]"));
+
+    // The keys move the row they are on and select it; with Shift the selection grows.
+    p.click(50.0, y(1.0), Mods::NONE);
+    p.key(Key::Down, Mods::NONE);
+    p.key(Key::Down, Mods::SHIFT);
+    p.key(Key::Down, Mods::SHIFT);
+    assert_eq!(p.chosen.get_untracked(), [2, 3, 4]);
+    // Copied as text: a line a row, a tab between cells.
+    p.key(Key::C, Mods::CTRL);
+    let copied = p.h.clipboard.read_text().unwrap();
+    assert_eq!(copied.lines().next(), Some("pod-0002\t74\tFailed\t130"));
+    assert_eq!(copied.lines().count(), 3);
+
+    p.key(Key::PageDown, Mods::NONE);
+    assert_eq!(p.chosen.get_untracked(), [24]);
+    p.key(Key::End, Mods::NONE);
+    assert!(p.chosen.get_untracked() == [999] && p.names().contains(&"pod-0999".to_string()));
+    p.key(Key::Home, Mods::NONE);
+    p.key(Key::Up, Mods::NONE);
+    assert!(p.chosen.get_untracked() == [0] && p.names()[0] == "pod-0000");
+    // Sorted, the selection is of the rows of the data, not of the places they show at.
+    p.h.get_by_role(Role::Cell, "CPU").click();
+    p.h.get_by_role(Role::Cell, "CPU").click();
+    p.settle();
+    p.click(50.0, y(0.0), Mods::NONE);
+    assert_eq!(p.chosen.get_untracked(), [927]);
+}
+
+#[test]
+fn a_column_is_made_wider_by_dragging_its_edge() {
+    let mut p = page();
+    let name = p.h.get_by_role(Role::Cell, "Name").node();
+    let cpu = |h: &mut Harness| {
+        let cell = h.get_by_role(Role::Cell, "0").node();
+        h.tree.window_rect(cell)
+    };
+    assert_eq!((p.h.tree.window_rect(name).width, cpu(&mut p.h).x), (195.0, 200.0));
+    // The 5 px at the edge of the title: pressed, moved 60 px, let go.
+    p.h.pointer(PointerInput::Move, 198.0, 14.0);
+    p.h.pointer(PointerInput::Down, 198.0, 14.0);
+    p.h.pointer(PointerInput::Move, 258.0, 300.0);
+    p.settle();
+    assert_eq!((p.h.tree.window_rect(name).width, cpu(&mut p.h).x), (255.0, 260.0));
+    p.h.pointer(PointerInput::Move, -400.0, 300.0); // never under its least
+    p.h.pointer(PointerInput::Up, -400.0, 300.0);
+    p.h.pointer(PointerInput::Move, 500.0, 300.0);
+    p.settle();
+    assert_eq!(cpu(&mut p.h).x, 48.0);
+    assert_eq!(p.names()[0], "pod-0000"); // the press on the edge did not sort
+}

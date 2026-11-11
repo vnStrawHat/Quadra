@@ -48,6 +48,42 @@ impl Action for MoveLast {
     const NAME: &'static str = "kit::move_last";
 }
 
+/// The key context of a table: the keys of a list, a page at a time, a selection that grows
+/// with Shift, and a copy.
+pub const TABLE: &str = "table";
+
+/// A page down and a page up; a row more of the selection each way; the selection as text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PageNext;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PagePrevious;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ExtendNext;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ExtendPrevious;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Copy;
+
+impl Action for PageNext {
+    const NAME: &'static str = "kit::page_next";
+}
+
+impl Action for PagePrevious {
+    const NAME: &'static str = "kit::page_previous";
+}
+
+impl Action for ExtendNext {
+    const NAME: &'static str = "kit::extend_next";
+}
+
+impl Action for ExtendPrevious {
+    const NAME: &'static str = "kit::extend_previous";
+}
+
+impl Action for Copy {
+    const NAME: &'static str = "kit::copy";
+}
+
 /// The key contexts of what holds a number: a slider, which every arrow steps, and a number
 /// input, where left and right are the caret's.
 pub const SLIDER: &str = "slider";
@@ -121,15 +157,20 @@ pub fn keymap() -> Keymap {
         keymap.bind_in(CHOICE, keys, MovePrevious).expect(well_formed);
     }
     keymap.bind_in(POPUP, "escape", Cancel).expect(well_formed);
-    for context in [MENU, LIST] {
+    for context in [MENU, LIST, TABLE] {
         keymap.bind_in(context, "down", MoveNext).expect(well_formed);
         keymap.bind_in(context, "up", MovePrevious).expect(well_formed);
         keymap.bind_in(context, "enter", Confirm).expect(well_formed);
     }
+    keymap.bind_in(TABLE, "pagedown", PageNext).expect(well_formed);
+    keymap.bind_in(TABLE, "pageup", PagePrevious).expect(well_formed);
+    keymap.bind_in(TABLE, "shift-down", ExtendNext).expect(well_formed);
+    keymap.bind_in(TABLE, "shift-up", ExtendPrevious).expect(well_formed);
+    keymap.bind_in(TABLE, "ctrl-c", Copy).expect(well_formed);
     keymap.bind_in(MENU, "space", Confirm).expect(well_formed);
     keymap.bind_in(MENU, "right", MoveInto).expect(well_formed);
     keymap.bind_in(MENU, "left", MoveOut).expect(well_formed);
-    for context in [LIST, SLIDER] {
+    for context in [LIST, SLIDER, TABLE] {
         keymap.bind_in(context, "home", MoveFirst).expect(well_formed);
         keymap.bind_in(context, "end", MoveLast).expect(well_formed);
     }

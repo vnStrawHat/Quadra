@@ -248,6 +248,23 @@ As built so far:
   is a block that stands for what is on its way, and pulses. In the three that move, what
   moves is a layer and each frame writes one constant of it (an offset, a turn, an
   opacity): nothing is laid out, painted or uploaded, at the exact place of every frame.
+- **`table(columns, rows, cell)`** (`table.rs`, `table/view.rs`) shows `rows()` rows of
+  cells under a header; `cell(row, column)` is what a cell says, and both are asked again
+  when what they read changes. Rows are 26 px with a seam under each and are mounted as
+  they show (`uniform_list`); the header is 28 px on the plane of table heads. A `Column`
+  has a title, a width (140 px; `.width(..)`), and how it shows its cells: text, numbers
+  (`.numeric()`: at the right in the mono face, sorted as numbers), `CellKind::Status`
+  (the word with its mark and colour) or `CellKind::Age` (seconds as 45s, 12m, 3h, 6d). A
+  click on a title sorts by its column from the least, another from the most, with an
+  arrow in the accent; the order is worked out again when the data changes. The 5 px at
+  the edge of a title are dragged to make the column wider, never under 48 px. A click
+  selects a row, with Ctrl one more or one less, with Shift from the last one clicked; the
+  arrows, the page keys, Home and End move the row the keys are on and select it, Shift
+  with an arrow grows the selection, and Ctrl-C copies the selected rows as lines of cells
+  with tabs between (key context `action::TABLE`). The selection is of rows as the data
+  numbers them, in a signal the caller may own (`.selected(..)`). Not yet: scrolling
+  sideways and pinned columns, hidden columns, a cursor on cells, cells that flash when
+  they change.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).
@@ -256,8 +273,9 @@ As built so far:
   its own selection. A field shows its placeholder while it holds nothing, composing counted.
 - A component that builds a view from properties it was given passes them on as they are:
   `Prop<T>` is itself something a setter takes.
-- The example `gallery` of the kit shows the components in a real window in either theme:
-  a window with its own title bar, a sidebar of pages, a toolbar and a status bar. It
+- The example `gallery` of the kit (`examples/gallery/`) shows the components in a real
+  window in either theme: a window with its own title bar, a sidebar of pages, a toolbar,
+  a status bar and a command palette. It
   becomes the gallery app when it is compared with the reference screenshots.
 
 ## Overlays in the kit

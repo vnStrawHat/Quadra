@@ -144,7 +144,7 @@ implementation described by specs 00–14 of the V repository.
   |---|---|---|
   | `windows` | Win32, D3D11, DXGI, DirectWrite, the system image codecs | `quadra-native-win`, `quadra-shell` |
   | `accesskit`, `accesskit_windows` | The accessibility bridge to the OS (R11) | `quadra-native-win` |
-  | `serde_json` (with `serde`, no derive) | Reading and writing themes, settings and keymaps | `quadra-app` |
+  | `serde_json` (with `serde`, no derive) | Reading and writing themes, settings and keymaps | `quadra-app`, `quadra-kit` (theme files) |
 
   One version of `windows` is used: the one the accessibility adapter depends on. It brings
   three build-time crates of its own macros (`syn`, `quote`, `proc-macro2`); nothing of them

@@ -125,9 +125,9 @@ drop (`quadra-tree/src/drag.rs`, `quadra-ui/src/div/drag.rs`, the example `board
 `tween` on the window's clock (`Tree::set_clock`, `Handle::now`). **R3 has started** (specs/13;
 the design language is specs/behaviour/15): colours of box styles can be roles of the theme
 (`Paint`, `Token`, `Theme` in `quadra-tree/src/theme.rs`; `Tree::set_theme`; the app's theme
-is a `Signal<Rc<Theme>>` in the context of views). Next: the crate `quadra-kit` with the
-names of the roles and the theme files (JSON, as `quadra/kit/themes/*.json` of the V repo),
-inherited text style with text colours, tokens for radii and spacing, style transitions
+is a `Signal<Rc<Theme>>` in the context of views), and the crate `quadra-kit` has the names
+of the roles (`quadra_kit::token`) and the themes (`dark()`, `light()`, `theme_from_json`;
+the files are in `crates/quadra-kit/themes/`). Next: inherited text style with text colours, tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`
 (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range

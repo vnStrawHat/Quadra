@@ -63,6 +63,15 @@ radii, component styles. They are loaded and validated at start-up; an unknown k
 malformed value is reported with its path. The system appearance (dark, accent, high contrast,
 text scale) arrives from the platform (10) and can select or adjust the theme.
 
+As built: `quadra_kit::token` names the roles of the palette (`token::CANVAS`, `ACCENT`, ..),
+each a `Token` numbered in the order of the table, and `token::NAMES` their names in a file.
+`theme_from_json(text)` reads a theme file into a `KitTheme` (name, mode, a colour a role),
+starting from `dark()` or `light()` by the file's mode; the two built-in themes are files
+bundled in the crate (`themes/one-dark-pro.json`, `themes/one-light.json`). Roles a file
+leaves unset follow its own colours (the table of behaviour/15 says which follows which).
+`KitTheme::theme()` is what a tree styles with. The sections of code, the terminal and
+charts are checked to hold colours and are not kept yet: their roles come with their crates.
+
 ## Components
 
 A component is a builder type with a function to create it:

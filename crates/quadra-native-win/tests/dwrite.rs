@@ -147,3 +147,15 @@ fn text_goes_from_a_view_to_pixels() {
     assert!((10..16).contains(&left) && (50..80).contains(&right), "{left}..{right}");
     assert!((14..26).contains(&top) && (36..48).contains(&bottom), "{top}..{bottom}");
 }
+
+#[test]
+fn numbers_in_segoe_ui_are_composed_and_equal_what_shaping_gives() {
+    let mut ts = quadra_text::TextSystem::new(Box::new(DirectWrite::new().unwrap()));
+    let face = ts.face_for(&quadra_text::TextStyle::default());
+    for number in ["950.28", "-3,141.59", "12:30", "+7%", "1/2"] {
+        let composed = ts.word(number, face, 13.0);
+        let shaped = ts.backend().shape(number, face, 13.0);
+        assert_eq!(composed.glyphs, shaped, "{number}");
+    }
+    assert_eq!(ts.take_stats().words_composed, 5);
+}

@@ -88,17 +88,17 @@ its tests. In short:
   `tools/build_shaders.sh` (needs the Windows SDK's fxc) into `.cso` files that are committed.
   Its tests use windows that are never shown and the software rasterizer.
 
-The four scenes of the comparison bench run in real windows and look right. First numbers
-against the V build (docs/benchmarks.md): list equal, memory and binary size better, but grid
-2.5 times slower, document 2.1 times, start-up 4 times. Each has a known cause; **that is the
-work in progress**:
+The four scenes of the comparison bench run in real windows and look right. Against the V
+build (docs/benchmarks.md): list, grid and document cost the same CPU a frame or a little less,
+memory is lower, the binary is less than half. **Start-up is 4 times slower (189 ms against
+44 ms): that is the work in progress.** The hardware device is made before the first frame;
+the V build draws the first frame on the software device and makes the hardware one meanwhile
+(specs/07, "Start-up").
 
-1. Pass timings, to measure before changing anything.
-2. grid: compose numbers from digit glyphs shaped once (the V build's `text/numeric.v`).
-3. document: paint only the lines near the visible part of a layer, or make a glyph cheaper
-   to emit and upload.
-4. start-up: first frame on the software device, the hardware device made meanwhile
-   (specs/07, "Start-up").
+Room left that the numbers show (headless, `tools/bench.sh grid`): 200 ns a binding in the grid
+(a reactive property boxes a closure on every run, see the `ponytail:` note in
+`quadra-ui/src/div.rs`), and a flex item is measured once per height its column offers though
+its height does not depend on it.
 
 Then the go/no-go of R1 is written down, and phase R2 (input first) begins.
 
@@ -109,6 +109,8 @@ Habits that cost time when forgotten:
 - A script with backslashes is written to `.tmp/` as a file, not passed through a here-document
   (the shell collapses the backslashes). `.tmp/edit.py FILE SPEC` applies exact replacements.
 - The cargo fork puts binaries under `<cargo home>/targets/quadra-*/<profile>/build/<crate>/<hash>/out/`.
+- `tools/bench.sh [scene...]` builds the bench, copies it to `.tmp/compare.exe` and runs the
+  named scenes headless with their pass timings.
 - The V runner and bench are built in the V repository (`tools/v.sh -cc clang -prod ...`; the
   runner needs `-cflags -Wno-int-conversion`).
 

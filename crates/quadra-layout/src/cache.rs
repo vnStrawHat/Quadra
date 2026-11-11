@@ -38,6 +38,9 @@ pub(crate) struct Entry {
 pub(crate) struct Answers {
     cache: [Entry; SLOTS],
     valid: u8,
+    /// Entries a measure asked for. One only a perform asked for is forgotten when the node
+    /// is performed at another request: the parent that placed it there has moved on.
+    measured: u8,
     next: u8,
     pslot: u8,
     /// Performed: the rects below are that layout's.
@@ -58,8 +61,11 @@ impl Answers {
         self.valid == 0
     }
 
-    pub fn cached(&self, req: &Request) -> Option<Size> {
-        (0..SLOTS).find(|&i| self.has(i) && self.cache[i].req == *req).map(|i| self.cache[i].out)
+    /// The answer to a measure, if it is known.
+    pub fn cached(&mut self, req: &Request) -> Option<Size> {
+        let i = (0..SLOTS).find(|&i| self.has(i) && self.cache[i].req == *req)?;
+        self.measured |= 1 << i;
+        Some(self.cache[i].out)
     }
 
     /// The result of the last perform if it was at this request and nothing measured the node
@@ -72,13 +78,21 @@ impl Answers {
     /// Records a result. A perform's entry is never the one replaced.
     pub fn store(&mut self, req: Request, out: Size, perform: bool) {
         self.probed = !perform;
-        if perform && let Some(i) = (0..SLOTS).find(|&i| self.has(i) && self.cache[i].req == req) {
+        let known = (0..SLOTS).find(|&i| self.has(i) && self.cache[i].req == req);
+        if perform
+            && self.done
+            && known != Some(self.pslot as usize)
+            && self.measured & (1 << self.pslot) == 0
+        {
+            self.valid &= !(1 << self.pslot); // the last perform, which nothing else asked for
+        }
+        if perform && let Some(i) = known {
             self.cache[i].out = out;
             self.pslot = i as u8;
             self.done = true;
             return;
         }
-        if self.done && self.next == self.pslot {
+        if self.done && self.has(self.pslot as usize) && self.next == self.pslot {
             self.next = (self.next + 1) % SLOTS as u8;
         }
         let i = self.next as usize;
@@ -87,6 +101,7 @@ impl Answers {
         }
         self.cache[i] = Entry { req, out };
         self.valid |= 1 << i;
+        self.measured = if perform { self.measured & !(1 << i) } else { self.measured | 1 << i };
         self.next = (self.next + 1) % SLOTS as u8;
         if perform {
             self.pslot = i as u8;
@@ -94,9 +109,13 @@ impl Answers {
         }
     }
 
-    /// The measure answers, without the perform.
+    /// The measure answers, without the perform, in the order they were asked: a parent asks
+    /// for a size first and then, with that size, for more.
     pub fn measures(&self) -> impl Iterator<Item = Entry> + '_ {
-        (0..SLOTS).filter(|&i| self.has(i) && !(self.done && i == self.pslot as usize)).map(|i| self.cache[i])
+        let oldest_first = (0..SLOTS).map(|i| (self.next as usize + i) % SLOTS);
+        oldest_first
+            .filter(|&i| self.has(i) && !(self.done && i == self.pslot as usize))
+            .map(|i| self.cache[i])
     }
 
     pub fn perform(&self) -> Option<Entry> {

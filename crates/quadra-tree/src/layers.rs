@@ -20,6 +20,10 @@ pub(crate) struct LayerState {
     pub clip_to_parent: bool,
     /// Its marker stands in the list of the layer around it.
     pub marked: bool,
+    /// Paint only what is near the part that shows (specs/07, "Layers").
+    pub culls: bool,
+    /// The part of the layer, in its own space, that is painted when it culls.
+    pub band: Option<Rect>,
     /// The node's range in its own layer (`len` with its subtree, `own` its own instances).
     /// The node's `start`, `len` and `own` describe its marker in the parent's layer.
     pub len: u32,
@@ -34,6 +38,8 @@ impl LayerState {
             opacity: 1.0,
             clip_to_parent: false,
             marked: false,
+            culls: false,
+            band: None,
             len: 0,
             own: 0,
         }
@@ -67,6 +73,49 @@ impl Tree {
         let node = &mut self.nodes[id.index as usize];
         (node.len, node.own) = (0, 0);
         self.mark(id, flag::PAINT | flag::SUBTREE | flag::RELIST);
+    }
+
+    /// Makes a layer that is cut to its parent paint only what is near the part that shows:
+    /// the content of a scroll container.
+    pub fn cull_layer(&mut self, id: NodeId) {
+        let Some(state) = self.get_mut(id).and_then(|n| n.layer.as_mut()) else { return };
+        if !std::mem::replace(&mut state.culls, true) {
+            self.culled.push(id);
+        }
+    }
+
+    /// The part of a layer its parent's padding box shows, in the layer's own space.
+    fn layer_visible(&self, id: NodeId) -> Option<Rect> {
+        let node = &self.nodes[id.index as usize];
+        let (state, parent) = (node.layer.as_ref()?, &self.nodes[node.parent?.index as usize]);
+        let own = self.layout.rect(node.layout).origin();
+        let size = self.layout.rect(parent.layout).size();
+        let shown =
+            Rect::new(0.0, 0.0, size.width, size.height).inset(self.layout.style(parent.layout).border);
+        Some(shown.translate(-own.x - state.offset.x, -own.y - state.offset.y))
+    }
+
+    /// Before the paint pass: a culling layer whose visible part left the band it was painted
+    /// for gets a band around that part, and is painted again.
+    pub(crate) fn cull_pass(&mut self) {
+        let mut list = std::mem::take(&mut self.culled);
+        list.retain(|&id| self.get(id).is_some_and(|n| n.layer.as_ref().is_some_and(|s| s.culls)));
+        for &id in &list {
+            let Some(shown) = self.layer_visible(id) else { continue };
+            let Some(state) = self.nodes[id.index as usize].layer.as_mut() else { continue };
+            let covers = |band: Rect| {
+                band.x <= shown.x
+                    && band.y <= shown.y
+                    && band.right() >= shown.right()
+                    && band.bottom() >= shown.bottom()
+            };
+            if !state.band.is_some_and(covers) {
+                let (w, h) = (shown.width, shown.height);
+                state.band = Some(Rect::new(shown.x - w, shown.y - h, w * 3.0, h * 3.0));
+                self.mark(id, flag::PAINT | flag::SUBTREE);
+            }
+        }
+        self.culled = list;
     }
 
     pub fn is_layer(&self, id: NodeId) -> bool {

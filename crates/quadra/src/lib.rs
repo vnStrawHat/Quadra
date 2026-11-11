@@ -17,7 +17,7 @@ use std::rc::Rc;
 
 use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
-pub use quadra_app::{AppError, Result};
+pub use quadra_app::{AppError, FrameReport, Result};
 pub use quadra_layout::{Align, Direction, Justify, Length, Overflow};
 pub use quadra_platform::{WindowId, WindowOptions};
 pub use quadra_prim::{Color, Corners, Edges, Point, Rect, Size};

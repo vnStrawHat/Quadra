@@ -200,9 +200,12 @@ impl Paragraph {
     /// Breaks the paragraph into lines no wider than `max_width` (infinite: only at newlines)
     /// and returns its size: the widest line and the height of all of them.
     pub fn wrap(&mut self, ts: &mut TextSystem, max_width: f32) -> Size {
-        let fits_unchanged = !self.width_breaks && max_width + SLACK >= self.size.width;
-        if self.wrapped_at.is_some_and(|at| at == max_width || fits_unchanged) {
-            self.wrapped_at = Some(max_width);
+        // The same lines come out of every width from the widest line up to the width they
+        // were broken at: every line still fits, and none can take its next word. A layout
+        // asks at the space it has, then at the width it was told: both are in that range.
+        // Lines that no width broke are the same at any width they fit in.
+        let fits = max_width + SLACK >= self.size.width;
+        if self.wrapped_at.is_some_and(|at| fits && (max_width <= at || !self.width_breaks)) {
             return self.size;
         }
         ts.stats.paragraphs_broken += 1;

@@ -46,6 +46,15 @@ virtual list; a surface widget; a node with a transform or an opacity that is an
 the identity; a node marked `.layer()`. A node stops being one when the reason ends. Promotion
 and demotion repaint that subtree once.
 
+**A scroll container's content is painted only near what shows.** The layer keeps a band, in
+its own space: the part of it the viewport shows, with the viewport's size added on every
+side. A node outside the band emits nothing, and a text skips its lines outside it. Scrolling
+inside the band is still one constant. When the part that shows leaves the band, the layer
+gets a new band around it and is painted again: once per viewport scrolled, for three
+viewports of content, whatever the length of the page. So a long page costs what its visible
+part costs, when it is first shown and whenever all of it changes (a new width). A virtual
+list does not need this (its rows outside the window do not exist) and does not use it.
+
 Limits and choices:
 
 - Translations are rounded to whole device pixels. Under a rotation or a scale, glyphs are drawn

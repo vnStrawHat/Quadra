@@ -6,6 +6,7 @@
 
 mod fake;
 mod grapheme;
+mod numeric;
 mod paragraph;
 mod system;
 mod types;

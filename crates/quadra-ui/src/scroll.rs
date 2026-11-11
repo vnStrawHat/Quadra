@@ -25,6 +25,7 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
         cx.tree.set_layout_style(viewport, scrolls);
         let content = content.mount(cx);
         cx.tree.make_layer(content, true);
+        cx.tree.cull_layer(content);
         cx.tree.set_children(viewport, &[content]);
         let (outer, inner) = (cx.tree.size_signal(viewport), cx.tree.size_signal(content));
         let top = memo(move || scroll_y.get().clamp(0.0, (inner.get().height - outer.get().height).max(0.0)));

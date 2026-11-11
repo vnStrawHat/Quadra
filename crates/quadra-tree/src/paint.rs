@@ -35,6 +35,8 @@ struct Painter<'a> {
     /// The node whose layer is being painted.
     root: NodeId,
     scale: f32,
+    /// The part of the layer that is painted, if it paints only near what shows.
+    band: Option<Rect>,
     /// The scale changed: everything is painted, in every layer.
     all: bool,
     /// Every repainted node emitted as many instances as it had, and no list of children
@@ -43,12 +45,13 @@ struct Painter<'a> {
 }
 
 /// Paints one node's own instances: the background and border from its style, then its
-/// widget. A node that is not displayed paints nothing.
+/// widget. A node that is not displayed paints nothing. The caller has checked that the node
+/// is in the band its layer paints.
 pub(crate) fn paint_own(
     node: &mut Node,
     layout: &LayoutTree,
     rect: Rect,
-    scale: f32,
+    (scale, band): (f32, Option<Rect>),
     fonts: &mut Fonts,
     out: &mut Vec<Instance>,
 ) {
@@ -56,7 +59,7 @@ pub(crate) fn paint_own(
     if style.display == Display::None {
         return;
     }
-    let mut cx = PaintCx { rect, scale, clip: Clip::NONE, fonts, out };
+    let mut cx = PaintCx { rect, scale, visible: band, clip: Clip::NONE, fonts, out };
     let (background, border_color, radii) =
         (node.paint.background, node.paint.border_color, node.paint.radii);
     cx.quad(Quad {
@@ -70,6 +73,11 @@ pub(crate) fn paint_own(
     if let Some(widget) = &mut node.widget {
         widget.paint(&mut cx);
     }
+}
+
+/// Whether a node lies outside the part of its layer that is painted: it emits nothing.
+pub(crate) fn outside(band: Option<Rect>, rect: Rect) -> bool {
+    band.is_some_and(|band| !band.intersects(rect))
 }
 
 impl Painter<'_> {
@@ -97,10 +105,15 @@ impl Painter<'_> {
         let force = force || flags & flag::SUBTREE != 0;
         if force || flags & flag::PAINT != 0 {
             let from = self.scratch.len() as u32;
-            paint_own(&mut self.nodes[i], self.layout, rect, self.scale, self.fonts, self.scratch);
+            // ponytail: a new band visits every node of the layer to find those in it; a
+            // spatial index if pages of a hundred thousand nodes scroll.
+            if !outside(self.band, rect) {
+                let how = (self.scale, self.band);
+                paint_own(&mut self.nodes[i], self.layout, rect, how, self.fonts, self.scratch);
+                self.stats.nodes_painted += 1;
+            }
             let to = self.scratch.len() as u32;
             self.nodes[i].fresh = (from, to);
-            self.stats.nodes_painted += 1;
             self.stats.instances_written += to - from;
             self.same &= to - from == self.nodes[i].own;
             self.patches.push(Patch { at: abs, from, to });
@@ -222,9 +235,8 @@ impl Tree {
         let i = root.index as usize;
         // As the root of its own layer the node starts at zero; as a child it is one marker.
         // The two sets of numbers are swapped in for the pass and back out after it.
-        let Some((layer_id, len, own)) = self.nodes[i].layer.as_ref().map(|s| (s.id, s.len, s.own)) else {
-            return;
-        };
+        let Some(state) = self.nodes[i].layer.as_ref() else { return };
+        let (layer_id, len, own, band) = (state.id, state.len, state.own, state.band.filter(|_| state.culls));
         let as_child = (self.nodes[i].start, self.nodes[i].len, self.nodes[i].own);
         (self.nodes[i].start, self.nodes[i].len, self.nodes[i].own) = (0, len, own);
         self.scratch.clear();
@@ -241,6 +253,7 @@ impl Tree {
             fonts,
             root,
             scale: self.scale,
+            band,
             all,
             same: true,
         };

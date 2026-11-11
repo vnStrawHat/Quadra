@@ -10,7 +10,7 @@ use quadra_reactive::{Signal, signal};
 use quadra_render::{Instance, LayerId, Scene};
 
 use crate::fonts::Fonts;
-use crate::frame::FrameStats;
+use crate::frame::{FrameStats, PassTimes};
 use crate::layers::LayerState;
 use crate::node::{NOT_PAINTED, Node, NodeId, PaintStyle, Style, flag};
 use crate::paint::Patch;
@@ -39,11 +39,14 @@ pub struct Tree {
     pub(crate) repaint_all: bool,
     /// Layers whose constants must be worked out again.
     pub(crate) recompose: Vec<NodeId>,
+    /// The layers that paint only near what shows.
+    pub(crate) culled: Vec<NodeId>,
     /// Layers waiting to be painted, during the paint pass.
     pub(crate) todo: Vec<NodeId>,
     /// By node index: the signal that follows the node's size (`Tree::size_signal`).
     pub(crate) sizes: HashMap<u32, Signal<Size>>,
     pub(crate) stats: FrameStats,
+    pub(crate) times: PassTimes,
     // Reused by every pass.
     pub(crate) scratch: Vec<Instance>,
     pub(crate) patches: Vec<Patch>,
@@ -73,9 +76,11 @@ impl Tree {
             repaint: false,
             repaint_all: false,
             recompose: Vec::new(),
+            culled: Vec::new(),
             todo: Vec::new(),
             sizes: HashMap::new(),
             stats: FrameStats::default(),
+            times: PassTimes::default(),
             scratch: Vec::new(),
             patches: Vec::new(),
             changes: Vec::new(),

@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use crate::numeric::Numeric;
 use crate::types::{FaceId, FontKey, GlyphBitmap, ShapedGlyph, TextBackend, TextStyle};
 
 /// A shaped token: a word, or a run of one separator.
@@ -20,6 +21,8 @@ pub struct TextStats {
     pub words_shaped: u32,
     /// Words found in the cache.
     pub word_hits: u32,
+    /// Numbers composed from glyphs shaped once.
+    pub words_composed: u32,
     /// Paragraphs whose lines were broken.
     pub paragraphs_broken: u32,
 }
@@ -62,6 +65,7 @@ pub struct TextSystem {
     default_family: Rc<str>,
     faces: HashMap<FontKey, FaceId>,
     words: WordCache,
+    numeric: Numeric,
     pub(crate) stats: TextStats,
 }
 
@@ -69,7 +73,8 @@ impl TextSystem {
     pub fn new(backend: Box<dyn TextBackend>) -> TextSystem {
         let default_family = Rc::from(backend.default_family());
         let words = WordCache { current: Words::new(), previous: Words::new(), count: 0, limit: 16_384 };
-        TextSystem { backend, default_family, faces: HashMap::new(), words, stats: TextStats::default() }
+        let (faces, numeric, stats) = (HashMap::new(), Numeric::default(), TextStats::default());
+        TextSystem { backend, default_family, faces, words, numeric, stats }
     }
 
     /// How many shaped words the cache may hold (16,384 unless set).
@@ -102,8 +107,13 @@ impl TextSystem {
         (m.ascent * style.size, m.descent * style.size)
     }
 
-    /// The shaped token, from the cache or the backend.
+    /// The shaped token: a number composed from its characters' glyphs when the face allows
+    /// it, otherwise from the cache or the backend.
     pub fn word(&mut self, token: &str, face: FaceId, size: f32) -> Rc<Word> {
+        if let Some(word) = self.numeric.word(&mut *self.backend, token, face, size) {
+            self.stats.words_composed += 1;
+            return Rc::new(word);
+        }
         let key = (face, size.to_bits());
         if let Some(word) = self.words.get(key, token) {
             self.stats.word_hits += 1;

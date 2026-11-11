@@ -16,3 +16,8 @@ path = "src/main.rs"
 
 [dependencies]
 quadra = { path = "../../crates/quadra" }
+# For the headless mode (BENCH_HEADLESS): the app on other backends than the facade's.
+quadra-app = { path = "../../crates/quadra-app" }
+quadra-native-win = { path = "../../crates/quadra-native-win" }
+quadra-platform = { path = "../../crates/quadra-platform" }
+quadra-render = { path = "../../crates/quadra-render" }

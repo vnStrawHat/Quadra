@@ -38,6 +38,9 @@ pub struct PaintCx<'a> {
     pub rect: Rect,
     /// Device pixels per logical pixel.
     pub scale: f32,
+    /// The part of the layer that is painted, when it is not all of it: what lies outside
+    /// need not be emitted (a text skips its lines there).
+    pub visible: Option<Rect>,
     pub clip: Clip,
     /// Where glyph tiles come from.
     pub fonts: &'a mut Fonts,

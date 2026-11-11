@@ -42,6 +42,10 @@ name = "quadra-bench-compare"
 version = "0.1.0"
 dependencies = [
  "quadra",
+ "quadra-app",
+ "quadra-native-win",
+ "quadra-platform",
+ "quadra-render",
 ]
 
 [[package]]

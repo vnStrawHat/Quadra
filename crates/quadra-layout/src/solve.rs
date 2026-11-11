@@ -55,12 +55,13 @@ impl LayoutTree {
         req: Request,
         perform: bool,
     ) -> Size {
-        let node = &self.nodes[id.index()];
-        let hit = if perform { node.answers.performed(&req) } else { node.answers.cached(&req) };
+        let answers = &mut self.nodes[id.index()].answers;
+        let hit = if perform { answers.performed(&req) } else { answers.cached(&req) };
         if let Some(out) = hit {
             return out;
         }
         self.stats.asked += 1;
+        let node = &self.nodes[id.index()];
         let style = node.style.clone();
         let (s, leaf) = (&*style, node.leaf);
         // A size in pixels is definite whoever asks.

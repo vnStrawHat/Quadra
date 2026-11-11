@@ -47,11 +47,19 @@ This is the idea the V engine was built on, and the part that carries over.
 A node flagged `LAYOUT` (a layout style value, its children, or a leaf's content changed)
 forgets its answers. The layout pass then, for each flagged node, deepest first:
 
-1. Asks the node again every request it had answered, the perform last.
+1. Asks the node again the requests it had answered, in the order they were asked and the
+   perform last, and stops at the first answer that differs.
 2. **The answers are the same**: stop. Only the node's subtree was laid out, and the node keeps
    its rect. Nothing above it runs.
 3. **An answer differs**: the parent forgets its own answers and is asked its old requests
    again. Its other children answer from their caches. Repeat from step 2 with the parent.
+
+Stopping at the first difference matters when a size changes every frame (a panel being
+dragged, a width that animates). A parent asks for a size, then asks again with the size it
+was told: once the first answer has changed, the later requests are ones nobody will repeat,
+and answering them would lay the subtree out at its old size. For the same reason a node is
+not asked at all when a value its parent reads itself changed (its own width): the parent
+runs whatever it answers.
 
 The **layout boundary** is the first ancestor that answers as before. No static rule declares
 it: a node with a definite size, a scroll container, or one its parent stretches to an
@@ -66,6 +74,8 @@ Details that keep it exact:
   a leaf may keep the state of the last measure (a text wrap at that width).
 - The perform answer is never the one evicted from the cache. A node that lost an answer its
   parent had been given counts as changed.
+- A perform that no measure had asked for is forgotten when the node is performed at another
+  request: the parent that placed it there has moved on, and nothing else knows the answer.
 - A node with no old answers (just mounted) makes its parent the starting point.
 - When the climbs of one pass reach more children than the tree has nodes (many rows of a long
   list changed height at once), the pass switches to one full layout from the root.

@@ -64,7 +64,9 @@ A text node owns a `Paragraph`:
 - **Shaped runs**, from the backend through the shaping cache. Rebuilt when the text or a
   shaping style (family, weight, size, features, language) changes.
 - **Lines**, from breaking the shaped runs at a width. Rebuilt when the width changes; breaking
-  uses the cached advances and shapes nothing.
+  uses the cached advances and shapes nothing. The same lines answer every width from the
+  widest line up to the width they were broken at, which is what a layout asks: first at the
+  space it has, then at the width it was told.
 - **Glyph handles**, one per distinct glyph tile it paints with. Acquired at paint, kept until
   the paragraph changes or the node is removed (07, "Atlases").
 
@@ -85,8 +87,11 @@ Rich text (spans of different style in one flow) is one paragraph with several s
   across a document or a table are shaped once.
 - Bounded by entry count with least-recently-used eviction. It is not tied to frames: a
   paragraph that exists holds its shaped runs itself and does not need the cache to stay warm.
-- ASCII text in a face known to have no ligatures or kerning for it takes a fast path that
-  places glyphs from an advance table.
+- Numbers are the text that changes every frame (tables, meters, clocks), and each new one
+  would be shaped. A number (digits and `. , - + % : /`) is composed from glyphs shaped once
+  per size, when the face shapes numbers glyph by glyph: every pair of those characters must
+  shape to its two glyphs at their own advances, checked once per face. Composed numbers do
+  not enter the cache.
 
 ## Glyph tiles
 

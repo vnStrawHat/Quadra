@@ -2,12 +2,12 @@
 //! from scratch must be what the passes left.
 
 use quadra_layout::Display;
-use quadra_prim::Point;
+use quadra_prim::{Point, Rect};
 use quadra_render::Instance;
 
 use crate::fonts::Fonts;
 use crate::node::NodeId;
-use crate::paint::paint_own;
+use crate::paint::{outside, paint_own};
 use crate::tree::Tree;
 
 impl Tree {
@@ -22,14 +22,15 @@ impl Tree {
         while let Some(root) = layers.pop() {
             let i = root.index as usize;
             let Some(state) = self.nodes[i].layer.as_ref() else { continue };
-            let (layer, len, own) = (state.id, state.len, state.own);
+            let (layer, len, own, band) =
+                (state.id, state.len, state.own, state.band.filter(|_| state.culls));
             let origin = self.layout.rect(self.nodes[i].layout).origin();
             let mut fresh = Vec::new();
             // The root's own range is kept in its layer state: check it apart from the walk.
             let as_child = (self.nodes[i].start, self.nodes[i].len, self.nodes[i].own);
             (self.nodes[i].start, self.nodes[i].len, self.nodes[i].own) = (0, len, own);
             self.verify_node(
-                root,
+                (root, band),
                 root,
                 Point::new(-origin.x, -origin.y),
                 0,
@@ -60,7 +61,7 @@ impl Tree {
     #[allow(clippy::too_many_arguments)]
     fn verify_node(
         &mut self,
-        id: NodeId,
+        (id, band): (NodeId, Option<Rect>),
         root: NodeId,
         origin: Point,
         parent_start: usize,
@@ -82,12 +83,14 @@ impl Tree {
             own = out.len() - start;
         } else {
             let rect = self.layout.rect(self.nodes[i].layout).translate(origin.x, origin.y);
-            paint_own(&mut self.nodes[i], &self.layout, rect, self.scale, fonts, out);
+            if !outside(band, rect) {
+                paint_own(&mut self.nodes[i], &self.layout, rect, (self.scale, band), fonts, out);
+            }
             own = out.len() - start;
             if shown {
                 for k in 0..self.nodes[i].children.len() {
                     let child = self.nodes[i].children[k];
-                    self.verify_node(child, root, rect.origin(), start, fonts, out, layers, wrong);
+                    self.verify_node((child, band), root, rect.origin(), start, fonts, out, layers, wrong);
                 }
             }
         }

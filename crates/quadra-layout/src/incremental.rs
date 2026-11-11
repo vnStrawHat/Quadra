@@ -80,8 +80,9 @@ impl LayoutTree {
     /// its parent. Returns the work done, counted in children of the ancestors visited.
     fn climb(&mut self, id: LayoutId, old: Answers, item_changed: bool, m: &mut dyn Measure) -> usize {
         let (mut cur, mut old, mut work) = (id, old, 0);
-        // A value the parent reads changed: the parent runs whatever this node answers.
-        let mut same = self.replay(cur, &old, m) && !item_changed;
+        // A value the parent reads changed: the parent runs whatever this node answers, and
+        // asks it other things than before, so the old requests are not worth answering.
+        let mut same = !item_changed && self.replay(cur, &old, m);
         while !same {
             let Some(parent) = self.nodes[cur.index()].parent else {
                 if let Some(size) = self.nodes[cur.index()].root {
@@ -102,22 +103,26 @@ impl LayoutTree {
             work += self.nodes[parent.index()].children.len() + 1;
             self.stats.climbed += 1;
             cur = parent;
-            same = self.replay(cur, &old, m) && !parent_changed;
+            same = !parent_changed && self.replay(cur, &old, m);
         }
         work
     }
 
-    /// Asks `id` every request of `old` again, the perform last, and reports whether every
-    /// answer is the same.
+    /// Asks `id` the requests of `old` again, in the order they were asked and the perform
+    /// last, and reports whether every answer is the same. It stops at the first that
+    /// differs: the parent is then laid out again and asks what it needs. A request made with
+    /// the size a node answered before is not one its parent repeats once that size changed,
+    /// so a node whose size changes every frame is not laid out at its old sizes.
     fn replay(&mut self, id: LayoutId, old: &Answers, m: &mut dyn Measure) -> bool {
-        let mut same = old.done && !old.lost;
+        if !old.done || old.lost {
+            return false;
+        }
         for entry in old.measures() {
-            same &= self.layout_node(m, id, entry.req, false) == entry.out;
+            if self.layout_node(m, id, entry.req, false) != entry.out {
+                return false;
+            }
         }
-        if let Some(entry) = old.perform() {
-            same &= self.layout_node(m, id, entry.req, true) == entry.out;
-        }
-        same
+        old.perform().is_some_and(|entry| self.layout_node(m, id, entry.req, true) == entry.out)
     }
 
     fn run_root(&mut self, root: LayoutId, size: RootSize, m: &mut dyn Measure) {

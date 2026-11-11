@@ -9,11 +9,16 @@
 
 mod recorder;
 
+use std::rc::Rc;
+
 use quadra::{
     Align, AnyView, Color, Direction, Div, Justify, Length, Signal, WindowOptions, column, div, each_frame,
-    memo, row, scroll, signal, text, uniform_list,
+    expect, memo, provide, row, scroll, signal, text, uniform_list,
 };
-use recorder::{Recorder, say};
+use quadra_native_win::DirectWrite;
+use quadra_platform::HeadlessPlatform;
+use quadra_render::{NullRenderer, Renderer};
+use recorder::{Recorder, SharedPhases, say};
 
 const WORDS: [&str; 32] = [
     "window", "button", "layout", "render", "scroll", "update", "shadow", "cursor", "memory", "thread",
@@ -56,7 +61,7 @@ fn full() -> Div {
 
 /// Counts frames with the recorder and gives each frame of the run its number.
 fn animate(mut frame: impl FnMut(u32) + 'static) {
-    let (mut recorder, mut n) = (Recorder::new(), 0);
+    let (mut recorder, mut n) = (Recorder::new(expect::<SharedPhases>()), 0);
     each_frame(move || {
         let more = recorder.tick();
         if more {
@@ -126,11 +131,35 @@ fn main() -> quadra::Result<()> {
             std::process::exit(2);
         }
     };
-    let mut said = scene != "counter";
-    let app = quadra::app()?.on_presented(move |_| {
+    let options = WindowOptions::new("Benchmark").size(width, height);
+    if std::env::var_os("BENCH_HEADLESS").is_some() {
+        // The passes alone, as fast as they go: real text, but no window and no GPU. For
+        // finding where a frame's time goes; the numbers that count are the runner's.
+        let text = DirectWrite::new().map_err(quadra::AppError::Text)?;
+        let app =
+            quadra_app::App::with(Rc::new(HeadlessPlatform::new()), NullRenderer::new(), Box::new(text));
+        return run(app, options, view, true);
+    }
+    run(quadra::app()?, options, view, scene != "counter")
+}
+
+fn run<R: Renderer>(
+    app: quadra_app::App<R>,
+    options: WindowOptions,
+    view: fn() -> AnyView,
+    mut said: bool,
+) -> quadra::Result<()> {
+    let phases = SharedPhases::default();
+    let seen = phases.clone();
+    let app = app.on_presented(move |report| {
+        seen.borrow_mut().add(report);
         if !std::mem::replace(&mut said, true) {
             say("ready"); // the counter's first frame is on its way to the screen
         }
     });
-    app.window(WindowOptions::new("Benchmark").size(width, height), view)?.run()
+    let view = move || {
+        provide(phases); // where the scene's recorder finds the frame reports
+        view()
+    };
+    app.window(options, view)?.run()
 }

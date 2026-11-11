@@ -7,6 +7,7 @@
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 use quadra_platform::{
     Platform, PlatformError, PlatformEvent, PlatformHandler, PlatformWindow, TimerId, WindowHandle, WindowId,
@@ -14,9 +15,9 @@ use quadra_platform::{
 };
 use quadra_prim::Color;
 use quadra_reactive::{Scope, batch};
-use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
+use quadra_render::{DeviceSize, RenderError, RenderStats, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
-use quadra_tree::{Fonts, Tree};
+use quadra_tree::{Fonts, FrameStats, PassTimes, Tree};
 use quadra_ui::{View, mount_with};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -53,6 +54,20 @@ impl From<RenderError> for AppError {
 
 pub type Result<T> = std::result::Result<T, AppError>;
 
+/// A frame that was handed to the display: what it visited and how long each part took.
+#[derive(Clone, Copy, Debug)]
+pub struct FrameReport {
+    pub window: WindowId,
+    pub stats: FrameStats,
+    pub passes: PassTimes,
+    pub render: RenderStats,
+    /// Uploading and drawing, as far as the CPU is concerned.
+    pub draw: Duration,
+    pub present: Duration,
+}
+
+type FrameHook = Box<dyn FnMut(&FrameReport)>;
+
 /// One window: the OS window, its tree, and where its frames are drawn.
 struct AppWindow {
     /// Everything its view created: ended when the window closes.
@@ -72,7 +87,7 @@ pub struct App<R: Renderer> {
     root: Scope,
     clear: Color,
     on_error: Box<dyn FnMut(&AppError)>,
-    on_presented: Option<Box<dyn FnMut(WindowId)>>,
+    on_presented: Option<FrameHook>,
 }
 
 impl<R: Renderer> App<R> {
@@ -105,7 +120,7 @@ impl<R: Renderer> App<R> {
 
     /// `hook` runs each time a frame of a window has been handed to the display: what
     /// measures start-up, or records frames, listens here.
-    pub fn on_presented(mut self, hook: impl FnMut(WindowId) + 'static) -> App<R> {
+    pub fn on_presented(mut self, hook: impl FnMut(&FrameReport) + 'static) -> App<R> {
         self.on_presented = Some(Box::new(hook));
         self
     }
@@ -168,19 +183,22 @@ impl<R: Renderer> App<R> {
         if device.width == 0 || device.height == 0 {
             return; // minimized: nothing to show
         }
-        w.tree.frame(w.window.size(), w.window.scale());
-        let (renderer, fonts) = (&mut self.renderer, &self.fonts);
+        let stats = w.tree.frame(w.window.size(), w.window.scale());
+        let (renderer, fonts, started) = (&mut self.renderer, &self.fonts, Instant::now());
         let mut frame = || {
             renderer.resize_surface(w.surface, device)?;
             renderer.sync_atlas(fonts.borrow_mut().glyphs.core_mut())?;
             renderer.sync_atlas(fonts.borrow_mut().color_glyphs.core_mut())?;
             renderer.draw(w.surface, w.tree.scene_mut(), self.clear)?;
-            renderer.present(w.surface)
+            let drawn = started.elapsed();
+            renderer.present(w.surface)?;
+            Ok((drawn, started.elapsed() - drawn))
         };
         match frame() {
-            Ok(()) => {
+            Ok((draw, present)) => {
                 if let Some(hook) = &mut self.on_presented {
-                    hook(window);
+                    let (passes, render) = (w.tree.times(), self.renderer.stats());
+                    hook(&FrameReport { window, stats, passes, render, draw, present });
                 }
             }
             Err(RenderError::DeviceLost) => self.recover(),

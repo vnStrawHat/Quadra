@@ -138,3 +138,26 @@ fn an_unknown_family_falls_back_and_loaded_fonts_are_known() {
     let loaded = TextStyle { family: names[0].as_str().into(), ..style() };
     assert_ne!(ts.face_for(&loaded), ts.face_for(&style()));
 }
+
+#[test]
+fn a_number_is_composed_from_glyphs_shaped_once() {
+    let mut ts = system();
+    let face = ts.face_for(&style());
+    let first = ts.word("12.50", face, 10.0);
+    assert_eq!(first.width, 30.0);
+    assert_eq!(
+        first.glyphs.iter().map(|g| (g.x, g.cluster)).collect::<Vec<_>>(),
+        [(0.0, 0), (6.0, 1), (12.0, 2), (18.0, 3), (24.0, 4)]
+    );
+    ts.take_stats();
+    // A thousand numbers never seen before: nothing is shaped and the cache does not grow.
+    for n in 0..1000 {
+        ts.word(&format!("{n}.{:02}", n % 100), face, 10.0);
+    }
+    let stats = ts.take_stats();
+    assert_eq!((stats.words_composed, stats.words_shaped, stats.word_hits), (1000, 0, 0));
+    // Another size shapes each character once more; text that is not a number is shaped.
+    ts.word("7", face, 20.0);
+    ts.word("7th", face, 20.0);
+    assert_eq!(ts.take_stats().words_shaped, 1);
+}

@@ -77,6 +77,10 @@ impl Widget for Text {
         let (ascent, descent) = paragraph.metrics();
         let (size, line_px, scale) = (paragraph.style().size, paragraph.style().line_px(), cx.scale);
         for line in paragraph.lines() {
+            let top = cx.rect.y + line.y;
+            if cx.visible.is_some_and(|band| top > band.bottom() || top + line_px < band.y) {
+                continue; // outside what its layer paints
+            }
             // Baselines sit on whole pixels; along the line a glyph keeps a quarter-pixel phase.
             let baseline =
                 ((cx.rect.y + line.y + (line_px - ascent - descent) / 2.0 + ascent) * scale).round();

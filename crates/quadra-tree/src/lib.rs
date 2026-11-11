@@ -17,7 +17,7 @@ mod verify;
 mod widget;
 
 pub use fonts::{Fonts, GlyphKey, GlyphMeta, GlyphTile, SUBPIXEL_STEPS};
-pub use frame::FrameStats;
+pub use frame::{FrameStats, PassTimes};
 pub use node::{NodeId, PaintStyle, Style};
 pub use shared::Handle;
 pub use text::Text;

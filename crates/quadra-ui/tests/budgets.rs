@@ -31,7 +31,7 @@ fn page() -> Page {
     let scroll_y = signal(0.0);
     let item = move |i: u32| {
         let cell = div().size(100.0, 2.0);
-        if i == 7_000 { cell.bg(row_tone) } else { cell.bg(Color::rgb(0x202020 + i)) }
+        if i == 70 { cell.bg(row_tone) } else { cell.bg(Color::rgb(0x202020 + i)) }
     };
     let list = scroll(scroll_y, column().children((0..10_000).map(item))).container(div().size(200.0, 600.0));
     let card = div().size(200.0, 60.0).bg(tone).child(text(label).size(10.0));
@@ -89,11 +89,18 @@ fn one_row_among_ten_thousand() {
 #[test]
 fn scrolling_plain_content() {
     let mut p = page();
-    p.scroll_y.set(3_000.0);
+    p.scroll_y.set(500.0);
     let (frame, drawn) = p.h.frame();
     assert_eq!((frame.nodes_painted, frame.nodes_laid_out, frame.layers_composed), (0, 0, 1));
     assert_eq!((frame.writes, drawn.instances_uploaded, drawn.layers_uploaded), (1, 0, 0));
-    assert_eq!(p.h.tree.window_rect(p.list).y, -3_000.0);
+    assert_eq!(p.h.tree.window_rect(p.list).y, -500.0);
+    // Past what was painted around the window: the 900 rows around the new place (and the
+    // column they are in), once.
+    p.scroll_y.set(3_000.0);
+    let (frame, drawn) = p.h.frame();
+    assert_eq!((frame.nodes_painted, frame.nodes_laid_out, drawn.layers_uploaded), (901, 0, 1));
+    p.scroll_y.set(3_500.0);
+    assert_eq!(p.h.frame().0.nodes_painted, 0);
     p.scroll_y.set(1.0e9); // past the end: kept at the end
     p.h.frame();
     assert_eq!(p.h.tree.window_rect(p.list).y, 600.0 - 20_000.0);

@@ -7,6 +7,45 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-11 — the comparison bench after the three fixes (on 7a38ba6 plus this commit)
+
+One round of the runner, both builds taking turns:
+
+| Measure | V | Rust before | Rust now |
+|---|---|---|---|
+| list: CPU per frame | 0.39 ms | 0.37 ms | 0.35 ms |
+| grid: CPU per frame | 1.29 ms | 3.22 ms | 1.25 ms |
+| document: CPU per frame | 0.73 ms | 1.55 ms | 0.69 ms |
+| list / grid / document: peak memory | 23.2 / 31.2 / 24.7 MB | 12.9 / 23.2 / 23.3 MB | 12.7 / 17.5 / 22.7 MB |
+| counter: startup | 44 ms | 187 ms | 189 ms (not worked on yet) |
+
+Where a frame's time went was measured first: the app reports each frame's passes
+(`FrameReport`), and the bench prints their averages with `BENCH_PHASES=1`. With
+`BENCH_HEADLESS=1` it runs the scenes on real text without a window, as fast as they go, which
+gives numbers steady enough to compare two builds (`tools/bench.sh grid document`). Microseconds
+a frame, headless:
+
+| Scene | Pass | Before | Now | What changed |
+|---|---|---|---|---|
+| grid | layout | 295 (2,663 in the window) | 247 | Numbers are composed from digit glyphs shaped once, when the face shapes them glyph by glyph (checked once per face), as the V build does |
+| grid | update, paint | 241, 172 | 239, 157 | nothing yet: 200 ns a binding, 260 ns a repainted text |
+| document | layout | 285 | 42 | Three things, below |
+| document | paint, draw | 526, 70 | 134, 22 | A scroll container's content is painted only near what shows (specs/07): 4,250 glyphs instead of 15,964 |
+
+The document's layout was doing its work six to sixteen times over:
+
+- A paragraph was broken again for every request, though a layout asks at the space it has and
+  then at the width it was told, and both give the same lines. A wrap now answers for every
+  width from its widest line up to the width it was broken at.
+- After a change, a node was asked again everything it had answered before, including
+  requests made with sizes it no longer has, each a layout of the whole page at an old width.
+  A replay now stops at the first answer that differs, asks in the order the parent had
+  asked, and is skipped when a value the parent reads itself has changed.
+- A perform nobody had asked for as a measure stayed in the cache as if it were one.
+
+In the window a frame costs two to three times its headless time, in both builds: the thread
+sleeps 12 ms between frames and the processor slows down. The runner's CPU time is what counts.
+
 ## 2026-11-11 — the comparison bench, first run in a real window (on af3edbe plus the uncommitted bench)
 
 `bench/compare` is the V bench's four scenes with the same text, sizes and frame recording,

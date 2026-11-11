@@ -24,6 +24,7 @@ unrelated nodes. "Path" means the node and its ancestors up to the layout bounda
 | A label's text changes size | 1 | 0 | path and affected siblings | those nodes | their layer | 0 |
 | One row of a 10,000-row list changes | 1 | 0 | path | 1 | that node's instances | 0 |
 | Scroll plain content | 1: the offset | 0 | 0 | 0 | 0 instances, one layer constant | 0 |
+| Scroll plain content past what is painted around the window (07) | 1: the offset | 0 | 0 | the nodes of three viewports | that layer | 0 |
 | Scroll a virtual list within realized rows | the list's own | 0 | 0 | 0 | 0 instances, one layer constant | 0 |
 | Scroll a virtual list by one row | the list's own and the row's | 0 | 1 row | 1 row | that layer | 0 (recycled) |
 | A transform or opacity animation frame | 0 | 0 | 0 | 0 | one layer constant | 0 |

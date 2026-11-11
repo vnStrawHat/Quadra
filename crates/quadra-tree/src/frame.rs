@@ -1,6 +1,8 @@
 //! A frame: the passes, in order, each over what is flagged for it (specs/02, "The frame";
 //! specs/04, "Passes"). Style resolution, compose and accessibility join as they are built.
 
+use std::time::{Duration, Instant};
+
 use quadra_layout::{Known, LayoutId, Measure, RootSize};
 use quadra_prim::Size;
 use quadra_reactive::batch;
@@ -32,6 +34,15 @@ pub struct FrameStats {
     pub layers_rebuilt: u32,
     /// Layers whose transform, cut or opacity changed.
     pub layers_composed: u32,
+}
+
+/// How long the passes of the last frame took. `update` includes the frame callbacks.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct PassTimes {
+    pub update: Duration,
+    pub layout: Duration,
+    pub paint: Duration,
+    pub compose: Duration,
 }
 
 /// Gives the layout engine the content size of leaves: it asks their widgets.
@@ -88,19 +99,32 @@ impl Tree {
             (self.repaint, self.repaint_all) = (true, true);
         }
         (self.size, self.scale) = (size, scale);
+        let (mut times, mut clock) = (PassTimes::default(), Instant::now());
+        let mut lap = || std::mem::replace(&mut clock, Instant::now()).elapsed();
         self.run_frame_callbacks();
         // A layout may change a size that state depends on: its bindings run and the layout
         // is done again. After four rounds the rest waits for the next frame.
         for _ in 0..4 {
             self.update();
+            times.update += lap();
             self.layout_pass();
+            times.layout += lap();
             if !self.shared.wake.get() {
                 break;
             }
         }
+        self.cull_pass();
         self.paint_pass();
+        times.paint = lap();
         self.compose_pass();
+        times.compose = lap();
+        self.times = times;
         self.stats
+    }
+
+    /// How long the passes of the last frame took.
+    pub fn times(&self) -> PassTimes {
+        self.times
     }
 
     /// The update pass: bindings that are due run and queue their writes; the writes are

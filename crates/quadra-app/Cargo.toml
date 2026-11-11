@@ -1,0 +1,20 @@
+[package]
+name = "quadra-app"
+description = "Quadra's app: windows, the frame loop, recovery from a lost device"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-platform = { path = "../quadra-platform" }
+quadra-prim = { path = "../quadra-prim" }
+quadra-reactive = { path = "../quadra-reactive" }
+quadra-render = { path = "../quadra-render" }
+quadra-text = { path = "../quadra-text" }
+quadra-tree = { path = "../quadra-tree" }
+quadra-ui = { path = "../quadra-ui" }

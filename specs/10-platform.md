@@ -123,14 +123,16 @@ until a second OS exists.
 
 ```rust
 fn main() -> quadra::Result<()> {
-    quadra::App::new()                    // native backends for this OS
-        .window(WindowOptions::new("Notes").size(960.0, 600.0), app_view)
+    quadra::App::new()?                   // native backends for this OS
+        .window(WindowOptions::new("Notes").size(960.0, 600.0), app_view)?
         .run()
 }
 ```
 
 `App` owns the platform, renderer, text system, the reactive runtime's root scope and the
-windows. It implements `PlatformHandler`: events go to dispatch (09), frames to the passes
+windows. Making the backends and opening a window can fail, and say so. A window's view is
+mounted in a scope of its own, which ends when the window closes; the last window closing
+ends the loop. It implements `PlatformHandler`: events go to dispatch (09), frames to the passes
 (02), timers and wakes to the task executor (11).
 
 The app's **error hook** receives what the framework could not handle: a lost device that could

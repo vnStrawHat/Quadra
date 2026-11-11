@@ -146,6 +146,12 @@ impl Tree {
         widget.downcast_mut()
     }
 
+    /// Paints everything again in the next frame: what was painted is gone with the device
+    /// (the glyph tiles), or depends on something every node read.
+    pub fn repaint_all(&mut self) {
+        (self.repaint, self.repaint_all) = (true, true);
+    }
+
     /// Says that what a leaf measures changed.
     pub fn mark_layout(&mut self, id: NodeId) {
         if let Some(node) = self.get(id) {

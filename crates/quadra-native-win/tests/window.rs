@@ -66,7 +66,6 @@ impl Recorder {
         let leave = |e: &PlatformEvent| matches!(e, PlatformEvent::Pointer { kind: PointerKind::Leave, .. });
         let plain =
             self.events.iter().filter(|(_, e)| !matches!(e, PlatformEvent::Resize { .. }) && !leave(e));
-
         plain.map(|(_, e)| format!("{e:?}").replace(", mods: Mods(0)", "")).collect()
     }
 }

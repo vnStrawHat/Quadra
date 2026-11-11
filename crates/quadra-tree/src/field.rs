@@ -92,7 +92,7 @@ impl TextField {
             goal_x: None,
             style,
             color,
-            selection: Color::rgb(0x3366FF).alpha(0.3),
+            selection: crate::text::SELECTION,
             focused: false,
             caret_on: true,
             touched: false,

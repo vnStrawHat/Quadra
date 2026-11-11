@@ -33,7 +33,7 @@ pub use focus::KeyEvent;
 pub use fonts::{Fonts, GlyphKey, GlyphMeta, GlyphTile, SUBPIXEL_STEPS};
 pub use frame::{FrameStats, PassTimes};
 pub use input::{PointerEvent, PointerKind};
-pub use keymap::{Keymap, KeymapError, Keystroke, TEXT_AREA_CONTEXT, TEXT_CONTEXT};
+pub use keymap::{Keymap, KeymapError, Keystroke, TEXT_AREA_CONTEXT, TEXT_CONTEXT, TEXT_SELECT_CONTEXT};
 pub use node::{NodeId, PaintStyle, Style};
 pub use overlay::{Along, Anchor, Side};
 pub use quadra_a11y::{Mirror, Role, SemanticAction, SemanticNode, Semantics, TreeUpdate};

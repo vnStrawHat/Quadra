@@ -17,6 +17,8 @@ pub const TEXT_CONTEXT: &str = "text";
 /// The key context of a text field of several lines: the same keys, and those that go by
 /// lines.
 pub const TEXT_AREA_CONTEXT: &str = "text-area";
+/// The key context of text that can be selected and not edited: select all, and copy.
+pub const TEXT_SELECT_CONTEXT: &str = "text-select";
 
 /// One key with the modifiers held.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -190,9 +192,12 @@ impl Keymap {
             lines.push((keys.to_string(), Move(motion, false)));
             lines.push((format!("shift-{keys}"), Move(motion, true)));
         }
+        let read = [("ctrl-a", SelectAll), ("ctrl-c", Copy), ("ctrl-insert", Copy)];
+        let read = read.map(|(keys, command)| (keys.to_string(), command));
         let both = all.iter().map(|binding| (TEXT_CONTEXT, binding));
         let area = all.iter().chain(&lines).map(|binding| (TEXT_AREA_CONTEXT, binding));
-        for (context, (keys, command)) in both.chain(area) {
+        let only = read.iter().map(|binding| (TEXT_SELECT_CONTEXT, binding));
+        for (context, (keys, command)) in both.chain(area).chain(only) {
             let stroke = Keystroke::parse(keys).expect("the built-in bindings are well formed");
             self.push(vec![stroke], Some(Rc::from(context)), *command);
         }

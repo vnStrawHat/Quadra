@@ -42,6 +42,7 @@ fn main() -> quadra::Result<()> {
         let line = row().gap(8.0).align_items(quadra::Align::Center);
         let line = line.child(field.child(text_input(name))).child(button);
         let hint = text("Tab, arrows, Ctrl+Z, Ctrl+C and Ctrl+V work; click to place the caret.").size(12.0);
+        let hint = hint.selectable();
         let notes = signal(
             "Notes take several lines:
 Enter starts one, and long lines are broken."

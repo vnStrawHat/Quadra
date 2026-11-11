@@ -217,5 +217,10 @@ locale at the window root; a subtree can provide its own.
   (06, "Scrolling into view", for the caret's rect). Its key context is "text-area", which
   binds what "text" binds and the keys of lines: on one line Up, Down and Enter stay keys,
   for a list around the input and for submitting.
+- `text(..).selectable()` lets the user select static text: a drag selects (Shift and a
+  press take the selection to the press), a double click a word, a third click or the key
+  for it everything, and the key for copying puts the selection on the clipboard of the
+  view's context. The text can have the focus; the selection goes when the focus does, and
+  when the text changes. Its key context is "text-select", which binds those two keys only.
 - A field lays its text out at layout; what reads the lines before the next layout (a key
   that moves the caret by lines, a click, in the same turn as an edit) lays it out first.

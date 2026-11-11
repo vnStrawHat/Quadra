@@ -357,8 +357,39 @@ an app that is not a workbench does not name it.
   pointer is over (the strip writes the new order to `tabs`). The strip scrolls sideways
   under the wheel (06, "Scrolling"), and a list at its end names every tab, the active one
   checked. `.action(view)` puts something before that list.
-- Not yet: a tab's own menu and renaming, limits on a tab's width with an ellipsis, the pane
-  tree and docking.
+- A **pane tree** is plain data, `Pane`: a leaf that names a group of tabs
+  (`Pane::leaf("editor")`), or a split of two trees side by side or one over the other with
+  the share of the first (`Pane::row(a, b, 0.3)`, `Pane::column(a, b, 0.65)`). An app keeps
+  it in a signal and saves it with its settings. `split(group, axis, new, before)` puts a
+  new group beside one, in half of its room; `remove(group)` takes a leaf out, and the other
+  side of its split takes the place of the split (the last leaf stays); `set_ratio(path,
+  share)` gives the first side of a split a share, a twentieth for each side at least (a
+  path is the sides taken from the root, 0 or 1); `toggle(group)` folds a leaf to its
+  header or opens it again, in a split of one over the other only, and never both sides
+  (the second stays open).
+- `panes(root, |group| view).header(28.0)` shows the tree. It is not mirrored by nested
+  boxes: every leaf and every seam is a child of one box, placed where the tree puts it in
+  the box's size, on whole pixels (`Pane::place`). A change of the tree moves them: a leaf
+  is built once and kept, with its nodes and their state, while its group is in the tree,
+  whatever is split, taken out or folded around it. A seam is a strip of 6 px with a line
+  of 1 px in its middle: a press holds it and the share follows the pointer (never under
+  80 px for a side, where the split has the room), a double click makes the sides even. A
+  folded leaf keeps the height of its header, under or over a line of 1 px that is not
+  dragged.
+- **Docking.** `dock(root, [("left", tabs), ..])` is a `Dock`: the pane tree of a workbench
+  (`.root`, a signal) and the tabs of the group at each of its leaves (`.group(name)`: the
+  tabs and the active id, two signals). `tab_strip(tabs, active).dock(work, group)` makes a
+  strip that of a group: a tab is torn off it, dragged 12 px up or down (09, "Drag and
+  drop"), and follows the pointer as a chip; along the strip it is moved by the strip as
+  anywhere, and it is chosen by a click, not by the press. A strip takes the tabs dropped
+  on it, before the first tab whose middle is past the pointer. `panes(..).dock(work)`
+  makes every pane take them too: on the middle of a pane a tab joins its group, on an edge
+  (the outer quarter of each side, `zone_at`) it has a new pane split off there, named
+  "group-N". The part a drop would take, the pane or the half at that edge, is veiled while
+  a tab is over the pane. A group left with no tab goes, and its pane with it
+  (`Dock::apply` does what a `DockEvent` asks; an app with its own drop targets takes the
+  dragged `TabDrag`).
+- Not yet: a tab's own menu and renaming, limits on a tab's width with an ellipsis.
 
 ## Overlays in the kit
 

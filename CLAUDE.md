@@ -156,7 +156,11 @@ submenus, scrolling and `context_menu` (`menu/rows.rs`; `popup::open_now` opens 
 notifications and toasts (`notices()`, `Notice`), and the command palette (`palette.rs`: `fuzzy`, `marked`).
 `quadra-text` normalizes (`normalize_nfc` on insert, `fold_diacritics`; tables from `tools/gen_nfc.py`). The kit
 has `table` (sort, column widths, selection, copy; no sideways scrolling yet) and `tree`, `range_slider`, `combobox`, `calendar`, `date_picker`, `time_input`, and the smaller
-things (`loading`, `indeterminate`, `clearable`, `key_hint`, `confirm`, `menu_button`, `menubar`). Next: drawer; scrolling sideways;
+things (`loading`, `indeterminate`, `clearable`, `key_hint`, `confirm`, `menu_button`, `menubar`), the hover
+card, the drawer, and the workbench (`quadra_kit::work`: activity bar, panel header, tab strip, pane tree,
+docking). The gallery has 61 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`);
+left: settings, motion (style transitions), rich text, and the pages that wait for R4 (markdown, terminal,
+editor, live table, log view, value viewer, the three charts). Next: the settings page and its kit;
 rich text; local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,

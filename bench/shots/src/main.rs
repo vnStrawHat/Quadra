@@ -27,9 +27,10 @@ type Shots = App<D3d11Renderer>;
 /// The size of the window the pages are drawn in, as the reference pictures have it.
 const SIZE: (f32, f32) = (1200.0, 800.0);
 
-/// The pages that open something, and the test id of what opens it: a click, but a hover for
-/// the tooltip and the hover card, and a right click on the page for the context menu.
-const OPENERS: [(&str, &str); 11] = [
+/// The pages that open something, and the test id (or the name) of what opens it: a click,
+/// but a hover for the tooltip and the hover card, a right click on the page for the context
+/// menu, and for the dock a tab torn off and held over the bottom edge of its pane.
+const OPENERS: [(&str, &str); 12] = [
     ("menu", "mn-file"),
     ("select", "sel-ns"),
     ("date-picker", "dp-date"),
@@ -40,6 +41,7 @@ const OPENERS: [(&str, &str); 11] = [
     ("tooltip", "tt-btn"),
     ("hover-card", "hc-trigger"),
     ("drawer", "drawer-right"),
+    ("dock", "main.rs"),
     ("context-menu", ""),
 ];
 
@@ -63,11 +65,12 @@ fn point(platform: &HeadlessPlatform, window: WindowId, at: Point, button: Mouse
     }
 }
 
-/// A point 10 px inside the control with this test id.
+/// A point 10 px inside the control with this test id, or this name.
 fn inside(app: &Shots, window: WindowId, id: &str) -> Option<Point> {
     let tree = app.tree(window)?;
     let nodes = tree.semantic_tree().nodes;
-    let found = nodes.iter().find(|node| node.semantics.test_id.as_deref() == Some(id))?;
+    let found =
+        nodes.iter().find(|n| n.semantics.test_id.as_deref() == Some(id) || n.semantics.name == id)?;
     let rect = tree.window_rect(tree.node_of(found.id)?);
     Some(Point::new(rect.x + 10.0, rect.y + 10.0))
 }
@@ -79,6 +82,18 @@ fn open(platform: &HeadlessPlatform, app: &mut Shots, window: WindowId, page: &s
         return true;
     }
     let Some(at) = inside(app, window, opener) else { return false };
+    if page == "dock" {
+        let moves = [
+            (PointerKind::Down, 0.0, 0.0),
+            (PointerKind::Move, 0.0, 20.0),
+            (PointerKind::Move, 150.0, 290.0),
+        ];
+        for (kind, dx, dy) in moves {
+            let (button, at) = (MouseButton::Left, Point::new(at.x + dx, at.y + dy));
+            platform.push(window, PlatformEvent::Pointer { kind, button, at, mods: Mods::NONE });
+        }
+        return true;
+    }
     let rests = page == "tooltip" || page == "hover-card";
     let button = if rests { MouseButton::None } else { MouseButton::Left };
     point(platform, window, at, button);

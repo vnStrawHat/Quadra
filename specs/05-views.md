@@ -126,6 +126,10 @@ press, a release, a move, the pointer entering or leaving, a click with any butt
 is never given the tree: it writes signals, and what it wants of the tree it asks through the
 tree's handle, which the next frame applies.
 
+`.on_mount(|tree, node| ..)` runs once, with the tree, when the box is mounted: what a
+component wants of its own node (a handler the box has no setter for, the node's id for
+later, the tree's handle) it sets up there.
+
 ## Control flow
 
 Because a component runs once, a plain `if` or `for` in it chooses once. Structure that changes

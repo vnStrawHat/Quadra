@@ -154,11 +154,19 @@ As built:
 - While the drag lasts the pointer's moves are the drag's: no node gets them, and hover
   stays as it was. The target is the deepest node under the pointer that takes values of the
   payload's type; a node that takes another type is no target.
+- A node can ask to be **torn off** instead (`.draggable_off(px, ..)`): the press is a drag
+  only once the pointer is that far above or below where it pressed. Until then the moves
+  are the node's own, and what the press held stays held: a tab is moved along its strip by
+  the strip, and dragged out of it by the drag.
+- A target can follow the pointer (`.on_drag_over::<T>(|at| ..)`): it is told where the
+  pointer is in the window at every move over it while a `T` is dragged, and `None` when the
+  pointer leaves it or the drag ends. This is how it shows where a drop would land.
 - The preview is held where the dragged node was pressed, and goes out of the window with
   the pointer (`Anchor::Free`). It is not hit, and is not in the semantic tree.
 - Escape gives the drag up: nothing is dropped, and the release that follows does nothing.
 - In views: `.draggable(|| value)`, `.draggable_with(|| value, || preview)`,
-  `.on_drop(|value: &T, at| ..)` and `.drop_target(|s| ..)` for the style while over.
+  `.draggable_off(px, || value, || preview)`, `.on_drop(|value: &T, at| ..)`,
+  `.on_drag_over::<T>(|at| ..)` and `.drop_target(|s| ..)` for the style while over.
 - **From the OS**: files and text dropped on the window arrive as drop events with the same
   targeting.
 

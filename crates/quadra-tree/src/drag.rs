@@ -30,12 +30,38 @@ pub(crate) struct Drag {
     preview: Option<NodeId>,
     /// The node under the pointer that takes the payload.
     over: Option<NodeId>,
+    /// How far above or below the press the pointer goes before the press is a drag; zero:
+    /// past the threshold, any way.
+    off: f32,
 }
 
 impl Tree {
     /// Lets a node be dragged: `payload` is asked for the value when a drag of it starts.
     pub fn on_drag(&mut self, id: NodeId, payload: impl FnMut() -> Rc<dyn Any> + 'static) {
-        self.add_handler(id, Handler::Drag(Box::new(payload)));
+        self.on_drag_off(id, 0.0, payload);
+    }
+
+    /// As [`Tree::on_drag`], for a node that is torn off: the drag starts once the pointer is
+    /// `off` pixels above or below where it pressed, and the moves are the node's until then.
+    pub fn on_drag_off(&mut self, id: NodeId, off: f32, payload: impl FnMut() -> Rc<dyn Any> + 'static) {
+        self.add_handler(id, Handler::Drag { off, start: Box::new(payload) });
+    }
+
+    /// Tells a node that takes values of type `T` where the pointer is while one is dragged
+    /// over it, and `None` when the pointer leaves it or the drag ends.
+    pub fn on_drag_over<T: 'static>(&mut self, id: NodeId, f: impl FnMut(Option<Point>) + 'static) {
+        self.add_handler(id, Handler::DragOver { of: TypeId::of::<T>(), run: Box::new(f) });
+    }
+
+    fn tell_over(&mut self, node: Option<NodeId>, dragged: TypeId, at: Option<Point>) {
+        let Some(node) = node.filter(|&node| self.is_alive(node)) else { return };
+        for handler in &mut self.nodes[node.index as usize].handlers {
+            if let Handler::DragOver { of, run } = handler
+                && *of == dragged
+            {
+                run(at);
+            }
+        }
     }
 
     /// Lets a node take what is dragged when it is a `T`: `f` runs with the value and the
@@ -75,16 +101,18 @@ impl Tree {
 
     /// A press: it may become a drag of the nearest node on its path that can be dragged.
     pub(crate) fn drag_press(&mut self, path: &[NodeId], at: Point) {
-        let can = |id: &&NodeId| {
-            self.nodes[id.index as usize].handlers.iter().any(|h| matches!(h, Handler::Drag(_)))
+        let off = |id: &NodeId| {
+            let handlers = self.nodes[id.index as usize].handlers.iter();
+            handlers.filter_map(|h| if let Handler::Drag { off, .. } = h { Some(*off) } else { None }).next()
         };
-        self.drag = path.iter().find(can).map(|&source| Drag {
+        self.drag = path.iter().find_map(|&source| Some((source, off(&source)?))).map(|(source, off)| Drag {
             source,
             pressed_at: at,
             held: at - self.window_rect(source).origin(),
             payload: None,
             preview: None,
             over: None,
+            off,
         });
     }
 
@@ -94,13 +122,17 @@ impl Tree {
         let Some(drag) = &self.drag else { return false };
         if drag.payload.is_none() {
             let (source, from) = (drag.source, drag.pressed_at);
-            if (at.x - from.x).hypot(at.y - from.y) <= THRESHOLD || !self.is_alive(source) {
+            let near = match drag.off > 0.0 {
+                true => (at.y - from.y).abs() <= drag.off,
+                false => (at.x - from.x).hypot(at.y - from.y) <= THRESHOLD,
+            };
+            if near || !self.is_alive(source) {
                 return false;
             }
             // The press is a drag now, and no click: what it held is let go.
             let mut payload = None;
             for handler in &mut self.nodes[source.index as usize].handlers {
-                if let Handler::Drag(start) = handler {
+                if let Handler::Drag { start, .. } = handler {
                     payload = Some(start());
                 }
             }
@@ -133,7 +165,9 @@ impl Tree {
                     self.set_state(node, State::DROP_TARGET, on);
                 }
             }
+            self.tell_over(was, of, None);
         }
+        self.tell_over(over, of, Some(at));
         true
     }
 
@@ -171,6 +205,9 @@ impl Tree {
         }
         if let Some(preview) = drag.preview {
             self.remove(preview);
+        }
+        if let Some(payload) = &drag.payload {
+            self.tell_over(drag.over, payload.as_ref().type_id(), None);
         }
         Some(drag)
     }

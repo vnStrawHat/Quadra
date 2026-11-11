@@ -24,9 +24,21 @@ impl Div {
         payload: impl Fn() -> T + 'static,
         preview: impl Fn() -> V + 'static,
     ) -> Self {
+        self.draggable_off(0.0, payload, preview)
+    }
+
+    /// As [`Div::draggable_with`], for a box that is torn off what it is in: the drag starts
+    /// once the pointer is `off` pixels above or below where it pressed, and the moves are
+    /// the box's own until then. Zero is the usual threshold, any way.
+    pub fn draggable_off<T: 'static, V: View + 'static>(
+        self,
+        off: f32,
+        payload: impl Fn() -> T + 'static,
+        preview: impl Fn() -> V + 'static,
+    ) -> Self {
         self.on_mount(move |tree, id| {
             let (owner, handle, preview) = (Scope::current(), tree.handle(), Rc::new(preview));
-            tree.on_drag(id, move || {
+            tree.on_drag_off(id, off, move || {
                 let preview = preview.clone();
                 handle.with(move |tree| {
                     if owner.is_alive() {
@@ -46,6 +58,12 @@ impl Div {
     /// where in the window it was let go.
     pub fn on_drop<T: 'static>(self, f: impl FnMut(&T, Point) + 'static) -> Self {
         self.on_mount(move |tree, id| tree.on_drop::<T>(id, f))
+    }
+
+    /// Tells the box where the pointer is in the window while a `T` is dragged over it, and
+    /// `None` when the pointer leaves it or the drag ends: to show where a drop would land.
+    pub fn on_drag_over<T: 'static>(self, f: impl FnMut(Option<Point>) + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_drag_over::<T>(id, f))
     }
 
     /// What the box looks like while something it takes is dragged over it.

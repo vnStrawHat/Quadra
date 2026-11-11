@@ -95,8 +95,18 @@ pub(crate) enum Handler {
     /// A press landed outside the overlay the node is the root of.
     /// It is given the path of the press, the deepest node first.
     OutsidePress(OutsideFn),
-    /// The node can be dragged: asked for the value when a drag of it starts.
-    Drag(Box<dyn FnMut() -> Rc<dyn Any>>),
+    /// The node can be dragged: asked for the value when a drag of it starts. `off`, when
+    /// not zero, is how far above or below the press the pointer goes before that.
+    Drag {
+        off: f32,
+        start: Box<dyn FnMut() -> Rc<dyn Any>>,
+    },
+    /// The node follows the pointer while what it takes is dragged over it: where the
+    /// pointer is in the window, and `None` when it leaves or the drag ends.
+    DragOver {
+        of: TypeId,
+        run: Box<dyn FnMut(Option<Point>)>,
+    },
     /// The node takes what is dragged when it is of a type: the value, and where it was let
     /// go in the window.
     Drop {

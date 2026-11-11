@@ -194,7 +194,9 @@ impl Div {
         self.on_mount(move |tree, id| node.fill(id, tree.handle()))
     }
 
-    pub(crate) fn on_mount(mut self, f: impl FnOnce(&mut Tree, NodeId) + 'static) -> Self {
+    /// Runs `f` once, with the tree, when the box is mounted: what a component wants of its
+    /// own node that no setter gives.
+    pub fn on_mount(mut self, f: impl FnOnce(&mut Tree, NodeId) + 'static) -> Self {
         self.mounts.push(Box::new(f));
         self
     }

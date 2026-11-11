@@ -123,3 +123,38 @@ fn a_small_move_is_a_click_and_other_boxes_take_nothing() {
     assert!(b.dropped.get_untracked().is_empty());
     assert_eq!(b.clicks.get_untracked(), 1);
 }
+
+#[test]
+fn a_box_is_torn_off_and_its_target_follows_the_pointer() {
+    let (moves, seen, dropped) = (signal(0u32), signal(Vec::new()), signal(0u32));
+    let mut h = Harness::new();
+    h.mount(move || {
+        // A tab that is moved along its strip, and torn off it 12 px above or below.
+        let tab = div().size(80.0, 30.0).draggable_off(12.0, || Task("tab"), || div().size(80.0, 30.0));
+        let tab = tab.on_pointer(quadra_tree::PointerKind::Move, move |_| moves.update(|n| *n += 1));
+        let pane = div().size(300.0, 200.0).on_drop(move |_: &Task, _| dropped.update(|n| *n += 1));
+        let pane = pane.on_drag_over::<Task>(move |at| seen.update(|all| all.push(at)));
+        column().child(tab).child(pane)
+    });
+    h.frame();
+    // Along the strip, however far: the moves are the tab's, and nothing is dragged.
+    h.pointer(PointerInput::Down, 10.0, 15.0);
+    h.pointer(PointerInput::Move, 70.0, 15.0);
+    h.pointer(PointerInput::Move, 70.0, 25.0);
+    assert_eq!((moves.get_untracked(), h.tree.dragging()), (2, false));
+    // Off it: a drag, which the pane under the pointer follows.
+    h.pointer(PointerInput::Move, 70.0, 60.0);
+    h.pointer(PointerInput::Move, 90.0, 80.0);
+    assert_eq!((moves.get_untracked(), h.tree.dragging()), (2, true));
+    assert_eq!(seen.get_untracked(), [Some(Point::new(70.0, 60.0)), Some(Point::new(90.0, 80.0))]);
+    // Out of the pane it is told so; back in and let go, it is given the tab and told again.
+    h.pointer(PointerInput::Move, 500.0, 80.0);
+    assert_eq!(seen.get_untracked().last(), Some(&None));
+    h.pointer(PointerInput::Move, 100.0, 100.0);
+    h.pointer(PointerInput::Up, 100.0, 100.0);
+    let seen = seen.get_untracked();
+    assert_eq!(
+        (dropped.get_untracked(), &seen[seen.len() - 2..]),
+        (1, &[Some(Point::new(100.0, 100.0)), None][..])
+    );
+}

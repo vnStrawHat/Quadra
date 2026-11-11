@@ -10,6 +10,8 @@ use quadra_layout::{Align, Display, Justify};
 use quadra_platform::{Cursor, MouseButton};
 use quadra_prim::Size;
 use quadra_reactive::{Signal, memo, on_cleanup, signal};
+
+use super::dock::{Dock, TabDrag, chip, take_tabs};
 use quadra_tree::{NodeId, Paint, PointerEvent, PointerKind, Role};
 use quadra_ui::{AnyView, Div, MountCx, View, div, each, row, scroll_strip, text};
 
@@ -45,19 +47,20 @@ impl Tab {
 
 type Close = Rc<dyn Fn(&str)>;
 /// How wide each mounted tab is, by its id: where a dragged tab is among the others.
-type Widths = Rc<RefCell<HashMap<String, Signal<Size>>>>;
+pub(crate) type Widths = Rc<RefCell<HashMap<String, Signal<Size>>>>;
 
 pub struct TabStrip {
     tabs: Signal<Vec<Tab>>,
     active: Signal<String>,
     close: Option<Close>,
     actions: Vec<AnyView>,
+    dock: Option<(Dock, String)>,
 }
 
 /// A strip of 32 px with a tab for each of `tabs`, the one whose id `active` holds joined to
 /// what is under the strip. A press writes `active`, a drag the order of `tabs`.
 pub fn tab_strip(tabs: Signal<Vec<Tab>>, active: Signal<String>) -> TabStrip {
-    TabStrip { tabs, active, close: None, actions: Vec::new() }
+    TabStrip { tabs, active, close: None, actions: Vec::new(), dock: None }
 }
 
 impl TabStrip {
@@ -65,6 +68,14 @@ impl TabStrip {
     /// middle button: `f` is told which tab, and takes it out of the tabs if it agrees.
     pub fn on_close(mut self, f: impl Fn(&str) + 'static) -> Self {
         self.close = Some(Rc::new(f));
+        self
+    }
+
+    /// Makes the strip that of a group of a docking workbench: a tab is torn off it (dragged
+    /// 12 px up or down) and dropped on another strip or on a pane, and the strip takes the
+    /// tabs dropped on it, where they are dropped.
+    pub fn dock(mut self, dock: Dock, group: impl Into<String>) -> Self {
+        self.dock = Some((dock, group.into()));
         self
     }
 
@@ -167,13 +178,17 @@ fn face(strip: &Rc<TabStrip>, widths: &Widths, tab: Signal<Tab>) -> Measured {
     // pointer is among the others.
     let held: Rc<Cell<Option<(f32, bool)>>> = Rc::default();
     let (press, drag, widths, close) = (held.clone(), held.clone(), widths.clone(), strip.close.clone());
+    let (torn, docked) = (held.clone(), strip.dock.is_some());
     let (chosen, pressed, moved) = (id.clone(), id.clone(), id.clone());
     let face = face.on_click(move |_| active.set(chosen.clone()));
     let face = face.on_pointer(PointerKind::Down, move |e: &mut PointerEvent| match (e.button, &close) {
         (MouseButton::Left, _) => {
             press.set(Some((e.at.x, false)));
             e.capture_pointer();
-            active.set(pressed.clone());
+            // A tab that can be torn off may be dropped elsewhere: it is chosen by a click.
+            if !docked {
+                active.set(pressed.clone());
+            }
         }
         (MouseButton::Middle, Some(close)) => close(&pressed),
         _ => {}
@@ -196,18 +211,33 @@ fn face(strip: &Rc<TabStrip>, widths: &Widths, tab: Signal<Tab>) -> Measured {
         }
     });
     let face = face.on_pointer(PointerKind::Up, move |_| held.set(None));
+    let face = match &strip.dock {
+        Some((_, group)) => {
+            let (group, dragged) = (group.clone(), id.clone());
+            // Torn off, the tab is the drag's: the strip moves it no more.
+            let carried = move || {
+                torn.set(None);
+                TabDrag { group: group.clone(), tab: dragged.clone() }
+            };
+            face.draggable_off(12.0, carried, move || chip(&tab.get_untracked()))
+        }
+        None => face,
+    };
     Measured { face: face.child(content), id, widths }
 }
 
 impl View for TabStrip {
     fn mount(mut self, cx: &mut MountCx) -> NodeId {
         let (tabs, active, actions) = (self.tabs, self.active, std::mem::take(&mut self.actions));
-        let (strip, widths) = (Rc::new(self), Widths::default());
+        let (docked, strip, widths) = (self.dock.clone(), Rc::new(self), Widths::default());
+        let (known, lane) = (widths.clone(), Rc::new(Cell::new(None)));
+        let found = lane.clone();
         let faces = each(move || tabs.get(), |tab| tab.id.clone(), move |tab| face(&strip, &widths, tab));
+        let faces = faces.container(row().shrink(0.0).on_mount(move |_, id| found.set(Some(id))));
         // The line of the bar runs under the tabs that are not active, the room that is left
         // and what stands at the end.
         let rest = div().grow(1.0).border_bottom(1.0).border_color(token::LINE_STRONG);
-        let all = row().role(Role::TabList).child(faces.container(row().shrink(0.0))).child(rest);
+        let all = row().role(Role::TabList).child(faces).child(rest);
         // Every tab by name, the active one checked.
         let list = move || {
             let named = |tab: &Tab| {
@@ -222,6 +252,10 @@ impl View for TabStrip {
         let end = end.border_bottom(1.0).border_left(1.0).border_color(token::LINE_STRONG);
         let end = end.children(actions).child(menu_icon_button(icons::ELLIPSIS, "Tabs", list));
         let bar = row().height(32.0).shrink(0.0).bg(token::TAB_BG);
-        bar.child(scroll_strip(signal(0.0), all)).child(end).mount(cx)
+        let bar = bar.child(scroll_strip(signal(0.0), all)).child(end).mount(cx);
+        if let Some((dock, group)) = docked {
+            take_tabs(cx, bar, (dock, group), tabs, (known, lane));
+        }
+        bar
     }
 }

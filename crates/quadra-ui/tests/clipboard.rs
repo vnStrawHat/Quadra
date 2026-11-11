@@ -56,3 +56,31 @@ fn an_input_without_a_clipboard_in_its_context_still_edits() {
     h.frame();
     assert_eq!(name.get_untracked(), ""); // the cut still removed the selection
 }
+
+#[test]
+fn a_password_shows_a_dot_a_character_and_is_never_copied() {
+    let clipboard: Rc<dyn Clipboard> = Rc::new(MemoryClipboard::default());
+    let (secret, provided) = (signal(String::new()), clipboard.clone());
+    let mut h = Harness::new();
+    mount_with(&mut h.tree, move || {
+        provide(provided);
+        div().size(200.0, 20.0).child(text_input(secret).password().size(10.0))
+    });
+    h.frame();
+    h.click(5.0, 10.0);
+    h.type_text("m\u{1EAD}t kh\u{1EA9}u"); // "mat khau" with its marks: eight characters
+    h.frame();
+    assert_eq!(secret.get_untracked(), "m\u{1EAD}t kh\u{1EA9}u");
+    let dots = "\u{2022}".repeat(8);
+    assert!(h.has_text(&dots) && !h.has_text("m\u{1EAD}t kh\u{1EA9}u"), "{}", h.semantics());
+    for key in [Key::A, Key::C, Key::X] {
+        h.key(key, Mods::CTRL);
+    }
+    h.frame();
+    assert_eq!((clipboard.read_text(), secret.get_untracked().chars().count()), (None, 8));
+    // The dots are placed and clicked as the characters would be: after the third.
+    h.click(6.0 * 3.0 + 1.0, 10.0);
+    h.type_text("X");
+    h.frame();
+    assert_eq!(secret.get_untracked(), "m\u{1EAD}tX kh\u{1EA9}u");
+}

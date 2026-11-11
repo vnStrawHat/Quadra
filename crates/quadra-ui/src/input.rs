@@ -1,13 +1,13 @@
 //! The text input view (specs/04, "Widgets"; behaviour/09): one line of text the user edits,
 //! showing a signal and writing it.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
 
 use quadra_async::{Timers, interval};
 
-use quadra_platform::{Clipboard, Cursor, Mods, MouseButton};
+use quadra_platform::{Clipboard, Cursor, Key, Mods, MouseButton};
 use quadra_prim::Color;
 use quadra_reactive::{Scope, Signal, use_context};
 use quadra_text::TextStyle;
@@ -24,13 +24,18 @@ pub struct TextInput {
     value: Signal<String>,
     style: TextStyle,
     color: Color,
+    masked: bool,
+    submit: Option<Submit>,
 }
+
+/// What runs with the text when Enter is pressed.
+type Submit = Box<dyn FnMut(&str)>;
 
 /// A line of text that edits `value`: what is typed is written to it, and what is written to
 /// it from elsewhere is shown. It takes the focus on a click or by Tab; the caret, the
 /// selection and undo are its own.
 pub fn text_input(value: Signal<String>) -> TextInput {
-    TextInput { value, style: TextStyle::default(), color: Color::BLACK }
+    TextInput { value, style: TextStyle::default(), color: Color::BLACK, masked: false, submit: None }
 }
 
 impl TextInput {
@@ -42,6 +47,18 @@ impl TextInput {
 
     pub fn color(mut self, color: Color) -> Self {
         self.color = color;
+        self
+    }
+
+    /// A password: a dot shows for each character, and copy and cut do nothing.
+    pub fn password(mut self) -> Self {
+        self.masked = true;
+        self
+    }
+
+    /// Runs `f` with the value when Enter is pressed in the input.
+    pub fn on_submit(mut self, f: impl FnMut(&str) + 'static) -> Self {
+        self.submit = Some(Box::new(f));
         self
     }
 }
@@ -67,8 +84,26 @@ fn edit(tree: &mut Tree, id: NodeId, value: Signal<String>, f: impl FnOnce(&mut 
 impl View for TextInput {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let value = self.value;
-        let field = TextField::new(&value.get_untracked(), self.style, self.color);
+        let mut field = TextField::new(&value.get_untracked(), self.style, self.color);
+        let masked = self.masked;
+        field.masked = masked;
         let id = cx.tree.insert_widget(Style::default(), Box::new(field));
+        if let Some(submit) = self.submit {
+            // After what was typed before the key: edits wait for the update pass, in order.
+            let (submit, writer) = (Rc::new(RefCell::new(submit)), cx.handle.clone());
+            cx.tree.on_key(id, true, move |e| {
+                if e.key == Key::Enter {
+                    let submit = submit.clone();
+                    writer.with(move |tree| {
+                        let text = tree.widget_mut::<TextField>(id).map(|f| f.buffer.text().to_string());
+                        if let Some(text) = text {
+                            (submit.borrow_mut())(&text);
+                        }
+                    });
+                    e.stop();
+                }
+            });
+        }
         cx.tree.set_focusable(id, true);
         cx.tree.set_cursor(id, Some(Cursor::Text));
         cx.tree.set_key_context(id, TEXT_CONTEXT);
@@ -115,6 +150,9 @@ impl View for TextInput {
         let clipboard = use_context::<Rc<dyn Clipboard>>();
         let writer = cx.handle.clone();
         cx.tree.on_action::<TextCommand>(id, move |&command| {
+            if masked && matches!(command, TextCommand::Copy | TextCommand::Cut) {
+                return; // a password leaves the field only as the value
+            }
             let clipboard = clipboard.clone();
             writer.with(move |tree| {
                 edit(tree, id, value, |field| {

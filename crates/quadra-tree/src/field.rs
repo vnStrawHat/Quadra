@@ -9,7 +9,7 @@ use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
 use quadra_prim::{Color, Point, Rect, Size};
 use quadra_render::Quad;
-use quadra_text::{EditBuffer, Motion, Paragraph, TextStyle};
+use quadra_text::{EditBuffer, Motion, Paragraph, TextStyle, next_grapheme};
 
 use crate::action::Action;
 use crate::fonts::GlyphTile;
@@ -36,8 +36,18 @@ impl Action for TextCommand {
     const NAME: &'static str = "text::edit";
 }
 
+/// What a masked field shows for each character of its text.
+const DOT: &str = "\u{2022}";
+
+/// How many characters, as a reader counts them, `text` has.
+fn characters(text: &str) -> usize {
+    std::iter::successors(Some(0), |&at| (at < text.len()).then(|| next_grapheme(text, at))).count() - 1
+}
+
 pub struct TextField {
     pub buffer: EditBuffer,
+    /// A password: a dot shows for each character, and nothing of it is copied.
+    pub masked: bool,
     style: TextStyle,
     pub color: Color,
     /// Behind the selected text.
@@ -63,6 +73,7 @@ impl TextField {
     pub fn new(text: &str, style: TextStyle, color: Color) -> TextField {
         TextField {
             buffer: EditBuffer::new(text),
+            masked: false,
             style,
             color,
             selection: Color::rgb(0x3366FF).alpha(0.3),
@@ -97,22 +108,40 @@ impl TextField {
     }
 
     /// What is shown: the buffer's text, with the text being composed in place of the
-    /// selection. Also where the caret is in it, and the range that is being composed.
-    fn shown(&self) -> (Cow<'_, str>, usize, Range<usize>) {
+    /// selection, or a dot for each character of that. Also where the caret is in it, the
+    /// range that is being composed and the range that is selected.
+    fn shown(&self) -> (Cow<'_, str>, usize, Range<usize>, Range<usize>) {
         let (text, selected) = (self.buffer.text(), self.buffer.selection());
-        match &self.preedit {
+        let (plain, caret, composed) = match &self.preedit {
             None => (Cow::Borrowed(text), self.buffer.head(), 0..0),
             Some((composing, caret)) => {
                 let shown = [&text[..selected.start], composing, &text[selected.end..]].concat();
                 let composed = selected.start..selected.start + composing.len();
                 (Cow::Owned(shown), selected.start + (*caret).min(composing.len()), composed)
             }
+        };
+        if !self.masked {
+            return (plain, caret, composed, selected);
         }
+        // An offset in the dots: as many dots as there are characters before it.
+        let at = |index: usize| characters(&plain[..index.min(plain.len())]) * DOT.len();
+        let dots = DOT.repeat(characters(&plain));
+        (
+            Cow::Owned(dots),
+            at(caret),
+            at(composed.start)..at(composed.end),
+            at(selected.start)..at(selected.end),
+        )
     }
 
     /// The byte offset nearest an x from the field's left edge: where a click puts the caret.
     pub fn index_at(&self, x: f32) -> usize {
-        self.paragraph.as_ref().map_or(0, |p| p.index_at(x + self.scroll_x))
+        let shown = self.paragraph.as_ref().map_or(0, |p| p.index_at(x + self.scroll_x));
+        if !self.masked {
+            return shown;
+        }
+        let text = self.buffer.text();
+        (0..shown / DOT.len()).fold(0, |at, _| next_grapheme(text, at))
     }
 }
 
@@ -124,8 +153,7 @@ impl Widget for TextField {
     /// One line high, and as wide as the space it is given: the text scrolls inside it. Only
     /// where the space has no end is it as wide as its text.
     fn measure(&mut self, cx: &mut MeasureCx, known: Known, avail: Size) -> Size {
-        let (shown, ..) = self.shown();
-        let shown = shown.into_owned();
+        let shown = self.shown().0.into_owned();
         let paragraph = match &mut self.paragraph {
             Some(paragraph) => {
                 paragraph.set_text(cx.text, &shown);
@@ -139,7 +167,7 @@ impl Widget for TextField {
     }
 
     fn paint(&mut self, cx: &mut PaintCx) {
-        let (_, caret_index, composed) = self.shown();
+        let (_, caret_index, composed, selected) = self.shown();
         let Some(paragraph) = &self.paragraph else { return };
         let (rect, caret) = (cx.rect, paragraph.x_at(caret_index));
         // The caret stays in view, and the text never leaves a gap it could fill.
@@ -150,7 +178,6 @@ impl Widget for TextField {
         let (outer, inner) = (cx.clip, cx.clip.then(cx.device(rect), 0.0));
         cx.clip = inner;
 
-        let selected = self.buffer.selection();
         if !composed.is_empty() {
             // What is being composed is underlined, as input methods show it.
             let (from, to) = (paragraph.x_at(composed.start), paragraph.x_at(composed.end));
@@ -185,6 +212,6 @@ impl Widget for TextField {
         if says.role == Role::None {
             says.role = Role::TextInput;
         }
-        says.value = Some(self.buffer.text().to_string());
+        says.value = Some(self.shown().0.into_owned()); // of a password, the dots
     }
 }

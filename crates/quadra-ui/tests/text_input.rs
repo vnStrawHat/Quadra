@@ -137,3 +137,17 @@ fn the_caret_and_the_selection_are_painted_and_long_text_scrolls_with_the_caret(
     let field = f.h.tree.widget_mut::<TextField>(f.field).unwrap();
     assert_eq!(field.index_at(0.0), 0); // back at the start
 }
+
+#[test]
+fn enter_submits_what_the_input_holds_after_what_was_typed() {
+    let (name, sent) = (signal(String::new()), signal(Vec::<String>::new()));
+    let mut h = Harness::new();
+    let input = text_input(name).size(10.0).on_submit(move |text| sent.update(|s| s.push(text.to_string())));
+    mount_root(&mut h.tree, div().size(120.0, 20.0).child(input));
+    h.frame();
+    h.click(10.0, 10.0);
+    h.type_text("An");
+    h.key(Key::Enter, Mods::NONE); // in the same turn as the typing
+    h.frame();
+    assert_eq!((name.get_untracked().as_str(), sent.get_untracked()), ("An", vec!["An".to_string()]));
+}

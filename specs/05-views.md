@@ -203,3 +203,8 @@ locale at the window root; a subtree can provide its own.
   are passed as signals or closures, not as values.
 - Two-way controls take a signal: `text_input(value: Signal<String>)`. The control writes it;
   whoever else reads it updates.
+- `text_input(value).password()` shows a dot for each character (a grapheme cluster): the
+  caret, the selection and a click are placed on the dots as they would be on the
+  characters; copy and cut do nothing; assistive technology is told the dots.
+  `.on_submit(f)` runs `f` with the text when Enter is pressed, after whatever was typed
+  before it in the same turn.

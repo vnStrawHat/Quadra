@@ -8,8 +8,8 @@ use std::rc::Rc;
 use quadra_layout::{Direction, Length};
 use quadra_prim::{Color, Size};
 use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
-use quadra_text::{FakeBackend, TextStyle};
-use quadra_tree::{Fonts, FrameStats, NodeId, PaintStyle, Style, Text, Tree};
+use quadra_text::FakeBackend;
+use quadra_tree::{Fonts, FrameStats, NodeId, PaintStyle, Style, Text, TextValues, Tree};
 
 pub struct Window {
     pub tree: Tree,
@@ -55,8 +55,9 @@ impl Window {
 
     /// A text node at size 10: 6 px a character on the fake backend, 14 px lines.
     pub fn text(&mut self, text: &str) -> NodeId {
-        let style = TextStyle { size: 10.0, ..TextStyle::default() };
-        self.tree.insert_widget(Style::default(), Box::new(Text::new(text, style, Color::BLACK)))
+        let text_values = TextValues { size: Some(10.0), ..TextValues::default() };
+        let style = Style { text: text_values, ..Style::default() };
+        self.tree.insert_widget(style, Box::new(Text::new(text)))
     }
 
     /// A column that sizes to its children.
@@ -70,5 +71,6 @@ impl Window {
 
 pub fn block_style(w: f32, h: f32, color: u32) -> Style {
     let layout = quadra_layout::Style { width: Length::Px(w), height: Length::Px(h), ..Default::default() };
-    Style { layout, paint: PaintStyle { background: Color::rgb(color), ..PaintStyle::default() } }
+    let paint = PaintStyle { background: Color::rgb(color), ..PaintStyle::default() };
+    Style { layout, paint, ..Style::default() }
 }

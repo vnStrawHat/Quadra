@@ -9,6 +9,7 @@ use quadra_render::{Clip, Instance, Quad, push_quad};
 use quadra_text::TextSystem;
 
 use crate::fonts::Fonts;
+use crate::inherit::Inherited;
 
 /// A node's behaviour. Every method has a default: a widget implements what it does. Most
 /// nodes have no widget at all: a box is its style.
@@ -26,6 +27,11 @@ pub trait Widget: Any {
 
     /// Emits the node's own instances, on top of the background the tree painted.
     fn paint(&mut self, _cx: &mut PaintCx) {}
+
+    /// Takes the text values that hold at the node: what a widget lays out and paints its
+    /// text with. The tree calls it before the widget is next measured or painted after
+    /// those values may have changed, and not otherwise.
+    fn inherit(&mut self, _inherited: &Inherited) {}
 
     /// Completes what the node says of itself to a user: a text names itself by its text.
     fn semantics(&self, _says: &mut Semantics) {}

@@ -8,12 +8,10 @@ use std::time::Duration;
 use quadra_async::{Timers, interval};
 
 use quadra_platform::{Clipboard, Cursor, Key, Mods, MouseButton};
-use quadra_prim::Color;
 use quadra_reactive::{Scope, Signal, use_context};
-use quadra_text::TextStyle;
 use quadra_tree::{
-    NodeId, PointerEvent, PointerKind, SemanticAction, Style, TEXT_AREA_CONTEXT, TEXT_CONTEXT, TextCommand,
-    TextField, Tree,
+    NodeId, Paint, Patch, PointerEvent, PointerKind, SemanticAction, Style, TEXT_AREA_CONTEXT, TEXT_CONTEXT,
+    TextCommand, TextField, TextValues, Tree,
 };
 
 use crate::view::{MountCx, View};
@@ -23,8 +21,9 @@ const CARET_BLINK: Duration = Duration::from_millis(530);
 
 pub struct TextInput {
     value: Signal<String>,
-    style: TextStyle,
-    color: Color,
+    /// What the text says of itself; the rest is as the boxes around it say.
+    values: TextValues,
+    color: Option<Paint>,
     masked: bool,
     multiline: bool,
     submit: Option<Submit>,
@@ -37,8 +36,8 @@ type Submit = Box<dyn FnMut(&str)>;
 /// it from elsewhere is shown. It takes the focus on a click or by Tab; the caret, the
 /// selection and undo are its own.
 pub fn text_input(value: Signal<String>) -> TextInput {
-    let (style, color) = (TextStyle::default(), Color::BLACK);
-    TextInput { value, style, color, masked: false, multiline: false, submit: None }
+    let (values, color) = (TextValues::default(), None);
+    TextInput { value, values, color, masked: false, multiline: false, submit: None }
 }
 
 /// Text on as many lines as it takes at the width the area is given: Enter starts a line, and
@@ -51,12 +50,13 @@ pub fn text_area(value: Signal<String>) -> TextInput {
 impl TextInput {
     /// The font size in pixels.
     pub fn size(mut self, px: f32) -> Self {
-        self.style.size = px;
+        self.values.size = Some(px);
         self
     }
 
-    pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
+    /// A colour, or a role of the theme.
+    pub fn color(mut self, color: impl Into<Paint>) -> Self {
+        self.color = Some(color.into());
         self
     }
 
@@ -110,10 +110,14 @@ fn edit(tree: &mut Tree, id: NodeId, value: Signal<String>, f: impl FnOnce(&mut 
 impl View for TextInput {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let value = self.value;
-        let mut field = TextField::new(&value.get_untracked(), self.style, self.color);
+        let mut field = TextField::new(&value.get_untracked());
         let (masked, multiline) = (self.masked, self.multiline);
         (field.masked, field.multiline) = (masked, multiline);
-        let id = cx.tree.insert_widget(Style::default(), Box::new(field));
+        let style = Style { text: self.values, ..Style::default() };
+        let id = cx.tree.insert_widget(style, Box::new(field));
+        if let Some(color) = self.color {
+            cx.tree.patch_style(id, Patch::TextColor(color));
+        }
         if let Some(submit) = self.submit {
             // After what was typed before the key: edits wait for the update pass, in order.
             let (submit, writer) = (Rc::new(RefCell::new(submit)), cx.handle.clone());

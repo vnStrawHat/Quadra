@@ -16,6 +16,7 @@ impl Tree {
         for child in old.into_iter().filter(|c| !children.contains(c)) {
             if let Some(node) = self.get_mut(child) {
                 node.parent = None;
+                self.text_moved(child);
             }
         }
         for &child in children {
@@ -27,7 +28,10 @@ impl Tree {
                 self.nodes[other.index as usize].children.retain(|&c| c != child);
                 self.mark(other, flag::RELIST);
                 self.semantics_changed(other);
+                self.text_moved(child);
             }
+            // New here: what it is given of text values is what holds at this parent.
+            self.text_epoch += 1;
             // In a new place: positions in a layer are absolute, so all of it is painted.
             self.nodes[child.index as usize].parent = Some(parent);
             if let Some(state) = self.nodes[child.index as usize].layer.as_mut() {

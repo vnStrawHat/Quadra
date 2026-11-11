@@ -4,11 +4,10 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use quadra_platform::{Clipboard, Cursor, Mods, MouseButton};
-use quadra_prim::Color;
 use quadra_reactive::use_context;
-use quadra_text::TextStyle;
 use quadra_tree::{
-    Handle, NodeId, PointerEvent, PointerKind, Style, TEXT_SELECT_CONTEXT, Text, TextCommand, Tree,
+    Handle, NodeId, Paint, Patch, PointerEvent, PointerKind, Style, TEXT_SELECT_CONTEXT, Text, TextCommand,
+    TextValues, Tree,
 };
 
 use crate::prop::{IntoProp, Prop};
@@ -16,31 +15,38 @@ use crate::view::{MountCx, View};
 
 pub struct TextView {
     content: Prop<String>,
-    style: TextStyle,
-    color: Color,
+    /// What the text says of itself; the rest is as the boxes around it say.
+    values: TextValues,
+    color: Option<Paint>,
     selectable: bool,
 }
 
 /// Text: a constant, or something reactive whose changes set the node's text.
 pub fn text<M>(content: impl IntoProp<String, M>) -> TextView {
-    let (style, color) = (TextStyle::default(), Color::BLACK);
-    TextView { content: content.into_prop(), style, color, selectable: false }
+    TextView { content: content.into_prop(), values: TextValues::default(), color: None, selectable: false }
 }
 
 impl TextView {
     /// The font size in pixels.
     pub fn size(mut self, px: f32) -> Self {
-        self.style.size = px;
+        self.values.size = Some(px);
         self
     }
 
     pub fn weight(mut self, weight: u16) -> Self {
-        self.style.weight = weight;
+        self.values.weight = Some(weight);
         self
     }
 
-    pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
+    /// The height of a line, as a multiple of the size.
+    pub fn line_height(mut self, multiple: f32) -> Self {
+        self.values.line_height = Some(multiple);
+        self
+    }
+
+    /// A colour, or a role of the theme.
+    pub fn color(mut self, color: impl Into<Paint>) -> Self {
+        self.color = Some(color.into());
         self
     }
 
@@ -121,8 +127,11 @@ impl View for TextView {
             Prop::Value(text) => (text, None),
             Prop::Reactive(read) => (String::new(), Some(read)),
         };
-        let widget = Text::new(initial, self.style, self.color);
-        let id = cx.tree.insert_widget(Style::default(), Box::new(widget));
+        let style = Style { text: self.values, ..Style::default() };
+        let id = cx.tree.insert_widget(style, Box::new(Text::new(initial)));
+        if let Some(color) = self.color {
+            cx.tree.patch_style(id, Patch::TextColor(color));
+        }
         if let Some(read) = read {
             let writer = cx.handle.clone();
             cx.handle.bind(move || writer.set_text(id, read()));

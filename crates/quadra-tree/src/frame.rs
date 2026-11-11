@@ -8,6 +8,7 @@ use quadra_prim::Size;
 use quadra_reactive::batch;
 use quadra_text::TextSystem;
 
+use crate::inherit::refresh;
 use crate::node::{Node, NodeId, flag};
 use crate::shared::Op;
 use crate::text::Text;
@@ -52,12 +53,18 @@ struct Measurer<'a> {
     nodes: &'a mut [Node],
     owners: &'a [u32],
     text: &'a mut TextSystem,
+    text_epoch: u32,
 }
 
 impl Measure for Measurer<'_> {
     fn measure(&mut self, node: LayoutId, known: Known, avail: Size) -> Size {
-        let widget = &mut self.nodes[self.owners[node.index()] as usize].widget;
-        widget.as_mut().map_or(Size::ZERO, |w| w.measure(&mut MeasureCx { text: self.text }, known, avail))
+        let index = self.owners[node.index()] as usize;
+        if self.nodes[index].widget.is_none() {
+            return Size::ZERO;
+        }
+        refresh(self.nodes, index, self.text_epoch);
+        let mut cx = MeasureCx { text: self.text };
+        self.nodes[index].widget.as_mut().map_or(Size::ZERO, |w| w.measure(&mut cx, known, avail))
     }
 }
 
@@ -244,8 +251,12 @@ impl Tree {
         let above: Vec<_> = self.overlays().map(|o| self.nodes[o.index as usize].layout).collect();
         {
             let mut fonts = self.fonts.borrow_mut();
-            let mut measurer =
-                Measurer { nodes: &mut self.nodes, owners: &self.owners, text: &mut fonts.text };
+            let mut measurer = Measurer {
+                nodes: &mut self.nodes,
+                owners: &self.owners,
+                text: &mut fonts.text,
+                text_epoch: self.text_epoch,
+            };
             self.layout.layout(root, RootSize::Fill(self.size), &mut measurer);
             // Overlays after the main tree: as large as their content, at most the window.
             for overlay in above {

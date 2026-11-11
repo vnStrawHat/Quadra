@@ -5,11 +5,9 @@
 
 use std::ops::BitOr;
 
-use quadra_layout::{Align, Direction, Justify, Length, Overflow};
-use quadra_prim::{Corners, Edges};
-
+use crate::inherit::TextValues;
 use crate::node::{NodeId, PaintStyle, Style, flag};
-use crate::theme::{Paint, Theme};
+use crate::patch::{Part, Patch};
 use crate::tree::Tree;
 
 /// The states of a node that a style can follow. Dispatch sets the first five (specs/09); the
@@ -44,87 +42,6 @@ impl BitOr for State {
     }
 }
 
-/// One value of a style: what a reactive property writes, and what a state variant is a list
-/// of. Each is named after the setter of the box view that makes it.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Patch {
-    Width(Length),
-    Height(Length),
-    MinWidth(Length),
-    MinHeight(Length),
-    MaxWidth(Length),
-    MaxHeight(Length),
-    Grow(f32),
-    Shrink(f32),
-    /// The space between children, on both axes.
-    Gap(f32),
-    /// The same on every side.
-    Padding(f32),
-    PaddingX(f32),
-    PaddingY(f32),
-    Margin(f32),
-    /// The width of the border on every side.
-    Border(f32),
-    Direction(Direction),
-    Justify(Justify),
-    AlignItems(Align),
-    Wrap(bool),
-    OverflowY(Overflow),
-    Background(Paint),
-    BorderColor(Paint),
-    /// The same radius on every corner.
-    Radius(f32),
-}
-
-impl Patch {
-    /// Sets the value in a style, a role as the colour the theme gives it. Returns whether
-    /// it is a layout value.
-    pub fn apply(self, style: &mut Style, theme: &Theme) -> bool {
-        let (l, p) = (&mut style.layout, &mut style.paint);
-        match self {
-            Patch::Background(v) => p.background = theme.resolve(v),
-            Patch::BorderColor(v) => p.border_color = theme.resolve(v),
-            Patch::Radius(v) => p.radii = Corners::all(v),
-            layout => {
-                match layout {
-                    Patch::Width(v) => l.width = v,
-                    Patch::Height(v) => l.height = v,
-                    Patch::MinWidth(v) => l.min_width = v,
-                    Patch::MinHeight(v) => l.min_height = v,
-                    Patch::MaxWidth(v) => l.max_width = v,
-                    Patch::MaxHeight(v) => l.max_height = v,
-                    Patch::Grow(v) => l.grow = v,
-                    Patch::Shrink(v) => l.shrink = v,
-                    Patch::Gap(v) => (l.gap_row, l.gap_col) = (v, v),
-                    Patch::Padding(v) => l.padding = Edges::all(v),
-                    Patch::PaddingX(v) => (l.padding.left, l.padding.right) = (v, v),
-                    Patch::PaddingY(v) => (l.padding.top, l.padding.bottom) = (v, v),
-                    Patch::Margin(v) => l.margin = Edges::all(v),
-                    Patch::Border(v) => l.border = Edges::all(v),
-                    Patch::Direction(v) => l.direction = v,
-                    Patch::Justify(v) => l.justify = v,
-                    Patch::AlignItems(v) => l.align_items = v,
-                    Patch::Wrap(v) => l.wrap = v,
-                    Patch::OverflowY(v) => l.overflow_y = v,
-                    Patch::Background(_) | Patch::BorderColor(_) | Patch::Radius(_) => {}
-                }
-                return true;
-            }
-        }
-        false
-    }
-
-    fn is_layout(self) -> bool {
-        !matches!(self, Patch::Background(_) | Patch::BorderColor(_) | Patch::Radius(_))
-    }
-
-    /// Whether the value is a role of the theme: it stands for another colour under
-    /// another theme.
-    pub fn themed(self) -> bool {
-        matches!(self, Patch::Background(Paint::Token(..)) | Patch::BorderColor(Paint::Token(..)))
-    }
-}
-
 /// What a node whose style is more than its values keeps: its own style, the values of it
 /// that are roles of the theme, and what each state changes.
 pub(crate) struct Styled {
@@ -148,7 +65,8 @@ impl Styled {
 
 impl Tree {
     fn own_style(&self, id: NodeId) -> Style {
-        Style { layout: self.layout_style(id).clone(), paint: self.node(id).paint }
+        let (layout, node) = (self.layout_style(id).clone(), self.node(id));
+        Style { layout, paint: node.paint, text: self.text_values(id) }
     }
 
     /// Declares what a state changes of a node's style. The values are applied over the
@@ -203,18 +121,35 @@ impl Tree {
             styled.roles.retain(|role| std::mem::discriminant(role) != std::mem::discriminant(&patch));
             match patch.themed() {
                 true => styled.roles.push(patch),
-                false => drop(patch.apply(&mut styled.base, &theme)),
+                false => patch.apply(&mut styled.base, &theme),
             }
             return self.resolve(id);
         }
-        if patch.is_layout() {
-            let mut style = self.own_style(id);
-            patch.apply(&mut style, &theme);
-            self.put_layout(id, style.layout);
-        } else {
-            let mut style = Style { paint: node.paint, ..Style::default() };
-            patch.apply(&mut style, &theme);
-            self.put_paint(id, style.paint);
+        // Only the part of the style the value is of is read, changed and put back.
+        let part = patch.part();
+        let mut style = match part {
+            Part::Layout => Style { layout: self.layout_style(id).clone(), ..Style::default() },
+            Part::Paint => Style { paint: node.paint, ..Style::default() },
+            Part::Text => Style { text: self.text_values(id), ..Style::default() },
+        };
+        patch.apply(&mut style, &theme);
+        match part {
+            Part::Layout => self.put_layout(id, style.layout),
+            Part::Paint => self.put_paint(id, style.paint),
+            Part::Text => self.put_text(id, style.text),
+        }
+    }
+
+    /// Replaces the text values a node says: what the text in it and under it is like,
+    /// where a node on the way does not say otherwise.
+    pub fn set_text_values(&mut self, id: NodeId, values: TextValues) {
+        match self.get_mut(id).map(|node| &mut node.styled) {
+            Some(Some(styled)) => {
+                styled.base.text = values;
+                self.resolve(id);
+            }
+            Some(None) => self.put_text(id, values),
+            None => {}
         }
     }
 
@@ -265,6 +200,7 @@ impl Tree {
         }
         self.put_layout(id, style.layout);
         self.put_paint(id, style.paint);
+        self.put_text(id, style.text);
     }
 
     /// Gives a node the layout style it is laid out with.

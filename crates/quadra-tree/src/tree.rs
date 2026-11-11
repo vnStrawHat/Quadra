@@ -65,6 +65,8 @@ pub struct Tree {
     pub(crate) todo: Vec<NodeId>,
     /// By node index: the signal that follows the node's size (`Tree::size_signal`).
     pub(crate) sizes: HashMap<u32, Signal<Size>>,
+    /// Counts the changes to what text values hold where: a node's own, or its place.
+    pub(crate) text_epoch: u32,
     /// What gives the roles in styles their colours.
     pub(crate) theme: Rc<crate::theme::Theme>,
     /// The press that may become a drag, or the drag it became.
@@ -113,6 +115,7 @@ impl Tree {
             listening: Listening::default(),
             todo: Vec::new(),
             sizes: HashMap::new(),
+            text_epoch: 1,
             theme: Rc::default(),
             drag: None,
             after_layout: Vec::new(),
@@ -163,6 +166,8 @@ impl Tree {
             // New: painted with everything under it once it is in the tree.
             flags: flag::PAINT | flag::SUBTREE,
             paint: style.paint,
+            text: style.text.is_set().then(|| Box::new(style.text)),
+            inherited_at: 0,
             widget,
             start: 0,
             len: 0,

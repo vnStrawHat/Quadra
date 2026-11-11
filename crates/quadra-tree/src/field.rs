@@ -61,8 +61,9 @@ pub struct TextField {
     /// Where the caret wants to be while it moves up and down: it keeps its x through lines
     /// that are too short for it.
     goal_x: Option<f32>,
+    /// The style and the colour that hold at its node.
     style: TextStyle,
-    pub color: Color,
+    color: Color,
     /// Behind the selected text.
     pub selection: Color,
     /// It has the focus: the caret shows.
@@ -83,15 +84,15 @@ pub struct TextField {
 }
 
 impl TextField {
-    pub fn new(text: &str, style: TextStyle, color: Color) -> TextField {
+    pub fn new(text: &str) -> TextField {
         TextField {
             buffer: EditBuffer::new(text),
             masked: false,
             multiline: false,
             width: f32::INFINITY,
             goal_x: None,
-            style,
-            color,
+            style: TextStyle::default(),
+            color: Color::BLACK,
             selection: crate::text::SELECTION,
             focused: false,
             caret_on: true,
@@ -188,6 +189,7 @@ impl TextField {
         let paragraph = match &mut self.paragraph {
             Some(paragraph) => {
                 paragraph.set_text(text, &shown);
+                paragraph.set_style(text, &self.style);
                 paragraph
             }
             none => none.insert(Paragraph::new(text, shown, self.style.clone())),

@@ -8,6 +8,7 @@ use quadra_prim::{Color, Point, Rect, Size};
 use quadra_render::Quad;
 
 use super::TextField;
+use crate::inherit::Inherited;
 use crate::text::paint_glyphs;
 use crate::widget::{MeasureCx, PaintCx, Widget};
 
@@ -30,6 +31,7 @@ impl Widget for TextField {
 
     fn paint(&mut self, cx: &mut PaintCx) {
         let (_, caret_index, composed, selected) = self.shown();
+        let color = self.color;
         let Some(paragraph) = &self.paragraph else { return };
         let (rect, line_px) = (cx.rect, self.style.line_px());
         let (line, caret) = paragraph.place(caret_index);
@@ -52,7 +54,7 @@ impl Widget for TextField {
             // What is being composed is underlined, as input methods show it.
             for span in boxes(composed) {
                 let bounds = Rect::new(left + span.x, rect.y + span.y + tall - 1.0, span.width, 1.0);
-                cx.quad(Quad { bounds, background: self.color, ..Quad::default() });
+                cx.quad(Quad { bounds, background: color, ..Quad::default() });
             }
         } else {
             for span in boxes(selected) {
@@ -61,7 +63,7 @@ impl Widget for TextField {
             }
         }
         self.tiles.clear();
-        paint_glyphs(cx, paragraph, Point::new(left, rect.y), self.color, &mut self.tiles);
+        paint_glyphs(cx, paragraph, Point::new(left, rect.y), color, &mut self.tiles);
         if self.focused {
             // One device pixel wide at least, on a whole pixel: a caret is never blurred.
             let x = ((left + caret) * cx.scale).round() / cx.scale;
@@ -69,11 +71,16 @@ impl Widget for TextField {
             let bounds = cx.device(Rect::new(x, rect.y + top, width, tall));
             // Always one instance, clear while the blink hides it: a blink overwrites it in
             // place and moves nothing else of the layer.
-            let background = if self.caret_on { self.color } else { Color::TRANSPARENT };
+            let background = if self.caret_on { color } else { Color::TRANSPARENT };
             cx.push(Quad { bounds, background, ..Quad::default() }.instance(&cx.clip));
         }
         cx.clip = outer;
         self.caret_at = Some(Rect::new(left + caret - rect.x, top, 1.0, tall));
+    }
+
+    fn inherit(&mut self, inherited: &Inherited) {
+        self.color = inherited.color;
+        self.style.clone_from(&inherited.style);
     }
 
     fn caret(&self) -> Option<Rect> {

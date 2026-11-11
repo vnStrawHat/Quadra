@@ -1,4 +1,5 @@
-//! The text widget: a node that owns a paragraph (specs/08, "Paragraphs").
+//! The text widget: a node that owns a paragraph (specs/08, "Paragraphs"). Its style is
+//! not its own: it is laid out and painted with the text values that hold at its node.
 
 use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
@@ -7,6 +8,7 @@ use quadra_render::{Kind, Quad, Sprite};
 use quadra_text::{EditBuffer, GlyphFormat, Paragraph, TextStyle};
 
 use crate::fonts::{GlyphTile, SUBPIXEL_STEPS};
+use crate::inherit::Inherited;
 use crate::widget::{MeasureCx, PaintCx, Widget};
 
 /// Behind selected text.
@@ -15,8 +17,9 @@ pub(crate) const SELECTION: Color = Color::rgba(0x3366FF4D);
 
 pub struct Text {
     text: String,
+    /// The style and the colour that hold at its node.
     style: TextStyle,
-    pub color: Color,
+    color: Color,
     /// Shaped at the first measure, when the text system is at hand, and again only when the
     /// text or the style changed.
     paragraph: Option<Paragraph>,
@@ -30,9 +33,9 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn new(text: impl Into<String>, style: TextStyle, color: Color) -> Text {
-        let (text, selected) = (text.into(), (0, 0));
-        Text { text, style, color, paragraph: None, stale: false, selected, tiles: Vec::new() }
+    pub fn new(text: impl Into<String>) -> Text {
+        let (text, style, color) = (text.into(), TextStyle::default(), Color::BLACK);
+        Text { text, style, color, paragraph: None, stale: false, selected: (0, 0), tiles: Vec::new() }
     }
 
     /// The offset in the text nearest a point from the node's corner.
@@ -83,16 +86,6 @@ impl Text {
         (self.stale, self.selected) = (true, (0, 0)); // what was selected is not there any more
         true
     }
-
-    /// Replaces the shaping style; false when it is equal.
-    pub fn set_style(&mut self, style: TextStyle) -> bool {
-        if self.style == style {
-            return false;
-        }
-        self.style = style;
-        self.stale = true;
-        true
-    }
 }
 
 impl Widget for Text {
@@ -109,7 +102,10 @@ impl Widget for Text {
                 }
                 paragraph
             }
-            none => none.insert(Paragraph::new(cx.text, self.text.as_str(), self.style.clone())),
+            none => {
+                self.stale = false;
+                none.insert(Paragraph::new(cx.text, self.text.as_str(), self.style.clone()))
+            }
         };
         paragraph.wrap(cx.text, known.width.unwrap_or(avail.width))
     }
@@ -123,6 +119,14 @@ impl Widget for Text {
         }
         self.tiles.clear();
         paint_glyphs(cx, paragraph, cx.rect.origin(), self.color, &mut self.tiles);
+    }
+
+    fn inherit(&mut self, inherited: &Inherited) {
+        self.color = inherited.color;
+        if self.style != inherited.style {
+            self.style.clone_from(&inherited.style);
+            self.stale = true;
+        }
     }
 
     fn semantics(&self, says: &mut Semantics) {

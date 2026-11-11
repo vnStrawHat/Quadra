@@ -73,9 +73,15 @@ pub struct TextStyle {
     pub line_height: f32,
 }
 
+thread_local! {
+    /// The family of a default style: shared, so that making one allocates nothing.
+    static NO_FAMILY: Rc<str> = Rc::from("");
+}
+
 impl Default for TextStyle {
     fn default() -> TextStyle {
-        TextStyle { family: Rc::from(""), size: 14.0, weight: 400, italic: false, line_height: 1.4 }
+        let family = NO_FAMILY.with(Rc::clone);
+        TextStyle { family, size: 14.0, weight: 400, italic: false, line_height: 1.4 }
     }
 }
 

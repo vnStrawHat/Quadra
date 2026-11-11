@@ -9,6 +9,7 @@ use quadra_render::{Clip, Instance, Quad, Rebuild};
 
 use crate::fonts::Fonts;
 use crate::frame::FrameStats;
+use crate::inherit::refresh;
 use crate::node::{NOT_PAINTED, Node, NodeId, flag};
 use crate::tree::Tree;
 use crate::widget::PaintCx;
@@ -35,6 +36,8 @@ struct Painter<'a> {
     /// The node whose layer is being painted.
     root: NodeId,
     scale: f32,
+    /// The tree's count of changes to text values: a widget is given them after one.
+    text_epoch: u32,
     /// The part of the layer that is painted, if it paints only near what shows.
     band: Option<Rect>,
     /// The scale changed: everything is painted, in every layer.
@@ -48,17 +51,20 @@ struct Painter<'a> {
 /// widget. A node that is not displayed paints nothing. The caller has checked that the node
 /// is in the band its layer paints.
 pub(crate) fn paint_own(
-    node: &mut Node,
+    nodes: &mut [Node],
+    index: usize,
     layout: &LayoutTree,
     rect: Rect,
-    (scale, band): (f32, Option<Rect>),
+    (scale, band, text_epoch): (f32, Option<Rect>, u32),
     fonts: &mut Fonts,
     out: &mut Vec<Instance>,
 ) {
-    let style = layout.style(node.layout);
+    let style = layout.style(nodes[index].layout);
     if style.display == Display::None {
         return;
     }
+    refresh(nodes, index, text_epoch);
+    let node = &mut nodes[index];
     let mut cx = PaintCx { rect, scale, visible: band, clip: Clip::NONE, fonts, out };
     let (background, border_color, radii) =
         (node.paint.background, node.paint.border_color, node.paint.radii);
@@ -108,8 +114,8 @@ impl Painter<'_> {
             // ponytail: a new band visits every node of the layer to find those in it; a
             // spatial index if pages of a hundred thousand nodes scroll.
             if !outside(self.band, rect) {
-                let how = (self.scale, self.band);
-                paint_own(&mut self.nodes[i], self.layout, rect, how, self.fonts, self.scratch);
+                let how = (self.scale, self.band, self.text_epoch);
+                paint_own(self.nodes, i, self.layout, rect, how, self.fonts, self.scratch);
                 self.stats.nodes_painted += 1;
             }
             let to = self.scratch.len() as u32;
@@ -254,6 +260,7 @@ impl Tree {
             fonts,
             root,
             scale: self.scale,
+            text_epoch: self.text_epoch,
             band,
             all,
             same: true,

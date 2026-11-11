@@ -8,6 +8,7 @@ use quadra_platform::Cursor;
 use quadra_prim::{Color, Corners};
 use quadra_reactive::Scope;
 
+use crate::inherit::TextValues;
 use crate::input::Handler;
 use crate::layers::LayerState;
 use crate::style::{State, Styled};
@@ -45,6 +46,8 @@ pub struct PaintStyle {
 pub struct Style {
     pub layout: quadra_layout::Style,
     pub paint: PaintStyle,
+    /// What the node says of the text in it and under it.
+    pub text: TextValues,
 }
 
 /// No scratch range: the node was not painted in this pass.
@@ -58,6 +61,11 @@ pub(crate) struct Node {
     pub layout: LayoutId,
     pub flags: u8,
     pub paint: PaintStyle,
+    /// The text values the node says, when it says any (specs/13).
+    pub text: Option<Box<TextValues>>,
+    /// The tree's count of changes to text values when the widget was last given those
+    /// that hold here: it is given them again only after another change.
+    pub inherited_at: u32,
     pub widget: Option<Box<dyn Widget>>,
     /// Its range in the layer's display list: `start` from its parent's start, `len` with
     /// everything under it, `own` the instances it painted itself, which come first

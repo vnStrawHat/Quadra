@@ -1,0 +1,116 @@
+//! One value of a style (specs/13, "Style values"): plain data, a few words. A reactive
+//! property writes one, a state variant is a list of them, and a role of the theme is one
+//! that stands for another colour under another theme.
+
+use quadra_layout::{Align, Direction, Justify, Length, Overflow};
+use quadra_prim::{Corners, Edges};
+
+use crate::node::Style;
+use crate::theme::{Paint, Theme};
+
+/// One value of a style: what a reactive property writes, and what a state variant is a list
+/// of. Each is named after the setter of the box view that makes it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Patch {
+    Width(Length),
+    Height(Length),
+    MinWidth(Length),
+    MinHeight(Length),
+    MaxWidth(Length),
+    MaxHeight(Length),
+    Grow(f32),
+    Shrink(f32),
+    /// The space between children, on both axes.
+    Gap(f32),
+    /// The same on every side.
+    Padding(f32),
+    PaddingX(f32),
+    PaddingY(f32),
+    Margin(f32),
+    /// The width of the border on every side.
+    Border(f32),
+    Direction(Direction),
+    Justify(Justify),
+    AlignItems(Align),
+    Wrap(bool),
+    OverflowY(Overflow),
+    Background(Paint),
+    BorderColor(Paint),
+    /// The same radius on every corner.
+    Radius(f32),
+    /// The colour of the text in the node and under it.
+    TextColor(Paint),
+    /// Its size, in pixels.
+    TextSize(f32),
+    FontWeight(u16),
+    Italic(bool),
+    /// The height of a line, as a multiple of the size.
+    LineHeight(f32),
+}
+
+impl Patch {
+    /// Sets the value in a style, a role as the colour the theme gives it.
+    pub fn apply(self, style: &mut Style, theme: &Theme) {
+        let (l, p, t) = (&mut style.layout, &mut style.paint, &mut style.text);
+        match self {
+            Patch::Background(v) => p.background = theme.resolve(v),
+            Patch::BorderColor(v) => p.border_color = theme.resolve(v),
+            Patch::Radius(v) => p.radii = Corners::all(v),
+            Patch::TextColor(v) => t.color = Some(theme.resolve(v)),
+            Patch::TextSize(v) => t.size = Some(v),
+            Patch::FontWeight(v) => t.weight = Some(v),
+            Patch::Italic(v) => t.italic = Some(v),
+            Patch::LineHeight(v) => t.line_height = Some(v),
+            layout => match layout {
+                Patch::Width(v) => l.width = v,
+                Patch::Height(v) => l.height = v,
+                Patch::MinWidth(v) => l.min_width = v,
+                Patch::MinHeight(v) => l.min_height = v,
+                Patch::MaxWidth(v) => l.max_width = v,
+                Patch::MaxHeight(v) => l.max_height = v,
+                Patch::Grow(v) => l.grow = v,
+                Patch::Shrink(v) => l.shrink = v,
+                Patch::Gap(v) => (l.gap_row, l.gap_col) = (v, v),
+                Patch::Padding(v) => l.padding = Edges::all(v),
+                Patch::PaddingX(v) => (l.padding.left, l.padding.right) = (v, v),
+                Patch::PaddingY(v) => (l.padding.top, l.padding.bottom) = (v, v),
+                Patch::Margin(v) => l.margin = Edges::all(v),
+                Patch::Border(v) => l.border = Edges::all(v),
+                Patch::Direction(v) => l.direction = v,
+                Patch::Justify(v) => l.justify = v,
+                Patch::AlignItems(v) => l.align_items = v,
+                Patch::Wrap(v) => l.wrap = v,
+                Patch::OverflowY(v) => l.overflow_y = v,
+                _ => {}
+            },
+        }
+    }
+
+    /// Which part of a style the value is of.
+    pub(crate) fn part(self) -> Part {
+        use Patch::*;
+        match self {
+            Background(_) | BorderColor(_) | Radius(_) => Part::Paint,
+            TextColor(_) | TextSize(_) | FontWeight(_) | Italic(_) | LineHeight(_) => Part::Text,
+            _ => Part::Layout,
+        }
+    }
+
+    /// Whether the value is a role of the theme: it stands for another colour under
+    /// another theme.
+    pub fn themed(self) -> bool {
+        use Patch::*;
+        matches!(
+            self,
+            Background(Paint::Token(..)) | BorderColor(Paint::Token(..)) | TextColor(Paint::Token(..))
+        )
+    }
+}
+
+/// The parts of a style: what a change of each one sets off.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Part {
+    Layout,
+    Paint,
+    Text,
+}

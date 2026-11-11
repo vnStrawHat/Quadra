@@ -12,7 +12,7 @@ use quadra_reactive::{Deferred, deferred};
 
 use crate::action::Action;
 use crate::node::{NodeId, PaintStyle};
-use crate::style::Patch;
+use crate::patch::Patch;
 use crate::tree::Tree;
 
 /// Something to do on the tree, once.

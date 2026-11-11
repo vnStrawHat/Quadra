@@ -17,6 +17,23 @@ them in a fixed order: base, then `hover`, `focus`, `focus_visible`, `active`, `
 `checked`, `expanded`, `drop_target`, `disabled`, each applied if its bit is set. Inherited text
 values come from the parent's resolved style.
 
+As built, for text: a node may say text values (family, size, weight, italic, line height,
+colour), each one or not; what holds at a node is its own value, else that of the nearest
+node around it that says one, else the default. A text and a text field have no style of
+their own: `text(..).size(12.0)` is a value of the text's own node. Boxes say them with
+`.text_color(..)`, `.text_size(..)`, `.font_weight(..)`, `.italic(..)`, `.line_height(..)`,
+`.font_family(..)`, the first five in state variants too; the colour may be a role.
+
+- A widget is given the values that hold at its node (`Widget::inherit`) before it is next
+  measured or painted after they may have changed, and keeps them: the tree counts the
+  changes to text values and to where nodes are, and a widget is given them again when the
+  count has moved on. A frame in which nothing of the kind changed costs each text one
+  comparison.
+- A node whose text values change marks the widgets in it and under it that have the
+  changed value from it: for layout when it shapes text, for paint only when it is the
+  colour. A node on the way that says the value itself keeps it, with what is under it.
+- A node that leaves its parent has the texts under it measured again where it comes to be.
+
 A partial style is a list of values, each one case of an enum with a case per setter
 (`Patch::Background(colour)`, `Patch::Padding(8.0)`): plain data, a few words each. The same
 value is what a reactive property writes when its source changes, so a property bound to a
@@ -51,8 +68,7 @@ div().bg(token::ACCENT.alpha(0.12))
 - `Tree::set_theme` styles again the nodes whose style holds a role; an equal theme does
   nothing. The app has one theme for all its windows, as a signal in the context of every
   view (`Signal<Rc<Theme>>`): writing it is how a view changes the theme.
-- Not yet: a theme for a subtree; tokens for radii, spacing, fonts and durations; text
-  colours (they come with inherited text style).
+- Not yet: a theme for a subtree; tokens for radii, spacing, fonts and durations.
 - Component-level tokens (`button.primary.bg`) resolve to palette tokens in the theme file, so
   a theme can restyle one component without code.
 

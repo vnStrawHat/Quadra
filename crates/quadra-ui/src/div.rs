@@ -101,6 +101,21 @@ props! {
     border_color: Paint => BorderColor;
     /// The same radius on every corner.
     radius: f32 => Radius;
+    /// The colour of the text in the box and in what it holds: a colour, or a role.
+    text_color: Paint => TextColor;
+    /// The size of that text, in pixels.
+    text_size: f32 => TextSize;
+    italic: bool => Italic;
+    /// The height of its lines, as a multiple of the size.
+    line_height: f32 => LineHeight;
+}
+
+impl Refine {
+    /// The weight of the text while the state is set.
+    pub fn font_weight(mut self, weight: u16) -> Self {
+        self.0.push(Patch::FontWeight(weight));
+        self
+    }
 }
 
 impl Div {
@@ -111,7 +126,7 @@ impl Div {
             // A role of the theme is kept as one; any other constant is the style's value.
             Prop::Value(value) => match patch(value) {
                 role if role.themed() => self.roles.push(role),
-                value => drop(value.apply(&mut self.style, &Theme::default())),
+                value => value.apply(&mut self.style, &Theme::default()),
             },
             Prop::Reactive(read) => self.binders.push(Box::new(move |id, handle| {
                 let writer = handle.clone();
@@ -205,6 +220,18 @@ impl Div {
     }
 
     /// Keeps Tab and Shift+Tab among what is in the box: a dialog, a menu.
+    /// The weight of the text in the box and in what it holds: 400 is regular, 600 semibold.
+    pub fn font_weight(mut self, weight: u16) -> Self {
+        self.style.text.weight = Some(weight);
+        self
+    }
+
+    /// The family of the text in the box and in what it holds.
+    pub fn font_family(mut self, family: &str) -> Self {
+        self.style.text.family = Some(family.into());
+        self
+    }
+
     /// The shape the pointer has over the box and what it holds.
     pub fn cursor(self, cursor: Cursor) -> Self {
         self.on_mount(move |tree, id| tree.set_cursor(id, Some(cursor)))

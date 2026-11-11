@@ -85,7 +85,8 @@ impl Tree {
         } else {
             let rect = self.layout.rect(self.nodes[i].layout).translate(origin.x, origin.y);
             if !outside(band, rect) {
-                paint_own(&mut self.nodes[i], &self.layout, rect, (self.scale, band), fonts, out);
+                let how = (self.scale, band, self.text_epoch);
+                paint_own(&mut self.nodes, i, &self.layout, rect, how, fonts, out);
             }
             own = out.len() - start;
             if shown {

@@ -127,7 +127,9 @@ the design language is specs/behaviour/15): colours of box styles can be roles o
 (`Paint`, `Token`, `Theme` in `quadra-tree/src/theme.rs`; `Tree::set_theme`; the app's theme
 is a `Signal<Rc<Theme>>` in the context of views), and the crate `quadra-kit` has the names
 of the roles (`quadra_kit::token`) and the themes (`dark()`, `light()`, `theme_from_json`;
-the files are in `crates/quadra-kit/themes/`). Next: inherited text style with text colours, tokens for radii and spacing, style transitions
+the files are in `crates/quadra-kit/themes/`). Text values hold down the tree
+(`quadra-tree/src/inherit.rs`: `TextValues`, `Widget::inherit`, the tree's `text_epoch`; a
+text has no style of its own). Next: tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`
 (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range

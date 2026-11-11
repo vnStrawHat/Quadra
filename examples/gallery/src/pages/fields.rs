@@ -91,7 +91,7 @@ pub fn combobox_page() -> Div {
 
 pub fn select_page() -> Div {
     let (space, fruit) = (signal(usize::MAX), signal(1usize));
-    let spaces = select(["default", "kube-system", "monitoring", "ingress-nginx"], space);
+    let spaces = select(["default", "kube-system", "monitoring", "ingress-nginx"], space).test_id("sel-ns");
     page(
         "Select",
         "Picks one value from a list in a popup. Escape or an outside click closes it.",
@@ -121,7 +121,9 @@ pub fn date_page() -> Div {
         [
             demo(
                 "Basic",
-                line().child(date_picker(date)).child(mono(move || date.get().to_string())),
+                line()
+                    .child(date_picker(date).test_id("dp-date"))
+                    .child(mono(move || date.get().to_string())),
                 "date_picker(since)",
             ),
             demo(

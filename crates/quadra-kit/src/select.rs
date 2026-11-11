@@ -11,7 +11,8 @@ use quadra_ui::{MountCx, NodeRef, View, column, div, row, text};
 
 use crate::action::{CONTROL, Confirm};
 use crate::icon::icon;
-use crate::menu::{MenuItem, menu};
+use crate::menu::{Ends, MenuItem, rows};
+use crate::popup::{EDGE, popover};
 use crate::{icons, size, token};
 
 pub struct Select {
@@ -70,14 +71,19 @@ impl View for Select {
         };
         let face = face.child(div().grow(1.0).text_color(tone).child(text(value)));
         let face = face.child(icon(icons::CHEVRONS_UP_DOWN).size(12.0).color(token::TEXT_2));
-        let options = self.options;
+        let (options, width) = (self.options, self.width);
+        // The chosen option has a quiet check before it; with none chosen, no room is kept.
         let items = move || {
             let on = chosen.get_untracked();
             let item = |(i, name): (usize, &String)| {
-                MenuItem::new(name.clone()).checked(i == on).on_select(move || chosen.set(i))
+                let item = MenuItem::new(name.clone()).on_select(move || chosen.set(i));
+                if i == on { item.checked(true).icon(icons::CHECK) } else { item }
             };
             options.iter().enumerate().map(item).collect()
         };
-        column().child(face).child(menu(open, &opener, items)).mount(cx)
+        let ends = move || Ends { done: Rc::new(move || open.set(false)), leave: None };
+        // As wide as the field at least.
+        let list = popover(open, &opener, move || rows(items(), ends()).min_width(width - EDGE));
+        column().child(face).child(list).mount(cx)
     }
 }

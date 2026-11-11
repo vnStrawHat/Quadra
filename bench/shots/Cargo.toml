@@ -20,4 +20,5 @@ quadra-gallery = { path = "../../examples/gallery" }
 quadra-kit = { path = "../../crates/quadra-kit" }
 quadra-native-win = { path = "../../crates/quadra-native-win" }
 quadra-platform = { path = "../../crates/quadra-platform" }
+quadra-prim = { path = "../../crates/quadra-prim" }
 quadra-render = { path = "../../crates/quadra-render" }

@@ -354,10 +354,18 @@ the popup closes the focus goes back to what had it.
   `.checked(..)`, `.disabled(..)`, `.on_select(..)`, `MenuItem::separator()`), asked for each
   time the menu opens. A click on a row does what it does and closes the menu; the arrows
   move a highlight over the rows that can be chosen, round the ends, and Enter or Space
-  chooses (key context `action::MENU`). Rows are 23 px, 4 px in from the edge; an icon
-  column is there only when a row has an icon or a check.
+  chooses (key context `action::MENU`). Rows are 23 px, 4 px in from the edge, with 6 px
+  beside and between their parts; the shortcut stands at the right end, 16 px from the label
+  at least. An icon column is there only when a row has an icon or a check; icons are in the
+  second text colour, and a row that is on shows a check in the accent unless it has an icon
+  of its own. `.danger()` puts the label of a row that destroys something in the colour of
+  errors.
 - `select(options, chosen)`: a filled button that shows the chosen option, and a menu of the
-  options with a check on it.
+  options, as wide as the button at least, with a quiet check before the chosen one (no room
+  is kept for it while none is chosen).
+- `menu_button(label, || items)` takes `.icon(body)`, `.variant(..)`, `.size(..)` and
+  `.test_id(..)` for its face. `popover_button(label, || content)` is the same button (in
+  the default variant) over a popover, with the content 12 px in from its edge.
 - More of the menu. `MenuItem::heading(name)` names the group of rows under it: 20 px,
   muted, never chosen. `.submenu(items)` makes a row one that opens a menu of those rows
   beside itself, at its right and over it by 2 px, with a chevron at its end: under the
@@ -365,22 +373,25 @@ the popup closes the focus goes back to what had it.
   another row closes it, as does the left arrow in it (`MoveOut`), and a choice in it ends
   the menus together. A menu taller than 450 px shows that much and scrolls; the highlight
   the arrows move is brought into view.
-- `context_menu(view, || items)` gives a view a menu that opens a pixel off the pointer on
-  a click with the other button, where it fits in the window. It adds no node around the
+- `context_menu(view, || items)` gives a view a menu that opens under the pointer, by the
+  gap of a popup (4 px), on a click with the other button, where it fits in the window. It adds no node around the
   view (as the tooltip): the popup is opened by hand, from the handler
   (`popup::open_now`), and goes with the scope of the view if it is still open then.
+- The width a popup is said to have is that of its plane, border and all: what it holds
+  asks for 2 px less (`popup::EDGE`). A menu is 200 px at least so.
 - The region a popup is shown in is not displayed (`.display(Display::None)`): where the
   popup stands in the flow it takes no room, not even a gap of the box around it.
 - The text values of the window's root hold in overlays too (a popup's text has the
   window's face and colour): an overlay has no parent, and is above the root.
-- `tooltip("Save the file", view).keys("Ctrl-S")`: the words show below the view, centred,
+- `tooltip("Save the file", view).keys("Ctrl-S")`: the words show above the view (below it where there is no room), centred and 6 px off it,
   once the pointer has rested on it for half a second, and go when it leaves or presses. A
   tooltip never has the focus. It adds no node: the tooltip's node is the view's own, the
   handlers are put on it, and the bubble is an overlay opened by hand.
 - `dialog(open, "Delete the file?", || body).action("Cancel", Variant::Ghost, f)..`: a popup
-  440 px wide, centred, 80 px under the top of the window (`Place::Top`), with no backdrop:
-  a title, the body in the second text colour, a seam, and the buttons at the right of its
-  foot. A button runs what it was given and closes the dialog; Escape and a press outside
+  440 px wide with its border, centred, 80 px under the top of the window (`Place::Top`), with no backdrop:
+  a title of 16 px with a quiet cross of 22 px at its end, the body in the second text
+  colour, and, when it has actions, a seam and the buttons at the right of its foot. A
+  button runs what it was given and closes the dialog; the cross, Escape and a press outside
   give it up.
 - Elevation is a paint value of a box (`.elevation(1)`): a level above the window casts the
   shadows of the design language (behaviour/15) under the box, two for the level of menus,
@@ -394,10 +405,12 @@ the popup closes the focus goes back to what had it.
   says and closes the card. Cards stack in the bottom right corner, 12 px from the edges
   (`.above(30.0)` lifts them over a status bar), the newest the lowest, 8 px apart, and
   stay until closed unless they say how long they last. `.toast(tone, words)` is a line
-  with its icon at the bottom centre for ten seconds. The stacks are overlays that take
+  on the panel's plane with its icon at the bottom centre for ten seconds. The icon is 16 px
+  on a card and 14 px in a toast, in the colour of the tone; a notice that only informs has
+  the accent on a card and the second text colour in a toast. The stacks are overlays that take
   neither the focus nor a press outside them (`Place::BottomRight`, `Place::Bottom`).
-- **`command_palette(open, || commands)`** is a popup of 608 px under the top of the window
-  at the level of dialogs: a query row of 36 px over a line, and under it the commands that
+- **`command_palette(open, || commands)`** is a popup of 608 px with its border under the top
+  of the window at the level of dialogs: a query row of 36 px over a line, and under it the commands that
   match, rows of 32 px, at most 347 px of them, the rest scrolled to. A `Command` has a
   title, the keys that run it too (shown muted at the end of its row, as shortcuts are
   written), and what it does. A command matches when the letters of the query are in its

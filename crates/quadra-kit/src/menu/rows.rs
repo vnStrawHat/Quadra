@@ -11,7 +11,7 @@ use quadra_ui::{AnyView, Div, NodeRef, Place, column, div, row, scroll, text};
 use super::MenuItem;
 use crate::action::{Confirm, MENU, MoveInto, MoveNext, MoveOut, MovePrevious};
 use crate::icon::icon;
-use crate::popup::{Shown, popup};
+use crate::popup::{EDGE, Shown, popup};
 use crate::{icons, size, token};
 
 /// The height of a row, and the most of a menu that shows before it scrolls.
@@ -26,11 +26,13 @@ pub(crate) struct Ends {
     pub leave: Option<Rc<dyn Fn()>>,
 }
 
-/// A row that is chosen: 23 px high, 4 px in from the menu's edge, 6 px beside what it holds.
+/// A row that is chosen: 23 px high, 4 px in from the menu's edge, 6 px beside what it holds
+/// and between its parts, the shortcut at the right and 16 px from the label at least.
 fn face(item: &MenuItem, marks: bool) -> Div {
-    let face = row().height(ROW).grow(1.0).padding_x(6.0).gap(8.0).radius(size::RADIUS_MD);
+    let face = row().height(ROW).grow(1.0).padding_x(6.0).gap(6.0).radius(size::RADIUS_MD);
     let face = face.align_items(Align::Center).role(Role::MenuItem).label(item.label.clone());
     let face = face.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
+    let face = if item.danger { face.text_color(token::ERROR) } else { face };
     let face = face.disabled(item.disabled).when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
     let face = match item.checked {
         Some(checked) => face.checked(checked),
@@ -38,13 +40,15 @@ fn face(item: &MenuItem, marks: bool) -> Div {
     };
     let face = match (marks, item.checked, item.icon) {
         (false, ..) => face,
-        (_, Some(true), _) => face.child(icon(icons::CHECK).color(token::ACCENT_TEXT)),
-        (_, None, Some(body)) => face.child(icon(body).color(token::TEXT_2)),
+        (_, _, Some(body)) if item.disabled => face.child(icon(body)),
+        (_, _, Some(body)) => face.child(icon(body).color(token::TEXT_2)),
+        (_, Some(true), None) => face.child(icon(icons::CHECK).color(token::ACCENT_TEXT)),
         _ => face.child(div().width(14.0)),
     };
-    let face = face.child(div().grow(1.0).child(text(item.label.clone())));
+    let face = face.child(text(item.label.clone())).child(div().grow(1.0).min_width(16.0));
     let face = match &item.keys {
-        Some(keys) => face.child(div().padding_x(8.0).child(text(keys.clone()).color(token::TEXT_2))),
+        Some(keys) if item.disabled => face.child(text(keys.clone())),
+        Some(keys) => face.child(text(keys.clone()).color(token::TEXT_2)),
         None => face,
     };
     match item.items.is_empty() {
@@ -136,7 +140,7 @@ pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
         }
         (ends.done)();
     };
-    let list = column().role(Role::Menu).min_width(200.0).padding_y(4.0).focusable().key_context(MENU);
+    let list = column().role(Role::Menu).min_width(200.0 - EDGE).padding_y(4.0).focusable().key_context(MENU);
     let list = list.on_action::<MoveNext>(move |_| forward(true));
     let list = list.on_action::<MovePrevious>(move |_| back(false));
     let list = list.on_action::<Confirm>(move |_| confirm());

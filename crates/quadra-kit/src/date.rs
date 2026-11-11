@@ -133,11 +133,19 @@ pub fn calendar(value: Signal<Date>) -> Div {
 
 pub struct DatePicker {
     value: Signal<Date>,
+    test_id: Option<&'static str>,
 }
 
 /// A field of 180 px that shows a date, and opens a calendar to choose another.
 pub fn date_picker(value: Signal<Date>) -> DatePicker {
-    DatePicker { value }
+    DatePicker { value, test_id: None }
+}
+
+impl DatePicker {
+    pub fn test_id(mut self, id: &'static str) -> Self {
+        self.test_id = Some(id);
+        self
+    }
 }
 
 impl View for DatePicker {
@@ -148,6 +156,10 @@ impl View for DatePicker {
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
         let face = face.cursor(Cursor::Pointer).role(Role::Button).label(move || value.get().to_string());
+        let face = match self.test_id {
+            Some(id) => face.test_id(id),
+            None => face,
+        };
         let face = face.expanded(open).focusable().key_context(CONTROL).node_ref(&opener);
         let face = face.on_click(move |_| open.update(|open| *open = !*open));
         let face = face.on_action::<Confirm>(move |_| open.set(true));

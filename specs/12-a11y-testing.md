@@ -132,7 +132,12 @@ makes a hover lay out a node fails a test, whatever its timing.
   As built: `App::read_pixels(window)` reads back what a window drawn offscreen shows. The
   tool `bench/shots` runs the gallery on the headless platform with the software device and
   the real text backend, turns its pages one after another and writes each as a PNG (written
-  uncompressed, by a few lines of its own); nothing shows on the desktop. `tools/shots.sh`
+  uncompressed, by a few lines of its own); nothing shows on the desktop. A page that opens
+  something (a menu, a select, a date picker, a dialog, a question, toasts, the palette, a
+  tooltip, a context menu) is drawn a second time with it open, as `<page>-open.png`: the
+  tool finds the opener by its test id in the semantic tree and sends the headless platform
+  the pointer events of a click, a rest or a click with the other button, then Escape, a
+  pointer that leaves, and the time the toasts last. `tools/shots.sh`
   runs it, and `tools/compare_shots.py` says for each picture what share of the pixels of
   the page differ from the reference by more than a tolerance; a band of rows may sit a
   pixel or two higher or lower than in the reference (the V pictures have lines of text of

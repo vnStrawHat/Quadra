@@ -24,7 +24,7 @@ pub struct Tooltip<V> {
     of: V,
 }
 
-/// Gives a view a tooltip: `tip` shows below it once the pointer has rested on it.
+/// Gives a view a tooltip: `tip` shows above it once the pointer has rested on it.
 pub fn tooltip<V: View + 'static>(tip: impl Into<String>, of: V) -> Tooltip<V> {
     Tooltip { tip: tip.into(), keys: None, meta: None, of }
 }
@@ -69,7 +69,7 @@ impl<V: View + 'static> View for Tooltip<V> {
         cx.tree.on_pointer(of, PointerKind::Leave, move |_| leave());
         cx.tree.on_pointer(of, PointerKind::Down, move |_| away());
 
-        // The bubble is an overlay opened by hand, below the view and centred on it.
+        // The bubble is an overlay opened by hand, above the view and centred on it.
         let (words, open) = (Rc::new((self.tip, self.keys, self.meta)), Rc::new(Cell::new(None)));
         let (writer, last) = (cx.handle.clone(), open.clone());
         cx.handle.bind(move || {
@@ -97,7 +97,7 @@ impl<V: View + 'static> View for Tooltip<V> {
                 };
                 let root = scope.run(|| bubble.mount(&mut MountCx::new(tree)));
                 tree.set_scope(root, scope);
-                let anchor = Anchor::Beside { node: of, side: Side::Below, along: Along::Center, gap: 4.0 };
+                let anchor = Anchor::Beside { node: of, side: Side::Above, along: Along::Center, gap: 6.0 };
                 tree.open_overlay(root, anchor);
                 open.set(Some(root));
             });

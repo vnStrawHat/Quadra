@@ -88,8 +88,8 @@ fn the_other_button_opens_a_menu_at_the_pointer() {
     p.other_click(50.0, 40.0);
     let list = p.h.get_by_role(Role::Menu, "").node();
     let panel = p.h.tree.window_rect(p.h.tree.overlays().next().unwrap());
-    // A pixel off the pointer, with the focus in it.
-    assert_eq!((panel.x, panel.y, p.h.tree.focused()), (51.0, 41.0, Some(list)));
+    // Under the pointer by 4 px, with the focus in it.
+    assert_eq!((panel.x, panel.y, p.h.tree.focused()), (50.0, 44.0, Some(list)));
     p.h.get_by_role(Role::MenuItem, "Rename").click();
     p.settle();
     assert_eq!((p.menus(), p.done.get_untracked(), p.h.tree.len()), (0, vec!["rename".to_string()], nodes));

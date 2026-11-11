@@ -74,8 +74,11 @@ impl Notice {
 }
 
 /// The icon of a tone, in its colour.
-fn mark(tone: Tone) -> impl View {
-    icon(tone.icon()).size(16.0).color(tone.role())
+/// The icon of a notice, in the colour of its tone: 16 px on a card, 14 px in a toast. One
+/// that only informs has the accent on a card, and is quiet in a toast.
+fn mark(tone: Tone, toast: bool) -> impl View {
+    let (size, informs) = if toast { (14.0, token::TEXT_2) } else { (16.0, token::ACCENT_TEXT) };
+    icon(tone.icon()).size(size).color(if tone == Tone::Info { informs } else { tone.role() })
 }
 
 /// What a window is told to show, and what it shows. Copies are the same one.
@@ -142,8 +145,11 @@ impl Notices {
             false => words.child(div().text_color(token::TEXT_2).child(text(notice.body))),
         };
         let close = icon_button(icons::X, "Close").on_click(move || me.close(id));
-        let top =
-            row().gap(8.0).child(div().padding_top(3.0).child(mark(notice.tone))).child(words).child(close);
+        let top = row()
+            .gap(8.0)
+            .child(div().padding_top(3.0).child(mark(notice.tone, false)))
+            .child(words)
+            .child(close);
         let card = surface(2).bg(token::PANEL).width(448.0).padding(12.0).gap(8.0);
         let card = card.role(Role::Group).label(notice.title).child(top);
         if notice.actions.is_empty() {
@@ -165,8 +171,8 @@ impl Notices {
     fn line(&self, id: u64) -> Div {
         let Some(notice) = self.find(id) else { return div() };
         let line = row().align_items(Align::Center).gap(8.0).padding_x(10.0).padding_y(6.0);
-        let line = line.child(mark(notice.tone)).child(text(notice.title.clone()));
-        surface(2).role(Role::Group).label(notice.title).child(line).radius(size::RADIUS_XL)
+        let line = line.child(mark(notice.tone, true)).child(text(notice.title.clone()));
+        surface(2).bg(token::PANEL).role(Role::Group).label(notice.title).child(line).radius(size::RADIUS_XL)
     }
 
     /// What shows the notifications: mount it once, anywhere in the window. It takes no room.

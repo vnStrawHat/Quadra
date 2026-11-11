@@ -10,10 +10,10 @@ use quadra_platform::MouseButton;
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, signal};
 use quadra_tree::{NodeId, PointerKind};
-use quadra_ui::{Div, MountCx, NodeRef, Place, View, div, row};
+use quadra_ui::{AnyView, Div, MountCx, NodeRef, Place, View, div, row};
 
 pub(crate) use self::rows::{Ends, rows};
-use crate::button::{Size, Variant, button};
+use crate::button::{Button, Size, Variant, button};
 use crate::popup::{open_now, popover};
 use crate::token;
 
@@ -25,6 +25,7 @@ pub struct MenuItem {
     keys: Option<String>,
     checked: Option<bool>,
     disabled: bool,
+    danger: bool,
     separator: bool,
     heading: bool,
     /// The rows of the menu the row opens beside itself.
@@ -66,7 +67,7 @@ impl MenuItem {
         self
     }
 
-    /// A row that is on or off: it shows a check while on.
+    /// A row that is on or off: it shows a check while on, unless it has an icon of its own.
     pub fn checked(mut self, on: bool) -> Self {
         self.checked = Some(on);
         self
@@ -74,6 +75,12 @@ impl MenuItem {
 
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+        self
+    }
+
+    /// A row that destroys something: in the colour of errors.
+    pub fn danger(mut self) -> Self {
+        self.danger = true;
         self
     }
 
@@ -126,8 +133,8 @@ where
             if e.button != MouseButton::Right {
                 return;
             }
-            // A pixel off the pointer, which is then over none of its rows.
-            let (place, items) = (Place::At(Point::new(e.at.x + 1.0, e.at.y + 1.0)), items.clone());
+            // Under the pointer by the gap of a popup: the pointer is then over none of its rows.
+            let (place, items) = (Place::At(Point::new(e.at.x, e.at.y + 4.0)), items.clone());
             handle.with(move |tree| {
                 open_now(tree, owner, place, move |close| rows(items(), Ends { done: close, leave: None }))
             });
@@ -137,30 +144,66 @@ where
     }
 }
 
+type Opened = Rc<dyn Fn(Signal<bool>, &NodeRef) -> AnyView>;
+
+/// A button that opens something under itself: a menu, a popover.
 pub struct MenuButton {
-    label: String,
-    items: Rc<dyn Fn() -> Vec<MenuItem>>,
-    size: Size,
+    face: Button,
+    under: Opened,
 }
 
 /// A ghost button that opens a menu under itself. `items` is asked each time it opens.
 pub fn menu_button(label: impl Into<String>, items: impl Fn() -> Vec<MenuItem> + 'static) -> MenuButton {
-    MenuButton { label: label.into(), items: Rc::new(items), size: Size::Md }
+    let items = Rc::new(items);
+    let under = move |open: Signal<bool>, opener: &NodeRef| {
+        let items = items.clone();
+        AnyView::new(menu(open, opener, move || items()))
+    };
+    MenuButton { face: button(label.into()).variant(Variant::Ghost), under: Rc::new(under) }
+}
+
+/// A button that opens a popover under itself, with what `content` builds each time, 12 px
+/// in from its edge.
+pub fn popover_button<V: View + 'static>(
+    label: impl Into<String>,
+    content: impl Fn() -> V + 'static,
+) -> MenuButton {
+    let content = Rc::new(content);
+    let under = move |open: Signal<bool>, opener: &NodeRef| {
+        let content = content.clone();
+        AnyView::new(popover(open, opener, move || div().padding(12.0).child(content())))
+    };
+    MenuButton { face: button(label.into()), under: Rc::new(under) }
 }
 
 impl MenuButton {
     pub fn size(mut self, size: Size) -> Self {
-        self.size = size;
+        self.face = self.face.size(size);
+        self
+    }
+
+    pub fn variant(mut self, variant: Variant) -> Self {
+        self.face = self.face.variant(variant);
+        self
+    }
+
+    /// An icon before the label.
+    pub fn icon(mut self, body: &'static str) -> Self {
+        self.face = self.face.icon(body);
+        self
+    }
+
+    pub fn test_id(mut self, id: &'static str) -> Self {
+        self.face = self.face.test_id(id);
         self
     }
 }
 
 impl View for MenuButton {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (open, opener, items) = (signal(false), NodeRef::new(), self.items);
-        let face = button(self.label).variant(Variant::Ghost).size(self.size);
-        let face = face.on_click(move || open.update(|open| *open = !*open));
-        let under = menu(open, &opener, move || items());
+        let (open, opener) = (signal(false), NodeRef::new());
+        let face = self.face.on_click(move || open.update(|open| *open = !*open));
+        let under = (self.under)(open, &opener);
         div().shrink(0.0).child(div().node_ref(&opener).child(face)).child(under).mount(cx)
     }
 }

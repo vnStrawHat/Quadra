@@ -1,17 +1,19 @@
 //! The dialog (specs/behaviour/15, "Dialog"): a question the user answers before going on.
-//! It hangs 80 px from the top of the window, centred, with no backdrop: Escape or a press
-//! outside gives it up.
+//! It hangs 80 px from the top of the window, centred, with no backdrop: the cross at the end
+//! of its title, Escape or a press outside gives it up.
 
 use std::rc::Rc;
 
-use quadra_layout::Justify;
+use quadra_layout::{Align, Justify};
+use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Role};
 use quadra_ui::{MountCx, Place, View, column, div, row, text};
 
-use crate::button::{Size, Variant, button};
-use crate::popup::popup;
-use crate::{size, token};
+use crate::button::{Variant, button};
+use crate::icon::icon;
+use crate::popup::{EDGE, popup};
+use crate::{icons, size, token};
 
 type Act = Rc<dyn Fn()>;
 
@@ -62,9 +64,20 @@ where
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (open, title, body, actions) = (self.open, self.title, self.body, Rc::new(self.actions));
         let content = move || {
-            let headline = text(title.clone()).size(size::TEXT_LG.size).weight(size::WEIGHT_STRONG);
-            let head = div().padding_x(12.0).padding_y(8.0).child(headline);
-            let middle = div().padding_x(12.0).padding_y(4.0).text_color(token::TEXT_2).child(body());
+            let cross = row().size(22.0, 22.0).align_items(Align::Center).justify(Justify::Center);
+            let cross = cross.radius(size::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
+            let cross = cross.cursor(Cursor::Pointer).role(Role::Button).label("Close");
+            let cross = cross.on_click(move |_| open.set(false));
+            let cross = cross.child(icon(icons::X).size(14.0).color(token::TEXT_2));
+            let headline = div().grow(1.0).child(text(title.clone()).size(size::TEXT_LG.size));
+            let head = row().align_items(Align::Center).gap(4.0).padding_x(12.0).padding_top(8.0);
+            let head = head.padding_bottom(4.0).child(headline).child(cross);
+            let middle = div().padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2).child(body());
+            let page = column().width(440.0 - EDGE).role(Role::Dialog).label(title.clone());
+            let page = page.child(head).child(middle);
+            if actions.is_empty() {
+                return page;
+            }
             let mut foot = row().gap(4.0).padding(8.0).justify(Justify::End);
             foot = foot.border_top(1.0).border_color(token::LINE);
             for (label, variant, act) in actions.iter() {
@@ -73,10 +86,9 @@ where
                     act();
                     open.set(false);
                 };
-                foot = foot.child(button(label.clone()).variant(*variant).size(Size::Sm).on_click(press));
+                foot = foot.child(button(label.clone()).variant(*variant).on_click(press));
             }
-            let page = column().width(440.0).role(Role::Dialog).label(title.clone());
-            page.child(head).child(middle).child(div().height(8.0)).child(foot)
+            page.child(foot)
         };
         popup(open, (Place::Top(80.0), 2), None, content).mount(cx)
     }

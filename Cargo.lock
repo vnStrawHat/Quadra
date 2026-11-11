@@ -134,6 +134,7 @@ dependencies = [
  "quadra-kit",
  "quadra-native-win",
  "quadra-platform",
+ "quadra-prim",
  "quadra-render",
 ]
 

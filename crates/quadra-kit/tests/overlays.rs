@@ -59,7 +59,8 @@ fn a_tooltip_shows_after_the_pointer_has_rested_and_goes_when_it_leaves() {
     p.wait(100);
     let tree = p.h.semantics();
     assert!(tree.contains("Tooltip") && p.h.has_text("Save the file") && p.h.has_text("Ctrl-S"), "{tree}");
-    // Below the button, centred on it; the focus is where it was: nowhere.
+    // Below the button, which has no room above it, and centred on it; the focus is where it was:
+    // nowhere.
     let (button, tip) =
         (p.h.tree.window_rect(save), p.h.tree.window_rect(p.h.tree.overlays().next().unwrap()));
     assert!(tip.y >= button.bottom() + 4.0 && (tip.center().x - button.center().x).abs() < 1.0, "{tip:?}");
@@ -95,9 +96,9 @@ fn a_dialog_is_answered_by_its_buttons_or_given_up() {
         tree.contains("Dialog \"Delete the file?\"") && p.h.has_text("It cannot be brought back."),
         "{tree}"
     );
-    // 440 wide (and its border), centred, 80 px under the top of the window.
+    // 440 wide with its border, centred, 80 px under the top of the window.
     let panel = p.h.tree.window_rect(p.h.tree.overlays().next().unwrap());
-    assert_eq!((panel.y, panel.width, panel.center().x), (80.0, 442.0, 400.0));
+    assert_eq!((panel.y, panel.width, panel.center().x), (80.0, 440.0, 400.0));
     // The focus is on its first button. Escape gives the dialog up, and nothing is deleted.
     assert_eq!(p.h.tree.focused(), Some(p.h.get_by_role(Role::Button, "Cancel").node()));
     p.h.key(Key::Escape, Mods::NONE);

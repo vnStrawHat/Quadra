@@ -54,7 +54,7 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
 | The bench app | `tools/bench.sh` builds `target/release/compare.exe`; with scene names it runs them headless with pass timings (docs/benchmarks.md has the runner's command) |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
 | The gallery | `tools/cargo.sh run -p quadra-gallery` (`examples/gallery`: a page a component) |
-| The gallery's pages as pictures | `tools/shots.sh [dark\|light] [page ..]` draws them without a window into `.tmp/shots/<theme>`; with `QUADRA_REFERENCE=<folder>` it compares them (`tools/compare_shots.py`). The V pictures are in the V repository, `.tmp/shots/hl-dark` and `hl-light` |
+| The gallery's pages as pictures | `tools/shots.sh [dark\|light] [page ..]` draws them without a window into `.tmp/shots/<theme>` (and `<page>-open.png` for a page that opens something); with `QUADRA_REFERENCE=<folder>` it compares them (`tools/compare_shots.py`). The V pictures are in the V repository, `.tmp/shots/hl-dark` and `hl-light` |
 
 Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 

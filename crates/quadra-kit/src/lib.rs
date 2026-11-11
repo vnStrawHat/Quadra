@@ -58,7 +58,7 @@ pub use field::{Field, Rule, Textarea, field, textarea, validate};
 pub use icon::icon;
 pub use input::{Input, input};
 pub use list::{List, list};
-pub use menu::{ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_button, menubar};
+pub use menu::{ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_button, menubar, popover_button};
 pub use notes::{alert, description_list, empty_state};
 pub use notice::{Notice, Notices, notices};
 pub use number::{NumberInput, number_input};

@@ -64,10 +64,10 @@ fn a_menu_opens_beside_its_button_and_closes_when_a_row_is_chosen() {
     {
         assert!(tree.contains(line), "{line} is not in:\n{tree}");
     }
-    // Below the button, 4 px off it, and at least 200 wide; the focus is in the menu.
+    // Below the button, 4 px off it, and at least 200 wide with its border; the focus is in the menu.
     let (edit, list) = (p.h.get_by_test_id("edit").node(), p.h.get_by_role(Role::Menu, "").node());
     let (button, shown) = (p.h.tree.window_rect(edit), p.h.tree.window_rect(list));
-    assert!(shown.y >= button.bottom() + 4.0 && shown.width >= 200.0, "{shown:?}");
+    assert!(shown.y >= button.bottom() + 4.0 && shown.width >= 198.0, "{shown:?}");
     assert_eq!(p.h.tree.focused(), Some(list));
     // The text of the window holds in the popup too: its face, its size, its colour.
     let copy = p.h.get_by_role(Role::MenuItem, "Copy").node();

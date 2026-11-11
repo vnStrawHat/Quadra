@@ -19,6 +19,10 @@ pub(crate) fn surface(level: u8) -> Div {
     plane.radius(size::RADIUS_XL).elevation(level)
 }
 
+/// What the border of the plane adds to the width of what it holds: a popup that is so wide
+/// asks for that less for its content.
+pub(crate) const EDGE: f32 = 2.0;
+
 /// When a popup is open, and what closes it.
 #[derive(Clone)]
 pub(crate) struct Shown {

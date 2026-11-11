@@ -56,7 +56,7 @@ impl Page {
     }
 
     fn ask(&mut self, query: &str) -> Vec<String> {
-        self.h.get_by_role(Role::TextInput, "Run a command").set_value(query);
+        self.h.get_by_role(Role::TextInput, "Type a command…").set_value(query);
         self.settle();
         self.rows()
     }
@@ -69,15 +69,15 @@ fn a_query_finds_the_commands_that_match_it_whatever_the_case_and_the_accents() 
     p.h.tree.focus(ask);
     p.h.key(Key::Enter, Mods::NONE);
     p.settle();
-    // 608 px and its border, under the top of the window, with the focus in its query.
+    // 608 px with its border, under the top of the window, with the focus in its query.
     let panel = p.h.tree.window_rect(p.h.tree.overlays().next().unwrap());
-    let field = p.h.get_by_role(Role::TextInput, "Run a command").node();
-    assert_eq!((panel.width, panel.y, p.h.tree.focused()), (610.0, 80.0, Some(field)));
+    let field = p.h.get_by_role(Role::TextInput, "Type a command…").node();
+    assert_eq!((panel.width, panel.y, p.h.tree.focused()), (608.0, 80.0, Some(field)));
     assert_eq!(p.rows(), ["[Save file]", "Open folder", "H\u{1EA3}i Ph\u{F2}ng weather", "Toggle sidebar"]);
-    // A row is 32 px, across the palette less 4 px at each side; its keys are at its end.
+    // A row is 32 px, across the palette less its border and 4 px at each side; its keys are at its end.
     let (row, keys) = (p.h.get_by_role(Role::ListItem, "Save file").node(), p.h.get_by_text("Ctrl-S").node());
     let (row, keys) = (p.h.tree.window_rect(row), p.h.tree.window_rect(keys));
-    assert_eq!((row.width, row.height, keys.right()), (600.0, 32.0, row.right() - 6.0));
+    assert_eq!((row.width, row.height, keys.right()), (598.0, 32.0, row.right() - 6.0));
     assert!(p.h.has_text("Ctrl-B"));
 
     assert_eq!(p.ask("SV"), ["[Save file]"]);

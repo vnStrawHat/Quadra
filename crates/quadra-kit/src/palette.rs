@@ -13,7 +13,7 @@ use quadra_ui::{Div, NodeRef, Place, View, column, div, dynamic, row, scroll, te
 
 use crate::action::{Confirm, LIST, MoveNext, MovePrevious};
 use crate::display::key_label;
-use crate::popup::popup;
+use crate::popup::{EDGE, popup};
 use crate::token;
 
 /// The height of a row, and the most of the list that shows.
@@ -150,12 +150,12 @@ where
         };
         let (down, up, enter, submit) = (step.clone(), step, run.clone(), run);
         let field =
-            text_input(query).placeholder("Run a command").on_submit(move |_| submit(on.get_untracked()));
+            text_input(query).placeholder("Type a command…").on_submit(move |_| submit(on.get_untracked()));
         let ask = row().align_items(Align::Center).height(37.0).padding_x(10.0);
         let ask = ask.border_bottom(1.0).border_color(token::LINE).child(div().grow(1.0).child(field));
         let tall = move || Length::Px((found.get().len().max(1) as f32 * ROW + 8.0).min(MOST));
         let list = scroll(signal(0.0), rows).container(div().height(tall));
-        let panel = column().width(608.0).key_context(LIST).selection_color(token::ACCENT_TINT);
+        let panel = column().width(608.0 - EDGE).key_context(LIST).selection_color(token::ACCENT_TINT);
         let panel = panel.on_action::<MoveNext>(move |_| down(true));
         let panel = panel.on_action::<MovePrevious>(move |_| up(false));
         panel.on_action::<Confirm>(move |_| enter(on.get_untracked())).child(ask).child(list)

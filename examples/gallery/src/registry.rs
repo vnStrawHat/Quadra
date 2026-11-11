@@ -3,7 +3,7 @@
 use quadra::Div;
 use quadra_kit::{dark, icons, light};
 
-use crate::pages::{actions, choices, display, fields, overview};
+use crate::pages::{actions, choices, data, display, fields, layout, navigation, overlays, overview};
 use crate::shell::Gallery;
 
 pub struct PageInfo {
@@ -50,6 +50,27 @@ pub const PAGES: &[PageInfo] = &[
     info("spinner", "Spinner", "Display", icons::LOADER_CIRCLE),
     info("skeleton", "Skeleton", "Display", icons::MINUS),
     info("card", "Card", "Display", icons::LAYERS),
+    info("tabs", "Tabs", "Layout", icons::PANEL_LEFT),
+    info("accordion", "Accordion", "Layout", icons::LIST),
+    info("split", "Split pane", "Layout", icons::GRIP_VERTICAL),
+    info("scroll-area", "Scroll area", "Layout", icons::ARROW_DOWN),
+    info("grid", "Grid", "Layout", icons::LAYOUT_GRID),
+    info("sidebar", "Sidebar", "Navigation", icons::PANEL_LEFT),
+    info("toolbar", "Toolbar", "Navigation", icons::SLIDERS_HORIZONTAL),
+    info("breadcrumb", "Breadcrumb", "Navigation", icons::CHEVRON_RIGHT),
+    info("menubar", "Menu bar", "Navigation", icons::MENU),
+    info("statusbar", "Status bar", "Navigation", icons::INFO),
+    info("palette", "Command palette", "Navigation", icons::COMMAND),
+    info("menu", "Menu", "Overlays", icons::ELLIPSIS),
+    info("context-menu", "Context menu", "Overlays", icons::LIST),
+    info("tooltip", "Tooltip", "Overlays", icons::MESSAGE_SQUARE),
+    info("popover", "Popover", "Overlays", icons::LAYERS),
+    info("dialog", "Dialog", "Overlays", icons::MONITOR),
+    info("confirm", "Confirm", "Overlays", icons::CIRCLE_ALERT),
+    info("toast", "Toast", "Overlays", icons::BELL),
+    info("table", "Table", "Data", icons::TABLE),
+    info("tree", "Tree", "Data", icons::FOLDER),
+    info("stress", "Stress", "Performance", icons::GAUGE),
 ];
 
 /// Builds the page of an id; an id that is not a page's gives the first page. A page that
@@ -87,6 +108,27 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "spinner" => display::spinner_page(),
         "skeleton" => display::skeleton_page(),
         "card" => display::card_page(),
+        "tabs" => layout::tabs_page(),
+        "accordion" => layout::accordion_page(),
+        "split" => layout::split_page(),
+        "scroll-area" => layout::scroll_page(),
+        "grid" => layout::grid_page(gallery),
+        "sidebar" => navigation::sidebar_page(),
+        "toolbar" => navigation::toolbar_page(),
+        "breadcrumb" => navigation::breadcrumb_page(),
+        "menubar" => navigation::menubar_page(),
+        "statusbar" => navigation::statusbar_page(),
+        "palette" => navigation::palette_page(gallery),
+        "menu" => overlays::menu_page(gallery),
+        "context-menu" => overlays::context_menu_page(),
+        "tooltip" => overlays::tooltip_page(),
+        "popover" => overlays::popover_page(),
+        "dialog" => overlays::dialog_page(),
+        "confirm" => overlays::confirm_page(),
+        "toast" => overlays::toast_page(gallery),
+        "table" => data::table_page(),
+        "tree" => data::tree_page(),
+        "stress" => data::stress_page(),
         _ => overview::start_page(),
     }
 }

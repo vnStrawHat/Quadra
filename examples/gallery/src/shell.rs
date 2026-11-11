@@ -5,8 +5,8 @@ use std::rc::Rc;
 
 use quadra::{Action, Display, Signal, Theme, View, column, div, dynamic, row, scroll, signal, use_context};
 use quadra_kit::{
-    Command, MenuItem, NavItem, Notices, Status, command_palette, dark, icon_button, icons, light, notices,
-    sidebar, status_button, status_divider, status_item, status_label, statusbar, titlebar, tooltip,
+    Command, MenuItem, NavItem, Notices, Status, Tone, command_palette, dark, icon_button, icons, light,
+    notices, sidebar, status_button, status_divider, status_item, status_label, statusbar, titlebar, tooltip,
 };
 
 use crate::registry::{PAGES, make};
@@ -27,29 +27,37 @@ pub struct Gallery {
     pub dark: Signal<bool>,
     /// What the pages tell the user: above the status bar.
     pub notices: Notices,
+    /// Whether the command palette is open.
+    pub palette: Signal<bool>,
 }
 
 impl Gallery {
     pub fn new(page: &'static str, dark: bool) -> Gallery {
-        Gallery { page: signal(page), dark: signal(dark), notices: notices().above(30.0) }
+        let notices = notices().above(30.0);
+        Gallery { page: signal(page), dark: signal(dark), notices, palette: signal(false) }
     }
 
-    /// What the palette offers: every page, and the other theme.
+    /// What the palette offers: a few commands of an app, and every page.
     fn commands(self) -> Vec<Command> {
-        let go = |page: &'static crate::PageInfo| {
-            Command::new(format!("Go to {}", page.title), move || self.page.set(page.id))
+        let says = move |tone, words: &'static str| {
+            move || {
+                self.notices.toast(tone, words);
+            }
         };
-        let theme = Command::new("Toggle theme", move || self.dark.update(|dark| *dark = !*dark));
-        PAGES.iter().map(go).chain([theme]).collect()
+        vec![
+            Command::new("Mở tệp…", says(Tone::Info, "Mở tệp")).keys("ctrl-o"),
+            Command::new("Lưu", says(Tone::Success, "Đã lưu")).keys("ctrl-s"),
+            Command::new("Đổi giao diện sáng/tối", move || self.dark.update(|dark| *dark = !*dark)),
+        ]
     }
 
     pub fn view(self) -> impl View {
-        let Gallery { page, dark, notices } = self;
+        let Gallery { page, dark, notices, palette: asking } = self;
         // The theme of the window follows `dark`.
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
         let name = move || if dark.get() { "One Dark Pro" } else { "One Light" };
         quadra::effect(move || theme.set(Rc::new(if dark.get() { dark_theme() } else { light_theme() })));
-        let (hidden, asking) = (signal(false), signal(false));
+        let hidden = signal(false);
 
         let toggle = dynamic(move || {
             let body = if dark.get() { icons::SUN } else { icons::MOON };

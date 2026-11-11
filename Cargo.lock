@@ -16,3 +16,10 @@ version = "0.1.0"
 [[package]]
 name = "quadra-reactive"
 version = "0.1.0"
+
+[[package]]
+name = "quadra-render"
+version = "0.1.0"
+dependencies = [
+ "quadra-prim",
+]

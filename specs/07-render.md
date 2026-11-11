@@ -52,13 +52,12 @@ Limits and choices:
 
 ## Display lists
 
-A layer's display list is a vector of instances plus a list of items in paint order:
-
-```
-Run(range of instances)      drawn in one call
-Child(layer)                 the child layer is drawn here, then this layer continues
-Image(texture, quad)         an image too large for the atlas
-```
+A layer's display list is one vector of instances in paint order. Where a child layer is drawn,
+the vector holds a **marker**: an entry of kind "layer" that names the child and is never drawn
+itself. The instances between two markers are a run, drawn in one call. Because markers live in
+the vector, copying a clean subtree carries its child layers along; the list of breaks is found
+again by one scan when the vector is rebuilt, and never changes when instances are overwritten
+in place. An image too large for the atlas will be a marker of its own kind (with images).
 
 Each node stores its range **relative to its parent's range**, covering what it painted before
 its children, its children, and what it painted after them.
@@ -84,11 +83,15 @@ renderer uploads what was reported. A terminal updates the rows that changed.
 for each root layer of the window, bottom to top:
     draw(layer):
         set the layer's constants and scissor
-        for each item: Run -> one instanced draw; Child -> draw(child); Image -> one draw
+        for each run and marker, in order: a run is one instanced draw; a marker is draw(child)
 ```
 
-Draw calls are about the number of visible layers plus the runs split by child layers. Layers
-entirely outside their scissor are skipped.
+A layer's transform, scissor and opacity are given in its parent layer's space. The scene works
+out what each layer has on screen (transforms composed, scissors intersected, opacities
+multiplied) and hands backends a flat list of steps, so no backend walks the layers itself.
+
+Draw calls are about the number of visible layers plus the runs split by child layers. A layer
+whose scissor leaves nothing on screen is skipped with everything inside it.
 
 The frame is presented with a flip-model swap chain and a frame-latency waitable. Dirty
 rectangles at present are not used in the first release.
@@ -137,21 +140,28 @@ it and every layer is uploaded once.
 
 ```rust
 pub trait Renderer {
-    fn create_surface(&mut self, window: WindowHandle, size: DeviceSize) -> Result<SurfaceId>;
+    fn create_surface(&mut self, target: SurfaceTarget, size: DeviceSize) -> Result<SurfaceId>;
     fn resize_surface(&mut self, s: SurfaceId, size: DeviceSize) -> Result<()>;
-    fn set_layer(&mut self, layer: LayerId, constants: &LayerConstants);
-    fn upload_layer(&mut self, layer: LayerId, instances: &[Instance], dirty: Range<u32>) -> Result<()>;
-    fn drop_layer(&mut self, layer: LayerId);
-    fn upload_tile(&mut self, atlas: AtlasKind, slice: u32, rect: TileRect, pixels: &[u8]) -> Result<()>;
-    fn draw(&mut self, s: SurfaceId, frame: &Frame) -> Result<()>;
+    fn drop_surface(&mut self, s: SurfaceId);
+    fn draw(&mut self, s: SurfaceId, scene: &mut Scene, clear: Color) -> Result<()>;
     fn present(&mut self, s: SurfaceId) -> Result<()>;
-    fn read_pixels(&mut self, s: SurfaceId) -> Result<Image>;      // offscreen surfaces: snapshots
+    fn read_pixels(&mut self, s: SurfaceId) -> Result<Pixels>;     // offscreen surfaces: snapshots
+    fn forget_scene(&mut self, scene: SceneId);                    // a window closed
+    fn recover(&mut self) -> Result<()>;                           // after DeviceLost
     fn stats(&self) -> RenderStats;
 }
 ```
 
-Implementations: D3D11 (`quadra-native-win`) and null (`quadra-testing`), which keeps what it
-was given so tests can read layers, instances and draw counts.
+A window's layers live in its `Scene`. `draw` pulls from it: for each layer on screen the
+backend uploads what the layer says changed (a range, or all of it), takes note of layers the
+scene dropped, and draws the steps. Nobody else tells the backend what to upload, so the dirty
+bookkeeping is in one place. `SurfaceTarget` (a window of some windowing system, or offscreen)
+is defined here, not by the platform crate: the two do not know each other (02), and the native
+crate converts.
+
+Implementations: D3D11 (`quadra-native-win`) and null (in `quadra-render`, used by
+`quadra-testing`). The null renderer keeps a copy of what it was told to upload, so a test can
+check that copy against the scene, read layers and instances, and count draws.
 
 ## What this replaces
 

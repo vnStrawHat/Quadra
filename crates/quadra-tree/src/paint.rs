@@ -9,6 +9,7 @@ use quadra_render::{Instance, Rebuild};
 
 use crate::fonts::Fonts;
 use crate::frame::FrameStats;
+use crate::inherit::TextAt;
 use crate::node::{NOT_PAINTED, Node, NodeId, flag};
 pub(crate) use crate::own::{outside, paint_own};
 use crate::tree::Tree;
@@ -35,8 +36,8 @@ struct Painter<'a> {
     /// The node whose layer is being painted.
     root: NodeId,
     scale: f32,
-    /// The tree's count of changes to text values: a widget is given them after one.
-    text_epoch: u32,
+    /// What widgets are given their text values with.
+    text_at: TextAt,
     /// The part of the layer that is painted, if it paints only near what shows.
     band: Option<Rect>,
     /// The scale changed: everything is painted, in every layer.
@@ -74,7 +75,7 @@ impl Painter<'_> {
             // ponytail: a new band visits every node of the layer to find those in it; a
             // spatial index if pages of a hundred thousand nodes scroll.
             if !outside(self.band, rect) {
-                let how = (self.scale, self.band, self.text_epoch);
+                let how = (self.scale, self.band, self.text_at);
                 paint_own(self.nodes, i, self.layout, rect, how, self.fonts, self.scratch);
                 self.stats.nodes_painted += 1;
             }
@@ -209,6 +210,7 @@ impl Tree {
         self.scratch.clear();
         self.patches.clear();
         let origin = self.layout.rect(self.nodes[i].layout).origin();
+        let text_at = self.text_at();
         let mut painter = Painter {
             nodes: &mut self.nodes,
             layout: &self.layout,
@@ -220,7 +222,7 @@ impl Tree {
             fonts,
             root,
             scale: self.scale,
-            text_epoch: self.text_epoch,
+            text_at,
             band,
             all,
             same: true,

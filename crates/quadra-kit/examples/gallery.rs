@@ -4,10 +4,12 @@
 
 use std::rc::Rc;
 
-use quadra::{Align, Div, Signal, Theme, WindowOptions, column, row, signal, text, use_context};
+use quadra::{
+    Align, Div, NodeRef, Signal, Theme, WindowOptions, column, div, row, signal, text, use_context,
+};
 use quadra_kit::{
-    Size, Variant, button, checkbox, dark, icon, icon_button, icons, input, light, radio_group, segmented,
-    size, switch, token,
+    MenuItem, Size, Variant, button, checkbox, dark, icon, icon_button, icons, input, light, menu,
+    radio_group, segmented, select, size, switch, token,
 };
 
 /// A section: its title, then its rows.
@@ -86,6 +88,27 @@ fn choices() -> Div {
     section("Selection").child(boxes).child(one_of)
 }
 
+fn overlays() -> Div {
+    // `GALLERY_OPEN=1` shows the menu at once: for a picture of it.
+    let (open, opener) = (signal(std::env::var_os("GALLERY_OPEN").is_some()), NodeRef::new());
+    let (wrap, size) = (signal(true), signal(1usize));
+    let items = move || {
+        vec![
+            MenuItem::new("Cut").icon(icons::TRASH_2).keys("Ctrl-X"),
+            MenuItem::new("Copy").icon(icons::COPY).keys("Ctrl-C"),
+            MenuItem::new("Paste").keys("Ctrl-V").disabled(true),
+            MenuItem::separator(),
+            MenuItem::new("Word wrap")
+                .checked(wrap.get_untracked())
+                .on_select(move || wrap.update(|on| *on = !*on)),
+        ]
+    };
+    let edit = button("Edit").icon(icons::CHEVRON_DOWN).on_click(move || open.update(|open| *open = !*open));
+    let edit = div().node_ref(&opener).child(edit);
+    let sizes = select(["Small", "Medium", "Large"], size);
+    section("Overlays").child(line().child(edit).child(sizes)).child(menu(open, &opener, items))
+}
+
 fn main() -> quadra::Result<()> {
     let view = || {
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
@@ -105,7 +128,8 @@ fn main() -> quadra::Result<()> {
             .child(icons())
             .child(inputs())
             .child(choices())
+            .child(overlays())
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
-    app.window(WindowOptions::new("Quadra gallery").size(680.0, 640.0), view)?.run()
+    app.window(WindowOptions::new("Quadra gallery").size(680.0, 860.0), view)?.run()
 }

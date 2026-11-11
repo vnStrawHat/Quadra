@@ -26,6 +26,7 @@ mod semantics;
 mod shared;
 mod structure;
 mod style;
+mod tab;
 mod text;
 mod theme;
 mod tree;

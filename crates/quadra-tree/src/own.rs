@@ -6,7 +6,7 @@ use quadra_prim::{Edges, Rect};
 use quadra_render::{Clip, Instance, Quad};
 
 use crate::fonts::Fonts;
-use crate::inherit::refresh;
+use crate::inherit::{TextAt, refresh};
 use crate::node::Node;
 use crate::widget::PaintCx;
 
@@ -18,7 +18,7 @@ pub(crate) fn paint_own(
     index: usize,
     layout: &LayoutTree,
     rect: Rect,
-    (scale, band, text_epoch): (f32, Option<Rect>, u32),
+    (scale, band, text_at): (f32, Option<Rect>, TextAt),
     fonts: &mut Fonts,
     out: &mut Vec<Instance>,
 ) {
@@ -26,7 +26,7 @@ pub(crate) fn paint_own(
     if style.display == Display::None {
         return;
     }
-    refresh(nodes, index, text_epoch);
+    refresh(nodes, index, text_at);
     let node = &mut nodes[index];
     let keep = node.styled.as_ref().is_some_and(|styled| styled.has_variants());
     let mut cx = PaintCx { rect, scale, visible: band, clip: Clip::NONE, keep, fonts, out };

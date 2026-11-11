@@ -112,13 +112,16 @@ impl Default for Inherited {
 
 /// What holds at a node: its own values, then those of each node around it for what is
 /// still not set, then the defaults. It stops as soon as everything is set.
-pub(crate) fn inherit(nodes: &[Node], index: usize) -> Inherited {
+pub(crate) fn inherit(nodes: &[Node], index: usize, root: Option<u32>) -> Inherited {
     let (mut values, mut at) = (TextValues::default(), Some(index));
     while let Some(i) = at.filter(|_| !values.complete()) {
         if let Some(own) = &nodes[i].text {
             values.fill(own);
         }
-        at = nodes[i].parent.map(|parent| parent.index as usize);
+        // What has no parent and is not the window's root is above it: an overlay. The text
+        // values of the window hold there too.
+        let above = root.map(|root| root as usize).filter(|&root| root != i);
+        at = nodes[i].parent.map(|parent| parent.index as usize).or(above);
     }
     let base = Inherited::default();
     let color = values.color.unwrap_or(base.color);
@@ -137,13 +140,21 @@ pub(crate) fn inherit(nodes: &[Node], index: usize) -> Inherited {
     }
 }
 
+/// What a pass needs to give widgets their text values: the tree's count of changes to
+/// them, and the window's root, whose values hold in overlays too.
+#[derive(Clone, Copy)]
+pub(crate) struct TextAt {
+    pub epoch: u32,
+    pub root: Option<u32>,
+}
+
 /// Gives a node's widget the text values that hold at the node, if they may have changed
 /// since it was last given them.
-pub(crate) fn refresh(nodes: &mut [Node], index: usize, epoch: u32) {
-    if nodes[index].inherited_at != epoch && nodes[index].widget.is_some() {
-        let inherited = inherit(nodes, index);
+pub(crate) fn refresh(nodes: &mut [Node], index: usize, at: TextAt) {
+    if nodes[index].inherited_at != at.epoch && nodes[index].widget.is_some() {
+        let inherited = inherit(nodes, index, at.root);
         let node = &mut nodes[index];
-        node.inherited_at = epoch;
+        node.inherited_at = at.epoch;
         if let Some(widget) = &mut node.widget {
             widget.inherit(&inherited);
         }
@@ -156,9 +167,15 @@ impl Tree {
         self.get(id).and_then(|node| node.text.as_deref().cloned()).unwrap_or_default()
     }
 
+    /// What the passes give widgets their text values with.
+    pub(crate) fn text_at(&self) -> TextAt {
+        TextAt { epoch: self.text_epoch, root: self.root.map(|root| root.index) }
+    }
+
     /// The text values that hold at a node.
     pub fn inherited(&self, id: NodeId) -> Inherited {
-        if self.is_alive(id) { inherit(&self.nodes, id.index as usize) } else { Inherited::default() }
+        let root = self.root.map(|root| root.index);
+        if self.is_alive(id) { inherit(&self.nodes, id.index as usize, root) } else { Inherited::default() }
     }
 
     /// Gives a node the text values it says. The widgets in it and under it are laid out
@@ -173,7 +190,10 @@ impl Tree {
         let changed = old.differs(&values);
         node.text = values.is_set().then(|| Box::new(values));
         self.text_epoch += 1;
-        let mut under = vec![(id, changed)];
+        // The values of the window's root hold in the overlays too.
+        let above: Vec<NodeId> = if self.root == Some(id) { self.overlays().collect() } else { Vec::new() };
+        let mut under: Vec<(NodeId, u16)> =
+            std::iter::once(id).chain(above).map(|at| (at, changed)).collect();
         while let Some((at, changed)) = under.pop() {
             let node = &self.nodes[at.index as usize];
             // A node on the way that says a value itself keeps it, with what is under it.

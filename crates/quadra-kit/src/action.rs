@@ -31,6 +31,19 @@ impl Action for MovePrevious {
     const NAME: &'static str = "kit::move_previous";
 }
 
+/// The key context of a popup: a menu, a popover, a dialog.
+pub const POPUP: &str = "popup";
+/// The key context of the rows of a menu.
+pub const MENU: &str = "menu";
+
+/// Give up what is open: Escape in a popup.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Cancel;
+
+impl Action for Cancel {
+    const NAME: &'static str = "kit::cancel";
+}
+
 /// The key bindings of the kit over those every window has. An app adds its own to it.
 pub fn keymap() -> Keymap {
     let mut keymap = Keymap::default();
@@ -43,6 +56,12 @@ pub fn keymap() -> Keymap {
     }
     for keys in ["left", "up"] {
         keymap.bind_in(CHOICE, keys, MovePrevious).expect(well_formed);
+    }
+    keymap.bind_in(POPUP, "escape", Cancel).expect(well_formed);
+    keymap.bind_in(MENU, "down", MoveNext).expect(well_formed);
+    keymap.bind_in(MENU, "up", MovePrevious).expect(well_formed);
+    for keys in ["enter", "space"] {
+        keymap.bind_in(MENU, keys, Confirm).expect(well_formed);
     }
     keymap
 }

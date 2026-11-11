@@ -138,9 +138,9 @@ of icons, coverage), and the kit has icons (`icon(icons::CHECK)`; the widget is 
 in `quadra-tree/src/drawing.rs`, its masks are tiles of the glyph atlas) and the text
 input (`input(value)`; placeholder, selection and caret colours are text values), and the
 selection controls (`checkbox`, `switch`, `radio_group`, `segmented`; `outline` is the
-focus mark of what has no border). Next: overlays (tooltip, popover, menu, select,
-dialog: one implementation of placement, focus scope, dismissal and return of focus for all
-of them, specs/13), lists and tabs, panels and the titlebar; the components in the order of specs/13, each with its
+focus mark of what has no border), and popups (`popup.rs`: focus in and back, Escape, a
+press outside; `popover`, `menu`, `select`). Next: tooltip (timers), dialog, shadows for
+the two elevations, then lists and tabs, panels and the titlebar; the components in the order of specs/13, each with its
 section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

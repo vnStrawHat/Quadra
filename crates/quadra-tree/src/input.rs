@@ -67,6 +67,8 @@ impl PointerEvent {
 
 type ActionFn = Box<dyn FnMut(&dyn Any)>;
 type CompositionFn = Box<dyn FnMut(&str, usize)>;
+/// What is told of a press outside an overlay: the nodes the press is on.
+type OutsideFn = Box<dyn FnMut(&[NodeId])>;
 
 /// What takes a dropped value: the value, and where in the window it was let go.
 pub(crate) type DropFn = Box<dyn FnMut(&dyn Any, Point)>;
@@ -91,7 +93,8 @@ pub(crate) enum Handler {
     /// An input method is composing text for the node: the text so far and the caret in it.
     Composition(CompositionFn),
     /// A press landed outside the overlay the node is the root of.
-    OutsidePress(Box<dyn FnMut()>),
+    /// It is given the path of the press, the deepest node first.
+    OutsidePress(OutsideFn),
     /// The node can be dragged: asked for the value when a drag of it starts.
     Drag(Box<dyn FnMut() -> Rc<dyn Any>>),
     /// The node takes what is dragged when it is of a type: the value, and where it was let

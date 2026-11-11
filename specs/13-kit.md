@@ -182,6 +182,27 @@ palette are built on `overlay` (05): placement against an anchor, a focus scope,
 outside press or Escape, return of focus to the opener. One implementation of each of those
 four behaviours serves all of them.
 
+As built: `popup.rs` is that implementation. A popup is shown while a signal is true; when
+it opens the focus goes to the first thing in it that can have it (or to its panel), Tab
+stays inside, Escape is the action `Cancel` (key context `action::POPUP`), and a press
+outside closes it. A press on its opener is not a press outside (`overlay(..).opener(..)`):
+the button that opened a menu closes it by its own click and does not open it again. When
+the popup closes the focus goes back to what had it.
+
+- `popover(open, &opener, || content)` is the bare popup, below its opener.
+- `menu(open, &opener, || items)`: rows of `MenuItem` (`.icon(..)`, `.keys("Ctrl-C")`,
+  `.checked(..)`, `.disabled(..)`, `.on_select(..)`, `MenuItem::separator()`), asked for each
+  time the menu opens. A click on a row does what it does and closes the menu; the arrows
+  move a highlight over the rows that can be chosen, round the ends, and Enter or Space
+  chooses (key context `action::MENU`). Rows are 23 px, 4 px in from the edge; an icon
+  column is there only when a row has an icon or a check.
+- `select(options, chosen)`: a filled button that shows the chosen option, and a menu of the
+  options with a check on it.
+- The text values of the window's root hold in overlays too (a popup's text has the
+  window's face and colour): an overlay has no parent, and is above the root.
+- Not yet: shadows (the two elevations), submenus, a menu that scrolls, the context menu,
+  tooltip, dialog, drawer, toast, command palette.
+
 ## Crates
 
 ```

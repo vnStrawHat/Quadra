@@ -95,6 +95,7 @@ impl Tree {
         }
         self.make_layer(root, false);
         self.overlays.push(Overlay { root, anchor });
+        self.text_epoch += 1; // the text values of the window hold in it from now on
         self.sync_roots();
         self.relayout = true;
         self.mark(root, flag::PAINT | flag::SUBTREE);
@@ -129,8 +130,10 @@ impl Tree {
         self.overlays.iter().map(|o| o.root)
     }
 
-    /// Runs `f` when a press lands outside an overlay: how a menu knows to close.
-    pub fn on_outside_press(&mut self, root: NodeId, f: impl FnMut() + 'static) {
+    /// Runs `f` when a press lands outside an overlay: how a menu knows to close. `f` is given
+    /// the nodes the press is on, the deepest first: a press on what opened the menu is that
+    /// node's to deal with.
+    pub fn on_outside_press(&mut self, root: NodeId, f: impl FnMut(&[NodeId]) + 'static) {
         self.add_handler(root, Handler::OutsidePress(Box::new(f)));
     }
 
@@ -143,7 +146,7 @@ impl Tree {
             }
             for handler in &mut self.nodes[root.index as usize].handlers {
                 if let Handler::OutsidePress(run) = handler {
-                    run();
+                    run(path);
                 }
             }
         }

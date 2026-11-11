@@ -9,11 +9,17 @@ use std::rc::Rc;
 
 use std::time::{Duration, Instant};
 
-use quadra_platform::{Key, Mods, MouseButton};
+use quadra_async::Timers;
+use quadra_platform::{
+    Clipboard, HeadlessPlatform, Key, Mods, MouseButton, Platform, PlatformEvent, PlatformHandler, TimerId,
+    WindowId,
+};
 use quadra_prim::{Color, Point, Size};
+use quadra_reactive::provide;
 use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
 use quadra_text::FakeBackend;
-use quadra_tree::{Fonts, FrameStats, PointerInput, Tree};
+use quadra_tree::{Fonts, FrameStats, NodeId, PointerInput, Tree};
+use quadra_ui::{View, mount_with};
 
 pub struct Harness {
     pub tree: Tree,
@@ -25,8 +31,24 @@ pub struct Harness {
     /// The window's size in logical pixels, and its scale. Change them to resize.
     pub size: Size,
     pub scale: f32,
-    /// The time input happens at: moved by [`Harness::advance`], never by the clock.
-    pub now: Instant,
+    /// The clock, moved by [`Harness::advance`] and never by time itself, and what runs on
+    /// it: the timers of views mounted with [`Harness::mount`].
+    platform: HeadlessPlatform,
+    timers: Rc<Timers>,
+    /// The clipboard those views find: a variable, never the real one.
+    pub clipboard: Rc<dyn Clipboard>,
+}
+
+/// Gives the platform's timers to what set them.
+struct Fire(Rc<Timers>);
+
+impl PlatformHandler for Fire {
+    fn event(&mut self, _: WindowId, _: PlatformEvent) {}
+    fn frame(&mut self, _: WindowId) {}
+    fn timer(&mut self, id: TimerId) {
+        self.0.fire(id);
+    }
+    fn wake(&mut self) {}
 }
 
 impl Default for Harness {
@@ -44,18 +66,36 @@ impl Harness {
         let surface =
             renderer.create_surface(SurfaceTarget::Offscreen, size).expect("the null renderer has surfaces");
         let tree = Tree::new(fonts.clone());
-        let (size, now) = (Size::new(800.0, 600.0), Instant::now());
-        Harness { tree, renderer, fonts, surface, size, scale: 1.0, now }
+        let platform = HeadlessPlatform::new();
+        let timers = Timers::new(Rc::new(platform.clone()));
+        let (size, clipboard) = (Size::new(800.0, 600.0), platform.clipboard());
+        Harness { tree, renderer, fonts, surface, size, scale: 1.0, platform, timers, clipboard }
     }
 
-    /// Moves the harness's time forward.
+    /// Builds a view as an app's window does, where it finds timers and the clipboard in its
+    /// context, and mounts it as the root.
+    pub fn mount<V: View>(&mut self, build: impl FnOnce() -> V) -> NodeId {
+        let (timers, clipboard) = (self.timers.clone(), self.clipboard.clone());
+        mount_with(&mut self.tree, move || {
+            provide(timers);
+            provide(clipboard);
+            build()
+        })
+    }
+
+    /// The harness's time.
+    pub fn now(&self) -> Instant {
+        self.platform.now()
+    }
+
+    /// Moves the harness's time forward: the timers that come due fire, in order.
     pub fn advance(&mut self, by: Duration) {
-        self.now += by;
+        self.platform.advance(by, &mut Fire(self.timers.clone()));
     }
 
     /// A pointer event of the window, with the main button and no modifier.
     pub fn pointer(&mut self, input: PointerInput, x: f32, y: f32) {
-        self.tree.pointer(input, MouseButton::Left, Point::new(x, y), Mods::NONE, self.now);
+        self.tree.pointer(input, MouseButton::Left, Point::new(x, y), Mods::NONE, self.now());
     }
 
     /// Turns the wheel by lines at a point: positive is away from the user, towards the

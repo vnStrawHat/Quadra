@@ -3,14 +3,20 @@
 
 use std::cell::Cell;
 use std::rc::Rc;
+use std::time::Duration;
+
+use quadra_async::{Timers, interval};
 
 use quadra_platform::{Clipboard, Mods, MouseButton};
 use quadra_prim::Color;
-use quadra_reactive::{Signal, use_context};
+use quadra_reactive::{Scope, Signal, use_context};
 use quadra_text::TextStyle;
 use quadra_tree::{NodeId, PointerEvent, PointerKind, Style, TEXT_CONTEXT, TextCommand, TextField, Tree};
 
 use crate::view::{MountCx, View};
+
+/// How long the caret is shown, and then hidden.
+const CARET_BLINK: Duration = Duration::from_millis(530);
 
 pub struct TextInput {
     value: Signal<String>,
@@ -48,6 +54,7 @@ fn one_line(text: &str) -> String {
 fn edit(tree: &mut Tree, id: NodeId, value: Signal<String>, f: impl FnOnce(&mut TextField) -> bool) {
     let Some(field) = tree.widget_mut::<TextField>(id) else { return };
     let changed = f(field).then(|| field.buffer.text().to_string());
+    (field.caret_on, field.touched) = (true, true); // a caret in use does not blink away
     if let Some(text) = changed {
         tree.mark_layout(id);
         value.set(text);
@@ -106,8 +113,30 @@ impl View for TextInput {
                 })
             });
         });
+        // While it has the focus the caret blinks, on a timer that lives as long as the focus
+        // (in a scope of its own). Without timers in the context it simply stays shown.
+        let (owner, blinks) = (Scope::current(), use_context::<Rc<Timers>>().is_some());
+        let session: Cell<Option<Scope>> = Cell::new(None);
         let writer = cx.handle.clone();
         cx.tree.on_focus(id, move |gained| {
+            if let Some(ended) = session.take() {
+                ended.dispose();
+            }
+            if gained && blinks {
+                let scope = owner.run(Scope::child);
+                let writer = writer.clone();
+                scope.run(|| {
+                    interval(CARET_BLINK, move || {
+                        writer.with(move |tree| {
+                            if let Some(field) = tree.widget_mut::<TextField>(id) {
+                                field.blink();
+                                tree.mark_paint(id);
+                            }
+                        })
+                    })
+                });
+                session.set(Some(scope));
+            }
             writer.with(move |tree| {
                 edit(tree, id, value, |field| {
                     field.focused = gained;

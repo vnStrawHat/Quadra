@@ -40,6 +40,10 @@ pub struct TextField {
     pub selection: Color,
     /// It has the focus: the caret shows.
     pub focused: bool,
+    /// The caret's blink: shown now, and touched since the blink last turned (then it
+    /// stays shown for a whole turn more).
+    pub caret_on: bool,
+    pub touched: bool,
     paragraph: Option<Paragraph>,
     /// How far the text is moved left so that the caret is in view.
     scroll_x: f32,
@@ -54,6 +58,8 @@ impl TextField {
             color,
             selection: Color::rgb(0x3366FF).alpha(0.3),
             focused: false,
+            caret_on: true,
+            touched: false,
             paragraph: None,
             scroll_x: 0.0,
             tiles: Vec::new(),
@@ -72,6 +78,11 @@ impl TextField {
             TextCommand::Copy | TextCommand::Paste => {}
         }
         false
+    }
+
+    /// Turns the caret's blink: hidden, then shown. A caret that was just used stays shown.
+    pub fn blink(&mut self) {
+        self.caret_on = std::mem::take(&mut self.touched) || !self.caret_on;
     }
 
     /// The byte offset nearest an x from the field's left edge: where a click puts the caret.
@@ -123,8 +134,11 @@ impl Widget for TextField {
             // One device pixel wide at least, on a whole pixel: a caret is never blurred.
             let x = ((left + caret) * cx.scale).round() / cx.scale;
             let width = cx.scale.round().max(1.0) / cx.scale;
-            let bounds = Rect::new(x, rect.y, width, rect.height);
-            cx.quad(Quad { bounds, background: self.color, ..Quad::default() });
+            let bounds = cx.device(Rect::new(x, rect.y, width, rect.height));
+            // Always one instance, clear while the blink hides it: a blink overwrites it in
+            // place and moves nothing else of the layer.
+            let background = if self.caret_on { self.color } else { Color::TRANSPARENT };
+            cx.push(Quad { bounds, background, ..Quad::default() }.instance(&cx.clip));
         }
         cx.clip = outer;
     }

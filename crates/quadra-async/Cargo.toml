@@ -1,0 +1,15 @@
+[package]
+name = "quadra-async"
+description = "Quadra's work over time: timers on the platform's clock (tasks, the pool and inboxes follow)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-platform = { path = "../quadra-platform" }
+quadra-reactive = { path = "../quadra-reactive" }

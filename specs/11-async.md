@@ -67,6 +67,12 @@ inbox.on_data(move |bytes| screen.update(|s| s.feed(bytes)));
 - `debounce(signal, duration)` and `throttle(signal, duration)` give derived signals.
 - All use the platform clock, which is virtual under test: `harness.advance(ms)` fires them in
   order.
+- A callback runs in the scope the timer was set in, inside a batch. It may cancel its own
+  timer and set others.
+- An app has one `Timers`, which gives the platform's timers their meaning. It is provided as
+  context by the app's root scope (as the clipboard is, 10), so `timeout` and `interval` work
+  wherever a view of the app is built; the test harness provides its own to views mounted
+  with `Harness::mount`.
 
 Frame-driven animation does not use timers: transitions and animations are advanced by the
 frame (04, 05).

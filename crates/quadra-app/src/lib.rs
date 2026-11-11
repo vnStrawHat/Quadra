@@ -10,6 +10,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
+use quadra_async::Timers;
 use quadra_platform::{
     Platform, PlatformEvent, PlatformHandler, PlatformWindow, PointerKind, TimerId, WindowHandle, WindowId,
     WindowOptions,
@@ -45,6 +46,8 @@ pub struct App<R: Renderer> {
     clear: Color,
     /// The key bindings every window of the app uses.
     keymap: Rc<Keymap>,
+    /// What the platform's timers mean (specs/11).
+    timers: Rc<Timers>,
     on_error: Box<dyn FnMut(&AppError)>,
     on_presented: Option<FrameHook>,
 }
@@ -52,14 +55,21 @@ pub struct App<R: Renderer> {
 impl<R: Renderer> App<R> {
     /// An app on these backends. `quadra::App::new` picks the ones of the OS.
     pub fn with(platform: Rc<dyn Platform>, renderer: R, text: Box<dyn TextBackend>) -> App<R> {
+        // What every view of the app finds in its context: timers, and the clipboard.
+        let (root, timers) = (Scope::child(), Timers::new(platform.clone()));
+        root.run(|| {
+            provide(timers.clone());
+            provide(platform.clipboard());
+        });
         App {
             platform,
             renderer,
             fonts: Fonts::new(text),
             windows: Vec::new(),
-            root: Scope::child(),
+            root,
             clear: Color::WHITE,
             keymap: Rc::new(Keymap::default()),
+            timers,
             on_error: Box::new(|e| eprintln!("quadra: {e}")),
             on_presented: None,
         }
@@ -115,10 +125,7 @@ impl<R: Renderer> App<R> {
         let scope = self.root.run(Scope::child);
         let mut tree = Tree::new(self.fonts.clone());
         tree.set_keymap(self.keymap.clone());
-        scope.run(|| {
-            provide(self.platform.clipboard()); // what a text input copies to and pastes from
-            mount_with(&mut tree, view)
-        });
+        scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();
         self.windows.push(AppWindow { scope, tree, surface, window });
@@ -266,7 +273,8 @@ impl<R: Renderer> PlatformHandler for App<R> {
         self.request_frames();
     }
 
-    fn timer(&mut self, _: TimerId) {
+    fn timer(&mut self, id: TimerId) {
+        self.timers.fire(id);
         self.request_frames();
     }
 

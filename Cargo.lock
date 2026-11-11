@@ -29,6 +29,7 @@ dependencies = [
 name = "quadra-app"
 version = "0.1.0"
 dependencies = [
+ "quadra-async",
  "quadra-platform",
  "quadra-prim",
  "quadra-reactive",
@@ -36,6 +37,14 @@ dependencies = [
  "quadra-text",
  "quadra-tree",
  "quadra-ui",
+]
+
+[[package]]
+name = "quadra-async"
+version = "0.1.0"
+dependencies = [
+ "quadra-platform",
+ "quadra-reactive",
 ]
 
 [[package]]
@@ -97,11 +106,14 @@ dependencies = [
 name = "quadra-testing"
 version = "0.1.0"
 dependencies = [
+ "quadra-async",
  "quadra-platform",
  "quadra-prim",
+ "quadra-reactive",
  "quadra-render",
  "quadra-text",
  "quadra-tree",
+ "quadra-ui",
 ]
 
 [[package]]
@@ -127,6 +139,7 @@ dependencies = [
 name = "quadra-ui"
 version = "0.1.0"
 dependencies = [
+ "quadra-async",
  "quadra-layout",
  "quadra-platform",
  "quadra-prim",

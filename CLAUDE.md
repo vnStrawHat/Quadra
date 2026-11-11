@@ -100,8 +100,9 @@ the focus path, `NodeRef::focus`), and so are actions and the keymap (`action.rs
 `quadra-tree/src/field.rs`, the buffer in `quadra-text/src/edit.rs`; `crates/quadra/examples/form.rs`
 shows it in a real window). Copy, cut and paste go through the clipboard the app provides as
 context (`Platform::clipboard`; the Win32 one in `quadra-native-win/src/clipboard.rs` is
-never run by a test, and must not be). Still missing for it, in this order: timers
-(`quadra-async`, specs/11) for the caret's blink; IME composition (specs/09; behaviour/02;
+never run by a test, and must not be). The caret blinks on a timer (`quadra-async` has
+`timeout` and `interval`; `Harness::mount` and `Harness::advance` for tests). Still missing
+for it: IME composition (specs/09; behaviour/02;
 the V code is `quadra/platform/win/ime_windows.c.v`).
 After the text input: overlays, semantics (specs/12), rows of different heights.
 `quadra-async` (specs/11) when the first thing needs a timer or a task.

@@ -17,7 +17,7 @@ pub fn heading(words: impl Into<String>, level: u8) -> Div {
         3 => size::TEXT_LG.size,
         _ => size::TEXT_MD.size,
     };
-    let line = div().role(Role::Heading).text_size(px).line_height((px * 1.618).round() / px);
+    let line = div().role(Role::Heading).text_size(px).line_height(size::LINE);
     line.child(text(words.into()))
 }
 

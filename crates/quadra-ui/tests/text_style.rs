@@ -50,7 +50,8 @@ fn text_is_as_the_boxes_around_it_say_until_one_says_otherwise() {
     // the one with a size of its own is not measured.
     size.set(12.0);
     let (stats, _) = h.frame();
-    assert_eq!((h.tree.rect(plain).height, h.tree.rect(note).height), (16.8, 28.0));
+    // A line is 1.4 of the size, in whole pixels.
+    assert_eq!((h.tree.rect(plain).height, h.tree.rect(note).height), (17.0, 28.0));
     assert_eq!(look(&h, save).0, 12.0);
     assert!(stats.nodes_measured >= 3, "{stats:?}");
 

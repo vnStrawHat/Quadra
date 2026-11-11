@@ -23,7 +23,8 @@ pub fn install<R: Renderer>(mut app: App<R>, theme: &KitTheme) -> Result<App<R>,
 pub fn root() -> Div {
     let page = column().grow(1.0).bg(token::CANVAS).text_color(token::TEXT);
     let page = page.font_family(fonts::UI).font_weight(size::WEIGHT_NORMAL);
-    let page = page.text_size(size::TEXT_MD.size).line_height(size::TEXT_MD.line_height());
+    // Lines are 1.618 of the size of their text, in whole pixels: 23 px for the 14 of the UI.
+    let page = page.text_size(size::TEXT_MD.size).line_height(size::LINE);
     // In fields: what stands where text goes, the selection, and the caret.
     let page = page.placeholder_color(token::TEXT_3).selection_color(token::ACCENT.alpha(0.24));
     page.caret_color(token::ACCENT)

@@ -134,7 +134,9 @@ makes a hover lay out a node fails a test, whatever its timing.
   the real text backend, turns its pages one after another and writes each as a PNG (written
   uncompressed, by a few lines of its own); nothing shows on the desktop. `tools/shots.sh`
   runs it, and `tools/compare_shots.py` says for each picture what share of the pixels of
-  the page differ from the reference by more than a tolerance.
+  the page differ from the reference by more than a tolerance; a band of rows may sit a
+  pixel or two higher or lower than in the reference (the V pictures have lines of text of
+  fractional heights, 08).
 
 ## Other test kinds
 

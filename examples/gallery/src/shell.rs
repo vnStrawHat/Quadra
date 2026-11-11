@@ -76,7 +76,7 @@ impl Gallery {
         let places =
             div().display(move || if hidden.get() { Display::None } else { Display::Flex }).child(places);
         // Each page is built when it is gone to, and scrolls from its top.
-        let shown = dynamic(move || scroll(signal(0.0), make(page.get())));
+        let shown = dynamic(move || scroll(signal(0.0), make(page.get(), self)));
         let middle = row().grow(1.0).child(places).child(shown.container(column().grow(1.0)));
 
         let title = move || PAGES.iter().find(|known| known.id == page.get()).map_or("", |known| known.title);

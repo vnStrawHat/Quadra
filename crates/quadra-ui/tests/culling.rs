@@ -39,8 +39,8 @@ fn a_long_page_paints_what_is_near_the_window_and_scrolls_inside_it_for_one_cons
 
     y.set(700.0); // rows past the band show: a new band, from 100 to 1900
     let (stats, _) = h.frame();
-    // Row 2 crosses the band's edge with its box, not with its text (four glyphs).
-    assert_eq!((stats.layers_rebuilt, stats.instances_written), (1, ink(2..=47) - 4), "{stats:?}");
+    // Row 2 crosses the band's edge with its box; the line of its text ends on the edge.
+    assert_eq!((stats.layers_rebuilt, stats.instances_written), (1, ink(2..=47)), "{stats:?}");
     y.set(900.0);
     assert_eq!(h.frame().0.nodes_painted, 0);
 

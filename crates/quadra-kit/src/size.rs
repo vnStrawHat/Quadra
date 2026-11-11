@@ -28,6 +28,9 @@ pub const TEXT_XL: Type = Type { size: 18.0, line: 26.0 };
 /// Display: the first heading of a page.
 pub const TEXT_2XL: Type = Type { size: 23.0, line: 29.0 };
 
+/// The height of a line of UI text, as a multiple of its size.
+pub const LINE: f32 = 1.618;
+
 /// The heights of controls, at the compact density, which is the reference.
 pub const H_XS: f32 = 18.0;
 pub const H_SM: f32 = 22.0;

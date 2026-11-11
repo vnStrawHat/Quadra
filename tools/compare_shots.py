@@ -1,9 +1,11 @@
 """Compares the pictures of two folders, file by file: python tools/compare_shots.py OURS REFERENCE
 
 For each picture in both it says what share of the pixels of the page differ by more than a
-tolerance in a channel (--tolerance, 24), the worst first. By default only the page is
-compared: not the title bar, the sidebar or the status bar of the gallery, which list other
-pages (--all compares everything). Only the standard library.
+tolerance in a channel (--tolerance, 24), the worst first. A row may sit up to --drift rows
+(2) higher or lower than in the reference: lines of text are whole pixels tall here, and were
+not in the V pictures. By default only the page is compared: not the title bar, the sidebar
+or the status bar of the gallery, which list other pages (--all compares everything). Only
+the standard library.
 """
 import argparse
 import os
@@ -53,19 +55,32 @@ def read(path):
     return width, height, rows
 
 
-def differ(ours, reference, tolerance, area):
-    """The share of the pixels of `area` that differ, or None when the sizes do."""
+def far(mine, theirs, tolerance):
+    """How many pixels of two rows of RGB bytes differ by more than the tolerance."""
+    if mine == theirs:
+        return 0
+    off = [abs(p - q) > tolerance for p, q in zip(mine, theirs)]
+    return sum(1 for i in range(0, len(off), 3) if off[i] or off[i + 1] or off[i + 2])
+
+
+def differ(ours, reference, tolerance, area, drift):
+    """The share of the pixels of `area` that differ, or None when the sizes do. A row is
+    compared with the rows of the reference up to `drift` above and below it, and the nearest
+    counts: a band that sits a pixel lower is the same band."""
     (w, h, a), (w2, h2, b) = read(ours), read(reference)
     if (w, h) != (w2, h2):
         return None
     left, top, right, bottom = area if area else (0, 0, w, h)
-    count = 0
-    for y in range(top, min(bottom, h)):
-        mine, theirs = a[y][left * 3:right * 3], b[y][left * 3:right * 3]
-        if mine != theirs:
-            far = [abs(p - q) > tolerance for p, q in zip(mine, theirs)]
-            count += sum(1 for i in range(0, len(far), 3) if far[i] or far[i + 1] or far[i + 2])
-    return count / max(1, (right - left) * (min(bottom, h) - top))
+    bottom, count = min(bottom, h), 0
+    for y in range(top, bottom):
+        mine = a[y][left * 3:right * 3]
+        best = far(mine, b[y][left * 3:right * 3], tolerance)
+        for dy in range(1, drift + 1):
+            for other in (y - dy, y + dy):
+                if best and top <= other < bottom:
+                    best = min(best, far(mine, b[other][left * 3:right * 3], tolerance))
+        count += best
+    return count / max(1, (right - left) * (bottom - top))
 
 
 def main():
@@ -73,6 +88,7 @@ def main():
     parser.add_argument("ours")
     parser.add_argument("reference")
     parser.add_argument("--tolerance", type=int, default=24)
+    parser.add_argument("--drift", type=int, default=2, help="rows up and down a band may sit off (2)")
     parser.add_argument("--all", action="store_true", help="compare the whole picture, not the page alone")
     args = parser.parse_args()
     area = None if args.all else (241, 32, 1200, 770)
@@ -81,7 +97,8 @@ def main():
     for name in names:
         reference = os.path.join(args.reference, name)
         if os.path.exists(reference):
-            found.append((differ(os.path.join(args.ours, name), reference, args.tolerance, area), name))
+            share = differ(os.path.join(args.ours, name), reference, args.tolerance, area, args.drift)
+            found.append((share, name))
     for share, name in sorted(found, key=lambda f: -1 if f[0] is None else -f[0]):
         print(f"{'size' if share is None else format(share * 100, '6.2f') + ' %':>9}  {name}")
     print(f"{len(found)} compared, {len(names) - len(found)} without a reference")

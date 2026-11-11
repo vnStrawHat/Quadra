@@ -86,9 +86,10 @@ impl Default for TextStyle {
 }
 
 impl TextStyle {
-    /// The height of a line box in pixels.
+    /// The height of a line box: the multiple of the size, in whole pixels, so that lines of
+    /// any size keep to the pixel grid.
     pub fn line_px(&self) -> f32 {
-        self.size * self.line_height
+        (self.size * self.line_height).round()
     }
 }
 

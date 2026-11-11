@@ -197,6 +197,10 @@ it stands in the flow it takes no room. It is placed beside the node of a `NodeR
 point of the window, in its middle, centred a distance under its top (`Place::Top`) or over
 its bottom (`Place::Bottom`), or in its bottom right corner (`Place::BottomRight`).
 
+A box lays its children out as a grid with `.grid(columns)` (tracks of `quadra_layout`) or
+`.grid_fill(least)` (as many equal columns of at least that width as fit); a child spans
+columns with `.col_span(..)`.
+
 A box is taken out of the flow of the box around it with `.absolute()`, and placed against
 that box by `.left(..)`, `.top(..)`, `.right(..)` and `.bottom(..)`, each a constant or
 reactive: the knob of a slider. It is laid out alone when one of them changes. Pointer events reach the top overlay first; an

@@ -16,6 +16,10 @@ The rules for fallback, line breaking, wrapping, graphemes, cell widths, normali
 detection are those of behaviour/04 and carry over. Script, line-break and bidirectional analysis
 come from the backend.
 
+The height of a line is the style's multiple of the size, in whole pixels
+(`TextStyle::line_px`): lines of any size keep to the pixel grid, and the kit's 1.618 gives
+23 px for 14, 19 for 12, 16 for 10.
+
 As built for normalization (`normalize.rs`, tables from `tools/gen_nfc.py` for the Latin
 blocks, which hold every Vietnamese letter): `normalize_nfc` takes letters apart, puts their
 marks in canonical order and composes them again, so "e" with a circumflex and a dot below in

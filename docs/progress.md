@@ -5,7 +5,7 @@ Status per phase of specs/00-migration.md. Run everything with `tools/check.sh`.
 | Phase | Status | Evidence |
 |---|---|---|
 | R0 repository and toolchain | Done (2026-11-11) | `tools/check.sh` and `tools/check.sh prod` pass; `quadra-prim` (points, rects, edges, corners, colours, affine transforms) with its tests |
-| R1 vertical slice | In progress: 1 of 8 crates | See "R1" below |
+| R1 vertical slice | In progress: 2 of 8 crates | See "R1" below |
 | R2 interaction | Not started | |
 | R3 kit | Not started | |
 | R4 domain crates | Not started | |
@@ -18,7 +18,7 @@ On hold by the user's decision: `quadra-term`.
 | Crate | Status | Evidence |
 |---|---|---|
 | `quadra-reactive` | Done (2026-11-11) | 31 tests covering every item of specs/03 "Tests"; no `unsafe`; 93 ns per binding in the `grid` shape (docs/benchmarks.md) |
-| `quadra-layout` | Not started | |
+| `quadra-layout` | Flex done (2026-11-11); grid not started | 30 tests: the 16 flex cases of the V suite, the costs of a change as counters, 1,500 random changes each checked against a layout from scratch; 0.82 µs for a change in a list of 10,000 fixed-height rows (docs/benchmarks.md) |
 | `quadra-tree` | Not started | |
 | `quadra-text` with the fake backend | Not started | |
 | `quadra-render` with the null backend | Not started | |

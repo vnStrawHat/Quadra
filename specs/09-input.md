@@ -1,0 +1,125 @@
+# 09 — Input
+
+Events are dispatched over the retained tree. Nothing is prepared per frame for them.
+
+## Hit testing
+
+A pointer position finds its target by walking down:
+
+1. Root layers of the window from the top of the overlay stack to the main tree.
+2. In a layer, the point is mapped through the layer's inverse transform and tested against its
+   scissor.
+3. In a node, children are tested in reverse paint order, then the node itself: inside its
+   rect, inside its rounded clip if it clips, and `pointer_events` not `none`.
+
+The first node that accepts is the target. The cost is the depth of the tree times the children
+scanned at each level. A container with thousands of direct children that are not virtualized
+scans them all; that is a known ceiling, and such a container should be a virtual list.
+
+Hit testing uses layout rects and layer transforms, so it always agrees with what was drawn in
+the last frame, including scrolled and transformed content.
+
+## Dispatch
+
+The path is the target and its ancestors.
+
+- **Capture, then bubble**: handlers registered for capture run from the root down, then the
+  others from the target up. `e.stop()` ends it.
+- **Pointer capture**: a handler of pointer-down may call `e.capture_pointer()`. Moves and the
+  release then go to that node wherever the pointer is, until release or the node is removed.
+- **Click** is synthesized on release, for nodes on both the press path and the release path.
+  Double and triple clicks are counted by time and distance.
+- **Wheel** bubbles until a scroll container consumes it; what it cannot consume continues up.
+- Every dispatch runs in a batch (03). Handlers write signals; nothing is redrawn until the
+  frame.
+
+Handlers are closures on nodes (05). A node with no handler for an event kind is skipped.
+
+## Hover and press
+
+- After each pointer move, and after each frame that changed layout or scrolled, the hover path
+  is computed again. Nodes entering and leaving get `hovered` set or cleared and enter or leave
+  events.
+- Pointer-down sets `active` on the path; release clears it.
+- A state bit sets the `STYLE` flag only on a node that has a style variant for it (04). A
+  window of plain content costs nothing to hover over.
+- The cursor is the `cursor` style of the first node on the path that sets one.
+- Tooltips are overlays opened by the kit after a rest delay; the tree only reports hover.
+
+## Focus
+
+- A node is focusable when it sets `focusable` or a tab index. Focus is a `NodeId` per window.
+- Clicking focuses the deepest focusable node on the path. Tab and Shift+Tab move in tree order,
+  adjusted by tab index, inside the nearest **focus scope** (a dialog or menu traps focus).
+- `focused`, `focus_visible` (focus arrived by keyboard) and `focus_within` (on ancestors) are
+  state bits.
+- Focus moves emit focus and blur events and flag accessibility.
+- When the focused node is removed, focus goes to its nearest focusable ancestor, or to the
+  node its focus scope names as fallback.
+
+## Keys, contexts and actions
+
+Three steps for a key press:
+
+1. **IME and text**: if the focused node accepts text and the platform reports composition or
+   committed text, it gets text events (see IME).
+2. **Keymap**: the key, with pending keys of a chord, is matched against bindings. A binding
+   maps a keystroke sequence, in a context, to an action.
+3. **Raw key events**: key-down and key-up dispatch along the focus path, capture then bubble.
+
+**Contexts** are names on nodes (`.key_context("editor")`), interned at mount. The context of a
+dispatch is the list of names from the focused node to the root. A binding's context is a
+predicate over that list, so the deepest matching binding wins.
+
+**Actions** are Rust types:
+
+```rust
+#[derive(Clone, PartialEq)] pub struct Save;
+impl Action for Save { const NAME: &'static str = "file::save"; }
+```
+
+- Dispatch is by `TypeId`; `NAME` is what a user's keymap file and the command palette use.
+- `on_action::<Save>(..)` on a node handles it for that subtree. The action bubbles from the
+  focused node; window and app handlers come last.
+- An action can carry data and be built from a keymap entry's arguments.
+- Menus, the palette and buttons dispatch the same actions, so every command has one
+  implementation and its shortcut is shown from the keymap.
+
+The keymap is data: default bindings from the kit and the app, then the user's file. Bindings
+are checked when loaded; an unknown action name or a malformed keystroke is reported, not
+ignored.
+
+## IME
+
+The focused text input declares that it accepts text and gives its caret rectangle. The
+platform reports composition start, update (text, caret, clause ranges) and end, and committed
+text. The input shows the composition inside its paragraph (08) and places the candidate window
+from the caret. The Win32 details are those of behaviour/02.
+
+## Drag and drop
+
+- **Inside the app**: a node marked draggable starts a drag after the pointer moves past a
+  threshold with the button down. The payload is a typed value; the preview is an overlay that
+  follows the pointer (a layer translation, so moving it repaints nothing). Nodes that accept
+  the payload's type get `drop_target` while it is over them, and the drop event on release.
+- **From the OS**: files and text dropped on the window arrive as drop events with the same
+  targeting.
+
+## Semantic actions
+
+Assistive technology and tests act through semantic actions (12): click, focus, set value,
+toggle, expand, scroll into view. They are dispatched to the node's widget as events of their
+own kind, not as synthetic pointer events, so they work on nodes that are covered or outside
+the viewport.
+
+## Events while the tree is changing
+
+Dispatch reads the tree as it is. A handler may remove nodes, including itself: removal is
+deferred to the end of the dispatch, so the path being walked stays valid. Pointer capture and
+focus are fixed up then (04).
+
+## Tests
+
+Dispatch order (capture, bubble, stop); capture across moves; click only when press and release
+share a node; hover enter and leave on scroll without a pointer move; focus order and traps;
+chords and context precedence; an action reaching the right handler; removal during dispatch.

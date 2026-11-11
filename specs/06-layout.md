@@ -1,0 +1,139 @@
+# 06 — Layout
+
+Layout is Quadra's own engine (01, R8). Its results stay on the nodes; a change lays out the
+changed node and climbs only as far as the change is felt.
+
+## Model
+
+- Sizes are in logical pixels (`f32`). Device pixels appear only at paint (07).
+- A node's rect is relative to its parent's border box. A scroll offset is not part of any
+  rect: it is the transform of the scroll content's layer (07).
+- The style values are those of behaviour/05 ("Style"), unchanged: flex with wrap and gaps; grid
+  with tracks in pixels, percentages, fractions, `auto`, `min_content`, `max_content`,
+  `minmax`, `repeat`, `repeat_fill`, placement by line, span or named area; absolute children
+  with insets; lengths as pixels, percentages, `auto` or `fill`. Not supported: subgrid,
+  masonry, baseline alignment, `order`.
+- Leaves with content (text, image, a custom widget) report an intrinsic size through
+  `Widget::measure` (04).
+
+## The engine
+
+`quadra-layout` depends on `quadra-prim` only. It holds the layout part of every node in its
+own dense arena (style, children, answers, rect, content size), indexed by the tree's node
+slot. The tree passes a measurer for leaves when it runs a layout:
+
+```rust
+pub trait Measure {
+    fn measure(&mut self, node: LayoutId, known: Size<Option<f32>>, avail: Size<Avail>) -> Size;
+}
+```
+
+### Requests and answers
+
+A parent asks a child a **request**: per axis, a definite size or a limit (a length,
+min-content, max-content, unbounded); and whether to **measure** (report a size) or **perform**
+(also place the children). The child gives an **answer**: its size and content size.
+
+- A node keeps its last four answers with their requests, and which one was its last perform.
+  A flex container asks a child for its base size, then its cross size at the final main size,
+  then performs it; nested containers repeat that, hence four.
+- A node's layout depends only on its own style and its children's answers. So a node whose
+  style and whose children's answers did not change leaves its parent's layout as it was.
+
+This is the idea the V engine was built on, and the part that carries over.
+
+### What a change costs
+
+A node flagged `LAYOUT` (a layout style value, its children, or a leaf's content changed)
+forgets its answers. The layout pass then, for each flagged node, deepest first:
+
+1. Asks the node again every request it had answered, the perform last.
+2. **The answers are the same**: stop. Only the node's subtree was laid out, and the node keeps
+   its rect. Nothing above it runs.
+3. **An answer differs**: the parent forgets its own answers and is asked its old requests
+   again. Its other children answer from their caches. Repeat from step 2 with the parent.
+
+The **layout boundary** is the first ancestor that answers as before. No static rule declares
+it: a node with a definite size, a scroll container, or one its parent stretches to an
+unchanged size answers the same whatever its content, so the climb ends there by itself.
+
+Details that keep it exact:
+
+- A node already laid out by another node's climb in this pass is skipped.
+- **Position only**: a perform at the same request on a node with nothing changed below
+  returns at once. The rects under it still hold; its parent sets its rect.
+- A node that was measured at another request since its last perform performs again, because
+  a leaf may keep the state of the last measure (a text wrap at that width).
+- The perform answer is never the one evicted from the cache. A node that lost an answer its
+  parent had been given counts as changed.
+- A node with no old answers (just mounted) makes its parent the starting point.
+- When the climbs of one pass reach more children than the tree has nodes (many rows of a long
+  list changed height at once), the pass switches to one full layout from the root.
+
+What does **not** carry over from the V engine: recycling nodes of a rebuilt subtree, replacing
+an old subtree by a fresh one, owners, epochs, placements that become void. They existed
+because every render built new nodes. Here nodes persist, and a change is a flag on a node.
+
+### Measuring leaves
+
+- A text node measures from its retained paragraph (08): shaping is reused, wrapping at a new
+  width uses cached advances.
+- A leaf whose content did not change and whose request is in its cache is never measured.
+
+## Scrolling
+
+- A scroll container has a viewport (its own rect) and content (its children's extent). The
+  content is a layer; the scroll offset is that layer's translation.
+- Scrolling sets `COMPOSE` on the layer. It does not flag layout or paint, unless a virtual
+  list must realize rows.
+- Offsets are clamped in the compose pass and rounded to whole device pixels, so glyphs keep
+  their subpixel positions while scrolling.
+- `scroll_into_view`, anchoring (keep the first visible item in place when content above it
+  changes size) and momentum are behaviours of the scroll widget.
+- `position: sticky` children are placed in the compose pass from the offset.
+
+## Virtual lists
+
+A virtual list places its own rows (`Widget::layout`) and answers its parent from its style
+alone, so it is always a boundary:
+
+- From its size, the scroll offset and the known or estimated heights it computes the row range
+  to show, plus an overscan margin.
+- It mounts or recycles rows for indexes entering the range (05), lays each out at the list's
+  width, and positions them.
+- It reports its content extent from measured and estimated heights.
+- Mounting during layout flags the update pass for the new rows' bindings; the frame repeats
+  from there once (02).
+
+## Overlays
+
+Overlay roots are laid out after the main tree, in stack order:
+
+- Available size is the window.
+- An anchored overlay is placed against its anchor's rect in window coordinates: preferred
+  side, alignment, offset, then flipped or shifted to stay inside the window.
+- An overlay whose anchor moved is placed again in the compose pass if only its position
+  changes, in the layout pass if its available size does.
+
+## Rounding
+
+Layout results are not rounded. Paint snaps edges to device pixels (07), so a fractional layout
+never produces a blurred edge or a seam, and layout results do not depend on the display scale.
+
+## Resize and scale
+
+- A window resize asks the root a new request. Every node whose request is unchanged answers
+  from its cache.
+- A scale change keeps layout (logical pixels are unchanged) and flags paint for the window,
+  because snapping and glyph sizes depend on scale.
+
+## Tests
+
+- **Conformance**: the flex and grid cases of the V suite, ported as data (style tree in,
+  rects out).
+- **The check**: `verify` lays a copy of the tree out from scratch and compares every rect with
+  the incremental result. The whole test suite runs with it on.
+- **Counters**: for every structural budget of 14 there is a test asserting how many nodes were
+  asked and how many were measured.
+- **Randomized**: seeded sequences of style changes, insertions and removals, each step
+  checked with `verify`.

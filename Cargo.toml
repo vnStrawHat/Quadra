@@ -1,0 +1,19 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+license = "MIT"
+publish = false
+
+# specs/01, R16: every crate inherits this except the two that hold OS code.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+# Less debug info: smaller build output on a machine with little disk (specs/00). Release
+# settings are fixed with measurements in phase R1.
+[profile.dev]
+debug = "line-tables-only"

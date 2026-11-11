@@ -9,6 +9,7 @@ use std::rc::Rc;
 
 use quadra_reactive::{Deferred, deferred};
 
+use crate::action::Action;
 use crate::node::{NodeId, PaintStyle};
 use crate::style::Patch;
 use crate::tree::Tree;
@@ -67,6 +68,14 @@ impl Handle {
     pub fn each_frame(&self, f: impl FnMut() -> bool + 'static) {
         self.0.frames.borrow_mut().push(Box::new(f));
         self.0.wake.set(true);
+    }
+
+    /// Dispatches an action in the tree's next update pass, as a key binding would: what a
+    /// button or a menu item does for its command.
+    pub fn dispatch<A: Action>(&self, action: A) {
+        self.with(move |tree| {
+            tree.dispatch(&action);
+        });
     }
 
     /// Runs `f` on the tree in its next update pass.

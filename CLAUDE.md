@@ -94,8 +94,8 @@ bench's counter counts real clicks. Styles have state variants (`.hover(..)`, `.
 `Patch` and `State` in `quadra-tree/src/style.rs`); tokens and themes are R3. The wheel
 scrolls `scroll` and `uniform_list`, nested ones included. Focus and keys are in
 (`quadra-tree/src/focus.rs`: press to focus, Tab inside a focus scope, the ring, keys along
-the focus path, `NodeRef::focus`). Next, in this order: actions, contexts and the keymap
-(specs/09; Tab then becomes a binding), text input and IME, overlays, semantics (specs/12), rows of different heights.
+the focus path, `NodeRef::focus`), and so are actions and the keymap (`action.rs`,
+`keymap.rs`; `App::keymap`; Tab is a binding). Next, in this order: text input and IME, overlays, semantics (specs/12), rows of different heights.
 `quadra-async` (specs/11) when the first thing needs a timer or a task.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its

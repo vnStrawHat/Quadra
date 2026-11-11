@@ -151,3 +151,36 @@ fn pointer_events_of_a_window_reach_the_handlers_of_its_view() {
     assert!(platform.step(&mut app)); // delivered,
     assert_eq!(app.renderer.stats().frames, frames + 1); // and nothing to draw
 }
+
+#[test]
+fn the_apps_keymap_turns_keys_into_actions_in_every_window() {
+    use quadra_platform::{Key, Mods};
+    use quadra_tree::{Action, Keymap};
+    use quadra_ui::div;
+
+    struct Add(i32);
+    impl Action for Add {
+        const NAME: &'static str = "count::add";
+    }
+
+    let platform = HeadlessPlatform::new();
+    let mut keymap = Keymap::new();
+    keymap.bind("ctrl-equal", Add(1)).unwrap();
+    keymap.bind("ctrl-k ctrl-minus", Add(-10)).unwrap();
+    let mut app = app(&platform).keymap(keymap);
+    let count = signal(0);
+    let view = move || div().on_action::<Add>(move |add| count.update(|n| *n += add.0)).child(text("keys"));
+    let (first, second) = (
+        app.open_window(WindowOptions::new("a"), view).unwrap(),
+        app.open_window(WindowOptions::new("b"), view).unwrap(),
+    );
+    let key = |key, down| PlatformEvent::Key { key, code: 0, mods: Mods::CTRL, down, repeat: false };
+    for (window, keys) in [(first, vec![Key::Equal]), (second, vec![Key::K, Key::Minus])] {
+        for k in keys {
+            platform.push(window, key(k, true));
+            platform.push(window, key(k, false));
+        }
+    }
+    platform.step(&mut app);
+    assert_eq!(count.get_untracked(), -9);
+}

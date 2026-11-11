@@ -18,7 +18,7 @@ use quadra_prim::Color;
 use quadra_reactive::{Scope, batch};
 use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
-use quadra_tree::{Fonts, PointerInput, Tree};
+use quadra_tree::{Fonts, Keymap, PointerInput, Tree};
 use quadra_ui::{View, mount_with};
 
 pub use report::{AppError, FrameReport, Result};
@@ -43,6 +43,8 @@ pub struct App<R: Renderer> {
     /// The scope of everything the app creates.
     root: Scope,
     clear: Color,
+    /// The key bindings every window of the app uses.
+    keymap: Rc<Keymap>,
     on_error: Box<dyn FnMut(&AppError)>,
     on_presented: Option<FrameHook>,
 }
@@ -57,6 +59,7 @@ impl<R: Renderer> App<R> {
             windows: Vec::new(),
             root: Scope::child(),
             clear: Color::WHITE,
+            keymap: Rc::new(Keymap::default()),
             on_error: Box::new(|e| eprintln!("quadra: {e}")),
             on_presented: None,
         }
@@ -65,6 +68,16 @@ impl<R: Renderer> App<R> {
     /// The colour under everything a window draws.
     pub fn clear_color(mut self, color: Color) -> App<R> {
         self.clear = color;
+        self
+    }
+
+    /// The app's key bindings: its defaults, then the user's (specs/09). Windows opened
+    /// before and after use them.
+    pub fn keymap(mut self, keymap: Keymap) -> App<R> {
+        self.keymap = Rc::new(keymap);
+        for w in &mut self.windows {
+            w.tree.set_keymap(self.keymap.clone());
+        }
         self
     }
 
@@ -101,6 +114,7 @@ impl<R: Renderer> App<R> {
         let surface = self.renderer.create_surface(target, device_size(&*window))?;
         let scope = self.root.run(Scope::child);
         let mut tree = Tree::new(self.fonts.clone());
+        tree.set_keymap(self.keymap.clone());
         scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();

@@ -97,6 +97,21 @@ The keymap is data: default bindings from the kit and the app, then the user's f
 are checked when loaded; an unknown action name or a malformed keystroke is reported, not
 ignored.
 
+How a key press is decided:
+
+- A keystroke is written `ctrl-shift-p`, `f5`, `alt-enter`; a binding may be a sequence
+  (`ctrl-k ctrl-c`). While a sequence is being typed its keys are taken; a key that continues
+  no binding drops the sequence and is an ordinary key. A modifier pressed on its way to a
+  keystroke is not one.
+- Among the bindings a keystroke completes, the one whose context is nearest the focus wins;
+  of equals, the one added last, so a user's binding replaces a default.
+- The action goes from the focused node up to the first node with a handler for its type. If
+  none has one the tree handles the actions it knows (moving the focus: Tab and Shift+Tab
+  are bindings to `FocusNext` and `FocusPrevious`); if it knows none, the key is not consumed
+  and goes on as a raw key event.
+- `Tree::dispatch` and `Handle::dispatch` send an action the same way without a key: what a
+  button, a menu item or the palette does.
+
 ## IME
 
 The focused text input declares that it accepts text and gives its caret rectangle. The

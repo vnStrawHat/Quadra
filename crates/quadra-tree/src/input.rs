@@ -1,6 +1,7 @@
 //! Pointer input (specs/09): the event a handler gets, handlers on nodes, and hit testing over
 //! the tree as it was laid out. Nothing is prepared per frame for it.
 
+use std::any::{Any, TypeId};
 use std::time::Instant;
 
 use quadra_layout::{Display, Overflow};
@@ -62,6 +63,8 @@ impl PointerEvent {
     }
 }
 
+type ActionFn = Box<dyn FnMut(&dyn Any)>;
+
 /// What a node does when events reach it. `capture`: on the way down from the root, before
 /// the handlers on the way up.
 pub(crate) enum Handler {
@@ -77,6 +80,11 @@ pub(crate) enum Handler {
     },
     /// Focus came to the node (true) or left it.
     Focus(Box<dyn FnMut(bool)>),
+    /// An action of a type reached the node.
+    Action {
+        of: TypeId,
+        run: ActionFn,
+    },
 }
 
 /// What the tree remembers of the pointer between events.

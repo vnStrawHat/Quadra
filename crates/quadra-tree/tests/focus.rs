@@ -121,10 +121,13 @@ fn tab_walks_the_tree_and_comes_round_and_shows_the_ring() {
     p.w.tree.focus(p.email);
     p.press(Key::Tab, Mods::NONE);
     assert_eq!(p.w.tree.focused(), Some(p.form));
-    // A handler that stops Tab keeps the focus where it is.
-    p.w.tree.on_key(p.form, true, |e| e.stop());
+    // Tab is a binding of the keymap: a node that handles its action keeps the focus (a text
+    // area that takes Tab as a character does this).
+    p.w.tree.on_action::<quadra_tree::FocusNext>(p.form, |_| {});
     p.press(Key::Tab, Mods::NONE);
     assert_eq!(p.w.tree.focused(), Some(p.form));
+    p.press(Key::Tab, Mods::SHIFT); // the other action is not handled: the tree moves the focus
+    assert_eq!(p.w.tree.focused(), Some(p.email));
 }
 
 #[test]

@@ -68,7 +68,7 @@ impl Tree {
         node.generation = node.generation.wrapping_add(1);
         node.widget = None;
         node.handlers = Vec::new();
-        (node.focusable, node.focus_scope) = (false, false);
+        (node.focusable, node.focus_scope, node.key_context) = (false, false, None);
         (node.state, node.styled) = (crate::State::NONE, None);
         self.sizes.remove(&id.index);
         if let Some(state) = node.layer.take().filter(|s| s.id != self.root_layer) {

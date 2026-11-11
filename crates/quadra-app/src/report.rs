@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use quadra_platform::{PlatformError, WindowId};
 use quadra_render::{RenderError, RenderStats};
-use quadra_tree::{FrameStats, PassTimes};
+use quadra_tree::{FrameStats, KeymapError, PassTimes};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AppError {
@@ -13,6 +13,8 @@ pub enum AppError {
     Render(RenderError),
     /// The text backend could not start, in its own words.
     Text(String),
+    /// A key binding that could not be read.
+    Keymap(KeymapError),
 }
 
 impl fmt::Display for AppError {
@@ -21,6 +23,7 @@ impl fmt::Display for AppError {
             AppError::Platform(e) => e.fmt(f),
             AppError::Render(e) => e.fmt(f),
             AppError::Text(what) => write!(f, "the text backend failed: {what}"),
+            AppError::Keymap(e) => e.fmt(f),
         }
     }
 }
@@ -30,6 +33,12 @@ impl std::error::Error for AppError {}
 impl From<PlatformError> for AppError {
     fn from(e: PlatformError) -> AppError {
         AppError::Platform(e)
+    }
+}
+
+impl From<KeymapError> for AppError {
+    fn from(e: KeymapError) -> AppError {
+        AppError::Keymap(e)
     }
 }
 

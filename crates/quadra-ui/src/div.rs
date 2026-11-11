@@ -3,7 +3,7 @@
 use quadra_layout::{Align, Direction, Justify, Length, Overflow};
 use quadra_platform::MouseButton;
 use quadra_prim::Color;
-use quadra_tree::{Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Tree};
+use quadra_tree::{Action, Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Tree};
 
 use crate::node_ref::NodeRef;
 
@@ -175,6 +175,18 @@ impl Div {
     /// Runs `f` with true when the focus comes to the box, and with false when it leaves.
     pub fn on_focus(self, f: impl FnMut(bool) + 'static) -> Self {
         self.on_mount(move |tree, id| tree.on_focus(id, f))
+    }
+
+    /// Runs `f` when an action of type `A` reaches the box: the focus is on it or in it, and
+    /// nothing nearer the focus handled the action (specs/09).
+    pub fn on_action<A: Action>(self, f: impl FnMut(&A) + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_action::<A>(id, f))
+    }
+
+    /// Names the box as a context of key bindings: those made for it apply while the focus is
+    /// in the box.
+    pub fn key_context(self, context: &'static str) -> Self {
+        self.on_mount(move |tree, id| tree.set_key_context(id, context))
     }
 
     /// Lets the box have the focus: a click on it focuses it, and Tab stops at it.

@@ -9,6 +9,7 @@ use quadra_prim::{Point, Rect, Size};
 use quadra_reactive::{Signal, signal};
 use quadra_render::{Instance, LayerId, Scene};
 
+use crate::action::Keys;
 use crate::fonts::Fonts;
 use crate::frame::{FrameStats, PassTimes};
 use crate::input::InputState;
@@ -52,6 +53,8 @@ pub struct Tree {
     pub(crate) active: bool,
     /// The focus came by the keyboard: it shows its ring.
     pub(crate) focus_ring: bool,
+    /// The keymap, and the keys of a sequence typed so far.
+    pub(crate) keys: Keys,
     /// Layers waiting to be painted, during the paint pass.
     pub(crate) todo: Vec<NodeId>,
     /// By node index: the signal that follows the node's size (`Tree::size_signal`).
@@ -93,6 +96,7 @@ impl Tree {
             focus: None,
             active: true,
             focus_ring: false,
+            keys: Keys::default(),
             todo: Vec::new(),
             sizes: HashMap::new(),
             stats: FrameStats::default(),
@@ -152,6 +156,7 @@ impl Tree {
             handlers: Vec::new(),
             focusable: false,
             focus_scope: false,
+            key_context: None,
             state: State::NONE,
             styled: None,
         };

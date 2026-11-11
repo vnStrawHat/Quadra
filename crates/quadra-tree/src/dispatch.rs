@@ -44,7 +44,7 @@ impl Tree {
                 PointerInput::Move => {
                     self.rehover();
                     if let Some(target) = self.input.capture.or_else(|| self.hit_test(at)) {
-                        self.dispatch(PointerKind::Move, target, button, 0);
+                        self.dispatch_pointer(PointerKind::Move, target, button, 0);
                     }
                 }
                 PointerInput::Down => {
@@ -54,7 +54,7 @@ impl Tree {
                     self.set_states(State::ACTIVE, true);
                     let path = self.input.pressed.clone();
                     self.focus_on_press(&path);
-                    self.input.capture = self.dispatch(PointerKind::Down, target, button, 0).captured;
+                    self.input.capture = self.dispatch_pointer(PointerKind::Down, target, button, 0).captured;
                 }
                 PointerInput::Up => self.release(button, at, now),
             }
@@ -80,7 +80,7 @@ impl Tree {
         self.set_states(State::ACTIVE, false);
         let pressed = std::mem::take(&mut self.input.pressed);
         if let Some(target) = self.input.capture.take().or(under) {
-            self.dispatch(PointerKind::Up, target, button, 0);
+            self.dispatch_pointer(PointerKind::Up, target, button, 0);
         }
         // A click belongs to the deepest node that both the press and the release were on.
         let shared =
@@ -94,14 +94,14 @@ impl Tree {
             });
             let clicks = again.map_or(1, |(.., count)| count.saturating_add(1));
             self.input.last_click = Some((now, at, button, clicks));
-            self.dispatch(PointerKind::Click, target, button, clicks);
+            self.dispatch_pointer(PointerKind::Click, target, button, clicks);
         }
         self.rehover(); // the capture is over: what is under the pointer may be something else
     }
 
     /// Runs the handlers of a kind along the path of `target`: from the root down those that
     /// capture, then from the target up the others, until one stops it.
-    fn dispatch(
+    fn dispatch_pointer(
         &mut self,
         kind: PointerKind,
         target: NodeId,

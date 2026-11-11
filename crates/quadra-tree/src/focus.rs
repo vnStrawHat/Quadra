@@ -7,6 +7,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::batch;
 
 use crate::input::Handler;
+use crate::keymap::Keystroke;
 use crate::node::NodeId;
 use crate::style::State;
 use crate::tree::Tree;
@@ -29,8 +30,7 @@ pub struct KeyEvent {
 }
 
 impl KeyEvent {
-    /// Ends the dispatch: no handler after this one runs, and the key does nothing more (Tab
-    /// does not move the focus).
+    /// Ends the dispatch: no handler after this one runs.
     pub fn stop(&mut self) {
         self.stopped = true;
     }
@@ -147,11 +147,17 @@ impl Tree {
         batch(|| self.set_focus(to, false));
     }
 
-    /// Takes a key event of the window: it goes down the path to the focused node (or the
-    /// root) and back up. A Tab press nobody stopped moves the focus.
+    /// Takes a key event of the window. A press is first looked up in the keymap: an action
+    /// that something handles, or the start of a key sequence, is all the key does. Otherwise
+    /// the key goes down the path to the focused node (or the root) and back up.
     pub fn key(&mut self, key: Key, code: u32, mods: Mods, down: bool, repeat: bool) {
         let Some(target) = self.focus.filter(|&id| self.is_alive(id)).or(self.root) else { return };
         batch(|| {
+            // A modifier pressed on its way to a keystroke is not one itself.
+            let modifier = matches!(key, Key::Shift | Key::Ctrl | Key::Alt | Key::Super);
+            if down && !modifier && self.key_binding(Keystroke { key, mods }, target) {
+                return;
+            }
             let mut event = KeyEvent { key, code, mods, down, repeat, target, node: target, stopped: false };
             let path = self.path(target);
             'walk: for capture in [true, false] {
@@ -171,16 +177,6 @@ impl Tree {
                         break 'walk;
                     }
                 }
-            }
-            // ponytail: Tab is wired here; it becomes a binding of the default keymap when
-            // the keymap is in (specs/09, "Keys, contexts and actions").
-            if down
-                && key == Key::Tab
-                && !event.stopped
-                && !mods.contains(Mods::CTRL)
-                && !mods.contains(Mods::ALT)
-            {
-                self.focus_next(mods.contains(Mods::SHIFT));
             }
         });
     }

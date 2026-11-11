@@ -4,11 +4,13 @@
 //! This crate joins the reactive runtime (bindings queue writes), the layout tree (rects kept
 //! on nodes), paragraphs (text nodes) and layers (painted output kept and patched).
 
+mod action;
 mod dispatch;
 mod focus;
 mod fonts;
 mod frame;
 mod input;
+mod keymap;
 mod layers;
 mod node;
 mod paint;
@@ -20,11 +22,13 @@ mod tree;
 mod verify;
 mod widget;
 
+pub use action::{Action, FocusNext, FocusPrevious};
 pub use dispatch::PointerInput;
 pub use focus::KeyEvent;
 pub use fonts::{Fonts, GlyphKey, GlyphMeta, GlyphTile, SUBPIXEL_STEPS};
 pub use frame::{FrameStats, PassTimes};
 pub use input::{PointerEvent, PointerKind};
+pub use keymap::{Keymap, KeymapError, Keystroke};
 pub use node::{NodeId, PaintStyle, Style};
 pub use shared::Handle;
 pub use style::{Patch, State};

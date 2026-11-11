@@ -136,14 +136,15 @@ fn a_form_is_walked_with_tab_and_its_fields_hear_keys() {
     h.key(Key::Tab, Mods::NONE);
     h.key(Key::X, Mods::NONE);
     let (stats, _) = h.frame();
-    // The Tab went to the root, where the focus was not yet; the X to the field. One node
-    // was styled: the field shows its ring.
+    // The X went to the field the Tab had focused. One node was styled: it shows its ring.
     assert_eq!((typed.get_untracked().as_str(), stats.nodes_styled), ("a:X ", 1));
     assert_eq!(h.tree.paint_style(nodes[0]).border_color, ring);
     h.key(Key::Tab, Mods::NONE); // past the box that cannot have the focus
     h.key(Key::Y, Mods::NONE);
     h.frame();
-    assert_eq!(typed.get_untracked(), "a:X a:Tab b:Y "); // a key is heard where the focus is
+    // A key is heard where the focus is. The second Tab was not a key at all: the keymap
+    // made it the action that moves the focus.
+    assert_eq!(typed.get_untracked(), "a:X b:Y ");
     assert_eq!(
         (h.tree.focused(), h.tree.paint_style(nodes[0]).border_color),
         (Some(nodes[2]), Color::default())

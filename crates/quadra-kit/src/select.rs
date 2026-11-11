@@ -77,7 +77,7 @@ impl View for Select {
             let on = chosen.get_untracked();
             let item = |(i, name): (usize, &String)| {
                 let item = MenuItem::new(name.clone()).on_select(move || chosen.set(i));
-                if i == on { item.checked(true).icon(icons::CHECK) } else { item }
+                if i == on { item.checked(true).quiet() } else { item }
             };
             options.iter().enumerate().map(item).collect()
         };

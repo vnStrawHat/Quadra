@@ -41,6 +41,7 @@ mod toggle;
 pub mod token;
 mod tooltip;
 mod tree;
+pub mod work;
 
 pub use accordion::{Accordion, accordion};
 pub use action::keymap;
@@ -60,7 +61,10 @@ pub use hover_card::{HoverCard, hover_card};
 pub use icon::icon;
 pub use input::{Input, input};
 pub use list::{List, list};
-pub use menu::{ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_button, menubar, popover_button};
+pub use menu::{
+    ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_button, menu_icon_button, menubar,
+    popover_button,
+};
 pub use notes::{alert, description_list, empty_state};
 pub use notice::{Notice, Notices, notices};
 pub use number::{NumberInput, number_input};

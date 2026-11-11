@@ -335,6 +335,31 @@ As built so far:
   (`common.rs`). The pages are those of the V gallery, ported as their components land,
   and compared with its screenshots (12, "Snapshots").
 
+## The workbench
+
+What the window of a tool is made of around its content (behaviour/16) is `quadra_kit::work`:
+an app that is not a workbench does not name it.
+
+- `activity_bar(active, [Activity::new(id, icon, title).badge(|| count), ..]).footer([..])`
+  is the leftmost column, 40 px wide with its line: a tool is 40 px high, a ghost icon of
+  28 px, in the accent while `active` holds its id (a click writes it), its title in a
+  tooltip at its right. A count stands in the corner of the icon while it is not zero, "99+"
+  over ninety-nine. The footer's tools are kept at the bottom.
+- `panel_header(title)` is the title strip of a panel: 28 px on the panel's plane over a
+  line, the title muted; what is added to it stands at its end (icon buttons of 18 px).
+- `tab_strip(tabs, active)` shows the open views of a pane: 32 px on the plane of tabs. The
+  tabs are a signal of `Tab`s (`Tab::new(id, title).icon(..).dirty(..)`) and `active` holds
+  the id of the one that shows. A tab has a dot while it is dirty, its icon, its title, and,
+  when the strip was told how to close (`.on_close(|id| ..)`), a cross that shows under the
+  pointer; a click with the middle button closes too. The active tab stands on the canvas
+  with no line under it, so it joins what it shows; the seams between tabs are on the side
+  away from it. A press chooses a tab; dragged 4 px, it takes the place of the tab the
+  pointer is over (the strip writes the new order to `tabs`). The strip scrolls sideways
+  under the wheel (06, "Scrolling"), and a list at its end names every tab, the active one
+  checked. `.action(view)` puts something before that list.
+- Not yet: a tab's own menu and renaming, limits on a tab's width with an ellipsis, the pane
+  tree and docking.
+
 ## Overlays in the kit
 
 Popover, menu, context menu, tooltip, select, combobox, dialog, drawer, toast and the command
@@ -357,12 +382,11 @@ the popup closes the focus goes back to what had it.
   chooses (key context `action::MENU`). Rows are 23 px, 4 px in from the edge, with 6 px
   beside and between their parts; the shortcut stands at the right end, 16 px from the label
   at least. An icon column is there only when a row has an icon or a check; icons are in the
-  second text colour, and a row that is on shows a check in the accent unless it has an icon
-  of its own. `.danger()` puts the label of a row that destroys something in the colour of
+  second text colour, and a row that is on shows a check in the accent in place of its icon. `.danger()` puts the label of a row that destroys something in the colour of
   errors.
 - `select(options, chosen)`: a filled button that shows the chosen option, and a menu of the
-  options, as wide as the button at least, with a quiet check before the chosen one (no room
-  is kept for it while none is chosen).
+  options, as wide as the button at least, with a check in the second text colour before the
+  chosen one (no room is kept for it while none is chosen).
 - `menu_button(label, || items)` takes `.icon(body)`, `.variant(..)`, `.size(..)` and
   `.test_id(..)` for its face. `popover_button(label, || content)` is the same button (in
   the default variant) over a popover, with the content 12 px in from its edge.

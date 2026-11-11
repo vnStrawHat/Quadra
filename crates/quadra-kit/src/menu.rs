@@ -13,7 +13,7 @@ use quadra_tree::{NodeId, PointerKind};
 use quadra_ui::{AnyView, Div, MountCx, NodeRef, Place, View, div, row};
 
 pub(crate) use self::rows::{Ends, rows};
-use crate::button::{Button, Size, Variant, button};
+use crate::button::{Button, Size, Variant, button, icon_button};
 use crate::popup::{open_now, popover};
 use crate::token;
 
@@ -26,6 +26,8 @@ pub struct MenuItem {
     checked: Option<bool>,
     disabled: bool,
     danger: bool,
+    /// Its check is in the second text colour: the chosen option of a select.
+    quiet: bool,
     separator: bool,
     heading: bool,
     /// The rows of the menu the row opens beside itself.
@@ -67,7 +69,7 @@ impl MenuItem {
         self
     }
 
-    /// A row that is on or off: it shows a check while on, unless it has an icon of its own.
+    /// A row that is on or off: it shows a check while on, in place of its icon.
     pub fn checked(mut self, on: bool) -> Self {
         self.checked = Some(on);
         self
@@ -87,6 +89,11 @@ impl MenuItem {
     /// What choosing the row does, before the menu closes.
     pub fn on_select(mut self, f: impl Fn() + 'static) -> Self {
         self.select = Some(Rc::new(f));
+        self
+    }
+
+    pub(crate) fn quiet(mut self) -> Self {
+        self.quiet = true;
         self
     }
 
@@ -160,6 +167,16 @@ pub fn menu_button(label: impl Into<String>, items: impl Fn() -> Vec<MenuItem> +
         AnyView::new(menu(open, opener, move || items()))
     };
     MenuButton { face: button(label.into()).variant(Variant::Ghost), under: Rc::new(under) }
+}
+
+/// A ghost button that is only an icon, and opens a menu under itself. `name` is what a
+/// reader calls it.
+pub fn menu_icon_button(
+    body: &'static str,
+    name: &'static str,
+    items: impl Fn() -> Vec<MenuItem> + 'static,
+) -> MenuButton {
+    MenuButton { face: icon_button(body, name), ..menu_button("", items) }
 }
 
 /// A button that opens a popover under itself, with what `content` builds each time, 12 px

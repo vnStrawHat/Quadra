@@ -47,6 +47,8 @@ impl LayoutTree {
             (scrolls(s.overflow_y), scrolls(s.overflow_x))
         };
         let stretch_into = if !s.wrap && !clips_cross { inner_cross } else { None };
+        // What a row that scrolls sideways holds is measured with all the width it asks for.
+        let avail_w = if row && scroll_main { f32::INFINITY } else { avail_w };
         let ax = Axes { row, inner_w, inner_h, avail_w, avail_h, stretch_into };
 
         // Taken, not copied: layout never adds nodes or changes child lists. Items and lines

@@ -21,12 +21,13 @@ pub struct Tooltip<V> {
     tip: String,
     keys: Option<String>,
     meta: Option<String>,
+    side: Side,
     of: V,
 }
 
 /// Gives a view a tooltip: `tip` shows above it once the pointer has rested on it.
 pub fn tooltip<V: View + 'static>(tip: impl Into<String>, of: V) -> Tooltip<V> {
-    Tooltip { tip: tip.into(), keys: None, meta: None, of }
+    Tooltip { tip: tip.into(), keys: None, meta: None, side: Side::Above, of }
 }
 
 impl<V> Tooltip<V> {
@@ -38,6 +39,13 @@ impl<V> Tooltip<V> {
 }
 
 impl<V> Tooltip<V> {
+    /// The side of the view the tooltip shows on: at the right of what stands in a column
+    /// at the edge of the window.
+    pub fn side(mut self, side: Side) -> Self {
+        self.side = side;
+        self
+    }
+
     /// A line under the text that says more, smaller and muted.
     pub fn meta(mut self, words: impl Into<String>) -> Self {
         self.meta = Some(words.into());
@@ -71,7 +79,7 @@ impl<V: View + 'static> View for Tooltip<V> {
 
         // The bubble is an overlay opened by hand, above the view and centred on it.
         let words = (self.tip, self.keys, self.meta);
-        let anchor = Anchor::Beside { node: of, side: Side::Above, along: Along::Center, gap: 6.0 };
+        let anchor = Anchor::Beside { node: of, side: self.side, along: Along::Center, gap: 6.0 };
         hang(cx, of, shown, anchor, move || {
             let line = row().gap(16.0).padding_x(8.0).padding_y(4.0).child(text(words.0.clone()));
             let line = match &words.1 {

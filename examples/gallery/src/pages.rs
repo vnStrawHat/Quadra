@@ -9,3 +9,4 @@ pub mod layout;
 pub mod navigation;
 pub mod overlays;
 pub mod overview;
+pub mod workbench;

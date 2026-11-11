@@ -1,4 +1,5 @@
-//! The scroll view: content of any size behind a viewport (specs/06, "Scrolling").
+//! The scroll view: content of any size behind a viewport (specs/06, "Scrolling"), and the
+//! strip, a row that scrolls sideways.
 
 use quadra_layout::{Direction, Overflow};
 use quadra_prim::{Point, Rect};
@@ -65,6 +66,45 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
         cx.handle.bind(move || {
             let y = top.get();
             writer.with(move |tree| tree.set_layer_offset(content, Point::new(0.0, -y)));
+        });
+    };
+    Region::new(div().grow(1.0), bind)
+}
+
+/// Shows a row of things behind a viewport, scrolled sideways by `scroll_x` pixels (kept
+/// between zero and the end): a strip of tabs. The wheel scrolls it, turned either way, and
+/// it has no scrollbar. The content is as wide as the strip at least.
+// ponytail: no scrollbar and nothing brought into view; a sideways scroll view with both
+// when a wide table or a block of code needs one.
+pub fn scroll_strip<V: View + 'static>(scroll_x: Signal<f32>, content: V) -> Region {
+    let bind = move |viewport: NodeId, cx: &mut MountCx| {
+        let scrolls = quadra_layout::Style {
+            direction: Direction::Row,
+            overflow_x: Overflow::Scroll,
+            ..cx.tree.layout_style(viewport).clone()
+        };
+        cx.tree.set_layout_style(viewport, scrolls);
+        let content = content.mount(cx);
+        let fills = quadra_layout::Style { grow: 1.0, shrink: 0.0, ..cx.tree.layout_style(content).clone() };
+        cx.tree.set_layout_style(content, fills);
+        cx.tree.make_layer(content, true);
+        let (outer, inner) = (cx.tree.size_signal(viewport), cx.tree.size_signal(content));
+        let end = memo(move || (inner.get().width - outer.get().width).max(0.0));
+        let left = memo(move || scroll_x.get().clamp(0.0, end.get()));
+        cx.tree.on_pointer(viewport, PointerKind::Wheel, move |e| {
+            // The wheel turned sideways, or the plain wheel: one of the two says how far.
+            let turned = if e.delta.x != 0.0 { e.delta.x } else { e.delta.y };
+            let (from, to) = (left.get(), (left.get() - turned).clamp(0.0, end.get()));
+            if to != from {
+                scroll_x.set(to);
+                e.stop();
+            }
+        });
+        cx.tree.set_children(viewport, &[content]);
+        let writer = cx.handle.clone();
+        cx.handle.bind(move || {
+            let x = left.get();
+            writer.with(move |tree| tree.set_layer_offset(content, Point::new(-x, 0.0)));
         });
     };
     Region::new(div().grow(1.0), bind)

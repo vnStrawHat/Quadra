@@ -3,7 +3,9 @@
 use quadra::Div;
 use quadra_kit::{dark, icons, light};
 
-use crate::pages::{actions, choices, data, display, fields, layout, navigation, overlays, overview};
+use crate::pages::{
+    actions, choices, data, display, fields, layout, navigation, overlays, overview, workbench,
+};
 use crate::shell::Gallery;
 
 pub struct PageInfo {
@@ -55,6 +57,9 @@ pub const PAGES: &[PageInfo] = &[
     info("split", "Split pane", "Layout", icons::GRIP_VERTICAL),
     info("scroll-area", "Scroll area", "Layout", icons::ARROW_DOWN),
     info("grid", "Grid", "Layout", icons::LAYOUT_GRID),
+    info("activity-bar", "Activity bar", "Workbench", icons::LAYERS),
+    info("tab-strip", "Tab strip", "Workbench", icons::FILE),
+    info("panel-header", "Panel header", "Workbench", icons::MINUS),
     info("sidebar", "Sidebar", "Navigation", icons::PANEL_LEFT),
     info("toolbar", "Toolbar", "Navigation", icons::SLIDERS_HORIZONTAL),
     info("breadcrumb", "Breadcrumb", "Navigation", icons::CHEVRON_RIGHT),
@@ -116,6 +121,9 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "split" => layout::split_page(),
         "scroll-area" => layout::scroll_page(),
         "grid" => layout::grid_page(gallery),
+        "activity-bar" => workbench::activity_page(),
+        "tab-strip" => workbench::tab_strip_page(),
+        "panel-header" => workbench::panel_header_page(),
         "sidebar" => navigation::sidebar_page(),
         "toolbar" => navigation::toolbar_page(),
         "breadcrumb" => navigation::breadcrumb_page(),

@@ -40,9 +40,10 @@ fn face(item: &MenuItem, marks: bool) -> Div {
     };
     let face = match (marks, item.checked, item.icon) {
         (false, ..) => face,
+        (_, Some(true), _) if item.quiet => face.child(icon(icons::CHECK).color(token::TEXT_2)),
+        (_, Some(true), _) => face.child(icon(icons::CHECK).color(token::ACCENT_TEXT)),
         (_, _, Some(body)) if item.disabled => face.child(icon(body)),
         (_, _, Some(body)) => face.child(icon(body).color(token::TEXT_2)),
-        (_, Some(true), None) => face.child(icon(icons::CHECK).color(token::ACCENT_TEXT)),
         _ => face.child(div().width(14.0)),
     };
     let face = face.child(text(item.label.clone())).child(div().grow(1.0).min_width(16.0));

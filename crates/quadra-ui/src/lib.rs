@@ -38,7 +38,7 @@ pub use list::{ListView, uniform_list, virtual_list};
 pub use node_ref::NodeRef;
 pub use overlay::{OverlayView, Place, overlay};
 pub use prop::{IntoProp, Prop};
-pub use scroll::scroll;
+pub use scroll::{scroll, scroll_strip};
 pub use text::{TextView, text};
 pub use tween::tween;
 pub use view::{AnyView, MountCx, View, each_frame, mount_root, mount_with};

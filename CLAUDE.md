@@ -149,8 +149,9 @@ their own frame (`WindowOptions::custom_frame`, `PlatformHandler::hit_test`, `.w
 `quadra_ui::window()`; Win32 in `quadra-native-win/src/frame.rs`) and the kit its `titlebar`, `toolbar`,
 `statusbar`, `breadcrumb`, `sidebar` and status marks, and its form controls (`slider`, `number_input`,
 `field` with rules, `textarea`; boxes have `.absolute()` with insets), and `progress`, `progress_busy`,
-`spinner`, `skeleton` (compose-only: `Tree::set_layer_turn` beside offset and opacity). Next: the remaining overlays
-(context menu, toast, command palette, submenus), table and tree; the components in the order of specs/13, each with its
+`spinner`, `skeleton` (compose-only: `Tree::set_layer_turn` beside offset and opacity). Menus have headings,
+submenus, scrolling and `context_menu` (`menu/rows.rs`; `popup::open_now` opens a popup from a handler). Next:
+toast and notifications, the command palette, table and tree; the components in the order of specs/13, each with its
 section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

@@ -47,7 +47,7 @@ pub use field::{Field, Rule, field, textarea, validate};
 pub use icon::icon;
 pub use input::{Input, input};
 pub use list::{List, list};
-pub use menu::{MenuItem, menu};
+pub use menu::{ContextMenu, MenuItem, context_menu, menu};
 pub use number::{NumberInput, number_input};
 pub use popup::popover;
 pub use progress::{Busy, Skeleton, Spinner, progress, progress_busy, skeleton, spinner};

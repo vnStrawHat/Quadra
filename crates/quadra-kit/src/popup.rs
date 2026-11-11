@@ -3,9 +3,11 @@
 //! focus back to what had it. Menus, selects, popovers and dialogs are this, with content.
 
 use quadra_layout::Display;
-use quadra_reactive::{Signal, on_cleanup};
-use quadra_tree::{Along, NodeId, Side};
-use quadra_ui::{Div, MountCx, NodeRef, Place, View, column, div, overlay, show};
+use std::rc::Rc;
+
+use quadra_reactive::{Scope, Signal, on_cleanup};
+use quadra_tree::{Along, NodeId, Side, Tree};
+use quadra_ui::{Div, MountCx, NodeRef, Place, Region, View, column, div, overlay, show};
 
 use crate::action::{Cancel, POPUP};
 use crate::{size, token};
@@ -17,9 +19,22 @@ pub(crate) fn surface(level: u8) -> Div {
     plane.radius(size::RADIUS_XL).elevation(level)
 }
 
+/// When a popup is open, and what closes it.
+#[derive(Clone)]
+pub(crate) struct Shown {
+    pub is: Rc<dyn Fn() -> bool>,
+    pub close: Rc<dyn Fn()>,
+}
+
+impl From<Signal<bool>> for Shown {
+    fn from(open: Signal<bool>) -> Shown {
+        Shown { is: Rc::new(move || open.get()), close: Rc::new(move || open.set(false)) }
+    }
+}
+
 /// A popup while it is open.
 struct Open<V> {
-    open: Signal<bool>,
+    close: Rc<dyn Fn()>,
     level: u8,
     place: Place,
     opener: Option<NodeRef>,
@@ -28,11 +43,11 @@ struct Open<V> {
 
 impl<V: View + 'static> View for Open<V> {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (open, panel_ref) = (self.open, NodeRef::new());
+        let (close, outside, panel_ref) = (self.close.clone(), self.close, NodeRef::new());
         // The panel can have the focus itself, for a popup that holds nothing that can.
         let panel = surface(self.level).focus_scope().tab_index(-1).key_context(POPUP).node_ref(&panel_ref);
-        let panel = panel.on_action::<Cancel>(move |_| open.set(false)).child(self.content);
-        let shown = overlay(self.place, panel).on_outside_press(move || open.set(false));
+        let panel = panel.on_action::<Cancel>(move |_| close()).child(self.content);
+        let shown = overlay(self.place, panel).on_outside_press(move || outside());
         let shown = match &self.opener {
             Some(opener) => shown.opener(opener),
             None => shown,
@@ -73,17 +88,42 @@ where
 /// A popup at a place of the caller's choosing (beside a node on another side, at a point,
 /// under the top of the window) and at a level above the window.
 pub(crate) fn popup<V, F>(
-    open: Signal<bool>,
+    open: impl Into<Shown>,
     (place, level): (Place, u8),
     opener: Option<NodeRef>,
     content: F,
-) -> impl View + use<V, F>
+) -> Region
 where
     V: View + 'static,
     F: Fn() -> V + 'static,
 {
-    let shown =
-        move || Open { open, level, place: place.clone(), opener: opener.clone(), content: content() };
+    let Shown { is, close } = open.into();
+    let shown = move || {
+        let (close, place, opener) = (close.clone(), place.clone(), opener.clone());
+        Open { close, level, place, opener, content: content() }
+    };
     // The region takes no room where it stands, not even a gap: what it shows is above.
-    show(move || open.get(), shown).container(div().display(Display::None))
+    show(move || is(), shown).container(div().display(Display::None))
+}
+
+/// Opens a popup now, from outside any view: a menu at the pointer. `content` is given what
+/// closes it. It ends with `owner` if it is still open then.
+pub(crate) fn open_now<V: View + 'static>(
+    tree: &mut Tree,
+    owner: Scope,
+    place: Place,
+    content: impl FnOnce(Rc<dyn Fn()>) -> V,
+) {
+    if !owner.is_alive() {
+        return;
+    }
+    let (scope, handle) = (owner.run(Scope::child), tree.handle());
+    let later = handle.clone();
+    let close: Rc<dyn Fn()> = Rc::new(move || later.with(move |_| scope.dispose()));
+    scope.run(|| {
+        let view = Open { close: close.clone(), level: 1, place, opener: None, content: content(close) };
+        // What stands for the popup in the flow stands nowhere: it goes with the popup.
+        let node = view.mount(&mut MountCx::new(tree));
+        on_cleanup(move || handle.with(move |tree| tree.remove(node)));
+    });
 }

@@ -283,6 +283,17 @@ the popup closes the focus goes back to what had it.
   column is there only when a row has an icon or a check.
 - `select(options, chosen)`: a filled button that shows the chosen option, and a menu of the
   options with a check on it.
+- More of the menu. `MenuItem::heading(name)` names the group of rows under it: 20 px,
+  muted, never chosen. `.submenu(items)` makes a row one that opens a menu of those rows
+  beside itself, at its right and over it by 2 px, with a chevron at its end: under the
+  pointer, by a click or Enter, or by the right arrow (`MoveInto`); the pointer over
+  another row closes it, as does the left arrow in it (`MoveOut`), and a choice in it ends
+  the menus together. A menu taller than 450 px shows that much and scrolls; the highlight
+  the arrows move is brought into view.
+- `context_menu(view, || items)` gives a view a menu that opens a pixel off the pointer on
+  a click with the other button, where it fits in the window. It adds no node around the
+  view (as the tooltip): the popup is opened by hand, from the handler
+  (`popup::open_now`), and goes with the scope of the view if it is still open then.
 - The region a popup is shown in is not displayed (`.display(Display::None)`): where the
   popup stands in the flow it takes no room, not even a gap of the box around it.
 - The text values of the window's root hold in overlays too (a popup's text has the
@@ -299,8 +310,8 @@ the popup closes the focus goes back to what had it.
 - Elevation is a paint value of a box (`.elevation(1)`): a level above the window casts the
   shadows of the design language (behaviour/15) under the box, two for the level of menus,
   popovers and tooltips, four for that of dialogs. A change of level is a paint change.
-- Not yet: submenus, a menu that scrolls, the context menu, drawer, toast, command palette;
-  a tooltip told to assistive technology as the description of its view.
+- Not yet: drawer, toast, command palette; the menu key for a context menu; a tooltip
+  told to assistive technology as the description of its view.
 
 ## Crates
 

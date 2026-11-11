@@ -84,6 +84,21 @@ pub const POPUP: &str = "popup";
 /// The key context of the rows of a menu.
 pub const MENU: &str = "menu";
 
+/// Into the menu of the row the highlight is on, and out of a menu that a row opened: the
+/// right and the left arrow.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveInto;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveOut;
+
+impl Action for MoveInto {
+    const NAME: &'static str = "kit::move_into";
+}
+
+impl Action for MoveOut {
+    const NAME: &'static str = "kit::move_out";
+}
+
 /// Give up what is open: Escape in a popup.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Cancel;
@@ -112,6 +127,8 @@ pub fn keymap() -> Keymap {
         keymap.bind_in(context, "enter", Confirm).expect(well_formed);
     }
     keymap.bind_in(MENU, "space", Confirm).expect(well_formed);
+    keymap.bind_in(MENU, "right", MoveInto).expect(well_formed);
+    keymap.bind_in(MENU, "left", MoveOut).expect(well_formed);
     for context in [LIST, SLIDER] {
         keymap.bind_in(context, "home", MoveFirst).expect(well_formed);
         keymap.bind_in(context, "end", MoveLast).expect(well_formed);

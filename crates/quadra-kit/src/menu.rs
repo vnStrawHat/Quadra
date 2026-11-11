@@ -1,17 +1,18 @@
 //! The menu (specs/behaviour/15, "Menu"): rows that do something, in a popup. The arrows move
 //! a highlight, Enter does what the highlighted row does, and doing it closes the menu.
 
+mod rows;
+
 use std::rc::Rc;
 
-use quadra_layout::Align;
-use quadra_reactive::{Signal, signal};
-use quadra_tree::{Role, State};
-use quadra_ui::{AnyView, Div, NodeRef, View, column, div, row, text};
+use quadra_platform::MouseButton;
+use quadra_prim::Point;
+use quadra_reactive::{Scope, Signal};
+use quadra_tree::{NodeId, PointerKind};
+use quadra_ui::{MountCx, NodeRef, Place, View};
 
-use crate::action::{Confirm, MENU, MoveNext, MovePrevious};
-use crate::icon::icon;
-use crate::popup::popover;
-use crate::{icons, size, token};
+pub(crate) use self::rows::{Ends, rows};
+use crate::popup::{open_now, popover};
 
 /// A row of a menu, or the line between two groups of rows.
 #[derive(Clone, Default)]
@@ -22,6 +23,9 @@ pub struct MenuItem {
     checked: Option<bool>,
     disabled: bool,
     separator: bool,
+    heading: bool,
+    /// The rows of the menu the row opens beside itself.
+    items: Vec<MenuItem>,
     select: Option<Rc<dyn Fn()>>,
 }
 
@@ -33,6 +37,18 @@ impl MenuItem {
     /// A hairline between two groups of rows.
     pub fn separator() -> MenuItem {
         MenuItem { separator: true, ..MenuItem::default() }
+    }
+
+    /// The name of the group of rows under it: muted, and not chosen.
+    pub fn heading(label: impl Into<String>) -> MenuItem {
+        MenuItem { label: label.into(), heading: true, ..MenuItem::default() }
+    }
+
+    /// Makes the row one that opens a menu of these rows beside itself: under the pointer,
+    /// by a click, or by the right arrow.
+    pub fn submenu(mut self, items: impl IntoIterator<Item = MenuItem>) -> Self {
+        self.items = items.into_iter().collect();
+        self
     }
 
     /// An icon before the label: one of [`crate::icons`].
@@ -65,76 +81,8 @@ impl MenuItem {
     }
 
     fn chosen(&self) -> bool {
-        !self.separator && !self.disabled
+        !self.separator && !self.heading && !self.disabled
     }
-}
-
-/// The rows of a menu as a view. `done` runs after a row was chosen.
-pub(crate) fn rows(items: Vec<MenuItem>, done: impl Fn() + Clone + 'static) -> Div {
-    let items = Rc::new(items);
-    // The row the keyboard is on, if any: the pointer has its own mark, the hover fill.
-    let on: Signal<Option<usize>> = signal(None);
-    let marks = items.iter().any(|item| item.icon.is_some() || item.checked.is_some());
-    let mut parts: Vec<AnyView> = Vec::new();
-    for (i, item) in items.iter().enumerate() {
-        if item.separator {
-            parts
-                .push(AnyView::new(div().height(13.0).padding_y(6.0).child(div().grow(1.0).bg(token::LINE))));
-            continue;
-        }
-        // 23 px high, 4 px in from the menu's edge, 6 px beside what it holds.
-        let face = row().height(23.0).grow(1.0).padding_x(6.0).gap(8.0).radius(size::RADIUS_MD);
-        let face = face.align_items(Align::Center).role(Role::MenuItem).label(item.label.clone());
-        let face = face.hover(|s| s.bg(token::PANEL_HOVER)).selected(move || on.get() == Some(i));
-        let face = face.when(State::SELECTED, |s| s.bg(token::PRESS));
-        let face = face.disabled(item.disabled).when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
-        let face = match item.checked {
-            Some(checked) => face.checked(checked),
-            None => face,
-        };
-        let face = match (marks, item.checked, item.icon) {
-            (false, ..) => face,
-            (_, Some(true), _) => face.child(icon(icons::CHECK).color(token::ACCENT_TEXT)),
-            (_, None, Some(body)) => face.child(icon(body).color(token::TEXT_2)),
-            _ => face.child(div().width(14.0)),
-        };
-        let face = face.child(div().grow(1.0).child(text(item.label.clone())));
-        let face = match &item.keys {
-            Some(keys) => face.child(div().padding_x(8.0).child(text(keys.clone()).color(token::TEXT_2))),
-            None => face,
-        };
-        let (select, done) = (item.select.clone(), done.clone());
-        let face = face.on_click(move |_| {
-            if let Some(select) = &select {
-                select();
-            }
-            done();
-        });
-        parts.push(AnyView::new(div().padding_x(4.0).child(face)));
-    }
-    // The arrows go to the next row that can be chosen, round the ends.
-    let step = {
-        let items = items.clone();
-        move |forward: bool| {
-            let count = items.len();
-            let from = on.get_untracked().unwrap_or(if forward { count - 1 } else { 0 });
-            let order =
-                (1..=count).map(|k| if forward { (from + k) % count } else { (from + count - k) % count });
-            on.set({ order }.find(|&i| items[i].chosen()));
-        }
-    };
-    let (forward, back) = (step.clone(), step);
-    let confirm = move || {
-        let Some(item) = on.get_untracked().and_then(|i| items.get(i)) else { return };
-        if let Some(select) = &item.select {
-            select();
-        }
-        done();
-    };
-    let list = column().role(Role::Menu).min_width(200.0).padding_y(4.0).focusable().key_context(MENU);
-    let list = list.on_action::<MoveNext>(move |_| forward(true));
-    let list = list.on_action::<MovePrevious>(move |_| back(false));
-    list.on_action::<Confirm>(move |_| confirm()).children(parts)
 }
 
 /// A menu below `opener` while `open` is true. `items` is asked each time the menu opens,
@@ -143,5 +91,45 @@ pub fn menu<F>(open: Signal<bool>, opener: &NodeRef, items: F) -> impl View + us
 where
     F: Fn() -> Vec<MenuItem> + 'static,
 {
-    popover(open, opener, move || rows(items(), move || open.set(false)))
+    let ends = move || Ends { done: Rc::new(move || open.set(false)), leave: None };
+    popover(open, opener, move || rows(items(), ends()))
+}
+
+pub struct ContextMenu<V, F> {
+    of: V,
+    items: F,
+}
+
+/// Gives a view a menu that opens at the pointer on a click with the other button. `items`
+/// is asked each time it opens. No node is added around the view.
+pub fn context_menu<V, F>(of: V, items: F) -> ContextMenu<V, F>
+where
+    V: View + 'static,
+    F: Fn() -> Vec<MenuItem> + 'static,
+{
+    ContextMenu { of, items }
+}
+
+impl<V, F> View for ContextMenu<V, F>
+where
+    V: View + 'static,
+    F: Fn() -> Vec<MenuItem> + 'static,
+{
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        // ponytail: the pointer opens it; the menu key and Shift-F10 when keys do too.
+        let (of, owner, handle, items) =
+            (self.of.mount(cx), Scope::current(), cx.handle.clone(), Rc::new(self.items));
+        cx.tree.on_pointer(of, PointerKind::Click, move |e| {
+            if e.button != MouseButton::Right {
+                return;
+            }
+            // A pixel off the pointer, which is then over none of its rows.
+            let (place, items) = (Place::At(Point::new(e.at.x + 1.0, e.at.y + 1.0)), items.clone());
+            handle.with(move |tree| {
+                open_now(tree, owner, place, move |close| rows(items(), Ends { done: close, leave: None }))
+            });
+            e.stop();
+        });
+        of
+    }
 }

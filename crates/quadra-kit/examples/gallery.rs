@@ -10,10 +10,10 @@ use quadra::{
 };
 use quadra_kit::{
     MenuItem, NavItem, Rule, Size, Status, Tone, Variant, accordion, avatar, badge, breadcrumb, button, card,
-    card_head, checkbox, dark, dialog, divider, field, heading, icon, icon_button, icons, input, kbd, light,
-    list, menu, number_input, progress, progress_busy, radio_group, segmented, select, sidebar, size,
-    skeleton, slider, spinner, split, status_button, status_divider, status_item, status_label, statusbar,
-    switch, tabs, tag, textarea, titlebar, token, toolbar, tooltip, validate,
+    card_head, checkbox, context_menu, dark, dialog, divider, field, heading, icon, icon_button, icons,
+    input, kbd, light, list, menu, number_input, progress, progress_busy, radio_group, segmented, select,
+    sidebar, size, skeleton, slider, spinner, split, status_button, status_divider, status_item,
+    status_label, statusbar, switch, tabs, tag, textarea, titlebar, token, toolbar, tooltip, validate,
 };
 
 /// A section: its title, then its rows.
@@ -122,10 +122,13 @@ fn overlays() -> Div {
     let (open, asking, opener) = (signal(shown == "menu"), signal(shown == "dialog"), NodeRef::new());
     let (wrap, size) = (signal(true), signal(1usize));
     let items = move || {
+        let to = [MenuItem::new("Mail").icon(icons::MAIL), MenuItem::new("A link").icon(icons::LINK)];
         vec![
+            MenuItem::heading("Edit"),
             MenuItem::new("Cut").icon(icons::TRASH_2).keys("Ctrl-X"),
             MenuItem::new("Copy").icon(icons::COPY).keys("Ctrl-C"),
             MenuItem::new("Paste").keys("Ctrl-V").disabled(true),
+            MenuItem::new("Share").submenu(to),
             MenuItem::separator(),
             MenuItem::new("Word wrap")
                 .checked(wrap.get_untracked())
@@ -141,7 +144,11 @@ fn overlays() -> Div {
         .action("Cancel", Variant::Ghost, || {})
         .action("Delete", Variant::Danger, || {});
     let controls = line().child(edit).child(sizes).child(save).child(delete);
-    section("Overlays").child(controls).child(menu(open, &opener, items)).child(ask)
+    let other = div().padding(12.0).border(1.0).border_color(token::LINE).radius(size::RADIUS_LG);
+    let other = other.child(text("A menu for the other button").color(token::TEXT_2));
+    let other = context_menu(other, || vec![MenuItem::new("Rename"), MenuItem::new("Delete")]);
+    let menus = menu(open, &opener, items);
+    section("Overlays").child(controls).child(line().child(other)).child(menus).child(ask)
 }
 
 fn lists() -> Div {

@@ -90,8 +90,9 @@ Rich text (spans of different style in one flow) is one paragraph with several s
 - Numbers are the text that changes every frame (tables, meters, clocks), and each new one
   would be shaped. A number (digits and `. , - + % : /`) is composed from glyphs shaped once
   per size, when the face shapes numbers glyph by glyph: every pair of those characters must
-  shape to its two glyphs at their own advances, checked once per face. Composed numbers do
-  not enter the cache.
+  shape to its two glyphs at their own advances, checked once per face, and only once a face
+  has been asked for some dozens of numbers: a window with a few never pays for the check.
+  Composed numbers do not enter the cache.
 
 ## Glyph tiles
 

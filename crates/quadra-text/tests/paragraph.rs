@@ -143,6 +143,11 @@ fn an_unknown_family_falls_back_and_loaded_fonts_are_known() {
 fn a_number_is_composed_from_glyphs_shaped_once() {
     let mut ts = system();
     let face = ts.face_for(&style());
+    // The first numbers of a face are shaped like any word: few windows show many.
+    for n in 0..64 {
+        ts.word(&format!("{n}"), face, 10.0);
+    }
+    assert_eq!(ts.take_stats().words_shaped, 64);
     let first = ts.word("12.50", face, 10.0);
     assert_eq!(first.width, 30.0);
     assert_eq!(
@@ -156,7 +161,7 @@ fn a_number_is_composed_from_glyphs_shaped_once() {
     }
     let stats = ts.take_stats();
     assert_eq!((stats.words_composed, stats.words_shaped, stats.word_hits), (1000, 0, 0));
-    // Another size shapes each character once more; text that is not a number is shaped.
+    // Text that is not a number is shaped.
     ts.word("7", face, 20.0);
     ts.word("7th", face, 20.0);
     assert_eq!(ts.take_stats().words_shaped, 1);

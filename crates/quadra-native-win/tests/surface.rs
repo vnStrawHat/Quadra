@@ -118,3 +118,47 @@ fn frames_are_given_as_the_swap_chain_takes_them() {
     assert!(!animation.gave_up, "the swap chain never took a frame: {} drawn", animation.frames);
     assert_eq!(animation.frames, 5);
 }
+
+/// Leaves the loop at a wake, or when the guard timer fires.
+struct UntilWoken(WinPlatform, bool);
+
+impl PlatformHandler for UntilWoken {
+    fn event(&mut self, _: WindowId, _: PlatformEvent) {}
+    fn frame(&mut self, _: WindowId) {}
+    fn timer(&mut self, _: TimerId) {
+        self.0.quit();
+    }
+    fn wake(&mut self) {
+        self.1 = true;
+        self.0.quit();
+    }
+}
+
+#[test]
+fn a_starting_renderer_copies_its_frames_to_the_window_then_moves_to_the_device_made_meanwhile() {
+    let p = WinPlatform::new().unwrap();
+    let w = p.open_window(&WindowOptions::new("starting").size(120.0, 80.0).hidden()).unwrap();
+    let mut r = D3d11Renderer::starting(&p);
+    assert!(r.is_software()); // ready at once
+    let mut scene = scene_with_a_quad();
+    let surface = r.create_surface(target(&*w), DeviceSize { width: 120, height: 80 }).unwrap();
+    // The first frame, unless the other device was made before it could be drawn.
+    if r.draw(surface, &mut scene, Color::WHITE).is_ok() {
+        assert_eq!((at(&mut r, surface, 20, 20), at(&mut r, surface, 5, 5)), (RED, 0xFFFFFF));
+        r.present(surface).unwrap(); // copied to the window: it has no swap chain yet
+    }
+
+    let mut waiting = UntilWoken(p.clone(), false);
+    let guard = p.set_timer(Duration::from_secs(20), false);
+    p.run(&mut waiting).unwrap(); // the worker wakes the loop when the device is made
+    p.cancel_timer(guard);
+    assert!(waiting.1, "the worker never woke the loop");
+    assert!(r.wants_frame());
+    assert_eq!(r.draw(surface, &mut scene, Color::WHITE), Err(quadra_render::RenderError::DeviceLost));
+    r.recover().unwrap(); // takes the device that waits; the window gets its swap chain
+    assert!(!r.wants_frame());
+    scene.invalidate_all();
+    r.draw(surface, &mut scene, Color::WHITE).unwrap();
+    assert_eq!((at(&mut r, surface, 20, 20), at(&mut r, surface, 5, 5)), (RED, 0xFFFFFF));
+    r.present(surface).unwrap();
+}

@@ -8,10 +8,11 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_CPU_ACCESS_WRITE, D3D11_CULL_NONE, D3D11_FILL_SOLID, D3D11_FILTER_MIN_MAG_MIP_LINEAR,
     D3D11_MAP_WRITE_DISCARD, D3D11_MAPPED_SUBRESOURCE, D3D11_RASTERIZER_DESC, D3D11_RENDER_TARGET_BLEND_DESC,
     D3D11_SAMPLER_DESC, D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_USAGE_DYNAMIC, ID3D11BlendState, ID3D11Buffer,
-    ID3D11PixelShader, ID3D11RasterizerState, ID3D11SamplerState, ID3D11VertexShader,
+    ID3D11Device, ID3D11DeviceContext, ID3D11PixelShader, ID3D11RasterizerState, ID3D11SamplerState,
+    ID3D11VertexShader,
 };
 
-use crate::gpu::{Gpu, error, made};
+use crate::gpu::{error, made};
 
 /// Compiled by `tools/build_shaders.sh` from `shaders/prims.hlsl` and embedded: start-up
 /// compiles no shader.
@@ -40,7 +41,7 @@ pub(crate) struct Pipeline {
 }
 
 impl Pipeline {
-    pub fn new(gpu: &Gpu) -> Result<Pipeline, RenderError> {
+    pub fn new(device: &ID3D11Device) -> Result<Pipeline, RenderError> {
         // Dual-source blending: the second output is a weight per channel, so subpixel text
         // blends each subpixel on its own. For everything else it is premultiplied alpha.
         let mut blend_desc = D3D11_BLEND_DESC::default();
@@ -80,12 +81,12 @@ impl Pipeline {
             (None, None, None, None, None, None);
         // SAFETY: bytecode, descriptions and out pointers are valid for the calls.
         unsafe {
-            gpu.device.CreateVertexShader(VS, None, Some(&mut vs)).map_err(error)?;
-            gpu.device.CreatePixelShader(PS, None, Some(&mut ps)).map_err(error)?;
-            gpu.device.CreateBlendState(&blend_desc, Some(&mut blend)).map_err(error)?;
-            gpu.device.CreateRasterizerState(&raster_desc, Some(&mut raster)).map_err(error)?;
-            gpu.device.CreateSamplerState(&sampler_desc, Some(&mut sampler)).map_err(error)?;
-            gpu.device.CreateBuffer(&constants_desc, None, Some(&mut constants)).map_err(error)?;
+            device.CreateVertexShader(VS, None, Some(&mut vs)).map_err(error)?;
+            device.CreatePixelShader(PS, None, Some(&mut ps)).map_err(error)?;
+            device.CreateBlendState(&blend_desc, Some(&mut blend)).map_err(error)?;
+            device.CreateRasterizerState(&raster_desc, Some(&mut raster)).map_err(error)?;
+            device.CreateSamplerState(&sampler_desc, Some(&mut sampler)).map_err(error)?;
+            device.CreateBuffer(&constants_desc, None, Some(&mut constants)).map_err(error)?;
         }
         Ok(Pipeline {
             vs: made(vs, "vertex shader")?,
@@ -98,8 +99,7 @@ impl Pipeline {
     }
 
     /// Makes this pipeline the one draws use.
-    pub fn bind(&self, gpu: &Gpu) {
-        let c = &gpu.context;
+    pub fn bind(&self, c: &ID3D11DeviceContext) {
         // SAFETY: every object passed is alive for the call; the context keeps its own
         // references to what it binds.
         unsafe {
@@ -118,7 +118,7 @@ impl Pipeline {
     /// Sets the constants of a run: its layer's place on the surface, and its first instance.
     pub fn set_run(
         &self,
-        gpu: &Gpu,
+        context: &ID3D11DeviceContext,
         world: &World,
         viewport: [f32; 2],
         start: u32,
@@ -137,11 +137,9 @@ impl Pipeline {
         // SAFETY: a write-discard map of a dynamic buffer gives at least its ByteWidth, which
         // is the size of Constants; nothing else touches the buffer between Map and Unmap.
         unsafe {
-            gpu.context
-                .Map(&self.constants, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut mapped))
-                .map_err(error)?;
+            context.Map(&self.constants, 0, D3D11_MAP_WRITE_DISCARD, 0, Some(&mut mapped)).map_err(error)?;
             mapped.pData.cast::<Constants>().write(constants);
-            gpu.context.Unmap(&self.constants, 0);
+            context.Unmap(&self.constants, 0);
         }
         Ok(())
     }

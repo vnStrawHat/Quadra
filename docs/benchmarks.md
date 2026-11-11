@@ -7,7 +7,43 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
-## 2026-11-11 — the comparison bench after the three fixes (on 7a38ba6 plus this commit)
+## 2026-11-11 — the result of phase R1: the comparison bench, three rounds (on f96baf0 plus this commit)
+
+The runner's medians of three rounds, both builds taking turns in one session
+(`.tmp/cmp4.json`):
+
+| Measure | V | Rust |
+|---|---|---|
+| list: CPU per frame | 0.38 ms | 0.36 ms |
+| grid: CPU per frame | 1.31 ms | 1.29 ms |
+| document: CPU per frame | 0.73 ms | 0.70 ms |
+| list / grid / document: p99 frame interval | 13.49 / 13.43 / 13.44 ms | 13.45 / 13.44 / 13.44 ms (75 Hz: 13.33) |
+| list / grid / document: peak memory | 21.6 / 31.1 / 24.7 MB | 22.8 / 25.5 / 28.2 MB |
+| counter: startup | 44 ms | 41 ms |
+| counter: idle memory | 10.0 MB | 11.1 MB |
+| counter: idle CPU | 0.84 ms/s | 0.91 ms/s |
+| binary size | 1.63 MB | 0.88 MB |
+
+Every time is at the V build's or a little under it; the binary is half. Memory is the one
+measure that is not better everywhere: idle 1 MB more, document's peak 3.5 MB more.
+
+What start-up took (189 ms before, of which 136 ms was the hardware device being made before
+the first frame):
+
+- The first frames are drawn on the software device and copied to the window, and the
+  renderer moves to the hardware device when a worker has made it (specs/07, "Start-up"):
+  189 to 51 ms. The move is the app's recovery from a lost device, asked for on purpose.
+- The software device is made on that worker too, while the UI thread opens the window (13 ms)
+  and builds the view: 51 to 41 ms.
+- A face is checked for composing numbers only once it has been asked for 64 of them: the
+  counter's "0" no longer shapes 300 pairs in the first frame (1 ms).
+
+The memory that came with it: before the two devices, the peaks were 12.7 / 17.5 / 22.7 MB
+and idle 10.4 MB. The software rasterizer's library stays loaded after its device is gone, as
+in the V build, which starts the same way. Ten megabytes for 150 ms of start-up is the trade
+both builds make.
+
+## 2026-11-11 — the comparison bench after the three fixes (on 7a38ba6 plus f96baf0)
 
 One round of the runner, both builds taking turns:
 
@@ -53,8 +89,8 @@ on the Win32 platform, the D3D11 renderer (hardware device) and DirectWrite. The
 runner measures both builds from outside, in one session, taking turns (one round):
 
 ```sh
-tools/cargo.sh build --release -p quadra-bench-compare      # then copy compare.exe to .tmp/
-<V repo>/.tmp/cmprun.exe -runs 1 -out .tmp/cmp1.json v=<V repo>/.tmp/cmp.exe rust=.tmp/compare.exe
+tools/bench.sh                                              # builds target/release/compare.exe
+<V repo>/.tmp/cmprun.exe -runs 1 -out .tmp/cmp1.json v=<V repo>/.tmp/cmp.exe rust=target/release/compare.exe
 ```
 
 | Measure | V | Rust | |

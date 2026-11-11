@@ -51,7 +51,7 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
 | Gate | `tools/check.sh` |
 | Release gate | `tools/check.sh prod`; run both before saying done |
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
-| The bench app | `tools/cargo.sh build --release -p quadra-bench-compare`, then copy `compare.exe` from the build output to `.tmp/` (docs/benchmarks.md has the runner's command) |
+| The bench app | `tools/bench.sh` builds `target/release/compare.exe`; with scene names it runs them headless with pass timings (docs/benchmarks.md has the runner's command) |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
 
 Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
@@ -72,35 +72,31 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 There is no remote yet (the user sets it up later). Work goes on from a session opened in the
 V repository until the user opens one here; every command starts with `cd /d/quadra`.
 
-Phase R0 is done. Phase R1, the vertical slice that proves the paradigm (specs/00, Phases), is
-close to its go/no-go; `docs/progress.md` lists each crate with what it has, what it lacks and
-its tests. In short:
+Phase R0 is done. **Phase R1, the vertical slice, is done** (docs/progress.md, "The exit of
+R1"): the four scenes of the comparison bench run in real windows, and against the V build
+every time is equal or a little better (list 0.36 ms, grid 1.29, document 0.70, start-up
+41 ms, binary 0.88 MB; docs/benchmarks.md). Idle memory is 1 MB more. The decisions the phase
+tested (specs/01, R1 to R5) stand.
 
-- `quadra-reactive`, `quadra-layout`: done.
-- `quadra-render`, `quadra-text`, `quadra-tree`, `quadra-ui`, `quadra-testing`: the passes,
-  layers, atlases, glyph tiles, views, virtual list, scroll, frame callbacks. Missing: style
-  variants and tokens (specs/13), input (specs/09), semantics (specs/12), rows of different
-  heights.
-- `quadra-platform` (traits, events, the headless platform), `quadra-app` (windows, the frame
-  loop, device-loss recovery), `quadra` (the facade, `quadra::app()`).
-- `quadra-native-win`: the Win32 platform, the D3D11 renderer with window swap chains, the
-  DirectWrite backend. Its shader is `shaders/prims.hlsl`, compiled by
-  `tools/build_shaders.sh` (needs the Windows SDK's fxc) into `.cso` files that are committed.
-  Its tests use windows that are never shown and the software rasterizer.
+What exists, in short (`docs/progress.md` has each crate with what it lacks and its tests):
+`quadra-reactive`, `quadra-layout` (done); `quadra-render`, `quadra-text`, `quadra-tree`,
+`quadra-ui`, `quadra-testing` (passes, layers, atlases, glyph tiles, views, virtual list,
+scroll with culling, frame callbacks); `quadra-platform` (traits, the headless platform),
+`quadra-app` (windows, the frame loop, recovery), `quadra` (the facade, `quadra::app()`);
+`quadra-native-win` (Win32 platform, D3D11 with swap chains and the two-device start,
+DirectWrite). Its shader is `shaders/prims.hlsl`, compiled by `tools/build_shaders.sh` (needs
+the Windows SDK's fxc) into committed `.cso` files. Its tests use windows that are never shown.
 
-The four scenes of the comparison bench run in real windows and look right. Against the V
-build (docs/benchmarks.md): list, grid and document cost the same CPU a frame or a little less,
-memory is lower, the binary is less than half. **Start-up is 4 times slower (189 ms against
-44 ms): that is the work in progress.** The hardware device is made before the first frame;
-the V build draws the first frame on the software device and makes the hardware one meanwhile
-(specs/07, "Start-up").
+**Next: phase R2, interaction** (specs/00, Phases; specs/09): hit testing and pointer dispatch
+over the tree first (the counter's buttons do nothing yet), then hover and press with style
+variants (specs/13), focus, keys and actions, text input and IME, wheel scrolling, overlays,
+semantics (specs/12), rows of different heights. `quadra-async` (specs/11) when the first
+thing needs a timer or a task.
 
-Room left that the numbers show (headless, `tools/bench.sh grid`): 200 ns a binding in the grid
-(a reactive property boxes a closure on every run, see the `ponytail:` note in
-`quadra-ui/src/div.rs`), and a flex item is measured once per height its column offers though
-its height does not depend on it.
-
-Then the go/no-go of R1 is written down, and phase R2 (input first) begins.
+Room left that the numbers show (`tools/bench.sh grid`): 200 ns a binding in the grid (a
+reactive property boxes a closure on every run, see the `ponytail:` note in
+`quadra-ui/src/div.rs`); a flex item is measured once per height its column offers though its
+height does not depend on it; a new painted band visits every node of its layer.
 
 Habits that cost time when forgotten:
 
@@ -108,9 +104,8 @@ Habits that cost time when forgotten:
   `tools/check.sh prod > .tmp/check.log 2>&1; echo $?`, and commit only on 0.
 - A script with backslashes is written to `.tmp/` as a file, not passed through a here-document
   (the shell collapses the backslashes). `.tmp/edit.py FILE SPEC` applies exact replacements.
-- The cargo fork puts binaries under `<cargo home>/targets/quadra-*/<profile>/build/<crate>/<hash>/out/`.
-- `tools/bench.sh [scene...]` builds the bench, copies it to `.tmp/compare.exe` and runs the
-  named scenes headless with their pass timings.
+- The cargo fork builds in `<cargo home>/targets/` and links the final binaries into
+  `target/<profile>/` here.
 - The V runner and bench are built in the V repository (`tools/v.sh -cc clang -prod ...`; the
   runner needs `-cflags -Wno-int-conversion`).
 

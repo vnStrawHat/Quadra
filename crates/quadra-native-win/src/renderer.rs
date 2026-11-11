@@ -1,78 +1,67 @@
 //! The D3D11 renderer (specs/07): it keeps a buffer per layer, uploads what a layer says
 //! changed, and draws the scene's steps.
 
-use std::collections::HashMap;
-use std::ffi::c_void;
-
 use quadra_prim::{Color, Rect};
 use quadra_render::{
-    AtlasCore, AtlasKind, DeviceSize, Dirty, Instance, LayerId, Pixels, RenderError, RenderStats, Renderer,
-    Scene, SceneId, Step, SurfaceId, SurfaceTarget,
+    AtlasCore, AtlasKind, DeviceSize, Pixels, RenderError, RenderStats, Renderer, Scene, SceneId, Step,
+    SurfaceId, SurfaceTarget,
 };
 use windows::Win32::Foundation::RECT;
-use windows::Win32::Graphics::Direct3D11::{
-    D3D11_BOX, D3D11_VIEWPORT, ID3D11Buffer, ID3D11ShaderResourceView,
-};
+use windows::Win32::Graphics::Direct3D11::D3D11_VIEWPORT;
 
 use crate::atlas::AtlasTexture;
-use crate::gpu::Gpu;
+use crate::gpu::{Device, Gpu};
+use crate::layers::LayerBuffers;
 use crate::pacing::Pacing;
-use crate::pipeline::Pipeline;
 use crate::platform::WinPlatform;
 use crate::surface::Surface;
-
-const STRIDE: u32 = size_of::<Instance>() as u32;
-
-/// A layer's instances on the GPU.
-struct LayerBuffer {
-    /// The layer it was last filled for: another layer may have taken the same id.
-    serial: u64,
-    capacity: u32,
-    view: ID3D11ShaderResourceView,
-    buffer: ID3D11Buffer,
-}
+use crate::upgrade::Upgrade;
 
 pub struct D3d11Renderer {
+    /// The device, or the one on its way: every call that can fail waits for it first.
     gpu: Gpu,
-    pipeline: Pipeline,
     surfaces: Vec<Option<Surface>>,
     /// Where the loop finds each window's frame-latency handle.
     pacing: Pacing,
-    layers: HashMap<(SceneId, LayerId), LayerBuffer>,
+    layers: LayerBuffers,
     /// The glyph and image atlases, as texture arrays.
     coverage: Option<AtlasTexture>,
     color: Option<AtlasTexture>,
     steps: Vec<Step>,
     stats: RenderStats,
+    /// The hardware device on its way, while the first frames are drawn on the software one.
+    pub(crate) upgrade: Option<Upgrade>,
 }
 
 impl D3d11Renderer {
     /// A renderer on the hardware device, or on the software rasterizer: no GPU, the same
     /// pixels on every machine (tests, and the first frames of a window).
     pub fn new(software: bool) -> Result<D3d11Renderer, RenderError> {
-        let gpu = Gpu::new(software)?;
-        let pipeline = Pipeline::new(&gpu)?;
-        Ok(D3d11Renderer {
+        Ok(D3d11Renderer::on(Gpu::made(Device::new(software)?), Pacing::default()))
+    }
+
+    pub(crate) fn on(gpu: Gpu, pacing: Pacing) -> D3d11Renderer {
+        D3d11Renderer {
             gpu,
-            pipeline,
             surfaces: Vec::new(),
-            pacing: Pacing::default(),
-            layers: HashMap::new(),
+            pacing,
+            layers: LayerBuffers::default(),
             coverage: None,
             color: None,
             steps: Vec::new(),
             stats: RenderStats::default(),
-        })
+            upgrade: None,
+        }
     }
 
     /// A renderer whose window surfaces pace the frames of that platform's loop: a frame a
     /// window asked for is given when its swap chain can take one (specs/10).
     pub fn for_platform(platform: &WinPlatform, software: bool) -> Result<D3d11Renderer, RenderError> {
-        Ok(D3d11Renderer { pacing: platform.0.pacing.clone(), ..D3d11Renderer::new(software)? })
+        Ok(D3d11Renderer::on(Gpu::made(Device::new(software)?), platform.0.pacing.clone()))
     }
 
     pub fn is_software(&self) -> bool {
-        self.gpu.software
+        self.gpu.is_software()
     }
 
     fn surface(&self, id: SurfaceId) -> Result<&Surface, RenderError> {
@@ -81,49 +70,12 @@ impl D3d11Renderer {
 
     /// Makes a surface and tells the loop what to wait on for it.
     fn make_surface(&self, target: SurfaceTarget, size: DeviceSize) -> Result<Surface, RenderError> {
-        let surface = Surface::new(&self.gpu, target, size)?;
+        // Before the hardware device is there, a window is shown by copying (specs/07).
+        let surface = Surface::new(&self.gpu, target, size, self.upgrade.is_some())?;
         if let Surface::Window(window) = &surface {
             self.pacing.set(window.hwnd, Some(window.waitable));
         }
         Ok(surface)
-    }
-
-    /// Brings a layer's buffer in step with the scene and returns its view.
-    fn sync(&mut self, scene: &mut Scene, id: LayerId) -> Result<ID3D11ShaderResourceView, RenderError> {
-        let key = (scene.id(), id);
-        let layer = scene.layer_mut(id);
-        let dirty = layer.take_dirty();
-        let (instances, serial) = (layer.instances(), layer.serial());
-        let count = instances.len() as u32;
-        let stale = self.layers.get(&key).is_none_or(|b| b.serial != serial || b.capacity < count);
-        if stale {
-            let capacity = count.next_power_of_two().max(64);
-            let (buffer, view) = self.gpu.structured_buffer(capacity, STRIDE)?;
-            self.layers.insert(key, LayerBuffer { serial, capacity, view, buffer });
-        }
-        let buffer = &self.layers[&key];
-        let range = match dirty {
-            _ if stale => 0..count,
-            Dirty::Clean => 0..0,
-            Dirty::Range { start, end } => start..end.min(count),
-            Dirty::All => 0..count,
-        };
-        if !range.is_empty() {
-            let part = D3D11_BOX {
-                left: range.start * STRIDE,
-                right: range.end * STRIDE,
-                top: 0,
-                bottom: 1,
-                front: 0,
-                back: 1,
-            };
-            let from = instances[range.start as usize..].as_ptr().cast::<c_void>();
-            // SAFETY: `from` points at range.len() instances, which is what the box takes.
-            unsafe { self.gpu.update(&buffer.buffer, 0, Some(part), from, 0)? };
-            self.stats.instances_uploaded += range.len() as u32;
-            self.stats.layers_uploaded += 1;
-        }
-        Ok(buffer.view.clone())
     }
 }
 
@@ -140,12 +92,14 @@ fn scissor(rect: Rect, size: DeviceSize) -> RECT {
 
 impl Renderer for D3d11Renderer {
     fn create_surface(&mut self, target: SurfaceTarget, size: DeviceSize) -> Result<SurfaceId, RenderError> {
+        self.gpu.ready()?;
         let surface = self.make_surface(target, size)?;
         self.surfaces.push(Some(surface));
         Ok(SurfaceId(self.surfaces.len() as u32 - 1))
     }
 
     fn resize_surface(&mut self, surface: SurfaceId, size: DeviceSize) -> Result<(), RenderError> {
+        self.gpu.ready()?;
         let slot = self.surfaces.get_mut(surface.0 as usize).and_then(Option::as_mut);
         slot.ok_or(RenderError::BadSurface)?.resize(&self.gpu, size)
     }
@@ -159,6 +113,7 @@ impl Renderer for D3d11Renderer {
     }
 
     fn sync_atlas(&mut self, atlas: &mut AtlasCore) -> Result<(), RenderError> {
+        self.gpu.ready()?;
         let slot = match atlas.kind() {
             AtlasKind::Coverage => &mut self.coverage,
             AtlasKind::Color => &mut self.color,
@@ -167,6 +122,10 @@ impl Renderer for D3d11Renderer {
     }
 
     fn draw(&mut self, surface: SurfaceId, scene: &mut Scene, clear: Color) -> Result<(), RenderError> {
+        self.gpu.ready()?;
+        if self.wants_frame() {
+            return Err(RenderError::DeviceLost); // a better device waits: `recover` takes it
+        }
         let (size, target) = {
             let s = self.surface(surface)?;
             if let Surface::Window(window) = s {
@@ -175,7 +134,7 @@ impl Renderer for D3d11Renderer {
             (s.size(), s.target()?)
         };
         for layer in scene.take_dropped() {
-            self.layers.remove(&(scene.id(), layer));
+            self.layers.remove(scene.id(), layer);
         }
         let mut steps = std::mem::take(&mut self.steps);
         let bounds = Rect::new(0.0, 0.0, size.width as f32, size.height as f32);
@@ -192,7 +151,7 @@ impl Renderer for D3d11Renderer {
             self.gpu.context.RSSetViewports(Some(&[view]));
             self.gpu.context.ClearRenderTargetView(&target, &premultiplied);
         }
-        self.pipeline.bind(&self.gpu);
+        self.gpu.pipeline.bind(&self.gpu.context);
         let atlases =
             [self.coverage.as_ref().map(|t| t.view.clone()), self.color.as_ref().map(|t| t.view.clone())];
         // SAFETY: the views are alive for the call; a slot without a texture reads as zero.
@@ -202,7 +161,7 @@ impl Renderer for D3d11Renderer {
         for step in &steps {
             match *step {
                 Step::Layer { id, world } => {
-                    let instances = match self.sync(scene, id) {
+                    let instances = match self.layers.sync(&self.gpu, scene, id, &mut self.stats) {
                         Ok(view) => Some(view),
                         Err(e) => {
                             result = Err(e);
@@ -220,7 +179,7 @@ impl Renderer for D3d11Renderer {
                 }
                 Step::Run { start, end } => {
                     let Some(world) = &current else { continue };
-                    if let Err(e) = self.pipeline.set_run(&self.gpu, world, viewport, start) {
+                    if let Err(e) = self.gpu.pipeline.set_run(&self.gpu.context, world, viewport, start) {
                         result = Err(e);
                         break;
                     }
@@ -236,30 +195,36 @@ impl Renderer for D3d11Renderer {
     }
 
     fn present(&mut self, surface: SurfaceId) -> Result<(), RenderError> {
-        self.surface(surface)?.present()
+        self.gpu.ready()?;
+        self.surface(surface)?.present(&self.gpu)
     }
 
     fn read_pixels(&mut self, surface: SurfaceId) -> Result<Pixels, RenderError> {
+        self.gpu.ready()?;
         self.surface(surface)?.read(&self.gpu)
     }
 
     fn forget_scene(&mut self, scene: SceneId) {
-        self.layers.retain(|key, _| key.0 != scene);
+        self.layers.forget(scene);
     }
 
     fn recover(&mut self) -> Result<(), RenderError> {
-        let software = self.gpu.software;
+        let software = self.gpu.is_software();
         let made_for: Vec<_> = self.surfaces.iter().map(|s| s.as_ref().map(Surface::made_for)).collect();
         // A window takes a new swap chain only once the old one is gone, and a swap chain
         // goes when nothing is bound and the context has been flushed.
         self.surfaces.clear();
-        // SAFETY: plain calls on the old context, which is alive until it is replaced below.
-        unsafe {
-            self.gpu.context.ClearState();
-            self.gpu.context.Flush();
+        if let Some(old) = self.gpu.get() {
+            // SAFETY: plain calls on the old context, which is alive until it is replaced below.
+            unsafe {
+                old.context.ClearState();
+                old.context.Flush();
+            }
         }
-        self.gpu = Gpu::new(software)?;
-        self.pipeline = Pipeline::new(&self.gpu)?;
+        self.gpu = Gpu::made(match self.upgrade.take().and_then(Upgrade::take) {
+            Some(waiting) => waiting,
+            None => Device::new(software)?,
+        });
         self.layers.clear();
         (self.coverage, self.color) = (None, None);
         for made_for in made_for {
@@ -267,6 +232,10 @@ impl Renderer for D3d11Renderer {
             self.surfaces.push(surface);
         }
         Ok(())
+    }
+
+    fn wants_frame(&mut self) -> bool {
+        self.upgrade.as_mut().is_some_and(Upgrade::is_ready)
     }
 
     fn stats(&self) -> RenderStats {

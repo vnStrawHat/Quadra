@@ -35,7 +35,9 @@ pub type App = quadra_app::App<D3d11Renderer>;
 /// Makes the app: the platform, the GPU device and the text backend.
 pub fn app() -> Result<App> {
     let platform = WinPlatform::new()?;
-    let renderer = D3d11Renderer::for_platform(&platform, false)?;
+    // Before the renderer: its worker starts the GPU driver, which holds up whatever loads
+    // a library meanwhile.
     let text = DirectWrite::new().map_err(AppError::Text)?;
+    let renderer = D3d11Renderer::starting(&platform);
     Ok(App::with(Rc::new(platform), renderer, Box::new(text)))
 }

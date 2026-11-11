@@ -8,6 +8,9 @@ use std::collections::HashMap;
 use crate::system::Word;
 use crate::types::{FaceId, ShapedGlyph, TextBackend};
 
+/// How many numbers a face shapes the usual way before it is checked for composing them.
+pub(crate) const WARM_UP: u32 = 64;
+
 /// The characters numbers are written with.
 const CHARS: &[u8; 17] = b"0123456789.,-+%:/";
 
@@ -17,8 +20,9 @@ fn index(byte: u8) -> Option<usize> {
 
 #[derive(Default)]
 pub(crate) struct Numeric {
-    /// Per face: whether its numbers may be composed.
-    faces: HashMap<FaceId, bool>,
+    /// Per face: the numbers asked for so far, and, once there were enough of them to be
+    /// worth the check, whether its numbers may be composed.
+    faces: HashMap<FaceId, (u32, Option<bool>)>,
     /// Per face and size: the glyph of each character, shaped alone.
     singles: HashMap<(FaceId, u32), [ShapedGlyph; 17]>,
 }
@@ -63,7 +67,10 @@ impl Numeric {
         if token.is_empty() || !token.bytes().all(|b| index(b).is_some()) {
             return None;
         }
-        if !*self.faces.entry(face).or_insert_with(|| composes(backend, face)) {
+        // The check shapes 300 pairs: a window that shows a few numbers never pays for it.
+        let (asked, composes_them) = self.faces.entry(face).or_insert((0, None));
+        *asked += 1;
+        if *asked <= WARM_UP || !*composes_them.get_or_insert_with(|| composes(backend, face)) {
             return None;
         }
         let singles = match self.singles.get(&(face, size.to_bits())) {

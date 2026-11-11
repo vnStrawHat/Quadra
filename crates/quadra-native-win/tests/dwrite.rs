@@ -152,6 +152,10 @@ fn text_goes_from_a_view_to_pixels() {
 fn numbers_in_segoe_ui_are_composed_and_equal_what_shaping_gives() {
     let mut ts = quadra_text::TextSystem::new(Box::new(DirectWrite::new().unwrap()));
     let face = ts.face_for(&quadra_text::TextStyle::default());
+    for n in 0..64 {
+        ts.word(&n.to_string(), face, 13.0); // the first numbers of a face are shaped
+    }
+    ts.take_stats();
     for number in ["950.28", "-3,141.59", "12:30", "+7%", "1/2"] {
         let composed = ts.word(number, face, 13.0);
         let shaped = ts.backend().shape(number, face, 13.0);

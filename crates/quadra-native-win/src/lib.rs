@@ -8,12 +8,14 @@ mod atlas;
 mod dwrite;
 mod gpu;
 mod input;
+mod layers;
 mod pacing;
 mod pipeline;
 mod platform;
 mod renderer;
 mod surface;
 mod swapchain;
+mod upgrade;
 mod window;
 mod wndproc;
 

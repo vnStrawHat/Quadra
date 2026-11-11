@@ -17,7 +17,7 @@ use windows::Win32::Graphics::Dxgi::{
 };
 use windows::core::Interface;
 
-use crate::gpu::{Gpu, error, made};
+use crate::gpu::{Device, error, made};
 
 const FLAGS: i32 = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT.0;
 
@@ -34,7 +34,7 @@ pub(crate) struct SwapChain {
 }
 
 impl SwapChain {
-    pub fn new(gpu: &Gpu, hwnd: isize, size: DeviceSize) -> Result<SwapChain, RenderError> {
+    pub fn new(gpu: &Device, hwnd: isize, size: DeviceSize) -> Result<SwapChain, RenderError> {
         let size = DeviceSize { width: size.width.max(1), height: size.height.max(1) };
         let desc = DXGI_SWAP_CHAIN_DESC1 {
             Width: size.width,
@@ -73,7 +73,7 @@ impl SwapChain {
         unsafe { self.chain.GetBuffer(0) }.map_err(error)
     }
 
-    fn back_buffer(&self, gpu: &Gpu) -> Result<ID3D11RenderTargetView, RenderError> {
+    fn back_buffer(&self, gpu: &Device) -> Result<ID3D11RenderTargetView, RenderError> {
         let mut view = None;
         // SAFETY: the texture is alive and the out pointer valid for the call.
         unsafe { gpu.device.CreateRenderTargetView(&self.back_texture()?, None, Some(&mut view)) }
@@ -86,7 +86,7 @@ impl SwapChain {
     }
 
     /// A size of zero (a minimized window) keeps the buffers as they are.
-    pub fn resize(&mut self, gpu: &Gpu, size: DeviceSize) -> Result<(), RenderError> {
+    pub fn resize(&mut self, gpu: &Device, size: DeviceSize) -> Result<(), RenderError> {
         if size.width == 0 || size.height == 0 || size == self.size {
             return Ok(());
         }

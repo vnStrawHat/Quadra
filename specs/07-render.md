@@ -163,10 +163,24 @@ Every GPU resource can be rebuilt from CPU state:
 
 ## Start-up
 
-Unchanged from the V design, because it was right: shaders are precompiled and embedded; the
+The idea of the V design, because it was right: shaders are precompiled and embedded; the
 hardware device is created on a worker thread while the first frame is drawn on the software
 device and shown through a plain blit; when the hardware device is ready the renderer moves to
-it and every layer is uploaded once.
+it and every layer is uploaded once. A hardware driver takes over a hundred milliseconds to
+start; the software device takes ten.
+
+One thread makes both devices, the software one first (a driver that starts holds up whatever
+loads a library meanwhile). The renderer is there at once: the UI thread opens its window and
+builds its view while the software device is made, and the first call that needs a device
+waits for it.
+
+The move is not a mechanism of its own. A renderer that has a better device ready says its
+device is lost: the app then does what it does for a lost device (new device, tiles cleared,
+everything painted and uploaded again), and `recover` takes the device that is waiting instead
+of making one. Until then a window's surface is a texture copied to the window; with the
+hardware device it gets its swap chain, once (a window whose swap chain is replaced keeps
+presenting late). The worker wakes the loop when the device is ready, and the renderer then
+wants a frame (`Renderer::wants_frame`), so an app that draws nothing more still moves.
 
 ## The `Renderer` trait
 

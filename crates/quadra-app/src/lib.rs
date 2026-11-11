@@ -220,9 +220,11 @@ impl<R: Renderer> App<R> {
         }
     }
 
-    /// After every entry point: a window whose tree has something to do asks for a frame.
-    fn request_frames(&self) {
-        for w in self.windows.iter().filter(|w| w.tree.needs_frame()) {
+    /// After every entry point: a window whose tree has something to do asks for a frame,
+    /// and every window does when the renderer wants one.
+    fn request_frames(&mut self) {
+        let all = self.renderer.wants_frame();
+        for w in self.windows.iter().filter(|w| all || w.tree.needs_frame()) {
             w.window.request_frame();
         }
     }

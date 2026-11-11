@@ -14,7 +14,7 @@ use windows::Win32::Graphics::Dxgi::Common::{
     DXGI_FORMAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC,
 };
 
-use crate::gpu::{Gpu, error, made};
+use crate::gpu::{Device, error, made};
 
 pub(crate) struct AtlasTexture {
     /// The atlas epoch the texture holds: after a clear it starts again.
@@ -34,7 +34,7 @@ fn format(kind: AtlasKind) -> DXGI_FORMAT {
 
 impl AtlasTexture {
     fn new(
-        gpu: &Gpu,
+        gpu: &Device,
         kind: AtlasKind,
         epoch: u64,
         size: u32,
@@ -81,7 +81,7 @@ impl AtlasTexture {
     /// old slices copied) when the atlas grew, then the queued pixels.
     pub fn sync(
         slot: &mut Option<AtlasTexture>,
-        gpu: &Gpu,
+        gpu: &Device,
         atlas: &mut AtlasCore,
     ) -> Result<(), RenderError> {
         let (kind, epoch, size, slices) =

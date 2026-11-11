@@ -96,5 +96,11 @@ pub trait Renderer {
     /// the next draws.
     fn recover(&mut self) -> Result<(), RenderError>;
 
+    /// True when the renderer has something that only a draw will bring out (a better device
+    /// is ready): the app draws a frame for every window. The call may take note of it.
+    fn wants_frame(&mut self) -> bool {
+        false
+    }
+
     fn stats(&self) -> RenderStats;
 }

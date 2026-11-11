@@ -1,0 +1,25 @@
+[package]
+name = "quadra-native-win"
+description = "Quadra on Windows: the D3D11 renderer, the DirectWrite text backend, the Win32 platform"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# One of the two crates that may hold unsafe code (specs/01, R16): it does not inherit the
+# workspace lints, which forbid it.
+
+[dependencies]
+quadra-prim = { path = "../quadra-prim" }
+quadra-render = { path = "../quadra-render" }
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+] }
+
+# Explicitly not inheriting the workspace lints (see above).
+[lints]

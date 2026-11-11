@@ -95,12 +95,16 @@ Atlases (`quadra-render`) and glyph tiles (`quadra-tree::Fonts`: the text system
 coverage and colour atlases, shared by an app's windows) are in: text is painted from tiles
 the text node holds handles to.
 
-Next, in order: the native crate `quadra-native-win` (the first with the `windows` dependency
-and `unsafe`): a Win32 window and message loop, the D3D11 renderer (the HLSL of the V
-repository's `quadra/gpu/d3d11/shaders/prims.hlsl`, changed for per-layer constants and
-texture arrays; shaders are compiled with `fxc` from the Windows SDK), the DirectWrite text
-backend; then the comparison bench against the V baseline: that is the go/no-go of phase R1.
-Still missing below that: style variants and tokens (specs/13), input (specs/09), semantics
+`quadra-native-win` has begun: the D3D11 renderer (`windows` crate, `unsafe` with a reason on
+every block) draws scenes into offscreen surfaces, checked by pixel tests on the software
+rasterizer. Its shader is `shaders/prims.hlsl`, compiled by `tools/build_shaders.sh` (needs the
+Windows SDK's fxc) into `.cso` files that are committed and embedded.
+
+Next, in order, in that crate: the atlas textures (texture arrays filled by `sync_atlas`) and a
+pixel test of glyphs; window surfaces (flip-model swap chain, frame-latency waitable) with a
+Win32 window and message loop, and a counter in a real window; the DirectWrite text backend;
+then the comparison bench against the V baseline: that is the go/no-go of phase R1. Still
+missing below that: style variants and tokens (specs/13), input (specs/09), semantics
 (specs/12), rows of different heights. An open question from the numbers: whether paint should
 skip what is far outside the visible part of a layer (docs/benchmarks.md, the document scene).
 

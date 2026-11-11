@@ -65,7 +65,17 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 
 ## State at the last handoff (2026-11-11)
 
-Phase R0 is done: repository, workspace, gate, `quadra-prim`. Nothing is committed and there
-is no remote yet (the user sets it up later). Next is phase R1, the vertical slice that proves
-the paradigm (specs/00, Phases). `quadra-term` is **on hold** by the user's decision: do not
-build it until told. The apps come after Quadra is complete.
+Phase R0 is done and committed: repository, workspace, gate, `quadra-prim`. There is no remote
+yet (the user sets it up later).
+
+Phase R1, the vertical slice that proves the paradigm (specs/00, Phases), is in progress;
+`docs/progress.md` lists its crates. `quadra-reactive` is done and passes the gate, but is
+**uncommitted**, together with `.gitattributes` (LF line endings), the "Implementation"
+section of specs/03, `docs/benchmarks.md` and the progress notes. Commit them when the user
+asks.
+
+Next: `quadra-layout` (specs/06). The flex and grid cases come from the V repository's
+`quadra/layout/*_test.v` and `tests/layout*_test.v`, ported as data. Then `quadra-tree`.
+
+`quadra-term` is **on hold** by the user's decision: do not build it until told. The apps come
+after Quadra is complete.

@@ -136,6 +136,38 @@ asks for a count and builds only visible rows. A collection that reports its own
 - Bindings never write signals. A binding that needs to (a measured size feeding state) goes
   through `layout_signal` (04), which is delivered after the layout pass in its own batch.
 
+## Implementation
+
+How the crate is built, so that it needs no `unsafe` and no user code ever runs while the
+runtime is borrowed.
+
+- **Storage.** One thread-local runtime holds generational arenas of nodes (signals, memos,
+  effects), scopes and events. A node's value is an `Rc<RefCell<dyn Any>>`: a read clones the
+  `Rc` out of the arena in a short borrow, then borrows the value while the caller's closure
+  runs. The runtime's own `RefCell` is never held across a call into user code. For the same
+  reason, what a disposed scope owned is moved out of the arenas and dropped afterwards: a
+  value's `Drop` may use the runtime.
+- **States.** A node is clean, to check, or dirty. A write marks direct readers dirty and, the
+  first time a node leaves clean, marks the readers of a memo "to check", queues an effect, or
+  calls a deferred effect's notify. A node that was already marked is not walked again.
+- **Updating a node.** "To check": update each source in the order it was read, and stop as
+  soon as one makes this node dirty. Dirty: run it. The node is set clean *before* it runs, so
+  a write during its own run to something it reads marks it again and it runs once more.
+- **Edges.** While a node runs, each read is compared with the source it read at the same
+  position last time. As long as they match nothing is touched, so a node with stable
+  dependencies costs no edge work. From the first difference on, new sources are collected, and
+  the edge from a new source is added at once (not at the end of the run), so a write later in
+  the same run still reaches the running node. At the end, sources no longer read lose their
+  edge. A source read twice is recorded once.
+- **A memo that changed** raises its "to check" readers to dirty. A memo reading itself panics.
+- **Bindings** are deferred effects: created with a notify callback and a body. The body runs
+  once at creation. When a source changes, notify is called once; the owner (a window's update
+  pass) later calls `run`, which checks the sources and runs the body only if one really
+  changed.
+- **Effects in a flush** run in creation order. Events queued by `emit` are delivered before
+  effects, one at a time, to the subscribers still subscribed at that moment.
+- **Counts for tests**: the number of live nodes, scopes and events is public (`stats`).
+
 ## Tests
 
 The crate's own tests cover: each memo runs at most once per batch; an unchanged memo stops

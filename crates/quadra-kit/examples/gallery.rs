@@ -9,12 +9,12 @@ use quadra::{
     use_context,
 };
 use quadra_kit::{
-    MenuItem, NavItem, Notice, Notices, Rule, Size, Status, Tone, Variant, accordion, avatar, badge,
-    breadcrumb, button, card, card_head, checkbox, context_menu, dark, dialog, divider, field, heading, icon,
-    icon_button, icons, input, kbd, light, list, menu, notices, number_input, progress, progress_busy,
-    radio_group, segmented, select, sidebar, size, skeleton, slider, spinner, split, status_button,
-    status_divider, status_item, status_label, statusbar, switch, tabs, tag, textarea, titlebar, token,
-    toolbar, tooltip, validate,
+    Command, MenuItem, NavItem, Notice, Notices, Rule, Size, Status, Tone, Variant, accordion, avatar, badge,
+    breadcrumb, button, card, card_head, checkbox, command_palette, context_menu, dark, dialog, divider,
+    field, heading, icon, icon_button, icons, input, kbd, light, list, menu, notices, number_input, progress,
+    progress_busy, radio_group, segmented, select, sidebar, size, skeleton, slider, spinner, split,
+    status_button, status_divider, status_item, status_label, statusbar, switch, tabs, tag, textarea,
+    titlebar, token, toolbar, tooltip, validate,
 };
 
 /// A section: its title, then its rows.
@@ -255,9 +255,24 @@ fn main() -> quadra::Result<()> {
                 if is_dark.get() { "One Dark Pro" } else { "One Light" }.to_string()
             }))
             .right(status_item(Some(icons::CHECK), "Ready"));
-        let bar = titlebar("Quadra gallery").menu(|| vec![MenuItem::new("About"), MenuItem::new("Quit")]);
+        // What the app can do, found by typing: `GALLERY_OPEN=palette` shows it at once.
+        let asking = signal(std::env::var("GALLERY_OPEN").is_ok_and(|shown| shown == "palette"));
+        let commands = move || {
+            let to = |(id, name, _): (&'static str, &str, &str)| {
+                Command::new(format!("Go to {name}"), move || page.set(id))
+            };
+            let fold = Command::new("Toggle the sidebar", move || folded.update(|folded| *folded = !*folded));
+            PAGES
+                .into_iter()
+                .map(to)
+                .chain([fold.keys("ctrl-b"), Command::new("Other theme", swap)])
+                .collect()
+        };
+        let ask = MenuItem::new("Command palette").keys("Ctrl-Shift-P").on_select(move || asking.set(true));
+        let bar = titlebar("Quadra gallery").menu(move || vec![ask.clone(), MenuItem::new("About")]);
         let middle = row().grow(1.0).child(places).child(column().grow(1.0).child(tools).child(content));
-        quadra_kit::root().child(bar).child(middle).child(status).child(all.host())
+        let over = command_palette(asking, commands);
+        quadra_kit::root().child(bar).child(middle).child(status).child(all.host()).child(over)
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
     app.window(WindowOptions::new("Quadra gallery").size(900.0, 640.0).custom_frame(), view)?.run()

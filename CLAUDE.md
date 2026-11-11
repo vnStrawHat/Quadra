@@ -151,7 +151,8 @@ their own frame (`WindowOptions::custom_frame`, `PlatformHandler::hit_test`, `.w
 `field` with rules, `textarea`; boxes have `.absolute()` with insets), and `progress`, `progress_busy`,
 `spinner`, `skeleton` (compose-only: `Tree::set_layer_turn` beside offset and opacity). Menus have headings,
 submenus, scrolling and `context_menu` (`menu/rows.rs`; `popup::open_now` opens a popup from a handler), and
-notifications and toasts (`notices()`, `Notice`). Next: the command palette, table and tree; the components in the order of specs/13, each with its
+notifications and toasts (`notices()`, `Notice`), and the command palette (`palette.rs`: `fuzzy`, `marked`).
+`quadra-text` normalizes (`normalize_nfc` on insert, `fold_diacritics`; tables from `tools/gen_nfc.py`). Next: table and tree; the components in the order of specs/13, each with its
 section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

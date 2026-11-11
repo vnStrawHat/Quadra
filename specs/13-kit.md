@@ -321,7 +321,17 @@ the popup closes the focus goes back to what had it.
   stay until closed unless they say how long they last. `.toast(tone, words)` is a line
   with its icon at the bottom centre for ten seconds. The stacks are overlays that take
   neither the focus nor a press outside them (`Place::BottomRight`, `Place::Bottom`).
-- Not yet: drawer, command palette; the menu key for a context menu; a toast that waits
+- **`command_palette(open, || commands)`** is a popup of 608 px under the top of the window
+  at the level of dialogs: a query row of 36 px over a line, and under it the commands that
+  match, rows of 32 px, at most 347 px of them, the rest scrolled to. A `Command` has a
+  title, the keys that run it too (shown muted at the end of its row, as shortcuts are
+  written), and what it does. A command matches when the letters of the query are in its
+  title in order, whatever their case and accents (`fuzzy_hits`; "hai ph" finds "Hải
+  Phòng"); letters at the start and one after another count for more (`fuzzy`), and the
+  best match is first and highlighted. The letters that matched are in the accent
+  (`marked`: a row of texts). The arrows go round the matches with the focus still in the
+  query, Enter or a click runs one after the palette has closed and given the focus back.
+- Not yet: drawer; a picker of other things than commands; the menu key for a context menu; a toast that waits
   while the pointer is on it; a tooltip told to assistive technology as the description of
   its view.
 

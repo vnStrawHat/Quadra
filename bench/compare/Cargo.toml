@@ -1,0 +1,18 @@
+[package]
+name = "quadra-bench-compare"
+description = "The comparison bench's four scenes (docs/benchmarks.md), measured from outside by its runner"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "compare"
+path = "src/main.rs"
+
+[dependencies]
+quadra = { path = "../../crates/quadra" }

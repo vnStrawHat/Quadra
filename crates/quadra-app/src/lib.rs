@@ -23,6 +23,8 @@ use quadra_ui::{View, mount_with};
 pub enum AppError {
     Platform(PlatformError),
     Render(RenderError),
+    /// The text backend could not start, in its own words.
+    Text(String),
 }
 
 impl fmt::Display for AppError {
@@ -30,6 +32,7 @@ impl fmt::Display for AppError {
         match self {
             AppError::Platform(e) => e.fmt(f),
             AppError::Render(e) => e.fmt(f),
+            AppError::Text(what) => write!(f, "the text backend failed: {what}"),
         }
     }
 }
@@ -69,6 +72,7 @@ pub struct App<R: Renderer> {
     root: Scope,
     clear: Color,
     on_error: Box<dyn FnMut(&AppError)>,
+    on_presented: Option<Box<dyn FnMut(WindowId)>>,
 }
 
 impl<R: Renderer> App<R> {
@@ -82,6 +86,7 @@ impl<R: Renderer> App<R> {
             root: Scope::child(),
             clear: Color::WHITE,
             on_error: Box::new(|e| eprintln!("quadra: {e}")),
+            on_presented: None,
         }
     }
 
@@ -95,6 +100,13 @@ impl<R: Renderer> App<R> {
     /// made again, a failed draw. The default prints it.
     pub fn on_error(mut self, hook: impl FnMut(&AppError) + 'static) -> App<R> {
         self.on_error = Box::new(hook);
+        self
+    }
+
+    /// `hook` runs each time a frame of a window has been handed to the display: what
+    /// measures start-up, or records frames, listens here.
+    pub fn on_presented(mut self, hook: impl FnMut(WindowId) + 'static) -> App<R> {
+        self.on_presented = Some(Box::new(hook));
         self
     }
 
@@ -166,7 +178,11 @@ impl<R: Renderer> App<R> {
             renderer.present(w.surface)
         };
         match frame() {
-            Ok(()) => {}
+            Ok(()) => {
+                if let Some(hook) = &mut self.on_presented {
+                    hook(window);
+                }
+            }
             Err(RenderError::DeviceLost) => self.recover(),
             Err(e) => (self.on_error)(&e.into()),
         }

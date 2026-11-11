@@ -19,7 +19,8 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
    `quadra-` prefix (prim, reactive, layout, text, render, platform, tree, ui, async, a11y,
    app, native, shell, testing, kit, code, md, data, viz), or specs, tools.
 4. **Never test the real clipboard.**
-6. **Commit or push only when the user asks.**
+5. **Commit each finished part** once `tools/check.sh prod` exits 0, then go on with the
+   next; **push only when the user asks**.
 
 ## How to work
 
@@ -50,6 +51,8 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
 | Gate | `tools/check.sh` |
 | Release gate | `tools/check.sh prod`; run both before saying done |
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
+| The bench app | `tools/cargo.sh build --release -p quadra-bench-compare`, then copy `compare.exe` from the build output to `.tmp/` (docs/benchmarks.md has the runner's command) |
+| A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
 
 Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 
@@ -58,58 +61,56 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 - `specs/README.md` indexes the specs. `specs/00` has the phases and the user's decisions,
   `specs/01` the architecture decisions, `specs/behaviour/` what components do and look like
   (carried from the V repository; their code sections are superseded).
-- `crates/quadra-*`: the framework (specs/02, Crates). `examples/`, `bench/`, `assets/` appear
-  with the phases that need them.
+- `crates/quadra-*`: the framework (specs/02, Crates); `crates/quadra` is the facade apps
+  depend on. `bench/compare`: the comparison bench's four scenes. `examples/`, `assets/`
+  appear with the phases that need them.
 - `docs/progress.md`: status per phase. `docs/benchmarks-v.md`: the V implementation's
   measurements, frozen; the baseline of specs/14.
 
 ## State at the last handoff (2026-11-11)
 
-Phase R0 is done and committed: repository, workspace, gate, `quadra-prim`. There is no remote
-yet (the user sets it up later).
+There is no remote yet (the user sets it up later). Work goes on from a session opened in the
+V repository until the user opens one here; every command starts with `cd /d/quadra`.
 
-Phase R1, the vertical slice that proves the paradigm (specs/00, Phases), is in progress;
-`docs/progress.md` lists its crates. Done and committed: `quadra-reactive` and `quadra-layout`
-(flex and grid). The user's standing instruction: commit each finished part once the gate is
-green, then continue with the next.
+Phase R0 is done. Phase R1, the vertical slice that proves the paradigm (specs/00, Phases), is
+close to its go/no-go; `docs/progress.md` lists each crate with what it has, what it lacks and
+its tests. In short:
 
-Also committed, each at its first stage: `quadra-render` (layers, display lists, the
-`Renderer` trait, the null renderer), `quadra-text` (paragraphs, the shaping cache, the fake
-backend) and `quadra-tree` (nodes, widgets, the update, layout and paint passes on one layer,
-`Tree::verify_paint`). `docs/progress.md` says what each still lacks.
+- `quadra-reactive`, `quadra-layout`: done.
+- `quadra-render`, `quadra-text`, `quadra-tree`, `quadra-ui`, `quadra-testing`: the passes,
+  layers, atlases, glyph tiles, views, virtual list, scroll, frame callbacks. Missing: style
+  variants and tokens (specs/13), input (specs/09), semantics (specs/12), rows of different
+  heights.
+- `quadra-platform` (traits, events, the headless platform), `quadra-app` (windows, the frame
+  loop, device-loss recovery), `quadra` (the facade, `quadra::app()`).
+- `quadra-native-win`: the Win32 platform, the D3D11 renderer with window swap chains, the
+  DirectWrite backend. Its shader is `shaders/prims.hlsl`, compiled by
+  `tools/build_shaders.sh` (needs the Windows SDK's fxc) into `.cso` files that are committed.
+  Its tests use windows that are never shown and the software rasterizer.
 
-`quadra-tree` also has child layers and the compose pass: a node can be a layer, placed by a
-transform; a scroll container's content is such a node, and scrolling is its offset.
+The four scenes of the comparison bench run in real windows and look right. First numbers
+against the V build (docs/benchmarks.md): list equal, memory and binary size better, but grid
+2.5 times slower, document 2.1 times, start-up 4 times. Each has a known cause; **that is the
+work in progress**:
 
-`quadra-ui` has boxes, text, properties (constant, signal, memo or closure), `each`, `show`
-and `dynamic`; `quadra-testing` has a headless window that checks every frame.
+1. Pass timings, to measure before changing anything.
+2. grid: compose numbers from digit glyphs shaped once (the V build's `text/numeric.v`).
+3. document: paint only the lines near the visible part of a layer, or make a glyph cheaper
+   to emit and upload.
+4. start-up: first frame on the software device, the hardware device made meanwhile
+   (specs/07, "Start-up").
 
-`quadra-ui` also has `uniform_list` (a virtual list of rows of one height; its content is a
-layer, its rows are recycled), and `quadra-tree` has size signals for state that depends on a
-node's size.
+Then the go/no-go of R1 is written down, and phase R2 (input first) begins.
 
-The structural budgets of specs/14 that can be met so far are tests
-(`crates/quadra-ui/tests/budgets.rs`, `tests/list.rs`).
+Habits that cost time when forgotten:
 
-Atlases (`quadra-render`) and glyph tiles (`quadra-tree::Fonts`: the text system plus the
-coverage and colour atlases, shared by an app's windows) are in: text is painted from tiles
-the text node holds handles to.
-
-`quadra-native-win` has begun: the D3D11 renderer (`windows` crate, `unsafe` with a reason on
-every block) draws scenes into offscreen surfaces, checked by pixel tests on the software
-rasterizer. Its shader is `shaders/prims.hlsl`, compiled by `tools/build_shaders.sh` (needs the
-Windows SDK's fxc) into `.cso` files that are committed and embedded.
-
-Its atlases are texture arrays filled by `sync_atlas`; one test goes from a view to pixels.
-Next, in order, in that crate: window surfaces (flip-model swap chain, frame-latency waitable) with a
-Win32 window and message loop, and a counter in a real window; the DirectWrite text backend;
-then the comparison bench against the V baseline: that is the go/no-go of phase R1. Still
-missing below that: style variants and tokens (specs/13), input (specs/09), semantics
-(specs/12), rows of different heights. An open question from the numbers: whether paint should
-skip what is far outside the visible part of a layer (docs/benchmarks.md, the document scene).
-
-Always read the gate's exit status, not its output through a pipe:
-`tools/check.sh prod > .tmp/check.log 2>&1 && git commit ...`.
+- Read the gate's exit status, not its output through a pipe:
+  `tools/check.sh prod > .tmp/check.log 2>&1; echo $?`, and commit only on 0.
+- A script with backslashes is written to `.tmp/` as a file, not passed through a here-document
+  (the shell collapses the backslashes). `.tmp/edit.py FILE SPEC` applies exact replacements.
+- The cargo fork puts binaries under `<cargo home>/targets/quadra-*/<profile>/build/<crate>/<hash>/out/`.
+- The V runner and bench are built in the V repository (`tools/v.sh -cc clang -prod ...`; the
+  runner needs `-cflags -Wno-int-conversion`).
 
 `quadra-term` is **on hold** by the user's decision: do not build it until told. The apps come
 after Quadra is complete.

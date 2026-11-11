@@ -1,0 +1,20 @@
+[package]
+name = "quadra"
+description = "Quadra: a native, GPU-rendered UI framework. The crate apps depend on"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-app = { path = "../quadra-app" }
+quadra-layout = { path = "../quadra-layout" }
+quadra-native-win = { path = "../quadra-native-win" }
+quadra-platform = { path = "../quadra-platform" }
+quadra-prim = { path = "../quadra-prim" }
+quadra-reactive = { path = "../quadra-reactive" }
+quadra-ui = { path = "../quadra-ui" }

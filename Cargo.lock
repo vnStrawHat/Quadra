@@ -12,6 +12,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra"
+version = "0.1.0"
+dependencies = [
+ "quadra-app",
+ "quadra-layout",
+ "quadra-native-win",
+ "quadra-platform",
+ "quadra-prim",
+ "quadra-reactive",
+ "quadra-ui",
+]
+
+[[package]]
 name = "quadra-app"
 version = "0.1.0"
 dependencies = [
@@ -22,6 +35,13 @@ dependencies = [
  "quadra-text",
  "quadra-tree",
  "quadra-ui",
+]
+
+[[package]]
+name = "quadra-bench-compare"
+version = "0.1.0"
+dependencies = [
+ "quadra",
 ]
 
 [[package]]

@@ -123,7 +123,7 @@ until a second OS exists.
 
 ```rust
 fn main() -> quadra::Result<()> {
-    quadra::App::new()?                   // native backends for this OS
+    quadra::app()?                        // native backends for this OS
         .window(WindowOptions::new("Notes").size(960.0, 600.0), app_view)?
         .run()
 }

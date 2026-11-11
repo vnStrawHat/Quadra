@@ -46,6 +46,9 @@ props! {
     shrink: f32 => Shrink;
     /// The space between children, on both axes.
     gap: f32 => Gap;
+    /// The space between columns, and between rows: of a grid, of lines that wrap.
+    gap_x: f32 => GapX;
+    gap_y: f32 => GapY;
     /// The same padding on every side.
     padding: f32 => Padding;
     /// Left and right padding.

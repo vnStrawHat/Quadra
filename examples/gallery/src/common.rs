@@ -46,6 +46,13 @@ pub fn setting(title: &str, about: &str, control: impl View + 'static) -> Div {
     item.border_bottom(1.0).border_color(token::LINE).child(words).child(control)
 }
 
+/// A box with a hairline edge, for demos that need one: panes, lists, menus in place.
+pub fn framed(content: impl View + 'static) -> Div {
+    use quadra::Overflow;
+    let frame = column().border(1.0).border_color(token::LINE);
+    frame.overflow_x(Overflow::Hidden).overflow_y(Overflow::Hidden).child(content)
+}
+
 /// A line of small text that says less: a constant, or something reactive.
 pub fn hint<M>(words: impl IntoProp<String, M>) -> TextView {
     text(words).size(size::TEXT_SM.size).color(token::TEXT_3)

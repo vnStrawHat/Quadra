@@ -3,7 +3,7 @@
 use quadra::Div;
 use quadra_kit::{dark, icons, light};
 
-use crate::pages::{actions, choices, fields, overview};
+use crate::pages::{actions, choices, display, fields, overview};
 use crate::shell::Gallery;
 
 pub struct PageInfo {
@@ -38,6 +38,18 @@ pub const PAGES: &[PageInfo] = &[
     info("select", "Select", "Forms", icons::CHEVRON_DOWN),
     info("date-picker", "Date and time", "Forms", icons::CALENDAR),
     info("field", "Form field", "Forms", icons::CIRCLE_CHECK),
+    info("status", "Status", "Display", icons::CIRCLE_DOT),
+    info("badge", "Badge", "Display", icons::BOOKMARK),
+    info("tag", "Tag", "Display", icons::TAG),
+    info("kbd", "Kbd", "Display", icons::COMMAND),
+    info("alert", "Alert", "Display", icons::INFO),
+    info("empty-state", "Empty state", "Display", icons::SEARCH),
+    info("description-list", "Description list", "Display", icons::LIST),
+    info("avatar", "Avatar", "Display", icons::USER),
+    info("progress", "Progress bar", "Display", icons::GAUGE),
+    info("spinner", "Spinner", "Display", icons::LOADER_CIRCLE),
+    info("skeleton", "Skeleton", "Display", icons::MINUS),
+    info("card", "Card", "Display", icons::LAYERS),
 ];
 
 /// Builds the page of an id; an id that is not a page's gives the first page. A page that
@@ -63,6 +75,18 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "select" => fields::select_page(),
         "date-picker" => fields::date_page(),
         "field" => fields::field_page(gallery),
+        "status" => display::status_page(),
+        "badge" => display::badge_page(),
+        "tag" => display::tag_page(),
+        "kbd" => display::kbd_page(),
+        "alert" => display::alert_page(),
+        "empty-state" => display::empty_state_page(),
+        "description-list" => display::description_list_page(),
+        "avatar" => display::avatar_page(),
+        "progress" => display::progress_page(),
+        "spinner" => display::spinner_page(),
+        "skeleton" => display::skeleton_page(),
+        "card" => display::card_page(),
         _ => overview::start_page(),
     }
 }

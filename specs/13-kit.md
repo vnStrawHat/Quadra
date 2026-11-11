@@ -195,6 +195,11 @@ As built so far:
   written "Ctrl-Shift-P", the modifiers in the order Ctrl, Win, Alt, Shift), `avatar(name,
   side)` (the initials on a colour that is the name's own; images later), `card()` with
   `card_head(title, more)`, `divider()` and `vdivider()`.
+- **What says something in the flow** (`notes.rs`). `alert(tone, title, more)` is a box
+  tinted by its tone with the tone's icon, a title and a smaller muted line.
+  `empty_state(icon, title, hint, action)` is what an empty place shows, centred: a muted
+  icon, why it is empty, a hint, something to do about it. `description_list(items)` is
+  terms and their values in a grid of two columns, the terms muted and as wide as the widest.
 - **`accordion().item(title, open, || body)`**: sections under one another in one outline.
   A head is 28 px, a chevron then the title, and a button to a reader, expanded or not; a
   click, Enter or Space writes the signal that says whether its section is open. The body

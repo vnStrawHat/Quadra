@@ -75,15 +75,7 @@ impl Notice {
 
 /// The icon of a tone, in its colour.
 fn mark(tone: Tone) -> impl View {
-    let (body, role) = match tone {
-        Tone::Neutral => (icons::BELL, token::TEXT_2),
-        Tone::Primary => (icons::INFO, token::ACCENT_TEXT),
-        Tone::Info => (icons::INFO, token::INFO),
-        Tone::Success => (icons::CIRCLE_CHECK, token::OK),
-        Tone::Warning => (icons::TRIANGLE_ALERT, token::WARN),
-        Tone::Danger => (icons::CIRCLE_X, token::ERROR),
-    };
-    icon(body).size(16.0).color(role)
+    icon(tone.icon()).size(16.0).color(tone.role())
 }
 
 /// What a window is told to show, and what it shows. Copies are the same one.

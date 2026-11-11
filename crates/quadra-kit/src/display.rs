@@ -39,7 +39,8 @@ pub enum Tone {
 }
 
 impl Tone {
-    fn role(self) -> Token {
+    /// The role of the theme that is the tone's colour.
+    pub(crate) fn role(self) -> Token {
         match self {
             Tone::Neutral => token::TEXT_2,
             Tone::Primary => token::ACCENT_TEXT,

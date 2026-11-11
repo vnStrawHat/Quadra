@@ -22,6 +22,9 @@ pub enum Patch {
     Shrink(f32),
     /// The space between children, on both axes.
     Gap(f32),
+    /// The space between columns, and between rows.
+    GapX(f32),
+    GapY(f32),
     /// The same on every side.
     Padding(f32),
     PaddingX(f32),
@@ -103,6 +106,8 @@ impl Patch {
                 Patch::Grow(v) => l.grow = v,
                 Patch::Shrink(v) => l.shrink = v,
                 Patch::Gap(v) => (l.gap_row, l.gap_col) = (v, v),
+                Patch::GapX(v) => l.gap_col = v,
+                Patch::GapY(v) => l.gap_row = v,
                 Patch::Padding(v) => l.padding = Edges::all(v),
                 Patch::PaddingX(v) => (l.padding.left, l.padding.right) = (v, v),
                 Patch::PaddingY(v) => (l.padding.top, l.padding.bottom) = (v, v),

@@ -24,6 +24,7 @@ mod overlay;
 mod prop;
 mod scroll;
 mod text;
+mod tween;
 mod view;
 
 pub use div::{Div, Refine, column, div, row};
@@ -35,4 +36,5 @@ pub use overlay::{OverlayView, Place, overlay};
 pub use prop::{IntoProp, Prop};
 pub use scroll::scroll;
 pub use text::{TextView, text};
+pub use tween::tween;
 pub use view::{AnyView, MountCx, View, each_frame, mount_root, mount_with};

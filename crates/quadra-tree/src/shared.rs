@@ -6,6 +6,7 @@
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::time::Instant;
 
 use quadra_reactive::{Deferred, deferred};
 
@@ -36,6 +37,16 @@ pub(crate) struct Shared {
     pub frames: RefCell<Vec<Box<dyn FnMut() -> bool>>>,
     /// Set when something was queued: the window asks for a frame.
     pub wake: Cell<bool>,
+    /// The clock of the window the tree is in, when it was given one.
+    pub clock: RefCell<Option<Rc<dyn Fn() -> Instant>>>,
+}
+
+impl Tree {
+    /// Gives the tree the clock of its window: what animates goes by it, and a test moves
+    /// it. Without one the tree goes by the machine's.
+    pub fn set_clock(&mut self, now: impl Fn() -> Instant + 'static) {
+        *self.shared.clock.borrow_mut() = Some(Rc::new(now));
+    }
 }
 
 /// A cheap, clonable way to reach a tree from a closure.
@@ -64,6 +75,12 @@ impl Handle {
     /// Changes one value of a node's own style.
     pub fn patch_style(&self, node: NodeId, patch: Patch) {
         self.push(Op::Patch(node, patch));
+    }
+
+    /// The time on the clock of the tree's window.
+    pub fn now(&self) -> Instant {
+        let clock = self.0.clock.borrow().clone();
+        clock.map_or_else(Instant::now, |now| now())
     }
 
     /// Runs `f` at the start of each frame, in the frame's batch, until it returns false.

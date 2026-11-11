@@ -69,10 +69,11 @@ impl Harness {
         let size = DeviceSize { width: 800, height: 600 };
         let surface =
             renderer.create_surface(SurfaceTarget::Offscreen, size).expect("the null renderer has surfaces");
-        let tree = Tree::new(fonts.clone());
+        let mut tree = Tree::new(fonts.clone());
         let platform = HeadlessPlatform::new();
         let timers = Timers::new(Rc::new(platform.clone()));
-        let (size, clipboard) = (Size::new(800.0, 600.0), platform.clipboard());
+        let (size, clipboard, clock) = (Size::new(800.0, 600.0), platform.clipboard(), platform.clone());
+        tree.set_clock(move || clock.now()); // what animates goes by the harness's time
         Harness { tree, renderer, fonts, surface, size, scale: 1.0, platform, timers, clipboard }
     }
 

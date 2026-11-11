@@ -5,8 +5,10 @@
 
 mod affine;
 mod color;
+mod ease;
 mod geom;
 
 pub use affine::Affine;
 pub use color::Color;
+pub use ease::Ease;
 pub use geom::{Corners, Edges, Point, Rect, Size};

@@ -98,6 +98,13 @@ each_frame(move || {
   ends in a frame's update pass has had its callbacks run once more in that frame.
 - A registered callback is kept, not queued again each frame: an animation allocates nothing
   per frame.
+- A tree has the clock of its window (`Tree::set_clock`, read with `Handle::now`): the
+  platform's, which a test moves. What animates goes by it and not by counting frames.
+- `tween(|| target, duration, ease)` is a signal that follows a target: it starts at the
+  target, and each time the target changes it goes there over the duration, along the curve
+  (`Ease::Linear`, `In`, `Out`, `InOut`), from wherever it is. The clock is read when the
+  target changes: a window that was asleep has no recent frame to count from. While it is on
+  its way it is a frame callback; once it has arrived it asks for nothing.
 
 A component reaches its window's tree through context: the window's root scope provides the
 tree's handle, which is how `each_frame` finds where to register.

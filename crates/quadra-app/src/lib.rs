@@ -126,6 +126,8 @@ impl<R: Renderer> App<R> {
         let scope = self.root.run(Scope::child);
         let mut tree = Tree::new(self.fonts.clone());
         tree.set_keymap(self.keymap.clone());
+        let clock = self.platform.clone();
+        tree.set_clock(move || clock.now());
         scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();

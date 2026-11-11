@@ -6,10 +6,10 @@ use std::rc::Rc;
 use quadra::{Align, Div, NodeRef, Signal, column, div, row, signal, text};
 use quadra_kit::{
     CellKind, Column, MenuItem, Notice, Notices, Rule, Size, Status, Tone, TreeNode, Variant, accordion,
-    avatar, badge, breadcrumb, button, card, card_head, checkbox, context_menu, dialog, divider, field,
-    heading, icon, icon_button, icons, input, kbd, list, menu, number_input, progress, progress_busy,
-    radio_group, segmented, select, size, skeleton, slider, spinner, split, status_label, switch, table,
-    tabs, tag, textarea, token, tooltip, tree, validate,
+    avatar, badge, breadcrumb, button, card, card_head, checkbox, combobox, context_menu, dialog, divider,
+    field, heading, icon, icon_button, icons, input, kbd, list, menu, number_input, progress, progress_busy,
+    radio_group, range_slider, segmented, select, size, skeleton, slider, spinner, split, status_label,
+    switch, table, tabs, tag, textarea, token, tooltip, tree, validate,
 };
 
 /// A section: its title, then its rows.
@@ -82,11 +82,16 @@ of text"
     );
     let rules = [Rule::Required("A name is needed".into()), Rule::MinLen(3, "At least three letters".into())];
     let shown = text(move || format!("{:.0}", volume.get()));
-    let sliders =
-        line().gap(16.0).child(slider(volume).label("Volume")).child(div().width(32.0).child(shown));
+    let sliders = line()
+        .gap(16.0)
+        .child(slider(volume).label("Volume"))
+        .child(div().width(32.0).shrink(0.0).child(shown));
     let sliders = sliders.child(slider(signal(30.0)).disabled(true));
+    let sliders = sliders.child(range_slider(signal(20.0), signal(70.0)).label("Price"));
     let steps = line().gap(16.0).child(number_input(count).range(0.0, 10.0));
     let steps = steps.child(number_input(zoom).step(0.25).decimals(2).stepper());
+    let cities = ["H\u{E0} N\u{1ED9}i", "H\u{1EA3}i Ph\u{F2}ng", "Hu\u{1EBF}", "\u{110}\u{E0} N\u{1EB5}ng"];
+    let steps = steps.child(combobox(cities, signal(String::new())).placeholder("City"));
     let named = field("Name", input(name)).help("As it shows to others").required();
     let named = named.error(move || validate(&name.get(), &rules));
     let fields =

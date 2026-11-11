@@ -6,6 +6,7 @@ pub mod action;
 mod bars;
 mod button;
 mod choice;
+mod combobox;
 mod dialog;
 mod display;
 mod field;
@@ -20,6 +21,7 @@ mod number;
 mod palette;
 mod popup;
 mod progress;
+mod range;
 mod root;
 mod select;
 mod sidebar;
@@ -43,6 +45,7 @@ pub use bars::{
 };
 pub use button::{Button, Size, Variant, button, icon_button};
 pub use choice::{Choice, radio_group, segmented};
+pub use combobox::{Combobox, combobox};
 pub use dialog::{Dialog, dialog};
 pub use display::{
     Tone, avatar, badge, card, card_head, divider, heading, kbd, key_label, label, tag, vdivider,
@@ -57,6 +60,7 @@ pub use number::{NumberInput, number_input};
 pub use palette::{Command, command_palette, fuzzy, fuzzy_hits, marked};
 pub use popup::popover;
 pub use progress::{Busy, Skeleton, Spinner, progress, progress_busy, skeleton, spinner};
+pub use range::{RangeSlider, range_slider};
 pub use root::{install, root};
 pub use select::{Select, select};
 pub use sidebar::{NavItem, Sidebar, sidebar};

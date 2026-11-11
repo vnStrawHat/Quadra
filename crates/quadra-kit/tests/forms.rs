@@ -141,3 +141,91 @@ fn a_field_says_what_is_wrong_in_place_of_its_help() {
     assert_eq!([mail.check("a@b.c"), mail.check("a b@c.d"), mail.check("@b.c")], [None, wrong, wrong]);
     assert_eq!(Rule::MaxLen(2, "Too long".into()).check("abc"), Some("Too long"));
 }
+
+#[test]
+fn the_knobs_of_a_range_slider_move_to_the_pointer_and_never_pass_each_other() {
+    use quadra_kit::range_slider;
+    let (low, high) = (signal(20.0f32), signal(60.0f32));
+    let mut h = mount(move || column().child(range_slider(low, high).label("Price")));
+    let tree = h.semantics();
+    for line in ["Group \"Price\"", "Slider \"Minimum\" = \"20\"", "Slider \"Maximum\" = \"60\""] {
+        assert!(tree.contains(line), "{line} is not in:\n{tree}");
+    }
+    // A press moves the knob nearer to it; the track is 184 px from 8 px in.
+    let at = |part: f32| 8.0 + 184.0 * part;
+    h.click(at(0.3), 10.0);
+    h.click(at(0.8), 10.0);
+    assert_eq!((low.get_untracked(), high.get_untracked()), (30.0, 80.0));
+    // A drag past the other knob goes on with that one: they never cross.
+    h.pointer(PointerInput::Move, at(0.31), 10.0);
+    h.pointer(PointerInput::Down, at(0.31), 10.0);
+    h.pointer(PointerInput::Move, at(0.9), 10.0);
+    h.pointer(PointerInput::Up, at(0.9), 10.0);
+    assert_eq!((low.get_untracked(), high.get_untracked()), (31.0, 90.0));
+    // Each knob has the arrows of its own, as far as the other lets it.
+    h.get_by_role(Role::Slider, "Minimum").focus();
+    h.key(Key::Right, Mods::NONE);
+    h.key(Key::End, Mods::NONE);
+    assert_eq!((low.get_untracked(), high.get_untracked()), (90.0, 90.0));
+    h.get_by_role(Role::Slider, "Maximum").focus();
+    h.key(Key::Home, Mods::NONE);
+    h.key(Key::PageUp, Mods::NONE);
+    settle(&mut h);
+    assert_eq!((low.get_untracked(), high.get_untracked()), (90.0, 100.0));
+    assert!(h.semantics().contains("Slider \"Maximum\" = \"100\""));
+}
+
+#[test]
+fn a_combobox_offers_the_options_its_text_matches() {
+    use quadra_kit::combobox;
+    let (city, picked) = (signal(String::new()), signal(None));
+    let mut h = mount(move || {
+        let cities =
+            ["H\u{E0} N\u{1ED9}i", "H\u{1EA3}i Ph\u{F2}ng", "Hu\u{1EBF}", "\u{110}\u{E0} N\u{1EB5}ng"];
+        column().child(combobox(cities, city).placeholder("City").on_pick(move |i| picked.set(Some(i))))
+    });
+    let options = |h: &mut Harness| {
+        let says = h.tree.semantic_tree();
+        let rows = says.nodes.iter().filter(|n| n.semantics.role == Role::ListItem);
+        rows.map(|n| format!("{}{}", n.semantics.name, if n.semantics.selected { "*" } else { "" }))
+            .collect::<Vec<_>>()
+    };
+    assert!(options(&mut h).is_empty());
+    // Typing opens the list on what matches, whatever the accents, the best first.
+    h.get_by_role(Role::TextInput, "City").focus();
+    h.type_text("ha");
+    settle(&mut h);
+    assert_eq!(options(&mut h), ["H\u{E0} N\u{1ED9}i*", "H\u{1EA3}i Ph\u{F2}ng"]);
+    // It opens under the input, as wide as it, and the focus stays in the input.
+    let (field, list) = (h.get_by_role(Role::TextInput, "City").node(), h.tree.overlays().next().unwrap());
+    let (frame, list) = (h.tree.window_rect(h.tree.parent(field).unwrap()), h.tree.window_rect(list));
+    assert_eq!(
+        (list.x, list.y, list.width, h.tree.focused()),
+        (frame.x, frame.bottom() + 4.0, 280.0, Some(field))
+    );
+    // The arrows go round the options; Enter takes the highlighted one and closes the list.
+    h.key(Key::Down, Mods::NONE);
+    settle(&mut h);
+    assert_eq!(options(&mut h)[1], "H\u{1EA3}i Ph\u{F2}ng*");
+    h.key(Key::Enter, Mods::NONE);
+    settle(&mut h);
+    assert_eq!((city.get_untracked().as_str(), picked.get_untracked()), ("H\u{1EA3}i Ph\u{F2}ng", Some(1)));
+    assert!(options(&mut h).is_empty() && h.tree.focused() == Some(field));
+
+    // Escape closes it; a click on an option takes it.
+    h.get_by_role(Role::TextInput, "City").set_value("n");
+    settle(&mut h);
+    assert_eq!(options(&mut h).len(), 3);
+    h.key(Key::Escape, Mods::NONE);
+    settle(&mut h);
+    assert!(options(&mut h).is_empty());
+    h.key(Key::Down, Mods::NONE); // the arrow opens it again
+    settle(&mut h);
+    h.get_by_role(Role::ListItem, "\u{110}\u{E0} N\u{1EB5}ng").click();
+    settle(&mut h);
+    assert_eq!(
+        (city.get_untracked().as_str(), picked.get_untracked()),
+        ("\u{110}\u{E0} N\u{1EB5}ng", Some(3))
+    );
+    assert!(options(&mut h).is_empty());
+}

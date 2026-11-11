@@ -228,6 +228,17 @@ As built so far:
   goes on from it wherever the pointer is; with the focus the arrows step it, Page Up and
   Page Down go a tenth of the way, Home and End to the ends (key context `action::SLIDER`).
   To a reader it is a slider with its value, which it can step or set.
+- **`range_slider(low, high)`** is two knobs on one track for the ends of a range, filled
+  between them. A press or a drag moves the knob nearer to the pointer, so a drag past the
+  other knob goes on with that one; each knob is a slider of its own to the keys and to a
+  reader ("Minimum", "Maximum"), and goes as far as the other lets it. It shares the scale
+  of the slider (`slider::Scale`).
+- **`combobox(options, value)`** is an input, 280 px, that offers under itself the options
+  its text matches (as the command palette matches: in order, whatever the case and the
+  accents, the best first, the matched letters in the accent): rows of 23 px, at most 240
+  px of them. Typing opens the list; the focus stays in the input, the arrows go round the
+  options, Enter or a click takes the highlighted one (`.on_pick(|index| ..)`) and writes
+  it to the value, Escape or a press elsewhere closes the list.
 - **`number_input(value)`** is an input that holds a number (`.range(..)`, `.step(..)`,
   `.decimals(..)`), 160 px with a pair of chevrons that step it, or with `.stepper()` one
   frame of 128 by 32: a minus, the value in the middle, a plus. The up and down arrows step

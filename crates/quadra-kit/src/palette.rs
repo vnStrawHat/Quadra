@@ -66,6 +66,15 @@ pub fn fuzzy(query: &str, text: &str) -> Option<i32> {
     Some(score)
 }
 
+/// The texts a query matches, as their indexes: the best match first, and of equal ones the
+/// one that was given first.
+pub(crate) fn best<'a>(query: &str, texts: impl Iterator<Item = &'a str>) -> Vec<usize> {
+    let scored = texts.enumerate().filter_map(|(i, text)| Some((fuzzy(query, text)?, i)));
+    let mut scored: Vec<(i32, usize)> = scored.collect();
+    scored.sort_by_key(|&(score, i)| (-score, i));
+    scored.into_iter().map(|(_, i)| i).collect()
+}
+
 /// A text with the characters at `hits` in the accent: where a query matched it.
 pub fn marked(words: &str, hits: &[usize]) -> Div {
     let mut line = row();
@@ -92,13 +101,7 @@ where
         let (all, query, on) = (Rc::new(commands()), signal(String::new()), signal(0usize));
         // The commands that match, the best first; the order they were given in decides ties.
         let known = all.clone();
-        let found = memo(move || {
-            let query = query.get();
-            let scored = known.iter().enumerate().filter_map(|(i, c)| Some((fuzzy(&query, &c.title)?, i)));
-            let mut scored: Vec<(i32, usize)> = scored.collect();
-            scored.sort_by_key(|&(score, i)| (-score, i));
-            scored.into_iter().map(|(_, i)| i).collect::<Vec<usize>>()
-        });
+        let found = memo(move || best(&query.get(), known.iter().map(|command| command.title.as_str())));
         let run = {
             let all = all.clone();
             move |k: usize| {

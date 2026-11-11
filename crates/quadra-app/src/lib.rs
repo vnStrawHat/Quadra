@@ -14,10 +14,10 @@ use std::time::Instant;
 use quadra_async::Timers;
 use quadra_platform::{Cursor, Platform, PlatformWindow, WindowHandle, WindowId, WindowOptions};
 use quadra_prim::{Color, Rect};
-use quadra_reactive::{Scope, provide};
+use quadra_reactive::{Scope, Signal, provide, signal};
 use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
-use quadra_tree::{Fonts, Keymap, Tree};
+use quadra_tree::{Fonts, Keymap, Theme, Tree};
 use quadra_ui::{View, mount_with};
 
 pub use report::{AppError, FrameReport, Result};
@@ -49,6 +49,9 @@ pub struct App<R: Renderer> {
     keymap: Rc<Keymap>,
     /// What the platform's timers mean (specs/11).
     pub(crate) timers: Rc<Timers>,
+    /// The theme of every window: views find the signal in their context, and whoever
+    /// writes it gives the app another theme.
+    theme: Signal<Rc<Theme>>,
     on_error: Box<dyn FnMut(&AppError)>,
     on_presented: Option<FrameHook>,
 }
@@ -56,11 +59,14 @@ pub struct App<R: Renderer> {
 impl<R: Renderer> App<R> {
     /// An app on these backends. `quadra::App::new` picks the ones of the OS.
     pub fn with(platform: Rc<dyn Platform>, renderer: R, text: Box<dyn TextBackend>) -> App<R> {
-        // What every view of the app finds in its context: timers, and the clipboard.
+        // What every view of the app finds in its context: timers, the clipboard, the theme.
         let (root, timers) = (Scope::child(), Timers::new(platform.clone()));
-        root.run(|| {
+        let theme = root.run(|| {
             provide(timers.clone());
             provide(platform.clipboard());
+            let theme = signal(Rc::<Theme>::default());
+            provide(theme);
+            theme
         });
         App {
             platform,
@@ -71,6 +77,7 @@ impl<R: Renderer> App<R> {
             clear: Color::WHITE,
             keymap: Rc::new(Keymap::default()),
             timers,
+            theme,
             on_error: Box::new(|e| eprintln!("quadra: {e}")),
             on_presented: None,
         }
@@ -79,6 +86,13 @@ impl<R: Renderer> App<R> {
     /// The colour under everything a window draws.
     pub fn clear_color(mut self, color: Color) -> App<R> {
         self.clear = color;
+        self
+    }
+
+    /// The theme the roles in styles get their colours from (specs/13), in every window. A
+    /// view changes it by writing the `Signal<Rc<Theme>>` of its context.
+    pub fn theme(self, theme: Theme) -> App<R> {
+        self.theme.set(Rc::new(theme));
         self
     }
 
@@ -128,6 +142,16 @@ impl<R: Renderer> App<R> {
         tree.set_keymap(self.keymap.clone());
         let clock = self.platform.clone();
         tree.set_clock(move || clock.now());
+        // The window has the app's theme, now and whenever it is another one.
+        let (theme, handle) = (self.theme, tree.handle());
+        tree.set_theme(theme.get_untracked());
+        scope.run(|| {
+            let writer = handle.clone();
+            handle.bind(move || {
+                let theme = theme.get();
+                writer.with(move |tree| tree.set_theme(theme));
+            });
+        });
         scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();

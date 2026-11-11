@@ -6,9 +6,10 @@
 use std::ops::BitOr;
 
 use quadra_layout::{Align, Direction, Justify, Length, Overflow};
-use quadra_prim::{Color, Corners, Edges};
+use quadra_prim::{Corners, Edges};
 
 use crate::node::{NodeId, PaintStyle, Style, flag};
+use crate::theme::{Paint, Theme};
 use crate::tree::Tree;
 
 /// The states of a node that a style can follow. Dispatch sets the first five (specs/09); the
@@ -69,19 +70,20 @@ pub enum Patch {
     AlignItems(Align),
     Wrap(bool),
     OverflowY(Overflow),
-    Background(Color),
-    BorderColor(Color),
+    Background(Paint),
+    BorderColor(Paint),
     /// The same radius on every corner.
     Radius(f32),
 }
 
 impl Patch {
-    /// Sets the value in a style. Returns whether it is a layout value.
-    pub fn apply(self, style: &mut Style) -> bool {
+    /// Sets the value in a style, a role as the colour the theme gives it. Returns whether
+    /// it is a layout value.
+    pub fn apply(self, style: &mut Style, theme: &Theme) -> bool {
         let (l, p) = (&mut style.layout, &mut style.paint);
         match self {
-            Patch::Background(v) => p.background = v,
-            Patch::BorderColor(v) => p.border_color = v,
+            Patch::Background(v) => p.background = theme.resolve(v),
+            Patch::BorderColor(v) => p.border_color = theme.resolve(v),
             Patch::Radius(v) => p.radii = Corners::all(v),
             layout => {
                 match layout {
@@ -115,13 +117,33 @@ impl Patch {
     fn is_layout(self) -> bool {
         !matches!(self, Patch::Background(_) | Patch::BorderColor(_) | Patch::Radius(_))
     }
+
+    /// Whether the value is a role of the theme: it stands for another colour under
+    /// another theme.
+    pub fn themed(self) -> bool {
+        matches!(self, Patch::Background(Paint::Token(..)) | Patch::BorderColor(Paint::Token(..)))
+    }
 }
 
-/// What a node with state variants keeps: its own style, and what each state changes.
+/// What a node whose style is more than its values keeps: its own style, the values of it
+/// that are roles of the theme, and what each state changes.
 pub(crate) struct Styled {
     base: Style,
+    /// Applied over `base` with the theme of the moment.
+    roles: Vec<Patch>,
     /// In the order they are applied.
     variants: Vec<(State, Vec<Patch>)>,
+}
+
+impl Styled {
+    fn of(base: Style) -> Styled {
+        Styled { base, roles: Vec::new(), variants: Vec::new() }
+    }
+
+    /// Whether the theme has a say in the style.
+    pub fn themed(&self) -> bool {
+        !self.roles.is_empty() || self.variants.iter().any(|(_, patches)| patches.iter().any(|p| p.themed()))
+    }
 }
 
 impl Tree {
@@ -137,7 +159,7 @@ impl Tree {
         }
         let base = self.own_style(id);
         let node = &mut self.nodes[id.index as usize];
-        let styled = node.styled.get_or_insert_with(|| Box::new(Styled { base, variants: Vec::new() }));
+        let styled = node.styled.get_or_insert_with(|| Box::new(Styled::of(base)));
         styled.variants.retain(|(s, _)| *s != state);
         styled.variants.push((state, patches));
         styled.variants.sort_by_key(|(s, _)| *s);
@@ -164,20 +186,34 @@ impl Tree {
         }
     }
 
-    /// Changes one value of a node's own style.
+    /// Changes one value of a node's own style. A value that is a role of the theme is
+    /// kept as one: the node gets another colour when the theme changes.
     pub fn patch_style(&mut self, id: NodeId, patch: Patch) {
-        let Some(node) = self.get_mut(id) else { return };
+        if self.get(id).is_none() {
+            return;
+        }
+        if patch.themed() && self.nodes[id.index as usize].styled.is_none() {
+            let base = self.own_style(id);
+            self.nodes[id.index as usize].styled = Some(Box::new(Styled::of(base)));
+        }
+        let theme = self.theme.clone();
+        let node = &mut self.nodes[id.index as usize];
         if let Some(styled) = &mut node.styled {
-            patch.apply(&mut styled.base);
+            // The last value given for a property is the one that counts, role or not.
+            styled.roles.retain(|role| std::mem::discriminant(role) != std::mem::discriminant(&patch));
+            match patch.themed() {
+                true => styled.roles.push(patch),
+                false => drop(patch.apply(&mut styled.base, &theme)),
+            }
             return self.resolve(id);
         }
         if patch.is_layout() {
             let mut style = self.own_style(id);
-            patch.apply(&mut style);
+            patch.apply(&mut style, &theme);
             self.put_layout(id, style.layout);
         } else {
             let mut style = Style { paint: node.paint, ..Style::default() };
-            patch.apply(&mut style);
+            patch.apply(&mut style, &theme);
             self.put_paint(id, style.paint);
         }
     }
@@ -223,10 +259,9 @@ impl Tree {
         let node = &self.nodes[id.index as usize];
         let Some(styled) = &node.styled else { return };
         let mut style = styled.base.clone();
-        for (_, patches) in styled.variants.iter().filter(|(state, _)| node.state.contains(*state)) {
-            for patch in patches {
-                patch.apply(&mut style);
-            }
+        let states = styled.variants.iter().filter(|(state, _)| node.state.contains(*state));
+        for patch in styled.roles.iter().chain(states.flat_map(|(_, patches)| patches)) {
+            patch.apply(&mut style, &self.theme);
         }
         self.put_layout(id, style.layout);
         self.put_paint(id, style.paint);

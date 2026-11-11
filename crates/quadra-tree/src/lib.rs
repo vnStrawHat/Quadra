@@ -23,6 +23,7 @@ mod shared;
 mod structure;
 mod style;
 mod text;
+mod theme;
 mod tree;
 mod verify;
 mod widget;
@@ -41,5 +42,6 @@ pub use quadra_a11y::{Mirror, Role, SemanticAction, SemanticNode, Semantics, Tre
 pub use shared::Handle;
 pub use style::{Patch, State};
 pub use text::Text;
+pub use theme::{Paint, Theme, Token};
 pub use tree::Tree;
 pub use widget::{MeasureCx, PaintCx, Widget};

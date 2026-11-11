@@ -65,6 +65,8 @@ pub struct Tree {
     pub(crate) todo: Vec<NodeId>,
     /// By node index: the signal that follows the node's size (`Tree::size_signal`).
     pub(crate) sizes: HashMap<u32, Signal<Size>>,
+    /// What gives the roles in styles their colours.
+    pub(crate) theme: Rc<crate::theme::Theme>,
     /// The press that may become a drag, or the drag it became.
     pub(crate) drag: Option<crate::drag::Drag>,
     /// What waits to see the next layout.
@@ -111,6 +113,7 @@ impl Tree {
             listening: Listening::default(),
             todo: Vec::new(),
             sizes: HashMap::new(),
+            theme: Rc::default(),
             drag: None,
             after_layout: Vec::new(),
             stats: FrameStats::default(),

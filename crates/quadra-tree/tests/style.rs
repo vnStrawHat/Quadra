@@ -4,10 +4,12 @@
 
 mod common;
 
+use std::rc::Rc;
+
 use common::Window;
 use quadra_platform::{Mods, MouseButton};
 use quadra_prim::{Color, Point};
-use quadra_tree::{NodeId, Patch, PointerInput, State};
+use quadra_tree::{NodeId, Patch, PointerInput, State, Theme, Token};
 
 const GRAY: u32 = 0x808080;
 const LIGHT: u32 = 0xA0A0A0;
@@ -24,8 +26,8 @@ struct Page {
 fn page() -> Page {
     let mut w = Window::new();
     let (plain, button) = (w.block(100.0, 40.0, 0x202020), w.block(100.0, 40.0, GRAY));
-    w.tree.set_variant(button, State::HOVER, vec![Patch::Background(Color::rgb(LIGHT))]);
-    w.tree.set_variant(button, State::ACTIVE, vec![Patch::Background(Color::rgb(DARK))]);
+    w.tree.set_variant(button, State::HOVER, vec![Patch::Background(Color::rgb(LIGHT).into())]);
+    w.tree.set_variant(button, State::ACTIVE, vec![Patch::Background(Color::rgb(DARK).into())]);
     let root = w.column(&[plain, button]);
     w.tree.set_root(root);
     w.frame();
@@ -73,7 +75,7 @@ fn a_nodes_own_style_changes_under_its_variants() {
     p.send(PointerInput::Move, 50.0, 60.0);
     p.w.frame();
     // Its own background changes while it is hovered: the hover colour still shows.
-    p.w.tree.patch_style(p.button, Patch::Background(Color::rgb(0x112233)));
+    p.w.tree.patch_style(p.button, Patch::Background(Color::rgb(0x112233).into()));
     assert!(!p.w.tree.needs_frame()); // resolved to the same style: nothing to do
     p.w.tree.patch_style(p.button, Patch::Width(quadra_layout::Length::Px(160.0)));
     let (stats, _) = p.w.frame();
@@ -102,4 +104,47 @@ fn a_variant_may_change_layout_and_a_state_may_be_a_property() {
     p.w.tree.set_state(p.button, State::DISABLED, true);
     p.w.tree.set_state(p.plain, State::SELECTED, true);
     assert!(!p.w.tree.needs_frame());
+}
+
+/// Two roles, and a theme of a colour for each.
+const SURFACE: Token = Token(0);
+const ACCENT: Token = Token(1);
+
+fn theme(surface: u32, accent: u32) -> Rc<Theme> {
+    Rc::new(Theme::new(vec![Color::rgb(surface), Color::rgb(accent)]))
+}
+
+#[test]
+fn a_role_gets_its_colour_from_the_theme_and_another_when_the_theme_changes() {
+    let mut p = page();
+    p.w.tree.set_theme(theme(0x202020, 0x3366FF));
+    // The plain box is the surface; the button turns the accent, half as opaque, when hovered.
+    p.w.tree.patch_style(p.plain, Patch::Background(SURFACE.into()));
+    p.w.tree.set_variant(p.button, State::HOVER, vec![Patch::Background(ACCENT.alpha(0.5))]);
+    p.w.frame();
+    assert_eq!(p.background(p.plain), Color::rgb(0x202020));
+    assert_eq!(p.background(p.button), Color::rgb(GRAY)); // not hovered: its own colour
+    p.send(PointerInput::Move, 50.0, 60.0);
+    p.w.frame();
+    assert_eq!(p.background(p.button), Color::rgb(0x3366FF).alpha(0.5));
+
+    // Another theme: the two nodes that hold roles are styled and painted again, and
+    // nothing is laid out. A third box, of plain colours, is not looked at.
+    p.w.tree.set_theme(theme(0xF0F0F0, 0xCC0000));
+    let (stats, _) = p.w.frame();
+    assert_eq!((stats.nodes_styled, stats.nodes_laid_out, stats.nodes_painted), (2, 0, 2));
+    assert_eq!(p.background(p.plain), Color::rgb(0xF0F0F0));
+    assert_eq!(p.background(p.button), Color::rgb(0xCC0000).alpha(0.5));
+    p.w.tree.set_theme(theme(0xF0F0F0, 0xCC0000)); // the same colours: nothing to do
+    assert!(!p.w.tree.needs_frame());
+
+    // A colour given after a role takes its place: the theme has no say in it any more.
+    p.w.tree.patch_style(p.plain, Patch::Background(Color::rgb(0x112233).into()));
+    p.w.frame();
+    p.w.tree.set_theme(theme(0x000000, 0xCC0000));
+    let (stats, _) = p.w.frame();
+    assert_eq!((p.background(p.plain), stats.nodes_painted), (Color::rgb(0x112233), 0));
+    // A role the theme has no colour for is transparent.
+    p.w.tree.patch_style(p.plain, Patch::BorderColor(Token(9).into()));
+    assert_eq!(p.w.tree.paint_style(p.plain).border_color, Color::TRANSPARENT);
 }

@@ -2,8 +2,9 @@
 
 use quadra_layout::{Align, Direction, Justify, Length, Overflow};
 use quadra_platform::{Cursor, MouseButton};
-use quadra_prim::Color;
-use quadra_tree::{Action, Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Tree};
+use quadra_tree::{
+    Action, Handle, KeyEvent, NodeId, Paint, Patch, PointerEvent, PointerKind, State, Style, Theme, Tree,
+};
 
 use crate::node_ref::NodeRef;
 
@@ -24,6 +25,8 @@ pub struct Div {
     children: Vec<AnyView>,
     pub(crate) binders: Vec<Binder>,
     mounts: Vec<Mount>,
+    /// The values of the box's own style that are roles of the theme.
+    roles: Vec<Patch>,
     variants: Vec<(State, Vec<Patch>)>,
 }
 
@@ -94,8 +97,8 @@ props! {
     wrap: bool => Wrap;
     overflow_y: Overflow => OverflowY;
     /// The background colour.
-    bg: Color => Background;
-    border_color: Color => BorderColor;
+    bg: Paint => Background;
+    border_color: Paint => BorderColor;
     /// The same radius on every corner.
     radius: f32 => Radius;
 }
@@ -105,7 +108,11 @@ impl Div {
     /// binding that writes that one value when it changes.
     fn prop<T: 'static>(&mut self, prop: Prop<T>, patch: fn(T) -> Patch) {
         match prop {
-            Prop::Value(value) => drop(patch(value).apply(&mut self.style)),
+            // A role of the theme is kept as one; any other constant is the style's value.
+            Prop::Value(value) => match patch(value) {
+                role if role.themed() => self.roles.push(role),
+                value => drop(value.apply(&mut self.style, &Theme::default())),
+            },
             Prop::Reactive(read) => self.binders.push(Box::new(move |id, handle| {
                 let writer = handle.clone();
                 handle.bind(move || writer.patch_style(id, patch(read())));
@@ -238,6 +245,9 @@ impl Div {
 impl View for Div {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let id = cx.tree.insert(self.style);
+        for role in self.roles {
+            cx.tree.patch_style(id, role);
+        }
         let children: Vec<NodeId> = self.children.into_iter().map(|child| child.mount(cx)).collect();
         cx.tree.set_children(id, &children);
         for bind in self.binders {

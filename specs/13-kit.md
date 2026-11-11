@@ -39,6 +39,20 @@ div().bg(token::ACCENT.alpha(0.12))
   provide another theme (a dark panel in a light window).
 - Changing the theme flags the affected root with "restyle all". Resolved styles are diffed as
   usual: a theme that changes only colours lays out nothing.
+- As built, for colours: a colour of a style is a `Paint`, which is a `Color` or a `Token`
+  with an opacity (`ACCENT.alpha(0.12)`); every setter that takes a colour takes either,
+  constant, in a state variant, or reactive. `Token` is a number and `Theme` the colour of
+  each number, both in `quadra-tree`, which knows no role by name: the names are the kit's.
+  A role the theme has no colour for is transparent.
+- A node keeps the values of its style that are roles beside its own style, and they are
+  applied over it with the theme of the moment, before the variants of its states. A colour
+  given after a role for the same property takes its place. A node whose style holds no
+  role keeps nothing for the theme and is not looked at when the theme changes.
+- `Tree::set_theme` styles again the nodes whose style holds a role; an equal theme does
+  nothing. The app has one theme for all its windows, as a signal in the context of every
+  view (`Signal<Rc<Theme>>`): writing it is how a view changes the theme.
+- Not yet: a theme for a subtree; tokens for radii, spacing, fonts and durations; text
+  colours (they come with inherited text style).
 - Component-level tokens (`button.primary.bg`) resolve to palette tokens in the theme file, so
   a theme can restyle one component without code.
 

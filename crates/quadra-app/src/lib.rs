@@ -17,7 +17,7 @@ use quadra_reactive::{Scope, batch};
 use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
 use quadra_tree::{Fonts, Tree};
-use quadra_ui::{View, mount_root};
+use quadra_ui::{View, mount_with};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AppError {
@@ -117,7 +117,7 @@ impl<R: Renderer> App<R> {
         let surface = self.renderer.create_surface(target, device_size(&*window))?;
         let scope = self.root.run(Scope::child);
         let mut tree = Tree::new(self.fonts.clone());
-        scope.run(|| mount_root(&mut tree, view()));
+        scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();
         self.windows.push(AppWindow { scope, tree, surface, window });

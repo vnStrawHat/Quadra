@@ -71,7 +71,7 @@ impl Harness {
                 );
             }
         }
-        assert!(!self.tree.needs_frame(), "a frame left work to do");
+        assert!(self.tree.animating() || !self.tree.needs_frame(), "a frame left work to do");
         (stats, self.renderer.stats())
     }
 

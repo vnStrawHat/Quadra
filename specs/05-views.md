@@ -78,6 +78,30 @@ Transitions are part of style: `.transition(Prop::Background, 120, Ease::Out)`. 
 them; the property animated decides the pass, so a transform or opacity transition repaints
 nothing.
 
+## Frame callbacks
+
+Animation that app code drives itself (a value that follows a spring, a scroll that glides, a
+bench that changes its scene) is advanced by the frame, not by a timer:
+
+```rust
+each_frame(move || {
+    offset.update(|y| *y += 8.0);
+    offset.get_untracked() < end          // false: done
+});
+```
+
+- The callback runs at the start of each frame of its window, before the update pass, inside
+  the frame's batch. It writes signals; the frame it runs in shows the result.
+- While a window has one, it draws a frame every time the display can take one. When the last
+  returns `false`, the window goes back to sleep.
+- It belongs to the scope it was registered in, runs in it, and stops with it. A scope that
+  ends in a frame's update pass has had its callbacks run once more in that frame.
+- A registered callback is kept, not queued again each frame: an animation allocates nothing
+  per frame.
+
+A component reaches its window's tree through context: the window's root scope provides the
+tree's handle, which is how `each_frame` finds where to register.
+
 ## Handlers
 
 ```rust

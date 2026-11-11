@@ -29,4 +29,4 @@ pub use list::uniform_list;
 pub use prop::{IntoProp, Prop};
 pub use scroll::scroll;
 pub use text::{TextView, text};
-pub use view::{AnyView, MountCx, View, mount_root};
+pub use view::{AnyView, MountCx, View, each_frame, mount_root, mount_with};

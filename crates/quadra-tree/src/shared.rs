@@ -24,6 +24,9 @@ pub(crate) enum Op {
 pub(crate) struct Shared {
     pub due: RefCell<Vec<Deferred>>,
     pub ops: RefCell<Vec<Op>>,
+    /// Run at the start of every frame, each until it returns false (specs/05, "Frame
+    /// callbacks").
+    pub frames: RefCell<Vec<Box<dyn FnMut() -> bool>>>,
     /// Set when something was queued: the window asks for a frame.
     pub wake: Cell<bool>,
 }
@@ -49,6 +52,13 @@ impl Handle {
 
     pub fn set_paint_style(&self, node: NodeId, style: PaintStyle) {
         self.push(Op::Paint(node, style));
+    }
+
+    /// Runs `f` at the start of each frame, in the frame's batch, until it returns false.
+    /// While one is registered the window draws every frame the display can take.
+    pub fn each_frame(&self, f: impl FnMut() -> bool + 'static) {
+        self.0.frames.borrow_mut().push(Box::new(f));
+        self.0.wake.set(true);
     }
 
     /// Runs `f` on the tree in its next update pass.

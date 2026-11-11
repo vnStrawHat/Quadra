@@ -106,6 +106,10 @@ impl Div {
         gap: f32 => |s, v| (s.gap_row, s.gap_col) = (v, v);
         /// The same padding on every side.
         padding: f32 => |s, v| s.padding = Edges::all(v);
+        /// Left and right padding.
+        padding_x: f32 => |s, v| (s.padding.left, s.padding.right) = (v, v);
+        /// Top and bottom padding.
+        padding_y: f32 => |s, v| (s.padding.top, s.padding.bottom) = (v, v);
         margin: f32 => |s, v| s.margin = Edges::all(v);
         /// The width of the border on every side.
         border: f32 => |s, v| s.border = Edges::all(v);

@@ -3,6 +3,7 @@
 
 use quadra_layout::{Known, LayoutId, Measure, RootSize};
 use quadra_prim::Size;
+use quadra_reactive::batch;
 use quadra_text::TextSystem;
 
 use crate::node::{Node, NodeId, PaintStyle, flag};
@@ -50,7 +51,29 @@ impl Measure for Measurer<'_> {
 impl Tree {
     /// True when a frame would do something: nothing flagged, nothing queued means no frame.
     pub fn needs_frame(&self) -> bool {
-        self.relayout || self.repaint || !self.recompose.is_empty() || self.shared.wake.get()
+        self.relayout
+            || self.repaint
+            || !self.recompose.is_empty()
+            || self.shared.wake.get()
+            || self.animating()
+    }
+
+    /// True while a frame callback is registered: every frame is wanted.
+    pub fn animating(&self) -> bool {
+        !self.shared.frames.borrow().is_empty()
+    }
+
+    /// Runs the frame callbacks in one batch and keeps those that want the next frame.
+    fn run_frame_callbacks(&mut self) {
+        let mut callbacks = std::mem::take(&mut *self.shared.frames.borrow_mut());
+        if callbacks.is_empty() {
+            return;
+        }
+        batch(|| callbacks.retain_mut(|callback| callback()));
+        // Those registered while these ran come after the ones kept.
+        let mut registered = self.shared.frames.borrow_mut();
+        callbacks.append(&mut registered);
+        *registered = callbacks;
     }
 
     /// Runs the passes for a window of `size` logical pixels at `scale` device pixels each,
@@ -65,6 +88,7 @@ impl Tree {
             (self.repaint, self.repaint_all) = (true, true);
         }
         (self.size, self.scale) = (size, scale);
+        self.run_frame_callbacks();
         // A layout may change a size that state depends on: its bindings run and the layout
         // is done again. After four rounds the rest waits for the next frame.
         for _ in 0..4 {

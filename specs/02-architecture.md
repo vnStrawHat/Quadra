@@ -72,7 +72,8 @@ The compiler enforces the split: a signal handle cannot cross to another thread.
 A window draws a frame only when something is flagged. One frame:
 
 ```
-1. update     run queued bindings; they write node properties, which set flags
+1. update     run frame callbacks (05), then queued bindings; they write node properties,
+              which set flags
 2. style      resolve styles of nodes whose state or tokens changed; diff decides layout or paint
 3. layout     lay out dirty subtrees from their boundaries; realize virtual rows
 4. paint      repaint dirty nodes into their layers' display lists

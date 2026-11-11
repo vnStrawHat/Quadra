@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use quadra_async::{Timers, interval};
 
-use quadra_platform::{Clipboard, Mods, MouseButton};
+use quadra_platform::{Clipboard, Cursor, Mods, MouseButton};
 use quadra_prim::Color;
 use quadra_reactive::{Scope, Signal, use_context};
 use quadra_text::TextStyle;
@@ -70,6 +70,7 @@ impl View for TextInput {
         let field = TextField::new(&value.get_untracked(), self.style, self.color);
         let id = cx.tree.insert_widget(Style::default(), Box::new(field));
         cx.tree.set_focusable(id, true);
+        cx.tree.set_cursor(id, Some(Cursor::Text));
         cx.tree.set_key_context(id, TEXT_CONTEXT);
 
         // What is written to the value from elsewhere is shown. What the field wrote itself

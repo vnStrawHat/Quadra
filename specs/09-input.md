@@ -48,7 +48,9 @@ Handlers are closures on nodes (05). A node with no handler for an event kind is
   release.
 - A state bit sets the `STYLE` flag only on a node that has a style variant for it (04). A
   window of plain content costs nothing to hover over.
-- The cursor is the `cursor` style of the first node on the path that sets one.
+- The cursor is that of the deepest node on the hover path that sets one (`.cursor(..)`), the
+  arrow when none does; a text input sets the text cursor. It stays what it was while a node
+  holds the pointer, as hover does. The app tells the window when it changed (10).
 - Tooltips are overlays opened by the kit after a rest delay; the tree only reports hover.
 
 ## Focus

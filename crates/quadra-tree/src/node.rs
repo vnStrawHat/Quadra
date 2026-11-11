@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use quadra_a11y::Semantics;
 use quadra_layout::LayoutId;
+use quadra_platform::Cursor;
 use quadra_prim::{Color, Corners};
 use quadra_reactive::Scope;
 
@@ -79,6 +80,8 @@ pub(crate) struct Node {
     pub tab_index: i16,
     /// Tab and Shift+Tab stay among what is under it: a dialog, a menu.
     pub focus_scope: bool,
+    /// The shape the pointer has over it and what is under it (specs/09).
+    pub cursor: Option<Cursor>,
     /// Its name as a context of key bindings (specs/09).
     pub key_context: Option<Rc<str>>,
     /// What it is to a user, when that was said (specs/12).

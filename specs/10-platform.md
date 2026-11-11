@@ -108,6 +108,9 @@ Unchanged from the V implementation, whose notes in behaviour/02 remain the refe
   Vietnamese typing is a required test case.
 - Windows open at a fitted, centred or restored placement; a restored placement is used only if
   it is still on a connected display.
+- The window answers `WM_SETCURSOR` over its content with the cursor it was given, one of the
+  system's own; over its frame the system keeps its cursors. A cursor given while the pointer
+  is over the content shows at once.
 - Assistive technology through UI Automation, by the adapter of `accesskit` (12): made with
   the window, it loads nothing and builds nothing until a reader asks.
 - OS bindings come from the `windows` crate with only the needed features. COM objects are

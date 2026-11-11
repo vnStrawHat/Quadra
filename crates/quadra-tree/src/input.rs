@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use quadra_a11y::SemanticAction;
 use quadra_layout::{Display, Overflow};
-use quadra_platform::{Mods, MouseButton};
+use quadra_platform::{Cursor, Mods, MouseButton};
 use quadra_prim::Point;
 
 use crate::focus::KeyEvent;
@@ -167,6 +167,21 @@ impl Tree {
     /// A node and its ancestors, the node first.
     pub(crate) fn path(&self, id: NodeId) -> Vec<NodeId> {
         std::iter::successors(Some(id), |&at| self.nodes[at.index as usize].parent).collect()
+    }
+
+    /// Sets the shape the pointer has over a node and what is under it; `None` leaves it to
+    /// the node around it.
+    pub fn set_cursor(&mut self, id: NodeId, cursor: Option<Cursor>) {
+        if let Some(node) = self.get_mut(id) {
+            node.cursor = cursor;
+        }
+    }
+
+    /// The shape the pointer has now: that of the deepest node under it that sets one. It
+    /// stays what it was while a node holds the pointer.
+    pub fn cursor(&self) -> Cursor {
+        let set = self.input.hover.iter().find_map(|&id| self.get(id)?.cursor);
+        set.unwrap_or_default()
     }
 
     /// True while the pointer is over the node or something under it.

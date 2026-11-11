@@ -115,8 +115,8 @@ panics on an update that is not well formed (specs/12 lists the rules): a change
 tree tells a listener goes through `semantics_changed`, and `quadra_a11y::Mirror` in the
 random test is what catches a missed case. Lists with rows of different heights are in
 (`virtual_list` beside `uniform_list` in `quadra-ui/src/list.rs`, heights in
-`list/heights.rs`, `Tree::after_layout`), and so is the tab index. Next, in this order:
-cursors, the rest of `quadra-async` (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range
+`list/heights.rs`, `Tree::after_layout`), and so are the tab index and cursors. Next: the
+rest of `quadra-async` (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range
 values, positions in a set, a role for scroll views.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its

@@ -1,7 +1,7 @@
 //! The box view: a node that is its style and its children (specs/05).
 
 use quadra_layout::{Align, Direction, Justify, Length, Overflow};
-use quadra_platform::MouseButton;
+use quadra_platform::{Cursor, MouseButton};
 use quadra_prim::Color;
 use quadra_tree::{Action, Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Tree};
 
@@ -197,6 +197,11 @@ impl Div {
     }
 
     /// Keeps Tab and Shift+Tab among what is in the box: a dialog, a menu.
+    /// The shape the pointer has over the box and what it holds.
+    pub fn cursor(self, cursor: Cursor) -> Self {
+        self.on_mount(move |tree, id| tree.set_cursor(id, Some(cursor)))
+    }
+
     /// Lets the box have the focus, with a place in the order Tab walks: above zero before
     /// the boxes without one, lowest first; below zero never by Tab.
     pub fn tab_index(self, index: i16) -> Self {

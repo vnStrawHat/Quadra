@@ -252,3 +252,28 @@ fn a_window_tells_assistive_technology_its_tree_once_asked_and_does_what_it_asks
     platform.step(&mut app);
     assert_eq!(count.get_untracked(), 6);
 }
+
+#[test]
+fn a_window_is_given_the_cursor_of_what_the_pointer_is_over() {
+    use quadra_platform::{Cursor, Mods, MouseButton, PointerKind};
+    use quadra_prim::Point;
+    use quadra_ui::{div, text_input};
+
+    let platform = HeadlessPlatform::new();
+    let mut app = app(&platform);
+    let view = || {
+        let link = div().size(100.0, 40.0).cursor(Cursor::Pointer);
+        column().child(link).child(div().size(100.0, 20.0).child(text_input(signal(String::new()))))
+    };
+    let window = app.open_window(WindowOptions::new("cursor").size(400.0, 300.0), view).unwrap();
+    platform.step(&mut app);
+    let mut over = |y: f32| {
+        let (kind, at) = (PointerKind::Move, Point::new(50.0, y));
+        platform
+            .push(window, PlatformEvent::Pointer { kind, button: MouseButton::None, at, mods: Mods::NONE });
+        platform.step(&mut app);
+        platform.cursor(window).unwrap()
+    };
+    // The link's, the one of a text input, and the arrow over the rest.
+    assert_eq!([over(20.0), over(50.0), over(200.0)], [Cursor::Pointer, Cursor::Text, Cursor::Arrow]);
+}

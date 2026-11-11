@@ -19,7 +19,7 @@ use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
 pub use quadra_app::{AppError, FrameReport, Result};
 pub use quadra_layout::{Align, Direction, Justify, Length, Overflow};
-pub use quadra_platform::{Key, Mods, MouseButton, WindowId, WindowOptions};
+pub use quadra_platform::{Cursor, Key, Mods, MouseButton, WindowId, WindowOptions};
 pub use quadra_prim::{Color, Corners, Edges, Point, Rect, Size};
 pub use quadra_reactive::{
     Memo, Scope, Signal, batch, effect, expect, memo, on_cleanup, provide, signal, untrack, use_context,

@@ -3,8 +3,8 @@
 //!     tools/cargo.sh run -p quadra --example form
 
 use quadra::{
-    Along, Color, NodeRef, Place, Role, Side, WindowOptions, column, div, overlay, row, show, signal, text,
-    text_input,
+    Along, Color, Cursor, NodeRef, Place, Role, Side, WindowOptions, column, div, overlay, row, show, signal,
+    text, text_input,
 };
 
 fn main() -> quadra::Result<()> {
@@ -18,6 +18,7 @@ fn main() -> quadra::Result<()> {
         // A button that opens a menu below itself; an item of the menu writes the name.
         let anchor = NodeRef::new();
         let button = div().role(Role::Button).expanded(move || open.get()).focusable();
+        let button = button.cursor(Cursor::Pointer);
         let button = button.padding_x(12.0).padding_y(6.0).radius(4.0).bg(Color::rgb(0xE8E8E8));
         let button = button.hover(|s| s.bg(Color::rgb(0xD8D8D8))).active(|s| s.bg(Color::rgb(0xC4C4C4)));
         let button =

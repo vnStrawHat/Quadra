@@ -65,6 +65,29 @@ impl WindowOptions {
     }
 }
 
+/// The shape of the pointer over a window.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Cursor {
+    #[default]
+    Arrow,
+    /// Over text that can be selected or edited.
+    Text,
+    /// Over what a click follows: a link.
+    Pointer,
+    Crosshair,
+    Move,
+    NotAllowed,
+    /// Over an edge that is dragged left and right, up and down, or along a diagonal.
+    ResizeHorizontal,
+    ResizeVertical,
+    ResizeNwse,
+    ResizeNesw,
+    /// The app is busy; `Progress` when it still answers.
+    Wait,
+    Progress,
+    Help,
+}
+
 /// A window size capped by [`WindowOptions::fit`] against a display, both in logical pixels.
 pub fn fit_size(size: Size, display: Size, fit: f32) -> Size {
     if fit > 0.0 && display.width > 0.0 && display.height > 0.0 {
@@ -85,6 +108,8 @@ pub trait PlatformWindow {
     fn set_title(&self, title: &str);
     /// Asks for [`crate::PlatformHandler::frame`] as soon as the window can show a frame.
     fn request_frame(&self);
+    /// The shape the pointer has while it is over the window's content.
+    fn set_cursor(&self, cursor: Cursor);
     /// Says whether the focus is on something that takes text, and where its caret is, in
     /// logical pixels of the window: an input method is on only then, and opens its
     /// candidates beside that caret.

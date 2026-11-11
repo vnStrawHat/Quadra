@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use quadra_a11y::TreeUpdate;
 use quadra_platform::{
-    PlatformError, PlatformEvent, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size,
+    Cursor, PlatformError, PlatformEvent, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size,
 };
 use quadra_prim::{Rect, Size};
 use windows::Win32::Foundation::{HWND, POINT, RECT};
@@ -17,9 +17,11 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::HiDpi::{AdjustWindowRectExForDpi, GetDpiForWindow};
 use windows::Win32::UI::WindowsAndMessaging::{
     CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, CreateWindowExW, DestroyWindow, GWLP_USERDATA, GetClientRect,
-    IDC_ARROW, LoadCursorW, RegisterClassExW, SW_SHOW, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOZORDER,
-    SetWindowLongPtrW, SetWindowPos, SetWindowTextW, ShowWindow, WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSEXW,
-    WNDPROC, WS_MAXIMIZEBOX, WS_OVERLAPPEDWINDOW, WS_THICKFRAME,
+    HCURSOR, IDC_APPSTARTING, IDC_ARROW, IDC_CROSS, IDC_HAND, IDC_HELP, IDC_IBEAM, IDC_NO, IDC_SIZEALL,
+    IDC_SIZENESW, IDC_SIZENS, IDC_SIZENWSE, IDC_SIZEWE, IDC_WAIT, LoadCursorW, RegisterClassExW, SW_SHOW,
+    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOZORDER, SetCursor, SetWindowLongPtrW, SetWindowPos, SetWindowTextW,
+    ShowWindow, WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSEXW, WNDPROC, WS_MAXIMIZEBOX, WS_OVERLAPPEDWINDOW,
+    WS_THICKFRAME,
 };
 use windows::core::{HSTRING, PCWSTR, Param, w};
 
@@ -45,6 +47,8 @@ pub(crate) struct WindowState {
     /// Where the candidates of an input method go: the caret, in device pixels. `None`: the
     /// focus is on nothing that takes text, and the input method is off.
     pub caret: Cell<Option<RECT>>,
+    /// The shape the pointer has over the content.
+    pub cursor: Cell<HCURSOR>,
     /// The bridge to assistive technology, from when the window exists.
     pub access: OnceCell<Access>,
 }
@@ -127,6 +131,27 @@ pub(crate) unsafe fn create(
     }
 }
 
+/// One of the cursors the system has for everyone.
+fn system_cursor(cursor: Cursor) -> HCURSOR {
+    let id = match cursor {
+        Cursor::Arrow => IDC_ARROW,
+        Cursor::Text => IDC_IBEAM,
+        Cursor::Pointer => IDC_HAND,
+        Cursor::Crosshair => IDC_CROSS,
+        Cursor::Move => IDC_SIZEALL,
+        Cursor::NotAllowed => IDC_NO,
+        Cursor::ResizeHorizontal => IDC_SIZEWE,
+        Cursor::ResizeVertical => IDC_SIZENS,
+        Cursor::ResizeNwse => IDC_SIZENWSE,
+        Cursor::ResizeNesw => IDC_SIZENESW,
+        Cursor::Wait => IDC_WAIT,
+        Cursor::Progress => IDC_APPSTARTING,
+        Cursor::Help => IDC_HELP,
+    };
+    // SAFETY: loading a cursor of the system by its id; they are shared and never freed.
+    unsafe { LoadCursorW(None, id) }.unwrap_or_default()
+}
+
 /// The work area of the primary display, in device pixels.
 fn primary_display() -> RECT {
     let mut info = MONITORINFO { cbSize: size_of::<MONITORINFO>() as u32, ..Default::default() };
@@ -148,6 +173,7 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         in_size_move: Cell::new(false),
         high_surrogate: Cell::new(0),
         caret: Cell::new(None),
+        cursor: Cell::new(system_cursor(Cursor::Arrow)),
         access: OnceCell::new(),
     });
     let style = if options.resizable {
@@ -239,6 +265,16 @@ impl PlatformWindow for WinWindow {
 
     fn request_frame(&self) {
         self.0.frame_requested.set(true);
+    }
+
+    fn set_cursor(&self, cursor: Cursor) {
+        let cursor = system_cursor(cursor);
+        self.0.cursor.set(cursor);
+        if self.0.tracking_leave.get() {
+            // The pointer is over the content: it changes now, not at its next move.
+            // SAFETY: the handle is one of the system's own cursors, or null for none.
+            unsafe { SetCursor(Some(cursor)) };
+        }
     }
 
     fn set_text_input(&self, caret: Option<Rect>) {

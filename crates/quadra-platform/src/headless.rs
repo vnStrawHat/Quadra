@@ -14,7 +14,7 @@ use quadra_prim::{Rect, Size};
 use crate::clipboard::{Clipboard, MemoryClipboard};
 use crate::event::PlatformEvent;
 use crate::platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
-use crate::window::{PlatformWindow, WindowHandle, WindowId, WindowOptions};
+use crate::window::{Cursor, PlatformWindow, WindowHandle, WindowId, WindowOptions};
 
 struct Timer {
     id: TimerId,
@@ -29,6 +29,7 @@ struct WindowState {
     title: RefCell<String>,
     frame: Cell<bool>,
     text_input: Cell<Option<Rect>>,
+    cursor: Cell<Cursor>,
     semantics: RefCell<Vec<TreeUpdate>>,
 }
 
@@ -103,6 +104,11 @@ impl HeadlessPlatform {
     /// The semantic updates a window was given since this was last asked.
     pub fn take_semantics(&self, window: WindowId) -> Vec<TreeUpdate> {
         self.window(window).map(|w| w.semantics.take()).unwrap_or_default()
+    }
+
+    /// The cursor a window was last given.
+    pub fn cursor(&self, window: WindowId) -> Option<Cursor> {
+        self.window(window).map(|w| w.cursor.get())
     }
 
     /// The title a window was last given.
@@ -185,6 +191,7 @@ impl Platform for HeadlessPlatform {
             title: RefCell::new(options.title.clone()),
             frame: Cell::new(false),
             text_input: Cell::new(None),
+            cursor: Cell::default(),
             semantics: RefCell::default(),
         });
         self.0.windows.borrow_mut().push(Rc::downgrade(&state));
@@ -240,6 +247,10 @@ impl PlatformWindow for HeadlessWindow {
 
     fn request_frame(&self) {
         self.0.frame.set(true);
+    }
+
+    fn set_cursor(&self, cursor: Cursor) {
+        self.0.cursor.set(cursor);
     }
 
     fn set_text_input(&self, caret: Option<Rect>) {

@@ -12,7 +12,7 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_async::Timers;
-use quadra_platform::{Platform, PlatformWindow, WindowHandle, WindowId, WindowOptions};
+use quadra_platform::{Cursor, Platform, PlatformWindow, WindowHandle, WindowId, WindowOptions};
 use quadra_prim::{Color, Rect};
 use quadra_reactive::{Scope, provide};
 use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
@@ -30,8 +30,9 @@ pub(crate) struct AppWindow {
     scope: Scope,
     pub(crate) tree: Tree,
     surface: SurfaceId,
-    /// The caret the window was last told of.
+    /// The caret and the cursor the window was last told of.
     caret: Option<Rect>,
+    cursor: Cursor,
     pub(crate) window: Box<dyn PlatformWindow>,
 }
 
@@ -128,7 +129,7 @@ impl<R: Renderer> App<R> {
         scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();
-        self.windows.push(AppWindow { scope, tree, surface, caret: None, window });
+        self.windows.push(AppWindow { scope, tree, surface, caret: None, cursor: Cursor::Arrow, window });
         Ok(id)
     }
 
@@ -220,6 +221,10 @@ impl<R: Renderer> App<R> {
             let caret = w.tree.text_caret();
             if std::mem::replace(&mut w.caret, caret) != caret {
                 w.window.set_text_input(caret);
+            }
+            let cursor = w.tree.cursor();
+            if std::mem::replace(&mut w.cursor, cursor) != cursor {
+                w.window.set_cursor(cursor);
             }
         }
     }

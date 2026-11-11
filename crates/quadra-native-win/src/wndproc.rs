@@ -188,6 +188,12 @@ impl WindowState {
                 self.pointer(PointerKind::Move, MouseButton::None, lparam);
                 done
             }
+            // Over the content the cursor is the app's; over the frame, the system's.
+            WM_SETCURSOR if (lparam.0 & 0xFFFF) as u32 == HTCLIENT => {
+                // SAFETY: the handle is one of the system's own cursors, or null for none.
+                unsafe { SetCursor(Some(self.cursor.get())) };
+                Some(LRESULT(1))
+            }
             WM_MOUSELEAVE => {
                 self.tracking_leave.set(false);
                 self.pointer(PointerKind::Leave, MouseButton::None, LPARAM(0));

@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 use common::Window;
 use quadra_layout::{Direction, Overflow};
-use quadra_platform::{Mods, MouseButton};
+use quadra_platform::{Cursor, Mods, MouseButton};
 use quadra_prim::Point;
 use quadra_tree::{NodeId, PointerEvent, PointerInput, PointerKind, Tree};
 
@@ -215,4 +215,20 @@ fn a_node_removed_by_what_its_handler_set_off_is_gone_after_the_dispatch() {
     assert_eq!(p.w.tree.hit_test(Point::new(10.0, 10.0)), Some(p.card));
     p.click(10.0, 10.0); // nothing left of it to press or to click
     assert_eq!(p.take(), ["card Click"]);
+}
+
+#[test]
+fn the_cursor_is_that_of_the_deepest_node_under_the_pointer_that_sets_one() {
+    let mut p = page();
+    p.w.tree.set_cursor(p.card, Some(Cursor::Pointer));
+    p.w.tree.set_cursor(p.rows[1], Some(Cursor::Text));
+    assert_eq!(p.w.tree.cursor(), Cursor::Arrow); // the pointer is nowhere
+    p.send(PointerInput::Move, 10.0, 10.0); // over the button, which sets none: the card's
+    assert_eq!(p.w.tree.cursor(), Cursor::Pointer);
+    p.w.tree.set_cursor(p.button, Some(Cursor::Help));
+    assert_eq!(p.w.tree.cursor(), Cursor::Help);
+    p.send(PointerInput::Move, 10.0, 130.0); // the second row of the list
+    assert_eq!(p.w.tree.cursor(), Cursor::Text);
+    p.send(PointerInput::Move, 500.0, 500.0); // the root, which sets none
+    assert_eq!(p.w.tree.cursor(), Cursor::Arrow);
 }

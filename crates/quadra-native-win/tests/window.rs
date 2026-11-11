@@ -6,14 +6,15 @@ use std::time::Duration;
 
 use quadra_native_win::WinPlatform;
 use quadra_platform::{
-    Key, MouseButton, Platform, PlatformEvent, PlatformHandler, PlatformWindow, PointerKind, TimerId,
+    Cursor, Key, MouseButton, Platform, PlatformEvent, PlatformHandler, PlatformWindow, PointerKind, TimerId,
     WindowHandle, WindowId, WindowOptions,
 };
 use quadra_prim::{Point, Size};
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
-    IsWindow, PostMessageW, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOZORDER, SetWindowPos, WM_CHAR, WM_CLOSE,
-    WM_KEYDOWN, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE, WM_XBUTTONDOWN,
+    GetCursor, HTCAPTION, HTCLIENT, IDC_ARROW, IDC_IBEAM, IsWindow, LoadCursorW, PostMessageW,
+    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOZORDER, SendMessageW, SetWindowPos, WM_CHAR, WM_CLOSE, WM_KEYDOWN,
+    WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE, WM_SETCURSOR, WM_XBUTTONDOWN,
 };
 
 fn hwnd(window: &dyn PlatformWindow) -> HWND {
@@ -244,4 +245,25 @@ fn a_waker_wakes_the_loop_from_another_thread_and_a_frame_comes_when_asked() {
     w.request_frame();
     p.run(&mut seen).unwrap();
     assert_eq!(seen.frames, [w.id()]);
+}
+
+#[test]
+fn the_cursor_over_the_content_is_the_one_the_window_was_given() {
+    let p = WinPlatform::new().unwrap();
+    let w = hidden(&p, 320.0, 200.0);
+    w.set_cursor(Cursor::Text);
+    let over = |part: u32| {
+        // SAFETY: a message to a window of this thread, as the system sends it when the
+        // pointer moves over that part of it; then this thread's cursor is read.
+        unsafe {
+            let from = WPARAM(hwnd(&*w).0 as usize);
+            let handled = SendMessageW(hwnd(&*w), WM_SETCURSOR, Some(from), Some(LPARAM(part as isize)));
+            (handled.0, GetCursor())
+        }
+    };
+    // SAFETY: loading cursors of the system by their ids.
+    let (text, arrow) =
+        unsafe { (LoadCursorW(None, IDC_IBEAM).unwrap(), LoadCursorW(None, IDC_ARROW).unwrap()) };
+    assert_eq!(over(HTCLIENT), (1, text));
+    assert_eq!(over(HTCAPTION).1, arrow); // the frame keeps the system's
 }

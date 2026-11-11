@@ -217,3 +217,10 @@ impl Style {
             && GridStyle::same_as_item(self.grid.as_deref(), o.grid.as_deref())
     }
 }
+
+/// A number is a length in pixels.
+impl From<f32> for Length {
+    fn from(px: f32) -> Length {
+        Length::Px(px)
+    }
+}

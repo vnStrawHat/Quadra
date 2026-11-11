@@ -25,6 +25,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-testing"
+version = "0.1.0"
+dependencies = [
+ "quadra-prim",
+ "quadra-render",
+ "quadra-text",
+ "quadra-tree",
+]
+
+[[package]]
 name = "quadra-text"
 version = "0.1.0"
 dependencies = [
@@ -40,4 +50,17 @@ dependencies = [
  "quadra-reactive",
  "quadra-render",
  "quadra-text",
+]
+
+[[package]]
+name = "quadra-ui"
+version = "0.1.0"
+dependencies = [
+ "quadra-layout",
+ "quadra-prim",
+ "quadra-reactive",
+ "quadra-render",
+ "quadra-testing",
+ "quadra-text",
+ "quadra-tree",
 ]

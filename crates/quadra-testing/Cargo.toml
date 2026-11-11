@@ -1,0 +1,17 @@
+[package]
+name = "quadra-testing"
+description = "Quadra's test harness: a window with no OS, no GPU and deterministic text"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-prim = { path = "../quadra-prim" }
+quadra-render = { path = "../quadra-render" }
+quadra-text = { path = "../quadra-text" }
+quadra-tree = { path = "../quadra-tree" }

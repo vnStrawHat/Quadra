@@ -81,11 +81,18 @@ backend) and `quadra-tree` (nodes, widgets, the update, layout and paint passes 
 `quadra-tree` also has child layers and the compose pass: a node can be a layer, placed by a
 transform; a scroll container's content is such a node, and scrolling is its offset.
 
-Next, in order: `quadra-testing` (the harness of specs/12) and `quadra-ui` (views, properties,
-control flow: specs/05), enough for the four programs of R1; then the structural budgets of
-specs/14 as tests; then the native crate (Win32, D3D11, DirectWrite) and the comparison bench.
-Still missing below that: style variants and tokens (specs/13), the scroll widget and virtual
-lists, input (specs/09), semantics (specs/12), atlases and glyph tiles.
+`quadra-ui` has boxes, text, properties (constant, signal, memo or closure), `each`, `show`
+and `dynamic`; `quadra-testing` has a headless window that checks every frame.
+
+Next, in order: the scroll view and the virtual list (specs/05, "Virtual lists"), which the
+`list` scene needs; then the structural budgets of specs/14 as tests; then the native crate
+(Win32, D3D11, DirectWrite) with atlases and glyph tiles, and the comparison bench. Still
+missing below that: style variants and tokens (specs/13), input (specs/09), semantics
+(specs/12). An open question from the first numbers: whether paint should skip what is far
+outside the visible part of a layer (docs/benchmarks.md, the document scene).
+
+Always read the gate's exit status, not its output through a pipe:
+`tools/check.sh prod > .tmp/check.log 2>&1 && git commit ...`.
 
 `quadra-term` is **on hold** by the user's decision: do not build it until told. The apps come
 after Quadra is complete.

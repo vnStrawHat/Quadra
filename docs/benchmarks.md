@@ -7,6 +7,31 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-11 — the comparison scenes without a window (on c92b93f plus the uncommitted `quadra-ui`)
+
+`tools/cargo.sh run --release -p quadra-ui --example scenes`
+
+The passes on the CPU only: fake text backend, null renderer, 800 x 600. No glyph is rasterized
+and nothing reaches a GPU, so these are not yet comparable with the V numbers, which are whole
+frames of a real window (grid 1.19 ms, document 0.69 ms).
+
+| Scene | First frame | A frame | Bindings | Laid out | Painted | Instances written | Uploaded |
+|---|---|---|---|---|---|---|---|
+| grid: 600 cells, a number changing in each | 1.76 ms | 0.415 ms | 600 | 1,284 | 600 | 2,465 | 3,064 |
+| document: 40 paragraphs wrapped to a new width | 3.50 ms | 0.604 ms | 1 | 285 | 41 | 15,600 | 15,600 |
+
+What they say so far:
+
+- **grid**, the worst case for fine-grained updates, spends 0.7 µs per cell on binding, layout
+  and paint together. The whole layer is uploaded because the numbers change their digit
+  count, which rebuilds the list.
+- **document** is all glyph emission: every glyph of every paragraph is written again, 39 ns
+  each, although most of the page is below the window. The V build skips lines outside the
+  clip. Painting only what is near the visible part of a layer would cut this to a quarter, at
+  the price of painting when scrolling brings new lines in. To decide with the real backend.
+- Both will grow with real text: shaping by the OS (the V build composes numbers from digit
+  glyphs instead of shaping them) and a tile lookup per glyph.
+
 ## 2026-11-11 — incremental layout (on eccd55c plus the uncommitted `quadra-layout`)
 
 `tools/cargo.sh run --release -p quadra-layout --example relayout`

@@ -122,6 +122,11 @@ field.focus();  field.scroll_into_view();  let r = field.rect();
 written after the layout pass, in its own batch, so state derived from a size costs one more
 frame round instead of a loop inside the pass.
 
+`Tree::after_layout(f)` runs `f` once, on the tree, after the next layout pass: for what must
+see where nodes are before it can say where others go, and cannot wait for a size to change
+(a list's box that was given another row may be exactly as tall as before). State it writes
+is seen by another round of the same frame.
+
 ## State bits
 
 `hovered`, `active` (pressed), `focused`, `focus_visible`, `focus_within`, `disabled`,

@@ -14,6 +14,9 @@ use crate::node::{NodeId, PaintStyle};
 use crate::style::Patch;
 use crate::tree::Tree;
 
+/// Something to do on the tree, once.
+pub(crate) type OnTree = Box<dyn FnOnce(&mut Tree)>;
+
 pub(crate) enum Op {
     Text(NodeId, String),
     Layout(NodeId, Box<quadra_layout::Style>),
@@ -21,7 +24,7 @@ pub(crate) enum Op {
     /// One value of a node's own style: what a reactive property writes.
     Patch(NodeId, Patch),
     /// Anything else: mounting, removing, a widget of the caller's own.
-    With(Box<dyn FnOnce(&mut Tree)>),
+    With(OnTree),
 }
 
 #[derive(Default)]

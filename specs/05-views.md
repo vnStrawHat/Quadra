@@ -143,21 +143,32 @@ with state uses these views:
 ## Virtual lists
 
 ```rust
-virtual_list(move || rows.with(Vec::len), move |index: Memo<usize>| {
+virtual_list(move || rows.with(Vec::len), 28.0, scroll_y, move |index: Signal<usize>| {
     row().child(text(move || rows.with(|r| r[index.get()].name.clone())))
 })
-.estimate(28.0)
 ```
+
+The arguments: how many rows, the height a row counts with until it is measured, the signal
+that says how far the list is scrolled, and what builds a row from its index.
 
 - The list is a layer and a layout boundary. It keeps a pool of mounted rows.
 - When a row leaves the viewport its nodes are kept and given to the next row entering: the
   list writes the row's `index`, and the row's bindings update. Steady scrolling mounts
   nothing and allocates nothing.
 - Rows may have different heights. A row is measured when realized; unmeasured rows count with
-  the estimate; the row at the top keeps its position when a measured height differs.
+  the estimate. When a row that starts above the top of the viewport turns out taller or
+  shorter than it counted, the scroll offset moves by the difference: what shows below it
+  stays where it is. A row that changes height while mounted (what it holds, the list's
+  width) is measured again.
+- Heights are kept a row with running sums in a binary indexed tree: where a row is, which
+  row is at an offset, and a new height are each a logarithmic number of steps, four bytes
+  and a sum a row.
+- A box is measured after the layout that follows its getting a row, never before: the size
+  it had belongs to the row it held (`Tree::after_layout`, 04).
 - Scrolling within the realized range changes only the layer's offset (07). The list asks for
   layout only when a row must enter or leave.
-- `uniform_list` is the same with one fixed row height and no measuring.
+- `uniform_list(count, row_height, scroll_y, row)` is the same with one fixed row height, no
+  measuring and no memory a row.
 - A row recycled for another index must not keep state of the old one in node state. The list
   resets focus, selection and scroll of recycled rows; anything else belongs in signals keyed by
   the item.

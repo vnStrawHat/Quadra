@@ -104,16 +104,19 @@ because every render built new nodes. Here nodes persist, and a change is a flag
 
 ## Virtual lists
 
-A virtual list places its own rows (`Widget::layout`) and answers its parent from its style
-alone, so it is always a boundary:
+A virtual list places its own rows and answers its parent from its style alone, so it is
+always a boundary. Its rows are absolutely placed children of a content node; what places
+them is state (the scroll offset, the viewport's size, the heights), so the list is bindings
+on that state and not a layout algorithm of its own:
 
 - From its size, the scroll offset and the known or estimated heights it computes the row range
   to show, plus an overscan margin.
 - It mounts or recycles rows for indexes entering the range (05), lays each out at the list's
   width, and positions them.
 - It reports its content extent from measured and estimated heights.
-- Mounting during layout flags the update pass for the new rows' bindings; the frame repeats
-  from there once (02).
+- Rows mounted or given another index are measured after the layout that follows; a height
+  that differs moves the rows after it, and the frame goes round again (02): at most four
+  rounds a frame, the rest in the next one.
 
 ## Overlays
 

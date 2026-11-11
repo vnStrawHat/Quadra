@@ -113,9 +113,10 @@ to assistive technology is in (`PlatformEvent::SemanticsWanted` and `Semantic`,
 `accesskit`; `tests/access.rs` reads a hidden window through UI Automation). The adapter
 panics on an update that is not well formed (specs/12 lists the rules): a change to what the
 tree tells a listener goes through `semantics_changed`, and `quadra_a11y::Mirror` in the
-random test is what catches a missed case. Next, in this order: rows of different heights,
-tab index, cursors, the rest of `quadra-async` (tasks, the pool, inboxes) when the first
-thing needs it. For readers still to do: text ranges and the caret of an input, range
+random test is what catches a missed case. Lists with rows of different heights are in
+(`virtual_list` beside `uniform_list` in `quadra-ui/src/list.rs`, heights in
+`list/heights.rs`, `Tree::after_layout`). Next, in this order: tab index, cursors, the rest
+of `quadra-async` (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range
 values, positions in a set, a role for scroll views.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its

@@ -65,6 +65,8 @@ pub struct Tree {
     pub(crate) todo: Vec<NodeId>,
     /// By node index: the signal that follows the node's size (`Tree::size_signal`).
     pub(crate) sizes: HashMap<u32, Signal<Size>>,
+    /// What waits to see the next layout.
+    pub(crate) after_layout: Vec<crate::shared::OnTree>,
     pub(crate) stats: FrameStats,
     pub(crate) times: PassTimes,
     // Reused by every pass.
@@ -107,6 +109,7 @@ impl Tree {
             listening: Listening::default(),
             todo: Vec::new(),
             sizes: HashMap::new(),
+            after_layout: Vec::new(),
             stats: FrameStats::default(),
             times: PassTimes::default(),
             scratch: Vec::new(),

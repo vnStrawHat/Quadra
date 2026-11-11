@@ -16,6 +16,14 @@ impl Tree {
         *self.sizes.entry(id.index).or_insert_with(|| signal(size))
     }
 
+    /// Runs `f` once, after the next layout pass: for what must see where nodes are before
+    /// it can say where others go (a list that measures its rows). State it writes is seen
+    /// by another round of the same frame.
+    pub fn after_layout(&mut self, f: impl FnOnce(&mut Tree) + 'static) {
+        self.after_layout.push(Box::new(f));
+        self.shared.wake.set(true);
+    }
+
     /// The node's border box, relative to its parent's.
     pub fn rect(&self, id: NodeId) -> Rect {
         self.layout.rect(self.node(id).layout)

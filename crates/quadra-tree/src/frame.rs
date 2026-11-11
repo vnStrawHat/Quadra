@@ -231,6 +231,14 @@ impl Tree {
 
     /// The layout pass: lays out what changed, then flags for paint the nodes whose rect did.
     fn layout_pass(&mut self) {
+        self.lay_out();
+        // What asked to see the result may write state: the frame then goes round again.
+        for see in std::mem::take(&mut self.after_layout) {
+            see(self);
+        }
+    }
+
+    fn lay_out(&mut self) {
         let Some(root) = self.root.filter(|_| std::mem::take(&mut self.relayout)) else { return };
         let root = self.nodes[root.index as usize].layout;
         let above: Vec<_> = self.overlays().map(|o| self.nodes[o.index as usize].layout).collect();

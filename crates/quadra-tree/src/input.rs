@@ -2,6 +2,7 @@
 //! the tree as it was laid out. Nothing is prepared per frame for it.
 
 use std::any::{Any, TypeId};
+use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_a11y::SemanticAction;
@@ -67,6 +68,9 @@ impl PointerEvent {
 type ActionFn = Box<dyn FnMut(&dyn Any)>;
 type CompositionFn = Box<dyn FnMut(&str, usize)>;
 
+/// What takes a dropped value: the value, and where in the window it was let go.
+pub(crate) type DropFn = Box<dyn FnMut(&dyn Any, Point)>;
+
 /// What a node does when events reach it. `capture`: on the way down from the root, before
 /// the handlers on the way up.
 pub(crate) enum Handler {
@@ -88,6 +92,14 @@ pub(crate) enum Handler {
     Composition(CompositionFn),
     /// A press landed outside the overlay the node is the root of.
     OutsidePress(Box<dyn FnMut()>),
+    /// The node can be dragged: asked for the value when a drag of it starts.
+    Drag(Box<dyn FnMut() -> Rc<dyn Any>>),
+    /// The node takes what is dragged when it is of a type: the value, and where it was let
+    /// go in the window.
+    Drop {
+        of: TypeId,
+        run: DropFn,
+    },
     /// The node scrolls what it holds: asked to show a rect of its own box, it says how far
     /// down it scrolled for it.
     Reveal(Box<dyn FnMut(Rect) -> f32>),
@@ -142,8 +154,10 @@ impl Tree {
     /// the first, then the node itself. It reads layout rects and layer offsets, so it agrees
     /// with what the last frame drew, scrolled content included.
     pub fn hit_test(&self, at: Point) -> Option<NodeId> {
-        // What is on top is tried first: the overlays from the last opened, then the main tree.
-        let over = self.overlays().rev().find_map(|root| self.hit(root, at));
+        // What is on top is tried first: the overlays from the last opened, then the main
+        // tree. The preview of a drag is not there for the pointer.
+        let mut above = self.overlays().rev().filter(|&root| !self.is_drag_preview(root));
+        let over = above.find_map(|root| self.hit(root, at));
         over.or_else(|| self.root.and_then(|root| self.hit(root, at)))
     }
 

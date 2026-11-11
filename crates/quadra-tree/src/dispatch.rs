@@ -41,6 +41,7 @@ impl Tree {
             self.input.pointer = (input != PointerInput::Leave).then_some(at);
             match input {
                 PointerInput::Leave => self.rehover(),
+                PointerInput::Move if self.drag_move(at) => {}
                 PointerInput::Move => {
                     self.rehover();
                     if let Some(target) = self.input.capture.or_else(|| self.hit_test(at)) {
@@ -55,6 +56,9 @@ impl Tree {
                     let path = self.input.pressed.clone();
                     self.press_outside(&path);
                     self.focus_on_press(&path);
+                    if button == MouseButton::Left {
+                        self.drag_press(&path, at);
+                    }
                     self.input.capture = self.dispatch_pointer(PointerKind::Down, target, button, 0).captured;
                 }
                 PointerInput::Up => self.release(button, at, now),
@@ -77,6 +81,9 @@ impl Tree {
     }
 
     fn release(&mut self, button: MouseButton, at: Point, now: Instant) {
+        if self.drag_release(at) {
+            return self.rehover(); // the release ended a drag: it is no click
+        }
         let under = self.hit_test(at);
         self.set_states(State::ACTIVE, false);
         let pressed = std::mem::take(&mut self.input.pressed);

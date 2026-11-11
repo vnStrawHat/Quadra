@@ -99,7 +99,8 @@ impl Tree {
         }
         let named_by_content = says.name.is_empty() && says.role.named_by_content();
         let (mut content, mut children) = (String::new(), Vec::new());
-        let above = self.overlays().filter(|_| self.root == Some(id)); // under the window
+        // Under the window; the preview of a drag is not there for a reader.
+        let above = self.overlays().filter(|&over| self.root == Some(id) && !self.is_drag_preview(over));
         for child in node.children.iter().copied().chain(above) {
             let named = if named_by_content { Some(&mut content) } else { None };
             self.describe(child, named, &mut children, out);

@@ -142,6 +142,16 @@ As built:
   threshold with the button down. The payload is a typed value; the preview is an overlay that
   follows the pointer (a layer translation, so moving it repaints nothing). Nodes that accept
   the payload's type get `drop_target` while it is over them, and the drop event on release.
+- The threshold is 4 px. A press that stays under it is a click; one that passes it is a
+  drag and no click: what the press held (the active state, a captured pointer) is let go.
+- While the drag lasts the pointer's moves are the drag's: no node gets them, and hover
+  stays as it was. The target is the deepest node under the pointer that takes values of the
+  payload's type; a node that takes another type is no target.
+- The preview is held where the dragged node was pressed, and goes out of the window with
+  the pointer (`Anchor::Free`). It is not hit, and is not in the semantic tree.
+- Escape gives the drag up: nothing is dropped, and the release that follows does nothing.
+- In views: `.draggable(|| value)`, `.draggable_with(|| value, || preview)`,
+  `.on_drop(|value: &T, at| ..)` and `.drop_target(|s| ..)` for the style while over.
 - **From the OS**: files and text dropped on the window arrive as drop events with the same
   targeting.
 

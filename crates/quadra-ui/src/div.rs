@@ -7,6 +7,7 @@ use quadra_tree::{Action, Handle, KeyEvent, NodeId, Patch, PointerEvent, Pointer
 
 use crate::node_ref::NodeRef;
 
+mod drag;
 mod says;
 
 use crate::prop::{IntoProp, Prop};

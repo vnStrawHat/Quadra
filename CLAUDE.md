@@ -118,9 +118,10 @@ random test is what catches a missed case. Lists with rows of different heights 
 `list/heights.rs`, `Tree::after_layout`), and so are the tab index, cursors and scrolling
 into view (`Tree::scroll_into_view`, `on_reveal`; `.reveal(..)` on lists). **What R2 still
 needs for its exit** (the V suite's interaction tests, `tests/*_test.v` in the V repo, each
-with a counterpart here): drag and drop
-(a preview that follows, targets that accept by kind, `State::DROP_TARGET`). Popovers and
-hover cards are kit components (R3) on overlays and timers. After those: the
+with a counterpart here): a value that eases to its target by the frame's clock (the V
+`cx.animate`; frames carry no time yet). Drag and drop is in (`quadra-tree/src/drag.rs`,
+`quadra-ui/src/div/drag.rs`, the example `board`). Popovers and hover cards are kit
+components (R3) on overlays and timers. After those: the
 rest of `quadra-async` (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range
 values, positions in a set, a role for scroll views.
 

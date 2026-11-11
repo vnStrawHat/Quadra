@@ -35,6 +35,9 @@ pub enum Anchor {
     At(Point),
     /// In the middle of the window: a dialog.
     Center,
+    /// Its corner at a point of the window, wherever that leaves it: what follows the
+    /// pointer in a drag goes out of the window with it.
+    Free(Point),
 }
 
 pub(crate) struct Overlay {
@@ -53,6 +56,9 @@ fn place(anchor: Anchor, target: Option<Rect>, size: Size, window: Size) -> Poin
         let other_only = if first_after { !fits_after && fits_before } else { !fits_before && fits_after };
         if first_after != other_only { after } else { before - len }
     };
+    if let Anchor::Free(at) = anchor {
+        return at;
+    }
     let (x, y) = match (anchor, target) {
         (Anchor::Beside { side, along, gap, .. }, Some(a)) => {
             let aligned = |start: f32, len: f32, own: f32| match along {
@@ -99,6 +105,15 @@ impl Tree {
     fn overlays_changed(&mut self) {
         if let Some(window) = self.root {
             self.semantics_changed(window);
+        }
+    }
+
+    /// Puts an open overlay somewhere else. Only its layer's offset changes: nothing of it
+    /// is laid out or painted again.
+    pub fn move_overlay(&mut self, root: NodeId, anchor: Anchor) {
+        if let Some(overlay) = self.overlays.iter_mut().find(|o| o.root == root) {
+            overlay.anchor = anchor;
+            self.shared.wake.set(true); // placed in the next frame
         }
     }
 

@@ -211,6 +211,9 @@ impl Tree {
     pub fn key(&mut self, key: Key, code: u32, mods: Mods, down: bool, repeat: bool) {
         let Some(target) = self.focus.filter(|&id| self.is_alive(id)).or(self.root) else { return };
         batch(|| {
+            if down && key == Key::Escape && self.drag_cancel() {
+                return; // Escape gave up the drag, and did nothing else
+            }
             // A modifier pressed on its way to a keystroke is not one itself.
             let modifier = matches!(key, Key::Shift | Key::Ctrl | Key::Alt | Key::Super);
             if down && !modifier && self.key_binding(Keystroke { key, mods }, target) {

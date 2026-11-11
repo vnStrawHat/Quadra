@@ -6,6 +6,20 @@ pub struct Point {
     pub y: f32,
 }
 
+impl std::ops::Add for Point {
+    type Output = Point;
+    fn add(self, other: Point) -> Point {
+        Point { x: self.x + other.x, y: self.y + other.y }
+    }
+}
+
+impl std::ops::Sub for Point {
+    type Output = Point;
+    fn sub(self, other: Point) -> Point {
+        Point { x: self.x - other.x, y: self.y - other.y }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Size {
     pub width: f32,

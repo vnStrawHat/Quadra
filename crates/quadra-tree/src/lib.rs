@@ -6,6 +6,7 @@
 
 mod action;
 mod dispatch;
+mod drag;
 mod field;
 mod focus;
 mod fonts;

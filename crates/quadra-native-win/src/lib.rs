@@ -12,6 +12,7 @@ mod pipeline;
 mod platform;
 mod renderer;
 mod surface;
+mod swapchain;
 mod window;
 mod wndproc;
 

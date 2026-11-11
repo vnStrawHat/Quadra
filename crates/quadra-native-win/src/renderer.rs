@@ -16,8 +16,10 @@ use windows::Win32::Graphics::Direct3D11::{
 
 use crate::atlas::AtlasTexture;
 use crate::gpu::Gpu;
+use crate::pacing::Pacing;
 use crate::pipeline::Pipeline;
-use crate::surface::Offscreen;
+use crate::platform::WinPlatform;
+use crate::surface::Surface;
 
 const STRIDE: u32 = size_of::<Instance>() as u32;
 
@@ -33,7 +35,9 @@ struct LayerBuffer {
 pub struct D3d11Renderer {
     gpu: Gpu,
     pipeline: Pipeline,
-    surfaces: Vec<Option<Offscreen>>,
+    surfaces: Vec<Option<Surface>>,
+    /// Where the loop finds each window's frame-latency handle.
+    pacing: Pacing,
     layers: HashMap<(SceneId, LayerId), LayerBuffer>,
     /// The glyph and image atlases, as texture arrays.
     coverage: Option<AtlasTexture>,
@@ -52,6 +56,7 @@ impl D3d11Renderer {
             gpu,
             pipeline,
             surfaces: Vec::new(),
+            pacing: Pacing::default(),
             layers: HashMap::new(),
             coverage: None,
             color: None,
@@ -60,12 +65,27 @@ impl D3d11Renderer {
         })
     }
 
+    /// A renderer whose window surfaces pace the frames of that platform's loop: a frame a
+    /// window asked for is given when its swap chain can take one (specs/10).
+    pub fn for_platform(platform: &WinPlatform, software: bool) -> Result<D3d11Renderer, RenderError> {
+        Ok(D3d11Renderer { pacing: platform.0.pacing.clone(), ..D3d11Renderer::new(software)? })
+    }
+
     pub fn is_software(&self) -> bool {
         self.gpu.software
     }
 
-    fn surface(&self, id: SurfaceId) -> Result<&Offscreen, RenderError> {
+    fn surface(&self, id: SurfaceId) -> Result<&Surface, RenderError> {
         self.surfaces.get(id.0 as usize).and_then(Option::as_ref).ok_or(RenderError::BadSurface)
+    }
+
+    /// Makes a surface and tells the loop what to wait on for it.
+    fn make_surface(&self, target: SurfaceTarget, size: DeviceSize) -> Result<Surface, RenderError> {
+        let surface = Surface::new(&self.gpu, target, size)?;
+        if let Surface::Window(window) = &surface {
+            self.pacing.set(window.hwnd, Some(window.waitable));
+        }
+        Ok(surface)
     }
 
     /// Brings a layer's buffer in step with the scene and returns its view.
@@ -120,23 +140,21 @@ fn scissor(rect: Rect, size: DeviceSize) -> RECT {
 
 impl Renderer for D3d11Renderer {
     fn create_surface(&mut self, target: SurfaceTarget, size: DeviceSize) -> Result<SurfaceId, RenderError> {
-        if target != SurfaceTarget::Offscreen {
-            return Err(RenderError::Backend("window surfaces come with the window".into()));
-        }
-        self.surfaces.push(Some(Offscreen::new(&self.gpu, size)?));
+        let surface = self.make_surface(target, size)?;
+        self.surfaces.push(Some(surface));
         Ok(SurfaceId(self.surfaces.len() as u32 - 1))
     }
 
     fn resize_surface(&mut self, surface: SurfaceId, size: DeviceSize) -> Result<(), RenderError> {
-        if self.surface(surface)?.size != size {
-            self.surfaces[surface.0 as usize] = Some(Offscreen::new(&self.gpu, size)?);
-        }
-        Ok(())
+        let slot = self.surfaces.get_mut(surface.0 as usize).and_then(Option::as_mut);
+        slot.ok_or(RenderError::BadSurface)?.resize(&self.gpu, size)
     }
 
     fn drop_surface(&mut self, surface: SurfaceId) {
-        if let Some(slot) = self.surfaces.get_mut(surface.0 as usize) {
-            *slot = None;
+        if let Some(Surface::Window(window)) =
+            self.surfaces.get_mut(surface.0 as usize).and_then(Option::take)
+        {
+            self.pacing.set(window.hwnd, None);
         }
     }
 
@@ -151,7 +169,10 @@ impl Renderer for D3d11Renderer {
     fn draw(&mut self, surface: SurfaceId, scene: &mut Scene, clear: Color) -> Result<(), RenderError> {
         let (size, target) = {
             let s = self.surface(surface)?;
-            (s.size, s.target.clone())
+            if let Surface::Window(window) = s {
+                window.set_background(clear);
+            }
+            (s.size(), s.target()?)
         };
         for layer in scene.take_dropped() {
             self.layers.remove(&(scene.id(), layer));
@@ -215,7 +236,7 @@ impl Renderer for D3d11Renderer {
     }
 
     fn present(&mut self, surface: SurfaceId) -> Result<(), RenderError> {
-        self.surface(surface).map(|_| ())
+        self.surface(surface)?.present()
     }
 
     fn read_pixels(&mut self, surface: SurfaceId) -> Result<Pixels, RenderError> {
@@ -228,15 +249,21 @@ impl Renderer for D3d11Renderer {
 
     fn recover(&mut self) -> Result<(), RenderError> {
         let software = self.gpu.software;
-        let sizes: Vec<Option<DeviceSize>> =
-            self.surfaces.iter().map(|s| s.as_ref().map(|s| s.size)).collect();
+        let made_for: Vec<_> = self.surfaces.iter().map(|s| s.as_ref().map(Surface::made_for)).collect();
+        // A window takes a new swap chain only once the old one is gone, and a swap chain
+        // goes when nothing is bound and the context has been flushed.
+        self.surfaces.clear();
+        // SAFETY: plain calls on the old context, which is alive until it is replaced below.
+        unsafe {
+            self.gpu.context.ClearState();
+            self.gpu.context.Flush();
+        }
         self.gpu = Gpu::new(software)?;
         self.pipeline = Pipeline::new(&self.gpu)?;
         self.layers.clear();
         (self.coverage, self.color) = (None, None);
-        self.surfaces.clear();
-        for size in sizes {
-            let surface = size.map(|size| Offscreen::new(&self.gpu, size)).transpose()?;
+        for made_for in made_for {
+            let surface = made_for.map(|(target, size)| self.make_surface(target, size)).transpose()?;
             self.surfaces.push(surface);
         }
         Ok(())

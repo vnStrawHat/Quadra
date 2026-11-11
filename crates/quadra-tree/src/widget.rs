@@ -86,6 +86,10 @@ impl PaintCx<'_> {
 
     /// Paints a quad given in logical pixels.
     pub fn quad(&mut self, q: Quad) {
+        // Most boxes are only there to hold others: nothing is worked out for them.
+        if !self.keep && !q.is_visible() {
+            return;
+        }
         let b = q.border_widths.scale(self.scale);
         let border_widths = Edges {
             top: snap_stroke(b.top),

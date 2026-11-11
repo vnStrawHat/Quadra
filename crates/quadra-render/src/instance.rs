@@ -124,6 +124,12 @@ impl Quad {
         self.border_widths != Edges::default() && !self.border_color.is_transparent()
     }
 
+    /// Whether there is anything of the quad to see: a size, and a fill or a border.
+    pub fn is_visible(&self) -> bool {
+        let filled = !self.background.is_transparent() || self.gradient_to.is_some();
+        !self.bounds.is_empty() && (filled || self.has_border())
+    }
+
     /// The one instance of this quad. The shader keeps one second colour, so a gradient and a
     /// border cannot share an instance: [`push_quad`] splits them.
     pub fn instance(&self, clip: &Clip) -> Instance {
@@ -148,7 +154,7 @@ impl Quad {
 
 /// Appends a quad: nothing when it cannot be seen, two instances for a gradient with a border.
 pub fn push_quad(out: &mut Vec<Instance>, q: &Quad, clip: &Clip) {
-    if q.bounds.is_empty() || (q.background.is_transparent() && q.gradient_to.is_none() && !q.has_border()) {
+    if !q.is_visible() {
         return;
     }
     if q.gradient_to.is_some() && q.has_border() {

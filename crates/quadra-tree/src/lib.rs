@@ -36,7 +36,7 @@ pub use input::{PointerEvent, PointerKind};
 pub use keymap::{Keymap, KeymapError, Keystroke, TEXT_CONTEXT};
 pub use node::{NodeId, PaintStyle, Style};
 pub use overlay::{Along, Anchor, Side};
-pub use quadra_a11y::{Role, SemanticAction, SemanticNode, Semantics, TreeUpdate};
+pub use quadra_a11y::{Mirror, Role, SemanticAction, SemanticNode, Semantics, TreeUpdate};
 pub use shared::Handle;
 pub use style::{Patch, State};
 pub use text::Text;

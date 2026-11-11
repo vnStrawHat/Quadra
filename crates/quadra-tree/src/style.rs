@@ -241,9 +241,14 @@ impl Tree {
             // Border widths and the frame the content sits in are painted from this style.
             // Showing or hiding changes how many instances the subtree has: ranges move.
             let shown = if old.display != style.display { flag::RELIST } else { 0 };
+            let around = node.parent.filter(|_| shown != 0);
             self.layout.set_style(layout, style);
             self.relayout = true;
             self.mark(id, flag::PAINT | flag::SUBTREE | shown);
+            // Shown or hidden, it joins or leaves what its parent holds for a listener.
+            if let Some(parent) = around {
+                self.semantics_changed(parent);
+            }
         }
     }
 

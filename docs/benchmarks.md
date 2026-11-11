@@ -7,6 +7,29 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-11 — with the accessibility bridge (on fffd71e plus this commit)
+
+The runner, the Rust build alone, medians of three rounds (`.tmp/cmp5.json`): nothing moved
+but the binary.
+
+| Measure | Before | With the bridge |
+|---|---|---|
+| list / grid / document: CPU per frame | 0.36 / 1.29 / 0.70 ms | 0.36 / 1.26 / 0.68 ms |
+| counter: startup | 41 ms | 39 ms |
+| counter: idle memory | 11.1 MB | 11.1 MB |
+| list / grid / document: peak memory | 22.8 / 25.5 / 28.2 MB | 23.2 / 27.8 / 27.5 MB |
+| binary size | 0.88 MB | 1.50 MB |
+
+The adapter of the accessibility crate is 0.6 MB of the binary (the budget of specs/14 for
+the counter is 3 MB). It is made with the window and costs nothing measurable at start-up.
+None of the bench's windows was asked for its tree on this machine, which runs no assistive
+technology: the accessibility pass did not run.
+
+With a listener (forced, without a window, `BENCH_FRAMES=3000`), what building the update
+of a frame costs: list 12 us (60 nodes), grid 169 us (600 texts change every frame),
+document 19 us (38 nodes). The grid's was 700 us before the nodes to send were stamped
+instead of searched for in a list.
+
 ## 2026-11-11 — the result of phase R1: the comparison bench, three rounds (on f96baf0 plus this commit)
 
 The runner's medians of three rounds, both builds taking turns in one session

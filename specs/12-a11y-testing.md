@@ -25,24 +25,49 @@ semantic children attach to the nearest semantic ancestor.
   hold, and that text is then part of them, not a node of its own.
 - A click asked for semantically runs the click handlers on the node's path with no pointer
   and no hit test. Focus is the tree's own. The other actions go to what the node registered
-  for them (an input sets its value).
+  for them (an input sets its value). Expand, collapse and toggle that nothing is registered
+  for are a click, when the node says it is in the other state: a view that says
+  `.expanded(open)` and flips `open` on a click needs nothing more to be opened by a reader.
 - A change is sent as the subtree of the semantic node it happened in: a text, a state, a
   list of children, a rect, a scroll offset. Focus goes with every update.
+- **An update is well formed**, because the adapter of an OS refuses one that is not, and
+  refusing there is a panic in the app. A node that is sent is the window or in the children
+  of exactly one node the listener holds; a child was sent, now or before; the node said to
+  have the focus is in the tree. So: a node that starts or stops meaning something, or being
+  displayed, is a change of its parent; a node under one that is sent is not sent again;
+  nothing is sent of a node that is not displayed, is under one that is not, or is in no
+  window; overlays are children of the window; a focus on a node that means nothing is said
+  to be on the nearest node around it that does, or on the window.
+- `Mirror` in `quadra-a11y` is a listener that applies updates under those rules and holds
+  what they add up to. Tests follow a tree with one: what it holds after every frame must be
+  the tree. The tree's random test does so through insertions, removals, moves between
+  parents, nodes in no window, hiding, layers, roles that change and a focus that moves.
 
 ## Accessibility
 
-- `quadra-a11y` keeps the semantic tree and its pending updates and defines the bridge trait.
-  It has no OS code and no dependency, so everything in this spec runs headless, without a
-  desktop session.
-- The Windows bridge is in the native crate: it turns pending updates into the tree updates of
-  `accesskit`, whose Windows adapter speaks UI Automation (01, R11). The harness uses a bridge
-  that records updates instead.
-- A test in the native run feeds recorded updates to that crate family's tree consumer, the
-  library its adapters are built on, to prove the updates Quadra emits are well formed. It
-  needs no window.
+- `quadra-a11y` defines the semantic tree, its updates and the mirror. It has no OS code and
+  no dependency, so everything in this spec runs headless, without a desktop session.
+- **The bridge is the window** (10): the platform reports `SemanticsWanted` when assistive
+  technology first asks for a window's tree; from then on the app gives the window what
+  `take_semantic_update` returns, with `PlatformWindow::update_semantics`; what a reader asks
+  of a node arrives as the event `Semantic { node, action }`, and the app has the tree `act`.
+  The headless window keeps the updates it is given, for tests.
+- On Windows the window answers `WM_GETOBJECT` with the adapter of `accesskit`, which speaks
+  UI Automation (01, R11), and turns each update into that crate's. The first answer is the
+  adapter's empty tree: the question can come while the app is in the middle of something, so
+  the tree follows as an update, at once when no frame is due. Bounds are sent in logical
+  pixels; the root carries the scale. A static text is read by its value, a name is a label,
+  `test_id` is the automation id; what can be clicked is told by its role. Requests reach the
+  adapter on a thread of its choosing: they are queued and the window posted a message, so
+  the app sees them on the UI thread like any event.
+- A test in the native run reads a window that is never shown through UI Automation itself,
+  from a second thread, as a screen reader does: it finds controls by automation id, reads
+  name, control type, bounds and toggle state, invokes and toggles, and sees the new state.
 - **Lazy**: until assistive technology asks for the tree, the accessibility pass does not run
-  and no semantic node is built. On the first request the whole tree is built once.
-- **Incremental**: after that, each frame sends only the nodes flagged `A11Y`, plus focus.
+  and no semantic node is built. On the first request the whole tree is built once. On a
+  machine with no assistive technology a window is not asked (checked on the bench's
+  windows), so the pass costs nothing there.
+- **Incremental**: after that, each frame sends only what changed, plus focus.
 - **Actions** arrive as semantic actions and are dispatched to the node's widget (09): click,
   focus, set value, toggle, expand and collapse, scroll into view, increment and decrement.
   They do not go through pointer events.

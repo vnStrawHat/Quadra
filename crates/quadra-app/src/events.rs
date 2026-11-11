@@ -54,6 +54,18 @@ impl<R: Renderer> PlatformHandler for App<R> {
                     w.tree.composition(&text, caret);
                 }
             }
+            PlatformEvent::SemanticsWanted => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.listen(true);
+                }
+            }
+            PlatformEvent::Semantic { node, action } => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window)
+                    && let Some(node) = w.tree.node_of(node)
+                {
+                    w.tree.act(node, &action);
+                }
+            }
         });
         self.request_frames();
     }

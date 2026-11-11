@@ -107,11 +107,16 @@ shows it in a real window. One manual check is open: composing with a real input
 Overlays are in (`quadra-tree/src/overlay.rs`, `overlay(place, view)` in `quadra-ui`; the
 example has a menu). The semantic tree is in (`quadra-a11y`; `quadra-tree/src/semantics.rs`;
 `.role(..)`, `.label(..)`, the state setters; the harness finds controls with `get_by_role`
-and the like and drives them with semantic actions: prefer these in new tests). Next, in
-this order: the bridge to the OS (`accesskit` and `accesskit_windows` in `quadra-native-win`,
-admitted by specs/01 R15 and `tools/check_deps.py`; the tree's `listen` and
-`take_semantic_update` are its side here), rows of different heights, tab index, cursors, the rest of
-`quadra-async` (tasks, the pool, inboxes) when the first thing needs it.
+and the like and drives them with semantic actions: prefer these in new tests). The bridge
+to assistive technology is in (`PlatformEvent::SemanticsWanted` and `Semantic`,
+`PlatformWindow::update_semantics`; `quadra-native-win/src/a11y.rs` with the adapter of
+`accesskit`; `tests/access.rs` reads a hidden window through UI Automation). The adapter
+panics on an update that is not well formed (specs/12 lists the rules): a change to what the
+tree tells a listener goes through `semantics_changed`, and `quadra_a11y::Mirror` in the
+random test is what catches a missed case. Next, in this order: rows of different heights,
+tab index, cursors, the rest of `quadra-async` (tasks, the pool, inboxes) when the first
+thing needs it. For readers still to do: text ranges and the caret of an input, range
+values, positions in a set, a role for scroll views.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its
 height does not depend on it; a new painted band visits every node of its layer.

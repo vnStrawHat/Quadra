@@ -42,6 +42,7 @@ impl Tree {
     pub fn set_focusable(&mut self, id: NodeId, on: bool) {
         if let Some(node) = self.get_mut(id) {
             node.focusable = on;
+            self.semantics_changed(id);
         }
         if !on && self.focus == Some(id) {
             self.set_focus(None, false);
@@ -171,6 +172,7 @@ impl Tree {
         let Some(node) = node.filter(|&n| self.is_alive(n)) else { return };
         self.set_state(node, State::FOCUS, on);
         self.set_state(node, State::FOCUS_VISIBLE, visible);
+        self.semantics_changed(node); // a listener is told which node has the focus
         for id in self.path(node) {
             self.set_state(id, State::FOCUS_WITHIN, on);
         }

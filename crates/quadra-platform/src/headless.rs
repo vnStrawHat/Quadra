@@ -8,6 +8,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
+use quadra_a11y::TreeUpdate;
 use quadra_prim::{Rect, Size};
 
 use crate::clipboard::{Clipboard, MemoryClipboard};
@@ -28,6 +29,7 @@ struct WindowState {
     title: RefCell<String>,
     frame: Cell<bool>,
     text_input: Cell<Option<Rect>>,
+    semantics: RefCell<Vec<TreeUpdate>>,
 }
 
 struct Inner {
@@ -96,6 +98,11 @@ impl HeadlessPlatform {
     /// focus.
     pub fn text_input(&self, window: WindowId) -> Option<Rect> {
         self.window(window).and_then(|w| w.text_input.get())
+    }
+
+    /// The semantic updates a window was given since this was last asked.
+    pub fn take_semantics(&self, window: WindowId) -> Vec<TreeUpdate> {
+        self.window(window).map(|w| w.semantics.take()).unwrap_or_default()
     }
 
     /// The title a window was last given.
@@ -178,6 +185,7 @@ impl Platform for HeadlessPlatform {
             title: RefCell::new(options.title.clone()),
             frame: Cell::new(false),
             text_input: Cell::new(None),
+            semantics: RefCell::default(),
         });
         self.0.windows.borrow_mut().push(Rc::downgrade(&state));
         Ok(Box::new(HeadlessWindow(state)))
@@ -236,5 +244,9 @@ impl PlatformWindow for HeadlessWindow {
 
     fn set_text_input(&self, caret: Option<Rect>) {
         self.0.text_input.set(caret);
+    }
+
+    fn update_semantics(&self, update: &TreeUpdate) {
+        self.0.semantics.borrow_mut().push(update.clone());
     }
 }

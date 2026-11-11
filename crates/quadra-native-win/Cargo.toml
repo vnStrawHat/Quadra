@@ -11,6 +11,9 @@ publish.workspace = true
 # workspace lints, which forbid it.
 
 [dependencies]
+accesskit = "0.25"
+accesskit_windows = "0.35"
+quadra-a11y = { path = "../quadra-a11y" }
 quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }
 quadra-render = { path = "../quadra-render" }
@@ -36,6 +39,13 @@ windows = { version = "0.62", features = [
 ] }
 
 [dev-dependencies]
+# A test reads a window back through UI Automation, as a screen reader does (specs/12).
+windows = { version = "0.62", features = [
+    "Win32_System_Com",
+    "Win32_System_Ole",
+    "Win32_System_Variant",
+    "Win32_UI_Accessibility",
+] }
 quadra-reactive = { path = "../quadra-reactive" }
 quadra-text = { path = "../quadra-text" }
 quadra-tree = { path = "../quadra-tree" }

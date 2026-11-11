@@ -4,6 +4,7 @@
 //!
 //! This crate has no OS code: the bridge to an operating system is in its native crate.
 
+use std::collections::HashMap;
 use std::fmt::Write;
 
 use quadra_prim::Rect;
@@ -112,18 +113,41 @@ pub struct TreeUpdate {
     pub focus: Option<u64>,
 }
 
-/// Where updates go: the OS's accessibility API, or a recorder in tests.
-pub trait Bridge {
-    fn update(&mut self, update: &TreeUpdate);
+/// What a listener holds after the updates it was sent: the tree, when they were well formed.
+/// It takes updates as the adapter of an OS does, and refuses what that adapter refuses:
+/// tests follow a tree with one.
+#[derive(Default)]
+pub struct Mirror {
+    nodes: HashMap<u64, SemanticNode>,
 }
 
-/// A bridge that keeps what it is given.
-#[derive(Default)]
-pub struct Recorder(pub Vec<TreeUpdate>);
+impl Mirror {
+    /// Takes an update. A node that is sent, and the node with the focus, must be the root or
+    /// in the children of one node held; a child must have been sent, now or before. What no
+    /// node holds any more is forgotten.
+    pub fn apply(&mut self, update: TreeUpdate) -> Result<(), String> {
+        let sent: Vec<u64> = update.nodes.iter().map(|n| n.id).chain(update.focus).collect();
+        self.nodes.extend(update.nodes.into_iter().map(|n| (n.id, n)));
+        let (mut held, mut next) = (HashMap::new(), vec![update.root]);
+        while let Some(id) = next.pop() {
+            let Some(node) = self.nodes.remove(&id) else {
+                return Err(format!("node {id:#x} was never sent, or is the child of two nodes"));
+            };
+            next.extend(&node.children);
+            held.insert(id, node);
+        }
+        self.nodes = held;
+        match sent.iter().find(|id| !self.nodes.contains_key(id)) {
+            Some(id) => Err(format!("node {id:#x} was sent, or has the focus, and no node holds it")),
+            None => Ok(()),
+        }
+    }
 
-impl Bridge for Recorder {
-    fn update(&mut self, update: &TreeUpdate) {
-        self.0.push(update.clone());
+    /// The nodes it holds, in the order of their ids.
+    pub fn nodes(&self) -> Vec<SemanticNode> {
+        let mut nodes: Vec<SemanticNode> = self.nodes.values().cloned().collect();
+        nodes.sort_by_key(|n| n.id);
+        nodes
     }
 }
 

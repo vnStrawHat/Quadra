@@ -2,6 +2,7 @@
 
 use std::ops::{BitOr, BitOrAssign};
 
+use quadra_a11y::SemanticAction;
 use quadra_prim::{Point, Size};
 
 use crate::keys::Key;
@@ -98,4 +99,12 @@ pub enum PlatformEvent {
     },
     /// The user asked to close the window. The app decides: dropping the window closes it.
     CloseRequested,
+    /// Assistive technology started reading the window: from now on it is told the window's
+    /// semantic tree with [`crate::PlatformWindow::update_semantics`], all of it first.
+    SemanticsWanted,
+    /// Assistive technology asks a node of the semantic tree to do something.
+    Semantic {
+        node: u64,
+        action: SemanticAction,
+    },
 }

@@ -26,6 +26,7 @@ impl Tree {
             if let Some(other) = was {
                 self.nodes[other.index as usize].children.retain(|&c| c != child);
                 self.mark(other, flag::RELIST);
+                self.semantics_changed(other);
             }
             // In a new place: positions in a layer are absolute, so all of it is painted.
             self.nodes[child.index as usize].parent = Some(parent);

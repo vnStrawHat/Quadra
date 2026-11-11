@@ -69,6 +69,9 @@ impl Tree {
         }
         let Some(state) = self.get_mut(id).and_then(|n| n.layer.take()) else { return };
         self.scene.remove_layer(state.id);
+        if state.offset != Point::ZERO {
+            self.semantics_changed(id); // what is under it is back where it is laid out
+        }
         // Nothing of it is in the parent's list but the marker.
         let node = &mut self.nodes[id.index as usize];
         (node.len, node.own) = (0, 0);

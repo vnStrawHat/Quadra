@@ -20,6 +20,9 @@ pub(crate) struct Listening {
     /// Nodes that changed in a way a listener can tell.
     changed: Vec<NodeId>,
     focus: Option<u64>,
+    /// How many updates were made, and for each node the last one it was sent whole in.
+    update: u32,
+    stamps: Vec<u32>,
 }
 
 fn semantic_id(id: NodeId) -> u64 {
@@ -29,17 +32,18 @@ fn semantic_id(id: NodeId) -> u64 {
 impl Tree {
     /// Says what a node is to a user: its role, its name, its states.
     pub fn set_semantics(&mut self, id: NodeId, semantics: Semantics) {
-        if let Some(node) = self.get_mut(id) {
-            node.semantics = Some(Box::new(semantics));
-            self.semantics_changed(id);
-        }
+        self.update_semantics(id, |says| *says = semantics);
     }
 
     /// Changes what a node says of itself.
     pub fn update_semantics(&mut self, id: NodeId, f: impl FnOnce(&mut Semantics)) {
         if let Some(node) = self.get_mut(id) {
-            f(node.semantics.get_or_insert_default());
-            self.semantics_changed(id);
+            let says = node.semantics.get_or_insert_default();
+            let role = says.role;
+            f(says);
+            // A node that starts or stops meaning something changes what its parent holds.
+            let around = node.parent.filter(|_| says.role != role);
+            self.semantics_changed(around.unwrap_or(id));
         }
     }
 
@@ -65,53 +69,101 @@ impl Tree {
         says
     }
 
-    /// Adds the semantic nodes of a subtree to `out` and returns those that belong to the
-    /// node around it. A text inside a node that is named by its content adds its text to
-    /// `named` instead of a node.
-    fn describe(&self, id: NodeId, mut named: Option<&mut String>, out: &mut Vec<SemanticNode>) -> Vec<u64> {
-        let node = &self.nodes[id.index as usize];
-        if self.layout.style(node.layout).display == Display::None {
-            return Vec::new();
+    /// Adds the semantic nodes of a subtree to `out`, and those that belong to the node
+    /// around it to `held`. A text inside a node that is named by its content adds its text
+    /// to `named` instead of a node.
+    fn describe(
+        &self,
+        id: NodeId,
+        mut named: Option<&mut String>,
+        held: &mut Vec<u64>,
+        out: &mut Vec<SemanticNode>,
+    ) {
+        if self.hidden(id) {
+            return;
         }
+        let node = &self.nodes[id.index as usize];
         let mut says = self.meaning(id);
         if says.role == Role::Text
             && let Some(named) = named.as_deref_mut()
         {
             named.push_str(&says.name);
             named.push(' ');
-            return Vec::new();
-        }
-        let named_by_content = says.name.is_empty() && says.role.named_by_content();
-        let mut content = String::new();
-        let mut children = Vec::new();
-        let above: Vec<NodeId> = if self.root == Some(id) { self.overlays().collect() } else { Vec::new() };
-        for &child in node.children.iter().chain(&above) {
-            let into = match says.role {
-                Role::None => named.as_deref_mut(),
-                _ if named_by_content => Some(&mut content),
-                _ => None,
-            };
-            children.extend(self.describe(child, into, out));
+            return;
         }
         if says.role == Role::None {
-            return children;
+            for &child in &node.children {
+                self.describe(child, named.as_deref_mut(), held, out);
+            }
+            return;
+        }
+        let named_by_content = says.name.is_empty() && says.role.named_by_content();
+        let (mut content, mut children) = (String::new(), Vec::new());
+        let above = self.overlays().filter(|_| self.root == Some(id)); // under the window
+        for child in node.children.iter().copied().chain(above) {
+            let named = if named_by_content { Some(&mut content) } else { None };
+            self.describe(child, named, &mut children, out);
         }
         if named_by_content {
             says.name = content.trim_end().to_string();
         }
         let focused = self.focus == Some(id) && self.active;
         let (bounds, focusable) = (self.window_rect(id), node.focusable);
+        held.push(semantic_id(id));
         out.push(SemanticNode { id: semantic_id(id), semantics: says, bounds, focused, focusable, children });
-        vec![semantic_id(id)]
+    }
+
+    /// Whether a node, and so what is under it, is left out for not being displayed. The
+    /// window never is: a listener always has that much.
+    fn hidden(&self, id: NodeId) -> bool {
+        let node = &self.nodes[id.index as usize];
+        self.root != Some(id) && self.layout.style(node.layout).display == Display::None
+    }
+
+    /// Whether a node is one of the semantic tree, and not skipped or part of a name.
+    fn means(&self, id: NodeId) -> bool {
+        let says = self.meaning(id);
+        says.role != Role::None && !(says.role == Role::Text && self.names_its_parent(id))
+    }
+
+    /// What a node is under: its parent, and the window for an overlay.
+    fn above(&self, id: NodeId) -> Option<NodeId> {
+        let parent = self.nodes[id.index as usize].parent;
+        parent.or_else(|| self.root.filter(|_| self.overlays().any(|overlay| overlay == id)))
+    }
+
+    /// The node of the semantic tree a node is, or is part of: itself, or the nearest around
+    /// it. `None` for a node that is in no window. Something not displayed on the way means
+    /// `None` too when `shown`; otherwise the nearest above it: where the focus is said to be.
+    fn semantic_around(&self, id: NodeId, shown: bool) -> Option<NodeId> {
+        let (mut top, mut at) = (None, id);
+        loop {
+            if self.hidden(at) {
+                if shown {
+                    return None;
+                }
+                top = None;
+            } else if top.is_none() && self.means(at) {
+                top = Some(at);
+            }
+            let Some(up) = self.above(at) else { break };
+            at = up;
+        }
+        top.filter(|_| self.root == Some(at))
+    }
+
+    /// The node of the semantic tree that has the focus, while the window does.
+    fn semantic_focus(&self) -> Option<u64> {
+        let focus = self.focus.filter(|&id| self.active && self.is_alive(id))?;
+        self.semantic_around(focus, false).map(semantic_id)
     }
 
     /// The whole semantic tree, as tests and the first update of a listener get it.
     pub fn semantic_tree(&self) -> TreeUpdate {
         let mut nodes = Vec::new();
         let Some(root) = self.root else { return TreeUpdate::default() };
-        self.describe(root, None, &mut nodes);
-        let focus = self.focus.filter(|_| self.active).map(semantic_id);
-        TreeUpdate { nodes, root: semantic_id(root), focus }
+        self.describe(root, None, &mut Vec::new(), &mut nodes);
+        TreeUpdate { nodes, root: semantic_id(root), focus: self.semantic_focus() }
     }
 
     /// The node of a semantic id, if it is still there.
@@ -132,25 +184,37 @@ impl Tree {
         if !self.listening.on {
             return None;
         }
-        let focus = self.focus.filter(|_| self.active).map(semantic_id);
+        let focus = self.semantic_focus();
         if !std::mem::replace(&mut self.listening.sent, true) {
             self.listening.focus = focus;
             return Some(self.semantic_tree());
         }
-        let changed = std::mem::take(&mut self.listening.changed);
-        let mut nodes: Vec<SemanticNode> = Vec::new();
-        for id in changed.into_iter().filter(|&id| self.is_alive(id)) {
-            // ponytail: the change is sent as the subtree of the semantic node it is in; a
-            // diff per node if a listener with a large tree shows the cost.
-            let around = self.path(id).into_iter().find(|&n| {
-                let says = self.meaning(n);
-                let inside_name = says.role == Role::Text && self.names_its_parent(n);
-                says.role != Role::None && !inside_name
-            });
-            if let Some(top) = around.filter(|&top| !nodes.iter().any(|n| n.id == semantic_id(top))) {
-                self.describe(top, None, &mut nodes);
+        // ponytail: a change is sent as the subtree of the semantic node it is in; a diff
+        // per node if a listener with a large tree shows the cost.
+        // The nodes to send are stamped with this update's number: asking whether one is
+        // among them costs nothing, however many there are.
+        let mut stamps = std::mem::take(&mut self.listening.stamps);
+        stamps.resize(self.nodes.len(), 0);
+        self.listening.update += 1;
+        let (update, mut tops) = (self.listening.update, Vec::new());
+        for id in std::mem::take(&mut self.listening.changed) {
+            // What is not displayed, or is under something that is not, is in nobody's list
+            // of children: nothing of it is sent.
+            let top = if self.is_alive(id) { self.semantic_around(id, true) } else { None };
+            if let Some(top) = top.filter(|top| stamps[top.index as usize] != update) {
+                stamps[top.index as usize] = update;
+                tops.push(top);
             }
         }
+        let mut nodes: Vec<SemanticNode> = Vec::new();
+        for top in tops {
+            // What is under a node that is sent goes with it.
+            let mut around = std::iter::successors(self.above(top), |&at| self.above(at));
+            if !around.any(|at| stamps[at.index as usize] == update) {
+                self.describe(top, None, &mut Vec::new(), &mut nodes);
+            }
+        }
+        self.listening.stamps = stamps;
         if nodes.is_empty() && focus == self.listening.focus {
             return None;
         }
@@ -160,9 +224,9 @@ impl Tree {
 
     /// Whether a text is part of the name of the semantic node around it.
     fn names_its_parent(&self, text: NodeId) -> bool {
-        let around =
-            self.path(text).into_iter().skip(1).map(|n| self.meaning(n)).find(|s| s.role != Role::None);
-        around.is_some_and(|says| says.name.is_empty() && says.role.named_by_content())
+        let around = std::iter::successors(self.above(text), |&at| self.above(at));
+        let says = around.map(|at| self.meaning(at)).find(|says| says.role != Role::None);
+        says.is_some_and(|says| says.name.is_empty() && says.role.named_by_content())
     }
 
     /// Runs `f` for the semantic actions a node is asked to do, other than a click and the
@@ -209,7 +273,16 @@ impl Tree {
                         done |= run(other);
                     }
                 }
-                done
+                // What nothing registered for is a click, when a click is what makes the
+                // node what was asked: a closed one open, an open one closed, a box toggled.
+                let says = self.meaning(id);
+                let click = match other {
+                    SemanticAction::Toggle => says.checked.is_some(),
+                    SemanticAction::Expand => says.expanded == Some(false),
+                    SemanticAction::Collapse => says.expanded == Some(true),
+                    _ => false,
+                };
+                done || (click && self.act(id, &SemanticAction::Click))
             }
         })
     }

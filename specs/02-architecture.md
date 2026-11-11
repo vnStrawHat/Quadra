@@ -28,11 +28,11 @@ quadra-reactive        signals, memos, effects, scopes, events, context     prim
 quadra-layout          layout styles and the incremental flex and grid engine
 quadra-text            paragraphs, wrapping, caches, the TextBackend trait
 quadra-render          layers, display lists, instances, atlases, the Renderer trait
+quadra-a11y            semantic nodes, incremental updates, the mirror tests follow them with
 quadra-platform        Platform and Window traits, events, keys, the headless platform
 quadra-tree            nodes, widgets, passes, input dispatch, focus, keymap
 quadra-ui              views, properties, control flow, built-in widgets (box, text, image, scroll, lists)
 quadra-async           local executor, background pool, inbox, timers
-quadra-a11y            semantic nodes, incremental updates, the bridge trait
 quadra-app             App, windows, the frame loop, settings, assets, i18n, logging
 quadra-native-win      Win32 platform, D3D11 renderer, DirectWrite backend, the accessibility
                        adapter, image codecs, their wiring

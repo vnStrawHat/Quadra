@@ -3,7 +3,7 @@
 //!     tools/cargo.sh run -p quadra --example form
 
 use quadra::{
-    Along, Color, NodeRef, Place, Side, WindowOptions, column, div, overlay, row, show, signal, text,
+    Along, Color, NodeRef, Place, Role, Side, WindowOptions, column, div, overlay, row, show, signal, text,
     text_input,
 };
 
@@ -17,7 +17,8 @@ fn main() -> quadra::Result<()> {
 
         // A button that opens a menu below itself; an item of the menu writes the name.
         let anchor = NodeRef::new();
-        let button = div().padding_x(12.0).padding_y(6.0).radius(4.0).bg(Color::rgb(0xE8E8E8));
+        let button = div().role(Role::Button).expanded(move || open.get()).focusable();
+        let button = button.padding_x(12.0).padding_y(6.0).radius(4.0).bg(Color::rgb(0xE8E8E8));
         let button = button.hover(|s| s.bg(Color::rgb(0xD8D8D8))).active(|s| s.bg(Color::rgb(0xC4C4C4)));
         let button =
             button.node_ref(&anchor).on_click(move |_| open.update(|o| *o = !*o)).child(text("Names"));
@@ -27,10 +28,11 @@ fn main() -> quadra::Result<()> {
                     name.set(label.to_string());
                     open.set(false);
                 };
-                let item = div().width(140.0).padding_x(10.0).padding_y(5.0).radius(3.0);
+                let item = div().role(Role::MenuItem).width(140.0).padding_x(10.0).padding_y(5.0).radius(3.0);
                 item.hover(|s| s.bg(Color::rgb(0xDCE6FF))).on_click(pick).child(text(label))
             };
-            let items = column().padding(4.0).radius(6.0).border(1.0).border_color(Color::rgb(0xC0C0C0));
+            let items = column().role(Role::Menu).padding(4.0).radius(6.0).border(1.0);
+            let items = items.border_color(Color::rgb(0xC0C0C0));
             let items = items.bg(Color::WHITE).children(["Quadra", "Việt Nam", "World"].map(item));
             let place = Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);
             overlay(place, items).on_outside_press(move || open.set(false))

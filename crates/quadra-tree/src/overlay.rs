@@ -92,6 +92,14 @@ impl Tree {
         self.sync_roots();
         self.relayout = true;
         self.mark(root, flag::PAINT | flag::SUBTREE);
+        self.overlays_changed();
+    }
+
+    /// For a listener, the overlays are under the window.
+    fn overlays_changed(&mut self) {
+        if let Some(window) = self.root {
+            self.semantics_changed(window);
+        }
     }
 
     /// Closes an overlay: its root and everything under it is removed.
@@ -132,6 +140,7 @@ impl Tree {
         self.overlays.retain(|o| o.root != root);
         if self.overlays.len() != before {
             self.sync_roots();
+            self.overlays_changed();
         }
     }
 

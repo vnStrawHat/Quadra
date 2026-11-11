@@ -1,9 +1,10 @@
 //! A Win32 window: how it is made, and what the app can tell it.
 
-use std::cell::Cell;
+use std::cell::{Cell, OnceCell};
 use std::ffi::c_void;
 use std::rc::Rc;
 
+use quadra_a11y::TreeUpdate;
 use quadra_platform::{
     PlatformError, PlatformEvent, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size,
 };
@@ -22,6 +23,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{HSTRING, PCWSTR, Param, w};
 
+use crate::a11y::Access;
 use crate::ime;
 use crate::platform::{Delivery, Shared, failed};
 use crate::wndproc::window_proc;
@@ -43,6 +45,8 @@ pub(crate) struct WindowState {
     /// Where the candidates of an input method go: the caret, in device pixels. `None`: the
     /// focus is on nothing that takes text, and the input method is off.
     pub caret: Cell<Option<RECT>>,
+    /// The bridge to assistive technology, from when the window exists.
+    pub access: OnceCell<Access>,
 }
 
 impl WindowState {
@@ -144,6 +148,7 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         in_size_move: Cell::new(false),
         high_surrogate: Cell::new(0),
         caret: Cell::new(None),
+        access: OnceCell::new(),
     });
     let style = if options.resizable {
         WS_OVERLAPPEDWINDOW
@@ -160,6 +165,7 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
             create(class, &HSTRING::from(options.title.as_str()), style, None, Rc::as_ptr(&state).cast())?;
         let window = WinWindow(state); // from here on, an early return closes the window
         let state = &window.0;
+        let _ = state.access.set(Access::new(hwnd));
         // Size the client area to the logical size asked for, at this display's scale.
         let dpi = GetDpiForWindow(hwnd).max(1);
         let scale = dpi as f32 / 96.0;
@@ -245,6 +251,12 @@ impl PlatformWindow for WinWindow {
         }
         if let Some(caret) = caret {
             ime::place(hwnd, caret);
+        }
+    }
+
+    fn update_semantics(&self, update: &TreeUpdate) {
+        if let Some(access) = self.0.access.get() {
+            access.update(update, self.0.scale.get());
         }
     }
 }

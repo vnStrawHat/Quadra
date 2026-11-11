@@ -14,6 +14,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 };
 use windows::Win32::UI::WindowsAndMessaging::*;
 
+use crate::a11y::WM_SEMANTIC;
 use crate::ime;
 use crate::input::{button_of, char_text, current_mods, hi, key_from_vk, position, wheel_lines};
 use crate::window::WindowState;
@@ -130,7 +131,26 @@ impl WindowState {
                 None
             }
             WM_SETFOCUS | WM_KILLFOCUS => {
+                if let Some(access) = self.access.get() {
+                    access.window_focused(msg == WM_SETFOCUS);
+                }
                 self.emit(PlatformEvent::Focus(msg == WM_SETFOCUS));
+                done
+            }
+            // Assistive technology asks for the window's tree. The first time, the app is
+            // told to start sending it; until it has, the adapter answers with an empty one.
+            WM_GETOBJECT => {
+                let (result, first) = self.access.get()?.object(wparam, lparam);
+                if first {
+                    self.emit(PlatformEvent::SemanticsWanted);
+                }
+                result
+            }
+            WM_SEMANTIC => {
+                let asked: Vec<_> = self.access.get()?.requests().collect();
+                for (node, action) in asked {
+                    self.emit(PlatformEvent::Semantic { node, action });
+                }
                 done
             }
             WM_KEYDOWN | WM_SYSKEYDOWN | WM_KEYUP | WM_SYSKEYUP => {

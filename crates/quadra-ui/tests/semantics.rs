@@ -2,10 +2,11 @@
 //! skipped. A test finds controls in it and drives them as assistive technology would, and a
 //! listener hears only of what changed.
 
+use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
-use quadra_tree::{Role, SemanticAction};
-use quadra_ui::{column, div, row, scroll, show, text, text_input};
+use quadra_tree::{Mirror, Role, SemanticAction};
+use quadra_ui::{Place, column, div, overlay, row, scroll, show, text, text_input};
 
 struct Form {
     h: Harness,
@@ -82,6 +83,9 @@ fn a_test_finds_controls_and_drives_them_without_the_pointer() {
     let item = f.h.get_by_text("Item 40").node();
     assert!(f.h.tree.window_rect(item).y > 600.0);
     assert!(f.h.tree.act(item, &SemanticAction::Click) && !f.h.tree.act(item, &SemanticAction::Toggle));
+    // Toggling a checkbox that registered nothing for it is a click on it.
+    f.h.get_by_role(Role::Checkbox, "Done").act(SemanticAction::Toggle);
+    assert!(!f.done.get_untracked());
 }
 
 #[test]
@@ -119,4 +123,60 @@ fn a_listener_hears_everything_once_and_then_what_changed() {
     f.done.set(false);
     f.h.frame();
     assert!(f.h.tree.take_semantic_update().is_none());
+}
+
+/// Runs a frame and gives its update to a listener: what the listener then holds is the tree.
+fn follow(mirror: &mut Mirror, h: &mut Harness) {
+    h.frame();
+    if let Some(update) = h.tree.take_semantic_update() {
+        mirror.apply(update).unwrap();
+    }
+    let mut tree = h.tree.semantic_tree().nodes;
+    tree.sort_by_key(|n| n.id);
+    assert_eq!(mirror.nodes(), tree);
+}
+
+#[test]
+fn a_listener_that_applies_what_it_is_sent_holds_the_tree() {
+    let mut f = form();
+    let mut mirror = Mirror::default();
+    f.h.tree.listen(true);
+    follow(&mut mirror, &mut f.h);
+    f.done.set(true);
+    follow(&mut mirror, &mut f.h);
+    f.h.get_by_role(Role::TextInput, "").type_text("Plan"); // a value, a state, the focus
+    follow(&mut mirror, &mut f.h);
+    f.h.get_by_test_id("save").click(); // a text that was not there appears
+    follow(&mut mirror, &mut f.h);
+    f.h.wheel(100.0, 300.0, -3.0); // the list scrolls: its items are elsewhere
+    follow(&mut mirror, &mut f.h);
+
+    // A menu above the window, a box that means nothing and can have the focus, and a text
+    // that is at once a node of its own and part of an item's name.
+    let (open, name) = (signal(false), signal("one".to_string()));
+    let menu = move || {
+        let item = div().role(Role::MenuItem).child(text(name));
+        overlay(Place::Center, column().role(Role::Menu).child(item).child(text("Close")))
+    };
+    let mut h = Harness::new();
+    h.mount(move || {
+        let page = column().child(div().size(50.0, 20.0).focusable()).child(div().child(text(name)));
+        page.child(show(move || open.get(), menu))
+    });
+    let mut mirror = Mirror::default();
+    h.frame();
+    h.tree.listen(true);
+    follow(&mut mirror, &mut h);
+    open.set(true);
+    follow(&mut mirror, &mut h);
+    assert!(h.semantics().contains("  Menu\n    MenuItem \"one\"\n    Text \"Close\""));
+    name.set("two".to_string());
+    follow(&mut mirror, &mut h);
+    h.key(Key::Tab, Mods::NONE); // the focus is on what means nothing: the window has it
+    follow(&mut mirror, &mut h);
+    let tree = h.tree.semantic_tree();
+    assert_eq!(tree.focus, Some(tree.root));
+    open.set(false);
+    follow(&mut mirror, &mut h);
+    assert!(!h.semantics().contains("Menu"));
 }

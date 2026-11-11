@@ -165,6 +165,9 @@ impl<R: Renderer> App<R> {
             return; // minimized: nothing to show
         }
         let stats = w.tree.frame(w.window.size(), w.window.scale());
+        if let Some(update) = w.tree.take_semantic_update() {
+            w.window.update_semantics(&update); // the a11y pass: only while something listens
+        }
         let (renderer, fonts, started) = (&mut self.renderer, &self.fonts, Instant::now());
         let mut frame = || {
             renderer.resize_surface(w.surface, device)?;
@@ -208,6 +211,10 @@ impl<R: Renderer> App<R> {
         for w in &mut self.windows {
             if all || w.tree.needs_frame() {
                 w.window.request_frame();
+            } else if let Some(update) = w.tree.take_semantic_update() {
+                // No frame is coming to send it after: a listener that just arrived, a focus
+                // that moved.
+                w.window.update_semantics(&update);
             }
             // Where text is typed, or that it is not: what an input method goes by.
             let caret = w.tree.text_caret();

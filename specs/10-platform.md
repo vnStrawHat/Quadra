@@ -29,6 +29,7 @@ pub trait PlatformWindow {                       // dropping it closes the windo
     fn set_cursor(&self, cursor: Cursor);
     fn request_frame(&self);
     fn set_text_input(&self, caret: Option<Rect>);   // text is typed there, or nowhere
+    fn update_semantics(&self, update: &TreeUpdate); // for assistive technology (12)
     fn minimize(&self);  fn toggle_maximize(&self);
 }
 
@@ -45,7 +46,9 @@ pub trait PlatformHandler {
   `Headless`), defined in `quadra-platform`. No untyped pointer crosses the boundary.
 - `PlatformEvent` covers pointer, wheel, key, text and composition, focus, resize (one event
   carries the size and the scale: a change of either is the same work), close request,
-  appearance change, file drop.
+  appearance change, file drop, and assistive technology's two: `SemanticsWanted` (it started
+  reading the window) and `Semantic { node, action }` (it asks a node to do something). The
+  types of the semantic tree come from `quadra-a11y`, which has no OS code.
 - **Every method takes `&self`.** The handler calls the platform and its windows from inside
   `run`, so nothing can hold them exclusively; implementations keep their state in cells. All of
   it lives on the UI thread; only `Waker` is `Send`.
@@ -105,6 +108,8 @@ Unchanged from the V implementation, whose notes in behaviour/02 remain the refe
   Vietnamese typing is a required test case.
 - Windows open at a fitted, centred or restored placement; a restored placement is used only if
   it is still on a connected display.
+- Assistive technology through UI Automation, by the adapter of `accesskit` (12): made with
+  the window, it loads nothing and builds nothing until a reader asks.
 - OS bindings come from the `windows` crate with only the needed features. COM objects are
   owned by its smart pointers; no vtable is indexed by hand.
 
@@ -116,6 +121,8 @@ In `quadra-platform`, used by `quadra-testing` and by benches:
 - A virtual clock: `now` returns it, timers fire when a test advances it, in order.
 - An event queue a test fills; `run` is replaced by stepping.
 - A clipboard that is a variable in memory. The real clipboard is never touched by a test.
+- A window keeps the semantic updates it is given; a test queues `SemanticsWanted` to be the
+  reader.
 
 It is the second implementation of every trait above, which is what keeps the traits honest
 until a second OS exists.

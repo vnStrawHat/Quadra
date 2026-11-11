@@ -33,6 +33,7 @@ mod thumb;
 mod tree;
 mod verify;
 mod widget;
+mod window;
 
 pub use action::{Action, FocusNext, FocusPrevious};
 pub use dispatch::PointerInput;
@@ -55,3 +56,4 @@ pub use theme::{Paint, Theme, Token};
 pub use thumb::ScrollThumb;
 pub use tree::Tree;
 pub use widget::{MeasureCx, PaintCx, Widget};
+pub use window::WindowRequest;

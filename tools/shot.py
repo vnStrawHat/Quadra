@@ -22,6 +22,7 @@ gdi32.BitBlt.argtypes = [wintypes.HDC] + [ctypes.c_int] * 4 + [wintypes.HDC, cty
 gdi32.GetDIBits.argtypes = [wintypes.HDC, wintypes.HBITMAP, wintypes.UINT, wintypes.UINT, ctypes.c_void_p, ctypes.c_void_p, wintypes.UINT]
 gdi32.DeleteObject.argtypes = [wintypes.HANDLE]
 gdi32.DeleteDC.argtypes = [wintypes.HDC]
+user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
 
 
 def capture(title):

@@ -6,6 +6,8 @@ use std::rc::Rc;
 use quadra_reactive::{Scope, expect, on_cleanup, provide};
 use quadra_tree::{Handle, NodeId, Tree};
 
+use crate::window::Window;
+
 /// What a view mounts into.
 pub struct MountCx<'a> {
     pub tree: &'a mut Tree,
@@ -58,6 +60,7 @@ pub fn mount_with<V: View>(tree: &mut Tree, build: impl FnOnce() -> V) -> NodeId
     let scope = Scope::child();
     let id = scope.run(|| {
         provide(cx.handle.clone());
+        provide(Window::new(cx.handle.clone(), cx.tree.maximized()));
         build().mount(&mut cx)
     });
     cx.tree.set_scope(id, scope);

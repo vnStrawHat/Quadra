@@ -96,6 +96,8 @@ pub(crate) struct Node {
     pub focus_scope: bool,
     /// The shape the pointer has over it and what is under it (specs/09).
     pub cursor: Option<Cursor>,
+    /// What the node is to the OS in a window with its own frame.
+    pub region: quadra_platform::HitRegion,
     /// Its name as a context of key bindings (specs/09).
     pub key_context: Option<Rc<str>>,
     /// What it is to a user, when that was said (specs/12).

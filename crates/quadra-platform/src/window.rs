@@ -25,6 +25,9 @@ pub struct WindowOptions {
     pub fit: f32,
     /// A window that is not shown: tests, and tools that only draw.
     pub visible: bool,
+    /// The app draws the title bar: the content covers where the OS would draw its own, and
+    /// the app says what each point of it is ([`crate::PlatformHandler::hit_test`]).
+    pub custom_frame: bool,
 }
 
 impl WindowOptions {
@@ -36,6 +39,7 @@ impl WindowOptions {
             centered: false,
             fit: 0.0,
             visible: true,
+            custom_frame: false,
         }
     }
 
@@ -63,6 +67,23 @@ impl WindowOptions {
         self.visible = false;
         self
     }
+
+    pub fn custom_frame(mut self) -> WindowOptions {
+        self.custom_frame = true;
+        self
+    }
+}
+
+/// What a point of a window with its own frame is to the OS.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum HitRegion {
+    /// The app's: pointer events come to it.
+    #[default]
+    Client,
+    /// The window is dragged by it, and a double click maximizes it.
+    Caption,
+    /// The app's maximize button: the OS shows its snap layouts over it.
+    Maximize,
 }
 
 /// The shape of the pointer over a window.
@@ -117,4 +138,8 @@ pub trait PlatformWindow {
     /// Tells assistive technology what is new in the window's semantic tree. Called only
     /// after [`crate::PlatformEvent::SemanticsWanted`]; the first update is the whole tree.
     fn update_semantics(&self, update: &TreeUpdate);
+    fn minimize(&self);
+    /// Maximizes the window, or puts it back as it was.
+    fn toggle_maximize(&self);
+    fn is_maximized(&self) -> bool;
 }

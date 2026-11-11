@@ -17,7 +17,7 @@ use quadra_prim::{Color, Rect};
 use quadra_reactive::{Scope, Signal, provide, signal};
 use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
-use quadra_tree::{Fonts, Keymap, Theme, Tree};
+use quadra_tree::{Fonts, Keymap, Theme, Tree, WindowRequest};
 use quadra_ui::{View, mount_with};
 
 pub use report::{AppError, FrameReport, Result};
@@ -241,7 +241,16 @@ impl<R: Renderer> App<R> {
     /// and every window does when the renderer wants one.
     pub(crate) fn request_frames(&mut self) {
         let all = self.renderer.wants_frame();
+        let mut closed = Vec::new();
         for w in &mut self.windows {
+            // What a view asked of its window: a title bar's buttons.
+            for request in w.tree.take_window_requests() {
+                match request {
+                    WindowRequest::Minimize => w.window.minimize(),
+                    WindowRequest::ToggleMaximize => w.window.toggle_maximize(),
+                    WindowRequest::Close => closed.push(w.window.id()),
+                }
+            }
             if all || w.tree.needs_frame() {
                 w.window.request_frame();
             } else if let Some(update) = w.tree.take_semantic_update() {
@@ -258,6 +267,9 @@ impl<R: Renderer> App<R> {
             if std::mem::replace(&mut w.cursor, cursor) != cursor {
                 w.window.set_cursor(cursor);
             }
+        }
+        for window in closed {
+            self.close(window);
         }
     }
 }

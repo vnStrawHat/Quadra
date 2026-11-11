@@ -31,6 +31,8 @@ struct WindowState {
     text_input: Cell<Option<Rect>>,
     cursor: Cell<Cursor>,
     semantics: RefCell<Vec<TreeUpdate>>,
+    minimized: Cell<bool>,
+    maximized: Cell<bool>,
 }
 
 struct Inner {
@@ -109,6 +111,15 @@ impl HeadlessPlatform {
     /// The cursor a window was last given.
     pub fn cursor(&self, window: WindowId) -> Option<Cursor> {
         self.window(window).map(|w| w.cursor.get())
+    }
+
+    /// Whether a window was minimized, and whether it is maximized.
+    pub fn is_minimized(&self, window: WindowId) -> bool {
+        self.window(window).is_some_and(|w| w.minimized.get())
+    }
+
+    pub fn is_maximized(&self, window: WindowId) -> bool {
+        self.window(window).is_some_and(|w| w.maximized.get())
     }
 
     /// The title a window was last given.
@@ -193,6 +204,8 @@ impl Platform for HeadlessPlatform {
             text_input: Cell::new(None),
             cursor: Cell::default(),
             semantics: RefCell::default(),
+            minimized: Cell::new(false),
+            maximized: Cell::new(false),
         });
         self.0.windows.borrow_mut().push(Rc::downgrade(&state));
         Ok(Box::new(HeadlessWindow(state)))
@@ -259,5 +272,17 @@ impl PlatformWindow for HeadlessWindow {
 
     fn update_semantics(&self, update: &TreeUpdate) {
         self.0.semantics.borrow_mut().push(update.clone());
+    }
+
+    fn minimize(&self) {
+        self.0.minimized.set(true);
+    }
+
+    fn toggle_maximize(&self) {
+        self.0.maximized.set(!self.0.maximized.get());
+    }
+
+    fn is_maximized(&self) -> bool {
+        self.0.maximized.get()
     }
 }

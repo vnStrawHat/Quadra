@@ -30,7 +30,7 @@ pub trait PlatformWindow {                       // dropping it closes the windo
     fn request_frame(&self);
     fn set_text_input(&self, caret: Option<Rect>);   // text is typed there, or nowhere
     fn update_semantics(&self, update: &TreeUpdate); // for assistive technology (12)
-    fn minimize(&self);  fn toggle_maximize(&self);
+    fn minimize(&self);  fn toggle_maximize(&self);  fn is_maximized(&self) -> bool;
 }
 
 pub trait PlatformHandler {
@@ -56,6 +56,23 @@ pub trait PlatformHandler {
   an event at once (setting a title, moving a window). The platform queues such an event and
   delivers it when the handler returns. `hit_test`, which must answer at once, answers
   `Client` in that case.
+- **Windows with their own frame.** `WindowOptions::custom_frame()` asks for a window whose
+  content covers where the OS would draw a caption: the app draws the title bar. The OS
+  keeps moving, resizing and snapping the window, and for that asks what a point is:
+  `HitRegion::Caption` (the window is dragged by it, a double click maximizes it),
+  `Maximize` (the app's maximize button: the OS shows its snap layouts over it), or
+  `Client`, the app's own. The app answers from the window's tree: a node is given a region
+  (`.window_region(..)` on a box, `Tree::set_window_region`), and a point is the region of
+  the deepest node under it that has one, unless a node that takes the pointer (a handler
+  for it, the focus) is deeper: a button in the bar stays a button, with nothing to say.
+  Over `Caption` and `Maximize` the pointer still reaches the app as moves, and a press and
+  release on `Maximize` as a press and release: the button shows them and its click is the
+  app's to act on. Minimize and close are buttons of the app's like any other.
+- **What a view asks of its window.** `quadra_ui::window()` gives the window the calling
+  view is in: `.minimize()`, `.toggle_maximize()`, `.close()` (as the close button of the
+  OS: the app decides), and `.is_maximized()`, a read that what it is in runs again for.
+  The asks wait on the tree (`Tree::take_window_requests`) and the app does them after the
+  handler that asked; the tree is told of the window's state with each resize.
 - A window is owned by whoever holds its box. Dropping it closes the OS window; a close the
   user asks for arrives as an event, and the app decides.
 - Errors are returned, not printed (01, R18).
@@ -102,8 +119,12 @@ Unchanged from the V implementation, whose notes in behaviour/02 remain the refe
 - Per-monitor DPI awareness v2; a scale change resizes the window as the OS suggests.
 - The modal move and resize loop: frames keep being drawn while the user drags a border, and
   content stays in step with the window edge.
-- Custom titlebar: the app draws it; the OS keeps resizing, snapping and the window buttons'
-  behaviour through `hit_test`, including snap layouts over the maximize button.
+- Custom titlebar: the app draws it; the OS keeps resizing, snapping and the snap layouts
+  over the maximize button through `hit_test`. `WM_NCCALCSIZE` gives the caption's room to
+  the content (less the border a maximized window hangs over the screen by); `WM_NCHITTEST`
+  keeps the borders that resize, a band as tall as one at the top of the content included,
+  and asks the handler for the rest; the frame's pointer messages over the bar and the
+  maximize button become the app's pointer events (`frame.rs`).
 - IME through the text services of the OS, with composition reported to the focused input;
   Vietnamese typing is a required test case.
 - Windows open at a fitted, centred or restored placement; a restored placement is used only if
@@ -126,6 +147,8 @@ In `quadra-platform`, used by `quadra-testing` and by benches:
 - A clipboard that is a variable in memory. The real clipboard is never touched by a test.
 - A window keeps the semantic updates it is given; a test queues `SemanticsWanted` to be the
   reader.
+- A window remembers that it was minimized and whether it is maximized; a test asks the
+  app's `hit_test` itself.
 
 It is the second implementation of every trait above, which is what keeps the traits honest
 until a second OS exists.

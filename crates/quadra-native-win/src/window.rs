@@ -17,16 +17,15 @@ use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::HiDpi::{AdjustWindowRectExForDpi, GetDpiForWindow};
 use windows::Win32::UI::WindowsAndMessaging::{
     CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, CreateWindowExW, DestroyWindow, GWLP_USERDATA, GetClientRect,
-    HCURSOR, IDC_APPSTARTING, IDC_ARROW, IDC_CROSS, IDC_HAND, IDC_HELP, IDC_IBEAM, IDC_NO, IDC_SIZEALL,
-    IDC_SIZENESW, IDC_SIZENS, IDC_SIZENWSE, IDC_SIZEWE, IDC_WAIT, LoadCursorW, RegisterClassExW, SW_SHOW,
-    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOZORDER, SetCursor, SetWindowLongPtrW, SetWindowPos, SetWindowTextW,
-    ShowWindow, WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSEXW, WNDPROC, WS_MAXIMIZEBOX, WS_OVERLAPPEDWINDOW,
-    WS_THICKFRAME,
+    HCURSOR, IDC_ARROW, LoadCursorW, RegisterClassExW, SW_SHOW, SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE,
+    SWP_NOZORDER, SetCursor, SetWindowLongPtrW, SetWindowPos, SetWindowTextW, ShowWindow, WINDOW_EX_STYLE,
+    WINDOW_STYLE, WNDCLASSEXW, WNDPROC, WS_MAXIMIZEBOX, WS_OVERLAPPEDWINDOW, WS_THICKFRAME,
 };
 use windows::core::{HSTRING, PCWSTR, Param, w};
 
 use crate::a11y::Access;
 use crate::ime;
+use crate::input::system_cursor;
 use crate::platform::{Delivery, Shared, failed};
 use crate::wndproc::window_proc;
 
@@ -51,6 +50,11 @@ pub(crate) struct WindowState {
     pub cursor: Cell<HCURSOR>,
     /// The bridge to assistive technology, from when the window exists.
     pub access: OnceCell<Access>,
+    /// The app draws the title bar (`frame.rs`); whether the window's borders resize it; and
+    /// whether the app's maximize button is held down.
+    pub custom_frame: bool,
+    pub resizable: bool,
+    pub frame_down: Cell<bool>,
 }
 
 impl WindowState {
@@ -131,27 +135,6 @@ pub(crate) unsafe fn create(
     }
 }
 
-/// One of the cursors the system has for everyone.
-fn system_cursor(cursor: Cursor) -> HCURSOR {
-    let id = match cursor {
-        Cursor::Arrow => IDC_ARROW,
-        Cursor::Text => IDC_IBEAM,
-        Cursor::Pointer => IDC_HAND,
-        Cursor::Crosshair => IDC_CROSS,
-        Cursor::Move => IDC_SIZEALL,
-        Cursor::NotAllowed => IDC_NO,
-        Cursor::ResizeHorizontal => IDC_SIZEWE,
-        Cursor::ResizeVertical => IDC_SIZENS,
-        Cursor::ResizeNwse => IDC_SIZENWSE,
-        Cursor::ResizeNesw => IDC_SIZENESW,
-        Cursor::Wait => IDC_WAIT,
-        Cursor::Progress => IDC_APPSTARTING,
-        Cursor::Help => IDC_HELP,
-    };
-    // SAFETY: loading a cursor of the system by its id; they are shared and never freed.
-    unsafe { LoadCursorW(None, id) }.unwrap_or_default()
-}
-
 /// The work area of the primary display, in device pixels.
 fn primary_display() -> RECT {
     let mut info = MONITORINFO { cbSize: size_of::<MONITORINFO>() as u32, ..Default::default() };
@@ -175,6 +158,9 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         caret: Cell::new(None),
         cursor: Cell::new(system_cursor(Cursor::Arrow)),
         access: OnceCell::new(),
+        custom_frame: options.custom_frame,
+        resizable: options.resizable,
+        frame_down: Cell::new(false),
     });
     let style = if options.resizable {
         WS_OVERLAPPEDWINDOW
@@ -206,8 +192,12 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
             bottom: (size.height * scale) as i32,
         };
         AdjustWindowRectExForDpi(&mut frame, style, false, WINDOW_EX_STYLE(0), dpi).map_err(failed)?;
+        if options.custom_frame {
+            frame.top = 0; // the content covers the caption: no room is added for one
+        }
         let (w, h) = (frame.right - frame.left, frame.bottom - frame.top);
-        let mut flags = SWP_NOZORDER | SWP_NOACTIVATE;
+        // With a frame of its own the window works its client area out again, our way.
+        let mut flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED;
         if !options.centered {
             flags |= SWP_NOMOVE;
         }
@@ -294,5 +284,17 @@ impl PlatformWindow for WinWindow {
         if let Some(access) = self.0.access.get() {
             access.update(update, self.0.scale.get());
         }
+    }
+
+    fn minimize(&self) {
+        self.0.minimize();
+    }
+
+    fn toggle_maximize(&self) {
+        self.0.toggle_maximize();
+    }
+
+    fn is_maximized(&self) -> bool {
+        self.0.is_maximized()
     }
 }

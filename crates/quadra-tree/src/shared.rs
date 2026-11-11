@@ -37,6 +37,8 @@ pub(crate) struct Shared {
     pub frames: RefCell<Vec<Box<dyn FnMut() -> bool>>>,
     /// Set when something was queued: the window asks for a frame.
     pub wake: Cell<bool>,
+    /// What was asked of the window, until the app takes it.
+    pub asked: RefCell<Vec<crate::window::WindowRequest>>,
     /// The clock of the window the tree is in, when it was given one.
     pub clock: RefCell<Option<Rc<dyn Fn() -> Instant>>>,
 }

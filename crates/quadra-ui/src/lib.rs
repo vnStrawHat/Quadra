@@ -28,6 +28,7 @@ mod scrollbar;
 mod text;
 mod tween;
 mod view;
+mod window;
 
 pub use div::{Div, Refine, column, div, row};
 pub use drawing::{DrawingView, drawing};
@@ -41,3 +42,4 @@ pub use scroll::scroll;
 pub use text::{TextView, text};
 pub use tween::tween;
 pub use view::{AnyView, MountCx, View, each_frame, mount_root, mount_with};
+pub use window::{Window, window};

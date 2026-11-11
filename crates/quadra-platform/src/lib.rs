@@ -16,4 +16,4 @@ pub use event::{Mods, MouseButton, PlatformEvent, PointerKind};
 pub use headless::HeadlessPlatform;
 pub use keys::Key;
 pub use platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
-pub use window::{Cursor, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size};
+pub use window::{Cursor, HitRegion, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size};

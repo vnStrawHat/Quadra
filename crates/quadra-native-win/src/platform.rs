@@ -9,8 +9,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use quadra_platform::{
-    Clipboard, Platform, PlatformError, PlatformEvent, PlatformHandler, PlatformWindow, TimerId, Waker,
-    WindowId, WindowOptions,
+    Clipboard, Platform, PlatformError, PlatformHandler, PlatformWindow, TimerId, Waker, WindowOptions,
 };
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::HiDpi::{DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, SetProcessDpiAwarenessContext};
@@ -22,6 +21,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use windows::core::w;
 
 use crate::clipboard::WinClipboard;
+pub(crate) use crate::delivery::Delivery;
 use crate::pacing::Pacing;
 use crate::window::{self, WindowState};
 
@@ -34,22 +34,15 @@ pub(crate) fn failed(e: windows::core::Error) -> PlatformError {
     PlatformError(e.message().to_string())
 }
 
-pub(crate) enum Delivery {
-    Event(WindowId, PlatformEvent),
-    Frame(WindowId),
-    Timer(TimerId),
-    Wake,
-}
-
 pub(crate) struct Shared {
     /// The invisible window that receives timers and posts.
     message_window: Cell<HWND>,
     pub windows: RefCell<Vec<Weak<WindowState>>>,
-    queue: RefCell<VecDeque<Delivery>>,
+    pub(crate) queue: RefCell<VecDeque<Delivery>>,
     /// The handler `run` was given, while it runs.
-    handler: Cell<Option<NonNull<dyn PlatformHandler>>>,
+    pub(crate) handler: Cell<Option<NonNull<dyn PlatformHandler>>>,
     /// A handler method is on the stack: what arrives now waits in the queue.
-    busy: Cell<bool>,
+    pub(crate) busy: Cell<bool>,
     /// Timer id to whether it repeats.
     timers: RefCell<HashMap<usize, bool>>,
     next_id: Cell<u32>,
@@ -62,34 +55,6 @@ impl Shared {
     pub fn next_id(&self) -> u32 {
         self.next_id.set(self.next_id.get() + 1);
         self.next_id.get()
-    }
-
-    /// Hands something to the handler: now, or when the handler that is running returns.
-    pub fn deliver(&self, delivery: Delivery) {
-        self.queue.borrow_mut().push_back(delivery);
-        self.drain();
-    }
-
-    fn drain(&self) {
-        let Some(mut handler) = self.handler.get() else { return };
-        if self.busy.replace(true) {
-            return;
-        }
-        loop {
-            let next = self.queue.borrow_mut().pop_front();
-            let Some(delivery) = next else { break };
-            // SAFETY: the pointer is the handler `run` borrowed exclusively, and `run` clears
-            // it before returning. `busy` makes this the only reference made from it at a
-            // time, and `run` does not touch its own reference while the pointer is set.
-            let handler = unsafe { handler.as_mut() };
-            match delivery {
-                Delivery::Event(window, event) => handler.event(window, event),
-                Delivery::Frame(window) => handler.frame(window),
-                Delivery::Timer(id) => handler.timer(id),
-                Delivery::Wake => handler.wake(),
-            }
-        }
-        self.busy.set(false);
     }
 
     fn on_message(&self, msg: u32, wparam: WPARAM) -> bool {

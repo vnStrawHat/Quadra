@@ -51,7 +51,7 @@ pub(crate) unsafe extern "system" fn window_proc(
 }
 
 impl WindowState {
-    fn point(&self, x: i32, y: i32) -> Point {
+    pub(crate) fn point(&self, x: i32, y: i32) -> Point {
         Point::new(x as f32 / self.scale.get(), y as f32 / self.scale.get())
     }
 
@@ -85,6 +85,13 @@ impl WindowState {
     /// The arguments must be those of a message sent to this state's window.
     unsafe fn handle(&self, hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> Option<LRESULT> {
         let done = Some(LRESULT(0));
+        if self.custom_frame {
+            // SAFETY: the arguments are those this method was called with.
+            let framed = unsafe { self.frame_message(hwnd, msg, wparam, lparam) };
+            if framed.is_some() {
+                return framed;
+            }
+        }
         match msg {
             WM_SIZE => {
                 self.size.set(((lparam.0 & 0xFFFF) as i32, ((lparam.0 >> 16) & 0xFFFF) as i32));

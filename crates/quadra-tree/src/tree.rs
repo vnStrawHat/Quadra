@@ -65,6 +65,8 @@ pub struct Tree {
     pub(crate) todo: Vec<NodeId>,
     /// By node index: the signal that follows the node's size (`Tree::size_signal`).
     pub(crate) sizes: HashMap<u32, Signal<Size>>,
+    /// Whether the window is maximized, once something asked.
+    pub(crate) maximized: Option<Signal<bool>>,
     /// Counts the changes to what text values hold where: a node's own, or its place.
     pub(crate) text_epoch: u32,
     /// What gives the roles in styles their colours.
@@ -115,6 +117,7 @@ impl Tree {
             listening: Listening::default(),
             todo: Vec::new(),
             sizes: HashMap::new(),
+            maximized: None,
             text_epoch: 1,
             theme: Rc::default(),
             drag: None,
@@ -179,6 +182,7 @@ impl Tree {
             focusable: false,
             tab_index: 0,
             cursor: None,
+            region: Default::default(),
             focus_scope: false,
             key_context: None,
             semantics: None,

@@ -1,7 +1,8 @@
 //! The app as the platform's handler: events go to the windows' trees, frames to the passes
 //! and the renderer, timers to what set them.
 
-use quadra_platform::{PlatformEvent, PlatformHandler, PointerKind, TimerId, WindowId};
+use quadra_platform::{HitRegion, PlatformEvent, PlatformHandler, PointerKind, TimerId, WindowId};
+use quadra_prim::Point;
 use quadra_reactive::batch;
 use quadra_render::Renderer;
 use quadra_tree::PointerInput;
@@ -12,7 +13,8 @@ impl<R: Renderer> PlatformHandler for App<R> {
     fn event(&mut self, window: WindowId, event: PlatformEvent) {
         batch(|| match event {
             PlatformEvent::Resize { .. } => {
-                if let Some(w) = self.windows.iter().find(|w| w.window.id() == window) {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.set_maximized(w.window.is_maximized());
                     w.window.request_frame();
                 }
             }
@@ -82,5 +84,10 @@ impl<R: Renderer> PlatformHandler for App<R> {
 
     fn wake(&mut self) {
         self.request_frames();
+    }
+
+    fn hit_test(&mut self, window: WindowId, at: Point) -> HitRegion {
+        let w = self.windows.iter().find(|w| w.window.id() == window);
+        w.map_or(HitRegion::Client, |w| w.tree.window_region_at(at))
     }
 }

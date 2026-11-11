@@ -1,7 +1,7 @@
 //! The box view: a node that is its style and its children (specs/05).
 
 use quadra_layout::Direction;
-use quadra_platform::{Cursor, MouseButton};
+use quadra_platform::{Cursor, HitRegion, MouseButton};
 use quadra_tree::{
     Action, Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Theme, Tree,
 };
@@ -163,6 +163,12 @@ impl Div {
     /// The shape the pointer has over the box and what it holds.
     pub fn cursor(self, cursor: Cursor) -> Self {
         self.on_mount(move |tree, id| tree.set_cursor(id, Some(cursor)))
+    }
+
+    /// What the box is to the OS in a window with its own frame: the bar the window is
+    /// dragged by (what takes the pointer inside it stays the app's), its maximize button.
+    pub fn window_region(self, region: HitRegion) -> Self {
+        self.on_mount(move |tree, id| tree.set_window_region(id, region))
     }
 
     /// Lets the box have the focus, with a place in the order Tab walks: above zero before

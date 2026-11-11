@@ -7,7 +7,9 @@ use std::time::{Duration, Instant};
 
 use crate::clipboard::Clipboard;
 use crate::event::PlatformEvent;
-use crate::window::{PlatformWindow, WindowId, WindowOptions};
+use quadra_prim::Point;
+
+use crate::window::{HitRegion, PlatformWindow, WindowId, WindowOptions};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct TimerId(pub u64);
@@ -64,4 +66,10 @@ pub trait PlatformHandler {
     fn timer(&mut self, id: TimerId);
     /// A [`Waker`] fired: run what other threads posted.
     fn wake(&mut self);
+    /// What a point of a window with its own frame is, in logical pixels of the window. It
+    /// is asked while the pointer moves, and answered at once; a platform that cannot ask
+    /// (the handler is running) takes the point for the app's.
+    fn hit_test(&mut self, _window: WindowId, _at: Point) -> HitRegion {
+        HitRegion::Client
+    }
 }

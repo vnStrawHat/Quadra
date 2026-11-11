@@ -1,10 +1,12 @@
 //! Keyboard and mouse: from Win32 messages to platform events.
 
-use quadra_platform::{Key, Mods, MouseButton};
+use quadra_platform::{Cursor, Key, Mods, MouseButton};
 use windows::Win32::Foundation::{LPARAM, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::GetKeyState;
 use windows::Win32::UI::WindowsAndMessaging::{
-    WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONUP,
+    HCURSOR, IDC_APPSTARTING, IDC_ARROW, IDC_CROSS, IDC_HAND, IDC_HELP, IDC_IBEAM, IDC_NO, IDC_SIZEALL,
+    IDC_SIZENESW, IDC_SIZENS, IDC_SIZENWSE, IDC_SIZEWE, IDC_WAIT, LoadCursorW, WM_LBUTTONDOWN, WM_LBUTTONUP,
+    WM_MBUTTONDOWN, WM_MBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONUP,
 };
 
 pub(crate) fn lo(v: isize) -> i32 {
@@ -107,4 +109,25 @@ pub(crate) fn char_text(unit: u16, pending: &mut u16) -> Option<String> {
         0..0x20 | 0x7F => None,
         _ => Some(String::from_utf16_lossy(&[unit])),
     }
+}
+
+/// One of the cursors the system has for everyone.
+pub(crate) fn system_cursor(cursor: Cursor) -> HCURSOR {
+    let id = match cursor {
+        Cursor::Arrow => IDC_ARROW,
+        Cursor::Text => IDC_IBEAM,
+        Cursor::Pointer => IDC_HAND,
+        Cursor::Crosshair => IDC_CROSS,
+        Cursor::Move => IDC_SIZEALL,
+        Cursor::NotAllowed => IDC_NO,
+        Cursor::ResizeHorizontal => IDC_SIZEWE,
+        Cursor::ResizeVertical => IDC_SIZENS,
+        Cursor::ResizeNwse => IDC_SIZENWSE,
+        Cursor::ResizeNesw => IDC_SIZENESW,
+        Cursor::Wait => IDC_WAIT,
+        Cursor::Progress => IDC_APPSTARTING,
+        Cursor::Help => IDC_HELP,
+    };
+    // SAFETY: loading a cursor of the system by its id; they are shared and never freed.
+    unsafe { LoadCursorW(None, id) }.unwrap_or_default()
 }

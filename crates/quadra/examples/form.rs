@@ -1,10 +1,10 @@
-//! A text input, a button and a menu in a real window:
+//! A text input, a button with a menu, and a text area in a real window:
 //!
 //!     tools/cargo.sh run -p quadra --example form
 
 use quadra::{
     Along, Color, Cursor, NodeRef, Place, Role, Side, WindowOptions, column, div, overlay, row, show, signal,
-    text, text_input,
+    text, text_area, text_input,
 };
 
 fn main() -> quadra::Result<()> {
@@ -42,8 +42,17 @@ fn main() -> quadra::Result<()> {
         let line = row().gap(8.0).align_items(quadra::Align::Center);
         let line = line.child(field.child(text_input(name))).child(button);
         let hint = text("Tab, arrows, Ctrl+Z, Ctrl+C and Ctrl+V work; click to place the caret.").size(12.0);
+        let notes = signal(
+            "Notes take several lines:
+Enter starts one, and long lines are broken."
+                .to_string(),
+        );
+        let area = div().width(240.0).padding(6.0).radius(4.0).border(1.0);
+        let area =
+            area.border_color(Color::rgb(0xB0B0B0)).focus_within(|s| s.border_color(Color::rgb(0x3366FF)));
         let page = column().padding(24.0).gap(12.0).bg(Color::WHITE);
-        page.child(hello).child(line).child(hint).child(show(move || open.get(), menu))
+        let page = page.child(hello).child(line).child(hint).child(area.child(text_area(notes)));
+        page.child(show(move || open.get(), menu))
     };
-    quadra::app()?.window(WindowOptions::new("Quadra form").size(460.0, 240.0), view)?.run()
+    quadra::app()?.window(WindowOptions::new("Quadra form").size(460.0, 320.0), view)?.run()
 }

@@ -1,5 +1,5 @@
-//! The text input view (specs/04, "Widgets"; behaviour/09): one line of text the user edits,
-//! showing a signal and writing it.
+//! The text input views (specs/04, "Widgets"; behaviour/09): text the user edits, on one line
+//! or on several, showing a signal and writing it.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -12,7 +12,8 @@ use quadra_prim::Color;
 use quadra_reactive::{Scope, Signal, use_context};
 use quadra_text::TextStyle;
 use quadra_tree::{
-    NodeId, PointerEvent, PointerKind, SemanticAction, Style, TEXT_CONTEXT, TextCommand, TextField, Tree,
+    NodeId, PointerEvent, PointerKind, SemanticAction, Style, TEXT_AREA_CONTEXT, TEXT_CONTEXT, TextCommand,
+    TextField, Tree,
 };
 
 use crate::view::{MountCx, View};
@@ -25,6 +26,7 @@ pub struct TextInput {
     style: TextStyle,
     color: Color,
     masked: bool,
+    multiline: bool,
     submit: Option<Submit>,
 }
 
@@ -35,7 +37,15 @@ type Submit = Box<dyn FnMut(&str)>;
 /// it from elsewhere is shown. It takes the focus on a click or by Tab; the caret, the
 /// selection and undo are its own.
 pub fn text_input(value: Signal<String>) -> TextInput {
-    TextInput { value, style: TextStyle::default(), color: Color::BLACK, masked: false, submit: None }
+    let (style, color) = (TextStyle::default(), Color::BLACK);
+    TextInput { value, style, color, masked: false, multiline: false, submit: None }
+}
+
+/// Text on as many lines as it takes at the width the area is given: Enter starts a line, and
+/// the caret moves up and down keeping its place across the lines. The area is as tall as
+/// its text; in a scroll view, the caret is kept in view. The rest is as [`text_input`].
+pub fn text_area(value: Signal<String>) -> TextInput {
+    TextInput { multiline: true, ..text_input(value) }
 }
 
 impl TextInput {
@@ -63,30 +73,46 @@ impl TextInput {
     }
 }
 
-/// Text for a field of one line: its line breaks become spaces.
-fn one_line(text: &str) -> String {
-    text.replace("\r\n", " ").replace(['\r', '\n'], " ")
+/// Text as a field takes it: its line breaks are line feeds where it has several lines, and
+/// spaces where it has one.
+fn lines_of(text: &str, multiline: bool) -> String {
+    let breaks = if multiline { "\n" } else { " " };
+    text.replace("\r\n", breaks).replace(['\r', '\n'], breaks)
 }
 
 /// Changes the field in place. `f` says whether it changed the text: then the value is
 /// written and the text shaped again; in any case the field is painted again.
 fn edit(tree: &mut Tree, id: NodeId, value: Signal<String>, f: impl FnOnce(&mut TextField) -> bool) {
+    let fonts = tree.fonts();
     let Some(field) = tree.widget_mut::<TextField>(id) else { return };
+    // The lines are those of the text as it is now: an edit before this one, in the same
+    // turn, has not been laid out yet.
+    field.sync(&mut fonts.borrow_mut().text);
     let changed = f(field).then(|| field.buffer.text().to_string());
     (field.caret_on, field.touched) = (true, true); // a caret in use does not blink away
+    let follows = field.multiline;
     if let Some(text) = changed {
         tree.mark_layout(id);
         value.set(text);
     }
     tree.mark_paint(id);
+    if follows {
+        // Whatever scrolls around the area keeps the caret in view, once it is laid out.
+        tree.after_layout(move |tree| {
+            let caret = tree.widget_mut::<TextField>(id).and_then(|field| field.caret_rect());
+            if let Some(caret) = caret {
+                tree.scroll_rect_into_view(id, caret);
+            }
+        });
+    }
 }
 
 impl View for TextInput {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let value = self.value;
         let mut field = TextField::new(&value.get_untracked(), self.style, self.color);
-        let masked = self.masked;
-        field.masked = masked;
+        let (masked, multiline) = (self.masked, self.multiline);
+        (field.masked, field.multiline) = (masked, multiline);
         let id = cx.tree.insert_widget(Style::default(), Box::new(field));
         if let Some(submit) = self.submit {
             // After what was typed before the key: edits wait for the update pass, in order.
@@ -106,7 +132,7 @@ impl View for TextInput {
         }
         cx.tree.set_focusable(id, true);
         cx.tree.set_cursor(id, Some(Cursor::Text));
-        cx.tree.set_key_context(id, TEXT_CONTEXT);
+        cx.tree.set_key_context(id, if multiline { TEXT_AREA_CONTEXT } else { TEXT_CONTEXT });
 
         // What is written to the value from elsewhere is shown. What the field wrote itself
         // comes back here equal, and changes nothing.
@@ -126,7 +152,7 @@ impl View for TextInput {
 
         let writer = cx.handle.clone();
         cx.tree.on_text(id, move |typed| {
-            let typed = one_line(typed);
+            let typed = lines_of(typed, multiline);
             writer.with(move |tree| {
                 edit(tree, id, value, |field| {
                     field.preedit = None; // what was being composed is committed, or dropped
@@ -137,7 +163,7 @@ impl View for TextInput {
         // An input method composes at the caret: shown in the field, not yet in the value.
         let writer = cx.handle.clone();
         cx.tree.on_composition(id, move |composing, caret| {
-            let composing = (!composing.is_empty()).then(|| (one_line(composing), caret));
+            let composing = (!composing.is_empty()).then(|| (lines_of(composing, multiline), caret));
             writer.with(move |tree| {
                 edit(tree, id, value, |field| {
                     field.preedit = composing;
@@ -163,7 +189,7 @@ impl View for TextInput {
                         }
                         (TextCommand::Paste, Some(clipboard)) => {
                             let pasted = clipboard.read_text().unwrap_or_default();
-                            return field.buffer.insert(&one_line(&pasted));
+                            return field.buffer.insert(&lines_of(&pasted, multiline));
                         }
                         _ => {}
                     }
@@ -175,7 +201,7 @@ impl View for TextInput {
         let writer = cx.handle.clone();
         cx.tree.on_semantic(id, move |action| {
             let SemanticAction::SetValue(text) = action else { return false };
-            let text = one_line(text);
+            let text = lines_of(text, multiline);
             writer.with(move |tree| {
                 edit(tree, id, value, |field| {
                     field.buffer.select_all();
@@ -225,7 +251,7 @@ impl View for TextInput {
                 if e.button != MouseButton::Left && e.kind != PointerKind::Move {
                     return;
                 }
-                let (x, kind, clicks, shift) = (e.local.x, e.kind, e.clicks, e.mods.contains(Mods::SHIFT));
+                let (at, kind, clicks, shift) = (e.local, e.kind, e.clicks, e.mods.contains(Mods::SHIFT));
                 match kind {
                     PointerKind::Down => {
                         dragging.set(true);
@@ -237,7 +263,7 @@ impl View for TextInput {
                 }
                 writer.with(move |tree| {
                     edit(tree, id, value, |field| {
-                        let at = field.index_at(x);
+                        let at = field.index_at(at);
                         match (kind, clicks) {
                             (PointerKind::Click, 2) => field.buffer.select_word(at),
                             (PointerKind::Click, 3..) => field.buffer.select_all(),

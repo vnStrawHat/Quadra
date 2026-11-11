@@ -56,7 +56,8 @@ pub struct Line {
     /// The top of the line box.
     pub y: f32,
     glyphs: Range<usize>,
-    origin: f32,
+    /// Where the line starts along the endless line the text was shaped on.
+    pub(crate) origin: f32,
 }
 
 pub struct Paragraph {
@@ -64,7 +65,7 @@ pub struct Paragraph {
     style: TextStyle,
     glyphs: Vec<PositionedGlyph>,
     /// Caret stops: every grapheme boundary and its x, the end of the text included.
-    stops: Vec<(usize, f32)>,
+    pub(crate) stops: Vec<(usize, f32)>,
     tokens: Vec<Token>,
     lines: Vec<Line>,
     size: Size,

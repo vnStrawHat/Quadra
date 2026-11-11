@@ -1,20 +1,18 @@
-//! The text field widget (specs/04, "Widgets"; behaviour/09): one line of editable text. It
-//! owns the edit buffer and paints the selection, the text and the caret, scrolled sideways
-//! so the caret stays in view. What edits it is the view around it (handlers and actions).
+//! The text field widget (specs/04, "Widgets"; behaviour/09): editable text, on one line
+//! that scrolls sideways so the caret stays in view, or on as many lines as it takes at the
+//! field's width. It owns the edit buffer and paints the selection, the text and the caret.
+//! What edits it is the view around it (handlers and actions).
+
+mod widget;
 
 use std::borrow::Cow;
 use std::ops::Range;
 
-use quadra_a11y::{Role, Semantics};
-use quadra_layout::Known;
-use quadra_prim::{Color, Point, Rect, Size};
-use quadra_render::Quad;
-use quadra_text::{EditBuffer, Motion, Paragraph, TextStyle, next_grapheme};
+use quadra_prim::{Color, Point, Rect};
+use quadra_text::{EditBuffer, Motion, Paragraph, TextStyle, TextSystem, next_grapheme};
 
 use crate::action::Action;
 use crate::fonts::GlyphTile;
-use crate::text::paint_glyphs;
-use crate::widget::{MeasureCx, PaintCx, Widget};
 
 /// What a key binding asks of a text field. One action type with the command as its data.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -30,10 +28,17 @@ pub enum TextCommand {
     Copy,
     Cut,
     Paste,
+    /// Starts a new line: bound where a field has several.
+    Newline,
 }
 
 impl Action for TextCommand {
     const NAME: &'static str = "text::edit";
+}
+
+/// Motions that go by the lines a field shows.
+fn by_line(motion: Motion) -> bool {
+    matches!(motion, Motion::Up | Motion::Down | Motion::LineStart | Motion::LineEnd)
 }
 
 /// What a masked field shows for each character of its text.
@@ -48,6 +53,14 @@ pub struct TextField {
     pub buffer: EditBuffer,
     /// A password: a dot shows for each character, and nothing of it is copied.
     pub masked: bool,
+    /// The text is on as many lines as it takes at the field's width, and can hold line
+    /// breaks. Otherwise it is one line that scrolls sideways.
+    pub multiline: bool,
+    /// The width the lines were last broken at.
+    width: f32,
+    /// Where the caret wants to be while it moves up and down: it keeps its x through lines
+    /// that are too short for it.
+    goal_x: Option<f32>,
     style: TextStyle,
     pub color: Color,
     /// Behind the selected text.
@@ -74,6 +87,9 @@ impl TextField {
         TextField {
             buffer: EditBuffer::new(text),
             masked: false,
+            multiline: false,
+            width: f32::INFINITY,
+            goal_x: None,
             style,
             color,
             selection: Color::rgb(0x3366FF).alpha(0.3),
@@ -88,10 +104,28 @@ impl TextField {
         }
     }
 
-    /// Runs a command on the buffer. Returns whether the text changed.
+    /// Runs a command on the buffer. Returns whether the text changed. The paragraph must be
+    /// that of the buffer's text ([`TextField::sync`]): the lines are read from it.
     pub fn run(&mut self, command: TextCommand) -> bool {
+        let goal = self.goal_x.take();
         match command {
+            TextCommand::Move(motion, extend) if self.multiline && by_line(motion) => {
+                let Some(lines) = &self.paragraph else { return false };
+                let (line, x) = lines.place(self.buffer.head());
+                let (x, last) = (goal.unwrap_or(x), lines.lines().len().saturating_sub(1));
+                let to = match motion {
+                    Motion::Up if line == 0 => 0, // from the first line: to its start
+                    Motion::Up => lines.index_near(line - 1, x),
+                    Motion::Down if line == last => self.buffer.text().len(),
+                    Motion::Down => lines.index_near(line + 1, x),
+                    Motion::LineStart => lines.lines()[line].start,
+                    _ => lines.line_end(line),
+                };
+                self.buffer.set_caret(to, extend);
+                self.goal_x = matches!(motion, Motion::Up | Motion::Down).then_some(x);
+            }
             TextCommand::Move(motion, extend) => self.buffer.move_to(motion, extend),
+            TextCommand::Newline => return self.multiline && self.buffer.insert("\n"),
             TextCommand::Delete(motion) => return self.buffer.delete(motion),
             TextCommand::SelectAll => self.buffer.select_all(),
             TextCommand::Undo => return self.buffer.undo(),
@@ -134,84 +168,37 @@ impl TextField {
         )
     }
 
-    /// The byte offset nearest an x from the field's left edge: where a click puts the caret.
-    pub fn index_at(&self, x: f32) -> usize {
-        let shown = self.paragraph.as_ref().map_or(0, |p| p.index_at(x + self.scroll_x));
+    /// The byte offset nearest a point from the field's corner: where a click puts the caret.
+    pub fn index_at(&self, at: Point) -> usize {
+        let Some(lines) = &self.paragraph else { return 0 };
+        let line = (at.y / self.style.line_px()).floor().max(0.0) as usize;
+        let shown = lines.index_near(line.min(lines.lines().len().saturating_sub(1)), at.x + self.scroll_x);
         if !self.masked {
             return shown;
         }
         let text = self.buffer.text();
         (0..shown / DOT.len()).fold(0, |at, _| next_grapheme(text, at))
     }
-}
 
-impl Widget for TextField {
-    fn is_leaf(&self) -> bool {
-        true
-    }
-
-    /// One line high, and as wide as the space it is given: the text scrolls inside it. Only
-    /// where the space has no end is it as wide as its text.
-    fn measure(&mut self, cx: &mut MeasureCx, known: Known, avail: Size) -> Size {
+    /// Makes the paragraph that of the text as it is now, broken at the width the field was
+    /// last laid out at. A layout does it; what reads the lines before the next one (a key
+    /// that moves the caret up, a click) does it first.
+    pub fn sync(&mut self, text: &mut TextSystem) {
         let shown = self.shown().0.into_owned();
         let paragraph = match &mut self.paragraph {
             Some(paragraph) => {
-                paragraph.set_text(cx.text, &shown);
+                paragraph.set_text(text, &shown);
                 paragraph
             }
-            none => none.insert(Paragraph::new(cx.text, shown, self.style.clone())),
+            none => none.insert(Paragraph::new(text, shown, self.style.clone())),
         };
-        let text = paragraph.wrap(cx.text, f32::INFINITY);
-        let fill = if avail.width.is_finite() { avail.width } else { text.width };
-        Size::new(known.width.unwrap_or(fill), self.style.line_px())
+        paragraph.wrap(text, if self.multiline { self.width } else { f32::INFINITY });
     }
 
-    fn paint(&mut self, cx: &mut PaintCx) {
-        let (_, caret_index, composed, selected) = self.shown();
-        let Some(paragraph) = &self.paragraph else { return };
-        let (rect, caret) = (cx.rect, paragraph.x_at(caret_index));
-        // The caret stays in view, and the text never leaves a gap it could fill.
-        let room = (rect.width - 1.0).max(0.0);
-        self.scroll_x = self.scroll_x.clamp((caret - room).max(0.0), caret);
-        self.scroll_x = self.scroll_x.min((paragraph.size().width - room).max(0.0));
-        let left = rect.x - self.scroll_x;
-        let (outer, inner) = (cx.clip, cx.clip.then(cx.device(rect), 0.0));
-        cx.clip = inner;
-
-        if !composed.is_empty() {
-            // What is being composed is underlined, as input methods show it.
-            let (from, to) = (paragraph.x_at(composed.start), paragraph.x_at(composed.end));
-            let bounds = Rect::new(left + from, rect.bottom() - 1.0, to - from, 1.0);
-            cx.quad(Quad { bounds, background: self.color, ..Quad::default() });
-        } else if !selected.is_empty() {
-            let (from, to) = (paragraph.x_at(selected.start), paragraph.x_at(selected.end));
-            let bounds = Rect::new(left + from, rect.y, to - from, rect.height);
-            cx.quad(Quad { bounds, background: self.selection, ..Quad::default() });
-        }
-        self.tiles.clear();
-        paint_glyphs(cx, paragraph, Point::new(left, rect.y), self.color, &mut self.tiles);
-        if self.focused {
-            // One device pixel wide at least, on a whole pixel: a caret is never blurred.
-            let x = ((left + caret) * cx.scale).round() / cx.scale;
-            let width = cx.scale.round().max(1.0) / cx.scale;
-            let bounds = cx.device(Rect::new(x, rect.y, width, rect.height));
-            // Always one instance, clear while the blink hides it: a blink overwrites it in
-            // place and moves nothing else of the layer.
-            let background = if self.caret_on { self.color } else { Color::TRANSPARENT };
-            cx.push(Quad { bounds, background, ..Quad::default() }.instance(&cx.clip));
-        }
-        cx.clip = outer;
-        self.caret_at = Some(Rect::new(left + caret - rect.x, 0.0, 1.0, rect.height));
-    }
-
-    fn caret(&self) -> Option<Rect> {
-        self.caret_at
-    }
-
-    fn semantics(&self, says: &mut Semantics) {
-        if says.role == Role::None {
-            says.role = Role::TextInput;
-        }
-        says.value = Some(self.shown().0.into_owned()); // of a password, the dots
+    /// Where the caret is, from the field's corner, as the text is laid out now.
+    pub fn caret_rect(&self) -> Option<Rect> {
+        let (lines, line_px) = (self.paragraph.as_ref()?, self.style.line_px());
+        let (line, x) = lines.place(self.shown().1);
+        Some(Rect::new(x - self.scroll_x, line as f32 * line_px, 1.0, line_px))
     }
 }

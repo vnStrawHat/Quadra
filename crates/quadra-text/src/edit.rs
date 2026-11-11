@@ -15,6 +15,14 @@ pub enum Motion {
     WordRight,
     Start,
     End,
+    /// To the start or the end of the line: here between line breaks; a field that wraps
+    /// its text goes by the lines it shows.
+    LineStart,
+    LineEnd,
+    /// A line up or down. Only what lays the text out knows where that is: the buffer
+    /// stays where it is.
+    Up,
+    Down,
 }
 
 /// One change, as undo needs it: what was at `at` before and after, and the selections.
@@ -121,6 +129,9 @@ impl EditBuffer {
             Motion::WordRight => self.word_right(self.head),
             Motion::Start => 0,
             Motion::End => self.text.len(),
+            Motion::LineStart => self.text[..self.head].rfind('\n').map_or(0, |at| at + 1),
+            Motion::LineEnd => self.text[self.head..].find('\n').map_or(self.text.len(), |at| self.head + at),
+            Motion::Up | Motion::Down => self.head,
         }
     }
 

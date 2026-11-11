@@ -132,10 +132,10 @@ fn the_caret_and_the_selection_are_painted_and_long_text_scrolls_with_the_caret(
     f.h.type_text("0123456789012345678901234567890"); // far wider than the 120 px box
     f.h.frame();
     let field = f.h.tree.widget_mut::<TextField>(f.field).unwrap();
-    assert!(field.index_at(0.0) > 10, "the start is scrolled out"); // the caret is at the end
+    assert!(field.index_at(quadra_prim::Point::ZERO) > 10, "the start is scrolled out"); // the caret is at the end
     f.keys(&[(Key::Home, Mods::NONE)]);
     let field = f.h.tree.widget_mut::<TextField>(f.field).unwrap();
-    assert_eq!(field.index_at(0.0), 0); // back at the start
+    assert_eq!(field.index_at(quadra_prim::Point::ZERO), 0); // back at the start
 }
 
 #[test]

@@ -118,7 +118,7 @@ random test is what catches a missed case. Lists with rows of different heights 
 `list/heights.rs`, `Tree::after_layout`), and so are the tab index, cursors and scrolling
 into view (`Tree::scroll_into_view`, `on_reveal`; `.reveal(..)` on lists). **What R2 still
 needs for its exit** (the V suite's interaction tests, `tests/*_test.v` in the V repo, each
-with a counterpart here): a text area of several lines with vertical movement, text that can be selected (drag, double click, select all, copy), drag and drop
+with a counterpart here): text that can be selected (drag, double click, select all, copy), drag and drop
 (a preview that follows, targets that accept by kind, `State::DROP_TARGET`). Popovers and
 hover cards are kit components (R3) on overlays and timers. After those: the
 rest of `quadra-async` (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range

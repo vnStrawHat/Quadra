@@ -1,9 +1,13 @@
 //! What is asked of a node after layout: its rect, its place in the window, its size as a
 //! signal, its styles.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use quadra_prim::{Point, Rect, Size};
 use quadra_reactive::{Signal, batch, signal};
 
+use crate::fonts::Fonts;
 use crate::input::Handler;
 use crate::node::{NodeId, PaintStyle};
 use crate::tree::Tree;
@@ -15,6 +19,11 @@ impl Tree {
     pub fn size_signal(&mut self, id: NodeId) -> Signal<Size> {
         let size = self.rect(id).size();
         *self.sizes.entry(id.index).or_insert_with(|| signal(size))
+    }
+
+    /// The fonts and the text system the tree lays text out with.
+    pub fn fonts(&self) -> Rc<RefCell<Fonts>> {
+        self.fonts.clone()
     }
 
     /// Runs `f` once, after the next layout pass: for what must see where nodes are before
@@ -35,10 +44,19 @@ impl Tree {
     /// Scrolls whatever scrolls around a node, the nearest first, so that the node shows: as
     /// little as that takes. The scrolling is seen in the next frame.
     pub fn scroll_into_view(&mut self, id: NodeId) {
+        let whole = Rect::new(0.0, 0.0, f32::INFINITY, f32::INFINITY);
+        self.scroll_rect_into_view(id, whole);
+    }
+
+    /// As [`Tree::scroll_into_view`], for a part of the node, given from its corner: the
+    /// caret of a text of many lines.
+    pub fn scroll_rect_into_view(&mut self, id: NodeId, part: Rect) {
         if !self.is_alive(id) {
             return;
         }
-        let mut rect = self.window_rect(id);
+        let all = self.window_rect(id);
+        let (width, height) = (part.width.min(all.width - part.x), part.height.min(all.height - part.y));
+        let mut rect = Rect::new(all.x + part.x, all.y + part.y, width, height);
         batch(|| {
             for around in self.path(id).into_iter().skip(1) {
                 let port = self.window_rect(around);

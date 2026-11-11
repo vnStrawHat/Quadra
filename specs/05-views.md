@@ -208,3 +208,14 @@ locale at the window root; a subtree can provide its own.
   characters; copy and cut do nothing; assistive technology is told the dots.
   `.on_submit(f)` runs `f` with the text when Enter is pressed, after whatever was typed
   before it in the same turn.
+- `text_area(value)` is the same control on several lines: the text is broken at the width
+  the area is given and the area is as tall as its lines; Enter starts a line; Up and Down
+  move the caret by the lines as they are shown, keeping its x through lines too short for
+  it; Home and End go to the ends of the shown line, with Ctrl to the ends of the text; a
+  selection is painted line by line, with a little of each line break in it. Line breaks
+  that are typed, pasted or set are line feeds. In a scroll view the caret is kept in view
+  (06, "Scrolling into view", for the caret's rect). Its key context is "text-area", which
+  binds what "text" binds and the keys of lines: on one line Up, Down and Enter stay keys,
+  for a list around the input and for submitting.
+- A field lays its text out at layout; what reads the lines before the next layout (a key
+  that moves the caret by lines, a click, in the same turn as an edit) lays it out first.

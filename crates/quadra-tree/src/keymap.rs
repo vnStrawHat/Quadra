@@ -14,6 +14,9 @@ use crate::field::TextCommand;
 
 /// The key context of a text field: where the editing keys are bound.
 pub const TEXT_CONTEXT: &str = "text";
+/// The key context of a text field of several lines: the same keys, and those that go by
+/// lines.
+pub const TEXT_AREA_CONTEXT: &str = "text-area";
 
 /// One key with the modifiers held.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -146,14 +149,16 @@ impl Keymap {
     /// What the keys do in a text field (the context "text"): the caret, the selection,
     /// deleting, undo.
     fn text_bindings(&mut self) {
-        use TextCommand::{Copy, Cut, Delete, Move, Paste, Redo, SelectAll, Undo};
+        use TextCommand::{Copy, Cut, Delete, Move, Newline, Paste, Redo, SelectAll, Undo};
         let moves = [
             ("left", Motion::Left),
             ("right", Motion::Right),
             ("ctrl-left", Motion::WordLeft),
             ("ctrl-right", Motion::WordRight),
-            ("home", Motion::Start),
-            ("end", Motion::End),
+            ("home", Motion::LineStart),
+            ("end", Motion::LineEnd),
+            ("ctrl-home", Motion::Start),
+            ("ctrl-end", Motion::End),
         ];
         let mut all: Vec<(String, TextCommand)> = Vec::new();
         for (keys, motion) in moves {
@@ -178,9 +183,18 @@ impl Keymap {
             ("shift-insert", Paste),
         ];
         all.extend(rest.map(|(keys, command)| (keys.to_string(), command)));
-        for (keys, command) in all {
-            let stroke = Keystroke::parse(&keys).expect("the built-in bindings are well formed");
-            self.push(vec![stroke], Some(Rc::from(TEXT_CONTEXT)), command);
+        // Where there are several lines: the same, the keys that go up and down, and Enter.
+        // On one line those keys stay keys: for a list around the field, for submitting.
+        let mut lines = vec![("enter".to_string(), Newline)];
+        for (keys, motion) in [("up", Motion::Up), ("down", Motion::Down)] {
+            lines.push((keys.to_string(), Move(motion, false)));
+            lines.push((format!("shift-{keys}"), Move(motion, true)));
+        }
+        let both = all.iter().map(|binding| (TEXT_CONTEXT, binding));
+        let area = all.iter().chain(&lines).map(|binding| (TEXT_AREA_CONTEXT, binding));
+        for (context, (keys, command)) in both.chain(area) {
+            let stroke = Keystroke::parse(keys).expect("the built-in bindings are well formed");
+            self.push(vec![stroke], Some(Rc::from(context)), *command);
         }
     }
 

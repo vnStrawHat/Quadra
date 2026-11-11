@@ -23,3 +23,10 @@ version = "0.1.0"
 dependencies = [
  "quadra-prim",
 ]
+
+[[package]]
+name = "quadra-text"
+version = "0.1.0"
+dependencies = [
+ "quadra-prim",
+]

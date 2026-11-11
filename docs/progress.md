@@ -20,7 +20,7 @@ On hold by the user's decision: `quadra-term`.
 | `quadra-reactive` | Done (2026-11-11) | 31 tests covering every item of specs/03 "Tests"; no `unsafe`; 93 ns per binding in the `grid` shape (docs/benchmarks.md) |
 | `quadra-layout` | Done (2026-11-11) | 39 tests: the 16 flex and 5 grid cases of the V suite, the costs of a change as counters, 1,500 random changes each checked against a layout from scratch; 0.82 µs for a change in a list of 10,000 fixed-height rows (docs/benchmarks.md) |
 | `quadra-tree` | Not started | |
-| `quadra-text` with the fake backend | Not started | |
+| `quadra-text` with the fake backend | Paragraphs done (2026-11-11); glyph tiles wait for the atlases | 12 tests: wrapping, hanging spaces, breaks between graphemes, a new width breaks lines without shaping, a changed text shapes only new words, the cache bound, caret stops |
 | `quadra-render` with the null backend | Layers and display lists done (2026-11-11); atlases not started | 7 tests: in-place overwrites upload only their range, rebuilds copy clean ranges, child layers split runs, scrolling uploads nothing, culling, removed layers, device loss; the null renderer's copy is checked against the scene |
 | `quadra-testing` | Not started | |
 | `quadra-ui` (views, enough for the four programs) | Not started | |

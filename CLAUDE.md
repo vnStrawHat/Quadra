@@ -74,12 +74,13 @@ Phase R1, the vertical slice that proves the paradigm (specs/00, Phases), is in 
 green, then continue with the next.
 
 Also committed: `quadra-render` with layers, display lists, the `Renderer` trait and the null
-renderer. Its atlases (specs/07, "Atlases": texture arrays, counted tiles, a byte budget) are
-not written yet; they are needed when real text arrives.
+renderer; `quadra-text` with paragraphs, the shaping cache and the fake backend. Not written
+yet in those two: the atlases (specs/07, "Atlases") and glyph tiles (specs/08, "Glyph tiles"),
+which are needed when real text arrives, and caret hit testing beyond `x_at`.
 
-Next, in order: `quadra-text` with the fake backend (specs/08: paragraphs kept on nodes, the
-shaping cache; glyph tiles wait for the atlases); then `quadra-tree` (specs/04), which joins
-the reactive runtime, the layout tree, text and layers; then `quadra-testing` and `quadra-ui`.
+Next, in order: `quadra-tree` (specs/04), which joins the reactive runtime, the layout tree,
+paragraphs and layers: nodes, widgets, flags, the passes; then `quadra-testing` (the harness)
+and `quadra-ui` (views); then the four programs of R1 and the structural budgets as tests.
 
 `quadra-term` is **on hold** by the user's decision: do not build it until told. The apps come
 after Quadra is complete.

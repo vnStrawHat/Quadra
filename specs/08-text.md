@@ -22,19 +22,24 @@ from the Unicode data files by scripts in `tools/`, as in the V tree, and emitte
 
 ```rust
 pub trait TextBackend {
+    fn default_family(&self) -> String;
     fn families(&self) -> Vec<String>;
     fn load_fonts(&mut self, files: &[&[u8]]) -> Result<Vec<String>>;
-    fn face(&mut self, key: &FontKey) -> Result<FaceId>;
-    fn metrics(&self, face: FaceId, size: f32) -> FontMetrics;
-    /// Splits text into runs of one script, direction and face, with fallback applied.
-    fn analyze(&mut self, text: &str, style: &TextStyle) -> Vec<TextRun>;
-    fn shape(&mut self, run: &TextRun, text: &str, size: f32) -> ShapedRun;
+    fn face(&mut self, key: &FontKey) -> Option<FaceId>;
+    /// Per em: multiply by the font size.
+    fn metrics(&self, face: FaceId) -> FaceMetrics;
+    /// Shapes a word. Characters the face lacks come back in fallback faces: each glyph names
+    /// its own face.
+    fn shape(&mut self, text: &str, face: FaceId, size: f32) -> Vec<ShapedGlyph>;
+    /// Added with the atlases.
     fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap>;
 }
 ```
 
-Implementations: DirectWrite (`quadra-native-win`); a fake with fixed metrics for layout tests;
-a monospace fake for terminal tests.
+The backend is asked for one word at a time and does script analysis and fallback inside
+`shape`, as the V backend did: the shared code never sees runs. Implementations: DirectWrite
+(`quadra-native-win`); a fake with fixed metrics in `quadra-text` itself, for layout tests; a
+monospace fake for terminal tests.
 
 ## Paragraphs
 

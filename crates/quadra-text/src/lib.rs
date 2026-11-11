@@ -7,6 +7,8 @@
 mod edit;
 mod fake;
 mod grapheme;
+mod nfc_table;
+mod normalize;
 mod numeric;
 mod paragraph;
 mod places;
@@ -16,6 +18,7 @@ mod types;
 pub use edit::{EditBuffer, Motion};
 pub use fake::FakeBackend;
 pub use grapheme::{boundaries, next_grapheme, prev_grapheme};
+pub use normalize::{fold_diacritics, is_mark, normalize_nfc};
 pub use paragraph::{Line, Paragraph, PositionedGlyph};
 pub use system::{TextStats, TextSystem, Word};
 pub use types::{

@@ -5,6 +5,7 @@
 use std::ops::Range;
 
 use crate::grapheme::{next_grapheme, prev_grapheme};
+use crate::normalize::{is_mark, normalize_nfc};
 
 /// Where the head goes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -216,7 +217,17 @@ impl EditBuffer {
 
     /// Types text over the selection.
     pub fn insert(&mut self, text: &str) -> bool {
-        self.replace(self.selection(), text, true)
+        let (mut range, mut with) = (self.selection(), normalize_nfc(text));
+        // A combining mark typed after a letter composes with it: the letter, and the marks
+        // it has already, are replaced by what they make together.
+        if with.chars().next().is_some_and(is_mark) {
+            let before = self.text[..range.start].char_indices().rev();
+            let letter = { before }.find(|&(_, c)| !is_mark(c)).map_or(0, |(at, _)| at);
+            let joined = format!("{}{with}", &self.text[letter..range.start]);
+            with = normalize_nfc(&joined).into_owned().into();
+            range.start = letter;
+        }
+        self.replace(range, &with, true)
     }
 
     /// Deletes the selection, or from the caret to where the motion leads: Backspace is

@@ -14,7 +14,15 @@ result; nothing is looked up by content every frame.
 
 The rules for fallback, line breaking, wrapping, graphemes, cell widths, normalization and URL
 detection are those of behaviour/04 and carry over. Script, line-break and bidirectional analysis
-come from the backend. The tables for graphemes, cell widths and normalization are generated
+come from the backend.
+
+As built for normalization (`normalize.rs`, tables from `tools/gen_nfc.py` for the Latin
+blocks, which hold every Vietnamese letter): `normalize_nfc` takes letters apart, puts their
+marks in canonical order and composes them again, so "e" with a circumflex and a dot below in
+either order, or "ê" with a dot below, is one letter; text without marks is given back as it
+is. An edit buffer normalizes what is inserted, and a mark typed after a letter replaces the
+letter by what the two compose to. `fold_diacritics` takes the accents off for a search
+("Hải Phòng" is "Hai Phong", "đ" is "d"). The tables for graphemes, cell widths and normalization are generated
 from the Unicode data files by scripts in `tools/`, as in the V tree, and emitted as Rust
 (01, R15).
 

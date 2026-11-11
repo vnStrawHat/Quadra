@@ -65,8 +65,9 @@ pub enum PlatformEvent {
         at: Point,
         mods: Mods,
     },
-    /// `delta` is in lines unless `precise`, then in logical pixels. Positive `y` scrolls
-    /// towards the start of the content.
+    /// `delta` is in lines unless `precise`, then in logical pixels. Positive `y` is the wheel
+    /// turned away from the user (towards the start of the content); positive `x` is to the
+    /// right.
     Wheel {
         delta: Point,
         precise: bool,

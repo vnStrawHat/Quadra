@@ -6,8 +6,14 @@
 
 mod atlas;
 mod gpu;
+mod input;
+mod pacing;
 mod pipeline;
+mod platform;
 mod renderer;
 mod surface;
+mod window;
+mod wndproc;
 
+pub use platform::WinPlatform;
 pub use renderer::D3d11Renderer;

@@ -43,6 +43,7 @@ dependencies = [
  "quadra-tree",
  "quadra-ui",
  "windows",
+ "windows-core",
 ]
 
 [[package]]

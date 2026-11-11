@@ -84,6 +84,6 @@ impl TextBackend for FakeBackend {
         }
         let (width, height) = ((size * 0.5).round() as u32, (size * 0.7).round() as u32);
         let pixels = vec![255; (width * height) as usize];
-        Some(GlyphBitmap { left: 0, top: -(height as i32), width, height, color: false, pixels })
+        Some(GlyphBitmap { left: 0, top: -(height as i32), width, height, pixels, ..GlyphBitmap::default() })
     }
 }

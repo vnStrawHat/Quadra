@@ -41,6 +41,22 @@ The backend is asked for one word at a time and does script analysis and fallbac
 (`quadra-native-win`); a fake with fixed metrics in `quadra-text` itself, for layout tests; a
 monospace fake for terminal tests.
 
+## The DirectWrite backend
+
+The rules of behaviour/04 carry over. What differs from the V backend:
+
+- **Fallback is asked only for what the face lacks.** A script run whose characters all have
+  glyphs in the face is shaped with it; only other runs go through the system's fallback. A
+  bundled font so keeps its own glyphs for every script it covers (the V backend sent every
+  non-ASCII run through the fallback of the installed fonts, which does not know a bundled
+  family).
+- Printable ASCII skips script analysis: its analysis is known.
+- The text source and sink DirectWrite calls back are one object that owns a copy of the
+  word: no pointer into borrowed text crosses a COM boundary.
+- Fonts from memory are a collection searched before the installed ones.
+- Not yet: OpenType features per family, bidirectional analysis, a change of the font
+  smoothing setting while running.
+
 ## Paragraphs
 
 A text node owns a `Paragraph`:
@@ -76,7 +92,10 @@ Rich text (spans of different style in one flow) is one paragraph with several s
 
 - A tile is identified by face, glyph, device size and subpixel phase (four horizontal
   phases). Vertical position is snapped to whole pixels.
-- Coverage glyphs go to the coverage atlas; colour glyphs to the colour atlas.
+- A rasterized glyph is one of three formats: coverage (a byte a pixel), subpixel coverage
+  (the three stripes of an LCD pixel, blended per channel in the text's colour; what the
+  backend gives when the OS smooths fonts that way) or a colour image (emoji). Coverage goes
+  to the coverage atlas; the other two to the colour atlas.
 - Lifetime is by use: counted handles, then a least-recently-used list under a byte budget
   (07). A long session at many zoom levels does not grow without bound.
 - When the atlas epoch changes (device loss), paragraphs drop their handles and acquire again

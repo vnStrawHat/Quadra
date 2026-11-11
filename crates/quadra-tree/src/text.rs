@@ -3,7 +3,7 @@
 use quadra_layout::Known;
 use quadra_prim::{Color, Corners, Rect, Size};
 use quadra_render::{Kind, Sprite};
-use quadra_text::{Paragraph, TextStyle};
+use quadra_text::{GlyphFormat, Paragraph, TextStyle};
 
 use crate::fonts::{GlyphTile, SUBPIXEL_STEPS};
 use crate::widget::{MeasureCx, PaintCx, Widget};
@@ -96,10 +96,11 @@ impl Widget for Text {
                     slice: tile.rect.slice,
                     color: self.color,
                     radii: Corners::default(),
-                    glyph: true,
+                    // A colour glyph is an image: its pixels are not coverage of the text colour.
+                    glyph: tile.meta.format != GlyphFormat::Color,
                 };
-                let instance =
-                    sprite.instance(if tile.meta.color { Kind::Poly } else { Kind::Mono }, &cx.clip);
+                let coverage = tile.meta.format == GlyphFormat::Coverage;
+                let instance = sprite.instance(if coverage { Kind::Mono } else { Kind::Poly }, &cx.clip);
                 cx.push(instance);
                 self.tiles.push(tile);
             }

@@ -6,7 +6,8 @@ workspace crate. Workspace crates may depend on each other.
 import json
 import sys
 
-ADMITTED = {"windows", "accesskit", "accesskit_windows", "serde", "serde_json"}
+# windows-core is part of windows: its `implement` macro names the crate by that name.
+ADMITTED = {"windows", "windows-core", "accesskit", "accesskit_windows", "serde", "serde_json"}
 
 meta = json.load(sys.stdin)
 ours = {p["name"] for p in meta["packages"]}

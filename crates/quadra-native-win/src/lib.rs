@@ -5,6 +5,7 @@
 //! operating system. Every block says what makes it sound.
 
 mod atlas;
+mod dwrite;
 mod gpu;
 mod input;
 mod pacing;
@@ -16,5 +17,6 @@ mod swapchain;
 mod window;
 mod wndproc;
 
+pub use dwrite::DirectWrite;
 pub use platform::WinPlatform;
 pub use renderer::D3d11Renderer;

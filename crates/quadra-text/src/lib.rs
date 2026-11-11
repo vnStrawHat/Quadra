@@ -14,4 +14,6 @@ pub use fake::FakeBackend;
 pub use grapheme::{boundaries, next_grapheme, prev_grapheme};
 pub use paragraph::{Line, Paragraph, PositionedGlyph};
 pub use system::{TextStats, TextSystem, Word};
-pub use types::{FaceId, FaceMetrics, FontKey, GlyphBitmap, ShapedGlyph, TextBackend, TextStyle};
+pub use types::{
+    FaceId, FaceMetrics, FontKey, GlyphBitmap, GlyphFormat, ShapedGlyph, TextBackend, TextStyle,
+};

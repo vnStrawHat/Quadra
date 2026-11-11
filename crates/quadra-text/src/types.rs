@@ -36,15 +36,28 @@ pub struct ShapedGlyph {
     pub cluster: u32,
 }
 
-/// A rasterized glyph: 8-bit coverage, or RGBA when `color`. `left` and `top` place its
-/// top-left corner against the pen position on the baseline.
+/// What the pixels of a rasterized glyph are.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum GlyphFormat {
+    /// One byte a pixel: how much of it the glyph covers.
+    #[default]
+    Coverage,
+    /// RGBA: the coverage of the red, green and blue stripes of an LCD pixel, in screen
+    /// order, and their maximum in alpha. Blended per channel, in the text's colour.
+    Subpixel,
+    /// Premultiplied RGBA: a glyph with colours of its own (emoji).
+    Color,
+}
+
+/// A rasterized glyph. `left` and `top` place its top-left corner against the pen position on
+/// the baseline.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct GlyphBitmap {
     pub left: i32,
     pub top: i32,
     pub width: u32,
     pub height: u32,
-    pub color: bool,
+    pub format: GlyphFormat,
     pub pixels: Vec<u8>,
 }
 

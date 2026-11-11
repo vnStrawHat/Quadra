@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use quadra_render::{Atlas, AtlasKind, TileRef};
-use quadra_text::{FaceId, TextBackend, TextSystem};
+use quadra_text::{FaceId, GlyphFormat, TextBackend, TextSystem};
 
 /// The horizontal positions within a pixel a glyph is rasterized at. Vertical positions are
 /// whole pixels.
@@ -32,8 +32,8 @@ pub struct GlyphKey {
 pub struct GlyphMeta {
     pub left: f32,
     pub top: f32,
-    /// In the colour atlas: an emoji.
-    pub color: bool,
+    /// Coverage is in the coverage atlas; the other two are in the colour atlas.
+    pub format: GlyphFormat,
 }
 
 /// A handle to a glyph's tile: a text node holds the handles of what it painted, which keeps
@@ -66,8 +66,9 @@ impl Fonts {
             return Some(tile);
         }
         let bitmap = self.text.rasterize(face, id, size, phase)?;
-        let meta = GlyphMeta { left: bitmap.left as f32, top: bitmap.top as f32, color: bitmap.color };
-        let atlas = if bitmap.color { &mut self.color_glyphs } else { &mut self.glyphs };
+        let meta = GlyphMeta { left: bitmap.left as f32, top: bitmap.top as f32, format: bitmap.format };
+        let coverage = bitmap.format == GlyphFormat::Coverage;
+        let atlas = if coverage { &mut self.glyphs } else { &mut self.color_glyphs };
         atlas.insert(key, bitmap.width, bitmap.height, &bitmap.pixels, meta)
     }
 

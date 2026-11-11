@@ -69,13 +69,14 @@ Phase R0 is done and committed: repository, workspace, gate, `quadra-prim`. Ther
 yet (the user sets it up later).
 
 Phase R1, the vertical slice that proves the paradigm (specs/00, Phases), is in progress;
-`docs/progress.md` lists its crates. Done and committed: `quadra-reactive`, and `quadra-layout`
-with flex. The user's standing instruction: commit each finished part once the gate is green,
-then continue with the next.
+`docs/progress.md` lists its crates. Done and committed: `quadra-reactive` and `quadra-layout`
+(flex and grid). The user's standing instruction: commit each finished part once the gate is
+green, then continue with the next.
 
-Next, in order: grid in `quadra-layout` (the V repository's `quadra/layout/grid*.v` and
-`grid_test.v` carry the algorithm and its cases; add `Display::Grid` and the grid style), then
-`quadra-tree` (specs/04), which joins the reactive runtime and the layout tree.
+Next, in order: `quadra-render` with the null backend (specs/07: instances, layers, display
+lists with subtree-relative ranges, the `Renderer` trait), because the tree's paint pass writes
+into it; `quadra-text` with the fake backend (specs/08); then `quadra-tree` (specs/04), which
+joins the reactive runtime, the layout tree, text and layers.
 
 `quadra-term` is **on hold** by the user's decision: do not build it until told. The apps come
 after Quadra is complete.

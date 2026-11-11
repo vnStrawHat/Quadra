@@ -1,4 +1,4 @@
-//! Quadra's layout engine (specs/06-layout.md): flex on a tree that is kept across frames.
+//! Quadra's layout engine (specs/06-layout.md): flex and grid on a tree that is kept across frames.
 //!
 //! A parent asks a child a request and the child answers with a size. Nodes keep their
 //! answers, so a change costs the changed node and its ancestors up to the first one that
@@ -21,11 +21,16 @@ mod cache;
 mod flex;
 mod flex_items;
 mod flex_place;
+mod grid;
+mod grid_layout;
+mod grid_place;
+mod grid_tracks;
 mod incremental;
 mod solve;
 mod style;
 mod tree;
 
+pub use grid::{GridStyle, Track, TrackSize};
 pub use incremental::{RootSize, Stats};
 pub use solve::{Known, Measure, NoMeasure};
 pub use style::{Align, AutoMargins, Direction, Display, Insets, Justify, Length, Overflow, Position, Style};

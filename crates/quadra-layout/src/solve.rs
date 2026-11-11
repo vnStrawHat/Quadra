@@ -82,6 +82,7 @@ impl LayoutTree {
         } else {
             match s.display {
                 Display::Flex => self.layout_flex(m, id, s, known, req, perform),
+                Display::Grid => self.layout_grid(m, id, s, known, req, perform),
                 Display::None => Size::ZERO,
             }
         };

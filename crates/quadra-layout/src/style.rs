@@ -2,6 +2,8 @@
 
 use quadra_prim::Edges;
 
+use crate::grid::GridStyle;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum Length {
     #[default]
@@ -39,6 +41,7 @@ pub(crate) fn finite(v: f32) -> Option<f32> {
 pub enum Display {
     #[default]
     Flex,
+    Grid,
     /// Takes no space and is not laid out.
     None,
 }
@@ -138,6 +141,8 @@ pub struct Style {
     pub inset: Insets,
     pub overflow_x: Overflow,
     pub overflow_y: Overflow,
+    /// The grid part: a grid container's tracks, a grid item's placement. `None` for most nodes.
+    pub grid: Option<Box<GridStyle>>,
 }
 
 impl Default for Style {
@@ -169,6 +174,7 @@ impl Default for Style {
             inset: Insets::default(),
             overflow_x: Overflow::Visible,
             overflow_y: Overflow::Visible,
+            grid: None,
         }
     }
 }
@@ -208,5 +214,6 @@ impl Style {
             && self.margin == o.margin
             && self.margin_auto == o.margin_auto
             && self.inset == o.inset
+            && GridStyle::same_as_item(self.grid.as_deref(), o.grid.as_deref())
     }
 }

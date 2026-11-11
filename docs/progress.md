@@ -18,7 +18,7 @@ On hold by the user's decision: `quadra-term`.
 | Crate | Status | Evidence |
 |---|---|---|
 | `quadra-reactive` | Done (2026-11-11) | 31 tests covering every item of specs/03 "Tests"; no `unsafe`; 93 ns per binding in the `grid` shape (docs/benchmarks.md) |
-| `quadra-layout` | Flex done (2026-11-11); grid not started | 30 tests: the 16 flex cases of the V suite, the costs of a change as counters, 1,500 random changes each checked against a layout from scratch; 0.82 µs for a change in a list of 10,000 fixed-height rows (docs/benchmarks.md) |
+| `quadra-layout` | Done (2026-11-11) | 39 tests: the 16 flex and 5 grid cases of the V suite, the costs of a change as counters, 1,500 random changes each checked against a layout from scratch; 0.82 µs for a change in a list of 10,000 fixed-height rows (docs/benchmarks.md) |
 | `quadra-tree` | Not started | |
 | `quadra-text` with the fake backend | Not started | |
 | `quadra-render` with the null backend | Not started | |

@@ -20,7 +20,7 @@ use crate::{icons, size, token};
 const FACES: [&str; 2] = ["Segoe Fluent Icons", "Segoe MDL2 Assets"];
 /// Minimize, maximize, restore and close in those faces, and drawn where there is neither.
 const GLYPHS: [&str; 4] = ["\u{E921}", "\u{E922}", "\u{E923}", "\u{E8BB}"];
-const DRAWN: [&str; 4] = [icons::MINUS, icons::SQUARE, icons::COPY, icons::X];
+const DRAWN: [&str; 4] = [icons::MINUS, icons::WINDOW_MAXIMIZE, icons::WINDOW_RESTORE, icons::X];
 /// What the close button turns under the pointer, on every theme.
 const CLOSE: Color = Color::rgb(0xE81120);
 

@@ -3,6 +3,7 @@
 
 mod accordion;
 pub mod action;
+mod bars;
 mod button;
 mod choice;
 mod dialog;
@@ -16,8 +17,10 @@ mod menu;
 mod popup;
 mod root;
 mod select;
+mod sidebar;
 pub mod size;
 mod split;
+mod status;
 mod tabs;
 mod theme;
 mod titlebar;
@@ -27,6 +30,9 @@ mod tooltip;
 
 pub use accordion::{Accordion, accordion};
 pub use action::keymap;
+pub use bars::{
+    Breadcrumb, Statusbar, breadcrumb, status_button, status_divider, status_item, statusbar, toolbar,
+};
 pub use button::{Button, Size, Variant, button, icon_button};
 pub use choice::{Choice, radio_group, segmented};
 pub use dialog::{Dialog, dialog};
@@ -40,7 +46,9 @@ pub use menu::{MenuItem, menu};
 pub use popup::popover;
 pub use root::{install, root};
 pub use select::{Select, select};
+pub use sidebar::{NavItem, Sidebar, sidebar};
 pub use split::{Split, split};
+pub use status::{Status, status_label, status_mark};
 pub use tabs::{Tabs, tabs};
 pub use theme::{KitTheme, Mode, ThemeError, dark, light, theme_from_json};
 pub use titlebar::{Titlebar, titlebar};

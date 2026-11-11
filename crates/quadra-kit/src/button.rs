@@ -59,6 +59,7 @@ pub struct Button {
     disabled: Prop<bool>,
     toggled: Option<Prop<bool>>,
     full: bool,
+    muted: bool,
     test_id: Option<&'static str>,
     click: Option<Box<dyn FnMut()>>,
 }
@@ -80,6 +81,7 @@ pub fn button<M>(label: impl IntoProp<String, M>) -> Button {
         disabled: Prop::Value(false),
         toggled: None,
         full: false,
+        muted: false,
         test_id: None,
         click: None,
     }
@@ -133,6 +135,12 @@ impl Button {
         self
     }
 
+    /// In the second text colour: a button of a status bar, which is not to draw the eye.
+    pub fn muted(mut self) -> Self {
+        self.muted = true;
+        self
+    }
+
     /// A name for tests and tools that does not change with the label.
     pub fn test_id(mut self, id: &'static str) -> Self {
         self.test_id = Some(id);
@@ -161,6 +169,7 @@ impl Button {
             Some(_) => face.height(self.size.height()).padding_x(if small { 4.0 } else { 8.0 }),
             None => face.size(self.size.height(), self.size.height()),
         };
+        let label = if self.muted { token::TEXT_2.into() } else { label };
         let face = face.radius(size::RADIUS_MD).bg(fill).text_color(label);
         let face = face.role(Role::Button).focusable().key_context(CONTROL).cursor(Cursor::Pointer);
         let face = match self.size {
@@ -178,10 +187,12 @@ impl Button {
             false => face.focus_visible(|s| s.bg(hover)).hover(|s| s.bg(hover)),
         };
         let face = face.active(|s| s.bg(press));
-        // On: the accent for the label, and the selected step for a button with no fill.
+        // On: the accent for the label, and the selected step for a button with no fill
+        // that has a label; an icon alone turns the accent and takes no fill.
         let face = match self.toggled {
             Some(on) => {
-                let pressed = if fill == Paint::default() { token::PRESS.into() } else { fill };
+                let filled = fill != Paint::default() || self.label.is_none();
+                let pressed = if filled { fill } else { token::PRESS.into() };
                 face.checked(on).when(State::CHECKED, |s| s.text_color(token::ACCENT_TEXT).bg(pressed))
             }
             None => face,

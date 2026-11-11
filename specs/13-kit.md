@@ -203,6 +203,25 @@ As built so far:
   glyphs at 10 px from the system's face of caption glyphs when it has one, drawn icons
   otherwise; close turns `#E81120` under the pointer. They ask the window (`window()`),
   and are buttons to a reader.
+- **The bars** (`bars.rs`). `toolbar()` is a box of 45 px on the canvas with a line under
+  it, its children 4 px apart. `statusbar().left(view).right(view)` is the strip of 30 px
+  at the bottom of a window, in 12 px text; in it stand `status_item(icon, words)`,
+  `status_button(icon, name, on)` (an icon toggle: muted, the accent while on, never
+  filled; a toggled button that is an icon alone takes no fill anywhere) and
+  `status_divider()`. `breadcrumb(parts, pick)` is the way to where the user is: mono,
+  muted names with a mark between them, each a link that gives `pick` its index, but the
+  last.
+- **A status** (`status.rs`: running, pending, failed, succeeded, terminating, unknown) has
+  a role of the theme for its colour and a shape of its own in a box of 12 px
+  (`status_mark`): a dot, a ring, a triangle, a check, a dash, a square. `status_label` is
+  the mark and the name, `Status::of(word)` the status a word names.
+- **`sidebar(chosen)`** is the places of an app (`NavItem::new(id, label).icon(..)`) in
+  groups under muted titles, on the panel's plane with a strong line at its right, 240 px
+  wide unless told. `chosen` holds the id of the chosen place: a click writes it, and with
+  the focus in the sidebar the arrows, Home and End move it. A place is a row of 26 px,
+  filled when chosen. While `.folded(|| ..)` says so it is 40 px wide and shows the icons
+  alone; the places keep their names for a reader. `.head(view)` is above the places, and
+  what does not fit scrolls.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).
@@ -211,9 +230,9 @@ As built so far:
   its own selection. A field shows its placeholder while it holds nothing, composing counted.
 - A component that builds a view from properties it was given passes them on as they are:
   `Prop<T>` is itself something a setter takes.
-- The example `gallery` of the kit shows the components in a real window in either theme,
-  on pages chosen by tabs; it becomes the gallery app when it is compared with the
-  reference screenshots.
+- The example `gallery` of the kit shows the components in a real window in either theme:
+  a window with its own title bar, a sidebar of pages, a toolbar and a status bar. It
+  becomes the gallery app when it is compared with the reference screenshots.
 
 ## Overlays in the kit
 

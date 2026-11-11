@@ -5,12 +5,14 @@
 use std::rc::Rc;
 
 use quadra::{
-    Align, Div, NodeRef, Signal, Theme, WindowOptions, column, div, dynamic, row, signal, text, use_context,
+    Align, Div, NodeRef, Signal, Theme, WindowOptions, column, div, dynamic, row, scroll, signal, text,
+    use_context,
 };
 use quadra_kit::{
-    MenuItem, Size, Tone, Variant, accordion, avatar, badge, button, card, card_head, checkbox, dark, dialog,
-    divider, heading, icon, icon_button, icons, input, kbd, light, list, menu, radio_group, segmented,
-    select, size, split, switch, tabs, tag, titlebar, token, tooltip,
+    MenuItem, NavItem, Size, Status, Tone, Variant, accordion, avatar, badge, breadcrumb, button, card,
+    card_head, checkbox, dark, dialog, divider, heading, icon, icon_button, icons, input, kbd, light, list,
+    menu, radio_group, segmented, select, sidebar, size, split, status_button, status_divider, status_item,
+    status_label, statusbar, switch, tabs, tag, titlebar, token, toolbar, tooltip,
 };
 
 /// A section: its title, then its rows.
@@ -156,31 +158,60 @@ fn parts() -> Div {
     section("Parts").child(heading("Heading", 2)).child(chips).child(boxes).child(framed)
 }
 
+fn navigation() -> Div {
+    let all = [Status::Running, Status::Pending, Status::Failed, Status::Succeeded, Status::Terminating];
+    let marks = line().gap(16.0).children(all.map(|status| status_label(status, "")));
+    let way = breadcrumb(["workspace", "notes", "today.md"], |_| {});
+    section("Status and the way").child(marks.child(status_label(Status::Unknown, "No word"))).child(way)
+}
+
+/// The pages: what each is known by, its name in the sidebar, and its icon.
+const PAGES: [(&str, &str, &str); 5] = [
+    ("buttons", "Buttons", icons::SQUARE_CHECK),
+    ("forms", "Forms", icons::SLIDERS_HORIZONTAL),
+    ("overlays", "Overlays and lists", icons::LAYERS),
+    ("parts", "Parts", icons::LAYOUT_GRID),
+    ("navigation", "Navigation", icons::LIST_TREE),
+];
+
 fn main() -> quadra::Result<()> {
     let view = || {
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
-        let is_dark = signal(true);
+        let (is_dark, folded) = (signal(true), signal(false));
         let swap = move || {
             is_dark.update(|dark| *dark = !*dark);
             theme.set(Rc::new(if is_dark.get_untracked() { dark() } else { light() }.theme()));
         };
-        let name = text(move || if is_dark.get() { "One Dark Pro" } else { "One Light" });
-        let name = name.size(size::TEXT_LG.size).weight(size::WEIGHT_STRONG);
-        let head = line().child(name).child(button("Other theme").size(Size::Sm).on_click(swap));
         // `GALLERY_PAGE=2` starts on the third page: for a picture of it.
-        let first = std::env::var("GALLERY_PAGE").ok().and_then(|page| page.parse().ok());
-        let page = signal(first.unwrap_or(0usize));
+        let first = std::env::var("GALLERY_PAGE").ok().and_then(|page| page.parse().ok()).unwrap_or(0usize);
+        let page = signal(PAGES[first.min(PAGES.len() - 1)].0);
         let shown = dynamic(move || match page.get() {
-            0 => column().gap(20.0).child(buttons()).child(icons()),
-            1 => column().gap(20.0).child(inputs()).child(choices()),
-            3 => column().gap(20.0).child(parts()),
-            _ => column().gap(20.0).child(overlays()).child(lists()),
+            "buttons" => column().gap(20.0).child(buttons()).child(icons()),
+            "forms" => column().gap(20.0).child(inputs()).child(choices()),
+            "overlays" => column().gap(20.0).child(overlays()).child(lists()),
+            "parts" => column().gap(20.0).child(parts()),
+            _ => column().gap(20.0).child(navigation()),
         });
-        let pages = tabs(["Buttons", "Forms", "Overlays and lists", "Parts"], page);
-        let page = column().grow(1.0).padding(24.0).gap(20.0).child(head).child(pages).child(shown);
+        let name = move || PAGES.iter().find(|known| known.0 == page.get()).map_or("", |known| known.1);
+        let places = sidebar(page).width(200.0).folded(move || folded.get());
+        let places =
+            places.group("Components", PAGES.map(|(id, name, body)| NavItem::new(id, name).icon(body)));
+        let way = dynamic(move || breadcrumb(["Gallery", name()], move |_| page.set(PAGES[0].0)));
+        let tools = toolbar().child(way).child(div().grow(1.0));
+        let tools = tools.child(button("Other theme").size(Size::Sm).on_click(swap));
+        let content = scroll(signal(0.0), column().padding(24.0).child(shown));
+        let fold = status_button(icons::PANEL_LEFT, "Sidebar", move || !folded.get());
+        let status = statusbar()
+            .left(fold.on_click(move || folded.update(|folded| *folded = !*folded)))
+            .left(status_divider())
+            .left(status_item(None, move || {
+                if is_dark.get() { "One Dark Pro" } else { "One Light" }.to_string()
+            }))
+            .right(status_item(Some(icons::CHECK), "Ready"));
         let bar = titlebar("Quadra gallery").menu(|| vec![MenuItem::new("About"), MenuItem::new("Quit")]);
-        quadra_kit::root().child(bar).child(page)
+        let middle = row().grow(1.0).child(places).child(column().grow(1.0).child(tools).child(content));
+        quadra_kit::root().child(bar).child(middle).child(status)
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
-    app.window(WindowOptions::new("Quadra gallery").size(680.0, 600.0).custom_frame(), view)?.run()
+    app.window(WindowOptions::new("Quadra gallery").size(900.0, 640.0).custom_frame(), view)?.run()
 }

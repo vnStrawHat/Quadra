@@ -26,6 +26,15 @@ impl Heights {
         }
     }
 
+    /// Where a row starts and ends, and whether that is measured and not estimated.
+    pub fn span(&self, row: usize) -> (f64, f64, bool) {
+        let measured = match self {
+            Heights::Uniform { .. } => true,
+            Heights::Measured { own, .. } => own.get(row).is_some_and(|&height| height >= 0.0),
+        };
+        (self.before(row), self.before(row + 1), measured)
+    }
+
     /// The row that holds `y`: as many rows end at or before it.
     pub fn row_at(&self, y: f64) -> usize {
         self.ending(y, true)

@@ -265,6 +265,7 @@ impl Tree {
             (None, true) => stops.len() - 1,
         };
         batch(|| self.set_focus(Some(stops[next]), true));
+        self.scroll_into_view(stops[next]); // the keyboard went there: it is shown
     }
 
     /// The nodes under `id` that can have the focus, in tree order. What is not displayed is

@@ -7,7 +7,7 @@ use std::time::Instant;
 use quadra_a11y::SemanticAction;
 use quadra_layout::{Display, Overflow};
 use quadra_platform::{Cursor, Mods, MouseButton};
-use quadra_prim::Point;
+use quadra_prim::{Point, Rect};
 
 use crate::focus::KeyEvent;
 use crate::node::NodeId;
@@ -88,6 +88,9 @@ pub(crate) enum Handler {
     Composition(CompositionFn),
     /// A press landed outside the overlay the node is the root of.
     OutsidePress(Box<dyn FnMut()>),
+    /// The node scrolls what it holds: asked to show a rect of its own box, it says how far
+    /// down it scrolled for it.
+    Reveal(Box<dyn FnMut(Rect) -> f32>),
     /// Assistive technology, or a test, asks something of the node.
     Semantic(Box<dyn FnMut(&SemanticAction) -> bool>),
     /// An action of a type reached the node.

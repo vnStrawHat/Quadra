@@ -2,8 +2,9 @@
 //! signal, its styles.
 
 use quadra_prim::{Point, Rect, Size};
-use quadra_reactive::{Signal, signal};
+use quadra_reactive::{Signal, batch, signal};
 
+use crate::input::Handler;
 use crate::node::{NodeId, PaintStyle};
 use crate::tree::Tree;
 
@@ -22,6 +23,33 @@ impl Tree {
     pub fn after_layout(&mut self, f: impl FnOnce(&mut Tree) + 'static) {
         self.after_layout.push(Box::new(f));
         self.shared.wake.set(true);
+    }
+
+    /// Makes a node that scrolls what it holds answer [`Tree::scroll_into_view`]: `f` is given
+    /// a rect in the node's own box, as it is scrolled now, scrolls to show it, and returns
+    /// how far down it scrolled.
+    pub fn on_reveal(&mut self, id: NodeId, f: impl FnMut(Rect) -> f32 + 'static) {
+        self.add_handler(id, Handler::Reveal(Box::new(f)));
+    }
+
+    /// Scrolls whatever scrolls around a node, the nearest first, so that the node shows: as
+    /// little as that takes. The scrolling is seen in the next frame.
+    pub fn scroll_into_view(&mut self, id: NodeId) {
+        if !self.is_alive(id) {
+            return;
+        }
+        let mut rect = self.window_rect(id);
+        batch(|| {
+            for around in self.path(id).into_iter().skip(1) {
+                let port = self.window_rect(around);
+                let within = rect.translate(-port.x, -port.y);
+                for handler in &mut self.nodes[around.index as usize].handlers {
+                    if let Handler::Reveal(run) = handler {
+                        rect = rect.translate(0.0, -run(within)); // it is higher in the window now
+                    }
+                }
+            }
+        });
     }
 
     /// The node's border box, relative to its parent's.

@@ -29,7 +29,7 @@ mod view;
 pub use div::{Div, Refine, column, div, row};
 pub use flow::{Region, dynamic, each, mount_in, show};
 pub use input::{TextInput, text_input};
-pub use list::{uniform_list, virtual_list};
+pub use list::{ListView, uniform_list, virtual_list};
 pub use node_ref::NodeRef;
 pub use overlay::{OverlayView, Place, overlay};
 pub use prop::{IntoProp, Prop};

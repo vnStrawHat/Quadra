@@ -100,6 +100,13 @@ because every render built new nodes. Here nodes persist, and a change is a flag
   their subpixel positions while scrolling.
 - `scroll_into_view`, anchoring (keep the first visible item in place when content above it
   changes size) and momentum are behaviours of the scroll widget.
+- **Scrolling into view** (`Tree::scroll_into_view`, `NodeRef::scroll_into_view`): every node
+  around the asked one that scrolls what it holds is asked, the nearest first, to show the
+  node's rect, given in its own box as it is scrolled now. It scrolls as little as shows the
+  rect (to its start when it is taller than the viewport) and says how far, which moves the
+  rect for the next one out: nested scrolling settles in one go. A scroll view and the
+  lists answer; a widget that scrolls its own content registers with `Tree::on_reveal`.
+  A focus that comes by the keyboard and the semantic action `ScrollIntoView` ask for it.
 - `position: sticky` children are placed in the compose pass from the offset.
 
 ## Virtual lists

@@ -167,6 +167,10 @@ that says how far the list is scrolled, and what builds a row from its index.
   it had belongs to the row it held (`Tree::after_layout`, 04).
 - Scrolling within the realized range changes only the layer's offset (07). The list asks for
   layout only when a row must enter or leave.
+- `.reveal(|| row)` keeps a row in view: when the closure gives another row the list scrolls
+  as little as shows all of it. A row far away is only estimated to be where the list first
+  scrolls to, so the list asks again as heights are found out, until the row shows whole and
+  measured; then it lets go, and scrolling away is not undone.
 - `uniform_list(count, row_height, scroll_y, row)` is the same with one fixed row height, no
   measuring and no memory a row.
 - A row recycled for another index must not keep state of the old one in node state. The list

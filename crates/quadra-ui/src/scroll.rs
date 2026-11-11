@@ -1,7 +1,7 @@
 //! The scroll view: content of any size behind a viewport (specs/06, "Scrolling").
 
 use quadra_layout::{Direction, Overflow};
-use quadra_prim::Point;
+use quadra_prim::{Point, Rect};
 use quadra_reactive::{Signal, memo};
 use quadra_tree::{NodeId, PointerEvent, PointerKind};
 
@@ -29,6 +29,15 @@ pub(crate) fn wheel_scrolls(e: &mut PointerEvent, scroll_y: Signal<f32>, top: f3
     }
 }
 
+/// What a scroll container does when asked to show a rect of its own box: it scrolls as
+/// little as shows it, to the start of what is taller than the viewport, and says how far.
+pub(crate) fn reveals(rect: Rect, scroll_y: Signal<f32>, top: f32, end: f32, height: f32) -> f32 {
+    let down = if rect.y < 0.0 { rect.y } else { (rect.bottom() - height).clamp(0.0, rect.y) };
+    let to = (top + down).clamp(0.0, end);
+    scroll_y.set(to);
+    to - top
+}
+
 pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
     let bind = move |viewport: NodeId, cx: &mut MountCx| {
         let scrolls = quadra_layout::Style {
@@ -46,6 +55,9 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
         let top = memo(move || scroll_y.get().clamp(0.0, end.get()));
         cx.tree.on_pointer(viewport, PointerKind::Wheel, move |e| {
             wheel_scrolls(e, scroll_y, top.get(), end.get())
+        });
+        cx.tree.on_reveal(viewport, move |rect| {
+            reveals(rect, scroll_y, top.get(), end.get(), outer.get_untracked().height)
         });
         let writer = cx.handle.clone();
         cx.handle.bind(move || {

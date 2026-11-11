@@ -266,6 +266,10 @@ impl Tree {
                 self.send(click);
                 true
             }
+            SemanticAction::ScrollIntoView => {
+                self.scroll_into_view(id);
+                true
+            }
             other => {
                 let mut done = false;
                 for handler in &mut self.nodes[id.index as usize].handlers {

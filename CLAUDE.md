@@ -115,7 +115,13 @@ panics on an update that is not well formed (specs/12 lists the rules): a change
 tree tells a listener goes through `semantics_changed`, and `quadra_a11y::Mirror` in the
 random test is what catches a missed case. Lists with rows of different heights are in
 (`virtual_list` beside `uniform_list` in `quadra-ui/src/list.rs`, heights in
-`list/heights.rs`, `Tree::after_layout`), and so are the tab index and cursors. Next: the
+`list/heights.rs`, `Tree::after_layout`), and so are the tab index, cursors and scrolling
+into view (`Tree::scroll_into_view`, `on_reveal`; `.reveal(..)` on lists). **What R2 still
+needs for its exit** (the V suite's interaction tests, `tests/*_test.v` in the V repo, each
+with a counterpart here): a password input, a text area of several lines with vertical
+movement, text that can be selected (drag, double click, select all, copy), drag and drop
+(a preview that follows, targets that accept by kind, `State::DROP_TARGET`). Popovers and
+hover cards are kit components (R3) on overlays and timers. After those: the
 rest of `quadra-async` (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range
 values, positions in a set, a role for scroll views.
 

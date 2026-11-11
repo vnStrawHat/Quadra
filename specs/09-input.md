@@ -60,7 +60,8 @@ Handlers are closures on nodes (05). A node with no handler for an event kind is
   adjusted by tab index, inside the nearest **focus scope** (a dialog or menu traps focus).
   Nodes with a tab index above zero come first, lowest first, then the others in tree order;
   one with an index below zero is never reached by Tab, only by a press or by the program.
-  From a node that Tab does not reach, Tab goes to the first of the walk.
+  From a node that Tab does not reach, Tab goes to the first of the walk. The node Tab goes
+  to is scrolled into view (06).
 - `focused`, `focus_visible` (focus arrived by keyboard) and `focus_within` (on ancestors) are
   state bits.
 - Focus moves emit focus and blur events and flag accessibility.

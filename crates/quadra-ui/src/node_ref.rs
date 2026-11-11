@@ -24,6 +24,14 @@ impl NodeRef {
         self.0.borrow().as_ref().map(|(id, _)| *id)
     }
 
+    /// Scrolls what scrolls around the node so that it shows, in the window's next frame.
+    pub fn scroll_into_view(&self) {
+        if let Some((id, handle)) = &*self.0.borrow() {
+            let id = *id;
+            handle.with(move |tree| tree.scroll_into_view(id));
+        }
+    }
+
     /// Gives the node the focus, in the window's next frame.
     pub fn focus(&self) {
         if let Some((id, handle)) = &*self.0.borrow() {

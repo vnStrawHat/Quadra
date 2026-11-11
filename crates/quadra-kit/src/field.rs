@@ -1,0 +1,119 @@
+//! Forms (specs/behaviour/09, "Forms"): a control under its label, with a line of help or of
+//! what is wrong; the rules a value is checked against; and the text area in its frame.
+
+use quadra_layout::Align;
+use quadra_platform::Cursor;
+use quadra_reactive::{Signal, memo};
+use quadra_tree::{NodeId, Role, State};
+use quadra_ui::{AnyView, IntoProp, MountCx, Prop, View, column, dynamic, row, text, text_area};
+
+use crate::display::label;
+use crate::icon::icon;
+use crate::{icons, size, token};
+
+pub struct Field {
+    name: String,
+    control: AnyView,
+    help: String,
+    error: Prop<String>,
+    required: bool,
+}
+
+/// A control under its label.
+pub fn field(name: impl Into<String>, control: impl View + 'static) -> Field {
+    let (control, error) = (AnyView::new(control), Prop::Value(String::new()));
+    Field { name: name.into(), control, help: String::new(), error, required: false }
+}
+
+impl Field {
+    /// A line under the control that says what it is for.
+    pub fn help(mut self, words: impl Into<String>) -> Self {
+        self.help = words.into();
+        self
+    }
+
+    /// What is wrong with the value: it takes the help's place while it is not empty.
+    pub fn error<M>(mut self, words: impl IntoProp<String, M>) -> Self {
+        self.error = words.into_prop();
+        self
+    }
+
+    /// Marks the label of what must be filled in.
+    pub fn required(mut self) -> Self {
+        self.required = true;
+        self
+    }
+}
+
+impl View for Field {
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        let name = text(self.name).size(size::TEXT_SM.size);
+        let head = row().gap(4.0).child(name);
+        let head = match self.required {
+            true => head.child(text("*").size(size::TEXT_SM.size).color(token::ERROR)),
+            false => head,
+        };
+        let (help, error) = (self.help, self.error);
+        let wrong = memo(move || match &error {
+            Prop::Value(words) => words.clone(),
+            Prop::Reactive(read) => read(),
+        });
+        // The error, or the help, or nothing: 12 px under the control.
+        let under = dynamic(move || {
+            let wrong = wrong.get();
+            let line = row().align_items(Align::Center).gap(4.0);
+            if !wrong.is_empty() {
+                let mark = icon(icons::CIRCLE_ALERT).size(12.0).color(token::ERROR);
+                line.child(mark).child(text(wrong).size(size::TEXT_SM.size).color(token::ERROR))
+            } else if !help.is_empty() {
+                line.child(label(help.clone()))
+            } else {
+                line
+            }
+        });
+        column().gap(4.0).child(head).child(self.control).child(under).mount(cx)
+    }
+}
+
+/// A rule a text is checked against: plain data, with what to say when it is broken.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Rule {
+    Required(String),
+    MinLen(usize, String),
+    MaxLen(usize, String),
+    Email(String),
+}
+
+impl Rule {
+    /// What is wrong with `value` by this rule, if anything.
+    pub fn check(&self, value: &str) -> Option<&str> {
+        let (broken, says) = match self {
+            Rule::Required(says) => (value.trim().is_empty(), says),
+            Rule::MinLen(least, says) => (value.chars().count() < *least, says),
+            Rule::MaxLen(most, says) => (value.chars().count() > *most, says),
+            Rule::Email(says) => {
+                let at = value.find('@').filter(|at| *at > 0);
+                (!at.is_some_and(|at| value[at + 1..].contains('.') && !value.contains(' ')), says)
+            }
+        };
+        broken.then_some(says.as_str())
+    }
+}
+
+/// What the first broken rule says of a value; empty when none is broken: what
+/// [`Field::error`] takes.
+pub fn validate(value: &str, rules: &[Rule]) -> String {
+    rules.iter().find_map(|rule| rule.check(value)).unwrap_or_default().to_string()
+}
+
+/// A field of several lines that edits `value`, in the frame of an input: 240 px wide and
+/// at least `rows` lines tall, growing with what it holds.
+pub fn textarea(value: Signal<String>, rows: u32) -> quadra_ui::Div {
+    // ponytail: it grows without end; a most of rows, with scrolling inside, when wanted.
+    let least = rows.max(1) as f32 * size::TEXT_MD.line + 14.0;
+    let frame = column().width(240.0).min_height(least).padding_x(8.0).padding_y(6.0);
+    let frame = frame.radius(size::RADIUS_LG).border(1.0).border_color(token::LINE).bg(token::INPUT_BG);
+    let frame = frame.cursor(Cursor::Text).selection_color(token::ACCENT_TINT).role(Role::Group);
+    let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
+    frame.when(State::INVALID, |s| s.border_color(token::ERROR)).child(text_area(value))
+}

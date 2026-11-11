@@ -9,10 +9,11 @@ use quadra::{
     use_context,
 };
 use quadra_kit::{
-    MenuItem, NavItem, Size, Status, Tone, Variant, accordion, avatar, badge, breadcrumb, button, card,
-    card_head, checkbox, dark, dialog, divider, heading, icon, icon_button, icons, input, kbd, light, list,
-    menu, radio_group, segmented, select, sidebar, size, split, status_button, status_divider, status_item,
-    status_label, statusbar, switch, tabs, tag, titlebar, token, toolbar, tooltip,
+    MenuItem, NavItem, Rule, Size, Status, Tone, Variant, accordion, avatar, badge, breadcrumb, button, card,
+    card_head, checkbox, dark, dialog, divider, field, heading, icon, icon_button, icons, input, kbd, light,
+    list, menu, number_input, radio_group, segmented, select, sidebar, size, slider, split, status_button,
+    status_divider, status_item, status_label, statusbar, switch, tabs, tag, textarea, titlebar, token,
+    toolbar, tooltip, validate,
 };
 
 /// A section: its title, then its rows.
@@ -71,6 +72,30 @@ fn inputs() -> Div {
         .child(input(wrong).invalid(true).width(160.0))
         .child(input(signal(String::new())).placeholder("Disabled").disabled(true).width(160.0));
     section("Inputs").child(first).child(second)
+}
+
+fn numbers() -> Div {
+    let (volume, count, zoom) = (signal(40.0f32), signal(3.0f64), signal(1.5f64));
+    let (name, notes) = (
+        signal("Al".to_string()),
+        signal(
+            "Several lines
+of text"
+                .to_string(),
+        ),
+    );
+    let rules = [Rule::Required("A name is needed".into()), Rule::MinLen(3, "At least three letters".into())];
+    let shown = text(move || format!("{:.0}", volume.get()));
+    let sliders =
+        line().gap(16.0).child(slider(volume).label("Volume")).child(div().width(32.0).child(shown));
+    let sliders = sliders.child(slider(signal(30.0)).disabled(true));
+    let steps = line().gap(16.0).child(number_input(count).range(0.0, 10.0));
+    let steps = steps.child(number_input(zoom).step(0.25).decimals(2).stepper());
+    let named = field("Name", input(name)).help("As it shows to others").required();
+    let named = named.error(move || validate(&name.get(), &rules));
+    let fields =
+        line().align_items(Align::Start).gap(16.0).child(named).child(field("Notes", textarea(notes, 3)));
+    section("Numbers and fields").child(sliders).child(steps).child(fields)
 }
 
 fn choices() -> Div {
@@ -187,7 +212,7 @@ fn main() -> quadra::Result<()> {
         let page = signal(PAGES[first.min(PAGES.len() - 1)].0);
         let shown = dynamic(move || match page.get() {
             "buttons" => column().gap(20.0).child(buttons()).child(icons()),
-            "forms" => column().gap(20.0).child(inputs()).child(choices()),
+            "forms" => column().gap(20.0).child(inputs()).child(choices()).child(numbers()),
             "overlays" => column().gap(20.0).child(overlays()).child(lists()),
             "parts" => column().gap(20.0).child(parts()),
             _ => column().gap(20.0).child(navigation()),

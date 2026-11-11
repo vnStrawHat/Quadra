@@ -1,0 +1,143 @@
+//! The controls of a form beyond the text input (specs/behaviour/09, "Forms"): the slider,
+//! the number input and its stepper, a field with its label and what is wrong, and the rules
+//! a value is checked against.
+
+use std::rc::Rc;
+
+use quadra_kit::{Rule, dark, field, input, number_input, slider, textarea, validate};
+use quadra_platform::{Key, Mods};
+use quadra_prim::Size;
+use quadra_reactive::{Signal, signal};
+use quadra_testing::Harness;
+use quadra_tree::{PointerInput, Role, SemanticAction};
+use quadra_ui::{View, column};
+
+fn mount<V: View + 'static>(build: impl FnOnce() -> V + 'static) -> Harness {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    h.mount(move || quadra_kit::root().child(build()));
+    h.frame();
+    h
+}
+
+fn settle(h: &mut Harness) {
+    h.frame();
+    while h.frame_if_needed().is_some() {}
+}
+
+#[test]
+fn a_slider_is_set_by_the_pointer_the_keys_and_a_reader() {
+    let volume = signal(20.0f32);
+    let mut h = mount(move || column().child(slider(volume).range(0.0, 100.0, 5.0).label("Volume")));
+    assert!(h.semantics().contains("Slider \"Volume\" = \"20\""), "{}", h.semantics());
+    let face = h.get_by_role(Role::Slider, "Volume").node();
+    assert_eq!(h.tree.rect(face).size(), Size::new(200.0, 20.0));
+    // The knob is 12 px, a fifth of the way along the track of 184.
+    let knob = *h.tree.children(face).last().unwrap();
+    assert_eq!((h.tree.rect(knob).x, h.tree.rect(knob).width), (184.0 * 0.2 + 2.0, 12.0));
+
+    // A press on the track takes the value there, to the nearest step; a drag goes on from it
+    // wherever the pointer is, and stops at the ends.
+    h.pointer(PointerInput::Move, 100.0, 10.0);
+    h.pointer(PointerInput::Down, 100.0, 10.0);
+    assert_eq!(volume.get_untracked(), 50.0);
+    h.pointer(PointerInput::Move, 150.0, 300.0);
+    assert_eq!(volume.get_untracked(), 75.0);
+    h.pointer(PointerInput::Move, 900.0, 300.0);
+    h.pointer(PointerInput::Up, 900.0, 300.0);
+    h.pointer(PointerInput::Move, 20.0, 10.0);
+    settle(&mut h);
+    assert_eq!((volume.get_untracked(), h.tree.rect(knob).x), (100.0, 186.0));
+
+    // The press gave it the focus: the arrows step, the page keys go a tenth, Home and End
+    // to the ends.
+    for (key, expected) in [(Key::Left, 95.0), (Key::Down, 90.0), (Key::PageDown, 80.0), (Key::Home, 0.0)] {
+        h.key(key, Mods::NONE);
+        assert_eq!(volume.get_untracked(), expected, "{key:?}");
+    }
+    for (key, expected) in [(Key::Down, 0.0), (Key::Up, 5.0), (Key::PageUp, 15.0), (Key::End, 100.0)] {
+        h.key(key, Mods::NONE);
+        assert_eq!(volume.get_untracked(), expected, "{key:?}");
+    }
+    h.get_by_role(Role::Slider, "Volume").act(SemanticAction::Decrement);
+    h.get_by_role(Role::Slider, "Volume").act(SemanticAction::SetValue("42".into()));
+    settle(&mut h);
+    assert!(volume.get_untracked() == 40.0 && h.semantics().contains("= \"40\""));
+}
+
+fn numbers(stepper: bool) -> (Harness, Signal<f64>) {
+    let count = signal(3.0f64);
+    let h = mount(move || {
+        let field = number_input(count).range(0.0, 5.0).test_id("count");
+        column().child(if stepper { field.stepper() } else { field })
+    });
+    (h, count)
+}
+
+#[test]
+fn a_number_input_holds_a_number_typed_or_stepped() {
+    let (mut h, count) = numbers(false);
+    assert!(h.semantics().contains("TextInput = \"3\" #count"), "{}", h.semantics());
+    // The chevrons step it, and stop at the ends of its range.
+    for _ in 0..4 {
+        h.get_by_role(Role::Button, "Increment").click();
+    }
+    settle(&mut h);
+    assert!(count.get_untracked() == 5.0 && h.semantics().contains("= \"5\""));
+    // So do the up and down arrows while the field has the focus.
+    h.get_by_test_id("count").focus();
+    h.key(Key::Down, Mods::NONE);
+    h.key(Key::Down, Mods::NONE);
+    settle(&mut h);
+    assert_eq!(count.get_untracked(), 3.0);
+    // A number typed is the value, with a comma or a point; what is no number changes nothing.
+    h.get_by_test_id("count").set_value("1,5");
+    settle(&mut h);
+    assert_eq!(count.get_untracked(), 1.5);
+    h.get_by_test_id("count").set_value("many");
+    settle(&mut h);
+    assert_eq!(count.get_untracked(), 1.5);
+    // A value written from elsewhere is what the field says.
+    count.set(4.0);
+    settle(&mut h);
+    assert!(h.semantics().contains("TextInput = \"4\""), "{}", h.semantics());
+
+    // The stepper is one frame of 128 by 32 with a button at each end.
+    let (mut h, count) = numbers(true);
+    let minus = h.get_by_role(Role::Button, "Decrement").node();
+    let frame = h.tree.parent(minus).unwrap();
+    assert_eq!(h.tree.rect(frame).size(), Size::new(128.0, 32.0));
+    h.get_by_role(Role::Button, "Decrement").click();
+    settle(&mut h);
+    assert!(count.get_untracked() == 2.0 && h.semantics().contains("= \"2\""));
+}
+
+#[test]
+fn a_field_says_what_is_wrong_in_place_of_its_help() {
+    let (name, notes) = (signal(String::new()), signal("first".to_string()));
+    let rules = [Rule::Required("A name is needed".into()), Rule::MinLen(3, "At least three letters".into())];
+    let mut h = mount(move || {
+        let wrong = move || validate(&name.get(), &rules);
+        let named = field("Name", input(name).test_id("name")).help("As it shows to others").required();
+        column().child(named.error(wrong)).child(field("Notes", textarea(notes, 3)))
+    });
+    let tree = h.semantics();
+    assert!(tree.contains("Text \"Name\"") && tree.contains("Text \"*\""), "{tree}");
+    assert!(h.has_text("A name is needed") && !h.has_text("As it shows to others"));
+    h.get_by_test_id("name").set_value("Al");
+    settle(&mut h);
+    assert!(h.has_text("At least three letters"));
+    h.get_by_test_id("name").set_value("Alan");
+    settle(&mut h);
+    assert!(h.has_text("As it shows to others") && !h.has_text("At least three letters"));
+    // A text area of three lines is at least that tall, in the frame of an input.
+    let area = h.get_by_text("first").node();
+    let area = h.tree.parent(area).unwrap();
+    assert!(h.tree.rect(area).height >= 3.0 * 23.0 + 14.0, "{:?}", h.tree.rect(area));
+
+    let mail = Rule::Email("Not an address".into());
+    let wrong = Some("Not an address");
+    assert_eq!([mail.check("a@b.c"), mail.check("a b@c.d"), mail.check("@b.c")], [None, wrong, wrong]);
+    assert_eq!(Rule::MaxLen(2, "Too long".into()).check("abc"), Some("Too long"));
+}

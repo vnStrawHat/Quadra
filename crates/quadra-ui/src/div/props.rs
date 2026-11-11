@@ -1,7 +1,7 @@
 //! The style values of a box: each a setter of the box, taking a constant or something
 //! reactive, and a setter of what a state changes, taking a constant.
 
-use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow};
+use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position};
 use quadra_tree::{Paint, Patch};
 
 use super::Div;
@@ -65,6 +65,13 @@ props! {
     border_bottom: f32 => BorderBottom;
     border_left: f32 => BorderLeft;
     direction: Direction => Direction;
+    /// `Position::Absolute` takes the box out of the flow: it is placed by `left`, `top`,
+    /// `right` and `bottom` against the box around it.
+    position: Position => Position;
+    left: Length => Left;
+    top: Length => Top;
+    right: Length => Right;
+    bottom: Length => Bottom;
     /// `Display::None` takes the box and what it holds out of the layout and the picture,
     /// mounted as it is.
     display: Display => Display;
@@ -95,6 +102,13 @@ props! {
     selection_color: Paint => SelectionColor;
     /// The carets of the fields in the box.
     caret_color: Paint => CaretColor;
+}
+
+impl Div {
+    /// Out of the flow: placed by `left`, `top`, `right` and `bottom` against the box around.
+    pub fn absolute(self) -> Self {
+        self.position(Position::Absolute)
+    }
 }
 
 impl Refine {

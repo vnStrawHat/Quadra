@@ -2,7 +2,7 @@
 //! property writes one, a state variant is a list of them, and a role of the theme is one
 //! that stands for another colour under another theme.
 
-use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow};
+use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position};
 use quadra_prim::{Corners, Edges};
 
 use crate::node::Style;
@@ -39,6 +39,13 @@ pub enum Patch {
     BorderBottom(f32),
     BorderLeft(f32),
     Direction(Direction),
+    /// In the flow, or out of it and placed by its insets against the box around it.
+    Position(Position),
+    /// How far an edge of a box out of the flow is from that edge of the box around it.
+    Left(Length),
+    Top(Length),
+    Right(Length),
+    Bottom(Length),
     /// Laid out as a row or column, as a grid, or not at all.
     Display(Display),
     Justify(Justify),
@@ -111,6 +118,11 @@ impl Patch {
                 Patch::BorderLeft(v) => l.border.left = v,
                 Patch::Direction(v) => l.direction = v,
                 Patch::Display(v) => l.display = v,
+                Patch::Position(v) => l.position = v,
+                Patch::Left(v) => l.inset.left = v,
+                Patch::Top(v) => l.inset.top = v,
+                Patch::Right(v) => l.inset.right = v,
+                Patch::Bottom(v) => l.inset.bottom = v,
                 Patch::Justify(v) => l.justify = v,
                 Patch::AlignItems(v) => l.align_items = v,
                 Patch::Wrap(v) => l.wrap = v,

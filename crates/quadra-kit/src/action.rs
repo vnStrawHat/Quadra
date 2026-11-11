@@ -48,6 +48,37 @@ impl Action for MoveLast {
     const NAME: &'static str = "kit::move_last";
 }
 
+/// The key contexts of what holds a number: a slider, which every arrow steps, and a number
+/// input, where left and right are the caret's.
+pub const SLIDER: &str = "slider";
+pub const NUMBER: &str = "number";
+
+/// A step up and a step down, and a larger one each way: the arrows and the page keys.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Increase;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Decrease;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct IncreaseMore;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DecreaseMore;
+
+impl Action for Increase {
+    const NAME: &'static str = "kit::increase";
+}
+
+impl Action for Decrease {
+    const NAME: &'static str = "kit::decrease";
+}
+
+impl Action for IncreaseMore {
+    const NAME: &'static str = "kit::increase_more";
+}
+
+impl Action for DecreaseMore {
+    const NAME: &'static str = "kit::decrease_more";
+}
+
 /// The key context of a popup: a menu, a popover, a dialog.
 pub const POPUP: &str = "popup";
 /// The key context of the rows of a menu.
@@ -81,7 +112,17 @@ pub fn keymap() -> Keymap {
         keymap.bind_in(context, "enter", Confirm).expect(well_formed);
     }
     keymap.bind_in(MENU, "space", Confirm).expect(well_formed);
-    keymap.bind_in(LIST, "home", MoveFirst).expect(well_formed);
-    keymap.bind_in(LIST, "end", MoveLast).expect(well_formed);
+    for context in [LIST, SLIDER] {
+        keymap.bind_in(context, "home", MoveFirst).expect(well_formed);
+        keymap.bind_in(context, "end", MoveLast).expect(well_formed);
+    }
+    for context in [SLIDER, NUMBER] {
+        keymap.bind_in(context, "up", Increase).expect(well_formed);
+        keymap.bind_in(context, "down", Decrease).expect(well_formed);
+    }
+    keymap.bind_in(SLIDER, "right", Increase).expect(well_formed);
+    keymap.bind_in(SLIDER, "left", Decrease).expect(well_formed);
+    keymap.bind_in(SLIDER, "pageup", IncreaseMore).expect(well_formed);
+    keymap.bind_in(SLIDER, "pagedown", DecreaseMore).expect(well_formed);
     keymap
 }

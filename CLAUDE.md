@@ -147,7 +147,8 @@ the widget `ScrollThumb`: a layer of its own, shown on activity, faded by a time
 parts (`display.rs`), `accordion` and `split`; boxes have padding by side and `overflow_x`. Windows can have
 their own frame (`WindowOptions::custom_frame`, `PlatformHandler::hit_test`, `.window_region(..)`,
 `quadra_ui::window()`; Win32 in `quadra-native-win/src/frame.rs`) and the kit its `titlebar`, `toolbar`,
-`statusbar`, `breadcrumb`, `sidebar` and status marks. Next: the remaining form controls (slider, number input, form and field); the components in the order of specs/13, each with its
+`statusbar`, `breadcrumb`, `sidebar` and status marks, and its form controls (`slider`, `number_input`,
+`field` with rules, `textarea`; boxes have `.absolute()` with insets). Next: progress, spinner and skeleton; the components in the order of specs/13, each with its
 section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

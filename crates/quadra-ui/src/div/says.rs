@@ -1,7 +1,7 @@
 //! What a box is to a user (specs/12): its role, its name, its states. A state that a style
 //! can follow too (checked, selected, disabled, expanded) is set once here for both.
 
-use quadra_tree::{NodeId, Role, Semantics, State, Tree};
+use quadra_tree::{NodeId, Role, SemanticAction, Semantics, State, Tree};
 
 use super::Div;
 use crate::prop::{IntoProp, Prop};
@@ -42,6 +42,19 @@ impl Div {
         self.on_mount(move |tree, node| {
             tree.update_semantics(node, |says| says.test_id = Some(id.to_string()))
         })
+    }
+
+    /// What the box holds, as a reader is told it: the position of a slider.
+    pub fn value<M>(self, value: impl IntoProp<String, M>) -> Self {
+        self.with_value(value.into_prop(), |tree, id, value| {
+            tree.update_semantics(id, |says| says.value = Some(value))
+        })
+    }
+
+    /// What a reader asks of the box beyond a click and the focus: to step a value, to set
+    /// it. `f` says whether it did.
+    pub fn on_semantic(self, f: impl FnMut(&SemanticAction) -> bool + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_semantic(id, f))
     }
 
     pub fn checked<M>(self, checked: impl IntoProp<bool, M>) -> Self {

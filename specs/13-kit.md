@@ -222,6 +222,24 @@ As built so far:
   filled when chosen. While `.folded(|| ..)` says so it is 40 px wide and shows the icons
   alone; the places keep their names for a reader. `.head(view)` is above the places, and
   what does not fit scrolls.
+- **`slider(value)`** holds a number between two ends (`.range(min, max, step)`; 0 to 100
+  by 1 unless told): a track of 4 px, filled with the accent up to a knob of 12 px, in a
+  box of 20 px, 200 wide unless told. A press on the track takes the value there, a drag
+  goes on from it wherever the pointer is; with the focus the arrows step it, Page Up and
+  Page Down go a tenth of the way, Home and End to the ends (key context `action::SLIDER`).
+  To a reader it is a slider with its value, which it can step or set.
+- **`number_input(value)`** is an input that holds a number (`.range(..)`, `.step(..)`,
+  `.decimals(..)`), 160 px with a pair of chevrons that step it, or with `.stepper()` one
+  frame of 128 by 32: a minus, the value in the middle, a plus. The up and down arrows step
+  it too (key context `action::NUMBER`). A number typed, with a point or a comma, is the
+  value; what is no number changes nothing and shows as not accepted; a value written from
+  elsewhere is what the field says.
+- **`field(label, control)`** puts a control under its label, 12 px, with `.required()` a
+  mark after it; under the control is `.help(words)` or, while it is not empty, what
+  `.error(..)` says, in the colour of errors after a mark. `validate(value, &rules)` gives
+  what the first broken `Rule` says (`Required`, `MinLen`, `MaxLen`, `Email`): plain data.
+  `textarea(value, rows)` is the text area of `quadra-ui` in the frame of an input, at
+  least that many lines tall.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

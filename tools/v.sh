@@ -59,6 +59,13 @@ grep -q 'quadra patch (json2 depth)' "$ROOT/.tools/v/vlib/x/json2/decode.v" ||
 # value lost the ones after it, PATH included, for every shell started with extra variables.
 grep -q 'quadra patch (environ)' "$ROOT/.tools/v/vlib/os/environment.c.v" ||
 	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-environ.diff"
+# v.exe starts `v run` and `v test` programs through that same os.environ, so it needs the patch
+# compiled in too: a stale compiler hands the app an environment without PATH.
+if [ "$ROOT/.tools/v/vlib/os/environment.c.v" -nt "$ROOT/.tools/v/v.exe" ]; then
+	(cd "$ROOT/.tools/v" && PATH="$(cd ../llvm-mingw/bin && pwd):$PATH" env -u VFLAGS ./v.exe -cc clang -prod \
+		-cflags -Wno-incompatible-pointer-types -cflags -fno-strict-aliasing -o v.new.exe cmd/v &&
+		mv -f v.new.exe v.exe) || echo 'tools/v.sh: could not rebuild v.exe, `v run` may lose PATH' >&2
+fi
 # MSVC drops intermediate `*.tmp.obj` files into the working directory; remove them after each run.
 status=0
 "$ROOT/.tools/v/v.exe" "$@" || status=$?

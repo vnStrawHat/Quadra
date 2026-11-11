@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
-use quadra_prim::Size;
+use quadra_prim::{Rect, Size};
 
 use crate::clipboard::{Clipboard, MemoryClipboard};
 use crate::event::PlatformEvent;
@@ -27,6 +27,7 @@ struct WindowState {
     scale: Cell<f32>,
     title: RefCell<String>,
     frame: Cell<bool>,
+    text_input: Cell<Option<Rect>>,
 }
 
 struct Inner {
@@ -89,6 +90,12 @@ impl HeadlessPlatform {
             w.scale.set(scale);
             self.push(window, PlatformEvent::Resize { size, scale });
         }
+    }
+
+    /// The caret a window was last told of: `None` while nothing that takes text has the
+    /// focus.
+    pub fn text_input(&self, window: WindowId) -> Option<Rect> {
+        self.window(window).and_then(|w| w.text_input.get())
     }
 
     /// The title a window was last given.
@@ -170,6 +177,7 @@ impl Platform for HeadlessPlatform {
             scale: Cell::new(1.0),
             title: RefCell::new(options.title.clone()),
             frame: Cell::new(false),
+            text_input: Cell::new(None),
         });
         self.0.windows.borrow_mut().push(Rc::downgrade(&state));
         Ok(Box::new(HeadlessWindow(state)))
@@ -224,5 +232,9 @@ impl PlatformWindow for HeadlessWindow {
 
     fn request_frame(&self) {
         self.0.frame.set(true);
+    }
+
+    fn set_text_input(&self, caret: Option<Rect>) {
+        self.0.text_input.set(caret);
     }
 }

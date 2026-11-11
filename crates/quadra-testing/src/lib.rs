@@ -115,6 +115,12 @@ impl Harness {
         self.tree.text(text);
     }
 
+    /// Shows text an input method is composing, with the caret at its end; an empty text
+    /// ends the composition. What it commits is typed with [`Harness::type_text`].
+    pub fn compose(&mut self, text: &str) {
+        self.tree.composition(text, text.len());
+    }
+
     /// Moves the pointer to a point, presses the main button and releases it.
     pub fn click(&mut self, x: f32, y: f32) {
         self.pointer(PointerInput::Move, x, y);

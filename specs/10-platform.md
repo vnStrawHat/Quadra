@@ -28,7 +28,7 @@ pub trait PlatformWindow {                       // dropping it closes the windo
     fn set_title(&self, title: &str);
     fn set_cursor(&self, cursor: Cursor);
     fn request_frame(&self);
-    fn set_text_input(&self, state: Option<TextInputState>);   // accepts text, caret rect
+    fn set_text_input(&self, caret: Option<Rect>);   // text is typed there, or nowhere
     fn minimize(&self);  fn toggle_maximize(&self);
 }
 

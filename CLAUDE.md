@@ -95,17 +95,18 @@ bench's counter counts real clicks. Styles have state variants (`.hover(..)`, `.
 scrolls `scroll` and `uniform_list`, nested ones included. Focus and keys are in
 (`quadra-tree/src/focus.rs`: press to focus, Tab inside a focus scope, the ring, keys along
 the focus path, `NodeRef::focus`), and so are actions and the keymap (`action.rs`,
-`keymap.rs`; `App::keymap`; Tab is a binding). **The text input works** (`text_input(value)` in
-`quadra-ui/src/input.rs`, the `TextField` widget and `TextCommand` in
-`quadra-tree/src/field.rs`, the buffer in `quadra-text/src/edit.rs`; `crates/quadra/examples/form.rs`
-shows it in a real window). Copy, cut and paste go through the clipboard the app provides as
-context (`Platform::clipboard`; the Win32 one in `quadra-native-win/src/clipboard.rs` is
-never run by a test, and must not be). The caret blinks on a timer (`quadra-async` has
-`timeout` and `interval`; `Harness::mount` and `Harness::advance` for tests). Still missing
-for it: IME composition (specs/09; behaviour/02;
-the V code is `quadra/platform/win/ime_windows.c.v`).
-After the text input: overlays, semantics (specs/12), rows of different heights.
-`quadra-async` (specs/11) when the first thing needs a timer or a task.
+`keymap.rs`; `App::keymap`; Tab is a binding). **The text input is done** (`text_input(value)` in `quadra-ui/src/input.rs`, the `TextField`
+widget and `TextCommand` in `quadra-tree/src/field.rs`, the buffer in
+`quadra-text/src/edit.rs`): typing, the editing keys, pointer selection, undo, the clipboard
+(the app provides it as context; the Win32 one is never run by a test, and must not be), a
+caret that blinks on a timer (`quadra-async`: `timeout`, `interval`; `Harness::mount` and
+`Harness::advance` for tests), and input methods (`PlatformEvent::Composition`,
+`PlatformWindow::set_text_input`, `quadra-native-win/src/ime.rs`). `crates/quadra/examples/form.rs`
+shows it in a real window. One manual check is open: composing with a real input method
+(Vietnamese Telex) on a desktop.
+Next, in this order: overlays (specs/05, specs/13), semantics with the accessibility bridge
+(specs/12, `accesskit`), rows of different heights, tab index, cursors, the rest of
+`quadra-async` (tasks, the pool, inboxes) when the first thing needs it.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its
 height does not depend on it; a new painted band visits every node of its layer.

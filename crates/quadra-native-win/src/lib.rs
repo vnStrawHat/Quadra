@@ -8,6 +8,7 @@ mod atlas;
 mod clipboard;
 mod dwrite;
 mod gpu;
+mod ime;
 mod input;
 mod layers;
 mod pacing;

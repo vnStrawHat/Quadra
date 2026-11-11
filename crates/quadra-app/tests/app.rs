@@ -184,3 +184,34 @@ fn the_apps_keymap_turns_keys_into_actions_in_every_window() {
     platform.step(&mut app);
     assert_eq!(count.get_untracked(), -9);
 }
+
+#[test]
+fn a_window_is_told_where_text_is_typed_and_when_it_is_not() {
+    use quadra_platform::{Key, Mods};
+    use quadra_ui::{div, text_input};
+
+    let platform = HeadlessPlatform::new();
+    let mut app = app(&platform);
+    let name = signal("abc".to_string());
+    let view = move || column().child(div().size(120.0, 20.0).child(text_input(name))).child(text("label"));
+    let window = app.open_window(WindowOptions::new("ime").size(400.0, 300.0), view).unwrap();
+    platform.step(&mut app);
+    assert_eq!(platform.text_input(window), None); // no focus: input methods are off
+
+    let key = |down| PlatformEvent::Key { key: Key::Tab, code: 0, mods: Mods::NONE, down, repeat: false };
+    platform.push(window, key(true));
+    platform.push(window, key(false));
+    platform.step(&mut app);
+    platform.step(&mut app);
+    let caret = platform.text_input(window).expect("the input has the focus");
+    assert!(caret.x > 0.0 && caret.height == 20.0, "{caret:?}"); // after "abc", as high as the field
+
+    platform.push(window, PlatformEvent::Composition { text: "xy".into(), caret: 2 });
+    platform.step(&mut app);
+    platform.step(&mut app);
+    assert!(platform.text_input(window).unwrap().x > caret.x); // the caret moved with what is composed
+    platform.push(window, PlatformEvent::Text("xy".into()));
+    platform.push(window, PlatformEvent::Composition { text: String::new(), caret: 0 });
+    platform.step(&mut app);
+    assert_eq!(name.get_untracked(), "abcxy");
+}

@@ -4,6 +4,7 @@
 
 use quadra_layout::Display;
 use quadra_platform::{Key, Mods};
+use quadra_prim::Rect;
 use quadra_reactive::batch;
 
 use crate::input::Handler;
@@ -86,6 +87,33 @@ impl Tree {
                 }
             }
         });
+    }
+
+    /// Runs `f` with the text an input method is composing while the node has the focus, and
+    /// the caret in it; with an empty text when the composition is over.
+    pub fn on_composition(&mut self, id: NodeId, f: impl FnMut(&str, usize) + 'static) {
+        self.add_handler(id, Handler::Composition(Box::new(f)));
+    }
+
+    /// Takes what an input method is composing in the window: for the focused node.
+    pub fn composition(&mut self, text: &str, caret: usize) {
+        let Some(focus) = self.focus.filter(|&id| self.is_alive(id)) else { return };
+        batch(|| {
+            for handler in &mut self.nodes[focus.index as usize].handlers {
+                if let Handler::Composition(run) = handler {
+                    run(text, caret);
+                }
+            }
+        });
+    }
+
+    /// The caret of the focused node, in the window, if that node takes text: where an
+    /// input method opens. `None` turns input methods off.
+    pub fn text_caret(&self) -> Option<Rect> {
+        let focus = self.focus.filter(|&id| self.is_alive(id))?;
+        let caret = self.nodes[focus.index as usize].widget.as_ref()?.caret()?;
+        let at = self.window_rect(focus).origin();
+        Some(caret.translate(at.x, at.y))
     }
 
     /// The node that has the focus.

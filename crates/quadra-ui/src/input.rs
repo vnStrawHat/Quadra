@@ -89,7 +89,24 @@ impl View for TextInput {
         let writer = cx.handle.clone();
         cx.tree.on_text(id, move |typed| {
             let typed = one_line(typed);
-            writer.with(move |tree| edit(tree, id, value, |field| field.buffer.insert(&typed)));
+            writer.with(move |tree| {
+                edit(tree, id, value, |field| {
+                    field.preedit = None; // what was being composed is committed, or dropped
+                    field.buffer.insert(&typed)
+                })
+            });
+        });
+        // An input method composes at the caret: shown in the field, not yet in the value.
+        let writer = cx.handle.clone();
+        cx.tree.on_composition(id, move |composing, caret| {
+            let composing = (!composing.is_empty()).then(|| (one_line(composing), caret));
+            writer.with(move |tree| {
+                edit(tree, id, value, |field| {
+                    field.preedit = composing;
+                    false
+                });
+                tree.mark_layout(id);
+            });
         });
         // The clipboard of the window the input is in, if its context has one.
         let clipboard = use_context::<Rc<dyn Clipboard>>();

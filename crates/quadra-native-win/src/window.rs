@@ -7,7 +7,7 @@ use std::rc::Rc;
 use quadra_platform::{
     PlatformError, PlatformEvent, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size,
 };
-use quadra_prim::Size;
+use quadra_prim::{Rect, Size};
 use windows::Win32::Foundation::{HWND, POINT, RECT};
 use windows::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MONITOR_DEFAULTTOPRIMARY, MONITORINFO, MonitorFromPoint,
@@ -22,6 +22,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{HSTRING, PCWSTR, Param, w};
 
+use crate::ime;
 use crate::platform::{Delivery, Shared, failed};
 use crate::wndproc::window_proc;
 
@@ -39,6 +40,9 @@ pub(crate) struct WindowState {
     /// The user is dragging the window or its border: the OS runs its own loop.
     pub in_size_move: Cell<bool>,
     pub high_surrogate: Cell<u16>,
+    /// Where the candidates of an input method go: the caret, in device pixels. `None`: the
+    /// focus is on nothing that takes text, and the input method is off.
+    pub caret: Cell<Option<RECT>>,
 }
 
 impl WindowState {
@@ -139,6 +143,7 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         tracking_leave: Cell::new(false),
         in_size_move: Cell::new(false),
         high_surrogate: Cell::new(0),
+        caret: Cell::new(None),
     });
     let style = if options.resizable {
         WS_OVERLAPPEDWINDOW
@@ -228,5 +233,18 @@ impl PlatformWindow for WinWindow {
 
     fn request_frame(&self) {
         self.0.frame_requested.set(true);
+    }
+
+    fn set_text_input(&self, caret: Option<Rect>) {
+        let (hwnd, s) = (self.0.hwnd.get(), self.0.scale.get());
+        let px = |v: f32| (v * s).round() as i32;
+        let caret =
+            caret.map(|c| RECT { left: px(c.x), top: px(c.y), right: px(c.right()), bottom: px(c.bottom()) });
+        if self.0.caret.replace(caret).is_some() != caret.is_some() {
+            ime::enable(hwnd, caret.is_some());
+        }
+        if let Some(caret) = caret {
+            ime::place(hwnd, caret);
+        }
     }
 }

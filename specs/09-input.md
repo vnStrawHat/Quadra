@@ -119,6 +119,17 @@ platform reports composition start, update (text, caret, clause ranges) and end,
 text. The input shows the composition inside its paragraph (08) and places the candidate window
 from the caret. The Win32 details are those of behaviour/02.
 
+As built:
+
+- A widget that takes text says where its caret is (`Widget::caret`). After every entry
+  point the app gives the window the caret of the focused node, or none: the platform turns
+  the input method on only over text, and opens its candidates beside that caret.
+- One event carries a composition: the text being composed and the caret in it; an empty
+  text ends it. What is committed arrives as ordinary text.
+- The text input shows what is being composed at its caret, in place of the selection,
+  underlined. It is not in the value, and not in the undo history, until it is committed.
+- Not yet: clause ranges (the parts of a long composition shown differently).
+
 ## Drag and drop
 
 - **Inside the app**: a node marked draggable starts a drag after the pointer moves past a

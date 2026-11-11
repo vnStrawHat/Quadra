@@ -1,6 +1,6 @@
 //! Windows: how one is asked for, and what it can be told.
 
-use quadra_prim::Size;
+use quadra_prim::{Rect, Size};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct WindowId(pub u32);
@@ -84,4 +84,8 @@ pub trait PlatformWindow {
     fn set_title(&self, title: &str);
     /// Asks for [`crate::PlatformHandler::frame`] as soon as the window can show a frame.
     fn request_frame(&self);
+    /// Says whether the focus is on something that takes text, and where its caret is, in
+    /// logical pixels of the window: an input method is on only then, and opens its
+    /// candidates beside that caret.
+    fn set_text_input(&self, caret: Option<Rect>);
 }

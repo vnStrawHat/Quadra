@@ -25,6 +25,12 @@ pub trait Widget: Any {
 
     /// Emits the node's own instances, on top of the background the tree painted.
     fn paint(&mut self, _cx: &mut PaintCx) {}
+
+    /// Where text would be typed, from the node's top-left corner, for a widget that takes
+    /// text: an input method opens beside it.
+    fn caret(&self) -> Option<Rect> {
+        None
+    }
 }
 
 pub struct MeasureCx<'a> {

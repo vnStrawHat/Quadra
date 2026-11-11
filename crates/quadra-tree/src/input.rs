@@ -64,6 +64,7 @@ impl PointerEvent {
 }
 
 type ActionFn = Box<dyn FnMut(&dyn Any)>;
+type CompositionFn = Box<dyn FnMut(&str, usize)>;
 
 /// What a node does when events reach it. `capture`: on the way down from the root, before
 /// the handlers on the way up.
@@ -82,6 +83,8 @@ pub(crate) enum Handler {
     Focus(Box<dyn FnMut(bool)>),
     /// Text was typed while the node had the focus.
     Text(Box<dyn FnMut(&str)>),
+    /// An input method is composing text for the node: the text so far and the caret in it.
+    Composition(CompositionFn),
     /// An action of a type reached the node.
     Action {
         of: TypeId,

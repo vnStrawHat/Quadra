@@ -84,6 +84,12 @@ pub enum PlatformEvent {
     },
     /// Committed text. Never a control character.
     Text(String),
+    /// The text an input method is composing, not committed yet, and the caret in it as a
+    /// byte offset. Empty: the composition is over (what it committed came as `Text`).
+    Composition {
+        text: String,
+        caret: usize,
+    },
     Focus(bool),
     /// The size or the scale of the window changed.
     Resize {

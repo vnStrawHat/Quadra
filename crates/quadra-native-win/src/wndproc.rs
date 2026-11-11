@@ -8,11 +8,13 @@ use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
 use windows::Win32::Graphics::Dwm::DwmFlush;
 use windows::Win32::Graphics::Gdi::{ScreenToClient, ValidateRect};
 use windows::Win32::System::Threading::WaitForSingleObject;
+use windows::Win32::UI::Input::Ime::ISC_SHOWUICOMPOSITIONWINDOW;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     ReleaseCapture, SetCapture, TME_LEAVE, TRACKMOUSEEVENT, TrackMouseEvent,
 };
 use windows::Win32::UI::WindowsAndMessaging::*;
 
+use crate::ime;
 use crate::input::{button_of, char_text, current_mods, hi, key_from_vk, position, wheel_lines};
 use crate::window::WindowState;
 
@@ -197,6 +199,25 @@ impl WindowState {
                     at: self.point(at.x, at.y),
                     mods: current_mods(),
                 });
+                done
+            }
+            // The app draws the text being composed: the OS's own composition window stays
+            // hidden, its candidate window does not.
+            WM_IME_SETCONTEXT => {
+                let ui = LPARAM(lparam.0 & !(ISC_SHOWUICOMPOSITIONWINDOW as isize));
+                // SAFETY: the arguments are those of this message, less one flag.
+                Some(unsafe { DefWindowProcW(hwnd, msg, wparam, ui) })
+            }
+            WM_IME_STARTCOMPOSITION => done,
+            WM_IME_COMPOSITION => {
+                let caret = self.caret.get().unwrap_or_default();
+                for event in ime::composition(hwnd, lparam.0 as u32, caret) {
+                    self.emit(event);
+                }
+                done
+            }
+            WM_IME_ENDCOMPOSITION => {
+                self.emit(PlatformEvent::Composition { text: String::new(), caret: 0 });
                 done
             }
             _ => None,

@@ -4,6 +4,7 @@
 //!
 //! Input dispatch, tasks and timers join with their crates (specs/09, specs/11).
 
+mod events;
 mod report;
 
 use std::cell::RefCell;
@@ -11,15 +12,12 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_async::Timers;
-use quadra_platform::{
-    Platform, PlatformEvent, PlatformHandler, PlatformWindow, PointerKind, TimerId, WindowHandle, WindowId,
-    WindowOptions,
-};
-use quadra_prim::Color;
-use quadra_reactive::{Scope, batch, provide};
+use quadra_platform::{Platform, PlatformWindow, WindowHandle, WindowId, WindowOptions};
+use quadra_prim::{Color, Rect};
+use quadra_reactive::{Scope, provide};
 use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
-use quadra_tree::{Fonts, Keymap, PointerInput, Tree};
+use quadra_tree::{Fonts, Keymap, Tree};
 use quadra_ui::{View, mount_with};
 
 pub use report::{AppError, FrameReport, Result};
@@ -27,27 +25,29 @@ pub use report::{AppError, FrameReport, Result};
 type FrameHook = Box<dyn FnMut(&FrameReport)>;
 
 /// One window: the OS window, its tree, and where its frames are drawn.
-struct AppWindow {
+pub(crate) struct AppWindow {
     /// Everything its view created: ended when the window closes.
     scope: Scope,
-    tree: Tree,
+    pub(crate) tree: Tree,
     surface: SurfaceId,
-    window: Box<dyn PlatformWindow>,
+    /// The caret the window was last told of.
+    caret: Option<Rect>,
+    pub(crate) window: Box<dyn PlatformWindow>,
 }
 
 pub struct App<R: Renderer> {
-    platform: Rc<dyn Platform>,
+    pub(crate) platform: Rc<dyn Platform>,
     /// The renderer, open to tests and tools: its counters, and losing its device.
     pub renderer: R,
     fonts: Rc<RefCell<Fonts>>,
-    windows: Vec<AppWindow>,
+    pub(crate) windows: Vec<AppWindow>,
     /// The scope of everything the app creates.
     root: Scope,
     clear: Color,
     /// The key bindings every window of the app uses.
     keymap: Rc<Keymap>,
     /// What the platform's timers mean (specs/11).
-    timers: Rc<Timers>,
+    pub(crate) timers: Rc<Timers>,
     on_error: Box<dyn FnMut(&AppError)>,
     on_presented: Option<FrameHook>,
 }
@@ -128,7 +128,7 @@ impl<R: Renderer> App<R> {
         scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();
-        self.windows.push(AppWindow { scope, tree, surface, window });
+        self.windows.push(AppWindow { scope, tree, surface, caret: None, window });
         Ok(id)
     }
 
@@ -147,7 +147,7 @@ impl<R: Renderer> App<R> {
         self.windows.iter().find(|w| w.window.id() == window).map(|w| &w.tree)
     }
 
-    fn close(&mut self, window: WindowId) {
+    pub(crate) fn close(&mut self, window: WindowId) {
         let Some(at) = self.windows.iter().position(|w| w.window.id() == window) else { return };
         let closed = self.windows.remove(at);
         closed.scope.dispose();
@@ -158,7 +158,7 @@ impl<R: Renderer> App<R> {
         }
     }
 
-    fn draw(&mut self, window: WindowId) {
+    pub(crate) fn draw(&mut self, window: WindowId) {
         let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) else { return };
         let device = device_size(&*w.window);
         if device.width == 0 || device.height == 0 {
@@ -203,10 +203,17 @@ impl<R: Renderer> App<R> {
 
     /// After every entry point: a window whose tree has something to do asks for a frame,
     /// and every window does when the renderer wants one.
-    fn request_frames(&mut self) {
+    pub(crate) fn request_frames(&mut self) {
         let all = self.renderer.wants_frame();
-        for w in self.windows.iter().filter(|w| all || w.tree.needs_frame()) {
-            w.window.request_frame();
+        for w in &mut self.windows {
+            if all || w.tree.needs_frame() {
+                w.window.request_frame();
+            }
+            // Where text is typed, or that it is not: what an input method goes by.
+            let caret = w.tree.text_caret();
+            if std::mem::replace(&mut w.caret, caret) != caret {
+                w.window.set_text_input(caret);
+            }
         }
     }
 }
@@ -221,64 +228,4 @@ impl<R: Renderer> Drop for App<R> {
 fn device_size(window: &dyn PlatformWindow) -> DeviceSize {
     let (size, scale) = (window.size(), window.scale());
     DeviceSize { width: (size.width * scale).round() as u32, height: (size.height * scale).round() as u32 }
-}
-
-impl<R: Renderer> PlatformHandler for App<R> {
-    fn event(&mut self, window: WindowId, event: PlatformEvent) {
-        batch(|| match event {
-            PlatformEvent::Resize { .. } => {
-                if let Some(w) = self.windows.iter().find(|w| w.window.id() == window) {
-                    w.window.request_frame();
-                }
-            }
-            PlatformEvent::CloseRequested => self.close(window),
-            PlatformEvent::Pointer { kind, button, at, mods } => {
-                let input = match kind {
-                    PointerKind::Move => PointerInput::Move,
-                    PointerKind::Down => PointerInput::Down,
-                    PointerKind::Up => PointerInput::Up,
-                    PointerKind::Leave => PointerInput::Leave,
-                };
-                let now = self.platform.now();
-                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.pointer(input, button, at, mods, now);
-                }
-            }
-            PlatformEvent::Wheel { delta, precise, at, mods } => {
-                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.wheel(delta, precise, at, mods);
-                }
-            }
-            PlatformEvent::Key { key, code, mods, down, repeat } => {
-                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.key(key, code, mods, down, repeat);
-                }
-            }
-            PlatformEvent::Focus(active) => {
-                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.set_active(active);
-                }
-            }
-            PlatformEvent::Text(text) => {
-                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.text(&text);
-                }
-            }
-        });
-        self.request_frames();
-    }
-
-    fn frame(&mut self, window: WindowId) {
-        self.draw(window);
-        self.request_frames();
-    }
-
-    fn timer(&mut self, id: TimerId) {
-        self.timers.fire(id);
-        self.request_frames();
-    }
-
-    fn wake(&mut self) {
-        self.request_frames();
-    }
 }

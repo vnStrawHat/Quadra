@@ -2,6 +2,9 @@
 //! owns the edit buffer and paints the selection, the text and the caret, scrolled sideways
 //! so the caret stays in view. What edits it is the view around it (handlers and actions).
 
+use std::borrow::Cow;
+use std::ops::Range;
+
 use quadra_layout::Known;
 use quadra_prim::{Color, Point, Rect, Size};
 use quadra_render::Quad;
@@ -44,6 +47,11 @@ pub struct TextField {
     /// stays shown for a whole turn more).
     pub caret_on: bool,
     pub touched: bool,
+    /// The text an input method is composing, and the caret in it: shown at the caret, in
+    /// place of the selection, underlined, and not part of the buffer until it is committed.
+    pub preedit: Option<(String, usize)>,
+    /// Where the caret was painted, from the field's corner: where an input method opens.
+    caret_at: Option<Rect>,
     paragraph: Option<Paragraph>,
     /// How far the text is moved left so that the caret is in view.
     scroll_x: f32,
@@ -60,6 +68,8 @@ impl TextField {
             focused: false,
             caret_on: true,
             touched: false,
+            preedit: None,
+            caret_at: None,
             paragraph: None,
             scroll_x: 0.0,
             tiles: Vec::new(),
@@ -85,6 +95,20 @@ impl TextField {
         self.caret_on = std::mem::take(&mut self.touched) || !self.caret_on;
     }
 
+    /// What is shown: the buffer's text, with the text being composed in place of the
+    /// selection. Also where the caret is in it, and the range that is being composed.
+    fn shown(&self) -> (Cow<'_, str>, usize, Range<usize>) {
+        let (text, selected) = (self.buffer.text(), self.buffer.selection());
+        match &self.preedit {
+            None => (Cow::Borrowed(text), self.buffer.head(), 0..0),
+            Some((composing, caret)) => {
+                let shown = [&text[..selected.start], composing, &text[selected.end..]].concat();
+                let composed = selected.start..selected.start + composing.len();
+                (Cow::Owned(shown), selected.start + (*caret).min(composing.len()), composed)
+            }
+        }
+    }
+
     /// The byte offset nearest an x from the field's left edge: where a click puts the caret.
     pub fn index_at(&self, x: f32) -> usize {
         self.paragraph.as_ref().map_or(0, |p| p.index_at(x + self.scroll_x))
@@ -99,12 +123,14 @@ impl Widget for TextField {
     /// One line high, and as wide as the space it is given: the text scrolls inside it. Only
     /// where the space has no end is it as wide as its text.
     fn measure(&mut self, cx: &mut MeasureCx, known: Known, avail: Size) -> Size {
+        let (shown, ..) = self.shown();
+        let shown = shown.into_owned();
         let paragraph = match &mut self.paragraph {
             Some(paragraph) => {
-                paragraph.set_text(cx.text, self.buffer.text());
+                paragraph.set_text(cx.text, &shown);
                 paragraph
             }
-            none => none.insert(Paragraph::new(cx.text, self.buffer.text(), self.style.clone())),
+            none => none.insert(Paragraph::new(cx.text, shown, self.style.clone())),
         };
         let text = paragraph.wrap(cx.text, f32::INFINITY);
         let fill = if avail.width.is_finite() { avail.width } else { text.width };
@@ -112,8 +138,9 @@ impl Widget for TextField {
     }
 
     fn paint(&mut self, cx: &mut PaintCx) {
+        let (_, caret_index, composed) = self.shown();
         let Some(paragraph) = &self.paragraph else { return };
-        let (rect, caret) = (cx.rect, paragraph.x_at(self.buffer.head()));
+        let (rect, caret) = (cx.rect, paragraph.x_at(caret_index));
         // The caret stays in view, and the text never leaves a gap it could fill.
         let room = (rect.width - 1.0).max(0.0);
         self.scroll_x = self.scroll_x.clamp((caret - room).max(0.0), caret);
@@ -123,7 +150,12 @@ impl Widget for TextField {
         cx.clip = inner;
 
         let selected = self.buffer.selection();
-        if !selected.is_empty() {
+        if !composed.is_empty() {
+            // What is being composed is underlined, as input methods show it.
+            let (from, to) = (paragraph.x_at(composed.start), paragraph.x_at(composed.end));
+            let bounds = Rect::new(left + from, rect.bottom() - 1.0, to - from, 1.0);
+            cx.quad(Quad { bounds, background: self.color, ..Quad::default() });
+        } else if !selected.is_empty() {
             let (from, to) = (paragraph.x_at(selected.start), paragraph.x_at(selected.end));
             let bounds = Rect::new(left + from, rect.y, to - from, rect.height);
             cx.quad(Quad { bounds, background: self.selection, ..Quad::default() });
@@ -141,5 +173,10 @@ impl Widget for TextField {
             cx.push(Quad { bounds, background, ..Quad::default() }.instance(&cx.clip));
         }
         cx.clip = outer;
+        self.caret_at = Some(Rect::new(left + caret - rect.x, 0.0, 1.0, rect.height));
+    }
+
+    fn caret(&self) -> Option<Rect> {
+        self.caret_at
     }
 }

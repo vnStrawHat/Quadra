@@ -83,6 +83,8 @@ roles! {
     ACCENT_PRESS = "accent_press";
     /// The fill of a tinted button.
     ACCENT_TINT = "accent_tint";
+    /// That fill under the pointer and while pressed. Unset, the tint a little towards the accent.
+    ACCENT_TINT_HOVER = "accent_tint_hover";
     /// Selected or toggled labels, links, matches.
     ACCENT_TEXT = "accent_text";
     OK = "ok";
@@ -93,6 +95,8 @@ roles! {
     OK_TINT = "ok_tint";
     WARN_TINT = "warn_tint";
     ERROR_TINT = "error_tint";
+    /// The error's tint under the pointer. Unset, the tint a little towards the error.
+    ERROR_TINT_HOVER = "error_tint_hover";
     /// A filled error control under the pointer. Unset, the error a little towards the canvas.
     ERROR_HOVER = "error_hover";
     /// A cyan for kinds and marks. Unset, the colour of types in code.

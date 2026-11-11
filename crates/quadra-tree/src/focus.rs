@@ -191,7 +191,12 @@ impl Tree {
     /// What a press does for the focus: the deepest node of the path that can have it gets
     /// it; a press on nothing focusable takes it away.
     pub(crate) fn focus_on_press(&mut self, path: &[NodeId]) {
-        let to = path.iter().copied().find(|&id| self.nodes[id.index as usize].focusable);
+        // What is disabled does not take the focus; the press goes on to what is around it.
+        let takes = |id: &NodeId| {
+            let node = &self.nodes[id.index as usize];
+            node.focusable && !node.state.contains(State::DISABLED)
+        };
+        let to = path.iter().copied().find(takes);
         self.set_focus(to, false);
     }
 
@@ -275,7 +280,8 @@ impl Tree {
     /// left out with everything under it.
     fn tab_stops(&self, id: NodeId, out: &mut Vec<NodeId>) {
         let node = &self.nodes[id.index as usize];
-        if self.layout.style(node.layout).display == Display::None {
+        // What is not displayed, or is disabled, is left out with everything under it.
+        if self.layout.style(node.layout).display == Display::None || node.state.contains(State::DISABLED) {
             return;
         }
         if node.focusable && node.tab_index >= 0 {

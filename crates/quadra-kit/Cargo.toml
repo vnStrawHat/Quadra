@@ -12,6 +12,8 @@ workspace = true
 
 [dependencies]
 quadra-app = { path = "../quadra-app" }
+quadra-layout = { path = "../quadra-layout" }
+quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }
 quadra-render = { path = "../quadra-render" }
 quadra-tree = { path = "../quadra-tree" }
@@ -20,7 +22,6 @@ serde_json = "1"
 
 [dev-dependencies]
 quadra = { path = "../quadra" }
-quadra-platform = { path = "../quadra-platform" }
 quadra-reactive = { path = "../quadra-reactive" }
 quadra-testing = { path = "../quadra-testing" }
 quadra-text = { path = "../quadra-text" }

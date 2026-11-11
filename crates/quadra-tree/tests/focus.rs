@@ -220,3 +220,24 @@ fn a_tab_index_puts_a_node_first_or_out_of_the_walk() {
     p.click(50.0, 30.0); // the label
     assert_eq!(p.w.tree.focused(), Some(p.label));
 }
+
+#[test]
+fn what_is_disabled_is_not_clicked_and_does_not_take_the_focus() {
+    let mut p = page();
+    p.w.tree.set_focus_scope(p.dialog, false);
+    let log = p.log.clone();
+    p.w.tree
+        .on_pointer(p.name, quadra_tree::PointerKind::Click, move |_| log.borrow_mut().push("name".into()));
+    p.w.tree.set_state(p.name, State::DISABLED, true);
+    p.click(50.0, 10.0); // the field that is disabled: no click, and the focus goes to the form
+    assert_eq!((p.take(), p.w.tree.focused()), (Vec::<String>::new(), Some(p.form)));
+    let mut walked = Vec::new();
+    for _ in 0..4 {
+        p.press(Key::Tab, Mods::NONE);
+        walked.push(p.w.tree.focused().unwrap());
+    }
+    assert_eq!(walked, [p.email, p.ok, p.cancel, p.form]); // Tab passes it by
+    p.w.tree.set_state(p.name, State::DISABLED, false);
+    p.click(50.0, 10.0);
+    assert_eq!((p.take(), p.w.tree.focused()), (vec!["name".to_string()], Some(p.name)));
+}

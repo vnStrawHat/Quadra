@@ -67,6 +67,9 @@ Handlers are closures on nodes (05). A node with no handler for an event kind is
 - Focus moves emit focus and blur events and flag accessibility.
 - When the focused node is removed, focus goes to its nearest focusable ancestor, or to the
   node its focus scope names as fallback.
+- **Disabled** is a state with a meaning for input: a node that has it, and everything in
+  it, is not clicked (by the pointer or by a reader), does not take the focus from a press
+  (the press goes on to what is around it), and is passed by when Tab walks.
 - A window that does not have the keyboard shows no focus: the states are cleared, the node is
   remembered, and both come back with the window.
 - App code focuses a node through its `NodeRef` (04); the focus moves in the next frame.

@@ -140,6 +140,11 @@ impl Tree {
 
     pub(crate) fn send(&mut self, mut event: PointerEvent) -> PointerEvent {
         let path = self.path(event.target);
+        // What is disabled, and what is in it, is not clicked: by the pointer or by a reader.
+        let disabled = |id: &NodeId| self.nodes[id.index as usize].state.contains(State::DISABLED);
+        if event.kind == PointerKind::Click && path.iter().any(disabled) {
+            return event;
+        }
         for capture in [true, false] {
             let along = (0..path.len()).map(|i| if capture { path[path.len() - 1 - i] } else { path[i] });
             for node in along {

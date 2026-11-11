@@ -1,0 +1,139 @@
+//! The button (specs/behaviour/15): its sizes and the colours of its variants and states come
+//! from the theme, a click and the keyboard do the same thing, and a disabled one does
+//! nothing. On the fake backend a character is 0.6 of the text size wide.
+
+use std::rc::Rc;
+
+use quadra_kit::{KitTheme, Size, Variant, button, dark, token};
+use quadra_platform::{Key, Mods};
+use quadra_prim::Color;
+use quadra_reactive::{Signal, signal};
+use quadra_testing::Harness;
+use quadra_tree::{NodeId, PointerInput, Role, Token};
+use quadra_ui::row;
+
+struct Page {
+    h: Harness,
+    theme: KitTheme,
+    saved: Signal<u32>,
+    dirty: Signal<bool>,
+    wrap: Signal<bool>,
+}
+
+/// Five buttons in a row: a primary "Save" that is disabled until something is dirty, a
+/// secondary "Cancel", a ghost toggle "Wrap", a small danger "Delete" and a link.
+fn page() -> Page {
+    let (saved, dirty, wrap) = (signal(0), signal(false), signal(false));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    h.mount(move || {
+        let save = button("Save").variant(Variant::Primary).test_id("save");
+        let save = save.disabled(move || !dirty.get()).on_click(move || saved.update(|n| *n += 1));
+        let cancel = button("Cancel").test_id("cancel");
+        let toggle = button("Wrap").variant(Variant::Ghost).toggled(wrap).test_id("wrap");
+        let toggle = toggle.on_click(move || wrap.update(|on| *on = !*on));
+        let delete = button("Delete").variant(Variant::Danger).size(Size::Xs).test_id("delete");
+        let link = button("More").variant(Variant::Link).test_id("more");
+        quadra_kit::root()
+            .child(row().gap(8.0).child(save).child(cancel).child(toggle).child(delete).child(link))
+    });
+    h.frame();
+    Page { h, theme: dark(), saved, dirty, wrap }
+}
+
+impl Page {
+    fn node(&mut self, id: &str) -> NodeId {
+        self.h.get_by_test_id(id).node()
+    }
+
+    /// The fill, the border and the label's colour of a button.
+    fn look(&mut self, id: &str) -> (Color, Color, Color) {
+        let node = self.node(id);
+        let (paint, label) = (self.h.tree.paint_style(node), self.h.tree.children(node)[0]);
+        (paint.background, paint.border_color, self.h.tree.inherited(label).color)
+    }
+
+    fn is(&self, role: Token) -> Color {
+        self.theme.color(role)
+    }
+
+    fn over(&mut self, id: &str) {
+        let node = self.node(id);
+        let at = self.h.tree.window_rect(node).center();
+        self.h.pointer(PointerInput::Move, at.x, at.y);
+        self.h.frame();
+    }
+}
+
+#[test]
+fn buttons_have_the_sizes_and_the_colours_of_their_variants() {
+    let mut p = page();
+    let tree = p.h.semantics();
+    let lines: Vec<&str> = tree.lines().map(str::trim).collect();
+    assert_eq!(
+        lines[1..],
+        [
+            "Button \"Save\" [disabled] #save",
+            "Button \"Cancel\" #cancel",
+            "Button \"Wrap\" [unchecked] #wrap",
+            "Button \"Delete\" #delete",
+            "Button \"More\" #more",
+        ]
+    );
+    // 28 px high, 8 px beside a label of 14 px text; the smallest is 18 high around 12 px text.
+    let (save, delete) = (p.node("save"), p.node("delete"));
+    let (save, delete) = (p.h.tree.rect(save).size(), p.h.tree.rect(delete).size());
+    assert!((save.width - (16.0 + 4.0 * 8.4)).abs() < 0.01 && save.height == 28.0, "{save:?}");
+    assert!((delete.width - (8.0 + 6.0 * 7.2)).abs() < 0.01 && delete.height == 18.0, "{delete:?}");
+
+    let none = Color::TRANSPARENT;
+    // Disabled: its fill, and the colour of what is off.
+    assert_eq!(p.look("save"), (p.is(token::ACCENT_TINT), none, p.is(token::TEXT_DISABLED)));
+    assert_eq!(p.look("cancel"), (none, p.is(token::LINE), p.is(token::TEXT)));
+    assert_eq!(p.look("wrap"), (none, none, p.is(token::TEXT)));
+    assert_eq!(p.look("delete"), (p.is(token::ERROR_TINT), none, p.is(token::TEXT)));
+    assert_eq!(p.look("more"), (none, none, p.is(token::ACCENT_TEXT)));
+
+    // Under the pointer: a ghost gets the hover step, an outlined one a stronger border too,
+    // a disabled one nothing.
+    p.over("wrap");
+    assert_eq!(p.look("wrap").0, p.is(token::PANEL_HOVER));
+    p.over("cancel");
+    assert_eq!(p.look("cancel"), (p.is(token::PANEL_HOVER), p.is(token::LINE_STRONG), p.is(token::TEXT)));
+    p.over("save");
+    assert_eq!(p.look("save").0, p.is(token::ACCENT_TINT));
+    p.dirty.set(true);
+    p.h.frame();
+    assert_eq!(p.look("save"), (p.is(token::ACCENT_TINT_HOVER), none, p.is(token::TEXT)));
+}
+
+#[test]
+fn a_click_and_the_keyboard_do_the_same_and_a_disabled_button_does_nothing() {
+    let mut p = page();
+    p.h.get_by_role(Role::Button, "Save").click();
+    let save = p.node("save");
+    let at = p.h.tree.window_rect(save).center();
+    p.h.click(at.x, at.y);
+    assert_eq!(p.saved.get_untracked(), 0);
+    p.h.key(Key::Tab, Mods::NONE); // the first button that is not disabled
+    let cancel = p.node("cancel");
+    assert_eq!(p.h.tree.focused(), Some(cancel));
+    p.h.frame();
+    // A focus that came by the keyboard: the border of an outlined button says so.
+    assert_eq!(p.look("cancel").1, p.is(token::BORDER_FOCUSED));
+
+    p.dirty.set(true);
+    p.h.frame();
+    p.h.click(at.x, at.y);
+    p.h.key(Key::Enter, Mods::NONE); // the click gave it the focus: Enter and Space press it
+    p.h.key(Key::Space, Mods::NONE);
+    assert_eq!(p.saved.get_untracked(), 3);
+
+    // A toggle: its owner turns it, and it shows the accent and the selected step while on.
+    p.h.get_by_test_id("wrap").click();
+    p.h.frame();
+    assert!(p.wrap.get_untracked() && p.h.semantics().contains("Button \"Wrap\" [checked]"));
+    let on = p.look("wrap");
+    assert_eq!((on.0, on.2), (p.is(token::PRESS), p.is(token::ACCENT_TEXT)));
+}

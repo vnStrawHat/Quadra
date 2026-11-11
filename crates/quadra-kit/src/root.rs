@@ -8,12 +8,13 @@ use quadra_ui::{Div, column};
 use crate::theme::KitTheme;
 use crate::{fonts, size, token};
 
-/// Gives an app the kit's fonts and a theme. A view changes the theme later by writing the
+/// Gives an app the kit's fonts, its key bindings and a theme. A view changes the theme later by writing the
 /// theme signal of its context with another [`KitTheme::theme`].
 pub fn install<R: Renderer>(mut app: App<R>, theme: &KitTheme) -> Result<App<R>, AppError> {
     app.load_fonts(&fonts::files())?;
     // What shows before a window's first frame, and at its edge while it is resized.
-    Ok(app.clear_color(theme.color(token::CANVAS)).theme(theme.theme()))
+    let app = app.clear_color(theme.color(token::CANVAS)).theme(theme.theme());
+    Ok(app.keymap(crate::keymap()))
 }
 
 /// The box at the root of a window: the canvas behind everything, and the text of the UI

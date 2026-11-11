@@ -46,7 +46,9 @@ const KEYS: [&str; 8] = ["name", "mode", "palette", "syntax", "editor", "termina
 
 /// Roles a theme may split off. One that a file does not list follows that file's own
 /// colours, not the colour the built-in theme derived for itself.
-const DERIVED: [Token; 12] = [
+const DERIVED: [Token; 14] = [
+    token::ACCENT_TINT_HOVER,
+    token::ERROR_TINT_HOVER,
     token::INPUT_BG,
     token::SELECTION,
     token::TAB_FG,
@@ -203,6 +205,14 @@ impl KitTheme {
         for (role, derived) in tints {
             if unset(&self, role) {
                 self.set(role, derived);
+            }
+        }
+        // A tint under the pointer is pulled towards its colour; after the tints are known.
+        for (role, tint, color) in
+            [(ACCENT_TINT_HOVER, ACCENT_TINT, ACCENT), (ERROR_TINT_HOVER, ERROR_TINT, ERROR)]
+        {
+            if unset(&self, role) {
+                self.set(role, self.color(tint).lerp(self.color(color), 0.08));
             }
         }
         if unset(&self, SCROLL_THUMB_HOVER) {

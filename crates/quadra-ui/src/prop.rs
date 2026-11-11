@@ -19,6 +19,14 @@ pub struct ByValue;
 pub struct ByClosure;
 pub struct BySignal;
 pub struct ByMemo;
+pub struct ByProp;
+
+/// A property a component was given goes on to the view it builds as it is.
+impl<T> IntoProp<T, ByProp> for Prop<T> {
+    fn into_prop(self) -> Prop<T> {
+        self
+    }
+}
 
 impl<T, U: Into<T>> IntoProp<T, ByValue> for U {
     fn into_prop(self) -> Prop<T> {

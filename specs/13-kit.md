@@ -125,6 +125,24 @@ Conventions:
 The gallery shows every component in every variant and state, and is the acceptance test of
 the kit: its pages are compared with the reference screenshots (00, phase R3).
 
+As built so far:
+
+- **Actions and keys.** `quadra_kit::action::Confirm` is what Enter and Space mean on a
+  control (the key context `action::CONTROL`); `quadra_kit::keymap()` is the kit's bindings
+  over those of every window, and `install` gives them to the app.
+- **`button(label)`**: `.variant(Primary | Secondary | Outline | Ghost | Danger | Link)`,
+  `.size(Xs | Sm | Md | Lg)`, `.disabled(..)`, `.toggled(..)`, `.full()`, `.test_id(..)`,
+  `.on_click(|| ..)`. A click and `Confirm` do the same thing. Its colours are roles: the
+  fill, the label, the fill under the pointer and while pressed, the border (behaviour/15,
+  "States"); a tinted button's hover is a role of its own (`accent_tint_hover`,
+  `error_tint_hover`: the tint 8 % towards its colour unless a theme says). The label is a
+  text that takes the button's text colour. To a reader it is a button named by its label,
+  pressed or not when it is a toggle.
+- A component that builds a view from properties it was given passes them on as they are:
+  `Prop<T>` is itself something a setter takes.
+- The example `gallery` of the kit shows the components in a real window in either theme;
+  it becomes the gallery app when there are pages to have.
+
 ## Overlays in the kit
 
 Popover, menu, context menu, tooltip, select, combobox, dialog, drawer, toast and the command

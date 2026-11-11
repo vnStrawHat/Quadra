@@ -1,6 +1,7 @@
 // ConPTY smoke test: a real program on a pseudo console. Skipped where ConPTY is missing.
 module main
 
+import os
 import sync
 import time
 import quadra.platform
@@ -14,9 +15,10 @@ mut:
 	code int = -1
 }
 
-fn start(command string, sink &Sink) !platform.Pty {
+fn start(command string, sink &Sink, env map[string]string) !platform.Pty {
 	return win.spawn_conpty(platform.PtyOptions{
 		command: command
+		env:     env
 		cols:    80
 		rows:    24
 		ctx:     prim.hold(sink)
@@ -51,7 +53,7 @@ fn wait_exit(mut sink Sink) bool {
 
 fn test_conpty_runs_a_program() {
 	mut sink := &Sink{}
-	mut pty := start('cmd.exe /c echo quadra-ok', sink) or {
+	mut pty := start('cmd.exe /c echo quadra-ok', sink, {}) or {
 		eprintln('skipped: ${err}')
 		return
 	}
@@ -69,7 +71,7 @@ fn test_conpty_runs_a_program() {
 // Writes go through the writer thread: typed input reaches the program and runs.
 fn test_conpty_write_reaches_the_program() {
 	mut sink := &Sink{}
-	mut pty := start('cmd.exe', sink) or {
+	mut pty := start('cmd.exe', sink, {}) or {
 		eprintln('skipped: ${err}')
 		return
 	}
@@ -88,7 +90,7 @@ fn test_conpty_write_reaches_the_program() {
 // Closing with writes still queued returns: the writer gives up with the session.
 fn test_conpty_closes_with_writes_queued() {
 	mut sink := &Sink{}
-	mut pty := start('cmd.exe', sink) or {
+	mut pty := start('cmd.exe', sink, {}) or {
 		eprintln('skipped: ${err}')
 		return
 	}
@@ -97,4 +99,25 @@ fn test_conpty_closes_with_writes_queued() {
 	}
 	pty.close()
 	assert wait_exit(mut sink), 'the session did not end within 5 s'
+}
+
+// A variable with a non-ASCII value used to cost the ones after it: with extra variables
+// the child gets a block built from os.environ, and lost PATH that way.
+fn test_a_non_ascii_variable_keeps_the_next_one() {
+	os.setenv('QUADRA_ENV_A', 'Tiếng Việt ở đây', true)
+	os.setenv('QUADRA_ENV_B', 'still-here', true)
+	assert os.environ()['QUADRA_ENV_B'] == 'still-here'
+	mut sink := &Sink{}
+	mut pty := start('cmd.exe /c echo [%QUADRA_ENV_B%]', sink, {
+		'LANG': 'en_US.UTF-8'
+	}) or {
+		eprintln('skipped: ${err}')
+		return
+	}
+	assert wait_exit(mut sink), 'the program did not exit within 5 s'
+	sink.mu.@lock()
+	out := sink.out.bytestr()
+	sink.mu.unlock()
+	assert out.contains('[still-here]'), 'output: ${out}'
+	pty.close()
 }

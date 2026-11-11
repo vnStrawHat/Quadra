@@ -55,6 +55,10 @@ grep -q 'quadra patch (base64 bounds)' "$ROOT/.tools/v/vlib/encoding/base64/base
 # (a theme, a config, sessions.json) overflowed the stack. It now fails past 256 levels.
 grep -q 'quadra patch (json2 depth)' "$ROOT/.tools/v/vlib/x/json2/decode.v" ||
 	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-json2-depth.diff"
+# os.environ on Windows stepped by UTF-8 bytes through UTF-16 text: a variable with a non-ASCII
+# value lost the ones after it, PATH included, for every shell started with extra variables.
+grep -q 'quadra patch (environ)' "$ROOT/.tools/v/vlib/os/environment.c.v" ||
+	patch -s -d "$ROOT/.tools/v" -p0 <"$ROOT/tools/patches/v-environ.diff"
 # MSVC drops intermediate `*.tmp.obj` files into the working directory; remove them after each run.
 status=0
 "$ROOT/.tools/v/v.exe" "$@" || status=$?

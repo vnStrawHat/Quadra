@@ -119,8 +119,9 @@ pub struct Quad {
 }
 
 impl Quad {
+    /// A border that can be seen: it has a width and a colour.
     fn has_border(&self) -> bool {
-        self.border_widths != Edges::default()
+        self.border_widths != Edges::default() && !self.border_color.is_transparent()
     }
 
     /// The one instance of this quad. The shader keeps one second colour, so a gradient and a

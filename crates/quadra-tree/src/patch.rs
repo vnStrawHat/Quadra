@@ -38,6 +38,8 @@ pub enum Patch {
     BorderColor(Paint),
     /// The same radius on every corner.
     Radius(f32),
+    /// A line of one pixel along the edge, taking no room.
+    Outline(Paint),
     /// The colour of the text in the node and under it.
     TextColor(Paint),
     /// Its size, in pixels.
@@ -60,6 +62,7 @@ impl Patch {
             Patch::Background(v) => p.background = theme.resolve(v),
             Patch::BorderColor(v) => p.border_color = theme.resolve(v),
             Patch::Radius(v) => p.radii = Corners::all(v),
+            Patch::Outline(v) => p.outline = theme.resolve(v),
             Patch::TextColor(v) => t.color = Some(theme.resolve(v)),
             Patch::TextSize(v) => t.size = Some(v),
             Patch::FontWeight(v) => t.weight = Some(v),
@@ -97,7 +100,7 @@ impl Patch {
     pub(crate) fn part(self) -> Part {
         use Patch::*;
         match self {
-            Background(_) | BorderColor(_) | Radius(_) => Part::Paint,
+            Background(_) | BorderColor(_) | Radius(_) | Outline(_) => Part::Paint,
             TextColor(_) | TextSize(_) | FontWeight(_) | Italic(_) | LineHeight(_) => Part::Text,
             PlaceholderColor(_) | SelectionColor(_) | CaretColor(_) => Part::Text,
             _ => Part::Layout,
@@ -108,7 +111,7 @@ impl Patch {
     /// another theme.
     pub fn themed(self) -> bool {
         use Patch::*;
-        let (Background(paint) | BorderColor(paint) | TextColor(paint)) = self else {
+        let (Background(paint) | BorderColor(paint) | TextColor(paint) | Outline(paint)) = self else {
             let (PlaceholderColor(paint) | SelectionColor(paint) | CaretColor(paint)) = self else {
                 return false;
             };

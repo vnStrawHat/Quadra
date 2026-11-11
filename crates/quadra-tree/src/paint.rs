@@ -5,14 +5,13 @@
 
 use quadra_layout::{Display, LayoutTree};
 use quadra_prim::{Point, Rect};
-use quadra_render::{Clip, Instance, Quad, Rebuild};
+use quadra_render::{Instance, Rebuild};
 
 use crate::fonts::Fonts;
 use crate::frame::FrameStats;
-use crate::inherit::refresh;
 use crate::node::{NOT_PAINTED, Node, NodeId, flag};
+pub(crate) use crate::own::{outside, paint_own};
 use crate::tree::Tree;
-use crate::widget::PaintCx;
 
 /// Overwrite the layer from `at` with the scratch instances `from..to`.
 pub(crate) struct Patch {
@@ -45,45 +44,6 @@ struct Painter<'a> {
     /// Every repainted node emitted as many instances as it had, and no list of children
     /// changed: the layer can be overwritten in place.
     same: bool,
-}
-
-/// Paints one node's own instances: the background and border from its style, then its
-/// widget. A node that is not displayed paints nothing. The caller has checked that the node
-/// is in the band its layer paints.
-pub(crate) fn paint_own(
-    nodes: &mut [Node],
-    index: usize,
-    layout: &LayoutTree,
-    rect: Rect,
-    (scale, band, text_epoch): (f32, Option<Rect>, u32),
-    fonts: &mut Fonts,
-    out: &mut Vec<Instance>,
-) {
-    let style = layout.style(nodes[index].layout);
-    if style.display == Display::None {
-        return;
-    }
-    refresh(nodes, index, text_epoch);
-    let node = &mut nodes[index];
-    let mut cx = PaintCx { rect, scale, visible: band, clip: Clip::NONE, fonts, out };
-    let (background, border_color, radii) =
-        (node.paint.background, node.paint.border_color, node.paint.radii);
-    cx.quad(Quad {
-        bounds: rect,
-        background,
-        border_widths: style.border,
-        border_color,
-        radii,
-        ..Quad::default()
-    });
-    if let Some(widget) = &mut node.widget {
-        widget.paint(&mut cx);
-    }
-}
-
-/// Whether a node lies outside the part of its layer that is painted: it emits nothing.
-pub(crate) fn outside(band: Option<Rect>, rect: Rect) -> bool {
-    band.is_some_and(|band| !band.intersects(rect))
 }
 
 impl Painter<'_> {

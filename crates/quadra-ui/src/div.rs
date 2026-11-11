@@ -1,17 +1,20 @@
 //! The box view: a node that is its style and its children (specs/05).
 
-use quadra_layout::{Align, Direction, Justify, Length, Overflow};
+use quadra_layout::Direction;
 use quadra_platform::{Cursor, MouseButton};
 use quadra_tree::{
-    Action, Handle, KeyEvent, NodeId, Paint, Patch, PointerEvent, PointerKind, State, Style, Theme, Tree,
+    Action, Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Theme, Tree,
 };
 
 use crate::node_ref::NodeRef;
 
 mod drag;
+mod props;
 mod says;
 
-use crate::prop::{IntoProp, Prop};
+pub use props::Refine;
+
+use crate::prop::Prop;
 use crate::view::{AnyView, MountCx, View};
 
 /// Makes a binding for one node once it is mounted.
@@ -43,91 +46,10 @@ pub fn column() -> Div {
     div().direction(Direction::Column)
 }
 
-/// What a state changes of a box's style: the setters of the box, taking constants (specs/05,
-/// "Style and states").
-#[derive(Default)]
-pub struct Refine(Vec<Patch>);
-
-/// Declares the style values: each is a setter of the box, taking a constant or something
-/// reactive, and a setter of a refinement, taking a constant.
-macro_rules! props {
-    ($($(#[$doc:meta])* $name:ident: $ty:ty => $patch:ident;)*) => {
-        impl Div {$(
-            $(#[$doc])*
-            pub fn $name<M>(mut self, value: impl IntoProp<$ty, M>) -> Self {
-                self.prop(value.into_prop(), Patch::$patch);
-                self
-            }
-        )*}
-
-        impl Refine {$(
-            $(#[$doc])*
-            pub fn $name(mut self, value: impl Into<$ty>) -> Self {
-                self.0.push(Patch::$patch(value.into()));
-                self
-            }
-        )*}
-    };
-}
-
-props! {
-    width: Length => Width;
-    height: Length => Height;
-    min_width: Length => MinWidth;
-    min_height: Length => MinHeight;
-    max_width: Length => MaxWidth;
-    max_height: Length => MaxHeight;
-    /// How much of the free space the box takes.
-    grow: f32 => Grow;
-    shrink: f32 => Shrink;
-    /// The space between children, on both axes.
-    gap: f32 => Gap;
-    /// The same padding on every side.
-    padding: f32 => Padding;
-    /// Left and right padding.
-    padding_x: f32 => PaddingX;
-    /// Top and bottom padding.
-    padding_y: f32 => PaddingY;
-    margin: f32 => Margin;
-    /// The width of the border on every side.
-    border: f32 => Border;
-    direction: Direction => Direction;
-    justify: Justify => Justify;
-    align_items: Align => AlignItems;
-    wrap: bool => Wrap;
-    overflow_y: Overflow => OverflowY;
-    /// The background colour.
-    bg: Paint => Background;
-    border_color: Paint => BorderColor;
-    /// The same radius on every corner.
-    radius: f32 => Radius;
-    /// The colour of the text in the box and in what it holds: a colour, or a role.
-    text_color: Paint => TextColor;
-    /// The size of that text, in pixels.
-    text_size: f32 => TextSize;
-    italic: bool => Italic;
-    /// The height of its lines, as a multiple of the size.
-    line_height: f32 => LineHeight;
-    /// What stands in the fields of the box where text is to be typed.
-    placeholder_color: Paint => PlaceholderColor;
-    /// The fill behind selected text in the box.
-    selection_color: Paint => SelectionColor;
-    /// The carets of the fields in the box.
-    caret_color: Paint => CaretColor;
-}
-
-impl Refine {
-    /// The weight of the text while the state is set.
-    pub fn font_weight(mut self, weight: u16) -> Self {
-        self.0.push(Patch::FontWeight(weight));
-        self
-    }
-}
-
 impl Div {
     /// A constant goes into the style the node is mounted with; something reactive becomes a
     /// binding that writes that one value when it changes.
-    fn prop<T: 'static>(&mut self, prop: Prop<T>, patch: fn(T) -> Patch) {
+    pub(super) fn prop<T: 'static>(&mut self, prop: Prop<T>, patch: fn(T) -> Patch) {
         match prop {
             // A role of the theme is kept as one; any other constant is the style's value.
             Prop::Value(value) => match patch(value) {

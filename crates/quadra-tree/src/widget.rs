@@ -58,6 +58,9 @@ pub struct PaintCx<'a> {
     /// need not be emitted (a text skips its lines there).
     pub visible: Option<Rect>,
     pub clip: Clip,
+    /// A quad that cannot be seen is emitted all the same: a node whose look follows its
+    /// states keeps its place in the layer, and a state that fills it overwrites it there.
+    pub(crate) keep: bool,
     /// Where glyph tiles come from.
     pub fonts: &'a mut Fonts,
     pub(crate) out: &'a mut Vec<Instance>,
@@ -92,7 +95,11 @@ impl PaintCx<'_> {
         };
         let quad =
             Quad { bounds: self.device(q.bounds), border_widths, radii: q.radii.scale(self.scale), ..q };
+        let before = self.out.len();
         push_quad(self.out, &quad, &self.clip);
+        if self.keep && self.out.len() == before {
+            self.out.push(quad.instance(&self.clip)); // nothing to see, and a place kept
+        }
     }
 
     /// Appends an instance that is already in device pixels.

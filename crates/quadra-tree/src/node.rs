@@ -39,6 +39,9 @@ pub struct PaintStyle {
     pub background: Color,
     pub border_color: Color,
     pub radii: Corners,
+    /// A line of one pixel along the node's edge, over what the node paints and taking no
+    /// room: a mark of the focus.
+    pub outline: Color,
 }
 
 /// A node's style. Border widths are layout values, so they are in `layout`.

@@ -136,9 +136,11 @@ has `Confirm` and the kit's keymap; the example `gallery` shows it), and a disab
 not clicked, focused or tabbed to (specs/09). `quadra-vector` is ported (paths, the SVG
 of icons, coverage), and the kit has icons (`icon(icons::CHECK)`; the widget is `Drawing`
 in `quadra-tree/src/drawing.rs`, its masks are tiles of the glyph atlas) and the text
-input (`input(value)`; placeholder, selection and caret colours are text values). Next:
-selection controls (checkbox, switch, radio, segmented), then overlays (tooltip, popover,
-menu, select, dialog), lists and tabs, panels and the titlebar; the components in the order of specs/13, each with its
+input (`input(value)`; placeholder, selection and caret colours are text values), and the
+selection controls (`checkbox`, `switch`, `radio_group`, `segmented`; `outline` is the
+focus mark of what has no border). Next: overlays (tooltip, popover, menu, select,
+dialog: one implementation of placement, focus scope, dismissal and return of focus for all
+of them, specs/13), lists and tabs, panels and the titlebar; the components in the order of specs/13, each with its
 section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

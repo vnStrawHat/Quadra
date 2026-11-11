@@ -5,7 +5,10 @@
 use std::rc::Rc;
 
 use quadra::{Align, Div, Signal, Theme, WindowOptions, column, row, signal, text, use_context};
-use quadra_kit::{Size, Variant, button, dark, icon, icon_button, icons, input, light, size, token};
+use quadra_kit::{
+    Size, Variant, button, checkbox, dark, icon, icon_button, icons, input, light, radio_group, segmented,
+    size, switch, token,
+};
 
 /// A section: its title, then its rows.
 fn section(title: &'static str) -> Div {
@@ -65,6 +68,24 @@ fn inputs() -> Div {
     section("Inputs").child(first).child(second)
 }
 
+fn choices() -> Div {
+    let (wrap, numbers, live, quiet) = (signal(true), signal(false), signal(true), signal(false));
+    let (mode, view, density) = (signal(1usize), signal(0usize), signal(1usize));
+    let boxes = line()
+        .gap(16.0)
+        .child(checkbox(wrap).label("Word wrap"))
+        .child(checkbox(numbers).label("Line numbers"))
+        .child(checkbox(signal(true)).label("Disabled").disabled(true))
+        .child(switch(live).label("Live"))
+        .child(switch(quiet).label("Quiet"));
+    let one_of = line()
+        .gap(24.0)
+        .child(radio_group(["Light", "Dark", "System"], mode).horizontal())
+        .child(segmented(["List", "Grid", "Board"], view))
+        .child(segmented(["Compact", "Comfortable"], density).size(Size::Md));
+    section("Selection").child(boxes).child(one_of)
+}
+
 fn main() -> quadra::Result<()> {
     let view = || {
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
@@ -76,8 +97,15 @@ fn main() -> quadra::Result<()> {
         let name = text(move || if is_dark.get() { "One Dark Pro" } else { "One Light" });
         let name = name.size(size::TEXT_LG.size).weight(size::WEIGHT_STRONG);
         let head = line().child(name).child(button("Other theme").size(Size::Sm).on_click(swap));
-        quadra_kit::root().padding(24.0).gap(20.0).child(head).child(buttons()).child(icons()).child(inputs())
+        quadra_kit::root()
+            .padding(24.0)
+            .gap(20.0)
+            .child(head)
+            .child(buttons())
+            .child(icons())
+            .child(inputs())
+            .child(choices())
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
-    app.window(WindowOptions::new("Quadra gallery").size(640.0, 540.0), view)?.run()
+    app.window(WindowOptions::new("Quadra gallery").size(680.0, 640.0), view)?.run()
 }

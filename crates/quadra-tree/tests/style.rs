@@ -148,3 +148,21 @@ fn a_role_gets_its_colour_from_the_theme_and_another_when_the_theme_changes() {
     p.w.tree.patch_style(p.plain, Patch::BorderColor(Token(9).into()));
     assert_eq!(p.w.tree.paint_style(p.plain).border_color, Color::TRANSPARENT);
 }
+
+#[test]
+fn a_box_with_no_fill_until_hovered_is_filled_in_place() {
+    let mut p = page();
+    // A ghost: nothing to see at rest. It keeps a place in the layer all the same, so that
+    // the pointer coming over it overwrites one instance and moves no other.
+    let ghost = p.w.block(100.0, 40.0, 0);
+    p.w.tree.set_paint_style(ghost, quadra_tree::PaintStyle::default());
+    p.w.tree.set_variant(ghost, State::HOVER, vec![Patch::Background(Color::rgb(LIGHT).into())]);
+    let root = p.w.tree.root().unwrap();
+    p.w.tree.set_children(root, &[p.plain, p.button, ghost]);
+    p.w.frame();
+    p.send(PointerInput::Move, 50.0, 100.0);
+    let (stats, drawn) = p.w.frame();
+    assert_eq!(p.background(ghost), Color::rgb(LIGHT));
+    assert_eq!((stats.nodes_painted, stats.layers_patched, stats.layers_rebuilt), (1, 1, 0));
+    assert_eq!(drawn.instances_uploaded, 1);
+}

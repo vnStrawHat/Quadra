@@ -82,6 +82,9 @@ Repainting a layer after a change:
 2. A flagged node's widget paints into a scratch buffer.
 3. **Same instance count as before**: the new instances overwrite the old ones in place. Only
    that range is uploaded. Hover, press, focus, a caret, a selection colour take this path.
+   A node whose style has state variants emits its box even when there is nothing of it to
+   see (no fill, no border that shows): the count stays the same when a state fills it, so a
+   ghost control under the pointer takes this path too. A border with no colour is no border.
 4. **Different count**: the layer's vector is rebuilt by copying. Clean subtrees are copied as
    whole ranges without being visited, and their relative ranges stay valid. Only nodes on the
    dirty paths get new offsets. The layer is uploaded.

@@ -170,6 +170,7 @@ fn a_button_shows_an_icon_before_its_label_or_alone() {
     let (close, x) = size(&mut h, "close", 0);
     assert_eq!((close, x.x, x.y), (quadra_prim::Size::new(22.0, 22.0), 4.0, 4.0));
     // An icon is one instance: a tile of the atlas in the colour of the label.
-    // The canvas, two faces (a ghost at rest has none), three icons, and eight letters.
-    assert_eq!(stats.instances_written, 1 + 2 + 3 + 8);
+    // The canvas, three faces (a ghost at rest shows nothing, and keeps its place for when
+    // the pointer comes), three icons, and eight letters.
+    assert_eq!(stats.instances_written, 1 + 3 + 3 + 8);
 }

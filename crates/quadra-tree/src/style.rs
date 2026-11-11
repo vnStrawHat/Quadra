@@ -59,6 +59,11 @@ impl Styled {
         Styled { base, roles: Vec::new(), variants: Vec::new() }
     }
 
+    /// Whether a state changes the style.
+    pub fn has_variants(&self) -> bool {
+        !self.variants.is_empty()
+    }
+
     /// Whether the theme has a say in the style.
     pub fn themed(&self) -> bool {
         !self.roles.is_empty() || self.variants.iter().any(|(_, patches)| patches.iter().any(|p| p.themed()))

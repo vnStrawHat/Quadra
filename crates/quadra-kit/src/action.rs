@@ -14,11 +14,35 @@ impl Action for Confirm {
     const NAME: &'static str = "kit::confirm";
 }
 
+/// The key context of a control that holds one choice of a few: a radio group, tabs.
+pub const CHOICE: &str = "choice";
+
+/// To the next of a few, and to the one before: the arrows in a radio group.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveNext;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MovePrevious;
+
+impl Action for MoveNext {
+    const NAME: &'static str = "kit::move_next";
+}
+
+impl Action for MovePrevious {
+    const NAME: &'static str = "kit::move_previous";
+}
+
 /// The key bindings of the kit over those every window has. An app adds its own to it.
 pub fn keymap() -> Keymap {
     let mut keymap = Keymap::default();
+    let well_formed = "the kit's bindings are well formed";
     for keys in ["enter", "space"] {
-        keymap.bind_in(CONTROL, keys, Confirm).expect("the kit's bindings are well formed");
+        keymap.bind_in(CONTROL, keys, Confirm).expect(well_formed);
+    }
+    for keys in ["right", "down"] {
+        keymap.bind_in(CHOICE, keys, MoveNext).expect(well_formed);
+    }
+    for keys in ["left", "up"] {
+        keymap.bind_in(CHOICE, keys, MovePrevious).expect(well_formed);
     }
     keymap
 }

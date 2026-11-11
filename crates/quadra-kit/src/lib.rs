@@ -3,6 +3,7 @@
 
 pub mod action;
 mod button;
+mod choice;
 pub mod fonts;
 mod icon;
 pub mod icons;
@@ -10,11 +11,14 @@ mod input;
 mod root;
 pub mod size;
 mod theme;
+mod toggle;
 pub mod token;
 
 pub use action::keymap;
 pub use button::{Button, Size, Variant, button, icon_button};
+pub use choice::{Choice, radio_group, segmented};
 pub use icon::icon;
 pub use input::{Input, input};
 pub use root::{install, root};
 pub use theme::{KitTheme, Mode, ThemeError, dark, light, theme_from_json};
+pub use toggle::{Toggle, checkbox, switch};

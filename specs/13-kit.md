@@ -153,6 +153,20 @@ As built so far:
   focus shows; a value that is not accepted has the colour of errors with the focus or
   without (the state `INVALID`, applied after every other); a disabled field is a step back
   and takes neither the focus nor text. A reader hears the placeholder as its name.
+- **`checkbox(checked)` and `switch(on)`** take the signal that holds their value and write
+  it: by a click on the control or its label, by `Confirm`, or when a reader toggles them.
+  `.label(..)`, `.disabled(..)`, `.test_id(..)`. The checkbox is a box of 16 px with a
+  hairline border and an accent check; the switch a track of 32 by 20 inside a ring one
+  pixel off it, with a knob of 12 px that is at the end, over the accent, when on.
+- **`radio_group(options, chosen)` and `segmented(options, chosen)`** hold one of a few and
+  write its index: a click on an option, or the arrows while the group has the focus
+  (`MoveNext`, `MovePrevious` in the key context `action::CHOICE`), round the ends. The
+  group is one stop of Tab. Radios are rings of 12 px with a dot; segmented cells belong to
+  one outlined control, the chosen one tinted with an accent label (`.size(..)`: 22 px with
+  12 px labels, or 28 and 32 with 14).
+- **The keyboard's focus on a control without a border of its own** is a line of one pixel
+  around it: `outline`, a paint value that takes no room (it is drawn over what the node
+  paints, along its edge).
 - **Colours of fields are text values** (`placeholder_color`, `selection_color`,
   `caret_color` on boxes, roles if wanted): the kit's root sets them for the window, an input
   its own selection. A field shows its placeholder while it holds nothing, composing counted.

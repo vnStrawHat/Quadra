@@ -26,11 +26,7 @@ pub(crate) struct Arena<T> {
 
 impl<T> Arena<T> {
     pub fn new() -> Arena<T> {
-        Arena {
-            slots: Vec::new(),
-            free: Vec::new(),
-            len: 0,
-        }
+        Arena { slots: Vec::new(), free: Vec::new(), len: 0 }
     }
 
     pub fn insert(&mut self, value: T) -> Id {
@@ -38,19 +34,10 @@ impl<T> Arena<T> {
         if let Some(index) = self.free.pop() {
             let slot = &mut self.slots[index as usize];
             slot.value = Some(value);
-            return Id {
-                index,
-                generation: slot.generation,
-            };
+            return Id { index, generation: slot.generation };
         }
-        self.slots.push(Slot {
-            generation: 0,
-            value: Some(value),
-        });
-        Id {
-            index: (self.slots.len() - 1) as u32,
-            generation: 0,
-        }
+        self.slots.push(Slot { generation: 0, value: Some(value) });
+        Id { index: (self.slots.len() - 1) as u32, generation: 0 }
     }
 
     pub fn remove(&mut self, id: Id) -> Option<T> {
@@ -67,20 +54,12 @@ impl<T> Arena<T> {
 
     pub fn get(&self, id: Id) -> Option<&T> {
         let slot = self.slots.get(id.index())?;
-        if slot.generation == id.generation {
-            slot.value.as_ref()
-        } else {
-            None
-        }
+        if slot.generation == id.generation { slot.value.as_ref() } else { None }
     }
 
     pub fn get_mut(&mut self, id: Id) -> Option<&mut T> {
         let slot = self.slots.get_mut(id.index())?;
-        if slot.generation == id.generation {
-            slot.value.as_mut()
-        } else {
-            None
-        }
+        if slot.generation == id.generation { slot.value.as_mut() } else { None }
     }
 
     pub fn len(&self) -> usize {

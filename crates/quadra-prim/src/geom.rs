@@ -49,10 +49,7 @@ impl Point {
 }
 
 impl Size {
-    pub const ZERO: Size = Size {
-        width: 0.0,
-        height: 0.0,
-    };
+    pub const ZERO: Size = Size { width: 0.0, height: 0.0 };
 
     pub const fn new(width: f32, height: f32) -> Size {
         Size { width, height }
@@ -61,22 +58,12 @@ impl Size {
 
 impl Edges {
     pub const fn all(v: f32) -> Edges {
-        Edges {
-            top: v,
-            right: v,
-            bottom: v,
-            left: v,
-        }
+        Edges { top: v, right: v, bottom: v, left: v }
     }
 
     /// `x` on the left and right, `y` on the top and bottom.
     pub const fn xy(x: f32, y: f32) -> Edges {
-        Edges {
-            top: y,
-            right: x,
-            bottom: y,
-            left: x,
-        }
+        Edges { top: y, right: x, bottom: y, left: x }
     }
 
     pub fn horizontal(self) -> f32 {
@@ -88,23 +75,13 @@ impl Edges {
     }
 
     pub fn scale(self, s: f32) -> Edges {
-        Edges {
-            top: self.top * s,
-            right: self.right * s,
-            bottom: self.bottom * s,
-            left: self.left * s,
-        }
+        Edges { top: self.top * s, right: self.right * s, bottom: self.bottom * s, left: self.left * s }
     }
 }
 
 impl Corners {
     pub const fn all(v: f32) -> Corners {
-        Corners {
-            top_left: v,
-            top_right: v,
-            bottom_right: v,
-            bottom_left: v,
-        }
+        Corners { top_left: v, top_right: v, bottom_right: v, bottom_left: v }
     }
 
     pub fn scale(self, s: f32) -> Corners {
@@ -123,12 +100,7 @@ impl Corners {
 
 impl Rect {
     pub const fn new(x: f32, y: f32, width: f32, height: f32) -> Rect {
-        Rect {
-            x,
-            y,
-            width,
-            height,
-        }
+        Rect { x, y, width, height }
     }
 
     pub fn right(self) -> f32 {
@@ -160,10 +132,7 @@ impl Rect {
     }
 
     pub fn intersects(self, other: Rect) -> bool {
-        self.x < other.right()
-            && other.x < self.right()
-            && self.y < other.bottom()
-            && other.y < self.bottom()
+        self.x < other.right() && other.x < self.right() && self.y < other.bottom() && other.y < self.bottom()
     }
 
     /// The overlap of the two; an empty rectangle when there is none.
@@ -188,12 +157,7 @@ impl Rect {
         }
         let x = self.x.min(other.x);
         let y = self.y.min(other.y);
-        Rect::new(
-            x,
-            y,
-            self.right().max(other.right()) - x,
-            self.bottom().max(other.bottom()) - y,
-        )
+        Rect::new(x, y, self.right().max(other.right()) - x, self.bottom().max(other.bottom()) - y)
     }
 
     pub fn translate(self, dx: f32, dy: f32) -> Rect {
@@ -227,12 +191,7 @@ mod tests {
         assert_eq!(a.intersect(b), Rect::new(5.0, 5.0, 5.0, 5.0));
         assert_eq!(a.union(b), Rect::new(0.0, 0.0, 15.0, 15.0));
         assert_eq!(Rect::new(0.0, 0.0, 0.0, 5.0).union(b), b);
-        let e = Edges {
-            top: 1.0,
-            right: 2.0,
-            bottom: 3.0,
-            left: 4.0,
-        };
+        let e = Edges { top: 1.0, right: 2.0, bottom: 3.0, left: 4.0 };
         assert_eq!(a.inset(e), Rect::new(4.0, 1.0, 4.0, 6.0));
         assert_eq!(a.inset(Edges::all(8.0)).size(), Size::ZERO);
     }
@@ -247,15 +206,7 @@ mod tests {
 
     #[test]
     fn edges_and_corners() {
-        assert_eq!(
-            Edges::xy(2.0, 3.0),
-            Edges {
-                top: 3.0,
-                right: 2.0,
-                bottom: 3.0,
-                left: 2.0
-            }
-        );
+        assert_eq!(Edges::xy(2.0, 3.0), Edges { top: 3.0, right: 2.0, bottom: 3.0, left: 2.0 });
         assert_eq!(Edges::xy(2.0, 3.0).scale(2.0).horizontal(), 8.0);
         assert!(Corners::default().is_zero() && !Corners::all(4.0).scale(0.5).is_zero());
     }

@@ -20,30 +20,15 @@ impl Default for Affine {
 }
 
 impl Affine {
-    pub const IDENTITY: Affine = Affine {
-        a: 1.0,
-        b: 0.0,
-        c: 0.0,
-        d: 1.0,
-        tx: 0.0,
-        ty: 0.0,
-    };
+    pub const IDENTITY: Affine = Affine { a: 1.0, b: 0.0, c: 0.0, d: 1.0, tx: 0.0, ty: 0.0 };
 
     pub const fn translate(dx: f32, dy: f32) -> Affine {
-        Affine {
-            tx: dx,
-            ty: dy,
-            ..Affine::IDENTITY
-        }
+        Affine { tx: dx, ty: dy, ..Affine::IDENTITY }
     }
 
     /// Scales about the origin.
     pub const fn scale(s: f32) -> Affine {
-        Affine {
-            a: s,
-            d: s,
-            ..Affine::IDENTITY
-        }
+        Affine { a: s, d: s, ..Affine::IDENTITY }
     }
 
     /// Rotates by `degrees`, clockwise on screen (y grows downwards), about `pivot`.
@@ -60,10 +45,7 @@ impl Affine {
     }
 
     pub fn apply(self, p: Point) -> Point {
-        Point::new(
-            self.a * p.x + self.c * p.y + self.tx,
-            self.b * p.x + self.d * p.y + self.ty,
-        )
+        Point::new(self.a * p.x + self.c * p.y + self.tx, self.b * p.x + self.d * p.y + self.ty)
     }
 
     /// `self` applied after `inner`: `p -> self(inner(p))`.
@@ -86,14 +68,7 @@ impl Affine {
             return None;
         }
         let (a, b, c, d) = (self.d / det, -self.b / det, -self.c / det, self.a / det);
-        Some(Affine {
-            a,
-            b,
-            c,
-            d,
-            tx: -(a * self.tx + c * self.ty),
-            ty: -(b * self.tx + d * self.ty),
-        })
+        Some(Affine { a, b, c, d, tx: -(a * self.tx + c * self.ty), ty: -(b * self.tx + d * self.ty) })
     }
 
     pub fn is_identity(self) -> bool {
@@ -116,8 +91,7 @@ impl Affine {
             self.apply(Point::new(r.right(), r.bottom())),
             self.apply(Point::new(r.x, r.bottom())),
         ];
-        let (mut x0, mut y0, mut x1, mut y1) =
-            (corners[0].x, corners[0].y, corners[0].x, corners[0].y);
+        let (mut x0, mut y0, mut x1, mut y1) = (corners[0].x, corners[0].y, corners[0].x, corners[0].y);
         for p in &corners[1..] {
             x0 = x0.min(p.x);
             y0 = y0.min(p.y);
@@ -139,15 +113,9 @@ mod tests {
     #[test]
     fn a_quarter_turn_is_clockwise_about_its_pivot() {
         let turn = Affine::rotate_about(90.0, Point::new(10.0, 10.0));
-        assert!(close(
-            turn.apply(Point::new(10.0, 10.0)),
-            Point::new(10.0, 10.0)
-        ));
+        assert!(close(turn.apply(Point::new(10.0, 10.0)), Point::new(10.0, 10.0)));
         // The point to the right of the pivot goes below it.
-        assert!(close(
-            turn.apply(Point::new(15.0, 10.0)),
-            Point::new(10.0, 15.0)
-        ));
+        assert!(close(turn.apply(Point::new(15.0, 10.0)), Point::new(10.0, 15.0)));
     }
 
     #[test]
@@ -165,10 +133,7 @@ mod tests {
     #[test]
     fn bbox_surrounds_the_mapped_rect() {
         let r = Rect::new(0.0, 0.0, 10.0, 4.0);
-        assert_eq!(
-            Affine::translate(3.0, 2.0).bbox(r),
-            Rect::new(3.0, 2.0, 10.0, 4.0)
-        );
+        assert_eq!(Affine::translate(3.0, 2.0).bbox(r), Rect::new(3.0, 2.0, 10.0, 4.0));
         let b = Affine::rotate_about(90.0, Point::ZERO).bbox(r);
         assert!(close(b.origin(), Point::new(-4.0, 0.0)));
         assert!((b.width - 4.0).abs() < 1e-4 && (b.height - 10.0).abs() < 1e-4);

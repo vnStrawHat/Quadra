@@ -32,10 +32,7 @@ pub fn event<E: 'static>() -> Event<E> {
         r.scope_mut().events.push(id);
         id
     });
-    Event {
-        id,
-        marker: PhantomData,
-    }
+    Event { id, marker: PhantomData }
 }
 
 impl<E: 'static> Event<E> {
@@ -66,31 +63,17 @@ impl<E: 'static> Event<E> {
     /// emission order, before effects run.
     pub fn emit(self, value: E) {
         let id = self.id;
-        rt(|r| {
-            r.deliveries
-                .push_back(Box::new(move || deliver(id, &value)))
-        });
+        rt(|r| r.deliveries.push_back(Box::new(move || deliver(id, &value))));
         graph::flush();
     }
 }
 
 fn deliver(id: Id, value: &dyn Any) {
-    let keys: Vec<u64> = rt(|r| {
-        r.events
-            .get(id)
-            .map(|e| e.subs.iter().map(|s| s.0).collect())
-            .unwrap_or_default()
-    });
+    let keys: Vec<u64> =
+        rt(|r| r.events.get(id).map(|e| e.subs.iter().map(|s| s.0).collect()).unwrap_or_default());
     for key in keys {
         // Looked up again each time: a handler may have ended a later subscriber's scope.
-        let handler = rt(|r| {
-            r.events
-                .get(id)?
-                .subs
-                .iter()
-                .find(|s| s.0 == key)
-                .map(|s| s.1.clone())
-        });
+        let handler = rt(|r| r.events.get(id)?.subs.iter().find(|s| s.0 == key).map(|s| s.1.clone()));
         if let Some(handler) = handler {
             (handler.borrow_mut())(value);
         }

@@ -40,10 +40,7 @@ fn main() {
         .iter()
         .map(|&cell| {
             let (due, sink) = (due.clone(), sink.clone());
-            deferred(
-                move || due.set(due.get() + 1),
-                move || sink.set(sink.get().wrapping_add(cell.get())),
-            )
+            deferred(move || due.set(due.get() + 1), move || sink.set(sink.get().wrapping_add(cell.get())))
         })
         .collect();
     per_binding("signal -> binding", |n| {
@@ -58,10 +55,7 @@ fn main() {
         .map(|&cell| {
             let double = memo(move || cell.get() * 2);
             let sink = sink.clone();
-            deferred(
-                || {},
-                move || sink.set(sink.get().wrapping_add(double.get())),
-            )
+            deferred(|| {}, move || sink.set(sink.get().wrapping_add(double.get())))
         })
         .collect();
     per_binding("signal -> memo -> binding", |n| {

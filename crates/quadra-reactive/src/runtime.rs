@@ -55,13 +55,7 @@ pub(crate) struct Node {
 }
 
 impl Node {
-    pub fn new(
-        kind: Kind,
-        state: State,
-        value: Value,
-        compute: Option<Compute>,
-        created: Loc,
-    ) -> Node {
+    pub fn new(kind: Kind, state: State, value: Value, compute: Option<Compute>, created: Loc) -> Node {
         Node {
             kind,
             state,
@@ -188,16 +182,8 @@ impl Inner {
         if let Some(parent) = scope.parent.and_then(|p| self.scopes.get_mut(p)) {
             parent.children.retain(|&c| c != id);
         }
-        let nodes = scope
-            .nodes
-            .iter()
-            .filter_map(|&n| self.take_node(n))
-            .collect();
-        let events = scope
-            .events
-            .iter()
-            .filter_map(|&e| self.events.remove(e))
-            .collect();
+        let nodes = scope.nodes.iter().filter_map(|&n| self.take_node(n)).collect();
+        let events = scope.events.iter().filter_map(|&e| self.events.remove(e)).collect();
         Some((scope, nodes, events))
     }
 }
@@ -214,13 +200,7 @@ pub(crate) fn rt<R>(f: impl FnOnce(&mut Inner) -> R) -> R {
 /// The panic for a handle used after its scope ended: a programming error (specs/03).
 #[cold]
 pub(crate) fn disposed(what: &str, id: Id, at: Loc) -> ! {
-    let created = rt(|r| {
-        if r.nodes.freed(id) {
-            r.created.get(id.index()).copied()
-        } else {
-            None
-        }
-    });
+    let created = rt(|r| if r.nodes.freed(id) { r.created.get(id.index()).copied() } else { None });
     match created {
         Some(created) => panic!("{what} used at {at} after it was disposed (created at {created})"),
         None => panic!("{what} used at {at} after it was disposed"),
@@ -238,9 +218,5 @@ pub struct Stats {
 }
 
 pub fn stats() -> Stats {
-    rt(|r| Stats {
-        nodes: r.nodes.len(),
-        scopes: r.scopes.len(),
-        events: r.events.len(),
-    })
+    rt(|r| Stats { nodes: r.nodes.len(), scopes: r.scopes.len(), events: r.events.len() })
 }

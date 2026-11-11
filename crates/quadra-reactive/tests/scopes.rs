@@ -29,10 +29,7 @@ fn disposing_a_scope_frees_everything_it_owns() {
     scope.dispose();
     scope.dispose(); // twice does nothing
     let after = stats();
-    assert_eq!(
-        (after.nodes, after.scopes, after.events),
-        (before.nodes + 1, before.scopes, before.events)
-    );
+    assert_eq!((after.nodes, after.scopes, after.events), (before.nodes + 1, before.scopes, before.events));
     assert!(!scope.is_alive() && outside.is_alive());
     outside.set(2); // its dead readers are gone: nothing runs, nothing panics
 }
@@ -111,10 +108,7 @@ fn a_disposed_handle_reports_instead_of_reaching_another_value() {
     });
     scope.dispose();
     let reuse = signal(99); // takes a freed slot
-    assert_eq!(
-        (n.try_get(), double.try_get(), n.try_set(5)),
-        (None, None, false)
-    );
+    assert_eq!((n.try_get(), double.try_get(), n.try_set(5)), (None, None, false));
     assert!(!n.is_alive() && !double.is_alive() && reuse.get() == 99);
 }
 

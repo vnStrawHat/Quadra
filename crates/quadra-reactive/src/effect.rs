@@ -39,15 +39,8 @@ pub struct Deferred {
 /// owner calls [`Deferred::run`], and only if a source really changed.
 #[track_caller]
 pub fn deferred(notify: impl Fn() + 'static, f: impl FnMut() + 'static) -> Deferred {
-    let id = create(
-        Kind::Deferred(Rc::new(notify)),
-        f,
-        std::panic::Location::caller(),
-    );
-    Deferred {
-        id,
-        marker: PhantomData,
-    }
+    let id = create(Kind::Deferred(Rc::new(notify)), f, std::panic::Location::caller());
+    Deferred { id, marker: PhantomData }
 }
 
 impl Deferred {

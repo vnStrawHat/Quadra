@@ -14,9 +14,7 @@ impl Inner {
         let Some(observer) = self.observer else {
             return;
         };
-        let Inner {
-            nodes, tracking, ..
-        } = self;
+        let Inner { nodes, tracking, .. } = self;
         let Some(node) = nodes.get(observer) else {
             return;
         };
@@ -58,12 +56,7 @@ impl Inner {
     /// A write to `source`: its readers are dirty, and what reads a memo among them is "to
     /// check". A node already marked is not walked again.
     fn mark(&mut self, source: Id, at: Loc, notifies: &mut Vec<Notify>) {
-        let Inner {
-            nodes,
-            stack,
-            effects,
-            ..
-        } = self;
+        let Inner { nodes, stack, effects, .. } = self;
         let Some(node) = nodes.get(source) else {
             return;
         };
@@ -128,11 +121,7 @@ pub(crate) fn update(id: Id) {
         }
     }
     // Clean before it runs: a write during the run to something it reads marks it again.
-    let dirty = rt(|r| {
-        r.nodes
-            .get_mut(id)
-            .map(|n| std::mem::replace(&mut n.state, State::Clean))
-    });
+    let dirty = rt(|r| r.nodes.get_mut(id).map(|n| std::mem::replace(&mut n.state, State::Clean)));
     if dirty == Some(State::Dirty) {
         run(id);
     }
@@ -190,9 +179,7 @@ pub(crate) fn flush() {
         }
         let mut due = rt(|r| {
             let ids = std::mem::take(&mut r.effects);
-            ids.into_iter()
-                .filter_map(|id| r.nodes.get(id).map(|n| (n.seq, id)))
-                .collect::<Vec<_>>()
+            ids.into_iter().filter_map(|id| r.nodes.get(id).map(|n| (n.seq, id))).collect::<Vec<_>>()
         });
         if due.is_empty() {
             break;
@@ -221,10 +208,7 @@ fn within_limit(id: Id) -> bool {
             return None;
         }
         node.state = State::Clean; // a later write may wake it again
-        Some(ReactiveError::EffectCycle {
-            effect: node.created,
-            woken_by: node.woken_by,
-        })
+        Some(ReactiveError::EffectCycle { effect: node.created, woken_by: node.woken_by })
     });
     match cycle {
         Some(error) => {

@@ -23,14 +23,10 @@ impl fmt::Display for ReactiveError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let ReactiveError::EffectCycle { effect, woken_by } = self;
         match woken_by {
-            Some(write) => write!(
-                f,
-                "the effect created at {effect} keeps being woken by the write at {write}; stopped"
-            ),
-            None => write!(
-                f,
-                "the effect created at {effect} keeps waking itself; stopped"
-            ),
+            Some(write) => {
+                write!(f, "the effect created at {effect} keeps being woken by the write at {write}; stopped")
+            }
+            None => write!(f, "the effect created at {effect} keeps waking itself; stopped"),
         }
     }
 }

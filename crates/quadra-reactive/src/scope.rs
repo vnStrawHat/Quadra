@@ -18,10 +18,7 @@ pub struct Scope {
 impl Scope {
     /// The scope new signals, effects and scopes are created in right now.
     pub fn current() -> Scope {
-        Scope {
-            id: rt(|r| r.scope),
-            marker: PhantomData,
-        }
+        Scope { id: rt(|r| r.scope), marker: PhantomData }
     }
 
     /// Creates a scope owned by the current one. It becomes current only inside [`Scope::run`].
@@ -29,17 +26,11 @@ impl Scope {
         let id = rt(|r| {
             r.scope_mut();
             let parent = r.scope;
-            let id = r.scopes.insert(ScopeData {
-                parent: Some(parent),
-                ..ScopeData::default()
-            });
+            let id = r.scopes.insert(ScopeData { parent: Some(parent), ..ScopeData::default() });
             r.scope_mut().children.push(id);
             id
         });
-        Scope {
-            id,
-            marker: PhantomData,
-        }
+        Scope { id, marker: PhantomData }
     }
 
     /// Runs `f` with this scope current: what `f` creates belongs to it.
@@ -67,10 +58,7 @@ fn dispose(id: Id) {
         let work = rt(|r| {
             assert!(id != r.root, "the root scope cannot be disposed");
             let scope = r.scopes.get_mut(id)?;
-            Some((
-                std::mem::take(&mut scope.children),
-                std::mem::take(&mut scope.cleanups),
-            ))
+            Some((std::mem::take(&mut scope.children), std::mem::take(&mut scope.cleanups)))
         });
         let Some((children, cleanups)) = work else {
             return;
@@ -134,9 +122,6 @@ pub fn use_context<T: Clone + 'static>() -> Option<T> {
 pub fn expect<T: Clone + 'static>() -> T {
     match use_context::<T>() {
         Some(value) => value,
-        None => panic!(
-            "no {} was provided to this scope or one above it",
-            type_name::<T>()
-        ),
+        None => panic!("no {} was provided to this scope or one above it", type_name::<T>()),
     }
 }

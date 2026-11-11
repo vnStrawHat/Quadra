@@ -28,19 +28,12 @@ impl<T> Copy for Signal<T> {}
 pub fn signal<T: 'static>(value: T) -> Signal<T> {
     let value: Value = Rc::new(RefCell::new(value));
     let node = Node::new(Kind::Signal, State::Clean, value, None, Location::caller());
-    Signal {
-        id: rt(|r| r.add_node(node)),
-        marker: PhantomData,
-    }
+    Signal { id: rt(|r| r.add_node(node)), marker: PhantomData }
 }
 
 fn read<T: 'static, R>(cell: &Value, f: impl FnOnce(&T) -> R) -> R {
-    let Ok(value) = cell.try_borrow() else {
-        panic!("a signal was read inside its own update")
-    };
-    f(value
-        .downcast_ref::<T>()
-        .expect("a signal holds a value of its type"))
+    let Ok(value) = cell.try_borrow() else { panic!("a signal was read inside its own update") };
+    f(value.downcast_ref::<T>().expect("a signal holds a value of its type"))
 }
 
 impl<T: 'static> Signal<T> {
@@ -68,8 +61,7 @@ impl<T: 'static> Signal<T> {
     #[track_caller]
     pub fn with<R>(self, f: impl FnOnce(&T) -> R) -> R {
         let at = Location::caller();
-        self.try_with(f)
-            .unwrap_or_else(|| disposed("a signal", self.id, at))
+        self.try_with(f).unwrap_or_else(|| disposed("a signal", self.id, at))
     }
 
     /// Reads without becoming a reader.
@@ -113,9 +105,7 @@ impl<T: 'static> Signal<T> {
             let Ok(mut value) = cell.try_borrow_mut() else {
                 panic!("a signal was written at {at} inside its own read or update")
             };
-            f(value
-                .downcast_mut::<T>()
-                .expect("a signal holds a value of its type"))
+            f(value.downcast_mut::<T>().expect("a signal holds a value of its type"))
         };
         if changed {
             graph::changed(self.id, at);

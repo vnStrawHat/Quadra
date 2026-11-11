@@ -9,24 +9,9 @@ pub struct Color {
 }
 
 impl Color {
-    pub const TRANSPARENT: Color = Color {
-        r: 0.0,
-        g: 0.0,
-        b: 0.0,
-        a: 0.0,
-    };
-    pub const BLACK: Color = Color {
-        r: 0.0,
-        g: 0.0,
-        b: 0.0,
-        a: 1.0,
-    };
-    pub const WHITE: Color = Color {
-        r: 1.0,
-        g: 1.0,
-        b: 1.0,
-        a: 1.0,
-    };
+    pub const TRANSPARENT: Color = Color { r: 0.0, g: 0.0, b: 0.0, a: 0.0 };
+    pub const BLACK: Color = Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 };
+    pub const WHITE: Color = Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 };
 
     /// An opaque colour from `0xRRGGBB`.
     pub const fn rgb(hex: u32) -> Color {
@@ -57,12 +42,7 @@ impl Color {
             _ => (c, 0.0, x),
         };
         let m = l - c / 2.0;
-        Color {
-            r: r + m,
-            g: g + m,
-            b: b + m,
-            a,
-        }
+        Color { r: r + m, g: g + m, b: b + m, a }
     }
 
     /// Reads `#RRGGBB` or `#RRGGBBAA`.
@@ -91,12 +71,7 @@ impl Color {
 
     pub fn lerp(self, to: Color, t: f32) -> Color {
         let mix = |a: f32, b: f32| a + (b - a) * t;
-        Color {
-            r: mix(self.r, to.r),
-            g: mix(self.g, to.g),
-            b: mix(self.b, to.b),
-            a: mix(self.a, to.a),
-        }
+        Color { r: mix(self.r, to.r), g: mix(self.g, to.g), b: mix(self.b, to.b), a: mix(self.a, to.a) }
     }
 
     /// `[r, g, b, a]`, as GPU instance data wants it.
@@ -107,13 +82,7 @@ impl Color {
     /// `#rrggbbaa`.
     pub fn hex(self) -> String {
         let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8;
-        format!(
-            "#{:02x}{:02x}{:02x}{:02x}",
-            byte(self.r),
-            byte(self.g),
-            byte(self.b),
-            byte(self.a)
-        )
+        format!("#{:02x}{:02x}{:02x}{:02x}", byte(self.r), byte(self.g), byte(self.b), byte(self.a))
     }
 }
 
@@ -131,17 +100,7 @@ mod tests {
 
     #[test]
     fn parse_hex_rejects_what_is_not_a_colour() {
-        for bad in [
-            "",
-            "#",
-            "2563EB",
-            "#2563E",
-            "#2563EBF",
-            "#+2563E",
-            "#2563EG",
-            "#2563EBFFF",
-            "#é563E",
-        ] {
+        for bad in ["", "#", "2563EB", "#2563E", "#2563EBF", "#+2563E", "#2563EG", "#2563EBFFF", "#é563E"] {
             assert_eq!(Color::parse_hex(bad), None, "{bad}");
         }
     }

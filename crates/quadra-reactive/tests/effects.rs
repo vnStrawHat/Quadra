@@ -3,9 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use quadra_reactive::{
-    ReactiveError, Scope, batch, deferred, effect, event, set_error_hook, signal,
-};
+use quadra_reactive::{ReactiveError, Scope, batch, deferred, effect, event, set_error_hook, signal};
 
 fn log() -> (Rc<RefCell<Vec<String>>>, impl Fn(&str) + Clone + 'static) {
     let lines = Rc::new(RefCell::new(Vec::new()));
@@ -50,11 +48,7 @@ fn a_cycle_is_reported_and_stopped() {
     let n = signal(0u32);
     effect(move || n.set(n.get() + 1));
     assert_eq!(errors.borrow().len(), 1);
-    assert!(
-        errors.borrow()[0].contains("effects.rs"),
-        "{}",
-        errors.borrow()[0]
-    );
+    assert!(errors.borrow()[0].contains("effects.rs"), "{}", errors.borrow()[0]);
     let stopped_at = n.get();
     assert!(stopped_at > 60 && stopped_at < 70, "{stopped_at}");
     // The runtime still works, and the effect can be woken again in a later batch.
@@ -136,10 +130,7 @@ fn an_event_emitted_by_a_handler_is_delivered_after_it() {
         say(&format!("done {n}"));
     });
     ping.emit(0);
-    assert_eq!(
-        *lines.borrow(),
-        ["got 0", "done 0", "got 1", "done 1", "got 2", "done 2"]
-    );
+    assert_eq!(*lines.borrow(), ["got 0", "done 0", "got 1", "done 1", "got 2", "done 2"]);
 }
 
 #[test]

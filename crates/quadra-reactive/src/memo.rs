@@ -39,17 +39,8 @@ pub fn memo<T: PartialEq + 'static>(f: impl Fn() -> T + 'static) -> Memo<T> {
         }
         differs
     }));
-    let node = Node::new(
-        Kind::Memo,
-        State::Dirty,
-        slot,
-        Some(compute),
-        Location::caller(),
-    );
-    Memo {
-        id: rt(|r| r.add_node(node)),
-        marker: PhantomData,
-    }
+    let node = Node::new(Kind::Memo, State::Dirty, slot, Some(compute), Location::caller());
+    Memo { id: rt(|r| r.add_node(node)), marker: PhantomData }
 }
 
 impl<T: 'static> Memo<T> {
@@ -68,20 +59,15 @@ impl<T: 'static> Memo<T> {
         })?;
         graph::update(self.id);
         let value = cell.borrow();
-        let value = value
-            .downcast_ref::<Option<T>>()
-            .expect("a memo holds a value of its type");
-        Some(f(value.as_ref().expect(
-            "a memo was read while it was being computed: it depends on itself",
-        )))
+        let value = value.downcast_ref::<Option<T>>().expect("a memo holds a value of its type");
+        Some(f(value.as_ref().expect("a memo was read while it was being computed: it depends on itself")))
     }
 
     /// Reads the value. Panics on a disposed memo.
     #[track_caller]
     pub fn with<R>(self, f: impl FnOnce(&T) -> R) -> R {
         let at = Location::caller();
-        self.try_with(f)
-            .unwrap_or_else(|| disposed("a memo", self.id, at))
+        self.try_with(f).unwrap_or_else(|| disposed("a memo", self.id, at))
     }
 
     #[track_caller]

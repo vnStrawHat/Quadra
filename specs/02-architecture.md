@@ -26,6 +26,7 @@ update; passes run.
 quadra-prim            Point, Size, Rect, Edges, Color, Affine              no dependencies
 quadra-reactive        signals, memos, effects, scopes, events, context     prim-free, UI-free
 quadra-layout          layout styles and the incremental flex and grid engine
+quadra-vector          paths, the part of SVG icons need, rasterizing to coverage
 quadra-text            paragraphs, wrapping, caches, the TextBackend trait
 quadra-render          layers, display lists, instances, atlases, the Renderer trait
 quadra-a11y            semantic nodes, incremental updates, the mirror tests follow them with

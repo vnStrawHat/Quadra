@@ -242,6 +242,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-vector"
+version = "0.1.0"
+dependencies = [
+ "quadra-prim",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"

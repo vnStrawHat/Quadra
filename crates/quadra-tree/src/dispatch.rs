@@ -53,6 +53,7 @@ impl Tree {
                     self.input.pressed = self.path(target);
                     self.set_states(State::ACTIVE, true);
                     let path = self.input.pressed.clone();
+                    self.press_outside(&path);
                     self.focus_on_press(&path);
                     self.input.capture = self.dispatch_pointer(PointerKind::Down, target, button, 0).captured;
                 }

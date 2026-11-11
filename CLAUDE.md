@@ -104,7 +104,8 @@ caret that blinks on a timer (`quadra-async`: `timeout`, `interval`; `Harness::m
 `PlatformWindow::set_text_input`, `quadra-native-win/src/ime.rs`). `crates/quadra/examples/form.rs`
 shows it in a real window. One manual check is open: composing with a real input method
 (Vietnamese Telex) on a desktop.
-Next, in this order: overlays (specs/05, specs/13), semantics with the accessibility bridge
+Overlays are in (`quadra-tree/src/overlay.rs`, `overlay(place, view)` in `quadra-ui`; the
+example has a menu). Next, in this order: semantics with the accessibility bridge
 (specs/12, `accesskit`), rows of different heights, tab index, cursors, the rest of
 `quadra-async` (tasks, the pool, inboxes) when the first thing needs it.
 

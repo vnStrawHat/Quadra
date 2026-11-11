@@ -85,6 +85,8 @@ pub(crate) enum Handler {
     Text(Box<dyn FnMut(&str)>),
     /// An input method is composing text for the node: the text so far and the caret in it.
     Composition(CompositionFn),
+    /// A press landed outside the overlay the node is the root of.
+    OutsidePress(Box<dyn FnMut()>),
     /// An action of a type reached the node.
     Action {
         of: TypeId,
@@ -134,7 +136,9 @@ impl Tree {
     /// the first, then the node itself. It reads layout rects and layer offsets, so it agrees
     /// with what the last frame drew, scrolled content included.
     pub fn hit_test(&self, at: Point) -> Option<NodeId> {
-        self.root.and_then(|root| self.hit(root, at))
+        // What is on top is tried first: the overlays from the last opened, then the main tree.
+        let over = self.overlays().rev().find_map(|root| self.hit(root, at));
+        over.or_else(|| self.root.and_then(|root| self.hit(root, at)))
     }
 
     /// `at` is in the space of the node's parent.

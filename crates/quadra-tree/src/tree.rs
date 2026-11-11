@@ -15,6 +15,7 @@ use crate::frame::{FrameStats, PassTimes};
 use crate::input::InputState;
 use crate::layers::LayerState;
 use crate::node::{NOT_PAINTED, Node, NodeId, PaintStyle, Style, flag};
+use crate::overlay::Overlay;
 use crate::paint::Patch;
 use crate::shared::{Handle, Shared};
 use crate::style::State;
@@ -44,6 +45,8 @@ pub struct Tree {
     pub(crate) recompose: Vec<NodeId>,
     /// The layers that paint only near what shows.
     pub(crate) culled: Vec<NodeId>,
+    /// The open overlays, the lowest first: roots above the main tree.
+    pub(crate) overlays: Vec<Overlay>,
     /// The pointer: where it is, what it is over, what it pressed.
     pub(crate) input: InputState,
     /// Nodes whose state changed and that have a style variant for it.
@@ -91,6 +94,7 @@ impl Tree {
             repaint_all: false,
             recompose: Vec::new(),
             culled: Vec::new(),
+            overlays: Vec::new(),
             input: InputState::default(),
             restyle: Vec::new(),
             focus: None,

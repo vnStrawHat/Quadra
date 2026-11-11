@@ -53,6 +53,7 @@ impl Tree {
         if self.root == Some(id) {
             self.root = None;
         }
+        self.forget_overlay(id);
         self.layout.remove(layout);
         self.relayout = true;
         self.repaint = true;

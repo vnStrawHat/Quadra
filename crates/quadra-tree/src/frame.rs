@@ -117,6 +117,7 @@ impl Tree {
                 break;
             }
         }
+        self.place_overlays();
         self.cull_pass();
         self.paint_pass();
         times.paint = lap();
@@ -230,11 +231,16 @@ impl Tree {
     fn layout_pass(&mut self) {
         let Some(root) = self.root.filter(|_| std::mem::take(&mut self.relayout)) else { return };
         let root = self.nodes[root.index as usize].layout;
+        let above: Vec<_> = self.overlays().map(|o| self.nodes[o.index as usize].layout).collect();
         {
             let mut fonts = self.fonts.borrow_mut();
             let mut measurer =
                 Measurer { nodes: &mut self.nodes, owners: &self.owners, text: &mut fonts.text };
             self.layout.layout(root, RootSize::Fill(self.size), &mut measurer);
+            // Overlays after the main tree: as large as their content, at most the window.
+            for overlay in above {
+                self.layout.layout(overlay, RootSize::Fit(self.size), &mut measurer);
+            }
         }
         let stats = self.layout.take_stats();
         self.stats.nodes_laid_out += stats.asked;

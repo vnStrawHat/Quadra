@@ -221,6 +221,7 @@ impl Tree {
         let Some(root) = self.root.filter(|_| std::mem::take(&mut self.repaint)) else { return };
         let all = std::mem::take(&mut self.repaint_all);
         let mut todo = std::mem::take(&mut self.todo);
+        todo.extend(self.overlays());
         todo.push(root);
         let fonts = self.fonts.clone();
         let mut fonts = fonts.borrow_mut();

@@ -18,6 +18,7 @@ impl Tree {
         let fonts = self.fonts.clone();
         let fonts = &mut *fonts.borrow_mut();
         let mut layers = Vec::from_iter(self.root);
+        layers.extend(self.overlays());
         let mut wrong = None;
         while let Some(root) = layers.pop() {
             let i = root.index as usize;

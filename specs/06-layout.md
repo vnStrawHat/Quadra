@@ -124,6 +124,9 @@ Overlay roots are laid out after the main tree, in stack order:
   side, alignment, offset, then flipped or shifted to stay inside the window.
 - An overlay whose anchor moved is placed again in the compose pass if only its position
   changes, in the layout pass if its available size does.
+- An overlay opens on the side asked for unless only the other side has room, and is then
+  moved as far as needed to stay inside the window. Its place is its layer's offset: an
+  overlay that follows its anchor is laid out and painted by nobody.
 
 ## Rounding
 

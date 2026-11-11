@@ -164,10 +164,17 @@ virtual_list(move || rows.with(Vec::len), move |index: Memo<usize>| {
 
 ## Overlays
 
-`overlay(anchor, || view)` mounts its content as a root of the window's overlay stack: a layer
+`overlay(place, view)` mounts its content as a root of the window's overlay stack: a layer
 above the main tree, positioned against the anchor's rect after the main layout (06). Menus,
 popovers, tooltips, dialogs and drag previews are overlays. An overlay is owned by the scope
 that opened it and closes when that scope ends or its `open` signal turns false.
+
+An overlay is open while its view is mounted, so it is opened and closed like any other part:
+`show(open, || overlay(Place::Beside(anchor, Side::Below, Along::Start, 4.0), menu))`. Where
+it stands in the flow it takes no room. It is placed beside the node of a `NodeRef`, at a
+point of the window, or in its middle. Pointer events reach the top overlay first; an
+overlay is told of a press that lands outside it (`on_outside_press`), which is how a menu
+closes; a focus scope in it keeps Tab inside.
 
 ## Context in views
 

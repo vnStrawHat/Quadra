@@ -56,6 +56,9 @@ Handlers are closures on nodes (05). A node with no handler for an event kind is
 - A node is focusable when it sets `focusable` or a tab index. Focus is a `NodeId` per window.
 - Clicking focuses the deepest focusable node on the path. Tab and Shift+Tab move in tree order,
   adjusted by tab index, inside the nearest **focus scope** (a dialog or menu traps focus).
+  Nodes with a tab index above zero come first, lowest first, then the others in tree order;
+  one with an index below zero is never reached by Tab, only by a press or by the program.
+  From a node that Tab does not reach, Tab goes to the first of the walk.
 - `focused`, `focus_visible` (focus arrived by keyboard) and `focus_within` (on ancestors) are
   state bits.
 - Focus moves emit focus and blur events and flag accessibility.

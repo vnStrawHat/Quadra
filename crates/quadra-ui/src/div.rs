@@ -197,6 +197,12 @@ impl Div {
     }
 
     /// Keeps Tab and Shift+Tab among what is in the box: a dialog, a menu.
+    /// Lets the box have the focus, with a place in the order Tab walks: above zero before
+    /// the boxes without one, lowest first; below zero never by Tab.
+    pub fn tab_index(self, index: i16) -> Self {
+        self.on_mount(move |tree, id| tree.set_tab_index(id, index))
+    }
+
     pub fn focus_scope(self) -> Self {
         self.on_mount(|tree, id| tree.set_focus_scope(id, true))
     }

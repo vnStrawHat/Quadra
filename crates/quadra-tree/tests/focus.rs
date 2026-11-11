@@ -199,3 +199,24 @@ fn a_window_without_the_keyboard_shows_no_focus_and_gets_it_back() {
     p.w.tree.set_active(true);
     assert!(p.has(p.name, State::FOCUS | State::FOCUS_VISIBLE) && p.has(p.form, State::FOCUS_WITHIN));
 }
+
+#[test]
+fn a_tab_index_puts_a_node_first_or_out_of_the_walk() {
+    let mut p = page();
+    p.w.tree.set_focus_scope(p.dialog, false);
+    p.w.tree.set_tab_index(p.cancel, 1);
+    p.w.tree.set_tab_index(p.email, 2);
+    p.w.tree.set_tab_index(p.label, -1); // it can have the focus now, but not by Tab
+    let mut walked = Vec::new();
+    for _ in 0..5 {
+        p.press(Key::Tab, Mods::NONE);
+        walked.push(p.w.tree.focused().unwrap());
+    }
+    // The two with an index, lowest first, then the others as they are in the tree.
+    assert_eq!(walked, [p.cancel, p.email, p.form, p.name, p.ok]);
+    p.press(Key::Tab, Mods::SHIFT);
+    p.press(Key::Tab, Mods::SHIFT);
+    assert_eq!(p.w.tree.focused(), Some(p.form));
+    p.click(50.0, 30.0); // the label
+    assert_eq!(p.w.tree.focused(), Some(p.label));
+}

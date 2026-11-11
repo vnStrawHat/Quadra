@@ -117,6 +117,16 @@ impl Tree {
         Some(caret.translate(at.x, at.y))
     }
 
+    /// Lets a node have the focus, and gives it a place in the order Tab walks: above zero
+    /// before the nodes without one, lowest first; below zero never by Tab, only by a press or
+    /// by the program.
+    pub fn set_tab_index(&mut self, id: NodeId, index: i16) {
+        if let Some(node) = self.get_mut(id) {
+            node.tab_index = index;
+            self.set_focusable(id, true);
+        }
+    }
+
     /// The node that has the focus.
     pub fn focused(&self) -> Option<NodeId> {
         self.focus
@@ -239,6 +249,11 @@ impl Tree {
         });
         let mut stops = Vec::new();
         self.tab_stops(scope.unwrap_or(root), &mut stops);
+        // Those with an index above zero come first, lowest first; the rest in tree order.
+        stops.sort_by_key(|id| match self.nodes[id.index as usize].tab_index {
+            0 => i16::MAX,
+            index => index,
+        });
         if stops.is_empty() {
             return;
         }
@@ -259,7 +274,7 @@ impl Tree {
         if self.layout.style(node.layout).display == Display::None {
             return;
         }
-        if node.focusable {
+        if node.focusable && node.tab_index >= 0 {
             out.push(id);
         }
         for &child in &node.children {

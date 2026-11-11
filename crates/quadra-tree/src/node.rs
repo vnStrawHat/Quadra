@@ -74,6 +74,9 @@ pub(crate) struct Node {
     pub handlers: Vec<Handler>,
     /// It can have the focus (specs/09, "Focus").
     pub focusable: bool,
+    /// Its place in the order Tab walks: above zero before the others, lowest first; below
+    /// zero not at all.
+    pub tab_index: i16,
     /// Tab and Shift+Tab stay among what is under it: a dialog, a menu.
     pub focus_scope: bool,
     /// Its name as a context of key bindings (specs/09).

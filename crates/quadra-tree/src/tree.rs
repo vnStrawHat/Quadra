@@ -166,6 +166,7 @@ impl Tree {
             scope: None,
             handlers: Vec::new(),
             focusable: false,
+            tab_index: 0,
             focus_scope: false,
             key_context: None,
             semantics: None,

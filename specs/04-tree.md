@@ -77,7 +77,9 @@ invalidation model:
 Order and looping are in 02. What each does:
 
 - **Update**: runs the window's queued bindings. A binding calls its closure and writes one
-  property.
+  property. A closure cannot hold the tree, so it writes through a `Handle`, which queues
+  the write; the pass applies the queue, and repeats while applying one queued more (a
+  mount).
 - **Style**: for each flagged node, resolves base style, state variants and tokens into the
   resolved style (13).
 - **Layout**: 06.

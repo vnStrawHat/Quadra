@@ -140,7 +140,7 @@ impl LayoutTree {
             }
             RootSize::Fixed(size) => self.exact(root, size, m),
         };
-        self.nodes[root.index()].rect = Rect::new(0.0, 0.0, out.width, out.height);
+        self.set_rect(root, Rect::new(0.0, 0.0, out.width, out.height));
     }
 
     fn exact(&mut self, root: LayoutId, size: Size, m: &mut dyn Measure) -> Size {

@@ -30,3 +30,14 @@ version = "0.1.0"
 dependencies = [
  "quadra-prim",
 ]
+
+[[package]]
+name = "quadra-tree"
+version = "0.1.0"
+dependencies = [
+ "quadra-layout",
+ "quadra-prim",
+ "quadra-reactive",
+ "quadra-render",
+ "quadra-text",
+]

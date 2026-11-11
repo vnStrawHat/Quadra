@@ -77,7 +77,7 @@ impl LayoutTree {
         for &c in &children {
             let cs = self.nodes[c.index()].style.clone();
             if cs.display == Display::None {
-                self.nodes[c.index()].rect = Rect::default();
+                self.set_rect(c, Rect::default());
             } else if cs.position == Position::Absolute {
                 absolutes.push(c);
             } else {
@@ -171,7 +171,7 @@ impl LayoutTree {
                 self.layout_node(m, it.id, Request::new(Some(w), Some(h), w, h), true);
                 let (x, y) = if row { (it.pos_main, it.pos_cross) } else { (it.pos_cross, it.pos_main) };
                 let (x, y) = (f.left + x, f.top + y);
-                self.nodes[it.id.index()].rect = Rect::new(x, y, w, h);
+                self.set_rect(it.id, Rect::new(x, y, w, h));
                 let (after_x, after_y) =
                     if row { (it.m_main_b, it.m_cross_b) } else { (it.m_cross_b, it.m_main_b) };
                 extent.width = extent.width.max(x + w + after_x);

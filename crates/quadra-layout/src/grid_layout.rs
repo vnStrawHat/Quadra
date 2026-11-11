@@ -38,7 +38,7 @@ impl LayoutTree {
         for &c in &children {
             let cs = &self.nodes[c.index()].style;
             if cs.display == Display::None {
-                self.nodes[c.index()].rect = Rect::default();
+                self.set_rect(c, Rect::default());
             } else if cs.position == Position::Absolute {
                 absolutes.push(c);
             } else {

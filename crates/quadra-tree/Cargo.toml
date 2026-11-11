@@ -1,0 +1,18 @@
+[package]
+name = "quadra-tree"
+description = "Quadra's retained node tree: nodes, widgets, dirty flags and the passes of a frame"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-prim = { path = "../quadra-prim" }
+quadra-reactive = { path = "../quadra-reactive" }
+quadra-layout = { path = "../quadra-layout" }
+quadra-text = { path = "../quadra-text" }
+quadra-render = { path = "../quadra-render" }

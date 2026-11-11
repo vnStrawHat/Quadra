@@ -170,6 +170,6 @@ impl LayoutTree {
         self.layout_node(m, id, Request::new(Some(w), Some(h), w, h), true);
         let x = inner.x + align_offset(justify, inner.width - w);
         let y = inner.y + align_offset(align, inner.height - h);
-        self.nodes[id.index()].rect = Rect::new(x, y, w, h);
+        self.set_rect(id, Rect::new(x, y, w, h));
     }
 }

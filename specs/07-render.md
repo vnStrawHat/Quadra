@@ -74,6 +74,20 @@ Repainting a layer after a change:
 
 So CPU work follows the dirty paths, and an upload is bounded by one layer.
 
+Two things force more than the flagged node:
+
+- **A node that moved paints its whole subtree again.** Instances are in the layer's
+  coordinates, so everything under a node that changed place has new positions. The counts
+  are usually unchanged, so this is still an overwrite in place. It is the paint side of the
+  ceiling layout has: a row that grows in a list that is not virtualized repaints the rows
+  after it.
+- **Showing or hiding a node, or changing a list of children, rebuilds the layer**, because
+  ranges move.
+
+The tree can paint everything from scratch and compare it with what the incremental passes
+left (`Tree::verify_paint`): instances and every node's range. The test suite runs it after
+every frame.
+
 A surface widget owns its layer's vector. It writes ranges directly and reports them; the
 renderer uploads what was reported. A terminal updates the rows that changed.
 

@@ -14,7 +14,8 @@ use crate::style::Style;
 pub struct LayoutId(u32);
 
 impl LayoutId {
-    pub(crate) fn index(self) -> usize {
+    /// A dense index, for tables kept beside the tree. It is reused after a removal.
+    pub fn index(self) -> usize {
         self.0 as usize
     }
 
@@ -44,6 +45,15 @@ pub(crate) struct Node {
     pub root: Option<RootSize>,
 }
 
+/// A node whose rect a layout changed: what must be painted again.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RectChange {
+    pub id: LayoutId,
+    /// Its place in its parent changed: everything under it moved with it.
+    pub moved: bool,
+    pub resized: bool,
+}
+
 /// The answers a changed node had given, kept until the next update asks it again.
 #[derive(Clone)]
 pub(crate) struct Saved {
@@ -62,6 +72,8 @@ pub struct LayoutTree {
     pub(crate) scratch: Vec<Scratch>,
     pub(crate) depth: usize,
     pub(crate) stats: Stats,
+    /// The nodes whose rect changed since the last `take_changes`.
+    changes: Vec<RectChange>,
 }
 
 impl LayoutTree {
@@ -184,6 +196,20 @@ impl LayoutTree {
         node.pending = self.saved.len() as u32;
         self.saved.push(Some(Saved { id, answers: node.answers, item_changed }));
         node.answers = Answers::default();
+    }
+
+    pub(crate) fn set_rect(&mut self, id: LayoutId, rect: Rect) {
+        let old = std::mem::replace(&mut self.nodes[id.index()].rect, rect);
+        let (moved, resized) = (old.origin() != rect.origin(), old.size() != rect.size());
+        if moved || resized {
+            self.changes.push(RectChange { id, moved, resized });
+        }
+    }
+
+    /// Moves the rect changes logged since the last call into `out` (cleared first).
+    pub fn take_changes(&mut self, out: &mut Vec<RectChange>) {
+        out.clear();
+        std::mem::swap(out, &mut self.changes);
     }
 
     pub(crate) fn node(&self, id: LayoutId) -> &Node {

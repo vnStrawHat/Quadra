@@ -177,7 +177,7 @@ impl LayoutTree {
                 (None, Some(bt)) => outer_h - b.bottom - bt - h - mg.bottom,
                 (None, None) => f.top + mg.top,
             };
-            self.nodes[c.index()].rect = Rect::new(x, y, w, h);
+            self.set_rect(c, Rect::new(x, y, w, h));
         }
     }
 }

@@ -73,14 +73,16 @@ Phase R1, the vertical slice that proves the paradigm (specs/00, Phases), is in 
 (flex and grid). The user's standing instruction: commit each finished part once the gate is
 green, then continue with the next.
 
-Also committed: `quadra-render` with layers, display lists, the `Renderer` trait and the null
-renderer; `quadra-text` with paragraphs, the shaping cache and the fake backend. Not written
-yet in those two: the atlases (specs/07, "Atlases") and glyph tiles (specs/08, "Glyph tiles"),
-which are needed when real text arrives, and caret hit testing beyond `x_at`.
+Also committed, each at its first stage: `quadra-render` (layers, display lists, the
+`Renderer` trait, the null renderer), `quadra-text` (paragraphs, the shaping cache, the fake
+backend) and `quadra-tree` (nodes, widgets, the update, layout and paint passes on one layer,
+`Tree::verify_paint`). `docs/progress.md` says what each still lacks.
 
-Next, in order: `quadra-tree` (specs/04), which joins the reactive runtime, the layout tree,
-paragraphs and layers: nodes, widgets, flags, the passes; then `quadra-testing` (the harness)
-and `quadra-ui` (views); then the four programs of R1 and the structural budgets as tests.
+Next, in order: child layers and the compose pass in `quadra-tree` (a scroll container's
+content is a layer; scrolling changes one constant; markers in the parent's list);
+`quadra-testing` (the harness of specs/12) and `quadra-ui` (views, properties, control flow:
+specs/05), enough for the four programs of R1; then the structural budgets of specs/14 as
+tests, and the native crate (Win32, D3D11, DirectWrite) for the comparison bench.
 
 `quadra-term` is **on hold** by the user's decision: do not build it until told. The apps come
 after Quadra is complete.

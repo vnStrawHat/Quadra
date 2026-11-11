@@ -5,8 +5,8 @@ use std::rc::Rc;
 
 use quadra::{Action, Display, Signal, Theme, View, column, div, dynamic, row, scroll, signal, use_context};
 use quadra_kit::{
-    Command, MenuItem, NavItem, Status, command_palette, dark, icon_button, icons, light, sidebar,
-    status_button, status_divider, status_item, status_label, statusbar, titlebar, tooltip,
+    Command, MenuItem, NavItem, Notices, Status, command_palette, dark, icon_button, icons, light, notices,
+    sidebar, status_button, status_divider, status_item, status_label, statusbar, titlebar, tooltip,
 };
 
 use crate::registry::{PAGES, make};
@@ -25,11 +25,13 @@ impl Action for OpenPalette {
 pub struct Gallery {
     pub page: Signal<&'static str>,
     pub dark: Signal<bool>,
+    /// What the pages tell the user: above the status bar.
+    pub notices: Notices,
 }
 
 impl Gallery {
     pub fn new(page: &'static str, dark: bool) -> Gallery {
-        Gallery { page: signal(page), dark: signal(dark) }
+        Gallery { page: signal(page), dark: signal(dark), notices: notices().above(30.0) }
     }
 
     /// What the palette offers: every page, and the other theme.
@@ -42,7 +44,7 @@ impl Gallery {
     }
 
     pub fn view(self) -> impl View {
-        let Gallery { page, dark } = self;
+        let Gallery { page, dark, notices } = self;
         // The theme of the window follows `dark`.
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
         let name = move || if dark.get() { "One Dark Pro" } else { "One Light" };
@@ -94,7 +96,7 @@ impl Gallery {
             .right(status_item(Some(icons::COMMAND), "Ctrl-K"));
         let palette = command_palette(asking, move || self.commands());
         let all = quadra_kit::root().on_action::<OpenPalette>(move |_| asking.set(true));
-        all.child(head).child(middle).child(status).child(palette)
+        all.child(head).child(middle).child(status).child(palette).child(notices.host())
     }
 }
 

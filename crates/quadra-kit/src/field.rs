@@ -106,14 +106,47 @@ pub fn validate(value: &str, rules: &[Rule]) -> String {
     rules.iter().find_map(|rule| rule.check(value)).unwrap_or_default().to_string()
 }
 
+pub struct Textarea {
+    value: Signal<String>,
+    rows: u32,
+    width: f32,
+    placeholder: String,
+}
+
 /// A field of several lines that edits `value`, in the frame of an input: 240 px wide and
-/// at least `rows` lines tall, growing with what it holds.
-pub fn textarea(value: Signal<String>, rows: u32) -> quadra_ui::Div {
-    // ponytail: it grows without end; a most of rows, with scrolling inside, when wanted.
-    let least = rows.max(1) as f32 * size::TEXT_MD.line + 14.0;
-    let frame = column().width(240.0).min_height(least).padding_x(8.0).padding_y(6.0);
-    let frame = frame.radius(size::RADIUS_LG).border(1.0).border_color(token::LINE).bg(token::INPUT_BG);
-    let frame = frame.cursor(Cursor::Text).selection_color(token::ACCENT_TINT).role(Role::Group);
-    let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
-    frame.when(State::INVALID, |s| s.border_color(token::ERROR)).child(text_area(value))
+/// at least three lines tall unless told, growing with what it holds.
+pub fn textarea(value: Signal<String>) -> Textarea {
+    Textarea { value, rows: 3, width: 240.0, placeholder: String::new() }
+}
+
+impl Textarea {
+    /// The least number of lines it is tall.
+    pub fn rows(mut self, rows: u32) -> Self {
+        self.rows = rows.max(1);
+        self
+    }
+
+    pub fn width(mut self, px: f32) -> Self {
+        self.width = px;
+        self
+    }
+
+    /// What stands in it while it is empty.
+    pub fn placeholder(mut self, words: impl Into<String>) -> Self {
+        self.placeholder = words.into();
+        self
+    }
+}
+
+impl View for Textarea {
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        // ponytail: it grows without end; a most of rows, with scrolling inside, when wanted.
+        let least = self.rows as f32 * size::TEXT_MD.line + 14.0;
+        let frame = column().width(self.width).min_height(least).padding_x(8.0).padding_y(6.0);
+        let frame = frame.radius(size::RADIUS_LG).border(1.0).border_color(token::LINE).bg(token::INPUT_BG);
+        let frame = frame.cursor(Cursor::Text).selection_color(token::ACCENT_TINT).role(Role::Group);
+        let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
+        let frame = frame.when(State::INVALID, |s| s.border_color(token::ERROR));
+        frame.child(text_area(self.value).placeholder(&self.placeholder)).mount(cx)
+    }
 }

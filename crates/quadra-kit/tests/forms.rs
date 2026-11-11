@@ -120,7 +120,7 @@ fn a_field_says_what_is_wrong_in_place_of_its_help() {
     let mut h = mount(move || {
         let wrong = move || validate(&name.get(), &rules);
         let named = field("Name", input(name).test_id("name")).help("As it shows to others").required();
-        column().child(named.error(wrong)).child(field("Notes", textarea(notes, 3)))
+        column().child(named.error(wrong)).child(field("Notes", textarea(notes).rows(3)))
     });
     let tree = h.semantics();
     assert!(tree.contains("Text \"Name\"") && tree.contains("Text \"*\""), "{tree}");

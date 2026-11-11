@@ -1,6 +1,6 @@
 //! What the pages are built from: the page itself, a framed demo, and a few rows of text.
 
-use quadra::{Align, Div, TextView, View, column, div, row, text};
+use quadra::{Align, Div, IntoProp, TextView, View, column, div, row, text};
 use quadra_kit::{fonts, heading, label, size, token};
 
 use crate::registry::PAGES;
@@ -34,12 +34,24 @@ pub fn line() -> Div {
     row().wrap(true).align_items(Align::Center).gap(12.0)
 }
 
-/// A line of small text that says less.
-pub fn hint(words: impl Into<String>) -> TextView {
-    text(words.into()).size(size::TEXT_SM.size).color(token::TEXT_3)
+/// Things one under another, 12 px apart.
+pub fn stack() -> Div {
+    column().gap(12.0)
 }
 
-/// A value in the mono face.
-pub fn mono(words: impl Into<String>) -> Div {
-    div().font_family(fonts::MONO).child(text(words.into()).color(token::TEXT_2).selectable())
+/// A row of settings: what it sets and a line about it at the left, its control at the right.
+pub fn setting(title: &str, about: &str, control: impl View + 'static) -> Div {
+    let words = column().gap(2.0).grow(1.0).child(text(title.to_string())).child(hint(about));
+    let item = row().align_items(Align::Center).gap(16.0).padding_y(10.0);
+    item.border_bottom(1.0).border_color(token::LINE).child(words).child(control)
+}
+
+/// A line of small text that says less: a constant, or something reactive.
+pub fn hint<M>(words: impl IntoProp<String, M>) -> TextView {
+    text(words).size(size::TEXT_SM.size).color(token::TEXT_3)
+}
+
+/// A value in the mono face: a constant, or something reactive.
+pub fn mono<M>(words: impl IntoProp<String, M>) -> Div {
+    div().font_family(fonts::MONO).child(text(words).color(token::TEXT_2).selectable())
 }

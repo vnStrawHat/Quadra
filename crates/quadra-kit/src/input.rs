@@ -5,7 +5,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Role, State};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, show, text_input};
+use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, show, text, text_input};
 
 use crate::icon::icon;
 use crate::{icons, size, token};
@@ -19,6 +19,7 @@ pub struct Input {
     width: f32,
     lead: Option<&'static str>,
     clears: bool,
+    readonly: bool,
     test_id: Option<&'static str>,
     submit: Option<Submit>,
 }
@@ -37,6 +38,7 @@ pub fn input(value: Signal<String>) -> Input {
         width: 240.0,
         lead: None,
         clears: false,
+        readonly: false,
         test_id: None,
         submit: None,
     }
@@ -74,6 +76,12 @@ impl Input {
     /// An icon before the text: one of [`crate::icons`].
     pub fn icon(mut self, body: &'static str) -> Self {
         self.lead = Some(body);
+        self
+    }
+
+    /// The value shows, and can be selected and copied, and not typed over.
+    pub fn readonly(mut self) -> Self {
+        self.readonly = true;
         self
     }
 
@@ -120,7 +128,11 @@ impl Input {
             Some(body) => frame.child(icon(body).color(token::TEXT_2)),
             None => frame,
         };
-        let (frame, value) = (frame.child(field), self.value);
+        let value = self.value;
+        let frame = match self.readonly {
+            true => frame.child(text(move || value.get()).selectable()),
+            false => frame.child(field),
+        };
         if !self.clears {
             return frame;
         }

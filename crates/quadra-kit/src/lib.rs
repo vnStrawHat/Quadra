@@ -53,7 +53,7 @@ pub use dialog::{Dialog, confirm, dialog};
 pub use display::{
     Tone, avatar, badge, card, card_head, divider, heading, kbd, key_hint, key_label, label, tag, vdivider,
 };
-pub use field::{Field, Rule, field, textarea, validate};
+pub use field::{Field, Rule, Textarea, field, textarea, validate};
 pub use icon::icon;
 pub use input::{Input, input};
 pub use list::{List, list};

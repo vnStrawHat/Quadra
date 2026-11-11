@@ -6,7 +6,7 @@ use std::rc::Rc;
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
-use quadra_tree::{NodeId, Role};
+use quadra_tree::{NodeId, Paint, Role};
 use quadra_ui::{MountCx, NodeRef, View, column, div, row, text};
 
 use crate::action::{CONTROL, Confirm};
@@ -18,18 +18,26 @@ pub struct Select {
     options: Rc<Vec<String>>,
     chosen: Signal<usize>,
     width: f32,
+    placeholder: String,
     test_id: Option<&'static str>,
 }
 
 /// A dropdown of `options`: `chosen` holds the index of the one that is chosen.
 pub fn select<S: Into<String>>(options: impl IntoIterator<Item = S>, chosen: Signal<usize>) -> Select {
     let options = Rc::new(options.into_iter().map(Into::into).collect());
-    Select { options, chosen, width: 160.0, test_id: None }
+    Select { options, chosen, width: 160.0, placeholder: String::new(), test_id: None }
 }
 
 impl Select {
     pub fn width(mut self, px: f32) -> Self {
         self.width = px;
+        self
+    }
+
+    /// What the select says, muted, while `chosen` is the index of no option
+    /// (`usize::MAX` says nothing is chosen yet).
+    pub fn placeholder(mut self, words: impl Into<String>) -> Self {
+        self.placeholder = words.into();
         self
     }
 
@@ -43,7 +51,10 @@ impl View for Select {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (chosen, open, opener) = (self.chosen, signal(false), NodeRef::new());
         let options = self.options.clone();
-        let value = move || options.get(chosen.get()).cloned().unwrap_or_default();
+        let (count, none) = (options.len(), self.placeholder);
+        let value = move || options.get(chosen.get()).cloned().unwrap_or_else(|| none.clone());
+        let tone =
+            move || -> Paint { if chosen.get() < count { token::TEXT.into() } else { token::TEXT_3.into() } };
         // Filled, with a hairline border, 28 px high; the border is where the focus shows.
         let face = row().width(self.width).height(size::H_MD).padding_x(8.0).gap(8.0).shrink(0.0);
         let face = face.align_items(Align::Center).radius(size::RADIUS_MD).bg(token::RAISED);
@@ -57,7 +68,7 @@ impl View for Select {
             Some(id) => face.test_id(id),
             None => face,
         };
-        let face = face.child(div().grow(1.0).child(text(value)));
+        let face = face.child(div().grow(1.0).text_color(tone).child(text(value)));
         let face = face.child(icon(icons::CHEVRONS_UP_DOWN).size(12.0).color(token::TEXT_2));
         let options = self.options;
         let items = move || {

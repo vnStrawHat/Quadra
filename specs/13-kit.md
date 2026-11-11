@@ -262,6 +262,10 @@ As built so far:
   the focus, round its ends (`.minute_step(..)` for the minutes), Home and End go to its
   ends, and digits type it: two in a row make a number of two when that is a value of the
   part.
+- More of the fields: `input(..).readonly()` shows a value that can be selected and copied
+  and not typed over; `select(..).placeholder(words)` says the words, muted, while `chosen`
+  is the index of no option (`usize::MAX`: nothing chosen yet); `textarea(value)` is a
+  builder (`.rows(..)`, `.width(..)`, `.placeholder(..)`).
 - **`number_input(value)`** is an input that holds a number (`.range(..)`, `.step(..)`,
   `.decimals(..)`), 160 px with a pair of chevrons that step it, or with `.stepper()` one
   frame of 128 by 32: a minus, the value in the middle, a plus. The up and down arrows step
@@ -272,8 +276,8 @@ As built so far:
   mark after it; under the control is `.help(words)` or, while it is not empty, what
   `.error(..)` says, in the colour of errors after a mark. `validate(value, &rules)` gives
   what the first broken `Rule` says (`Required`, `MinLen`, `MaxLen`, `Email`): plain data.
-  `textarea(value, rows)` is the text area of `quadra-ui` in the frame of an input, at
-  least that many lines tall.
+  `textarea(value)` is the text area of `quadra-ui` in the frame of an input, at least
+  three lines tall unless told.
 - **What is under way** (`progress.rs`). `progress(part)` is a bar of 6 px on the chrome
   plane, filled with the accent as far as `part` (0 to 1, a constant or reactive), and a
   progress bar with its percentage to a reader. `progress_busy()` is the bar for what has

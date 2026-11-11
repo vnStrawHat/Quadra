@@ -29,8 +29,8 @@ pub use quadra_tree::{
     PointerKind, Role, SemanticAction, Side, State, Theme, Token,
 };
 pub use quadra_ui::{
-    AnyView, Div, MountCx, NodeRef, Place, Refine, Region, TextView, View, Window, column, div, dynamic,
-    each, each_frame, overlay, row, scroll, show, text, text_area, text_input, tween, uniform_list,
+    AnyView, Div, IntoProp, MountCx, NodeRef, Place, Refine, Region, TextView, View, Window, column, div,
+    dynamic, each, each_frame, overlay, row, scroll, show, text, text_area, text_input, tween, uniform_list,
     virtual_list, window,
 };
 

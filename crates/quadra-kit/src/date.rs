@@ -120,7 +120,8 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
         }
         weeks
     });
-    column().gap(8.0).padding(8.0).child(head).child(names).child(days)
+    // The names of the days are the first row of the weeks: 2 px over the next.
+    column().gap(8.0).padding(8.0).child(head).child(column().gap(2.0).child(names).child(days))
 }
 
 /// A month calendar in the page: `value` holds the chosen day, and a click on a day writes

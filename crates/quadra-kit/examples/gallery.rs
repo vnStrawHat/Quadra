@@ -10,7 +10,7 @@ use quadra::{
 use quadra_kit::{
     MenuItem, Size, Tone, Variant, accordion, avatar, badge, button, card, card_head, checkbox, dark, dialog,
     divider, heading, icon, icon_button, icons, input, kbd, light, list, menu, radio_group, segmented,
-    select, size, split, switch, tabs, tag, token, tooltip,
+    select, size, split, switch, tabs, tag, titlebar, token, tooltip,
 };
 
 /// A section: its title, then its rows.
@@ -177,8 +177,10 @@ fn main() -> quadra::Result<()> {
             _ => column().gap(20.0).child(overlays()).child(lists()),
         });
         let pages = tabs(["Buttons", "Forms", "Overlays and lists", "Parts"], page);
-        quadra_kit::root().padding(24.0).gap(20.0).child(head).child(pages).child(shown)
+        let page = column().grow(1.0).padding(24.0).gap(20.0).child(head).child(pages).child(shown);
+        let bar = titlebar("Quadra gallery").menu(|| vec![MenuItem::new("About"), MenuItem::new("Quit")]);
+        quadra_kit::root().child(bar).child(page)
     };
     let app = quadra_kit::install(quadra::app()?, &dark())?;
-    app.window(WindowOptions::new("Quadra gallery").size(680.0, 560.0), view)?.run()
+    app.window(WindowOptions::new("Quadra gallery").size(680.0, 600.0).custom_frame(), view)?.run()
 }

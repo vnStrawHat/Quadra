@@ -144,7 +144,9 @@ the view's node, a timer, an overlay opened by hand) and the dialog (`Place::Top
 shadows (`.elevation(1|2)`, a paint value), `tabs` and `list` (boxes have `.display(..)` and
 one-sided borders now). Every scroll view and list has a scrollbar (`quadra-ui/src/scrollbar.rs`,
 the widget `ScrollThumb`: a layer of its own, shown on activity, faded by a timer). The kit has its display
-parts (`display.rs`), `accordion` and `split`; boxes have padding by side and `overflow_x`. Next: the titlebar, status bar and toolbar; the components in the order of specs/13, each with its
+parts (`display.rs`), `accordion` and `split`; boxes have padding by side and `overflow_x`. Windows can have
+their own frame (`WindowOptions::custom_frame`, `PlatformHandler::hit_test`, `.window_region(..)`,
+`quadra_ui::window()`; Win32 in `quadra-native-win/src/frame.rs`) and the kit its `titlebar`. Next: the status bar and toolbar; the components in the order of specs/13, each with its
 section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

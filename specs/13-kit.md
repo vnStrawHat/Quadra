@@ -194,6 +194,15 @@ As built so far:
   of the whole, a signal: dragging the seam writes it, never leaving a pane under
   `.least(px)` (80), and a double click makes the panes even. What does not fit in a pane
   is cut.
+- **`titlebar(title)`** is the bar of a window with its own frame (10): 32 px on the chrome
+  plane over a strong line, 12 px text, and the window is dragged by it. `.menu(|| items)`
+  puts the app's menu behind a button at its left end, `.icon(body)` an icon before the
+  title, `.control(view)` things of the app's after it, which work as anywhere;
+  `.title_size(16.0)` makes it the caption of a small window (34 px). At its right are
+  minimize, maximize (restore while the window is maximized) and close: 36 px wide, their
+  glyphs at 10 px from the system's face of caption glyphs when it has one, drawn icons
+  otherwise; close turns `#E81120` under the pointer. They ask the window (`window()`),
+  and are buttons to a reader.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

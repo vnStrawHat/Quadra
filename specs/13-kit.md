@@ -138,8 +138,8 @@ As built so far:
   `error_tint_hover`: the tint 8 % towards its colour unless a theme says). The label is a
   text that takes the button's text colour. To a reader it is a button named by its label,
   pressed or not when it is a toggle.
-- **Smaller things.** A button shows a spinner before its label and does nothing while
-  `.loading(..)` says so (it is disabled then). A checkbox shows a dash while
+- **Smaller things.** A button shows a spinner before its label while `.loading(..)` says
+  so, looking as it did, and its click does nothing then. A checkbox shows a dash while
   `.indeterminate(..)` says some of what it stands for is checked. An input with
   `.clearable()` has a cross at its end while it holds text, and a click on it empties it.
   A tooltip takes `.meta(words)`, a smaller muted line under its text. `key_hint(keys,
@@ -188,7 +188,8 @@ As built so far:
   holds, filled under the pointer and with `press` when selected. `.empty(words)` is what a
   list with no rows says.
 - **What shows and does nothing** (`display.rs`) is functions that give boxes and texts:
-  `heading(words, level)` (23, 18, 16 px, then the size of text; regular weight), `label`
+  `heading(words, level)` (23, 18, 16 px, then the size of text; regular weight; lines of
+  1.618 of the size), `label`
   (12 px, muted), `badge(words, tone)` and `tag(words)` (chips of 16 and 18 px in 10 px mono
   text; a badge is a faint tint of its tone), `kbd("ctrl-s")` and `key_label` (shortcuts are
   written "Ctrl-Shift-P", the modifiers in the order Ctrl, Win, Alt, Shift), `avatar(name,
@@ -318,10 +319,12 @@ As built so far:
   its own selection. A field shows its placeholder while it holds nothing, composing counted.
 - A component that builds a view from properties it was given passes them on as they are:
   `Prop<T>` is itself something a setter takes.
-- The example `gallery` of the kit (`examples/gallery/`) shows the components in a real
-  window in either theme: a window with its own title bar, a sidebar of pages, a toolbar,
-  a status bar and a command palette. It
-  becomes the gallery app when it is compared with the reference screenshots.
+- The gallery (`examples/gallery`, the crate `quadra-gallery`) shows the components in a
+  real window in either theme: a window with its own title bar, the pages in a sidebar by
+  group, the page that shows, a status bar and a command palette. A page is the group it is
+  in, its title, what the component is for, and framed demos, each with how it is written
+  (`common.rs`). The pages are those of the V gallery, ported as their components land,
+  and compared with its screenshots (12, "Snapshots").
 
 ## Overlays in the kit
 

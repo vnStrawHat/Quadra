@@ -12,10 +12,12 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_async::Timers;
-use quadra_platform::{Cursor, Platform, PlatformWindow, WindowHandle, WindowId, WindowOptions};
+use quadra_platform::{
+    Cursor, Platform, PlatformError, PlatformWindow, WindowHandle, WindowId, WindowOptions,
+};
 use quadra_prim::{Color, Rect};
 use quadra_reactive::{Scope, Signal, provide, signal};
-use quadra_render::{DeviceSize, RenderError, Renderer, SurfaceId, SurfaceTarget};
+use quadra_render::{DeviceSize, Pixels, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
 use quadra_tree::{Fonts, Keymap, Theme, Tree, WindowRequest};
 use quadra_ui::{View, mount_with};
@@ -178,6 +180,15 @@ impl<R: Renderer> App<R> {
     /// A window's tree, for tests and tools.
     pub fn tree(&self, window: WindowId) -> Option<&Tree> {
         self.windows.iter().find(|w| w.window.id() == window).map(|w| &w.tree)
+    }
+
+    /// What a window shows, read back: for tools that save pictures and for pixel tests. Only
+    /// a window that is drawn offscreen can be read.
+    pub fn read_pixels(&mut self, window: WindowId) -> Result<Pixels> {
+        let surface = self.windows.iter().find(|w| w.window.id() == window).map(|w| w.surface);
+        let surface =
+            surface.ok_or_else(|| PlatformError(format!("{window:?} is not a window of the app")))?;
+        Ok(self.renderer.read_pixels(surface)?)
     }
 
     pub(crate) fn close(&mut self, window: WindowId) {

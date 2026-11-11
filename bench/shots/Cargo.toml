@@ -1,0 +1,23 @@
+[package]
+name = "quadra-bench-shots"
+description = "Draws the pages of the gallery without a window, to pictures: for design review and comparison"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "shots"
+path = "src/main.rs"
+
+[dependencies]
+quadra-app = { path = "../../crates/quadra-app" }
+quadra-gallery = { path = "../../examples/gallery" }
+quadra-kit = { path = "../../crates/quadra-kit" }
+quadra-native-win = { path = "../../crates/quadra-native-win" }
+quadra-platform = { path = "../../crates/quadra-platform" }
+quadra-render = { path = "../../crates/quadra-render" }

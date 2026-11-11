@@ -18,8 +18,8 @@ use std::rc::Rc;
 use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
 pub use quadra_app::{AppError, FrameReport, Result};
-pub use quadra_layout::{Align, Direction, Justify, Length, Overflow};
-pub use quadra_platform::{Cursor, Key, Mods, MouseButton, WindowId, WindowOptions};
+pub use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position};
+pub use quadra_platform::{Cursor, HitRegion, Key, Mods, MouseButton, WindowId, WindowOptions};
 pub use quadra_prim::{Color, Corners, Ease, Edges, Point, Rect, Size};
 pub use quadra_reactive::{
     Memo, Scope, Signal, batch, effect, expect, memo, on_cleanup, provide, signal, untrack, use_context,
@@ -29,8 +29,9 @@ pub use quadra_tree::{
     PointerKind, Role, SemanticAction, Side, State, Theme, Token,
 };
 pub use quadra_ui::{
-    AnyView, Div, NodeRef, Place, Refine, Region, View, column, div, dynamic, each, each_frame, overlay, row,
-    scroll, show, text, text_area, text_input, tween, uniform_list, virtual_list,
+    AnyView, Div, MountCx, NodeRef, Place, Refine, Region, TextView, View, Window, column, div, dynamic,
+    each, each_frame, overlay, row, scroll, show, text, text_area, text_input, tween, uniform_list,
+    virtual_list, window,
 };
 
 /// An app on the backends of this operating system: Win32 windows, the D3D11 renderer and

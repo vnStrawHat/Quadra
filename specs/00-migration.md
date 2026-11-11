@@ -52,8 +52,8 @@ commit and kept as the reference for behaviour, tests and measured numbers.
 ```
 Cargo.toml  rust-toolchain.toml
 crates/quadra-*        the framework (02-architecture)
-examples/              counter, the gallery (the kit's acceptance test), small demos
-bench/                 benches and the comparison runner
+examples/              the gallery (the kit's acceptance test); small demos live with their crates
+bench/                 benches, the comparison runner, the tool that draws the gallery to pictures
 assets/                themes, fonts, icons, shaders
 specs/                 these specs, and the behaviour specs carried from the V repository
 docs/                  progress.md, benchmarks.md

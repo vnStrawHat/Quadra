@@ -126,6 +126,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-bench-shots"
+version = "0.1.0"
+dependencies = [
+ "quadra-app",
+ "quadra-gallery",
+ "quadra-kit",
+ "quadra-native-win",
+ "quadra-platform",
+ "quadra-render",
+]
+
+[[package]]
+name = "quadra-gallery"
+version = "0.1.0"
+dependencies = [
+ "quadra",
+ "quadra-kit",
+]
+
+[[package]]
 name = "quadra-kit"
 version = "0.1.0"
 dependencies = [

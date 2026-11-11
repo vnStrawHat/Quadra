@@ -53,6 +53,8 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
 | The bench app | `tools/bench.sh` builds `target/release/compare.exe`; with scene names it runs them headless with pass timings (docs/benchmarks.md has the runner's command) |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
+| The gallery | `tools/cargo.sh run -p quadra-gallery` (`examples/gallery`: a page a component) |
+| The gallery's pages as pictures | `tools/shots.sh [dark\|light] [page ..]` draws them without a window into `.tmp/shots/<theme>`; with `QUADRA_REFERENCE=<folder>` it compares them (`tools/compare_shots.py`). The V pictures are in the V repository, `.tmp/shots/hl-dark` and `hl-light` |
 
 Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 
@@ -132,7 +134,7 @@ the files are in `crates/quadra-kit/themes/`). Text values hold down the tree
 text has no style of its own). The kit has its fonts (`quadra_kit::fonts`), its numbers
 (`size`), `install(app, &theme)` and `root()`; `crates/quadra-kit/examples/themes.rs` shows
 both themes in a real window. The button is in (`quadra-kit/src/button.rs`; `action.rs`
-has `Confirm` and the kit's keymap; the example `gallery` shows it), and a disabled node is
+has `Confirm` and the kit's keymap), and a disabled node is
 not clicked, focused or tabbed to (specs/09). `quadra-vector` is ported (paths, the SVG
 of icons, coverage), and the kit has icons (`icon(icons::CHECK)`; the widget is `Drawing`
 in `quadra-tree/src/drawing.rs`, its masks are tiles of the glyph atlas) and the text
@@ -156,7 +158,7 @@ notifications and toasts (`notices()`, `Notice`), and the command palette (`pale
 has `table` (sort, column widths, selection, copy; no sideways scrolling yet) and `tree`, `range_slider`, `combobox`, `calendar`, `date_picker`, `time_input`, and the smaller
 things (`loading`, `indeterminate`, `clearable`, `key_hint`, `confirm`, `menu_button`, `menubar`). Next: drawer; scrolling sideways;
 rich text; local time and the app's language (i18n); the components in the order of specs/13, each with its
-section in the gallery example and its test through the semantic tree; tokens for radii and spacing, style transitions
+page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, style transitions
 (`.transition(..)` of specs/05, not built), then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`
 (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range

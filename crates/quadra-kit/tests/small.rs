@@ -35,10 +35,7 @@ fn a_button_that_is_busy_does_nothing_and_a_checkbox_can_be_neither() {
     });
     // Busy: a spinner before the label, and a click does nothing.
     let tree = h.semantics();
-    assert!(
-        tree.contains("Button \"Save\" [disabled]") && tree.contains("ProgressBar \"Loading\""),
-        "{tree}"
-    );
+    assert!(tree.contains("Button \"Save\"") && tree.contains("ProgressBar \"Loading\""), "{tree}");
     h.get_by_role(Role::Button, "Save").click();
     assert_eq!(saved.get_untracked(), 0);
     busy.set(false);

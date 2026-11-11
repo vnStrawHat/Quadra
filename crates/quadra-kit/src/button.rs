@@ -139,8 +139,8 @@ impl Button {
         self
     }
 
-    /// While `loading` is true the button shows a spinner before its label and does nothing:
-    /// what it started is under way.
+    /// While `loading` is true the button shows a spinner before its label and its click
+    /// does nothing: what it started is under way.
     pub fn loading<M>(mut self, loading: impl IntoProp<bool, M>) -> Self {
         self.loading = Some(loading.into_prop());
         self
@@ -210,22 +210,13 @@ impl Button {
         };
         // Disabled: as it is at rest, whatever the pointer does, in the colour of what is off.
         let off = |s: quadra_ui::Refine| s.bg(fill).border_color(border).text_color(token::TEXT_DISABLED);
-        // Busy is disabled, with a spinner where an icon goes.
-        let (face, busy) = match self.loading {
-            Some(loading) => {
-                let busy = match loading {
-                    Prop::Value(busy) => memo(move || busy),
-                    Prop::Reactive(read) => memo(read),
-                };
-                let idle = match self.disabled {
-                    Prop::Value(off) => Box::new(move || off) as Box<dyn Fn() -> bool>,
-                    Prop::Reactive(read) => read,
-                };
-                (face.disabled(move || busy.get() || idle()), Some(busy))
-            }
-            None => (face.disabled(self.disabled), None),
-        };
-        let face = face.when(State::DISABLED, off);
+        let face = face.disabled(self.disabled).when(State::DISABLED, off);
+        // Busy looks as it did, with a spinner where an icon goes; its click does nothing.
+        let busy = self.loading.map(|loading| match loading {
+            Prop::Value(busy) => memo(move || busy),
+            Prop::Reactive(read) => memo(read),
+        });
+        let idle = move || !busy.is_some_and(|busy| busy.get());
         let face = if self.full { face.grow(1.0) } else { face };
         let face = match self.test_id {
             Some(id) => face.test_id(id),
@@ -236,8 +227,12 @@ impl Button {
                 // The pointer and the keyboard do the same thing.
                 let click = Rc::new(RefCell::new(click));
                 let by_key = click.clone();
-                face.on_click(move |_| (click.borrow_mut())())
-                    .on_action::<Confirm>(move |_| (by_key.borrow_mut())())
+                let press = move |click: &RefCell<Box<dyn FnMut()>>| {
+                    if idle() {
+                        (click.borrow_mut())()
+                    }
+                };
+                face.on_click(move |_| press(&click)).on_action::<Confirm>(move |_| press(&by_key))
             }
             None => face,
         };

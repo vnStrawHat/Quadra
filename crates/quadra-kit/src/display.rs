@@ -8,15 +8,16 @@ use quadra_ui::{Div, TextView, column, div, row, text};
 
 use crate::{fonts, size, token};
 
-/// A heading of a level from 1: the size alone ranks it, 23, 18 and 16 px, then that of text.
+/// A heading of a level from 1: the size alone ranks it, 23, 18 and 16 px, then that of text,
+/// on lines as tall as text of the UI has them (1.618 of the size, in whole pixels).
 pub fn heading(words: impl Into<String>, level: u8) -> Div {
-    let scale = match level {
-        1 => size::TEXT_2XL,
-        2 => size::TEXT_XL,
-        3 => size::TEXT_LG,
-        _ => size::TEXT_MD,
+    let px = match level {
+        1 => size::TEXT_2XL.size,
+        2 => size::TEXT_XL.size,
+        3 => size::TEXT_LG.size,
+        _ => size::TEXT_MD.size,
     };
-    let line = div().role(Role::Heading).text_size(scale.size).line_height(scale.line_height());
+    let line = div().role(Role::Heading).text_size(px).line_height((px * 1.618).round() / px);
     line.child(text(words.into()))
 }
 

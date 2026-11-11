@@ -40,9 +40,12 @@ Handlers are closures on nodes (05). A node with no handler for an event kind is
 
 ## Hover and press
 
-- After each pointer move, and after each frame that changed layout or scrolled, the hover path
-  is computed again. Nodes entering and leaving get `hovered` set or cleared and enter or leave
-  events.
+- After each pointer move, and in each frame while the pointer is over the window, the hover
+  path is computed again. Nodes entering and leaving get `hovered` set or cleared and enter or
+  leave events. In a frame this is done once the layout is settled and overlays are placed,
+  before painting: what scrolled under the pointer shows its hover in that frame. What the
+  handlers of those events write is applied then too (bindings, styles); a layout they ask
+  for waits for the next frame.
 - Pointer-down sets `active` on the path; release clears it.
 - While a node holds the pointer (capture), hover stays as it was; it catches up at the
   release.

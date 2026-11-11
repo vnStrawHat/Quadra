@@ -125,15 +125,20 @@ impl Tree {
             }
         }
         self.place_overlays();
+        if self.input.pointer.is_some() {
+            // What is under the pointer may have moved away from it, or come under it: a list
+            // that scrolled. Its hover shows in this frame; a layout that its handlers ask
+            // for waits for the next one.
+            batch(|| self.rehover());
+            self.update();
+            self.style_pass();
+            times.update += lap();
+        }
         self.cull_pass();
         self.paint_pass();
         times.paint = lap();
         self.compose_pass();
         times.compose = lap();
-        if self.input.pointer.is_some() {
-            // What is under the pointer may have moved away from it, or come under it.
-            batch(|| self.rehover());
-        }
         self.times = times;
         self.stats
     }

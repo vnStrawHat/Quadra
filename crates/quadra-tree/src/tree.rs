@@ -1,10 +1,12 @@
 //! The tree: nodes kept across frames, changed where they changed (specs/04).
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use quadra_layout::{LayoutTree, RectChange};
 use quadra_prim::{Point, Rect, Size};
+use quadra_reactive::{Signal, signal};
 use quadra_render::{Instance, LayerId, Scene};
 use quadra_text::TextSystem;
 
@@ -39,6 +41,8 @@ pub struct Tree {
     pub(crate) recompose: Vec<NodeId>,
     /// Layers waiting to be painted, during the paint pass.
     pub(crate) todo: Vec<NodeId>,
+    /// By node index: the signal that follows the node's size (`Tree::size_signal`).
+    pub(crate) sizes: HashMap<u32, Signal<Size>>,
     pub(crate) stats: FrameStats,
     // Reused by every pass.
     pub(crate) scratch: Vec<Instance>,
@@ -69,6 +73,7 @@ impl Tree {
             repaint_all: false,
             recompose: Vec::new(),
             todo: Vec::new(),
+            sizes: HashMap::new(),
             stats: FrameStats::default(),
             scratch: Vec::new(),
             patches: Vec::new(),
@@ -208,19 +213,30 @@ impl Tree {
         }
     }
 
+    /// A signal of the node's size, for state that depends on it (how many rows of a list
+    /// fit). It is written after the layout pass, and the frame then runs its bindings and
+    /// lays out again: one more round, not a loop inside the pass (specs/04).
+    pub fn size_signal(&mut self, id: NodeId) -> Signal<Size> {
+        let size = self.rect(id).size();
+        *self.sizes.entry(id.index).or_insert_with(|| signal(size))
+    }
+
     /// The node's border box, relative to its parent's.
     pub fn rect(&self, id: NodeId) -> Rect {
         self.layout.rect(self.node(id).layout)
     }
 
-    /// The node's border box in the window, in logical pixels.
+    /// The node's border box in the window, in logical pixels: where it is drawn, with the
+    /// offsets of the layers around it (scrolling) counted in.
     pub fn window_rect(&self, id: NodeId) -> Rect {
         let mut origin = Point::ZERO;
-        let mut up = self.node(id).parent;
-        while let Some(parent) = up {
-            let r = self.layout.rect(self.nodes[parent.index as usize].layout);
-            origin = Point::new(origin.x + r.x, origin.y + r.y);
-            up = self.nodes[parent.index as usize].parent;
+        let mut up = Some(id);
+        while let Some(at) = up {
+            let node = &self.nodes[at.index as usize];
+            let offset = node.layer.as_ref().map_or(Point::ZERO, |layer| layer.offset);
+            let place = if at == id { Point::ZERO } else { self.layout.rect(node.layout).origin() };
+            origin = Point::new(origin.x + place.x + offset.x, origin.y + place.y + offset.y);
+            up = node.parent;
         }
         self.rect(id).translate(origin.x, origin.y)
     }

@@ -57,7 +57,6 @@ impl Tree {
     /// and returns what they visited. Afterwards the scene is ready to draw.
     pub fn frame(&mut self, size: Size, scale: f32) -> FrameStats {
         self.stats = FrameStats::default();
-        self.update();
         if size != self.size {
             self.relayout = true;
         }
@@ -66,7 +65,15 @@ impl Tree {
             (self.repaint, self.repaint_all) = (true, true);
         }
         (self.size, self.scale) = (size, scale);
-        self.layout_pass();
+        // A layout may change a size that state depends on: its bindings run and the layout
+        // is done again. After four rounds the rest waits for the next frame.
+        for _ in 0..4 {
+            self.update();
+            self.layout_pass();
+            if !self.shared.wake.get() {
+                break;
+            }
+        }
         self.paint_pass();
         self.compose_pass();
         self.stats
@@ -198,6 +205,15 @@ impl Tree {
             let index = self.owners[change.id.index()];
             let id = NodeId { index, generation: self.nodes[index as usize].generation };
             self.rect_changed(id, change.moved, change.resized);
+            if change.resized
+                && let Some(&watcher) = self.sizes.get(&index)
+            {
+                // A watcher whose scope ended is dropped; a slot reused by another node too.
+                let size = self.layout.rect(change.id).size();
+                if !watcher.try_set(size) {
+                    self.sizes.remove(&index);
+                }
+            }
         }
         self.changes = changes;
     }

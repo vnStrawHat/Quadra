@@ -3,6 +3,7 @@
 //!
 //!     tools/cargo.sh run --release -p quadra-ui --example scenes
 //!
+//! `list` is a virtual list of 100,000 rows of three texts, scrolling 8 px a frame.
 //! `grid` is 600 cells, each with its own background and a number that changes every frame.
 //! `document` is 40 paragraphs, about 20,000 characters, wrapped to a width that changes
 //! every frame. The numbers are not comparable with a real window's yet: no glyph is
@@ -17,7 +18,7 @@ use quadra_reactive::signal;
 use quadra_render::{DeviceSize, NullRenderer, Renderer, SurfaceTarget};
 use quadra_text::{FakeBackend, TextSystem};
 use quadra_tree::{FrameStats, Tree};
-use quadra_ui::{View, column, div, mount_root, row, text};
+use quadra_ui::{View, column, div, mount_root, row, text, uniform_list};
 
 const FRAMES: u32 = 600;
 
@@ -65,6 +66,15 @@ fn run(name: &str, view: impl View, mut change: impl FnMut(u32)) {
 }
 
 fn main() {
+    let scroll = signal(0.0f32);
+    let entry = |i: quadra_reactive::Signal<usize>| {
+        let name = text(move || format!("Row number {}", i.get())).size(10.0);
+        let detail = text(move || format!("detail {}", i.get() * 3)).size(10.0);
+        let state = text(move || if i.get().is_multiple_of(2) { "ready" } else { "waiting" }).size(10.0);
+        row().gap(12.0).child(name).child(detail).child(state)
+    };
+    run("list", uniform_list(|| 100_000, 28.0, scroll, entry), move |n| scroll.set(n as f32 * 8.0));
+
     let tick = signal(0u32);
     let cell = move |i: u32| {
         let number = text(move || (tick.get() * 7 + i * 13).to_string()).size(10.0);

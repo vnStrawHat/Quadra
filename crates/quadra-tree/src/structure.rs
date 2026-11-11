@@ -66,6 +66,7 @@ impl Tree {
         node.alive = false;
         node.generation = node.generation.wrapping_add(1);
         node.widget = None;
+        self.sizes.remove(&id.index);
         if let Some(state) = node.layer.take().filter(|s| s.id != self.root_layer) {
             self.scene.remove_layer(state.id);
         }

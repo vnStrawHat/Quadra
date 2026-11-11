@@ -13,15 +13,20 @@ defaults until phase R1 fixes it.
 
 The passes on the CPU only: fake text backend, null renderer, 800 x 600. No glyph is rasterized
 and nothing reaches a GPU, so these are not yet comparable with the V numbers, which are whole
-frames of a real window (grid 1.19 ms, document 0.69 ms).
+frames of a real window (list 0.35 ms, grid 1.19 ms, document 0.69 ms).
 
 | Scene | First frame | A frame | Bindings | Laid out | Painted | Instances written | Uploaded |
 |---|---|---|---|---|---|---|---|
+| list: 100,000 rows of three texts, scrolling 8 px a frame | 0.47 ms | 0.007 ms | 2 | 4 | 1 | 8 | 404 |
 | grid: 600 cells, a number changing in each | 1.76 ms | 0.415 ms | 600 | 1,284 | 600 | 2,465 | 3,064 |
 | document: 40 paragraphs wrapped to a new width | 3.50 ms | 0.604 ms | 1 | 285 | 41 | 15,600 | 15,600 |
 
 What they say so far:
 
+- **list** scrolls for 7 µs a frame: most frames change one layer constant and nothing else.
+  Every third or fourth frame a row is given to the row entering, which runs its three
+  bindings and repaints it (the counts above are averages a frame). The upload is the list's
+  layer, about 1,200 instances, when a text changes its length.
 - **grid**, the worst case for fine-grained updates, spends 0.7 µs per cell on binding, layout
   and paint together. The whole layer is uploaded because the numbers change their digit
   count, which rebuilds the list.

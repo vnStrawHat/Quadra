@@ -84,12 +84,16 @@ transform; a scroll container's content is such a node, and scrolling is its off
 `quadra-ui` has boxes, text, properties (constant, signal, memo or closure), `each`, `show`
 and `dynamic`; `quadra-testing` has a headless window that checks every frame.
 
-Next, in order: the scroll view and the virtual list (specs/05, "Virtual lists"), which the
-`list` scene needs; then the structural budgets of specs/14 as tests; then the native crate
+`quadra-ui` also has `uniform_list` (a virtual list of rows of one height; its content is a
+layer, its rows are recycled), and `quadra-tree` has size signals for state that depends on a
+node's size.
+
+Next, in order: the structural budgets of specs/14 as one test file; then the native crate
 (Win32, D3D11, DirectWrite) with atlases and glyph tiles, and the comparison bench. Still
 missing below that: style variants and tokens (specs/13), input (specs/09), semantics
-(specs/12). An open question from the first numbers: whether paint should skip what is far
-outside the visible part of a layer (docs/benchmarks.md, the document scene).
+(specs/12), rows of different heights. An open question from the first numbers: whether paint
+should skip what is far outside the visible part of a layer (docs/benchmarks.md, the document
+scene).
 
 Always read the gate's exit status, not its output through a pipe:
 `tools/check.sh prod > .tmp/check.log 2>&1 && git commit ...`.

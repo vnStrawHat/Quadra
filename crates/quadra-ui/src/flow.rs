@@ -22,6 +22,10 @@ pub struct Region {
 }
 
 impl Region {
+    pub(crate) fn new(container: Div, bind: impl FnOnce(NodeId, &mut MountCx) + 'static) -> Region {
+        Region { container, bind: Box::new(bind) }
+    }
+
     /// Replaces the box the content is mounted in (a column by default for `each`).
     pub fn container(mut self, container: Div) -> Self {
         self.container = container;

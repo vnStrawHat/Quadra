@@ -17,12 +17,14 @@
 
 mod div;
 mod flow;
+mod list;
 mod prop;
 mod text;
 mod view;
 
 pub use div::{Div, column, div, row};
 pub use flow::{Region, dynamic, each, mount_in, show};
+pub use list::uniform_list;
 pub use prop::{IntoProp, Prop};
 pub use text::{TextView, text};
 pub use view::{AnyView, MountCx, View, mount_root};

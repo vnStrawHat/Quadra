@@ -100,8 +100,8 @@ every block) draws scenes into offscreen surfaces, checked by pixel tests on the
 rasterizer. Its shader is `shaders/prims.hlsl`, compiled by `tools/build_shaders.sh` (needs the
 Windows SDK's fxc) into `.cso` files that are committed and embedded.
 
-Next, in order, in that crate: the atlas textures (texture arrays filled by `sync_atlas`) and a
-pixel test of glyphs; window surfaces (flip-model swap chain, frame-latency waitable) with a
+Its atlases are texture arrays filled by `sync_atlas`; one test goes from a view to pixels.
+Next, in order, in that crate: window surfaces (flip-model swap chain, frame-latency waitable) with a
 Win32 window and message loop, and a counter in a real window; the DirectWrite text backend;
 then the comparison bench against the V baseline: that is the go/no-go of phase R1. Still
 missing below that: style variants and tokens (specs/13), input (specs/09), semantics

@@ -23,7 +23,11 @@ name = "quadra-native-win"
 version = "0.1.0"
 dependencies = [
  "quadra-prim",
+ "quadra-reactive",
  "quadra-render",
+ "quadra-text",
+ "quadra-tree",
+ "quadra-ui",
  "windows",
 ]
 

@@ -4,6 +4,7 @@
 //! This is one of the two crates that may hold `unsafe` code (specs/01, R16): calls into the
 //! operating system. Every block says what makes it sound.
 
+mod atlas;
 mod gpu;
 mod pipeline;
 mod renderer;

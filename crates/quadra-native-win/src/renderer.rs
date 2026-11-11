@@ -6,14 +6,15 @@ use std::ffi::c_void;
 
 use quadra_prim::{Color, Rect};
 use quadra_render::{
-    AtlasCore, DeviceSize, Dirty, Instance, LayerId, Pixels, RenderError, RenderStats, Renderer, Scene,
-    SceneId, Step, SurfaceId, SurfaceTarget,
+    AtlasCore, AtlasKind, DeviceSize, Dirty, Instance, LayerId, Pixels, RenderError, RenderStats, Renderer,
+    Scene, SceneId, Step, SurfaceId, SurfaceTarget,
 };
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D11::{
     D3D11_BOX, D3D11_VIEWPORT, ID3D11Buffer, ID3D11ShaderResourceView,
 };
 
+use crate::atlas::AtlasTexture;
 use crate::gpu::Gpu;
 use crate::pipeline::Pipeline;
 use crate::surface::Offscreen;
@@ -34,6 +35,9 @@ pub struct D3d11Renderer {
     pipeline: Pipeline,
     surfaces: Vec<Option<Offscreen>>,
     layers: HashMap<(SceneId, LayerId), LayerBuffer>,
+    /// The glyph and image atlases, as texture arrays.
+    coverage: Option<AtlasTexture>,
+    color: Option<AtlasTexture>,
     steps: Vec<Step>,
     stats: RenderStats,
 }
@@ -49,6 +53,8 @@ impl D3d11Renderer {
             pipeline,
             surfaces: Vec::new(),
             layers: HashMap::new(),
+            coverage: None,
+            color: None,
             steps: Vec::new(),
             stats: RenderStats::default(),
         })
@@ -135,10 +141,11 @@ impl Renderer for D3d11Renderer {
     }
 
     fn sync_atlas(&mut self, atlas: &mut AtlasCore) -> Result<(), RenderError> {
-        // ponytail: glyph textures come with the text backend; until then the pixels are taken
-        // and dropped, as the null renderer does.
-        atlas.take_uploads();
-        Ok(())
+        let slot = match atlas.kind() {
+            AtlasKind::Coverage => &mut self.coverage,
+            AtlasKind::Color => &mut self.color,
+        };
+        AtlasTexture::sync(slot, &self.gpu, atlas)
     }
 
     fn draw(&mut self, surface: SurfaceId, scene: &mut Scene, clear: Color) -> Result<(), RenderError> {
@@ -165,6 +172,10 @@ impl Renderer for D3d11Renderer {
             self.gpu.context.ClearRenderTargetView(&target, &premultiplied);
         }
         self.pipeline.bind(&self.gpu);
+        let atlases =
+            [self.coverage.as_ref().map(|t| t.view.clone()), self.color.as_ref().map(|t| t.view.clone())];
+        // SAFETY: the views are alive for the call; a slot without a texture reads as zero.
+        unsafe { self.gpu.context.PSSetShaderResources(1, Some(&atlases)) };
         let mut current = None;
         let mut result = Ok(());
         for step in &steps {
@@ -222,6 +233,7 @@ impl Renderer for D3d11Renderer {
         self.gpu = Gpu::new(software)?;
         self.pipeline = Pipeline::new(&self.gpu)?;
         self.layers.clear();
+        (self.coverage, self.color) = (None, None);
         self.surfaces.clear();
         for size in sizes {
             let surface = size.map(|size| Offscreen::new(&self.gpu, size)).transpose()?;

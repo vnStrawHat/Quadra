@@ -95,7 +95,13 @@ bench's counter counts real clicks. Styles have state variants (`.hover(..)`, `.
 scrolls `scroll` and `uniform_list`, nested ones included. Focus and keys are in
 (`quadra-tree/src/focus.rs`: press to focus, Tab inside a focus scope, the ring, keys along
 the focus path, `NodeRef::focus`), and so are actions and the keymap (`action.rs`,
-`keymap.rs`; `App::keymap`; Tab is a binding). Next, in this order: text input and IME, overlays, semantics (specs/12), rows of different heights.
+`keymap.rs`; `App::keymap`; Tab is a binding). **The text input is in progress**: its edit
+buffer is done (`quadra-text/src/edit.rs`). Next for it: text events from the platform to the
+focused node (`Tree::text`), a `TextField` widget in `quadra-tree` (caret, selection,
+horizontal scroll), the `text_input(value)` view with its actions and default bindings and
+pointer selection, then the clipboard (platform trait, headless and Win32; never test the
+real one), timers (`quadra-async`, for the caret's blink) and IME (specs/09; behaviour/02).
+After the text input: overlays, semantics (specs/12), rows of different heights.
 `quadra-async` (specs/11) when the first thing needs a timer or a task.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its

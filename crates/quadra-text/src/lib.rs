@@ -4,6 +4,7 @@
 //! A text node owns a [`Paragraph`]: shaped once, broken into lines at a width without shaping
 //! again. Shaped words are shared through the [`TextSystem`]'s cache.
 
+mod edit;
 mod fake;
 mod grapheme;
 mod numeric;
@@ -11,6 +12,7 @@ mod paragraph;
 mod system;
 mod types;
 
+pub use edit::{EditBuffer, Motion};
 pub use fake::FakeBackend;
 pub use grapheme::{boundaries, next_grapheme, prev_grapheme};
 pub use paragraph::{Line, Paragraph, PositionedGlyph};

@@ -12,7 +12,7 @@
 
 ## Structural budgets
 
-Each row is a test on `FrameStats` (12) in `quadra-testing`, in a window that also holds 10,000
+Each row is a test on `FrameStats` (12), in a window that also holds 10,000
 unrelated nodes. "Path" means the node and its ancestors up to the layout boundary.
 
 | Change | Bindings | Styled | Laid out | Painted | Uploaded | Mounted |
@@ -23,15 +23,20 @@ unrelated nodes. "Path" means the node and its ancestors up to the layout bounda
 | A label's text changes, same size | 1 | 0 | path | 1 | that node's instances | 0 |
 | A label's text changes size | 1 | 0 | path and affected siblings | those nodes | their layer | 0 |
 | One row of a 10,000-row list changes | 1 | 0 | path | 1 | that node's instances | 0 |
-| Scroll plain content | 0 | 0 | 0 | 0 | 0 instances, one layer constant | 0 |
-| Scroll a virtual list within realized rows | 0 | 0 | 0 | 0 | 0 instances, one layer constant | 0 |
-| Scroll a virtual list by one row | row's bindings | 0 | 1 row | 1 row | that layer | 0 (recycled) |
+| Scroll plain content | 1: the offset | 0 | 0 | 0 | 0 instances, one layer constant | 0 |
+| Scroll a virtual list within realized rows | the list's own | 0 | 0 | 0 | 0 instances, one layer constant | 0 |
+| Scroll a virtual list by one row | the list's own and the row's | 0 | 1 row | 1 row | that layer | 0 (recycled) |
 | A transform or opacity animation frame | 0 | 0 | 0 | 0 | one layer constant | 0 |
 | A colour transition frame | 0 | 1 | 0 | 1 | that node's instances | 0 |
 | Caret blink | 0 | 0 | 0 | 1 | that node's instances | 0 |
 | Theme change, colours only | 0 | all | 0 | changed | changed layers | 0 |
 | A character typed in an input | 1–2 | 0 | path | the input | its instances or layer | 0 |
 | One terminal row changes | 0 | 0 | 0 | 1 surface | that row's instances | 0 |
+
+The scroll position is a signal, so scrolling runs the binding that turns it into a layer
+offset: that is the one binding of the scroll rows. The tests are
+`crates/quadra-ui/tests/budgets.rs` and `tests/list.rs`; the rows about input, style
+variants, themes and the terminal are added as those are built.
 
 The same table, read against the V design: scrolling prepainted and painted the window; a text
 change rendered and laid out its whole view; hover was a special patch path.

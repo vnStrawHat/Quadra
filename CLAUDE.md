@@ -88,9 +88,12 @@ and `dynamic`; `quadra-testing` has a headless window that checks every frame.
 layer, its rows are recycled), and `quadra-tree` has size signals for state that depends on a
 node's size.
 
-Next, in order: the structural budgets of specs/14 as one test file; then the native crate
-(Win32, D3D11, DirectWrite) with atlases and glyph tiles, and the comparison bench. Still
-missing below that: style variants and tokens (specs/13), input (specs/09), semantics
+The structural budgets of specs/14 that can be met so far are tests
+(`crates/quadra-ui/tests/budgets.rs`, `tests/list.rs`).
+
+Next, in order: the native crate (Win32 window, D3D11, DirectWrite) with atlases and glyph
+tiles, then the comparison bench against the V baseline: that is the go/no-go of phase R1.
+Still missing below that: style variants and tokens (specs/13), input (specs/09), semantics
 (specs/12), rows of different heights. An open question from the first numbers: whether paint
 should skip what is far outside the visible part of a layer (docs/benchmarks.md, the document
 scene).

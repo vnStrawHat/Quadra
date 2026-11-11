@@ -31,9 +31,11 @@ fn a_long_page_paints_what_is_near_the_window_and_scrolls_inside_it_for_one_cons
     // The window and its height below it: 30 rows, not 500.
     assert_eq!(stats.instances_written, ink(0..=29), "{stats:?}");
 
+    y.set(100.0); // the bar shows: its thumb is painted, and nothing else
+    assert_eq!(h.frame().0.nodes_painted, 1);
     y.set(500.0); // still inside the band: nothing is painted, nothing uploaded
     let (stats, render) = h.frame();
-    assert_eq!((stats.nodes_painted, stats.layers_composed, render.instances_uploaded), (0, 1, 0));
+    assert_eq!((stats.nodes_painted, stats.layers_composed, render.instances_uploaded), (0, 2, 0));
 
     y.set(700.0); // rows past the band show: a new band, from 100 to 1900
     let (stats, _) = h.frame();

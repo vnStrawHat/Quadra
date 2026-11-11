@@ -89,10 +89,15 @@ fn one_row_among_ten_thousand() {
 #[test]
 fn scrolling_plain_content() {
     let mut p = page();
+    // The first scroll after a rest shows the bar: its thumb is painted, one instance.
+    p.scroll_y.set(100.0);
+    let (frame, drawn) = p.h.frame();
+    assert_eq!((frame.nodes_painted, frame.nodes_laid_out, drawn.instances_uploaded), (1, 0, 1));
+    // From then on a scroll is two constants: where the content is, and where the thumb.
     p.scroll_y.set(500.0);
     let (frame, drawn) = p.h.frame();
-    assert_eq!((frame.nodes_painted, frame.nodes_laid_out, frame.layers_composed), (0, 0, 1));
-    assert_eq!((frame.writes, drawn.instances_uploaded, drawn.layers_uploaded), (1, 0, 0));
+    assert_eq!((frame.nodes_painted, frame.nodes_laid_out, frame.layers_composed), (0, 0, 2));
+    assert_eq!((frame.writes, drawn.instances_uploaded, drawn.layers_uploaded), (2, 0, 0));
     assert_eq!(p.h.tree.window_rect(p.list).y, -500.0);
     // Past what was painted around the window: the 900 rows around the new place (and the
     // column they are in), once.

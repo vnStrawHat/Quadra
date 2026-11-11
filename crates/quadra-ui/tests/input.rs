@@ -97,7 +97,8 @@ fn the_wheel_scrolls_what_is_under_the_pointer_and_what_is_left_goes_outwards() 
     h.wheel(50.0, 50.0, -1.0); // one line towards the end, over the small area
     assert_eq!((inner_y.get_untracked(), outer_y.get_untracked()), (40.0, 0.0));
     let (stats, drawn) = h.frame();
-    assert_eq!((stats.nodes_painted, stats.layers_composed, drawn.instances_uploaded), (0, 1, 0));
+    // The content moved by its layer; what was painted is the thumb of its bar, which shows.
+    assert_eq!((stats.nodes_painted, stats.layers_composed, drawn.instances_uploaded), (1, 2, 1));
 
     // It has 200 px to scroll. Five lines ask for 200 more than the 160 left: the page takes the rest.
     h.wheel(50.0, 50.0, -5.0);

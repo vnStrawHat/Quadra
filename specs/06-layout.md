@@ -100,6 +100,15 @@ because every render built new nodes. Here nodes persist, and a change is a flag
   their subpixel positions while scrolling.
 - `scroll_into_view`, anchoring (keep the first visible item in place when content above it
   changes size) and momentum are behaviours of the scroll widget.
+- **The scrollbar** (behaviour/15, "Scrollbar"). Every scroll view and list has one, with
+  nothing to ask for: a pill 6 px wide, 4 px in from the right edge and from the ends, as
+  long as the viewport is of the content and at least 25 px, in the text colour that holds
+  at the container, at 30 %. It is a node of its own in the viewport, beside the content
+  and above it, and a layer: scrolling moves it by its offset and paints nothing. It shows
+  when the pointer moves over the container or the content is scrolled by any means, stays
+  one second after the last of those, then fades over 400 ms; content that fits has none.
+  The 14 px at the edge where the thumb is are its grip: a press there takes the pointer,
+  and the content follows the pointer in proportion until the release.
 - **Scrolling into view** (`Tree::scroll_into_view`, `NodeRef::scroll_into_view`): every node
   around the asked one that scrolls what it holds is asked, the nearest first, to show the
   node's rect, given in its own box as it is scrolled now. It scrolls as little as shows the

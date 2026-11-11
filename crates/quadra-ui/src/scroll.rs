@@ -7,6 +7,7 @@ use quadra_tree::{NodeId, PointerEvent, PointerKind};
 
 use crate::div::div;
 use crate::flow::Region;
+use crate::scrollbar::{self, Scrolled};
 use crate::view::{MountCx, View};
 
 /// Shows `content` behind a viewport, scrolled down by `scroll_y` pixels (kept between zero
@@ -49,7 +50,6 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
         let content = content.mount(cx);
         cx.tree.make_layer(content, true);
         cx.tree.cull_layer(content);
-        cx.tree.set_children(viewport, &[content]);
         let (outer, inner) = (cx.tree.size_signal(viewport), cx.tree.size_signal(content));
         let end = memo(move || (inner.get().height - outer.get().height).max(0.0));
         let top = memo(move || scroll_y.get().clamp(0.0, end.get()));
@@ -59,6 +59,8 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
         cx.tree.on_reveal(viewport, move |rect| {
             reveals(rect, scroll_y, top.get(), end.get(), outer.get_untracked().height)
         });
+        let thumb = scrollbar::attach(cx, viewport, Scrolled { scroll_y, top, end, view: outer });
+        cx.tree.set_children(viewport, &[content, thumb]);
         let writer = cx.handle.clone();
         cx.handle.bind(move || {
             let y = top.get();

@@ -24,6 +24,7 @@ mod node_ref;
 mod overlay;
 mod prop;
 mod scroll;
+mod scrollbar;
 mod text;
 mod tween;
 mod view;

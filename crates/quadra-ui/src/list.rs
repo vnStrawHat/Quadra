@@ -23,6 +23,7 @@ use crate::div::Div;
 use crate::div::div;
 use crate::flow::Region;
 use crate::scroll::{reveals, wheel_scrolls};
+use crate::scrollbar::{self, Scrolled};
 use crate::view::{MountCx, View};
 
 /// Rows kept mounted above and below the viewport, so a small scroll shows no gap.
@@ -129,6 +130,8 @@ fn list<V: View + 'static>(
         tree.on_reveal(viewport, move |rect| {
             reveals(rect, scroll_y, top.get(), end.get(), size.get_untracked().height)
         });
+        let thumb = scrollbar::attach(cx, viewport, Scrolled { scroll_y, top, end, view: size });
+        cx.tree.set_children(viewport, &[content, thumb]);
         if let Some(wanted) = asked.borrow_mut().take() {
             // Asked again when heights are found out, until the row shows whole and measured:
             // the rows on the way to it were only estimated.

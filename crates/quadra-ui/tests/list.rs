@@ -53,7 +53,8 @@ fn only_the_rows_in_the_window_are_mounted() {
     let (mut h, ..) = list(100_000);
     let shown = rows(&mut h);
     assert_eq!((shown.len(), shown[0].as_str(), shown[31].as_str()), (32, "row 0", "row 31"));
-    assert_eq!(h.tree.len(), 2 + 32 * 2); // the viewport, the content, and a box and a text a row
+    // The viewport, the content, the thumb of the bar, and a box and a text a row.
+    assert_eq!(h.tree.len(), 3 + 32 * 2);
     let content = h.tree.children(h.tree.root().unwrap())[0];
     assert_eq!(h.tree.rect(content).height, 2_000_000.0);
 }
@@ -66,7 +67,7 @@ fn scrolling_within_the_mounted_rows_paints_nothing() {
     scroll.set(109.0); // the same rows
     let (stats, drawn) = h.frame();
     assert_eq!((stats.nodes_painted, stats.nodes_laid_out, stats.layers_composed), (0, 0, 1));
-    assert_eq!((drawn.instances_uploaded, stats.writes), (0, 1)); // one write: the offset
+    assert_eq!((drawn.instances_uploaded, stats.writes), (0, 2)); // the offsets: content and thumb
 }
 
 #[test]
@@ -78,7 +79,7 @@ fn a_row_that_leaves_is_given_to_the_row_that_enters() {
     let shown = rows(&mut h);
     assert_eq!((shown[0].as_str(), shown.last().unwrap().as_str()), ("row 1", "row 35"));
     assert_eq!((h.tree.len(), stats()), (nodes + 3 * 2, before.clone_with(3))); // three more rows fit
-    assert!(frame.nodes_painted <= 2 * 4, "{frame:?}"); // the four rows that came in
+    assert!(frame.nodes_painted <= 2 * 4 + 1, "{frame:?}"); // the four rows that came in, the thumb
 
     for step in 1..=50 {
         scroll.set(68.0 + step as f32 * 20.0); // a row a frame: nothing is mounted any more
@@ -100,10 +101,10 @@ fn the_list_stops_at_its_end_and_follows_its_count() {
     count.set(3); // far fewer rows than the window holds
     h.frame();
     assert_eq!(rows(&mut h), ["row 0", "row 1", "row 2"]);
-    assert_eq!(h.tree.len(), 2 + 3 * 2);
+    assert_eq!(h.tree.len(), 3 + 3 * 2);
     count.set(0);
     h.frame();
-    assert_eq!(h.tree.len(), 2);
+    assert_eq!(h.tree.len(), 3);
 }
 
 #[test]

@@ -9,6 +9,7 @@ mod layers;
 mod node;
 mod paint;
 mod shared;
+mod structure;
 mod text;
 mod tree;
 mod verify;

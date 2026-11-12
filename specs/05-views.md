@@ -296,7 +296,15 @@ locale at the window root; a subtree can provide its own.
   the pointer is a hand over it, and a click on it gives its target to
   `.on_link(|target| ..)`. With `.ctrl_links()` on the text, for content its user did not
   write, a link is one only while Ctrl is held: the hand shows then, and the click counts
-  then. To a reader it is a text, named by all of it. Not yet: links reached by Tab and by
-  a reader, a selection, what is not text in the flow.
+  then. To a reader it is a text, named by all of it.
+  - **What is no text** is in the flow as a span too: `inline(what)`, where `what` is an
+    `InlineBox` (`quadra-tree`): it says how wide, how high and how deep it is in the style
+    of its span, paints itself with the left end of its baseline where the line puts it, in
+    the colour of its span, and says what it is to a reader, which is said in its place in
+    the name of the text. It is in the word around it (a comma after it stays with it), and
+    is measured before the text is shaped: the first time, and when the style changes. A
+    formula is one (13, "Markdown").
+  - Not yet: links reached by Tab and by a reader, a selection, a line that is higher for
+    a box higher than it (the box goes over its neighbours).
 - A field lays its text out at layout; what reads the lines before the next layout (a key
   that moves the caret by lines, a click, in the same turn as an edit) lays it out first.

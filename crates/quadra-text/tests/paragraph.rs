@@ -190,3 +190,20 @@ fn runs_are_set_on_one_pen_and_a_word_across_them_never_breaks() {
     p.set_style(&mut ts, &TextStyle { size: 20.0, ..style });
     assert_eq!([p.x_at(3), p.x_at(5), p.x_at(7)], [36.0, 60.0, 84.0]);
 }
+
+#[test]
+fn a_run_that_is_a_box_is_as_wide_as_it_says_in_the_word_around_it() {
+    let mut ts = system();
+    // "ab " then a box of 25 px glued to a comma, then " cd": the box has no glyph.
+    let boxed = Shaping { advance: Some(25.0), ..Shaping::default() };
+    let runs = vec![(3, Shaping::default()), (6, boxed)];
+    let mut p = Paragraph::rich(&mut ts, "ab \u{FFFC}, cd", style(), runs);
+    assert_eq!([p.x_at(3), p.x_at(6), p.x_at(7), p.x_at(10)], [18.0, 43.0, 49.0, 67.0]);
+    assert_eq!(p.wrap(&mut ts, f32::INFINITY), Size::new(67.0, 14.0));
+    let glyphs = p.line_glyphs(&p.lines()[0]).0;
+    assert_eq!(glyphs.len(), 7, "seven characters have glyphs, the box none");
+    // The box and its comma are one word: 45 px takes "ab " and not them.
+    p.wrap(&mut ts, 45.0);
+    assert_eq!(lines(&p), ["ab ", "\u{FFFC}, ", "cd"]);
+    assert_eq!(p.spans(3..6, 0.0).next().map(|part| (part.x, part.y, part.width)), Some((0.0, 14.0, 25.0)));
+}

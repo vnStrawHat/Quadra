@@ -52,7 +52,7 @@ pub use node::{NodeId, PaintStyle, Pose, Style};
 pub use overlay::{Along, Anchor, Side};
 pub use patch::Patch;
 pub use quadra_a11y::{Mirror, Role, SemanticAction, SemanticNode, Semantics, TreeUpdate};
-pub use rich::{LinkBoxes, RichSpan, RichText};
+pub use rich::{InlineBox, LinkBoxes, RichSpan, RichText};
 pub use shared::Handle;
 pub use style::State;
 pub use text::{Text, paint_glyph};

@@ -4,11 +4,13 @@
 use std::rc::Rc;
 
 use quadra_platform::{Cursor, Mods, MouseButton};
-use quadra_prim::{Color, Point, Size};
+use quadra_prim::{Color, Point, Rect, Size};
 use quadra_reactive::{Signal, signal};
+use quadra_render::Quad;
 use quadra_testing::Harness;
-use quadra_tree::{NodeId, PointerInput, Theme, Token};
-use quadra_ui::{column, rich_text, span};
+use quadra_text::TextStyle;
+use quadra_tree::{InlineBox, MeasureCx, NodeId, PaintCx, PointerInput, Theme, Token};
+use quadra_ui::{column, inline, rich_text, span};
 
 const BLUE: Color = Color::rgb(0x0000FF);
 const RED: Color = Color::rgb(0xFF0000);
@@ -128,4 +130,51 @@ fn a_struck_span_has_a_line_through_it_and_links_can_wait_for_ctrl() {
     }
     h.frame();
     assert_eq!((clicked.get_untracked().as_str(), h.tree.cursor()), ("there", Cursor::Pointer));
+}
+
+/// A box of a line: twice the size of its span wide, a quad from its baseline up.
+struct Mark;
+
+impl InlineBox for Mark {
+    fn measure(&mut self, _: &mut MeasureCx, style: &TextStyle) -> (f32, f32, f32) {
+        (style.size * 2.0, style.size, 0.0)
+    }
+
+    fn paint(&mut self, cx: &mut PaintCx, origin: Point, color: Color) {
+        cx.quad(Quad {
+            bounds: Rect::new(origin.x, origin.y - 4.0, 20.0, 4.0),
+            background: color,
+            ..Quad::default()
+        });
+    }
+
+    fn says(&self) -> &str {
+        "mark"
+    }
+}
+
+#[test]
+fn what_is_no_text_is_in_the_line_on_its_baseline_and_said_in_its_place() {
+    let mut h = Harness::new();
+    h.mount(|| {
+        let words = rich_text([span("ab "), inline(Mark).color(RED), span(", cd")]);
+        column().width(80.0).text_size(10.0).line_height(1.4).child(words)
+    });
+    h.frame();
+    // To a reader the box is what it says it is, where it is.
+    assert!(h.has_text("ab mark, cd"));
+    // One line of 3 characters, a box of 20 px, 4 characters: the box is painted from the
+    // end of "ab " to 20 px on, its bottom on the baseline (10 px under the top of the line
+    // on the fake backend), in the colour of its span.
+    let words = h.tree.children(h.tree.root().unwrap())[0];
+    assert_eq!(h.tree.rect(words).size(), Size::new(80.0, 14.0));
+    let layer = h.tree.scene().layer(h.tree.scene().roots()[0]);
+    let red: Vec<_> =
+        layer.instances().iter().filter(|i| i.color == RED.to_array()).map(|i| i.bounds).collect();
+    assert_eq!(red.len(), 1);
+    let [x, y, width, height] = red[0];
+    assert_eq!((x, width, height), (18.0, 20.0, 4.0));
+    let letters = layer.instances().iter().filter(|i| i.color != RED.to_array());
+    let stand = letters.map(|i| i.bounds[1] + i.bounds[3]).fold(0.0, f32::max);
+    assert_eq!(stand, y + height, "the box stands where the letters do");
 }

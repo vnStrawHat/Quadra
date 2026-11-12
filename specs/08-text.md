@@ -101,6 +101,10 @@ family, the size, the weight and the slant (`Shaping`).
   size has the new one.
 - The lines are as high as the paragraph's style says, and every run stands on their
   baseline. Not yet: a line that is higher for a larger run on it.
+- **A run can be a box** (`Shaping::advance`): so wide, with no glyphs. Its text is one
+  character, U+FFFC, which stands for what is no text; the pen goes past it and nothing is
+  shaped. It is part of the word around it, has a caret stop before and after it, and
+  `Paragraph::spans` gives where it is. What is drawn there is its maker's (05, rich text).
 
 ## Shaping cache
 

@@ -6,7 +6,9 @@ use std::rc::Rc;
 
 use quadra_platform::{Cursor, Mods};
 use quadra_text::Shaping;
-use quadra_tree::{LinkBoxes, NodeId, Paint, PointerEvent, PointerKind, RichSpan, RichText, Style};
+use quadra_tree::{
+    InlineBox, LinkBoxes, NodeId, Paint, PointerEvent, PointerKind, RichSpan, RichText, Style,
+};
 
 use crate::view::{MountCx, View};
 
@@ -18,12 +20,19 @@ pub struct Span {
     background: Option<Paint>,
     strike: bool,
     link: Option<Rc<str>>,
+    inline: Option<Box<dyn InlineBox>>,
 }
 
 /// A span that is as the text around it, until it says otherwise.
 pub fn span(text: impl Into<String>) -> Span {
     let (text, shaping) = (text.into(), Shaping::default());
-    Span { text, shaping, color: None, background: None, strike: false, link: None }
+    Span { text, shaping, color: None, background: None, strike: false, link: None, inline: None }
+}
+
+/// A span that is no text: something drawn in the line, on its baseline, as wide as it
+/// says (a formula). It is in the word around it, and takes the colour of a span.
+pub fn inline(what: impl InlineBox + 'static) -> Span {
+    Span { inline: Some(Box::new(what)), ..span("\u{FFFC}") }
 }
 
 impl Span {
@@ -134,13 +143,15 @@ fn link(cx: &mut MountCx, id: NodeId, boxes: LinkBoxes, on_link: Option<OnLink>,
 
 impl View for RichTextView {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (mut text, mut spans) = (String::new(), Vec::new());
-        for Span { text: words, shaping, color, background, strike, link } in self.spans {
+        let (mut text, mut spans, mut boxes) = (String::new(), Vec::new(), Vec::new());
+        for Span { text: words, shaping, color, background, strike, link, inline } in self.spans {
             text.push_str(&words);
+            boxes.extend(inline.map(|inline| (spans.len(), inline)));
             spans.push(RichSpan { end: text.len(), shaping, color, background, strike, link });
         }
         let links = spans.iter().any(|span| span.link.is_some());
         let rich = RichText::new(text, spans);
+        let rich = boxes.into_iter().fold(rich, |rich, (span, inline)| rich.with_box(span, inline));
         let boxes = rich.links();
         let id = cx.tree.insert_widget(Style::default(), Box::new(rich));
         if links {

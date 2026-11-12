@@ -100,6 +100,10 @@ pub struct Shaping {
     pub size: Option<f32>,
     pub weight: Option<u16>,
     pub italic: Option<bool>,
+    /// The run is a box so wide, with no glyphs: what is drawn there is its maker's. Its
+    /// text is one character (U+FFFC stands for what is no text), and it is in the word
+    /// around it.
+    pub advance: Option<f32>,
 }
 
 impl Shaping {

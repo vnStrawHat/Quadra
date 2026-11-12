@@ -123,6 +123,9 @@ fn spans(source: &str) -> Vec<Run> {
         };
         match (&part.link, part.code) {
             _ if said.is_empty() => {}
+            // A formula is drawn in the line; one with a fault is its source, in the colour
+            // of what is wrong.
+            _ if part.math => out.push(formula(&said).span().size(BODY)),
             (Some(link), _) => out.push(styled(&said).link(link).color(token::ACCENT_TEXT)),
             (None, true) => cut(&said, styled, &mut out),
             (None, false) => out.push(styled(&said)),

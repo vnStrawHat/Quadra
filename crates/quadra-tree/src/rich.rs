@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
-use quadra_prim::{Color, Rect, Size};
+use quadra_prim::{Color, Point, Rect, Size};
 use quadra_render::Quad;
 use quadra_text::{Paragraph, Shaping, TextStyle};
 
@@ -31,6 +31,20 @@ pub struct RichSpan {
     pub link: Option<Rc<str>>,
 }
 
+/// What is in a line of rich text and is no text: a formula. Its span is one character,
+/// U+FFFC, and as wide as the box says.
+pub trait InlineBox {
+    /// Its width, its height above the baseline and its depth below it, in a text of a
+    /// style. A line is as high as the text says: what is higher goes over its neighbours.
+    fn measure(&mut self, cx: &mut MeasureCx, style: &TextStyle) -> (f32, f32, f32);
+
+    /// Paints it with the left end of its baseline at `origin`, in the colour of its span.
+    fn paint(&mut self, cx: &mut PaintCx, origin: Point, color: Color);
+
+    /// What it is to a reader: said in its place in the text.
+    fn says(&self) -> &str;
+}
+
 /// Where the links of a rich text are, from the node's corner, as last painted: a box for
 /// each line a link is on, and what the link gives. The view that handles the pointer holds
 /// them too.
@@ -50,6 +64,8 @@ pub struct RichText {
     stale: bool,
     links: LinkBoxes,
     tiles: Vec<GlyphTile>,
+    /// What is in its lines and is no text, each with the number of its span.
+    boxes: Vec<(usize, Box<dyn InlineBox>)>,
 }
 
 impl RichText {
@@ -57,7 +73,19 @@ impl RichText {
         let (text, style, color) = (text.into(), TextStyle::default(), Color::BLACK);
         let (links, tiles) = (LinkBoxes::default(), Vec::new());
         let colors = Vec::new(); // the tree gives the theme when the node is added
-        RichText { text, spans, colors, style, color, paragraph: None, stale: false, links, tiles }
+        let boxes = Vec::new();
+        RichText { text, spans, colors, style, color, paragraph: None, stale: false, links, tiles, boxes }
+    }
+
+    /// Puts a box in the place of a span, by the span's number.
+    pub fn with_box(mut self, span: usize, inline: Box<dyn InlineBox>) -> Self {
+        self.boxes.push((span, inline));
+        self
+    }
+
+    /// Where a span starts and ends in the text.
+    fn range(&self, span: usize) -> std::ops::Range<usize> {
+        span.checked_sub(1).map_or(0, |before| self.spans[before].end)..self.spans[span].end
     }
 
     /// Where its links are: filled when it is painted.
@@ -72,15 +100,24 @@ impl Widget for RichText {
     }
 
     fn measure(&mut self, cx: &mut MeasureCx, known: Known, avail: Size) -> Size {
+        let stale = std::mem::take(&mut self.stale);
+        // A box says how wide it is in the style of its span, before the text is shaped
+        // around it: the first time, and when the style changed.
+        if !self.boxes.is_empty() && (stale || self.paragraph.is_none()) {
+            for (span, inline) in &mut self.boxes {
+                let shaping = &mut self.spans[*span].shaping;
+                shaping.advance = Some(inline.measure(cx, &shaping.over(&self.style)).0);
+            }
+            self.paragraph = None;
+        }
         let paragraph = match &mut self.paragraph {
             Some(paragraph) => {
-                if std::mem::take(&mut self.stale) {
+                if stale {
                     paragraph.set_style(cx.text, &self.style);
                 }
                 paragraph
             }
             none => {
-                self.stale = false;
                 let runs = self.spans.iter().map(|span| (span.end, span.shaping.clone())).collect();
                 none.insert(Paragraph::rich(cx.text, self.text.as_str(), self.style.clone(), runs))
             }
@@ -122,6 +159,13 @@ impl Widget for RichText {
             start = span.end;
         }
         drop(links);
+        for k in 0..self.boxes.len() {
+            let span = self.boxes[k].0;
+            if let Some(part) = paragraph.spans(self.range(span), 0.0).next() {
+                let origin = Point::new(cx.rect.x + part.x, cx.rect.y + part.y + base);
+                self.boxes[k].1.paint(cx, origin, color(span));
+            }
+        }
         self.tiles.clear();
         paint_runs(cx, paragraph, cx.rect.origin(), color, &mut self.tiles);
     }
@@ -145,7 +189,14 @@ impl Widget for RichText {
             says.role = Role::Text;
         }
         if says.name.is_empty() {
-            says.name.clone_from(&self.text);
+            // A box is said in its place, by what it says it is.
+            let mut from = 0;
+            for (span, inline) in &self.boxes {
+                let at = self.range(*span);
+                says.name.extend([&self.text[from..at.start], inline.says()]);
+                from = at.end;
+            }
+            says.name.push_str(&self.text[from..]);
         }
     }
 }

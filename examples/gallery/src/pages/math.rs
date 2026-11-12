@@ -1,6 +1,6 @@
 //! Math: formulas in the notation of TeX, laid out as boxes and painted with the text.
 
-use quadra::{Align, Div, column, div, row, text};
+use quadra::{Div, column, div, rich_text, span};
 use quadra_md::markdown;
 use quadra_md::tex::formula;
 
@@ -32,18 +32,22 @@ pub fn math_page() -> Div {
     let display = SAMPLES
         .iter()
         .fold(column().gap(18.0).text_size(20.0), |all, source| all.child(formula(source).display()));
-    let line = row().gap(6.0).align_items(Align::Center);
-    let line = line
-        .child(text("In a line:"))
-        .child(formula("a^2+b^2=c^2"))
-        .child(text("and"))
-        .child(formula(r"\frac{1}{2}"));
+    let line = rich_text([
+        span("The sides of a right triangle have "),
+        formula("a^2+b^2=c^2").span(),
+        span(", and a half is "),
+        formula(r"\frac{1}{2}").span(),
+        span(". A sum in a line keeps its limits at its side: "),
+        formula(r"\sum_{i=1}^{n} i = \frac{n(n+1)}{2}").span(),
+        span(", whatever the line holds before and after it, and the words wrap around what is no word."),
+    ]);
+    let line = div().width(420.0).child(line);
     page(
         "Math",
         "Formulas as notes and technical documents write them: fractions, roots, sums, matrices.",
         [
             demo("Display", display, "formula(source).display()"),
-            demo("In a line", line, "formula(source)"),
+            demo("In a line", line, "rich_text([span(..), formula(source).span()])"),
             demo("In a document", div().width(560.0).child(markdown(NOTE)), "markdown(source)"),
         ],
     )

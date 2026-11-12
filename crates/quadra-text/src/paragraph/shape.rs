@@ -19,9 +19,9 @@ impl Paragraph {
         self.shaped.clear();
         for (end, says) in &self.runs {
             let style = says.over(&self.style);
-            self.shaped.push((*end, ts.face_for(&style), style.size));
+            self.shaped.push((*end, ts.face_for(&style), style.size, says.advance));
         }
-        self.shaped.push((usize::MAX, ts.face_for(&self.style), self.style.size));
+        self.shaped.push((usize::MAX, ts.face_for(&self.style), self.style.size, None));
         self.glyphs.clear();
         self.tokens.clear();
         self.wrapped_at = None;
@@ -43,8 +43,16 @@ impl Paragraph {
                 while self.shaped[run].0 <= at {
                     run += 1;
                 }
-                let (run_end, face, size) = self.shaped[run];
+                let (run_end, face, size, advance) = self.shaped[run];
                 let piece_end = end.min(run_end);
+                if let Some(advance) = advance {
+                    // A box: the pen goes past it, and nothing is shaped.
+                    if first_x[at].is_nan() {
+                        first_x[at] = x + width;
+                    }
+                    (width, at) = (width + advance, piece_end);
+                    continue;
+                }
                 let word = ts.word(&self.text[at..piece_end], face, size);
                 for g in &word.glyphs {
                     let (cluster, x) = (at + g.cluster as usize, x + width + g.x);

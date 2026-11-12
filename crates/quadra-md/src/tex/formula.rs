@@ -7,10 +7,11 @@ use quadra_kit::{fonts, token};
 use quadra_layout::Known;
 use quadra_prim::{Color, Corners, Point, Rect, Size};
 use quadra_render::{Kind, Quad, Sprite};
+use quadra_text::TextStyle;
 use quadra_tree::{
-    GlyphTile, Inherited, MeasureCx, NodeId, PaintCx, Role, Semantics, Style, Widget, paint_glyph,
+    GlyphTile, Inherited, InlineBox, MeasureCx, NodeId, PaintCx, Role, Semantics, Style, Widget, paint_glyph,
 };
-use quadra_ui::{MountCx, View, div, text};
+use quadra_ui::{MountCx, Span, View, div, inline, span, text};
 use quadra_vector::{Coverage, Polyline};
 
 use super::layout::{Laid, Lay, Part};
@@ -24,7 +25,9 @@ pub struct Formula {
     /// The size of the text around it, and its colour.
     size: f32,
     color: Color,
+    /// The box, and the size it was laid out at.
     laid: Option<Laid>,
+    laid_at: f32,
     /// The tiles last painted: holding them keeps them in the atlas.
     tiles: Vec<GlyphTile>,
 }
@@ -32,7 +35,7 @@ pub struct Formula {
 impl Formula {
     pub fn new(source: &str, nodes: List, display: bool) -> Formula {
         let (source, tiles) = (source.to_string(), Vec::new());
-        Formula { source, nodes, display, size: 16.0, color: Color::BLACK, laid: None, tiles }
+        Formula { source, nodes, display, size: 16.0, color: Color::BLACK, laid: None, laid_at: 0.0, tiles }
     }
 }
 
@@ -80,17 +83,62 @@ impl Widget for Formula {
     }
 
     fn measure(&mut self, cx: &mut MeasureCx, _known: Known, _avail: Size) -> Size {
-        let (nodes, style, size) = (&self.nodes, usize::from(!self.display), self.size);
-        let laid = self.laid.get_or_insert_with(|| Lay::new(cx.text, size).list(nodes, style));
+        let laid = self.lay(cx, self.size);
         Size::new(laid.width, laid.height + laid.depth)
     }
 
     fn paint(&mut self, cx: &mut PaintCx) {
-        let Formula { laid: Some(laid), tiles, color, .. } = self else { return };
-        let (scale, color) = (cx.scale, *color);
+        let height = self.laid.as_ref().map_or(0.0, |laid| laid.height);
+        self.paint_at(cx, Point::new(cx.rect.x, cx.rect.y + height), self.color);
+    }
+
+    fn inherit(&mut self, inherited: &Inherited) {
+        (self.color, self.size) = (inherited.color, inherited.style.size);
+    }
+
+    fn semantics(&self, says: &mut Semantics) {
+        if says.role == Role::None {
+            says.role = Role::Text;
+        }
+        if says.name.is_empty() {
+            says.name.clone_from(&self.source);
+        }
+    }
+}
+
+/// A formula in a line of rich text: on the baseline of the line, at the size of its span.
+impl InlineBox for Formula {
+    fn measure(&mut self, cx: &mut MeasureCx, style: &TextStyle) -> (f32, f32, f32) {
+        let laid = self.lay(cx, style.size);
+        (laid.width, laid.height, laid.depth)
+    }
+
+    fn paint(&mut self, cx: &mut PaintCx, origin: Point, color: Color) {
+        self.paint_at(cx, origin, color);
+    }
+
+    fn says(&self) -> &str {
+        &self.source
+    }
+}
+
+impl Formula {
+    /// The formula as a box at a size of text: laid out when the size is another.
+    fn lay(&mut self, cx: &mut MeasureCx, size: f32) -> &Laid {
+        if self.laid_at != size {
+            (self.laid_at, self.laid) = (size, None);
+        }
+        let (nodes, style) = (&self.nodes, usize::from(!self.display));
+        self.laid.get_or_insert_with(|| Lay::new(cx.text, size).list(nodes, style))
+    }
+
+    /// Paints the box last laid out, the left end of its baseline at `origin`.
+    fn paint_at(&mut self, cx: &mut PaintCx, origin: Point, color: Color) {
+        let Formula { laid: Some(laid), tiles, .. } = self else { return };
+        let scale = cx.scale;
         tiles.clear();
         // Baselines and rules are on whole pixels; a rule that exists is a pixel at least.
-        laid.each(cx.rect.x, cx.rect.y + laid.height, &mut |x, y, part| match part {
+        laid.each(origin.x, origin.y, &mut |x, y, part| match part {
             Part::Glyphs { word, size } => {
                 let baseline = (y * scale).round();
                 for g in &word.glyphs {
@@ -111,22 +159,6 @@ impl Widget for Formula {
             }
             Part::Box(_) => {}
         });
-    }
-
-    fn inherit(&mut self, inherited: &Inherited) {
-        self.color = inherited.color;
-        if self.size != inherited.style.size {
-            (self.size, self.laid) = (inherited.style.size, None);
-        }
-    }
-
-    fn semantics(&self, says: &mut Semantics) {
-        if says.role == Role::None {
-            says.role = Role::Text;
-        }
-        if says.name.is_empty() {
-            says.name.clone_from(&self.source);
-        }
     }
 }
 
@@ -149,6 +181,15 @@ impl FormulaView {
     pub fn display(mut self) -> Self {
         self.display = true;
         self
+    }
+
+    /// The formula as a span of rich text: in a line, on its baseline, at the size of the
+    /// span. One with a fault is its source, in the colour of what is wrong.
+    pub fn span(self) -> Span {
+        match self.fault {
+            None => inline(Formula::new(&self.source, self.nodes, false)),
+            Some(_) => span(self.source).family(fonts::MONO).color(token::ERROR),
+        }
     }
 
     /// What is wrong with the source, if anything is: the view then shows the source.

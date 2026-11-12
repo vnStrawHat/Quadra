@@ -78,6 +78,10 @@ fn a_formula_is_drawn_in_the_middle_and_one_with_a_fault_shows_its_source() {
     assert!(glyphs > "Euler:".len() + 8, "{glyphs}");
     // What is wrong is said under the source, and the rest of the document is there.
     assert!(h.has_text("\\frac{a}") && h.has_text("Math: missing argument") && h.has_text("Euler:"));
+    // A formula in a line is in the text, said by its source; with a fault it is its source.
+    source.set("The sum $a^2+b^2$ and $\\frac{a}$ here.".to_string());
+    h.frame();
+    assert!(h.has_text("The sum a^2+b^2 and \\frac{a} here."));
     // A fraction is a rule and two lists: higher than a line of text.
     source.set("$$\n\\frac{a}{b}\n$$\n".to_string());
     h.frame();

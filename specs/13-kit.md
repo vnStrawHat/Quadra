@@ -793,9 +793,12 @@ What it reads and how it looks is behaviour/21. As built:
   - In a document a display formula (`$$ .. $$`, a fence of `math`) is a line of its own, in
     the middle, and scrolls sideways when it is wider than the page; one with a fault is its
     source in a box, with what is wrong under it.
-- Not yet: math in a line of text (`$..$` shows its source, in the code face: rich text has
-  no boxes in its lines yet); a stroke taller than a slice of the atlas; diagrams, which
-  show their source; images, which show their words in brackets;
+  - **In a line** (`$..$`) a formula is a box of the paragraph (05, rich text):
+    `formula(source).span()`, on the baseline of its line, at the size of the text, in text
+    style (limits at the side, fractions small). One with a fault is its source in the code
+    face, in the colour of what is wrong.
+- Not yet: a line made higher by a formula higher than it; a stroke taller than a slice of
+  the atlas; diagrams, which show their source; images, which show their words in brackets;
   one selection over the blocks; the hint over a link; where each block is, for an outline
   and for scrolling two panes together; a list of the blocks that show, for documents of
   tens of thousands of lines; a table wider than the page.

@@ -67,9 +67,9 @@ pub struct Paragraph {
     /// Rich text: where each run ends, and what it says otherwise than the style. Empty:
     /// all of the text is as the style says.
     runs: Vec<(usize, Shaping)>,
-    /// Where each run ends, and the face and the size it was shaped with; the last one
-    /// never ends.
-    shaped: Vec<(usize, FaceId, f32)>,
+    /// Where each run ends, the face and the size it was shaped with, and how wide it is
+    /// when it is a box; the last one never ends.
+    shaped: Vec<(usize, FaceId, f32, Option<f32>)>,
     glyphs: Vec<PositionedGlyph>,
     /// Caret stops: every grapheme boundary and its x, the end of the text included.
     pub(crate) stops: Vec<(usize, f32)>,
@@ -148,7 +148,7 @@ impl Paragraph {
     /// The run a byte offset is in, counted from the first, and the size of its text.
     pub fn run_at(&self, index: usize) -> (usize, f32) {
         let run = self.shaped.partition_point(|&(end, ..)| end <= index);
-        (run, self.shaped.get(run).map_or(self.style.size, |&(_, _, size)| size))
+        (run, self.shaped.get(run).map_or(self.style.size, |&(_, _, size, _)| size))
     }
 
     /// The x of the caret stop at or before a byte offset, along the endless line.

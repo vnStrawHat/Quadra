@@ -5,7 +5,7 @@ use quadra_platform::{HitRegion, PlatformEvent, PlatformHandler, PointerKind, Ti
 use quadra_prim::Point;
 use quadra_reactive::batch;
 use quadra_render::Renderer;
-use quadra_tree::PointerInput;
+use quadra_tree::{PointerInput, WindowRequest};
 
 use crate::App;
 
@@ -82,6 +82,7 @@ impl<R: Renderer> PlatformHandler for App<R> {
         self.request_frames();
     }
 
+    /// Another thread woke the loop: a task of this thread has what it waited for.
     fn wake(&mut self) {
         self.request_frames();
     }
@@ -89,5 +90,44 @@ impl<R: Renderer> PlatformHandler for App<R> {
     fn hit_test(&mut self, window: WindowId, at: Point) -> HitRegion {
         let w = self.windows.iter().find(|w| w.window.id() == window);
         w.map_or(HitRegion::Client, |w| w.tree.window_region_at(at))
+    }
+}
+
+impl<R: Renderer> App<R> {
+    /// After every entry point: the tasks that were woken run, then a window whose tree has
+    /// something to do asks for a frame, and every window does when the renderer wants one.
+    pub(crate) fn request_frames(&mut self) {
+        self.tasks.run_ready();
+        let all = self.renderer.wants_frame();
+        let mut closed = Vec::new();
+        for w in &mut self.windows {
+            // What a view asked of its window: a title bar's buttons.
+            for request in w.tree.take_window_requests() {
+                match request {
+                    WindowRequest::Minimize => w.window.minimize(),
+                    WindowRequest::ToggleMaximize => w.window.toggle_maximize(),
+                    WindowRequest::Close => closed.push(w.window.id()),
+                }
+            }
+            if all || w.tree.needs_frame() {
+                w.window.request_frame();
+            } else if let Some(update) = w.tree.take_semantic_update() {
+                // No frame is coming to send it after: a listener that just arrived, a focus
+                // that moved.
+                w.window.update_semantics(&update);
+            }
+            // Where text is typed, or that it is not: what an input method goes by.
+            let caret = w.tree.text_caret();
+            if std::mem::replace(&mut w.caret, caret) != caret {
+                w.window.set_text_input(caret);
+            }
+            let cursor = w.tree.cursor();
+            if std::mem::replace(&mut w.cursor, cursor) != cursor {
+                w.window.set_cursor(cursor);
+            }
+        }
+        for window in closed {
+            self.close(window);
+        }
     }
 }

@@ -76,6 +76,7 @@ name = "quadra"
 version = "0.1.0"
 dependencies = [
  "quadra-app",
+ "quadra-async",
  "quadra-layout",
  "quadra-native-win",
  "quadra-platform",

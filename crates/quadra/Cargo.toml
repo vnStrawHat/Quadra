@@ -12,6 +12,7 @@ workspace = true
 
 [dependencies]
 quadra-app = { path = "../quadra-app" }
+quadra-async = { path = "../quadra-async" }
 quadra-layout = { path = "../quadra-layout" }
 quadra-native-win = { path = "../quadra-native-win" }
 quadra-platform = { path = "../quadra-platform" }

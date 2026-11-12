@@ -11,7 +11,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use quadra_async::Timers;
+use quadra_async::{Executor, Timers};
 use quadra_platform::{
     Cursor, Platform, PlatformError, PlatformWindow, WindowHandle, WindowId, WindowOptions,
 };
@@ -19,7 +19,7 @@ use quadra_prim::{Color, Rect};
 use quadra_reactive::{Scope, Signal, provide, signal};
 use quadra_render::{DeviceSize, Pixels, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
-use quadra_tree::{Fonts, Keymap, Theme, Tree, WindowRequest};
+use quadra_tree::{Fonts, Keymap, Theme, Tree};
 use quadra_ui::{View, mount_with};
 
 pub use report::{AppError, FrameReport, Result};
@@ -51,6 +51,8 @@ pub struct App<R: Renderer> {
     keymap: Rc<Keymap>,
     /// What the platform's timers mean (specs/11).
     pub(crate) timers: Rc<Timers>,
+    /// The tasks of the app's views, run between events.
+    pub(crate) tasks: Rc<Executor>,
     /// The theme of every window: views find the signal in their context, and whoever
     /// writes it gives the app another theme.
     theme: Signal<Rc<Theme>>,
@@ -61,10 +63,13 @@ pub struct App<R: Renderer> {
 impl<R: Renderer> App<R> {
     /// An app on these backends. `quadra::App::new` picks the ones of the OS.
     pub fn with(platform: Rc<dyn Platform>, renderer: R, text: Box<dyn TextBackend>) -> App<R> {
-        // What every view of the app finds in its context: timers, the clipboard, the theme.
-        let (root, timers) = (Scope::child(), Timers::new(platform.clone()));
+        // What every view of the app finds in its context: timers, tasks, the clipboard, the
+        // theme.
+        let (root, timers, tasks) =
+            (Scope::child(), Timers::new(platform.clone()), Executor::new(&*platform));
         let theme = root.run(|| {
             provide(timers.clone());
+            provide(tasks.clone());
             provide(platform.clipboard());
             let theme = signal(Rc::<Theme>::default());
             provide(theme);
@@ -79,6 +84,7 @@ impl<R: Renderer> App<R> {
             clear: Color::WHITE,
             keymap: Rc::new(Keymap::default()),
             timers,
+            tasks,
             theme,
             on_error: Box::new(|e| eprintln!("quadra: {e}")),
             on_presented: None,
@@ -245,42 +251,6 @@ impl<R: Renderer> App<R> {
             w.tree.repaint_all();
             w.tree.scene_mut().invalidate_all();
             w.window.request_frame();
-        }
-    }
-
-    /// After every entry point: a window whose tree has something to do asks for a frame,
-    /// and every window does when the renderer wants one.
-    pub(crate) fn request_frames(&mut self) {
-        let all = self.renderer.wants_frame();
-        let mut closed = Vec::new();
-        for w in &mut self.windows {
-            // What a view asked of its window: a title bar's buttons.
-            for request in w.tree.take_window_requests() {
-                match request {
-                    WindowRequest::Minimize => w.window.minimize(),
-                    WindowRequest::ToggleMaximize => w.window.toggle_maximize(),
-                    WindowRequest::Close => closed.push(w.window.id()),
-                }
-            }
-            if all || w.tree.needs_frame() {
-                w.window.request_frame();
-            } else if let Some(update) = w.tree.take_semantic_update() {
-                // No frame is coming to send it after: a listener that just arrived, a focus
-                // that moved.
-                w.window.update_semantics(&update);
-            }
-            // Where text is typed, or that it is not: what an input method goes by.
-            let caret = w.tree.text_caret();
-            if std::mem::replace(&mut w.caret, caret) != caret {
-                w.window.set_text_input(caret);
-            }
-            let cursor = w.tree.cursor();
-            if std::mem::replace(&mut w.cursor, cursor) != cursor {
-                w.window.set_cursor(cursor);
-            }
-        }
-        for window in closed {
-            self.close(window);
         }
     }
 }

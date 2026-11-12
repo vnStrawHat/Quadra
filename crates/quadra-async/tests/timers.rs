@@ -1,11 +1,12 @@
 //! Timers in virtual time (specs/11, Tests): they fire in order on the platform's clock, end
-//! with their scope, and can be cancelled, from inside their own callback too.
+//! with their scope, and can be cancelled, from inside their own callback too; signals follow
+//! another after a pause or at a pace.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
 
-use quadra_async::{Timers, interval, timeout};
+use quadra_async::{Timers, debounce, interval, throttle, timeout};
 use quadra_platform::{HeadlessPlatform, PlatformEvent, PlatformHandler, TimerId, WindowId};
 use quadra_reactive::{Scope, provide, signal};
 
@@ -86,4 +87,30 @@ fn a_callback_may_cancel_its_own_timer_and_set_others() {
     *own.borrow_mut() = Some(timer);
     platform.advance(100 * MS, &mut app);
     assert_eq!(count.get_untracked(), 13);
+}
+
+#[test]
+fn signals_follow_another_after_a_pause_or_at_a_pace() {
+    let (platform, mut app, scope) = setup();
+    let source = scope.run(|| signal(0));
+    let (calm, paced) = scope.run(|| (debounce(source, 50 * MS), throttle(source, 50 * MS)));
+
+    // Typing: the debounced one waits for a pause, the throttled one takes the first at once.
+    for n in 1..=4 {
+        source.set(n);
+        platform.advance(10 * MS, &mut app);
+    }
+    assert_eq!((calm.get_untracked(), paced.get_untracked()), (0, 1));
+    source.set(5);
+    platform.advance(10 * MS, &mut app);
+    assert_eq!((calm.get_untracked(), paced.get_untracked()), (0, 5), "the latest at the step");
+    platform.advance(40 * MS, &mut app);
+    assert_eq!((calm.get_untracked(), paced.get_untracked()), (5, 5));
+
+    // Back to what it shows before the pause is over: nothing to say.
+    source.set(6);
+    source.set(5);
+    platform.advance(200 * MS, &mut app);
+    assert_eq!((calm.get_untracked(), paced.get_untracked()), (5, 5));
+    scope.dispose();
 }

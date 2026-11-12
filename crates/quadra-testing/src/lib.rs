@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 use std::time::{Duration, Instant};
 
-use quadra_async::Timers;
+use quadra_async::{Executor, Timers};
 use quadra_platform::{
     Clipboard, HeadlessPlatform, Key, Mods, MouseButton, Platform, PlatformEvent, PlatformHandler, TimerId,
     WindowId,
@@ -40,20 +40,24 @@ pub struct Harness {
     /// it: the timers of views mounted with [`Harness::mount`].
     platform: HeadlessPlatform,
     timers: Rc<Timers>,
+    tasks: Rc<Executor>,
     /// The clipboard those views find: a variable, never the real one.
     pub clipboard: Rc<dyn Clipboard>,
 }
 
-/// Gives the platform's timers to what set them.
-struct Fire(Rc<Timers>);
+/// Gives the platform's timers to what set them, and runs the tasks they wake.
+struct Fire(Rc<Timers>, Rc<Executor>);
 
 impl PlatformHandler for Fire {
     fn event(&mut self, _: WindowId, _: PlatformEvent) {}
     fn frame(&mut self, _: WindowId) {}
     fn timer(&mut self, id: TimerId) {
         self.0.fire(id);
+        self.1.run_ready();
     }
-    fn wake(&mut self) {}
+    fn wake(&mut self) {
+        self.1.run_ready();
+    }
 }
 
 impl Default for Harness {
@@ -72,18 +76,19 @@ impl Harness {
             renderer.create_surface(SurfaceTarget::Offscreen, size).expect("the null renderer has surfaces");
         let mut tree = Tree::new(fonts.clone());
         let platform = HeadlessPlatform::new();
-        let timers = Timers::new(Rc::new(platform.clone()));
+        let (timers, tasks) = (Timers::new(Rc::new(platform.clone())), Executor::new(&platform));
         let (size, clipboard, clock) = (Size::new(800.0, 600.0), platform.clipboard(), platform.clone());
         tree.set_clock(move || clock.now()); // what animates goes by the harness's time
-        Harness { tree, renderer, fonts, surface, size, scale: 1.0, platform, timers, clipboard }
+        Harness { tree, renderer, fonts, surface, size, scale: 1.0, platform, timers, tasks, clipboard }
     }
 
-    /// Builds a view as an app's window does, where it finds timers and the clipboard in its
-    /// context, and mounts it as the root.
+    /// Builds a view as an app's window does, where it finds timers, tasks and the clipboard
+    /// in its context, and mounts it as the root.
     pub fn mount<V: View>(&mut self, build: impl FnOnce() -> V) -> NodeId {
-        let (timers, clipboard) = (self.timers.clone(), self.clipboard.clone());
+        let (timers, tasks, clipboard) = (self.timers.clone(), self.tasks.clone(), self.clipboard.clone());
         mount_with(&mut self.tree, move || {
             provide(timers);
+            provide(tasks);
             provide(clipboard);
             build()
         })
@@ -96,7 +101,24 @@ impl Harness {
 
     /// Moves the harness's time forward: the timers that come due fire, in order.
     pub fn advance(&mut self, by: Duration) {
-        self.platform.advance(by, &mut Fire(self.timers.clone()));
+        self.platform.advance(by, &mut Fire(self.timers.clone(), self.tasks.clone()));
+    }
+
+    /// Runs tasks and frames until no task is ready, the pool has brought what it was given
+    /// and nothing is left to draw (specs/12). The clock does not move: what waits for a
+    /// timer waits on.
+    pub fn settle(&mut self) {
+        loop {
+            while self.tasks.run_ready() {}
+            assert!(quadra_async::wait_idle(Duration::from_secs(30)), "work on the pool did not end");
+            if self.tasks.run_ready() {
+                continue;
+            }
+            // What animates asks for frames without end: it gets one.
+            if self.frame_if_needed().is_none() || self.tree.animating() {
+                return;
+            }
+        }
     }
 
     /// A pointer event of the window, with the main button and no modifier.

@@ -215,3 +215,29 @@ fn a_window_is_told_where_text_is_typed_and_when_it_is_not() {
     platform.step(&mut app);
     assert_eq!(name.get_untracked(), "abcxy");
 }
+
+#[test]
+fn a_task_of_a_view_gets_what_the_pool_made_and_shows_it() {
+    let platform = HeadlessPlatform::new();
+    let mut app = app(&platform);
+    let name = signal("loading".to_string());
+    let view = move || {
+        quadra_async::spawn(async move {
+            let read = quadra_async::background(|| "loaded".to_string()).await;
+            name.set(read.unwrap());
+        })
+        .detach();
+        column().child(text(name))
+    };
+    let window = app.open_window(WindowOptions::new("test").size(400.0, 300.0), view).unwrap();
+    // The loop turns as the pool wakes it, with no event and no timer.
+    let mut turns = 0;
+    while name.get_untracked() != "loaded" {
+        platform.step(&mut app);
+        std::thread::yield_now();
+        turns += 1;
+        assert!(turns < 10_000_000, "the task never came back");
+    }
+    platform.step(&mut app);
+    assert!(!app.tree(window).unwrap().needs_frame(), "what it set was drawn");
+}

@@ -187,8 +187,9 @@ a page `math` with no reference; rich text takes what is no text (`inline(what)`
 images in documents wait for the image view, which needs the system's decoder and the worker pool of `quadra-async`)
 (R4: `quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
-popovers and hover cards among them; the rest of `quadra-async`
-(tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range
+popovers and hover cards among them. `quadra-async` is done: `spawn` (a `Task` is cancelled when dropped, `.detach()` leaves it to its scope),
+`background(|| ..).await` (the pool; `Result<T, Panicked>`), `inbox_with(limit, Full::Block)` with `sender().extend(..)` and `.on_data(..)`, `sleep`, `debounce`,
+`throttle`; the app runs ready tasks after every entry point (`App::request_frames`), tests use `Harness::settle()`. For readers still to do: text ranges and the caret of an input, range
 values, positions in a set, a role for scroll views.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its

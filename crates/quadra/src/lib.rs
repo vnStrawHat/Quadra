@@ -18,6 +18,10 @@ use std::rc::Rc;
 use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
 pub use quadra_app::{AppError, FrameReport, Result};
+pub use quadra_async::{
+    Background, CancelToken, Full, Inbox, Panicked, Sender, Task, Timer, background, background_with,
+    debounce, inbox, inbox_with, interval, sleep, spawn, throttle, timeout,
+};
 pub use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position, Track};
 pub use quadra_platform::{Cursor, HitRegion, Key, Mods, MouseButton, WindowId, WindowOptions};
 pub use quadra_prim::{Color, Corners, Ease, Edges, Point, Rect, Size};

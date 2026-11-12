@@ -1,10 +1,20 @@
-//! Work over time (specs/11). So far: timers. They run on the platform's clock, which a test
-//! moves by hand, and belong to the scope that made them.
-//!
-//! Local tasks, the background pool and inboxes join when the first thing needs them.
+//! Work over time (specs/11): timers on the platform's clock, which a test moves by hand;
+//! tasks, which are futures run on the thread of the windows between events; the pool that
+//! blocking work goes to; and inboxes, for what another thread produces as a stream. Each
+//! belongs to the scope that made it and ends with it.
+
+mod inbox;
+mod pool;
+mod task;
+mod time;
+
+pub use inbox::{Full, Inbox, Sender, inbox, inbox_with};
+pub use pool::{Background, CancelToken, Panicked, background, background_with, pool_threads, wait_idle};
+pub use task::{Executor, Task, spawn};
+pub use time::{Sleep, debounce, sleep, throttle};
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 
@@ -22,6 +32,9 @@ struct Entry {
 pub struct Timers {
     platform: Rc<dyn Platform>,
     entries: RefCell<HashMap<TimerId, Entry>>,
+    /// The scopes that own a timer, or did: each ends its timers by one cleanup, however
+    /// many it sets while it lives.
+    owners: RefCell<HashSet<Scope>>,
     /// The timer whose callback is running, and whether that callback cancelled it.
     firing: Cell<Option<TimerId>>,
     cancelled: Cell<bool>,
@@ -46,7 +59,8 @@ impl Timer {
 impl Timers {
     pub fn new(platform: Rc<dyn Platform>) -> Rc<Timers> {
         let (firing, cancelled) = (Cell::new(None), Cell::new(false));
-        Rc::new(Timers { platform, entries: RefCell::new(HashMap::new()), firing, cancelled })
+        let (entries, owners) = (RefCell::new(HashMap::new()), RefCell::new(HashSet::new()));
+        Rc::new(Timers { platform, entries, owners, firing, cancelled })
     }
 
     fn cancel(&self, id: TimerId) {
@@ -59,12 +73,28 @@ impl Timers {
     }
 
     fn set(self: &Rc<Timers>, after: Duration, repeat: bool, run: Box<dyn FnMut()>) -> Timer {
-        let id = self.platform.set_timer(after, repeat);
-        self.entries.borrow_mut().insert(id, Entry { scope: Scope::current(), repeat, run });
-        let timer = Timer { id, timers: Rc::downgrade(self) };
-        let ended = timer.clone();
-        on_cleanup(move || ended.cancel());
-        timer
+        let (id, scope) = (self.platform.set_timer(after, repeat), Scope::current());
+        self.entries.borrow_mut().insert(id, Entry { scope, repeat, run });
+        if self.owners.borrow_mut().insert(scope) {
+            let timers = Rc::downgrade(self);
+            on_cleanup(move || {
+                if let Some(timers) = timers.upgrade() {
+                    timers.end(scope)
+                }
+            });
+        }
+        Timer { id, timers: Rc::downgrade(self) }
+    }
+
+    /// A scope ended: its timers do.
+    fn end(&self, scope: Scope) {
+        self.owners.borrow_mut().remove(&scope);
+        let ids: Vec<TimerId> =
+            self.entries.borrow().iter().filter(|(_, e)| e.scope == scope).map(|(&id, _)| id).collect();
+        for id in ids {
+            self.cancel(id);
+        }
+        // The one whose callback is running is in no entry: it is not put back (`fire`).
     }
 
     /// A timer of the platform fired: runs what was set for it, in the scope that set it and
@@ -76,14 +106,19 @@ impl Timers {
         batch(|| entry.scope.run(&mut entry.run));
         let cancelled = self.cancelled.replace(outer.1);
         self.firing.set(outer.0);
-        // Still wanted: it repeats, and neither the callback nor its scope cancelled it.
-        if entry.repeat && !cancelled && entry.scope.is_alive() {
-            self.entries.borrow_mut().entry(id).or_insert(entry);
+        // Still wanted: it repeats, and neither the callback nor its scope cancelled it. A
+        // scope that ended while its timer ran found no entry to cancel: the platform is told.
+        if entry.repeat && !cancelled {
+            if entry.scope.is_alive() {
+                self.entries.borrow_mut().entry(id).or_insert(entry);
+            } else {
+                self.platform.cancel_timer(id);
+            }
         }
     }
 }
 
-fn timers() -> Rc<Timers> {
+pub(crate) fn timers() -> Rc<Timers> {
     use_context::<Rc<Timers>>().expect("timers are set where an app, or a test harness, provides them")
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "quadra-async"
-description = "Quadra's work over time: timers on the platform's clock (tasks, the pool and inboxes follow)"
+description = "Quadra's work over time: timers, tasks on the thread of the windows, the background pool, inboxes"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

@@ -160,6 +160,7 @@ dependencies = [
  "quadra",
  "quadra-data",
  "quadra-kit",
+ "quadra-md",
  "quadra-viz",
 ]
 
@@ -194,8 +195,15 @@ dependencies = [
 name = "quadra-md"
 version = "0.1.0"
 dependencies = [
+ "quadra-kit",
+ "quadra-layout",
+ "quadra-platform",
+ "quadra-prim",
+ "quadra-reactive",
  "quadra-testing",
  "quadra-text",
+ "quadra-tree",
+ "quadra-ui",
 ]
 
 [[package]]

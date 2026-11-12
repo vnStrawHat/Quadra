@@ -17,5 +17,6 @@ path = "src/main.rs"
 [dependencies]
 quadra = { path = "../../crates/quadra" }
 quadra-data = { path = "../../crates/quadra-data" }
+quadra-md = { path = "../../crates/quadra-md" }
 quadra-kit = { path = "../../crates/quadra-kit" }
 quadra-viz = { path = "../../crates/quadra-viz" }

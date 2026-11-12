@@ -6,7 +6,7 @@
 
 use crate::lines::{cell_align, is_rule, is_table_rule, list_item, quote_parts, table_cells, task_parts};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Align {
     None,
     Left,
@@ -16,7 +16,7 @@ pub enum Align {
 
 /// What a block is, with what it has. A `text` is the source of inlines
 /// ([`crate::parse_inline`]), but that of code, math and the front matter, which is as written.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Kind {
     Paragraph {
         text: String,

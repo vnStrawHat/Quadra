@@ -9,6 +9,7 @@ pub mod display;
 pub mod fields;
 pub mod layout;
 pub mod live;
+pub mod markdown;
 pub mod motion;
 pub mod navigation;
 pub mod overlays;

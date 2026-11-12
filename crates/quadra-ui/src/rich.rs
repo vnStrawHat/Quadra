@@ -4,7 +4,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use quadra_platform::Cursor;
+use quadra_platform::{Cursor, Mods};
 use quadra_text::Shaping;
 use quadra_tree::{LinkBoxes, NodeId, Paint, PointerEvent, PointerKind, RichSpan, RichText, Style};
 
@@ -16,12 +16,14 @@ pub struct Span {
     shaping: Shaping,
     color: Option<Paint>,
     background: Option<Paint>,
+    strike: bool,
     link: Option<Rc<str>>,
 }
 
 /// A span that is as the text around it, until it says otherwise.
 pub fn span(text: impl Into<String>) -> Span {
-    Span { text: text.into(), shaping: Shaping::default(), color: None, background: None, link: None }
+    let (text, shaping) = (text.into(), Shaping::default());
+    Span { text, shaping, color: None, background: None, strike: false, link: None }
 }
 
 impl Span {
@@ -62,6 +64,12 @@ impl Span {
         self
     }
 
+    /// A line through the span, in its colour.
+    pub fn strike(mut self) -> Self {
+        self.strike = true;
+        self
+    }
+
     /// Makes the span a link: underlined, and a click on it gives `target` to what the
     /// text's `on_link` was given.
     pub fn link(mut self, target: &str) -> Self {
@@ -76,11 +84,12 @@ type OnLink = Rc<dyn Fn(&str)>;
 pub struct RichTextView {
     spans: Vec<Span>,
     on_link: Option<OnLink>,
+    ctrl: bool,
 }
 
 /// A paragraph of spans, wrapped as one text.
 pub fn rich_text(spans: impl IntoIterator<Item = Span>) -> RichTextView {
-    RichTextView { spans: spans.into_iter().collect(), on_link: None }
+    RichTextView { spans: spans.into_iter().collect(), on_link: None, ctrl: false }
 }
 
 impl RichTextView {
@@ -89,13 +98,21 @@ impl RichTextView {
         self.on_link = Some(Rc::new(f));
         self
     }
+
+    /// Links are links only while Ctrl is held: for content the user of the app did not
+    /// write, where a plain click must not open anything.
+    pub fn ctrl_links(mut self) -> Self {
+        self.ctrl = true;
+        self
+    }
 }
 
 /// What makes the links of a mounted rich text links: a hand over them, and their click.
-fn link(cx: &mut MountCx, id: NodeId, boxes: LinkBoxes, on_link: Option<OnLink>) {
+fn link(cx: &mut MountCx, id: NodeId, boxes: LinkBoxes, on_link: Option<OnLink>, ctrl: bool) {
     let under = move |e: &PointerEvent| {
         let boxes = boxes.borrow();
-        boxes.iter().find(|(part, _)| part.contains(e.local)).map(|(_, target)| target.clone())
+        let held = !ctrl || e.mods.contains(Mods::CTRL);
+        boxes.iter().find(|(part, _)| held && part.contains(e.local)).map(|(_, target)| target.clone())
     };
     // The node's cursor is written when the pointer comes over a link or leaves one, not at
     // every move.
@@ -118,16 +135,16 @@ fn link(cx: &mut MountCx, id: NodeId, boxes: LinkBoxes, on_link: Option<OnLink>)
 impl View for RichTextView {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (mut text, mut spans) = (String::new(), Vec::new());
-        for Span { text: words, shaping, color, background, link } in self.spans {
+        for Span { text: words, shaping, color, background, strike, link } in self.spans {
             text.push_str(&words);
-            spans.push(RichSpan { end: text.len(), shaping, color, background, link });
+            spans.push(RichSpan { end: text.len(), shaping, color, background, strike, link });
         }
         let links = spans.iter().any(|span| span.link.is_some());
         let rich = RichText::new(text, spans);
         let boxes = rich.links();
         let id = cx.tree.insert_widget(Style::default(), Box::new(rich));
         if links {
-            link(cx, id, boxes, self.on_link);
+            link(cx, id, boxes, self.on_link, self.ctrl);
         }
         id
     }

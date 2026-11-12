@@ -291,10 +291,12 @@ locale at the window root; a subtree can provide its own.
   paragraph of spans, each saying what it has otherwise than the text around it:
   `.bold()`, `.weight(..)`, `.italic()`, `.size(px)`, `.family(name)`, `.color(..)` (a
   colour, or a role of the theme), `.background(..)` (a fill behind the span, as high as
-  its line, on every line it is on), `.link(target)`. It wraps as one text does (08). A link
-  is underlined, in its own colour; the pointer is a hand over it, and a click on it gives
-  its target to `.on_link(|target| ..)`. To a reader it is a text, named by all of it. Not
-  yet: links reached by Tab and by a reader, a selection, links that open on Ctrl and a
-  click only (for content a user wrote), what is not text in the flow.
+  its line, on every line it is on), `.strike()` (a line through it, in its colour),
+  `.link(target)`. It wraps as one text does (08). A link is underlined, in its own colour;
+  the pointer is a hand over it, and a click on it gives its target to
+  `.on_link(|target| ..)`. With `.ctrl_links()` on the text, for content its user did not
+  write, a link is one only while Ctrl is held: the hand shows then, and the click counts
+  then. To a reader it is a text, named by all of it. Not yet: links reached by Tab and by
+  a reader, a selection, what is not text in the flow.
 - A field lays its text out at layout; what reads the lines before the next layout (a key
   that moves the caret by lines, a click, in the same turn as an edit) lays it out first.

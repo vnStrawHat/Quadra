@@ -30,8 +30,8 @@ pub use quadra_tree::{
 };
 pub use quadra_ui::{
     AnyView, Div, IntoProp, MountCx, NodeRef, Place, Refine, Region, Span, TextView, Timeline, View, Window,
-    column, div, dynamic, each, each_frame, overlay, rich_text, row, scroll, scroll_strip, show, span, text,
-    text_area, text_input, timeline, tween, uniform_list, virtual_list, window,
+    column, div, dynamic, each, each_frame, overlay, rich_text, row, scroll, scroll_strip, scroll_x, show,
+    span, text, text_area, text_input, timeline, tween, uniform_list, virtual_list, window,
 };
 
 /// An app on the backends of this operating system: Win32 windows, the D3D11 renderer and

@@ -3,8 +3,8 @@
 
 use std::rc::Rc;
 
-use quadra_platform::Cursor;
-use quadra_prim::{Color, Size};
+use quadra_platform::{Cursor, Mods, MouseButton};
+use quadra_prim::{Color, Point, Size};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
 use quadra_tree::{NodeId, PointerInput, Theme, Token};
@@ -101,4 +101,31 @@ fn the_fill_of_a_span_is_behind_it_on_every_line_it_is_on() {
     assert_eq!(fills(100.0), [[18.0, 0.0, 30.0, 14.0]]);
     // "ab cd " and "ef gh": the fill is on both lines, the space the line broke at with it.
     assert_eq!(fills(40.0), [[18.0, 0.0, 18.0, 14.0], [0.0, 14.0, 12.0, 14.0]]);
+}
+
+#[test]
+fn a_struck_span_has_a_line_through_it_and_links_can_wait_for_ctrl() {
+    let clicked = signal(String::new());
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(Theme::new(vec![BLUE])));
+    h.mount(move || {
+        let words = rich_text([span("ab ").strike().color(Token(0)), span("gh").link("there")]).ctrl_links();
+        let words = words.on_link(move |target| clicked.set(target.to_string()));
+        column().width(100.0).text_size(10.0).line_height(1.4).child(words)
+    });
+    h.frame();
+    // The line through "ab " is one pixel high, as wide as the span, in its colour.
+    let layer = h.tree.scene().layer(h.tree.scene().roots()[0]);
+    let lines = layer.instances().iter().filter(|i| i.color == BLUE.to_array() && i.bounds[3] == 1.0);
+    assert_eq!(lines.map(|i| (i.bounds[0], i.bounds[2])).collect::<Vec<_>>(), [(0.0, 18.0)]);
+
+    // A plain click on the link is no click on a link, and the pointer is no hand over it.
+    h.click(20.0, 7.0);
+    h.frame();
+    assert_eq!((clicked.get_untracked(), h.tree.cursor()), (String::new(), Cursor::default()));
+    for input in [PointerInput::Move, PointerInput::Down, PointerInput::Up] {
+        h.tree.pointer(input, MouseButton::Left, Point::new(20.0, 7.0), Mods::CTRL, h.now());
+    }
+    h.frame();
+    assert_eq!((clicked.get_untracked().as_str(), h.tree.cursor()), ("there", Cursor::Pointer));
 }

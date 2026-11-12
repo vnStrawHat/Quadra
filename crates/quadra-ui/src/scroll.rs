@@ -77,6 +77,17 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
 // ponytail: no scrollbar and nothing brought into view; a sideways scroll view with both
 // when a wide table or a block of code needs one.
 pub fn scroll_strip<V: View + 'static>(scroll_x: Signal<f32>, content: V) -> Region {
+    strip(scroll_x, content, true)
+}
+
+/// A box that scrolls sideways in a page that scrolls: a block of code, a wide table. It is
+/// a strip that leaves the plain wheel to the page, and takes the wheel turned sideways and
+/// the wheel with Shift.
+pub fn scroll_x<V: View + 'static>(scroll_x: Signal<f32>, content: V) -> Region {
+    strip(scroll_x, content, false)
+}
+
+fn strip<V: View + 'static>(scroll_x: Signal<f32>, content: V, plain_wheel: bool) -> Region {
     let bind = move |viewport: NodeId, cx: &mut MountCx| {
         let scrolls = quadra_layout::Style {
             direction: Direction::Row,
@@ -93,7 +104,8 @@ pub fn scroll_strip<V: View + 'static>(scroll_x: Signal<f32>, content: V) -> Reg
         let left = memo(move || scroll_x.get().clamp(0.0, end.get()));
         cx.tree.on_pointer(viewport, PointerKind::Wheel, move |e| {
             // The wheel turned sideways, or the plain wheel: one of the two says how far.
-            let turned = if e.delta.x != 0.0 { e.delta.x } else { e.delta.y };
+            let plain = plain_wheel || e.mods.contains(quadra_platform::Mods::SHIFT);
+            let turned = if e.delta.x != 0.0 || !plain { e.delta.x } else { e.delta.y };
             let (from, to) = (left.get(), (left.get() - turned).clamp(0.0, end.get()));
             if to != from {
                 scroll_x.set(to);

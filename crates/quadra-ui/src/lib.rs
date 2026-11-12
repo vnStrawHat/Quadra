@@ -40,7 +40,7 @@ pub use node_ref::NodeRef;
 pub use overlay::{OverlayView, Place, overlay};
 pub use prop::{IntoProp, Prop};
 pub use rich::{RichTextView, Span, rich_text, span};
-pub use scroll::{scroll, scroll_strip};
+pub use scroll::{scroll, scroll_strip, scroll_x};
 pub use text::{TextView, text};
 pub use tween::tween;
 pub use view::{AnyView, MountCx, View, each_frame, mount_root, mount_with};

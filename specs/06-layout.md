@@ -121,8 +121,10 @@ because every render built new nodes. Here nodes persist, and a change is a flag
   cannot scroll goes on outwards), and it has no scrollbar. Its content is as wide as the
   strip at least, so what grows in it fills the room that is left. In a row that scrolls
   sideways items keep their size, and are measured with all the width they ask for: the
-  width of the row is no limit to them. Other things that scroll
-  sideways (a wide table, a block of code) are not built yet.
+  width of the row is no limit to them.
+- **A box that scrolls sideways** in a page that scrolls (`scroll_x(scroll_x, content)`: a
+  block of code, a wide table) is a strip that leaves the plain wheel to the page: it takes
+  the wheel turned sideways, and the wheel with Shift. Not yet: a scrollbar for either.
 - `position: sticky` children are placed in the compose pass from the offset.
 
 ## Virtual lists

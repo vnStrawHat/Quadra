@@ -25,6 +25,8 @@ pub struct RichSpan {
     pub color: Option<Paint>,
     /// A fill behind it, as high as its line.
     pub background: Option<Paint>,
+    /// A line through it.
+    pub strike: bool,
     /// What a click on it gives: it is a link, and underlined.
     pub link: Option<Rc<str>>,
 }
@@ -90,9 +92,11 @@ impl Widget for RichText {
         let Some(paragraph) = &self.paragraph else { return };
         let (spans, colors, text) = (&self.spans, &self.colors, self.color);
         let color = |run: usize| colors.get(run).and_then(|of| of.0).unwrap_or(text);
-        // A line under each link, two pixels under the baseline, on every line it is on.
+        // A line under each link, two pixels under the baseline, on every line it is on; a
+        // line through what is struck, a third of the ascent over it.
         let (ascent, descent) = paragraph.metrics();
-        let under = ((self.style.line_px() - ascent - descent) / 2.0 + ascent).round() + 2.0;
+        let base = (self.style.line_px() - ascent - descent) / 2.0 + ascent;
+        let (under, through) = (base.round() + 2.0, (base - ascent * 0.3).round());
         let (mut start, mut links) = (0, self.links.borrow_mut());
         links.clear();
         for (run, span) in spans.iter().enumerate() {
@@ -101,6 +105,10 @@ impl Widget for RichText {
                     let bounds = Rect::new(cx.rect.x + part.x, cx.rect.y + part.y, part.width, part.height);
                     cx.quad(Quad { bounds, background, ..Quad::default() });
                 }
+            }
+            for part in paragraph.spans(start..span.end, 0.0).filter(|_| span.strike) {
+                let bounds = Rect::new(cx.rect.x + part.x, cx.rect.y + part.y + through, part.width, 1.0);
+                cx.quad(Quad { bounds, background: color(run), ..Quad::default() });
             }
             let parts = span
                 .link

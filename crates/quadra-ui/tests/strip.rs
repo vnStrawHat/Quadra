@@ -1,9 +1,11 @@
 //! The strip (specs/06, "Scrolling"): a row that scrolls sideways under the wheel, as wide
-//! as its viewport at least.
+//! as its viewport at least; and the box that scrolls sideways in a page.
 
+use quadra_platform::Mods;
+use quadra_prim::Point;
 use quadra_reactive::signal;
 use quadra_testing::Harness;
-use quadra_ui::{column, div, mount_root, row, scroll, scroll_strip};
+use quadra_ui::{column, div, mount_root, row, scroll, scroll_strip, scroll_x};
 
 #[test]
 fn a_strip_scrolls_sideways_under_the_wheel_and_passes_on_what_it_cannot_scroll() {
@@ -41,4 +43,23 @@ fn what_a_strip_holds_is_as_wide_as_the_strip_at_least() {
     let content = h.tree.children(h.tree.root().unwrap())[0];
     let rest = h.tree.children(content)[1];
     assert_eq!((h.tree.rect(content).width, h.tree.rect(rest).width), (200.0, 150.0));
+}
+
+#[test]
+fn a_box_that_scrolls_sideways_leaves_the_plain_wheel_to_the_page() {
+    let (x, page_y) = (signal(0.0f32), signal(0.0f32));
+    let mut h = Harness::new();
+    // A line of code of 500 px in a box of 200, on a page that scrolls.
+    let code = scroll_x(x, div().size(500.0, 30.0).shrink(0.0)).container(div().size(200.0, 30.0));
+    mount_root(&mut h.tree, scroll(page_y, column().child(code).child(div().size(200.0, 2000.0))));
+    h.frame();
+    let wheel = |h: &mut Harness, delta: Point, mods: Mods| {
+        h.tree.wheel(delta, false, Point::new(50.0, 10.0), mods);
+        h.frame();
+        (x.get_untracked(), page_y.get_untracked())
+    };
+    // With Shift, or turned sideways, the wheel is the box's; the plain wheel is the page's.
+    assert_eq!(wheel(&mut h, Point::new(0.0, -1.0), Mods::SHIFT), (40.0, 0.0));
+    assert_eq!(wheel(&mut h, Point::new(-1.0, 0.0), Mods::NONE), (80.0, 0.0));
+    assert_eq!(wheel(&mut h, Point::new(0.0, -1.0), Mods::NONE), (80.0, 40.0));
 }

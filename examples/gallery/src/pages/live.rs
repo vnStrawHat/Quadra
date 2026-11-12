@@ -1,6 +1,9 @@
-//! Live data: the table of rows known by their keys.
+//! Live data: the table of rows known by their keys, and the value viewer.
+
+use std::rc::Rc;
 
 use quadra::{Div, signal};
+use quadra_data::{Value, parse_json, value_view};
 use quadra_kit::{CellKind, Column, button, table};
 
 use crate::common::{demo, framed, page, stack};
@@ -61,6 +64,25 @@ pub fn live_table_page() -> Div {
             "Services",
             stack().child(change).child(framed(rows).height(320.0)),
             "table(columns, rows, cell).keys(|row| ..) // what each row is known by",
+        )],
+    )
+}
+
+const VALUE: &str = r#"{"name": "web", "replicas": 3, "ready": true, "selector": null,
+ "labels": {"app": "web", "tier": "frontend"},
+ "containers": [{"name": "web", "image": "registry.local/web:1.4.2", "ports": [8080, 9090],
+   "resources": {"limits": {"cpu": "500m", "memory": "256Mi"}}}]}"#;
+
+pub fn value_viewer_page() -> Div {
+    let value = Rc::new(parse_json(VALUE).unwrap_or(Value::Null));
+    let about = "A collapsible tree of a JSON or YAML value. Click or press right and left to open and close; ctrl-c or Copy path copies the selected path.";
+    page(
+        "Value viewer",
+        about,
+        [demo(
+            "Deployment (JSON)",
+            framed(value_view(value)).height(340.0),
+            "value_view(Rc::new(parse_json(text)?))  // or parse_yaml",
         )],
     )
 }

@@ -167,9 +167,10 @@ R3": both themes compared, a mean of 1 % of the pixels differ). **R4 has started
 column at a time and the shader works out the cover of each pixel, so **a chart line must never show steps**: where the line is
 stays a fraction of a pixel, columns are whole device pixels; `QUADRA_SCALE=1.5 tools/shots.sh ..` draws the pages at 150 % to look;
 a pointer handler has the size of its node, `e.size`). The live table is the kit's table with `.keys(|row| ..)`
-(`quadra-kit/src/table/live.rs`: what is chosen follows its keys, changed cells are tinted and fade). The gallery has 68 of the
-73 reference pages, each drawn offscreen and compared (`tools/shots.sh`); left: markdown, the editor, the log view, the value
-viewer (R4: `quadra-data`, then
+(`quadra-kit/src/table/live.rs`: what is chosen follows its keys, changed cells are tinted and fade). `quadra-data` has `Value`,
+`parse_json`, `parse_yaml` (its own readers) and `value_view` (the kit's tree with `TreeNode::color`, `.detail`; the colours of
+code are roles, `token::SYNTAX_*`). The gallery has 69 of the 73 reference pages, each drawn offscreen and compared
+(`tools/shots.sh`); left: markdown, the editor, the log view (R4: the log view in `quadra-data`, then
 `quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

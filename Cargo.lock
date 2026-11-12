@@ -139,10 +139,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-data"
+version = "0.1.0"
+dependencies = [
+ "quadra-kit",
+ "quadra-layout",
+ "quadra-platform",
+ "quadra-reactive",
+ "quadra-testing",
+ "quadra-tree",
+ "quadra-ui",
+]
+
+[[package]]
 name = "quadra-gallery"
 version = "0.1.0"
 dependencies = [
  "quadra",
+ "quadra-data",
  "quadra-kit",
  "quadra-viz",
 ]

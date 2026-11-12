@@ -15,6 +15,8 @@ mod places;
 mod system;
 mod types;
 mod url;
+mod width;
+mod width_table;
 
 pub use edit::{EditBuffer, Motion};
 pub use fake::FakeBackend;
@@ -26,3 +28,4 @@ pub use types::{
     FaceId, FaceMetrics, FontKey, GlyphBitmap, GlyphFormat, ShapedGlyph, Shaping, TextBackend, TextStyle,
 };
 pub use url::{UrlSpan, find_urls, url_openable};
+pub use width::{cell_step, char_width, display_width, grapheme_width};

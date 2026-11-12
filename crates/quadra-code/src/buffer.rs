@@ -87,7 +87,7 @@ impl Buffer {
 
     /// The piece an offset is in, and where in it: at the start of a piece rather than at
     /// the end of the one before, but for the end of the text.
-    fn find(&self, offset: usize) -> (usize, usize) {
+    fn locate(&self, offset: usize) -> (usize, usize) {
         assert!(offset <= self.len(), "offset {offset} is past the end, {}", self.len());
         let k = self.before.partition_point(|before| before.0 <= offset).clamp(1, self.chunks.len()) - 1;
         (k, offset - self.before[k].0)
@@ -112,13 +112,13 @@ impl Buffer {
 
     /// The line an offset is in.
     pub fn line_of(&self, offset: usize) -> usize {
-        let (k, at) = self.find(offset);
+        let (k, at) = self.locate(offset);
         self.before[k].1 + breaks(&self.chunks[k].text[..at])
     }
 
     /// The text between two offsets: lent when it is in one piece, as a line mostly is.
     pub fn slice(&self, range: Range<usize>) -> Cow<'_, str> {
-        let (k, at) = self.find(range.start);
+        let (k, at) = self.locate(range.start);
         let length = range.end.saturating_sub(range.start);
         if at + length <= self.chunks[k].text.len() {
             return Cow::Borrowed(&self.chunks[k].text[at..at + length]);
@@ -138,6 +138,38 @@ impl Buffer {
     /// A line without its line break.
     pub fn line(&self, line: usize) -> Cow<'_, str> {
         self.slice(self.line_start(line)..self.line_end(line))
+    }
+
+    /// The bytes from an offset on.
+    pub fn bytes(&self, from: usize) -> impl Iterator<Item = u8> + '_ {
+        let (k, at) = self.locate(from);
+        let first = self.chunks[k].text.as_bytes()[at..].iter().copied();
+        first.chain(self.chunks[k + 1..].iter().flat_map(|chunk| chunk.text.bytes()))
+    }
+
+    /// The bytes before an offset, the nearest first.
+    pub fn bytes_back(&self, before: usize) -> impl Iterator<Item = u8> + '_ {
+        let (k, at) = self.locate(before);
+        let first = self.chunks[k].text.as_bytes()[..at].iter().rev().copied();
+        first.chain(self.chunks[..k].iter().rev().flat_map(|chunk| chunk.text.bytes().rev()))
+    }
+
+    /// Where `needle` is next, from an offset on.
+    pub fn find(&self, needle: &str, from: usize) -> Option<usize> {
+        let (k, at) = self.locate(from);
+        // What is looked through: the end of what was, as long as a match can start in,
+        // and a piece more each time.
+        let (mut window, mut base) = (String::from(&self.chunks[k].text[at..]), from);
+        for next in &self.chunks[k + 1..] {
+            if let Some(found) = window.find(needle) {
+                return Some(base + found);
+            }
+            let keep = window.ceil_char_boundary(window.len().saturating_sub(needle.len().saturating_sub(1)));
+            base += keep;
+            window.drain(..keep);
+            window.push_str(&next.text);
+        }
+        window.find(needle).map(|found| base + found)
     }
 
     pub fn text(&self) -> String {
@@ -163,7 +195,7 @@ impl Buffer {
     }
 
     pub fn insert(&mut self, at: usize, text: &str) {
-        let (k, local) = self.find(at);
+        let (k, local) = self.locate(at);
         let chunk = &mut self.chunks[k];
         chunk.text.insert_str(local, text);
         chunk.breaks += breaks(text);
@@ -179,7 +211,7 @@ impl Buffer {
         if range.end <= range.start {
             return;
         }
-        let ((first, from), (last, to)) = (self.find(range.start), self.find(range.end));
+        let ((first, from), (last, to)) = (self.locate(range.start), self.locate(range.end));
         let mut left = String::from(&self.chunks[first].text[..from]);
         left.push_str(&self.chunks[last].text[to..]);
         // What is left joins the next piece when it is small, so that deleting does not

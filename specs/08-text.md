@@ -101,6 +101,11 @@ family, the size, the weight and the slant (`Shaping`).
   size has the new one.
 - The lines are as high as the paragraph's style says, and every run stands on their
   baseline. Not yet: a line that is higher for a larger run on it.
+- **Cells** (`width.rs`): `char_width`, `grapheme_width`, `display_width` and `cell_step`
+  count the cells of text where every cell is as wide as the next (code, a table written
+  in text, a terminal): a mark that joins the letter before it has none, an East Asian
+  wide character or an emoji two, a grapheme those of its widest character. The tables
+  are carried from the V tree.
 - **A run can be a box** (`Shaping::advance`): so wide, with no glyphs. Its text is one
   character, U+FFFC, which stands for what is no text; the pen goes past it and nothing is
   shaped. It is part of the word around it, has a caret stop before and after it, and

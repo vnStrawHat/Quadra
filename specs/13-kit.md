@@ -877,6 +877,41 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   - Not yet: a tree of pieces for files of gigabytes (a change counts hundreds of
     thousands of pieces there).
 
+- **The document** (`Doc`) is a buffer with its cursors, its undo and the commands of
+  editing; it draws nothing and knows no key, so a test drives it as the editor does.
+  - **A cursor** is an anchor and a head, offsets in the buffer, and the column it goes
+    back to while it moves up and down. There is one at least; they are kept in the order
+    of the text, and those that overlap, or that touch when one selects nothing, are one.
+  - **An edit** is a text in place of a range. A command makes its edits for every cursor
+    and `apply` makes them as one change, the last first; the edits are in the order of
+    the text and not over each other (two cursors in one word delete it once). An edit
+    with a caret puts the cursor that asked for it; where none has one, every cursor is
+    taken through the edits (an edit a line, not an edit a cursor).
+  - **Undo** takes back a group and puts the cursors where they were before it. Typing
+    joins the typing before it until a line break, a cursor that moves, another command,
+    or a pause of a second (`now`, set by who drives the document). A thousand groups are
+    kept.
+  - **Motion** is by grapheme in a line, by word (letters, blanks, the rest; what is not
+    ASCII is of words), to the first thing of a line that is not blank and then to its
+    start, by line and by page in the column the cursor came from. Columns are cells
+    (`quadra_text::display_width`: a wide character is two, a mark none) and a tab goes to
+    the next stop.
+  - **Commands**: text, a new line with the indent of the old and a level more after what
+    opens a block, deleting by grapheme and by word, the tab, lines indented, deleted,
+    duplicated, moved and made comments, everything and lines selected, the word at an
+    offset, a cursor more above or below (a selection in a line is a column), the next
+    place the selected text is (`Buffer::find` reads on from piece to piece and stops at
+    the first), the bracket that matches the one at the cursor (20 000 bytes away at
+    most, strings and comments not skipped), and what copy, cut and paste do (a line to
+    each cursor when there are as many).
+  - `version` counts the changes, for what a view keeps of the text; `dirty` is the first
+    line changed, for who colours it.
+  - A test does commands at random with several cursors: after each, the cursors are in
+    the text, between characters, in order, none over another; in the end everything is
+    undone to the text it started as and done again to what it was. It found three things
+    the V tree has too: two cursors in one word asked for edits over each other, a
+    selection moved down past the last line was left past the end, and the word selected
+    at a cursor could hold another cursor.
 - **A tokenizer reads a line at a time.** `Tokenizer::tokenize(line, state, out)` adds the
   tokens of the line to `out` (a `Token` is the bytes `start..end` and a `TokenKind`; what
   no token covers is plain text) and gives the state the next line starts in; the first
@@ -909,8 +944,8 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   find). The seeded test (12, "Fuzzing") holds every tokenizer to both.
 - A tokenizer allocates nothing: tokens go into the caller's vector, and words are compared
   where they are.
-- Not yet: the document with its cursors and its undo, the highlighter that keeps the
-  states of lines, and the editor's widget; what is inside `<script>` and
+- Not yet: the highlighter that keeps the states of lines, finding, and the editor's
+  widget; what is inside `<script>` and
   `<style>` is plain text; regular expressions in JavaScript are not told from division.
 
 ## Porting the kit

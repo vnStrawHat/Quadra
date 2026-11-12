@@ -12,6 +12,7 @@ workspace = true
 
 [dependencies]
 quadra-kit = { path = "../quadra-kit" }
+quadra-text = { path = "../quadra-text" }
 quadra-tree = { path = "../quadra-tree" }
 
 [dev-dependencies]

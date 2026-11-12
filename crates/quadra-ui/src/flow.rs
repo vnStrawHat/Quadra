@@ -135,9 +135,14 @@ fn region(content: impl Fn() -> Option<AnyView> + 'static) -> Region {
                 if let Some(old) = mounted.take() {
                     tree.remove(old);
                 }
-                let Some(view) = view.filter(|_| tree.is_alive(container)) else {
+                // The box may have gone in this very frame: a row of a list that is built
+                // again while the list drops it.
+                let there = tree.is_alive(container);
+                let Some(view) = view.filter(|_| there) else {
                     scope.dispose();
-                    tree.set_children(container, &[]);
+                    if there {
+                        tree.set_children(container, &[]);
+                    }
                     return;
                 };
                 let node = scope.run(|| view.mount(&mut MountCx::new(tree)));

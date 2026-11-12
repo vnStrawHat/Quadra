@@ -138,6 +138,30 @@ fn a_dynamic_region_is_built_again_when_what_it_reads_changes() {
 }
 
 #[test]
+fn a_region_whose_box_goes_as_it_is_built_again_is_dropped() {
+    // Rows that each hold a region reading `turn`: the list loses rows in the frame that
+    // builds the regions again, in whichever order the two are written.
+    for rows_first in [true, false] {
+        let (rows, turn) = (signal(vec![1, 2, 3]), signal(0));
+        let row = move |n: Signal<i32>| {
+            column().child(dynamic(move || text(format!("{} at {}", n.get(), turn.get()))))
+        };
+        let mut h = Harness::new();
+        mount_root(&mut h.tree, each(move || rows.get(), |n| *n, row));
+        h.frame();
+        if rows_first {
+            rows.set(vec![2]);
+            turn.set(1);
+        } else {
+            turn.set(1);
+            rows.set(vec![2]);
+        }
+        h.frame();
+        assert_eq!(all_texts(&mut h), ["2 at 1"]);
+    }
+}
+
+#[test]
 fn removing_the_root_frees_everything_the_views_made() {
     let before = stats();
     let n = signal(0);

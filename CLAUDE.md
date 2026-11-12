@@ -174,6 +174,8 @@ colours are `token::ANSI`; the filter by pattern is `regex-lite`, admitted in sp
 kit has `diff(old, new)` (`quadra-kit/src/diff.rs`, `diff/lines.rs` the line script, `diff/rows.rs` the rows; `.mode(DiffMode::Inline |
 SideBySide)`, `.context(n)` folds; `span(..).background(..)` is the fill behind a span of rich text; `token::DIFF_ADD`, `DIFF_REMOVE`). The
 gallery has 70 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`), and `diff`, which has no reference; left: markdown, the editor
+(`quadra-md` has its parser: `parse`, `parse_inline`, `outline`, linear in the text, with the seeded test of `quadra_testing::fuzz`;
+`quadra_text::find_urls` is the one URL detector; next its view, then math (`tex`) and diagrams (`mermaid`), ported from `quadra/kit/md` of the V tree)
 (R4: `quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

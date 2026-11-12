@@ -708,6 +708,29 @@ What these are and look like is behaviour/19. As built:
 - Not yet: a line selected or copied; scrolling sideways (a long line is cut at the edge);
   a limit on the lines held.
 
+## Markdown (`quadra-md`)
+
+What it reads and how it looks is behaviour/21. As built:
+
+- **The parser is plain functions over text**, with no dependency on the framework but the
+  URL detector of `quadra-text`. `parse(source)` gives the blocks, each with the source line
+  it starts on: `Kind::Paragraph`, `Heading { level }`, `Item { number, depth, task }` (a
+  bullet has no number; the depth is half its indent, a tab counting four), `Code { lang }`
+  (the first word after the fence, in lower case), `Quote { depth }`, `Rule`,
+  `Table { align, rows }`, `Math` and `Front`. A kind holds what it has and nothing else.
+  `parse_inline(text)` gives the spans of a block's text: bold, italic, struck, code, math,
+  a link, an image.
+- `outline(blocks)` lists the headings with their anchors (`anchor(text)`: lower case,
+  spaces to `-`, punctuation dropped); `plain(text)` is a text without its marks,
+  `block_at(blocks, line)` the block a source line is in, `words(source)` the count of
+  words.
+- **A document that is not ours costs what its length costs**: a search that failed is not
+  made again from further on (a closing backtick, bracket, comment end), brackets are
+  matched once a text, and links inside the labels of links stop at 16 deep, beyond which a
+  label is plain text. No input makes the parser fail, hang or recurse without bound; the
+  seeded test (12, "Fuzzing") holds it to that with the corpus of the V tree.
+- Not yet: the view; math; diagrams; the colours of code in fences.
+
 ## Porting the kit
 
 Order within phase R3: tokens and themes; text, box and icon; buttons and inputs; selection

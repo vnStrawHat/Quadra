@@ -1,0 +1,17 @@
+[package]
+name = "quadra-md"
+description = "Quadra's Markdown: the parser of blocks and inlines, and the outline of a document"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-text = { path = "../quadra-text" }
+
+[dev-dependencies]
+quadra-testing = { path = "../quadra-testing" }

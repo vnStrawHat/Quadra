@@ -191,6 +191,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-md"
+version = "0.1.0"
+dependencies = [
+ "quadra-testing",
+ "quadra-text",
+]
+
+[[package]]
 name = "quadra-native-win"
 version = "0.1.0"
 dependencies = [

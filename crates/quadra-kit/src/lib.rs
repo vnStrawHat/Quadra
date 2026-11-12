@@ -27,6 +27,7 @@ mod progress;
 mod range;
 mod root;
 mod select;
+mod settings;
 mod sidebar;
 pub mod size;
 mod slider;
@@ -74,6 +75,7 @@ pub use progress::{Busy, Skeleton, Spinner, progress, progress_busy, skeleton, s
 pub use range::{RangeSlider, range_slider};
 pub use root::{install, root};
 pub use select::{Select, select};
+pub use settings::{Settings, SettingsGroup, SettingsPage, settings};
 pub use sidebar::{NavItem, Sidebar, sidebar};
 pub use slider::{Slider, slider};
 pub use split::{Split, split};

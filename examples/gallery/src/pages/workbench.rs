@@ -1,9 +1,12 @@
 //! What a workbench is made of: the activity bar, the tab strip, the panel header, the pane
-//! tree and docking.
+//! tree, docking and the settings.
 
 use quadra::{Div, column, div, dynamic, memo, row, signal};
 use quadra_kit::work::{Activity, Axis, Pane, Tab, activity_bar, dock, panel_header, panes, tab_strip};
-use quadra_kit::{Size, button, icon_button, icons, token, tooltip};
+use quadra_kit::{
+    SettingsGroup, SettingsPage, Size, Variant, button, dialog, icon_button, icons, segmented, select,
+    settings, switch, token, tooltip,
+};
 
 use crate::common::{demo, framed, hint, line, mono, page, stack};
 
@@ -129,6 +132,80 @@ pub fn dock_page() -> Div {
             "Docking workbench",
             framed(panes(work.root, leaf).dock(work)).height(320.0),
             "panes(work.root, |group| ..).dock(work)  // strips: tab_strip(tabs, active).dock(work, group)",
+        )],
+    )
+}
+
+pub fn settings_page() -> Div {
+    let (current, query, scope, open) = (signal(0), signal(String::new()), signal(0), signal(false));
+    let (accessible, trust, blink) = (signal(false), signal(true), signal(true));
+    let (closing, quit, mode) = (signal(0), signal(0), signal(2));
+    let general = SettingsGroup::new("General Settings")
+        .row(
+            "Accessible Mode",
+            "Keep collapsed controls expanded and reachable from the keyboard, for screen readers.",
+            switch(accessible),
+        )
+        .row(
+            "When Closing With No Tabs",
+            "What closing the active item does when no tab is open.",
+            select(["Platform Default", "Close Window", "Keep Window Open"], closing).width(220.0),
+        )
+        .row(
+            "On Last Window Closed",
+            "What happens when the last window is closed.",
+            select(["Platform Default", "Quit App"], quit).width(220.0),
+        );
+    let security = SettingsGroup::new("Security").row(
+        "Trust All Projects",
+        "Run project tasks and language servers without asking first.",
+        switch(trust),
+    );
+    let theme = SettingsGroup::new("Theme").row(
+        "Theme Mode",
+        "Follow the system, or always use the light or the dark theme.",
+        segmented(["Light", "Dark", "System"], mode),
+    );
+    let cursor = SettingsGroup::new("Cursor").row(
+        "Cursor Blink",
+        "Blink the text cursor while the editor has focus.",
+        switch(blink),
+    );
+    let json = move || {
+        let mode = ["light", "dark", "system"][mode.get()];
+        let (accessible, trust, blink) = (accessible.get(), trust.get(), blink.get());
+        format!(
+            "{{\n  \"accessible_mode\": {accessible},\n  \"trust_all_projects\": {trust},\n  \
+             \"cursor_blink\": {blink},\n  \"theme_mode\": \"{mode}\"\n}}"
+        )
+    };
+    let small = |name: &str| button(name.to_string()).size(Size::Sm);
+    let mut view = settings(current)
+        .page(SettingsPage::new("General").group(general).group(security))
+        .page(SettingsPage::new("Appearance").group(theme))
+        .page(SettingsPage::new("Editor").group(cursor))
+        .search(query)
+        .hint("ctrl-shift-e", "Focus Navbar");
+    for name in ["Keymap", "Languages & Tools", "Window & Layout", "Terminal"] {
+        view = view.page(SettingsPage::new(name));
+    }
+    for (i, name) in ["User", "Project"].into_iter().enumerate() {
+        let scope_is = small(name).variant(Variant::Ghost).toggled(move || scope.get() == i);
+        view = view.header(scope_is.on_click(move || scope.set(i)));
+    }
+    let edit = small("Edit in settings.json").variant(Variant::Outline).on_click(move || open.set(true));
+    let view = view.header(div().grow(1.0)).header(edit);
+    let window = column().height(560.0).border(1.0).border_color(token::LINE_STRONG);
+    let file = dialog(open, "settings.json", move || mono(json()));
+    let about =
+        "Preferences in pages: a searchable navigation, then rows of a title, a description and a control.";
+    page(
+        "Settings",
+        about,
+        [demo(
+            "Window",
+            window.child(view).child(file),
+            "settings(current).page(SettingsPage::new(\"General\").group(..)).search(query)",
         )],
     )
 }

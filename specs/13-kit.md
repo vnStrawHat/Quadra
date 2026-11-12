@@ -320,6 +320,34 @@ As built so far:
   Enter and Space open and close (key context `action::TREE`). The ids of the open things
   are a signal the caller may own (`.open(..)`). To a reader: a tree of items, expanded or
   collapsed. Not yet: children that are asked for when a thing opens, several selected.
+- **`settings(current)`** is the preferences of an app in pages (behaviour/15, "Settings"
+  and "Settings, cards", has the numbers): a column of the pages at the left, the chosen one
+  at the right. A page is `SettingsPage::new(title).icon(..).about(..).group(..)`, a group
+  `SettingsGroup::new(title).about(..).row(title, about, control)`: a row is what a setting
+  is called, a line about it, and its control at the right, any view of the app's
+  (`.wide(control)` is a row that is its control alone). The app owns the controls and the
+  index of the chosen page, `current`; the component keeps which pages are open in the
+  column, the chosen group and where the page is scrolled. Every page is mounted once, the
+  ones that do not show are not displayed: a control keeps its state while another page
+  shows. Two layouts: rules (groups under small mono headers, a hairline under each row),
+  and `.cards()` (page icons, a header with the page's title and what `.header(view)` adds
+  at its right, each group an outlined card). In the rules layout the header views are a
+  row above the page's title.
+  - `.search(query)` puts a search field above the column, writing `query`. While it holds
+    text only the rows show whose title or line about them holds it, whatever the case and
+    the accents; a group and a page that keep no row leave the page and the column, and
+    while the chosen page keeps none the first page that keeps one shows (`current` is not
+    written).
+  - A click on a page's row chooses it and scrolls its page to the top. In the rules layout
+    every page has a chevron that shows its groups under it without choosing it; in the
+    cards layout a page has one when more than one of its titled groups keeps a row, and a
+    click on the row also opens them. A click on a group chooses its page and scrolls the
+    group's header to the top of the page.
+  - `.hint(keys, does)` is a key hint under the column (rules).
+  - The rows of the column take the focus (Tab), and Enter and Space do what a click does
+    (key context `action::CONTROL`). To a reader: a tree of items, selected, expanded or
+    collapsed (it can expand and collapse them); the page's title is a heading and each row
+    a group named by its title.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

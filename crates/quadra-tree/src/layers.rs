@@ -7,7 +7,7 @@
 use quadra_prim::{Affine, Point, Rect};
 use quadra_render::{LayerConstants, LayerId};
 
-use crate::node::{NodeId, flag};
+use crate::node::{NodeId, Pose, flag};
 use crate::tree::Tree;
 
 /// What makes a node a layer.
@@ -18,6 +18,8 @@ pub(crate) struct LayerState {
     pub opacity: f32,
     /// How far the layer is turned about its middle, in degrees.
     pub turn: f32,
+    /// What the node's style says of where its paint goes (specs/05): over the rest.
+    pub pose: Pose,
     /// Cut to the parent's padding box: the content of a scroll container.
     pub clip_to_parent: bool,
     /// Its marker stands in the list of the layer around it.
@@ -39,6 +41,7 @@ impl LayerState {
             offset: Point::ZERO,
             opacity: 1.0,
             turn: 0.0,
+            pose: Pose::default(),
             clip_to_parent: false,
             marked: false,
             culls: false,
@@ -192,8 +195,9 @@ impl Tree {
         }
         let s = self.scale;
         // Whole device pixels: glyphs keep their positions inside the layer while it moves.
-        let x = ((parent_at.x + own.x + state.offset.x) * s).round();
-        let y = ((parent_at.y + own.y + state.offset.y) * s).round();
+        let pose = state.pose;
+        let x = ((parent_at.x + own.x + state.offset.x + pose.translate.x) * s).round();
+        let y = ((parent_at.y + own.y + state.offset.y + pose.translate.y) * s).round();
         let scissor = node.parent.filter(|_| state.clip_to_parent).map(|parent| {
             let p = &self.nodes[parent.index as usize];
             let border = self.layout.style(p.layout).border;
@@ -205,11 +209,14 @@ impl Tree {
             Rect::new(left, top, (right - left).max(0.0), (bottom - top).max(0.0))
         });
         let mut transform = Affine::translate(x, y);
-        if state.turn != 0.0 {
+        let (turn, k) = (state.turn + pose.rotate, pose.scale);
+        if turn != 0.0 || k != 1.0 {
             let size = self.layout.rect(node.layout).size();
             let middle = Point::new(size.width * s / 2.0, size.height * s / 2.0);
-            transform = transform.then(Affine::rotate_about(state.turn, middle));
+            // Turned, then scaled, both about the middle: the middle stays where it is.
+            let grown = Affine::translate(middle.x * (1.0 - k), middle.y * (1.0 - k)).then(Affine::scale(k));
+            transform = transform.then(Affine::rotate_about(turn, middle)).then(grown);
         }
-        LayerConstants { transform, scissor, opacity: state.opacity }
+        LayerConstants { transform, scissor, opacity: state.opacity * pose.opacity }
     }
 }

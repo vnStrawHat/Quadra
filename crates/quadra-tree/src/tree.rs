@@ -75,6 +75,11 @@ pub struct Tree {
     pub(crate) drag: Option<crate::drag::Drag>,
     /// What waits to see the next layout.
     pub(crate) after_layout: Vec<crate::shared::OnTree>,
+    /// The nodes with a change that eases under way; the frames so far; and whether what
+    /// is styled in this one shows at once (a new theme).
+    pub(crate) moving: Vec<NodeId>,
+    pub(crate) frames: u64,
+    pub(crate) snap: bool,
     pub(crate) stats: FrameStats,
     pub(crate) times: PassTimes,
     // Reused by every pass.
@@ -122,6 +127,9 @@ impl Tree {
             theme: Rc::default(),
             drag: None,
             after_layout: Vec::new(),
+            moving: Vec::new(),
+            frames: 0,
+            snap: false,
             stats: FrameStats::default(),
             times: PassTimes::default(),
             scratch: Vec::new(),
@@ -188,6 +196,7 @@ impl Tree {
             semantics: None,
             state: State::NONE,
             styled: None,
+            motion: None,
         };
         if index as usize == self.nodes.len() {
             self.nodes.push(node);
@@ -198,7 +207,9 @@ impl Tree {
             self.owners.resize(layout.index() + 1, 0);
         }
         self.owners[layout.index()] = index;
-        NodeId { index, generation }
+        let id = NodeId { index, generation };
+        self.put_pose(id, style.pose);
+        id
     }
 
     /// The node of an id, or `None` when it was removed.

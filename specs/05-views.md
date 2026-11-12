@@ -74,9 +74,51 @@ once, when the view is built, and produce partial styles stored on the node. Hov
 runs on hover. Values such as `token::SURFACE` are theme tokens, resolved in the style pass
 (13).
 
-Transitions are part of style: `.transition(Prop::Background, 120, Ease::Out)`. The tree runs
-them; the property animated decides the pass, so a transform or opacity transition repaints
-nothing.
+### The pose and transitions
+
+Four values of a style say how what a box paints is placed over the box, and change nothing
+of the layout: `.translate(Point)`, `.scale(k)` and `.rotate(degrees)`, both about the middle
+of the box, and `.opacity(a)`. Together they are the box's pose. They are values like the
+others: constants, reactive, or what a state changes (`.hover(|s| s.scale(1.06))`).
+
+- A box whose style says one of them, in its own values or in a variant, is a layer (07):
+  the pose is the layer's constants, so a pose that changes paints nothing.
+- The pointer, the focus ring's place and the semantic tree go by the box as it is laid
+  out: a box that lifts under the pointer does not leave it.
+- A translation is in whole device pixels. What is scaled is drawn from what was painted
+  at the box's own size: text is not shaped or rasterized again.
+
+`.transition(ms)` makes the changes of what can ease go there over that time, along
+`Ease::Out`; `.transition_with(ms, ease)` says the curve. What can ease: the background, the
+border's colour, and the pose. The tree runs it; no app code does.
+
+- The style the box is mounted with shows at once; so does what a new theme changes.
+- A change starts from what shows, also in the middle of another change.
+- A frame of a change of colours styles and paints that node; a frame of a change of the
+  pose alone composes its layer and paints nothing (14).
+- The window draws frames while a change is under way, and none once it has arrived.
+
+`.animate(timeline)` plays a timeline from when the box is mounted: steps one after another,
+each going over its time to what it sets of what can ease, from where the step before left
+it.
+
+```rust
+let bounce = timeline()
+    .to(380, Ease::Out, |s| s.translate(Point::new(0.0, -18.0)))
+    .to(380, Ease::In, |s| s.translate(Point::ZERO))
+    .forever();
+div().animate(bounce)
+```
+
+- `.pause(ms)` is a step that changes nothing. `.repeat(n)` plays the steps n times,
+  `.forever()` until the box goes; `.alternate()` plays every second time backwards.
+- A timeline is a function of the time since it started and of what the box's style says:
+  every play starts from the style's values, and a style that changes while it plays (a
+  state, a signal) is what the next frame starts from. The transition of the box waits
+  while a timeline plays.
+- When the last play ends its values stay, until the style changes.
+- Not yet: steps that run together over different times, timelines inside timelines, a
+  timeline started again by the app.
 
 ## Frame callbacks
 

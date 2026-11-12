@@ -9,7 +9,9 @@ A style is a struct of optional values in three groups:
 
 - **Layout** values (06): sizes, spacing, flex and grid properties, position, overflow.
 - **Paint** values: background (colour or gradient), border colour, radii, shadows, text colour
-  and decoration, opacity, cursor, transform.
+  and decoration, cursor.
+- The **pose** (05, "The pose and transitions"): translation, scale, rotation and opacity.
+  They are constants of the node's layer, not paint.
 - **Text** values, inherited down the tree: family, size, weight, line height, features.
 
 A node's declared style is a base plus partial styles per state (05). The style pass resolves

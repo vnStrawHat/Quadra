@@ -2,6 +2,7 @@
 //! reactive, and a setter of what a state changes, taking a constant.
 
 use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position};
+use quadra_prim::Point;
 use quadra_tree::{Paint, Patch};
 
 use super::Div;
@@ -105,6 +106,13 @@ props! {
     selection_color: Paint => SelectionColor;
     /// The carets of the fields in the box.
     caret_color: Paint => CaretColor;
+    /// The pose (specs/05): what the box paints is moved by this, over the box it keeps.
+    translate: Point => Translate;
+    /// Made larger or smaller about the middle of the box.
+    scale: f32 => Scale;
+    /// Turned about the middle of the box, in degrees.
+    rotate: f32 => Rotate;
+    opacity: f32 => Opacity;
 }
 
 impl Div {

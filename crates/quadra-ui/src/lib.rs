@@ -30,7 +30,7 @@ mod tween;
 mod view;
 mod window;
 
-pub use div::{Div, Refine, column, div, row};
+pub use div::{Div, Refine, Timeline, column, div, row, timeline};
 pub use drawing::{DrawingView, drawing};
 pub use flow::{Region, dynamic, each, mount_in, show};
 pub use input::{TextInput, text_area, text_input};

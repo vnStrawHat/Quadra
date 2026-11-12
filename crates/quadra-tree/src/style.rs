@@ -73,7 +73,23 @@ impl Styled {
 impl Tree {
     fn own_style(&self, id: NodeId) -> Style {
         let (layout, node) = (self.layout_style(id).clone(), self.node(id));
-        Style { layout, paint: node.paint, text: self.text_values(id) }
+        Style { layout, paint: node.paint, pose: self.pose(id), text: self.text_values(id) }
+    }
+
+    /// Makes a node keep its own style apart from the one it shows: for what resolves it.
+    pub(crate) fn keep_own_style(&mut self, id: NodeId) {
+        if self.nodes[id.index as usize].styled.is_none() {
+            let base = self.own_style(id);
+            self.nodes[id.index as usize].styled = Some(Box::new(Styled::of(base)));
+        }
+    }
+
+    /// A node whose style may say a pose is a layer before it does: a pose that comes with
+    /// a state, or changes, then paints nothing.
+    fn poses(&mut self, id: NodeId, patches: &[Patch]) {
+        if patches.iter().any(|patch| patch.part() == Part::Pose) {
+            self.make_layer(id, false);
+        }
     }
 
     /// Declares what a state changes of a node's style. The values are applied over the
@@ -82,9 +98,10 @@ impl Tree {
         if self.get(id).is_none() {
             return;
         }
-        let base = self.own_style(id);
+        self.poses(id, &patches);
+        self.keep_own_style(id);
         let node = &mut self.nodes[id.index as usize];
-        let styled = node.styled.get_or_insert_with(|| Box::new(Styled::of(base)));
+        let Some(styled) = &mut node.styled else { return };
         styled.variants.retain(|(s, _)| *s != state);
         styled.variants.push((state, patches));
         styled.variants.sort_by_key(|(s, _)| *s);
@@ -117,9 +134,9 @@ impl Tree {
         if self.get(id).is_none() {
             return;
         }
-        if patch.themed() && self.nodes[id.index as usize].styled.is_none() {
-            let base = self.own_style(id);
-            self.nodes[id.index as usize].styled = Some(Box::new(Styled::of(base)));
+        self.poses(id, &[patch]);
+        if patch.themed() {
+            self.keep_own_style(id);
         }
         let theme = self.theme.clone();
         let node = &mut self.nodes[id.index as usize];
@@ -138,12 +155,14 @@ impl Tree {
             Part::Layout => Style { layout: self.layout_style(id).clone(), ..Style::default() },
             Part::Paint => Style { paint: node.paint, ..Style::default() },
             Part::Text => Style { text: self.text_values(id), ..Style::default() },
+            Part::Pose => Style { pose: self.pose(id), ..Style::default() },
         };
         patch.apply(&mut style, &theme);
         match part {
             Part::Layout => self.put_layout(id, style.layout),
             Part::Paint => self.put_paint(id, style.paint),
             Part::Text => self.put_text(id, style.text),
+            Part::Pose => self.put_pose(id, style.pose),
         }
     }
 
@@ -205,8 +224,10 @@ impl Tree {
         for patch in styled.roles.iter().chain(states.flat_map(|(_, patches)| patches)) {
             patch.apply(&mut style, &self.theme);
         }
+        self.ease(id, &mut style);
         self.put_layout(id, style.layout);
         self.put_paint(id, style.paint);
+        self.put_pose(id, style.pose);
         self.put_text(id, style.text);
     }
 

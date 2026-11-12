@@ -3,7 +3,7 @@
 //! that stands for another colour under another theme.
 
 use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position};
-use quadra_prim::{Corners, Edges};
+use quadra_prim::{Corners, Edges, Point};
 
 use crate::node::Style;
 use crate::theme::{Paint, Theme};
@@ -76,6 +76,12 @@ pub enum Patch {
     PlaceholderColor(Paint),
     SelectionColor(Paint),
     CaretColor(Paint),
+    /// The pose: what the node paints is moved, scaled and turned about its middle, and
+    /// faded, over the box it keeps.
+    Translate(Point),
+    Scale(f32),
+    Rotate(f32),
+    Opacity(f32),
 }
 
 impl Patch {
@@ -96,6 +102,10 @@ impl Patch {
             Patch::PlaceholderColor(v) => t.placeholder = Some(theme.resolve(v)),
             Patch::SelectionColor(v) => t.selection = Some(theme.resolve(v)),
             Patch::CaretColor(v) => t.caret = Some(theme.resolve(v)),
+            Patch::Translate(v) => style.pose.translate = v,
+            Patch::Scale(v) => style.pose.scale = v,
+            Patch::Rotate(v) => style.pose.rotate = v,
+            Patch::Opacity(v) => style.pose.opacity = v,
             layout => match layout {
                 Patch::Width(v) => l.width = v,
                 Patch::Height(v) => l.height = v,
@@ -145,6 +155,7 @@ impl Patch {
             Background(_) | BorderColor(_) | Radius(_) | Outline(_) | Elevation(_) => Part::Paint,
             TextColor(_) | TextSize(_) | FontWeight(_) | Italic(_) | LineHeight(_) => Part::Text,
             PlaceholderColor(_) | SelectionColor(_) | CaretColor(_) => Part::Text,
+            Translate(_) | Scale(_) | Rotate(_) | Opacity(_) => Part::Pose,
             _ => Part::Layout,
         }
     }
@@ -169,4 +180,5 @@ pub(crate) enum Part {
     Layout,
     Paint,
     Text,
+    Pose,
 }

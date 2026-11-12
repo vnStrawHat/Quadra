@@ -6,6 +6,7 @@ pub mod data;
 pub mod display;
 pub mod fields;
 pub mod layout;
+pub mod motion;
 pub mod navigation;
 pub mod overlays;
 pub mod overview;

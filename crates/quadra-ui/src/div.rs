@@ -10,9 +10,11 @@ use crate::node_ref::NodeRef;
 
 mod drag;
 mod grid;
+mod motion;
 mod props;
 mod says;
 
+pub use motion::{Timeline, timeline};
 pub use props::Refine;
 
 use crate::prop::Prop;

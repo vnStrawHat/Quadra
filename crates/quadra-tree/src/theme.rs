@@ -86,7 +86,7 @@ impl Tree {
         if *self.theme == *theme {
             return;
         }
-        self.theme = theme;
+        (self.theme, self.snap) = (theme, true); // a new theme shows at once: nothing eases to it
         let themed =
             |i: &usize| self.nodes[*i].alive && self.nodes[*i].styled.as_ref().is_some_and(|s| s.themed());
         let again: Vec<usize> = (0..self.nodes.len()).filter(themed).collect();

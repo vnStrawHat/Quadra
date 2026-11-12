@@ -79,9 +79,10 @@ impl Tree {
             || self.animating()
     }
 
-    /// True while a frame callback is registered: every frame is wanted.
+    /// True while a frame callback is registered, or a change of style is easing: every
+    /// frame is wanted.
     pub fn animating(&self) -> bool {
-        !self.shared.frames.borrow().is_empty()
+        !self.shared.frames.borrow().is_empty() || !self.moving.is_empty()
     }
 
     /// Runs the frame callbacks in one batch and keeps those that want the next frame.
@@ -112,6 +113,7 @@ impl Tree {
         let (mut times, mut clock) = (PassTimes::default(), Instant::now());
         let mut lap = || std::mem::replace(&mut clock, Instant::now()).elapsed();
         self.run_frame_callbacks();
+        self.motion_pass();
         // A layout may change a size that state depends on: its bindings run and the layout
         // is done again. After four rounds the rest waits for the next frame.
         for _ in 0..4 {
@@ -139,7 +141,7 @@ impl Tree {
         times.paint = lap();
         self.compose_pass();
         times.compose = lap();
-        self.times = times;
+        (self.times, self.frames, self.snap) = (times, self.frames + 1, false);
         self.stats
     }
 

@@ -5,12 +5,13 @@ use std::rc::Rc;
 use quadra_a11y::Semantics;
 use quadra_layout::LayoutId;
 use quadra_platform::Cursor;
-use quadra_prim::{Color, Corners};
+use quadra_prim::{Color, Corners, Point};
 use quadra_reactive::Scope;
 
 use crate::inherit::TextValues;
 use crate::input::Handler;
 use crate::layers::LayerState;
+use crate::motion::Motion;
 use crate::style::{State, Styled};
 use crate::widget::Widget;
 
@@ -47,11 +48,31 @@ pub struct PaintStyle {
     pub elevation: u8,
 }
 
+/// The pose part of a node's style: how what the node paints is placed over its box. It
+/// changes nothing of the layout, and the pointer goes by the box (specs/05).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Pose {
+    /// Moved by this, in logical pixels.
+    pub translate: Point,
+    /// Made larger or smaller about the middle of the box.
+    pub scale: f32,
+    /// Turned about the middle of the box, in degrees.
+    pub rotate: f32,
+    pub opacity: f32,
+}
+
+impl Default for Pose {
+    fn default() -> Pose {
+        Pose { translate: Point::ZERO, scale: 1.0, rotate: 0.0, opacity: 1.0 }
+    }
+}
+
 /// A node's style. Border widths are layout values, so they are in `layout`.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Style {
     pub layout: quadra_layout::Style,
     pub paint: PaintStyle,
+    pub pose: Pose,
     /// What the node says of the text in it and under it.
     pub text: TextValues,
 }
@@ -106,4 +127,6 @@ pub(crate) struct Node {
     pub state: State,
     /// Its own style and what its states change of it, when it has variants.
     pub styled: Option<Box<Styled>>,
+    /// How its changes ease, when they do (specs/05, "The pose and transitions").
+    pub motion: Option<Box<Motion>>,
 }

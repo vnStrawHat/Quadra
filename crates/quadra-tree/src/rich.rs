@@ -23,6 +23,8 @@ pub struct RichSpan {
     pub shaping: Shaping,
     /// Its colour, where it is not that of the text around: a colour, or a role.
     pub color: Option<Paint>,
+    /// A fill behind it, as high as its line.
+    pub background: Option<Paint>,
     /// What a click on it gives: it is a link, and underlined.
     pub link: Option<Rc<str>>,
 }
@@ -36,8 +38,8 @@ pub struct RichText {
     text: String,
     /// In the order of the text; they end where the next starts.
     spans: Vec<RichSpan>,
-    /// The colours of the spans under the tree's theme.
-    colors: Vec<Option<Color>>,
+    /// The colour and the fill of each span under the tree's theme.
+    colors: Vec<(Option<Color>, Option<Color>)>,
     /// The style and the colour that hold at its node.
     style: TextStyle,
     color: Color,
@@ -87,13 +89,19 @@ impl Widget for RichText {
     fn paint(&mut self, cx: &mut PaintCx) {
         let Some(paragraph) = &self.paragraph else { return };
         let (spans, colors, text) = (&self.spans, &self.colors, self.color);
-        let color = |run: usize| colors.get(run).copied().flatten().unwrap_or(text);
+        let color = |run: usize| colors.get(run).and_then(|of| of.0).unwrap_or(text);
         // A line under each link, two pixels under the baseline, on every line it is on.
         let (ascent, descent) = paragraph.metrics();
         let under = ((self.style.line_px() - ascent - descent) / 2.0 + ascent).round() + 2.0;
         let (mut start, mut links) = (0, self.links.borrow_mut());
         links.clear();
         for (run, span) in spans.iter().enumerate() {
+            if let Some(background) = colors.get(run).and_then(|of| of.1) {
+                for part in paragraph.spans(start..span.end, 0.0) {
+                    let bounds = Rect::new(cx.rect.x + part.x, cx.rect.y + part.y, part.width, part.height);
+                    cx.quad(Quad { bounds, background, ..Quad::default() });
+                }
+            }
             let parts = span
                 .link
                 .iter()
@@ -119,7 +127,8 @@ impl Widget for RichText {
     }
 
     fn theme(&mut self, theme: &Theme) -> bool {
-        let colors = self.spans.iter().map(|span| span.color.map(|paint| theme.resolve(paint))).collect();
+        let under = |paint: Option<Paint>| paint.map(|paint| theme.resolve(paint));
+        let colors = self.spans.iter().map(|span| (under(span.color), under(span.background))).collect();
         std::mem::replace(&mut self.colors, colors) != self.colors
     }
 

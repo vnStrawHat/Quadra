@@ -290,7 +290,8 @@ locale at the window root; a subtree can provide its own.
 - `rich_text([span("was "), span("restarted").bold(), span("the guide").link(url)])` is one
   paragraph of spans, each saying what it has otherwise than the text around it:
   `.bold()`, `.weight(..)`, `.italic()`, `.size(px)`, `.family(name)`, `.color(..)` (a
-  colour, or a role of the theme), `.link(target)`. It wraps as one text does (08). A link
+  colour, or a role of the theme), `.background(..)` (a fill behind the span, as high as
+  its line, on every line it is on), `.link(target)`. It wraps as one text does (08). A link
   is underlined, in its own colour; the pointer is a hand over it, and a click on it gives
   its target to `.on_link(|target| ..)`. To a reader it is a text, named by all of it. Not
   yet: links reached by Tab and by a reader, a selection, links that open on Ctrl and a

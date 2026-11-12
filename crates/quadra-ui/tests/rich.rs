@@ -81,3 +81,24 @@ fn a_link_takes_the_pointer_and_its_click() {
     h.click(5.0, 35.0);
     assert_eq!(clicked.get_untracked(), "there");
 }
+
+#[test]
+fn the_fill_of_a_span_is_behind_it_on_every_line_it_is_on() {
+    const FILL: Color = Color::rgb(0x00FF00);
+    let fills = |width: f32| {
+        let mut h = Harness::new();
+        h.tree.set_theme(Rc::new(Theme::new(vec![FILL])));
+        h.mount(move || {
+            let words = rich_text([span("ab "), span("cd ef").background(Token(0)), span(" gh")]);
+            column().width(width).text_size(10.0).line_height(1.4).child(words)
+        });
+        h.frame();
+        let layer = h.tree.scene().layer(h.tree.scene().roots()[0]);
+        let filled = layer.instances().iter().filter(|instance| instance.color == FILL.to_array());
+        filled.map(|instance| instance.bounds).collect::<Vec<_>>()
+    };
+    // On one line: five characters of 6 px from the fourth, as high as the line.
+    assert_eq!(fills(100.0), [[18.0, 0.0, 30.0, 14.0]]);
+    // "ab cd " and "ef gh": the fill is on both lines, the space the line broke at with it.
+    assert_eq!(fills(40.0), [[18.0, 0.0, 18.0, 14.0], [0.0, 14.0, 12.0, 14.0]]);
+}

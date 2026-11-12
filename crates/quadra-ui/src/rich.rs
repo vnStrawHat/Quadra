@@ -15,12 +15,13 @@ pub struct Span {
     text: String,
     shaping: Shaping,
     color: Option<Paint>,
+    background: Option<Paint>,
     link: Option<Rc<str>>,
 }
 
 /// A span that is as the text around it, until it says otherwise.
 pub fn span(text: impl Into<String>) -> Span {
-    Span { text: text.into(), shaping: Shaping::default(), color: None, link: None }
+    Span { text: text.into(), shaping: Shaping::default(), color: None, background: None, link: None }
 }
 
 impl Span {
@@ -52,6 +53,12 @@ impl Span {
     /// A colour, or a role of the theme.
     pub fn color(mut self, color: impl Into<Paint>) -> Self {
         self.color = Some(color.into());
+        self
+    }
+
+    /// A fill behind the span, as high as its line: a colour, or a role of the theme.
+    pub fn background(mut self, color: impl Into<Paint>) -> Self {
+        self.background = Some(color.into());
         self
     }
 
@@ -111,9 +118,9 @@ fn link(cx: &mut MountCx, id: NodeId, boxes: LinkBoxes, on_link: Option<OnLink>)
 impl View for RichTextView {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (mut text, mut spans) = (String::new(), Vec::new());
-        for Span { text: words, shaping, color, link } in self.spans {
+        for Span { text: words, shaping, color, background, link } in self.spans {
             text.push_str(&words);
-            spans.push(RichSpan { end: text.len(), shaping, color, link });
+            spans.push(RichSpan { end: text.len(), shaping, color, background, link });
         }
         let links = spans.iter().any(|span| span.link.is_some());
         let rich = RichText::new(text, spans);

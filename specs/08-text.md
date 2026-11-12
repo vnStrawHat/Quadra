@@ -91,7 +91,16 @@ What a change costs:
 | One character typed in a long text | Shape the words that changed; break from that line on |
 | Scale or device size | New glyph tiles; lines unchanged |
 
-Rich text (spans of different style in one flow) is one paragraph with several style runs.
+Rich text (spans of different style in one flow) is one paragraph with several style runs
+(`Paragraph::rich`): each run says what it has otherwise than the paragraph's style, of the
+family, the size, the weight and the slant (`Shaping`).
+
+- A word is still what stands between two spaces: one that goes over the end of a run is
+  shaped in pieces, a piece a run, set on one pen. It never breaks where the runs meet.
+- A style of the paragraph that changes shapes the runs again from it: a run that says no
+  size has the new one.
+- The lines are as high as the paragraph's style says, and every run stands on their
+  baseline. Not yet: a line that is higher for a larger run on it.
 
 ## Shaping cache
 

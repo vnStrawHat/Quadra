@@ -147,8 +147,19 @@ pub(crate) fn paint_glyphs(
     color: Color,
     tiles: &mut Vec<GlyphTile>,
 ) {
+    paint_runs(cx, paragraph, origin, |_| color, tiles);
+}
+
+/// The same for a paragraph of runs: `color` gives the colour of each, by its number.
+pub(crate) fn paint_runs(
+    cx: &mut PaintCx,
+    paragraph: &Paragraph,
+    origin: Point,
+    color: impl Fn(usize) -> Color,
+    tiles: &mut Vec<GlyphTile>,
+) {
     let (ascent, descent) = paragraph.metrics();
-    let (size, line_px, scale) = (paragraph.style().size, paragraph.style().line_px(), cx.scale);
+    let (line_px, scale) = (paragraph.style().line_px(), cx.scale);
     for line in paragraph.lines() {
         let top = origin.y + line.y;
         if cx.visible.is_some_and(|band| top > band.bottom() || top + line_px < band.y) {
@@ -159,6 +170,7 @@ pub(crate) fn paint_glyphs(
         let (glyphs, start) = paragraph.line_glyphs(line);
         for g in glyphs {
             let x = (origin.x + g.x - start) * scale;
+            let (run, size) = paragraph.run_at(g.cluster as usize);
             let phase = ((x - x.floor()) * SUBPIXEL_STEPS as f32) as u8;
             let Some(tile) = cx.fonts.glyph(g.face, g.id, size * scale, phase) else { continue };
             if tile.rect.w == 0 {
@@ -169,7 +181,7 @@ pub(crate) fn paint_glyphs(
                 bounds: Rect::new(left, top, tile.rect.w as f32, tile.rect.h as f32),
                 uv: tile.uv,
                 slice: tile.rect.slice,
-                color,
+                color: color(run),
                 radii: Corners::default(),
                 // A colour glyph is an image: its pixels are not coverage of the text colour.
                 glyph: tile.meta.format != GlyphFormat::Color,

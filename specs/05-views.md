@@ -287,5 +287,13 @@ locale at the window root; a subtree can provide its own.
   for it everything, and the key for copying puts the selection on the clipboard of the
   view's context. The text can have the focus; the selection goes when the focus does, and
   when the text changes. Its key context is "text-select", which binds those two keys only.
+- `rich_text([span("was "), span("restarted").bold(), span("the guide").link(url)])` is one
+  paragraph of spans, each saying what it has otherwise than the text around it:
+  `.bold()`, `.weight(..)`, `.italic()`, `.size(px)`, `.family(name)`, `.color(..)` (a
+  colour, or a role of the theme), `.link(target)`. It wraps as one text does (08). A link
+  is underlined, in its own colour; the pointer is a hand over it, and a click on it gives
+  its target to `.on_link(|target| ..)`. To a reader it is a text, named by all of it. Not
+  yet: links reached by Tab and by a reader, a selection, links that open on Ctrl and a
+  click only (for content a user wrote), what is not text in the flow.
 - A field lays its text out at layout; what reads the lines before the next layout (a key
   that moves the caret by lines, a click, in the same turn as an edit) lays it out first.

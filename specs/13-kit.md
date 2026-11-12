@@ -353,6 +353,9 @@ As built so far:
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).
+- **A widget that paints with roles of its own** (the spans of a rich text) is given the
+  theme when its node is added and when the tree gets another (`Widget::theme`): it keeps
+  the colours, and is painted again when they changed.
 - **Colours of fields are text values** (`placeholder_color`, `selection_color`,
   `caret_color` on boxes, roles if wanted): the kit's root sets them for the window, an input
   its own selection. A field shows its placeholder while it holds nothing, composing counted.

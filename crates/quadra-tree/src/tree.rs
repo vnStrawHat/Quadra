@@ -162,7 +162,8 @@ impl Tree {
         self.add(style, Some(widget))
     }
 
-    fn add(&mut self, style: Style, widget: Option<Box<dyn Widget>>) -> NodeId {
+    fn add(&mut self, style: Style, mut widget: Option<Box<dyn Widget>>) -> NodeId {
+        widget.iter_mut().for_each(|widget| _ = widget.theme(&self.theme));
         let leaf = widget.as_ref().is_some_and(|w| w.is_leaf());
         let layout =
             if leaf { self.layout.insert_leaf(style.layout) } else { self.layout.insert(style.layout) };

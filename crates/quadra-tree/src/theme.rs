@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use quadra_prim::Color;
 
-use crate::node::NodeId;
+use crate::node::{NodeId, flag};
 use crate::tree::Tree;
 
 /// A role of the theme: a small number the theme has a colour for. The names are those of
@@ -93,6 +93,17 @@ impl Tree {
         for index in again {
             let id = NodeId { index: index as u32, generation: self.nodes[index].generation };
             self.restyle.push(id);
+        }
+        // A widget that paints with roles of the theme is painted again with the new ones.
+        for index in 0..self.nodes.len() {
+            let node = &mut self.nodes[index];
+            let widget = node.widget.as_mut().filter(|_| node.alive);
+            if widget.is_some_and(|widget| widget.theme(&self.theme)) {
+                self.mark(
+                    NodeId { index: index as u32, generation: self.nodes[index].generation },
+                    flag::PAINT,
+                );
+            }
         }
         self.shared.wake.set(true);
     }

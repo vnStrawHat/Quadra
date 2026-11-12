@@ -2,7 +2,7 @@
 //! 6 px wide and a line is 14 px high (specs/08, "Paragraphs", "Shaping cache", Tests).
 
 use quadra_prim::Size;
-use quadra_text::{FakeBackend, Paragraph, TextStyle, TextSystem};
+use quadra_text::{FakeBackend, Paragraph, Shaping, TextStyle, TextSystem};
 
 fn system() -> TextSystem {
     TextSystem::new(Box::new(FakeBackend::new()))
@@ -165,4 +165,28 @@ fn a_number_is_composed_from_glyphs_shaped_once() {
     ts.word("7", face, 20.0);
     ts.word("7th", face, 20.0);
     assert_eq!(ts.take_stats().words_shaped, 1);
+}
+
+/// On the fake backend a character is 0.6 of the size wide.
+#[test]
+fn runs_are_set_on_one_pen_and_a_word_across_them_never_breaks() {
+    let mut ts = TextSystem::new(Box::new(FakeBackend::new()));
+    let style = TextStyle { size: 10.0, ..TextStyle::default() };
+    // "cd" is twice as large, and glued to "ef": "cdef" is one word of two runs.
+    let large = Shaping { size: Some(20.0), ..Shaping::default() };
+    let runs = vec![(3, Shaping::default()), (5, large)];
+    let mut p = Paragraph::rich(&mut ts, "ab cdef gh", style.clone(), runs);
+    assert_eq!([p.x_at(3), p.x_at(5), p.x_at(7), p.x_at(10)], [18.0, 42.0, 54.0, 72.0]);
+    assert_eq!(
+        [p.run_at(0), p.run_at(3), p.run_at(4), p.run_at(5)],
+        [(0, 10.0), (1, 20.0), (1, 20.0), (2, 10.0)]
+    );
+    // 50 px: "ab " and "cdef" do not fit on a line, nor "cdef " and "gh"; where the runs
+    // meet is no place to break.
+    p.wrap(&mut ts, 50.0);
+    let lines: Vec<_> = p.lines().iter().map(|line| (line.start, line.end, line.width)).collect();
+    assert_eq!(lines, [(0, 3, 12.0), (3, 8, 36.0), (8, 10, 12.0)]);
+    // What a run does not say it has from the paragraph's style, when that changes too.
+    p.set_style(&mut ts, &TextStyle { size: 20.0, ..style });
+    assert_eq!([p.x_at(3), p.x_at(5), p.x_at(7)], [36.0, 60.0, 84.0]);
 }

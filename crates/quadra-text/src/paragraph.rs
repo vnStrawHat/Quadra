@@ -8,9 +8,10 @@ use std::ops::Range;
 
 use quadra_prim::Size;
 
-use crate::grapheme::next_grapheme;
 use crate::system::TextSystem;
-use crate::types::{FaceId, TextStyle};
+use crate::types::{FaceId, Shaping, TextStyle};
+
+mod shape;
 
 /// The slack absorbs float error in layout sums, which would otherwise break a word that was
 /// measured to fit.
@@ -63,6 +64,12 @@ pub struct Line {
 pub struct Paragraph {
     text: String,
     style: TextStyle,
+    /// Rich text: where each run ends, and what it says otherwise than the style. Empty:
+    /// all of the text is as the style says.
+    runs: Vec<(usize, Shaping)>,
+    /// Where each run ends, and the face and the size it was shaped with; the last one
+    /// never ends.
+    shaped: Vec<(usize, FaceId, f32)>,
     glyphs: Vec<PositionedGlyph>,
     /// Caret stops: every grapheme boundary and its x, the end of the text included.
     pub(crate) stops: Vec<(usize, f32)>,
@@ -77,19 +84,24 @@ pub struct Paragraph {
     descent: f32,
 }
 
-fn token_end(bytes: &[u8], i: usize) -> usize {
-    let separator = |b: u8| matches!(b, b' ' | b'\t' | b'\n');
-    if separator(bytes[i]) {
-        return i + 1;
-    }
-    bytes[i..].iter().position(|&b| separator(b)).map_or(bytes.len(), |n| i + n)
-}
-
 impl Paragraph {
     pub fn new(ts: &mut TextSystem, text: impl Into<String>, style: TextStyle) -> Paragraph {
+        Paragraph::rich(ts, text, style, Vec::new())
+    }
+
+    /// A paragraph of runs: `runs` says where each ends, in order, and what it has otherwise
+    /// than `style`. What comes after the last one is as the style says.
+    pub fn rich(
+        ts: &mut TextSystem,
+        text: impl Into<String>,
+        style: TextStyle,
+        runs: Vec<(usize, Shaping)>,
+    ) -> Paragraph {
         let mut p = Paragraph {
             text: text.into(),
             style,
+            runs,
+            shaped: Vec::new(),
             glyphs: Vec::new(),
             stops: Vec::new(),
             tokens: Vec::new(),
@@ -133,63 +145,10 @@ impl Paragraph {
         true
     }
 
-    fn shape(&mut self, ts: &mut TextSystem) {
-        let (face, size) = (ts.face_for(&self.style), self.style.size);
-        (self.ascent, self.descent) = ts.line_metrics(&self.style);
-        self.glyphs.clear();
-        self.tokens.clear();
-        self.wrapped_at = None;
-        let bytes = self.text.as_bytes();
-        // Where each byte's first glyph starts: clusters need not come in order.
-        let mut first_x = vec![f32::NAN; bytes.len()];
-        let (mut i, mut x) = (0, 0.0);
-        while i < bytes.len() {
-            let end = token_end(bytes, i);
-            let kind = match bytes[i] {
-                b' ' | b'\t' => Kind::Space,
-                b'\n' => Kind::Newline,
-                _ => Kind::Word,
-            };
-            let from = self.glyphs.len();
-            let mut width = 0.0;
-            if kind != Kind::Newline {
-                let word = ts.word(&self.text[i..end], face, size);
-                for g in &word.glyphs {
-                    let cluster = i + g.cluster as usize;
-                    if first_x[cluster].is_nan() {
-                        first_x[cluster] = x + g.x;
-                    }
-                    let (face, id, y, advance) = (g.face, g.id, g.y, g.advance);
-                    self.glyphs.push(PositionedGlyph {
-                        face,
-                        id,
-                        x: x + g.x,
-                        y,
-                        advance,
-                        cluster: cluster as u32,
-                    });
-                }
-                width = word.width;
-            }
-            // A token starts at the pen even when no glyph marks its first byte (a newline).
-            if first_x[i].is_nan() {
-                first_x[i] = x;
-            }
-            self.tokens.push(Token { start: i, end, width, glyphs: from..self.glyphs.len(), kind });
-            x += width;
-            i = end;
-        }
-        // A boundary inside a ligature has no glyph of its own: it takes the stop before it.
-        self.stops.clear();
-        let (mut at, mut last) = (0, 0.0);
-        while at < bytes.len() {
-            if !first_x[at].is_nan() {
-                last = first_x[at];
-            }
-            self.stops.push((at, last));
-            at = next_grapheme(&self.text, at);
-        }
-        self.stops.push((bytes.len(), x));
+    /// The run a byte offset is in, counted from the first, and the size of its text.
+    pub fn run_at(&self, index: usize) -> (usize, f32) {
+        let run = self.shaped.partition_point(|&(end, ..)| end <= index);
+        (run, self.shaped.get(run).map_or(self.style.size, |&(_, _, size)| size))
     }
 
     /// The x of the caret stop at or before a byte offset, along the endless line.

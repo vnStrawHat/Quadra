@@ -93,6 +93,28 @@ impl TextStyle {
     }
 }
 
+/// What a run of rich text says otherwise than the style of its paragraph.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Shaping {
+    pub family: Option<Rc<str>>,
+    pub size: Option<f32>,
+    pub weight: Option<u16>,
+    pub italic: Option<bool>,
+}
+
+impl Shaping {
+    /// The style of the run in a paragraph of `base`.
+    pub fn over(&self, base: &TextStyle) -> TextStyle {
+        TextStyle {
+            family: self.family.clone().unwrap_or_else(|| base.family.clone()),
+            size: self.size.unwrap_or(base.size),
+            weight: self.weight.unwrap_or(base.weight),
+            italic: self.italic.unwrap_or(base.italic),
+            line_height: base.line_height,
+        }
+    }
+}
+
 /// Fonts and shaping of one operating system (or a fake).
 pub trait TextBackend {
     fn default_family(&self) -> String;

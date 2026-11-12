@@ -160,10 +160,11 @@ things (`loading`, `indeterminate`, `clearable`, `key_hint`, `confirm`, `menu_bu
 card, the drawer, and the workbench (`quadra_kit::work`: activity bar, panel header, tab strip, pane tree,
 docking), and `settings` (`settings.rs`: rules and cards). Boxes have a pose (`.translate`, `.scale`,
 `.rotate`, `.opacity`: constants of the node's layer), transitions (`.transition(ms)`) and timelines
-(`.animate(timeline()..)`): `quadra-tree/src/motion.rs`, run by the tree at the start of a frame. The gallery has 63 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`);
-left: rich text, and the pages that wait for R4 (markdown, terminal,
-editor, live table, log view, value viewer, the three charts). Next:
-rich text; local time and the app's language (i18n); the components in the order of specs/13, each with its
+(`.animate(timeline()..)`): `quadra-tree/src/motion.rs`, run by the tree at the start of a frame.
+Rich text is in (`rich_text([span(..)..])`; `Paragraph::rich` with `Shaping` runs, the widget `RichText`,
+`Widget::theme` for widgets that paint with roles). The gallery has 64 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`);
+left: the pages that wait for R4 (markdown, terminal,
+editor, live table, log view, value viewer, the three charts). Next: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`
 (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range

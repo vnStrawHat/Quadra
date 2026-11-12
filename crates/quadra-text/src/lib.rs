@@ -22,5 +22,5 @@ pub use normalize::{fold_diacritics, is_mark, normalize_nfc};
 pub use paragraph::{Line, Paragraph, PositionedGlyph};
 pub use system::{TextStats, TextSystem, Word};
 pub use types::{
-    FaceId, FaceMetrics, FontKey, GlyphBitmap, GlyphFormat, ShapedGlyph, TextBackend, TextStyle,
+    FaceId, FaceMetrics, FontKey, GlyphBitmap, GlyphFormat, ShapedGlyph, Shaping, TextBackend, TextStyle,
 };

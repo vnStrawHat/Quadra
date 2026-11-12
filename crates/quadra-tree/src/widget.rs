@@ -10,6 +10,7 @@ use quadra_text::TextSystem;
 
 use crate::fonts::Fonts;
 use crate::inherit::Inherited;
+use crate::theme::Theme;
 
 /// A node's behaviour. Every method has a default: a widget implements what it does. Most
 /// nodes have no widget at all: a box is its style.
@@ -32,6 +33,13 @@ pub trait Widget: Any {
     /// text with. The tree calls it before the widget is next measured or painted after
     /// those values may have changed, and not otherwise.
     fn inherit(&mut self, _inherited: &Inherited) {}
+
+    /// Takes the theme: when the node is added, and when the tree gets another. A widget
+    /// that paints with roles of the theme keeps their colours from it, and returns true
+    /// when it must be painted again.
+    fn theme(&mut self, _theme: &Theme) -> bool {
+        false
+    }
 
     /// Completes what the node says of itself to a user: a text names itself by its text.
     fn semantics(&self, _says: &mut Semantics) {}

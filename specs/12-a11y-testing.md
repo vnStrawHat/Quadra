@@ -149,7 +149,12 @@ makes a hover lay out a node fails a test, whatever its timing.
 
 - **Fuzzing** of every parser that reads outside data (terminal sequences, Markdown, themes,
   keymaps, settings, images): deterministic, seeded, in `cargo test`, with the corpora carried
-  from the V tree.
+  from the V tree. `quadra_testing::fuzz` has what such a test is made of: `Rng` (the same
+  numbers for a seed on every machine), `mutate(rng, input, corpus)` (bits flipped, bytes
+  overwritten, a cut, a chunk doubled up to hundreds of times, a splice with another input,
+  numbers at the edges of their widths, bytes that are not UTF-8, a chunk removed), and
+  `run(name, rounds, limit, make, check)`, which fails with the number of the input that
+  took longer than the limit. `QUADRA_FUZZ_ITERS` sets the rounds for a long run.
 - **The debug layout check** (06): the suite runs with incremental layout compared against a
   full one.
 - **Leaks**: after a window closes, the arenas of the reactive runtime and the tree, the layer

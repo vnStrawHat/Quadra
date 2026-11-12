@@ -5,6 +5,7 @@
 //! Finding and driving controls through the semantic tree joins when semantics and input do.
 
 mod find;
+pub mod fuzz;
 
 use std::cell::RefCell;
 use std::rc::Rc;

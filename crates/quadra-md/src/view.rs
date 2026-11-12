@@ -1,6 +1,7 @@
 //! The view of a document (specs/13, "Markdown"; its look is behaviour/15, "Type"): the
 //! blocks in a column, each a child of its own that stays while its source does.
 
+mod code;
 mod table;
 
 use std::collections::HashMap;
@@ -9,17 +10,18 @@ use std::rc::Rc;
 
 use quadra_kit::{fonts, icon, icons, size, token};
 use quadra_layout::{Align as Across, Justify, Length};
-use quadra_reactive::{memo, signal};
+use quadra_reactive::memo;
 use quadra_text::find_urls;
 use quadra_tree::{NodeId, Role};
 use quadra_ui::{
-    Div, IntoProp, MountCx, Prop, RichTextView, Span as Run, View, column, div, each, rich_text, row,
-    scroll_x, span, text,
+    Div, IntoProp, MountCx, Prop, RichTextView, Span as Run, View, column, div, each, rich_text, row, span,
+    text,
 };
 
 use crate::block::{Kind, parse};
 use crate::inline::parse_inline;
 use crate::outline::plain;
+use code::code_box;
 use table::Table;
 
 /// The size of the text of a document, and of the code in it.
@@ -169,16 +171,6 @@ fn item(
     row().padding_left(depth.min(DEEPEST) as f32 * 22.0).child(mark).child(body)
 }
 
-/// A block of code: the tone of the editor, a hairline, the code face. It scrolls sideways.
-fn code_box(source: &str, on_link: &Option<OnLink>) -> Div {
-    let mut runs = Vec::new();
-    cut(&source.replace('\t', "    "), |text| span(text), &mut runs);
-    let frame = column().padding(12.0).radius(size::RADIUS_LG).bg(token::CANVAS).border(1.0);
-    let frame =
-        frame.border_color(token::LINE).font_family(fonts::MONO).text_size(CODE).line_height(size::LINE);
-    if runs.is_empty() { frame } else { frame.child(scroll_x(signal(0.0), div().child(rich(runs, on_link)))) }
-}
-
 fn block(kind: &Kind, on_link: &Option<OnLink>) -> Div {
     let words = |source: &str| match spans(source) {
         runs if runs.is_empty() => column(),
@@ -189,7 +181,9 @@ fn block(kind: &Kind, on_link: &Option<OnLink>) -> Div {
         Kind::Heading { level, text } => heading(*level, text, on_link),
         Kind::Item { number, depth, task, text } => item(*number, *depth, *task, text, on_link),
         // ponytail: a formula and a diagram show their source until they are drawn.
-        Kind::Code { text, .. } | Kind::Math { text } | Kind::Front { text } => code_box(text, on_link),
+        Kind::Code { lang, text } => code_box(lang, text, on_link),
+        Kind::Math { text } => code_box("", text, on_link),
+        Kind::Front { text } => code_box("yaml", text, on_link),
         Kind::Quote { depth, text } => {
             let bar = words(text).border_left(4.0).border_color(token::LINE_STRONG).padding_left(16.0);
             let nested = (depth.clamp(&1, &DEEPEST) - 1) as f32 * 16.0;

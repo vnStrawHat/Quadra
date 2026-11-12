@@ -139,6 +139,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-code"
+version = "0.1.0"
+dependencies = [
+ "quadra-kit",
+ "quadra-testing",
+ "quadra-tree",
+]
+
+[[package]]
 name = "quadra-data"
 version = "0.1.0"
 dependencies = [
@@ -195,6 +204,7 @@ dependencies = [
 name = "quadra-md"
 version = "0.1.0"
 dependencies = [
+ "quadra-code",
  "quadra-kit",
  "quadra-layout",
  "quadra-platform",

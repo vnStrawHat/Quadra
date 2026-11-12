@@ -1,0 +1,18 @@
+[package]
+name = "quadra-code"
+description = "Quadra's code: the tokenizers that colour some thirty languages a line at a time"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-kit = { path = "../quadra-kit" }
+quadra-tree = { path = "../quadra-tree" }
+
+[dev-dependencies]
+quadra-testing = { path = "../quadra-testing" }

@@ -176,8 +176,10 @@ SideBySide)`, `.context(n)` folds; `span(..).background(..)` is the fill behind 
 gallery has 71 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`), and `diff`, which has no reference; left: the editor
 (`quadra-md` has its parser, `parse`, `parse_inline`, `outline`, linear in the text, with the seeded test of `quadra_testing::fuzz`, and its view,
 `markdown(source)`: blocks as a keyed list known by what they say, `view/table.rs` measures columns at mount; `quadra_text::find_urls` is the one URL
-detector; rich text has `.strike()` and `.ctrl_links()`, `scroll_x` is a box that scrolls sideways in a page; next the tokenizers of `quadra-code` for
-the colours of fences, then math (`tex`) and diagrams (`mermaid`), ported from `quadra/kit/md` of the V tree)
+detector; rich text has `.strike()` and `.ctrl_links()`, `scroll_x` is a box that scrolls sideways in a page; `quadra-code` has the tokenizers,
+`tokenizer_for(name).tokenize(line, state, out)`: V, YAML, Markdown and a table of 27 rows, `LangSpec`, read by one scanner, held by a seeded test
+to tokens in order and between characters; they colour the fences; next math (`tex`) and diagrams (`mermaid`), ported from `quadra/kit/md` of the
+V tree, then the buffer, the highlighter and the editor of `quadra-code`)
 (R4: `quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

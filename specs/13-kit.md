@@ -738,26 +738,67 @@ What it reads and how it looks is behaviour/21. As built:
   - The look is behaviour/15: body 16 / 1.5; headings 28, 22.4, 19.2, 16, 14 and 13.6 px,
     semibold, the first two over a line; items with a bullet, their number or a box (a task:
     read, not clicked), 22 px in for each depth; a quote behind a bar; a rule; code in a box
-    on the tone of the editor, in the code face at 14 px, which scrolls sideways (06); a
+    on the tone of the editor, in the code face at 14 px, which scrolls sideways (06),
+    coloured by the tokenizer its language names ("Code" below; the front matter as YAML); a
     table as a grid with lines, the head on the tone of the chrome, every other row on the
     panel's. Code in a line is in the code face, in the colour of strings; what is struck
     is faint.
   - **The columns of a table** share its width by what each asks for (its longest cell on
     one line, measured when the table is mounted), and none is narrower than its longest
     word.
-  - **Links** (`[text](url)`, `<url>`, bare URLs, and URLs in code, which keep the colour
-    of the code) are links while Ctrl is held (05): the document is not the app's own
+  - **Links** (`[text](url)`, `<url>`, bare URLs, and URLs in code, which keep the colours
+    of the code they are in) are links while Ctrl is held (05): the document is not the app's own
     words. `.on_link(|target| ..)` is given the target; whether it is opened is the app's
     to say (`quadra_text::url_openable`).
   - Depths past 12 show as 12 and a table has 64 columns at most: a document that is not
     ours does not decide how wide the page is.
   - To a reader: headings by their text, the boxes of tasks checked or not, a table and
     its cells, and the texts.
-- Not yet: the colours of code in fences (they come with the tokenizers of `quadra-code`);
-  math and diagrams, which show their source; images, which show their words in brackets;
+- Not yet: math and diagrams, which show their source; images, which show their words in
+  brackets;
   one selection over the blocks; the hint over a link; where each block is, for an outline
   and for scrolling two panes together; a list of the blocks that show, for documents of
   tens of thousands of lines; a table wider than the page.
+
+## Code (`quadra-code`)
+
+What the editor does is behaviour/18. As built, its tokenizers:
+
+- **A tokenizer reads a line at a time.** `Tokenizer::tokenize(line, state, out)` adds the
+  tokens of the line to `out` (a `Token` is the bytes `start..end` and a `TokenKind`; what
+  no token covers is plain text) and gives the state the next line starts in; the first
+  line of a text starts in 0. The state is all a line needs to know of the lines before
+  it: what is open at their end (a comment and how deep, where comments nest; a string and
+  its quote; a fence). So a change reads again its line, and the next ones only while their
+  states differ, and a view reads the lines it shows.
+- The kinds are those a theme gives colours to (its `syntax`): keyword, control, string,
+  number, constant, type, function, variable, property, operator, punctuation, comment,
+  tag, attribute, regexp, escape, invalid. `role(kind)` is the role of a kind
+  (`token::SYNTAX_*`).
+- **`tokenizer_for(name)`** finds one by the name of a file or by what follows a fence,
+  whatever its case: by all of the name (`Dockerfile`), then by its first word
+  (`rust title=x`, `js {.cls}`), then by what is after its last dot. A name none knows is
+  `Tokenizer::Plain`: no tokens.
+- **Three have code of their own**: V; YAML (keys, flows, block scalars: the state is how
+  deep the key of the scalar is); Markdown (fences, math, the marks in a line).
+- **The others are rows of one table** (`LangSpec`), read by one scanner: the words of the
+  language (keywords, control, types, constants, builtins), its comments, its quotes and
+  what they hold (escapes, expressions, raw strings, three quotes, strings over lines), and
+  switches for what families of languages differ in (`$name`, `@name`, directives after a
+  `#`, attributes, lifetimes, `name!`, keys before a `:` or an `=`, sections, selectors).
+  The rows: C, C++, C#, Java, Kotlin, Swift, Go, Rust, JavaScript, TypeScript, Dart,
+  Python, Ruby, PHP, Lua, the shells, the shell of Windows and its batch files, SQL,
+  makefiles, container files, JSON, TOML, INI, CSS and its kin; markup (HTML, XML) and
+  diffs are modes of the scanner. A language more is a row more.
+- **Code that is not ours**: whatever a line holds, and whatever state it is given, the
+  tokens are in order, none over another, each starting and ending between characters; and
+  a line costs what its length costs (Markdown does not search twice for a mark it did not
+  find). The seeded test (12, "Fuzzing") holds every tokenizer to both.
+- A tokenizer allocates nothing: tokens go into the caller's vector, and words are compared
+  where they are.
+- Not yet: the buffer, the document with its cursors and its undo, the highlighter that
+  keeps the states of lines, and the editor's widget; what is inside `<script>` and
+  `<style>` is plain text; regular expressions in JavaScript are not told from division.
 
 ## Porting the kit
 

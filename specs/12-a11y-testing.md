@@ -147,7 +147,7 @@ makes a hover lay out a node fails a test, whatever its timing.
 
 ## Other test kinds
 
-- **Fuzzing** of every parser that reads outside data (terminal sequences, Markdown, themes,
+- **Fuzzing** of every parser that reads outside data (terminal sequences, Markdown, code, themes,
   keymaps, settings, images): deterministic, seeded, in `cargo test`, with the corpora carried
   from the V tree. `quadra_testing::fuzz` has what such a test is made of: `Rng` (the same
   numbers for a seed on every machine), `mutate(rng, input, corpus)` (bits flipped, bytes

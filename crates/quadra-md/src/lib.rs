@@ -7,6 +7,7 @@ mod block;
 mod inline;
 mod lines;
 mod outline;
+pub mod tex;
 mod view;
 
 pub use block::{Align, Block, Kind, parse};

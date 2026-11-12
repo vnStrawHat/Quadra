@@ -754,8 +754,26 @@ What it reads and how it looks is behaviour/21. As built:
     ours does not decide how wide the page is.
   - To a reader: headings by their text, the boxes of tasks checked or not, a table and
     its cells, and the texts.
-- Not yet: math and diagrams, which show their source; images, which show their words in
-  brackets;
+- **Math** (`quadra_md::tex`; the subset is behaviour/21, "Math"). `tex::parse(source)` gives
+  the nodes of a formula and the first thing that is wrong with it. A fault does not stop the
+  parser: what is around it is still there, and a command it does not know is its own name.
+  - A `Node` is an atom of a class (what it is to its neighbours, which decides the space
+    between them: ordinary, operator, binary, relation, opening, closing, punctuation,
+    inner), words, a group, a fraction, a root, a base with what is raised and lowered after
+    it, a big operator or a function with where its limits go, a list between delimiters
+    that grow, a delimiter of a fixed size, an accent, a line over or under, a space, the
+    rows of an environment, a stack, a change of style. A kind holds what it has and nothing
+    else.
+  - A letter of an alphabet (slanted, as variables are; `\mathbb`, `\mathcal`, `\mathbf` ..)
+    is the character Unicode has for it, so a formula is laid out with one font and no
+    styles of it. The names of symbols, operators, functions, accents, spaces and delimiters
+    are tables, carried from the V tree by a script and not by hand.
+  - A formula comes from a document that is not ours: it nests no deeper than
+    `tex::DEEPEST` (256; a brace is two), beyond which it is at fault, for the parser and for
+    what walks its nodes after it; the text of an argument is read once. The seeded test
+    (12, "Fuzzing") holds the parser to both.
+- Not yet: the layout and the drawing of a formula (math shows its source); diagrams, which
+  show their source too; images, which show their words in brackets;
   one selection over the blocks; the hint over a link; where each block is, for an outline
   and for scrolling two panes together; a list of the blocks that show, for documents of
   tens of thousands of lines; a table wider than the page.

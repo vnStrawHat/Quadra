@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use quadra_md::{Kind, anchor, block_at, outline, parse, parse_inline, plain, words};
+use quadra_md::{Kind, anchor, block_at, outline, parse, parse_inline, plain, tex, words};
 use quadra_testing::fuzz::{Rng, mutate, run};
 
 const CORPUS: [&str; 10] = [
@@ -76,4 +76,85 @@ fn a_megabyte_of_what_is_never_closed_is_read_in_the_time_its_length_takes() {
         assert!(started.elapsed() < Duration::from_secs(2), "{unit:?} took {:?}", started.elapsed());
         assert!(!spans.is_empty());
     }
+}
+
+const FORMULAS: [&str; 9] = [
+    r"\frac{x}{y} + x^2_i - \sqrt[3]{x} \cdot \sum_{i=0}^{n} i",
+    r"\left( \frac{\frac{a}{b}}{c} \right] \big| \Big\{ x \bigg\}",
+    r"\begin{pmatrix} a & b \\ c & d \end{pmatrix} \begin{array}{cc} 1 & 2 \\[4pt] 3 & 4 \end{array}",
+    r"\begin{cases} x & x > 0 \\ -x & \text{otherwise} \end{cases} \operatorname*{arg\,max}_x f",
+    r"f'(x) = \lim\limits_{h \to 0} \frac{f(x+h) - f(x)}{h} \int_0^\infty e^{-x}\,dx f'''",
+    r"\mathbb{R} \mathcal{F} \mathbf{v} \hat{a} \vec{b} \overline{xy} \underbrace{abc}_{n}",
+    "\\alpha\\beta\\gamma \\le \\ge \\ne \\pm \\infty % comment\n\\binom{n}{k} \\tfrac12 \\color{red}{x} \\mathrm{d}x",
+    r"\begin{aligned} a &= b + c \\ &= d \end{aligned} \middle| \phantom{x} \quad \qquad",
+    "αβγ 漢 😀 \\text{Xin chào} é",
+];
+
+/// What opens and is never closed.
+const OPENERS: [&str; 10] = [
+    "{",
+    r"\frac{",
+    "x^{",
+    r"\sqrt{",
+    r"\left(",
+    r"\begin{matrix}",
+    r"\sqrt[",
+    r"\text{",
+    r"\overline{",
+    "a_{",
+];
+
+/// How deep the nodes of a formula nest.
+fn depth(nodes: &[tex::Node]) -> usize {
+    use tex::Node::*;
+    let of = |node: &tex::Node| match node {
+        Group(body) | Delim { body, .. } | Accent { body, .. } | Line { body, .. } => depth(body),
+        Frac { over, under, .. } => depth(over).max(depth(under)),
+        Sqrt { index, body } => depth(body).max(index.as_deref().map_or(0, depth)),
+        Scripts { base, sup, sub } => depth(std::slice::from_ref(base))
+            .max(sup.as_deref().map_or(0, depth))
+            .max(sub.as_deref().map_or(0, depth)),
+        Stack { body, over, under, .. } => {
+            depth(body).max(over.as_deref().map_or(0, depth)).max(under.as_deref().map_or(0, depth))
+        }
+        Matrix { rows, .. } => rows.iter().flatten().map(|cell| depth(cell)).max().unwrap_or(0),
+        _ => 0,
+    };
+    1 + nodes.iter().map(of).max().unwrap_or(0)
+}
+
+#[test]
+fn nothing_a_formula_can_hold_makes_its_parser_fail_hang_or_nest_without_bound() {
+    for opener in OPENERS {
+        let started = std::time::Instant::now();
+        let (nodes, fault) = tex::parse(&opener.repeat(20_000));
+        assert!(fault.is_some(), "{opener}");
+        assert!(depth(&nodes) <= tex::DEEPEST, "{opener}");
+        assert!(started.elapsed() < Duration::from_secs(2), "{opener:?} took {:?}", started.elapsed());
+    }
+    let corpus = FORMULAS.map(str::as_bytes);
+    let make = |rng: &mut Rng, _: usize| {
+        let n = 50 + rng.below(5000);
+        match rng.below(20) {
+            0 => {
+                let row = format!("{}\\\\ ", "a & ".repeat(1 + rng.below(60)));
+                format!(
+                    "\\begin{{matrix}}{}{}",
+                    row.repeat(n / 50),
+                    if rng.chance(50) { "\\end{matrix}" } else { "" }
+                )
+                .into_bytes()
+            }
+            1 => format!("{}x{}", rng.pick(&OPENERS).repeat(n), "}".repeat(rng.below(n))).into_bytes(),
+            _ => {
+                let from = *rng.pick(&corpus);
+                mutate(rng, from, &corpus)
+            }
+        }
+    };
+    let check = |input: &[u8]| {
+        let (nodes, _) = tex::parse(&String::from_utf8_lossy(input));
+        assert!(depth(&nodes) <= tex::DEEPEST);
+    };
+    run("tex", 1500, Duration::from_secs(2), make, check);
 }

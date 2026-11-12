@@ -126,6 +126,25 @@ roles! {
     SYNTAX_REGEXP = "syntax_regexp";
     SYNTAX_ESCAPE = "syntax_escape";
     SYNTAX_INVALID = "syntax_invalid";
+    /// The sixteen colours text asks for by number (a log, a terminal): a theme file's
+    /// `terminal.ansi`, black, red, green, yellow, blue, magenta, cyan, white, then the
+    /// bright ones.
+    ANSI_0 = "ansi_0";
+    ANSI_1 = "ansi_1";
+    ANSI_2 = "ansi_2";
+    ANSI_3 = "ansi_3";
+    ANSI_4 = "ansi_4";
+    ANSI_5 = "ansi_5";
+    ANSI_6 = "ansi_6";
+    ANSI_7 = "ansi_7";
+    ANSI_8 = "ansi_8";
+    ANSI_9 = "ansi_9";
+    ANSI_10 = "ansi_10";
+    ANSI_11 = "ansi_11";
+    ANSI_12 = "ansi_12";
+    ANSI_13 = "ansi_13";
+    ANSI_14 = "ansi_14";
+    ANSI_15 = "ansi_15";
     /// The colours of the series of a chart: a theme file's `series`. Unset, the accent.
     SERIES_1 = "series_1";
     SERIES_2 = "series_2";
@@ -136,6 +155,12 @@ roles! {
     SERIES_7 = "series_7";
     SERIES_8 = "series_8";
 }
+
+/// The sixteen colours text asks for by number, in order.
+pub const ANSI: [Token; 16] = [
+    ANSI_0, ANSI_1, ANSI_2, ANSI_3, ANSI_4, ANSI_5, ANSI_6, ANSI_7, ANSI_8, ANSI_9, ANSI_10, ANSI_11,
+    ANSI_12, ANSI_13, ANSI_14, ANSI_15,
+];
 
 /// The colours of the series of a chart, in order.
 pub const SERIES: [Token; 8] =

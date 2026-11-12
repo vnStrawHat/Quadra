@@ -139,8 +139,8 @@ impl KitTheme {
             };
             self.colors[role] = color(value, &path)?;
         }
-        // ponytail: the roles of the editor and the terminal come with their crates; until
-        // then their colours are only checked to be colours.
+        // ponytail: the other roles of the editor and the terminal come with their crates;
+        // until then their colours are only checked to be colours.
         for key in ["editor", "terminal"] {
             for (name, value) in section(&file, key)?.into_iter().flatten() {
                 let path = format!("{key}.{name}");
@@ -150,7 +150,7 @@ impl KitTheme {
                             return wrong(&path, "16 colours");
                         }
                         for (i, value) in list.iter().enumerate() {
-                            color(value, &format!("{path}[{i}]"))?;
+                            self.colors[token::ANSI[i].0 as usize] = color(value, &format!("{path}[{i}]"))?;
                         }
                     }
                     value => drop(color(value, &path)?),

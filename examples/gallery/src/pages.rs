@@ -4,6 +4,7 @@ pub mod actions;
 pub mod charts;
 pub mod choices;
 pub mod data;
+pub mod diagram;
 pub mod diff;
 pub mod display;
 pub mod fields;

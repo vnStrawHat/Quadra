@@ -64,7 +64,7 @@ fn corners4(c: Corners) -> [f32; 4] {
 }
 
 impl Instance {
-    fn base(kind: Kind, bounds: Rect, clip: &Clip) -> Instance {
+    pub(crate) fn base(kind: Kind, bounds: Rect, clip: &Clip) -> Instance {
         Instance {
             bounds: rect4(bounds),
             clip: rect4(clip.rect),

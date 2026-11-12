@@ -1,18 +1,15 @@
 //! A formula on the screen: the widget that lays the nodes out at the size of the text
 //! around it and paints them in its colour, and the view that mounts it.
 
-use std::hash::{DefaultHasher, Hash, Hasher};
-
 use quadra_kit::{fonts, token};
 use quadra_layout::Known;
-use quadra_prim::{Color, Corners, Point, Rect, Size};
-use quadra_render::{Kind, Quad, Sprite};
+use quadra_prim::{Color, Point, Rect, Size};
+use quadra_render::{Quad, stroke};
 use quadra_text::TextStyle;
 use quadra_tree::{
     GlyphTile, Inherited, InlineBox, MeasureCx, NodeId, PaintCx, Role, Semantics, Style, Widget, paint_glyph,
 };
 use quadra_ui::{MountCx, Span, View, div, inline, span, text};
-use quadra_vector::{Coverage, Polyline};
 
 use super::layout::{Laid, Lay, Part};
 use super::{List, parse};
@@ -37,44 +34,6 @@ impl Formula {
         let (source, tiles) = (source.to_string(), Vec::new());
         Formula { source, nodes, display, size: 16.0, color: Color::BLACK, laid: None, laid_at: 0.0, tiles }
     }
-}
-
-/// A line through points, in device pixels, as a mask in the atlas: the points from the
-/// corner of the mask, to a sixteenth of a pixel, are what the atlas knows it by.
-fn stroke(cx: &mut PaintCx, points: &[Point], width: f32, color: Color) -> Option<GlyphTile> {
-    let reach = width / 2.0 + 1.0;
-    let low = |of: fn(&Point) -> f32| points.iter().map(of).fold(f32::MAX, f32::min) - reach;
-    let high = |of: fn(&Point) -> f32| points.iter().map(of).fold(f32::MIN, f32::max) + reach;
-    let (left, top) = (low(|p| p.x).floor(), low(|p| p.y).floor());
-    let (wide, tall) = ((high(|p| p.x) - left).ceil(), (high(|p| p.y) - top).ceil());
-    if points.len() < 2 || !(wide * tall).is_finite() {
-        return None;
-    }
-    let line = Polyline {
-        points: points.iter().map(|p| Point::new(p.x - left, p.y - top)).collect(),
-        closed: false,
-    };
-    let mut hasher = DefaultHasher::new();
-    line.points.iter().for_each(|p| ((p.x * 16.0) as i32, (p.y * 16.0) as i32).hash(&mut hasher));
-    ((width * 16.0) as i32).hash(&mut hasher);
-    let (wide, tall) = (wide as u32, tall as u32);
-    // ponytail: a stroke taller than a slice of the atlas is not painted; in pieces when a
-    // formula is ever that tall.
-    let tile = cx.fonts.mask(hasher.finish(), wide, tall, || {
-        let mut coverage = Coverage::new(wide as usize, tall as usize);
-        coverage.stroke(std::slice::from_ref(&line), width);
-        coverage.to_bytes()
-    })?;
-    let sprite = Sprite {
-        bounds: Rect::new(left, top, tile.rect.w as f32, tile.rect.h as f32),
-        uv: tile.uv,
-        slice: tile.rect.slice,
-        color,
-        radii: Corners::default(),
-        glyph: true,
-    };
-    cx.push(sprite.instance(Kind::Mono, &cx.clip));
-    Some(tile)
 }
 
 impl Widget for Formula {
@@ -155,7 +114,8 @@ impl Formula {
             Part::Stroke { points, width } => {
                 let points: Vec<Point> =
                     points.iter().map(|p| Point::new((x + p.x) * scale, (y + p.y) * scale)).collect();
-                tiles.extend(stroke(cx, &points, (width * scale).max(1.0), color));
+                let clip = cx.clip;
+                stroke(&points, (width * scale).max(1.0), color, false, &clip, |instance| cx.push(instance));
             }
             Part::Box(_) => {}
         });

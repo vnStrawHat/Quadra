@@ -2,9 +2,10 @@
 //! (specs/12, "Pixel snapshots"). No GPU and no window is needed.
 
 use quadra_native_win::D3d11Renderer;
-use quadra_prim::{Affine, Color, Corners, Edges, Rect};
+use quadra_prim::{Affine, Color, Corners, Edges, Point, Rect};
 use quadra_render::{
     Clip, DeviceSize, Instance, LayerConstants, Line, LineMode, Pixels, Quad, Renderer, Scene, SurfaceTarget,
+    stroke,
 };
 
 const RED: u32 = 0xFF0000;
@@ -142,6 +143,30 @@ fn a_chart_line_covers_each_pixel_by_how_much_of_it_the_line_is_in() {
         // ...and its ends are shades.
         assert!(ink.iter().filter(|ink| **ink > 0.03 && **ink < 0.97).count() >= 2);
     }
+}
+
+#[test]
+fn a_stroke_is_as_wide_as_it_says_and_covers_its_joints_once() {
+    let mut r = D3d11Renderer::new(true).unwrap();
+    let mut scene = Scene::new();
+    let root = scene.add_layer();
+    scene.set_roots(&[root]);
+    // A line 4 px wide with a sharp turn, half see-through: a joint drawn twice is darker.
+    let points = [Point::new(10.0, 10.0), Point::new(40.0, 20.0), Point::new(20.0, 50.0)];
+    let mut instances = Vec::new();
+    stroke(&points, 4.0, Color::BLACK.alpha(0.5), false, &Clip::NONE, |instance| instances.push(instance));
+    assert_eq!(instances.len(), 2);
+    scene.layer_mut(root).set(&instances);
+    let pixels = draw(&mut r, &mut scene);
+    let ink = |x: u32, y: u32| 1.0 - (at(&pixels, x, y) >> 16) as f32 / 255.0;
+    let all: Vec<f32> = (0..64 * 64).map(|i| ink(i % 64, i / 64)).collect();
+    assert!(all.iter().all(|ink| *ink < 0.52), "a pixel was drawn twice");
+    // In the middle of a segment the line is whole, and beside it nothing is.
+    assert!((ink(25, 15) - 0.5).abs() < 0.02 && ink(25, 8) == 0.0 && ink(25, 22) == 0.0);
+    // Its ink is its width along its length and a round end at each end, half see-through.
+    let (length, ends) = (1000f32.sqrt() + 1300f32.sqrt(), std::f32::consts::PI * 4.0);
+    let (sum, wanted) = (all.iter().sum::<f32>(), 0.5 * (4.0 * length + ends));
+    assert!((sum - wanted).abs() < wanted * 0.04, "{sum} px of ink, not {wanted}");
 }
 
 #[test]

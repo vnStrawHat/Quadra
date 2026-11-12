@@ -20,6 +20,7 @@ use quadra_ui::{
 
 use crate::block::{Kind, parse};
 use crate::inline::parse_inline;
+use crate::mermaid::diagram;
 use crate::outline::plain;
 use crate::tex::formula;
 use code::code_box;
@@ -175,17 +176,29 @@ fn item(
     row().padding_left(depth.min(DEEPEST) as f32 * 22.0).child(mark).child(body)
 }
 
-/// A formula as a line of its own, in the middle; one wider than the page scrolls sideways.
-/// A formula with a fault is its source in a box, and what is wrong under it.
-fn math(source: &str) -> Div {
-    let formula = formula(source).display();
-    if let Some(fault) = formula.fault() {
-        let note = text(format!("Math: {fault}"));
-        let note = column().text_size(size::TEXT_SM.size).text_color(token::TEXT_3).child(note);
+/// What is drawn from a source, a formula or a diagram, as a line of its own, in the
+/// middle; one wider than the page scrolls sideways. One with a fault is its source in a
+/// box, and what is wrong under it.
+fn figure(drawn: impl View + 'static, fault: Option<String>, source: &str) -> Div {
+    if let Some(fault) = fault {
+        let note = column().text_size(size::TEXT_SM.size).text_color(token::TEXT_3).child(text(fault));
         return column().gap(6.0).child(code_box("", source, &None)).child(note);
     }
-    let line = row().justify(Justify::Center).padding_y(6.0).child(formula);
+    let line = row().justify(Justify::Center).padding_y(6.0).child(drawn);
     column().child(scroll_x(signal(0.0), line))
+}
+
+fn math(source: &str) -> Div {
+    let formula = formula(source).display();
+    let fault = formula.fault().map(|fault| format!("Math: {fault}"));
+    figure(formula, fault, source)
+}
+
+/// A diagram: its text is that of the controls of the kit, not of the page.
+fn chart(source: &str) -> Div {
+    let diagram = diagram(source);
+    let fault = diagram.fault().map(|fault| format!("Diagram: {fault}"));
+    figure(row().text_size(size::TEXT_MD.size).child(diagram), fault, source)
 }
 
 fn block(kind: &Kind, on_link: &Option<OnLink>) -> Div {
@@ -197,7 +210,7 @@ fn block(kind: &Kind, on_link: &Option<OnLink>) -> Div {
         Kind::Paragraph { text } => words(text),
         Kind::Heading { level, text } => heading(*level, text, on_link),
         Kind::Item { number, depth, task, text } => item(*number, *depth, *task, text, on_link),
-        // ponytail: a diagram shows its source until it is drawn.
+        Kind::Code { lang, text } if lang == "mermaid" => chart(text),
         Kind::Code { lang, text } => code_box(lang, text, on_link),
         Kind::Math { text } => math(text),
         Kind::Front { text } => code_box("yaml", text, on_link),

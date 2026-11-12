@@ -788,8 +788,7 @@ What it reads and how it looks is behaviour/21. As built:
   - **`formula(source)`** is the view (`.display()` sets it as a line of its own). Its widget
     lays out at the size of the text around it, once a size, and paints in its colour:
     glyphs with their baselines on whole pixels, rules on whole pixels and a pixel thick at
-    least, a stroke as a mask in the glyph atlas, known by its points. To a reader a formula
-    is its source. One with a fault shows its source in the colour of what is wrong.
+    least, a stroke as a stroke of the renderer (07). To a reader a formula is its source. One with a fault shows its source in the colour of what is wrong.
   - In a document a display formula (`$$ .. $$`, a fence of `math`) is a line of its own, in
     the middle, and scrolls sideways when it is wider than the page; one with a fault is its
     source in a box, with what is wrong under it.
@@ -797,8 +796,47 @@ What it reads and how it looks is behaviour/21. As built:
     `formula(source).span()`, on the baseline of its line, at the size of the text, in text
     style (limits at the side, fractions small). One with a fault is its source in the code
     face, in the colour of what is wrong.
-- Not yet: a line made higher by a formula higher than it; a stroke taller than a slice of
-  the atlas; diagrams, which show their source; images, which show their words in brackets;
+- **Diagrams** (`quadra_md::mermaid`; what is drawn is behaviour/21, "Diagrams").
+  `diagram(source)` reads the source once and is a node as large as the diagram. Its kind is
+  the first word after blank lines, `%%` comments and front matter. Flowcharts are drawn;
+  another kind, and a source with a fault, which is told with its line, is `fault()`, and
+  the view is then a node of no size.
+  - **A flowchart** is read from left to right, a statement at a time: nodes in nine
+    shapes, links with a stroke (solid, dotted, thick), a head at either end, a label and a
+    length, chains, groups with `&`, subgraphs in each other. A label is decoded in one
+    pass: what a name gives is not read again.
+  - **What a diagram may hold** is checked while it is read, before anything is laid out:
+    1000 nodes, 500 links (the pairs of two groups are counted before they are made, and a
+    node said twice in a group is one), 100 subgraphs, 64 ranks for one link, and 5000
+    nodes for long links to be cut into. A statement is searched once for each thing that
+    can close a label, however many links it has. The layout walks with stacks of its own;
+    only the sort of a rank by subgraphs calls itself, as deep as subgraphs are in each
+    other. A seeded test (12, "Fuzzing") holds reading and layout to no failure, sizes that
+    are numbers, and a time.
+  - **The layout** is in layers (`flow/rank.rs`, `order.rs`, `place.rs`). The links that
+    close a cycle are turned round; the rank of a node is the longest way to it, a link
+    two ranks a step so that the rank in its middle holds its label; a link over more
+    ranks is cut into a node a rank; a rank is ordered by sweeps to the mean of what its
+    nodes are linked to and by swaps that take crossings away, the nodes of a subgraph
+    kept side by side; nodes go to the median of what they are linked to, a rank spread
+    out again each time. A link is a smooth curve along its nodes, cut where it meets the
+    outline of what it joins and short of its heads.
+  - **A drawing** (`draw::Drawing`) is what a layout gives: boxes, lines, filled polygons,
+    lines of shaped text and heads, in the space of the diagram, their colours roles of
+    the theme. It is made once a font and painted by walking it, and another theme costs
+    no layout. Boxes are quads; lines and outlines are strokes of the renderer (07), so a
+    link of any length is smooth and takes no atlas; a filled shape and the head of an
+    arrow are masks in the glyph atlas, known by their points; text is glyphs with their
+    baselines on whole pixels. One painting makes 20 000 dashes at most: past them a
+    dashed line is drawn whole.
+  - To a reader a diagram is a picture, named by its kind and what its nodes say.
+  - In a document a fence of `mermaid` is the diagram in the middle, its text that of the
+    kit's controls, and scrolls sideways when it is wider than the page; one that is not
+    drawn is its source in a box, with why under it.
+  - Not yet: sequence diagrams; a filled shape larger than a slice of the atlas (it has
+    its outline and no fill); the links, to a reader.
+- Not yet: a line made higher by a formula higher than it; images, which show their words
+  in brackets;
   one selection over the blocks; the hint over a link; where each block is, for an outline
   and for scrolling two panes together; a list of the blocks that show, for documents of
   tens of thousands of lines; a table wider than the page.

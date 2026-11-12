@@ -147,3 +147,30 @@ fn nothing_a_document_can_hold_makes_the_view_fail() {
         h.frame();
     });
 }
+
+#[test]
+fn a_diagram_is_drawn_in_the_middle_and_one_that_is_not_shows_its_source() {
+    let (mut h, source, _) = page("A flow:\n\n```mermaid\ngraph TD\nA[Start] --> B{Choice}\n```\n");
+    // To a reader a diagram is a picture named by its kind and what its nodes say.
+    let diagram = h.get_by_role(Role::Image, "Flowchart: Start, Choice").node();
+    let at = h.tree.window_rect(diagram);
+    assert!(at.width > 80.0 && at.height > 150.0, "{at:?}");
+    assert!((at.x + at.width / 2.0 - 400.0).abs() < 1.0, "{at:?}");
+    // On the screen its link and the outline of the diamond are strokes: a segment an instance.
+    let strokes = |h: &Harness| {
+        let layers = h.renderer.steps().iter().filter_map(|step| match step {
+            quadra_render::Step::Layer { id, .. } => Some(h.tree.scene().layer(*id).instances()),
+            _ => None,
+        });
+        layers.flatten().filter(|instance| instance.kind == quadra_render::Kind::Line as u32).count()
+    };
+    assert!(strokes(&h) >= 5, "{}", strokes(&h));
+    // A kind that is not drawn, and a source with a fault, are their source and why.
+    source.set("```mermaid\npie title Pets\n```\n".to_string());
+    h.frame();
+    assert!(h.has_text("pie title Pets") && h.has_text("Diagram: diagram kind `pie` is not supported"));
+    assert_eq!(strokes(&h), 0);
+    source.set("```mermaid\ngraph TD\nA -->\n```\n".to_string());
+    h.frame();
+    assert!(h.has_text("Diagram: line 2: expected a node at ``"));
+}

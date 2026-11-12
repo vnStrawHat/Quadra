@@ -6,6 +6,7 @@
 mod block;
 mod inline;
 mod lines;
+pub mod mermaid;
 mod outline;
 pub mod tex;
 mod view;

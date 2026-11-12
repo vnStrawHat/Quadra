@@ -32,6 +32,15 @@ that is not one pixel on the grid, is what draws a slope as steps. A test of pix
 it: each column has all of the line's ink, its middle where the line's is to a twentieth
 of a pixel, and shades at its ends.
 
+**A stroke** is a line through points, an instance a segment:
+`quadra_render::stroke(points, width, color, closed, clip, push)`. The instance holds the
+ends of its segment and of the segments before and after it, and the shader shades a pixel
+by how far it is from the segment: a stroke of any slope and any length is as wide as it
+says, has round ends and round joints, and takes no room in an atlas. A pixel at a joint is
+drawn by the nearer of the two segments, once, so a stroke that is not opaque is even there
+too. A test of pixels holds its width, its ink and its joints. The links of a diagram and
+the strokes of a formula are drawn so (13).
+
 Colours are straight alpha in the instance and blended premultiplied, in the encoded (sRGB)
 space, as design tools and the V renderer do. The V pixel snapshots are the reference.
 

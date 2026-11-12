@@ -179,9 +179,11 @@ gallery has 71 of the 73 reference pages, each drawn offscreen and compared (`to
 detector; rich text has `.strike()` and `.ctrl_links()`, `scroll_x` is a box that scrolls sideways in a page; `quadra-code` has the tokenizers,
 `tokenizer_for(name).tokenize(line, state, out)`: V, YAML, Markdown and a table of 27 rows, `LangSpec`, read by one scanner, held by a seeded test
 to tokens in order and between characters; they colour the fences; `quadra_md::tex` has formulas: `parse` (nodes; its tables are written by `.tmp/gen_tex.py` from the V tree), `Lay` (boxes by the ink of glyphs,
-`TextSystem::ink`), `formula(source).display()` (the widget paints with `quadra_tree::paint_glyph`, rules, and strokes as masks); the gallery has
+`TextSystem::ink`), `formula(source).display()` (the widget paints with `quadra_tree::paint_glyph`, rules, and strokes); the gallery has
 a page `math` with no reference; rich text takes what is no text (`inline(what)`, `InlineBox`, `Shaping::advance`), which is how `$..$` is drawn: `formula(source).span()`;
-next diagrams (`mermaid`), then the buffer, the highlighter and the editor of `quadra-code`)
+`quadra_md::mermaid` has diagrams: `diagram(source)`, flowcharts so far (`flow.rs` reads, `flow/rank.rs`, `order.rs`, `place.rs` lay out in layers, `draw.rs` is the list a layout gives,
+`paint.rs` paints it; a line is `quadra_render::stroke`, a segment an instance, shaded by distance: use it for any line that is not a chart's; limits are checked while reading), with a page `diagram` with no reference;
+next sequence diagrams, then the buffer, the highlighter and the editor of `quadra-code`)
 (R4: `quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

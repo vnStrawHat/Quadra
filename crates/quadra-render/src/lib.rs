@@ -13,6 +13,7 @@ mod null;
 mod packing;
 mod renderer;
 mod scene;
+mod stroke;
 
 pub use atlas::{Atlas, AtlasStats, Tile, TileRef};
 pub use hasher::{FastBuild, FastHasher};
@@ -25,3 +26,4 @@ pub use null::NullRenderer;
 pub use packing::{AtlasCore, AtlasKind, TileRect, Upload};
 pub use renderer::{DeviceSize, Pixels, RenderError, RenderStats, Renderer, SurfaceId, SurfaceTarget};
 pub use scene::{Scene, SceneId, Step, World};
+pub use stroke::stroke;

@@ -6,7 +6,7 @@
 use std::time::{Duration, Instant};
 
 use quadra_platform::{Mods, MouseButton};
-use quadra_prim::Point;
+use quadra_prim::{Point, Size};
 use quadra_reactive::batch;
 
 use crate::input::{Handler, PointerEvent, PointerKind};
@@ -128,6 +128,7 @@ impl Tree {
             button: MouseButton::None,
             at,
             local: at,
+            size: Size::ZERO,
             mods: self.input.mods,
             clicks: 0,
             delta: Point::ZERO,
@@ -164,8 +165,9 @@ impl Tree {
         if !self.get(id).is_some_and(|node| node.handlers.iter().any(wanted)) {
             return;
         }
-        let origin = self.window_rect(id).origin();
-        (event.node, event.local) = (id, Point::new(event.at.x - origin.x, event.at.y - origin.y));
+        let rect = self.window_rect(id);
+        (event.node, event.size) = (id, rect.size());
+        event.local = Point::new(event.at.x - rect.x, event.at.y - rect.y);
         for handler in &mut self.nodes[id.index as usize].handlers {
             if let Handler::Pointer { kind: k, capture: c, run } = handler
                 && *k == kind

@@ -256,6 +256,7 @@ impl Tree {
                     button: MouseButton::Left,
                     at,
                     local: at,
+                    size: quadra_prim::Size::ZERO,
                     mods: Mods::NONE,
                     clicks: 1,
                     delta: quadra_prim::Point::ZERO,

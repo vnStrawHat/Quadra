@@ -8,7 +8,7 @@ use std::time::Instant;
 use quadra_a11y::SemanticAction;
 use quadra_layout::{Display, Overflow};
 use quadra_platform::{Cursor, Mods, MouseButton};
-use quadra_prim::{Point, Rect};
+use quadra_prim::{Point, Rect, Size};
 
 use crate::focus::KeyEvent;
 use crate::node::NodeId;
@@ -38,6 +38,9 @@ pub struct PointerEvent {
     pub at: Point,
     /// From the top-left corner of the node the handler is on.
     pub local: Point,
+    /// How large the node the handler is on is: `local` over it is how far across the
+    /// pointer is.
+    pub size: Size,
     pub mods: Mods,
     /// For a click: 1, or 2 for a double click, and so on.
     pub clicks: u8,

@@ -25,6 +25,9 @@ The path is the target and its ancestors.
 
 - **Capture, then bubble**: handlers registered for capture run from the root down, then the
   others from the target up. `e.stop()` ends it.
+- A handler is told where the pointer is in the window (`e.at`) and from the corner of the
+  node the handler is on (`e.local`), and how large that node is (`e.size`): the share of a
+  box the pointer is at needs no question to the tree.
 - **Pointer capture**: a handler of pointer-down may call `e.capture_pointer()`. Moves and the
   release then go to that node wherever the pointer is, until release or the node is removed.
 - **Click** is synthesized on release, for nodes on both the press path and the release path.

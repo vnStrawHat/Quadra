@@ -1,7 +1,0 @@
-* text=auto eol=lf
-*.ttf binary
-*.png binary
-*.cso binary
-*.ico binary
-*.zip binary
-*.cmd text eol=crlf

@@ -1,4 +1,0 @@
-{ "schema": 1, "name": "grep",
-  "options": ["-a", "-i", "-v", "-n", "-r", "-E", "-F",
-    { "flag": "--all", "description": "reserved Phase-2 description field" },
-    "--color", "--count", "--ignore-case"] }

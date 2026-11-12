@@ -135,6 +135,17 @@ the rectangles of a range, the next and previous grapheme, word and line boundar
 order of a mixed-direction line. Caret movement and editing in right-to-left text stay on the
 After-v1 list (behaviour/13); mixed-direction text is displayed correctly.
 
+## URLs
+
+`find_urls(line)` lists the URLs of a line of plain text as byte ranges, each with what it
+opens, by the rules of behaviour/04: a prefix (`https://`, `http://`, `www.`) after a word
+boundary, up to a space, `<`, `>` or `"`, without the punctuation it ends with (a `)`
+whose `(` is inside stays); `www.` opens as `https://www.`. A line with neither `://` nor
+`www.` is not scanned. `url_openable(url)` is the gate for links in content the user did
+not write: `http`, `https` and `mailto` only, with no control, direction or space
+characters. What `find_urls` lists has passed it. One detector, for Markdown, the editor
+and the terminal.
+
 ## Terminal and editor text
 
 A cell grid does not use paragraphs. `quadra-term` and `quadra-code` use the lower pieces

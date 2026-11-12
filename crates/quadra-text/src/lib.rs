@@ -14,6 +14,7 @@ mod paragraph;
 mod places;
 mod system;
 mod types;
+mod url;
 
 pub use edit::{EditBuffer, Motion};
 pub use fake::FakeBackend;
@@ -24,3 +25,4 @@ pub use system::{TextStats, TextSystem, Word};
 pub use types::{
     FaceId, FaceMetrics, FontKey, GlyphBitmap, GlyphFormat, ShapedGlyph, Shaping, TextBackend, TextStyle,
 };
+pub use url::{UrlSpan, find_urls, url_openable};

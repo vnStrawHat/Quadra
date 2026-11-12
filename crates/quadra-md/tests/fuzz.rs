@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use quadra_md::{Kind, anchor, block_at, outline, parse, parse_inline, plain, tex, words};
 use quadra_testing::fuzz::{Rng, mutate, run};
+use quadra_text::{FakeBackend, TextSystem};
 
 const CORPUS: [&str; 10] = [
     "# Title\n\nSome *text*\ncontinued.\n\n- one\n- two\n  - nested\n1. first\n",
@@ -152,9 +153,18 @@ fn nothing_a_formula_can_hold_makes_its_parser_fail_hang_or_nest_without_bound()
             }
         }
     };
-    let check = |input: &[u8]| {
+    // What is read is laid out too, in display and in a line: a formula with a fault shows
+    // its source, but nothing says the nodes of one cannot be laid out.
+    let mut ts = TextSystem::new(Box::new(FakeBackend::new()));
+    let mut check = |input: &[u8]| {
         let (nodes, _) = tex::parse(&String::from_utf8_lossy(input));
         assert!(depth(&nodes) <= tex::DEEPEST);
+        for style in [0, 1] {
+            let laid = tex::Lay::new(&mut ts, 20.0).list(&nodes, style);
+            assert!(laid.width.is_finite() && laid.height.is_finite() && laid.depth.is_finite());
+            laid.each(0.0, 0.0, &mut |x, y, _| assert!(x.is_finite() && y.is_finite()));
+        }
     };
+    OPENERS.iter().for_each(|opener| check(opener.repeat(100).as_bytes()));
     run("tex", 1500, Duration::from_secs(2), make, check);
 }

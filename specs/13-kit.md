@@ -772,8 +772,30 @@ What it reads and how it looks is behaviour/21. As built:
     `tex::DEEPEST` (256; a brace is two), beyond which it is at fault, for the parser and for
     what walks its nodes after it; the text of an argument is read once. The seeded test
     (12, "Fuzzing") holds the parser to both.
-- Not yet: the layout and the drawing of a formula (math shows its source); diagrams, which
-  show their source too; images, which show their words in brackets;
+  - **The layout** is that of TeX in boxes (`tex::Lay::new(text, size).list(nodes, style)`
+    gives a `Laid`: a width, a height above the baseline and a depth below it). The styles
+    are display, text, script and script of a script, at 1, 1, 0.7 and 0.5 of the size.
+    Atoms are spaced by their classes (a binary operator with nothing to work on is
+    ordinary); a fraction has its bar on the axis, which is the middle of a minus; scripts
+    are raised and lowered by the size of their base, and are limits above and below a big
+    operator in display; a root is three strokes and a rule; delimiters grow as their glyph
+    set larger up to 1.6 times, and as strokes beyond; the rows of an environment are about
+    the axis, their columns as wide as their widest cell. A glyph is as high and as deep as
+    its ink (08, "Glyph tiles"), and the family is Cambria Math, or the default without it.
+  - A box holds its parts as a tree (glyphs, rules, strokes, boxes): putting a box in another
+    moves nothing, so a formula costs its length however deep it nests. `Laid::each` gives
+    every part with its place.
+  - **`formula(source)`** is the view (`.display()` sets it as a line of its own). Its widget
+    lays out at the size of the text around it, once a size, and paints in its colour:
+    glyphs with their baselines on whole pixels, rules on whole pixels and a pixel thick at
+    least, a stroke as a mask in the glyph atlas, known by its points. To a reader a formula
+    is its source. One with a fault shows its source in the colour of what is wrong.
+  - In a document a display formula (`$$ .. $$`, a fence of `math`) is a line of its own, in
+    the middle, and scrolls sideways when it is wider than the page; one with a fault is its
+    source in a box, with what is wrong under it.
+- Not yet: math in a line of text (`$..$` shows its source, in the code face: rich text has
+  no boxes in its lines yet); a stroke taller than a slice of the atlas; diagrams, which
+  show their source; images, which show their words in brackets;
   one selection over the blocks; the hint over a link; where each block is, for an outline
   and for scrolling two panes together; a list of the blocks that show, for documents of
   tens of thousands of lines; a table wider than the page.

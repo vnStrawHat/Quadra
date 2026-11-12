@@ -4,6 +4,8 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use quadra_prim::Rect;
+
 use crate::numeric::Numeric;
 use crate::types::{FaceId, FontKey, GlyphBitmap, ShapedGlyph, TextBackend, TextStyle};
 
@@ -66,6 +68,8 @@ pub struct TextSystem {
     faces: HashMap<FontKey, FaceId>,
     words: WordCache,
     numeric: Numeric,
+    /// Where the ink of glyphs is, by face, glyph and size.
+    inks: HashMap<(FaceId, u16, u32), Rect>,
     pub(crate) stats: TextStats,
 }
 
@@ -74,7 +78,7 @@ impl TextSystem {
         let default_family = Rc::from(backend.default_family());
         let words = WordCache { current: Words::new(), previous: Words::new(), count: 0, limit: 16_384 };
         let (faces, numeric, stats) = (HashMap::new(), Numeric::default(), TextStats::default());
-        TextSystem { backend, default_family, faces, words, numeric, stats }
+        TextSystem { backend, default_family, faces, words, numeric, inks: HashMap::new(), stats }
     }
 
     /// How many shaped words the cache may hold (16,384 unless set).
@@ -130,6 +134,26 @@ impl TextSystem {
     /// A glyph's bitmap, from the backend: not cached here, the glyph atlas keeps tiles.
     pub fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap> {
         self.backend.rasterize(face, glyph, size, phase)
+    }
+
+    /// Where the ink of a glyph is at a size, against its pen position on the baseline (y
+    /// grows down: the top of a letter is above 0); a glyph with no ink has no size. What
+    /// lays out by ink and not by the lines of a face asks for the same few glyphs over
+    /// and over, so the answers are kept.
+    pub fn ink(&mut self, face: FaceId, glyph: u16, size: f32) -> Rect {
+        let key = (face, glyph, size.to_bits());
+        if let Some(ink) = self.inks.get(&key) {
+            return *ink;
+        }
+        let bitmap = self.backend.rasterize(face, glyph, size, 0).unwrap_or_default();
+        let ink = Rect::new(bitmap.left as f32, bitmap.top as f32, bitmap.width as f32, bitmap.height as f32);
+        // ponytail: all are dropped when there are 8192; two generations, as the words
+        // have, if sizes ever change so often that this shows.
+        if self.inks.len() >= 8192 {
+            self.inks.clear();
+        }
+        self.inks.insert(key, ink);
+        ink
     }
 
     /// The counters since the last call, which resets them.

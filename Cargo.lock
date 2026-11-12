@@ -210,10 +210,12 @@ dependencies = [
  "quadra-platform",
  "quadra-prim",
  "quadra-reactive",
+ "quadra-render",
  "quadra-testing",
  "quadra-text",
  "quadra-tree",
  "quadra-ui",
+ "quadra-vector",
 ]
 
 [[package]]

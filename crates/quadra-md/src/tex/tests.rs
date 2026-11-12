@@ -1,8 +1,11 @@
-//! The parser of formulas: the nodes of what is written, the faults it tells, and every
-//! name of its tables.
+//! Formulas: the nodes of what is written, the faults the parser tells, every name of its
+//! tables, and the boxes the nodes are laid out as.
+
+use quadra_text::{FakeBackend, TextSystem};
 
 use super::alphabets::{ACCENTS, FONTS, SPACES};
 use super::commands::ENVIRONMENTS;
+use super::layout::{Laid, Lay, Part};
 use super::symbols::{BIG_OPS, FUNCTIONS, SYMBOLS};
 use super::{Class, Limits, List, Node, parse};
 
@@ -149,7 +152,66 @@ fn every_name_of_the_tables_is_read() {
     sources.extend(more.map(str::to_string));
     for source in sources {
         assert_eq!(parse(&source).1, None, "{source}");
+        let (display, line) = (laid(&source, 0), laid(&source, 1));
+        assert!(display.width.is_finite() && line.height.is_finite() && line.depth.is_finite(), "{source}");
     }
+}
+
+/// A formula as a box, at 20 px, on the fake backend: every glyph is 0.6 em wide and
+/// its ink 0.7 em high, on the baseline.
+fn laid(source: &str, style: usize) -> Laid {
+    let mut ts = TextSystem::new(Box::new(FakeBackend::new()));
+    Lay::new(&mut ts, 20.0).list(&nodes(source), style)
+}
+
+#[test]
+fn a_node_is_a_box_as_wide_high_and_deep_as_what_it_holds() {
+    let tall = |laid: &Laid| laid.height + laid.depth;
+    let x = laid("x", 1);
+    assert_eq!((x.width, x.height, x.depth), (12.0, 14.0, 0.0));
+    let frac = laid(r"\frac{x}{y}", 1);
+    assert!(frac.height > x.height && frac.depth > 0.0);
+    let (sup, sub) = (laid("x^2", 1), laid("x_i", 1));
+    assert!(sup.height > x.height && sup.width > x.width);
+    assert!(sub.depth > x.depth && sub.height == x.height);
+    let root = laid(r"\sqrt{x}", 1);
+    assert!(root.height > x.height && root.width > x.width);
+    // Delimiters grow to what is between them.
+    assert!(tall(&laid(r"\left( \frac{\frac{a}{b}}{c} \right)", 0)) > 2.0 * tall(&laid("(x)", 1)));
+    // The limits of a sum are above and below it in display, at its side in a line.
+    let (display, line) = (laid(r"\sum_{i=0}^{n} i", 0), laid(r"\sum_{i=0}^{n} i", 1));
+    assert!(display.height > line.height && display.width < line.width);
+    assert!(tall(&laid(r"\begin{pmatrix} a & b \\ c & d \end{pmatrix}", 1)) > 2.0 * tall(&x));
+    // Spaces by the classes: a relation has more around it than a binary operator, and a
+    // sign before what it signs has none.
+    let (plain, sum, same, signed) =
+        (laid("ab", 1).width, laid("a+b", 1).width, laid("a=b", 1).width, laid("-b", 1).width);
+    assert!(same - plain > sum - plain && sum - plain > 10.0);
+    assert_eq!(signed, plain);
+}
+
+#[test]
+fn a_box_gives_its_parts_where_they_are() {
+    // A fraction: two lists and the rule between them, the first over the baseline.
+    let frac = laid(r"\frac{a}{b}", 0);
+    let mut parts = Vec::new();
+    frac.each(0.0, 0.0, &mut |x, y, part| parts.push((x, y, matches!(part, Part::Rule { .. }))));
+    assert_eq!(parts.len(), 3);
+    let (over, under, rule) = (parts[0], parts[1], parts[2]);
+    assert!(over.1 < 0.0 && under.1 > 0.0 && rule.2 && !over.2);
+    assert!(over.1 < rule.1 && rule.1 < under.1 && over.0 == under.0);
+    // A root draws its sign as strokes, and the bar over what it holds as a rule.
+    let mut kinds = Vec::new();
+    laid(r"\sqrt{x}", 0).each(0.0, 0.0, &mut |_, _, part| {
+        kinds.push(match part {
+            Part::Glyphs { .. } => 'g',
+            Part::Rule { .. } => 'r',
+            Part::Stroke { .. } => 's',
+            Part::Box(_) => 'b',
+        });
+    });
+    kinds.sort_unstable();
+    assert_eq!(kinds, ['g', 'r', 's', 's', 's']);
 }
 
 #[test]

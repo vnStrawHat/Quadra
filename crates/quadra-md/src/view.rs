@@ -10,17 +10,18 @@ use std::rc::Rc;
 
 use quadra_kit::{fonts, icon, icons, size, token};
 use quadra_layout::{Align as Across, Justify, Length};
-use quadra_reactive::memo;
+use quadra_reactive::{memo, signal};
 use quadra_text::find_urls;
 use quadra_tree::{NodeId, Role};
 use quadra_ui::{
-    Div, IntoProp, MountCx, Prop, RichTextView, Span as Run, View, column, div, each, rich_text, row, span,
-    text,
+    Div, IntoProp, MountCx, Prop, RichTextView, Span as Run, View, column, div, each, rich_text, row,
+    scroll_x, span, text,
 };
 
 use crate::block::{Kind, parse};
 use crate::inline::parse_inline;
 use crate::outline::plain;
+use crate::tex::formula;
 use code::code_box;
 use table::Table;
 
@@ -171,6 +172,19 @@ fn item(
     row().padding_left(depth.min(DEEPEST) as f32 * 22.0).child(mark).child(body)
 }
 
+/// A formula as a line of its own, in the middle; one wider than the page scrolls sideways.
+/// A formula with a fault is its source in a box, and what is wrong under it.
+fn math(source: &str) -> Div {
+    let formula = formula(source).display();
+    if let Some(fault) = formula.fault() {
+        let note = text(format!("Math: {fault}"));
+        let note = column().text_size(size::TEXT_SM.size).text_color(token::TEXT_3).child(note);
+        return column().gap(6.0).child(code_box("", source, &None)).child(note);
+    }
+    let line = row().justify(Justify::Center).padding_y(6.0).child(formula);
+    column().child(scroll_x(signal(0.0), line))
+}
+
 fn block(kind: &Kind, on_link: &Option<OnLink>) -> Div {
     let words = |source: &str| match spans(source) {
         runs if runs.is_empty() => column(),
@@ -180,9 +194,9 @@ fn block(kind: &Kind, on_link: &Option<OnLink>) -> Div {
         Kind::Paragraph { text } => words(text),
         Kind::Heading { level, text } => heading(*level, text, on_link),
         Kind::Item { number, depth, task, text } => item(*number, *depth, *task, text, on_link),
-        // ponytail: a formula and a diagram show their source until they are drawn.
+        // ponytail: a diagram shows its source until it is drawn.
         Kind::Code { lang, text } => code_box(lang, text, on_link),
-        Kind::Math { text } => code_box("", text, on_link),
+        Kind::Math { text } => math(text),
         Kind::Front { text } => code_box("yaml", text, on_link),
         Kind::Quote { depth, text } => {
             let bar = words(text).border_left(4.0).border_color(token::LINE_STRONG).padding_left(16.0);

@@ -127,6 +127,13 @@ family, the size, the weight and the slant (`Shaping`).
   (07). A long session at many zoom levels does not grow without bound.
 - When the atlas epoch changes (device loss), paragraphs drop their handles and acquire again
   at the next paint.
+- `quadra_tree::paint_glyph(cx, (face, glyph), size, pen, colour)` paints one glyph with its
+  pen at a place in device pixels and gives the tile to hold: what paragraphs paint with, and
+  what a widget that places glyphs itself (a formula) paints with.
+- **Ink.** `TextSystem::ink(face, glyph, size)` is where the ink of a glyph is against its pen
+  position on the baseline, from its bitmap, kept by face, glyph and size. A formula is laid
+  out by ink: the ascent and descent of a face are the same for a minus and for an integral,
+  and far more than either has.
 
 ## Editing support
 

@@ -4,7 +4,7 @@ use quadra::Div;
 use quadra_kit::{dark, icons, light};
 
 use crate::pages::{
-    actions, charts, choices, data, diff, display, fields, layout, live, markdown, motion, navigation,
+    actions, charts, choices, data, diff, display, fields, layout, live, markdown, math, motion, navigation,
     overlays, overview, workbench,
 };
 use crate::shell::Gallery;
@@ -47,6 +47,7 @@ pub const PAGES: &[PageInfo] = &[
     info("kbd", "Kbd", "Display", icons::COMMAND),
     info("rich-text", "Rich text", "Display", icons::TYPE),
     info("markdown", "Markdown", "Display", icons::FILE),
+    info("math", "Math", "Display", icons::SIGMA),
     info("alert", "Alert", "Display", icons::INFO),
     info("motion", "Motion", "Display", icons::LAYERS),
     info("empty-state", "Empty state", "Display", icons::SEARCH),
@@ -124,6 +125,7 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "kbd" => display::kbd_page(),
         "rich-text" => display::rich_text_page(),
         "markdown" => markdown::markdown_page(),
+        "math" => math::math_page(),
         "alert" => display::alert_page(),
         "motion" => motion::motion_page(),
         "empty-state" => display::empty_state_page(),

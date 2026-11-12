@@ -68,6 +68,33 @@ fn a_document_is_what_a_reader_is_told_and_its_links_wait_for_ctrl() {
 }
 
 #[test]
+fn a_formula_is_drawn_in_the_middle_and_one_with_a_fault_shows_its_source() {
+    let (mut h, source, _) = page("Euler:\n\n$$\ne^{i\\pi} + 1 = 0\n$$\n\n$$\n\\frac{a}\n$$\n");
+    // To a reader a formula is its source; on the screen it is glyphs, in the middle.
+    let formula = h.get_by_text("e^{i\\pi} + 1 = 0").node();
+    let (at, glyphs) = (h.tree.window_rect(formula), painted(&h));
+    assert!(at.width > 60.0 && at.height > 14.0, "{at:?}");
+    assert!((at.x + at.width / 2.0 - 400.0).abs() < 1.0, "{at:?}");
+    assert!(glyphs > "Euler:".len() + 8, "{glyphs}");
+    // What is wrong is said under the source, and the rest of the document is there.
+    assert!(h.has_text("\\frac{a}") && h.has_text("Math: missing argument") && h.has_text("Euler:"));
+    // A fraction is a rule and two lists: higher than a line of text.
+    source.set("$$\n\\frac{a}{b}\n$$\n".to_string());
+    h.frame();
+    let fraction = h.get_by_text("\\frac{a}{b}").node();
+    assert!(h.tree.window_rect(fraction).height > 30.0);
+}
+
+/// How many instances the layers of the window hold.
+fn painted(h: &Harness) -> usize {
+    let layers = h.renderer.steps().iter().filter_map(|step| match step {
+        quadra_render::Step::Layer { id, .. } => Some(h.tree.scene().layer(*id).instances().len()),
+        _ => None,
+    });
+    layers.sum()
+}
+
+#[test]
 fn a_block_keeps_its_nodes_while_its_source_does() {
     let (mut h, source, _) = page(NOTES);
     let node = |h: &mut Harness, role: Role| h.query(|n| n.semantics.role == role)[0];

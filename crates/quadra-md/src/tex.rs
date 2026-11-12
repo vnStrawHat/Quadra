@@ -4,12 +4,19 @@
 
 mod alphabets;
 mod commands;
+mod delim;
+mod formula;
+mod layout;
 mod lex;
+mod matrix;
 mod parse;
+mod parts;
 mod symbols;
 #[cfg(test)]
 mod tests;
 
+pub use formula::{Formula, FormulaView, formula};
+pub use layout::{FAMILY, Laid, Lay, Part};
 pub use parse::{DEEPEST, parse};
 
 /// What an atom is to its neighbours: it decides the space between them.

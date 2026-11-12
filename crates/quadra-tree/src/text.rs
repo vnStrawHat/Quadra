@@ -5,7 +5,7 @@ use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
 use quadra_prim::{Color, Corners, Point, Rect, Size};
 use quadra_render::{Kind, Quad, Sprite};
-use quadra_text::{EditBuffer, GlyphFormat, Paragraph, TextStyle};
+use quadra_text::{EditBuffer, FaceId, GlyphFormat, Paragraph, TextStyle};
 
 use crate::fonts::{GlyphTile, SUBPIXEL_STEPS};
 use crate::inherit::Inherited;
@@ -171,25 +171,35 @@ pub(crate) fn paint_runs(
         for g in glyphs {
             let x = (origin.x + g.x - start) * scale;
             let (run, size) = paragraph.run_at(g.cluster as usize);
-            let phase = ((x - x.floor()) * SUBPIXEL_STEPS as f32) as u8;
-            let Some(tile) = cx.fonts.glyph(g.face, g.id, size * scale, phase) else { continue };
-            if tile.rect.w == 0 {
-                continue; // no ink: a space
-            }
-            let (left, top) = (x.floor() + tile.meta.left, baseline - (g.y * scale).round() + tile.meta.top);
-            let sprite = Sprite {
-                bounds: Rect::new(left, top, tile.rect.w as f32, tile.rect.h as f32),
-                uv: tile.uv,
-                slice: tile.rect.slice,
-                color: color(run),
-                radii: Corners::default(),
-                // A colour glyph is an image: its pixels are not coverage of the text colour.
-                glyph: tile.meta.format != GlyphFormat::Color,
-            };
-            let coverage = tile.meta.format == GlyphFormat::Coverage;
-            let instance = sprite.instance(if coverage { Kind::Mono } else { Kind::Poly }, &cx.clip);
-            cx.push(instance);
-            tiles.push(tile);
+            let pen = Point::new(x, baseline - (g.y * scale).round());
+            tiles.extend(paint_glyph(cx, (g.face, g.id), size * scale, pen, color(run)));
         }
     }
+}
+
+/// Paints a glyph of a face at a size, both in device pixels, its pen at `pen`: along the
+/// line a glyph keeps a quarter-pixel phase, and the baseline is on a whole pixel. Gives the
+/// tile to hold, which keeps it in the atlas; none for a glyph with no ink.
+pub fn paint_glyph(
+    cx: &mut PaintCx,
+    (face, id): (FaceId, u16),
+    size: f32,
+    pen: Point,
+    color: Color,
+) -> Option<GlyphTile> {
+    let phase = ((pen.x - pen.x.floor()) * SUBPIXEL_STEPS as f32) as u8;
+    let tile = cx.fonts.glyph(face, id, size, phase).filter(|tile| tile.rect.w > 0)?;
+    let (left, top) = (pen.x.floor() + tile.meta.left, pen.y + tile.meta.top);
+    let sprite = Sprite {
+        bounds: Rect::new(left, top, tile.rect.w as f32, tile.rect.h as f32),
+        uv: tile.uv,
+        slice: tile.rect.slice,
+        color,
+        radii: Corners::default(),
+        // A colour glyph is an image: its pixels are not coverage of the text colour.
+        glyph: tile.meta.format != GlyphFormat::Color,
+    };
+    let coverage = tile.meta.format == GlyphFormat::Coverage;
+    cx.push(sprite.instance(if coverage { Kind::Mono } else { Kind::Poly }, &cx.clip));
+    Some(tile)
 }

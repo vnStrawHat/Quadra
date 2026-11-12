@@ -55,7 +55,7 @@ pub use quadra_a11y::{Mirror, Role, SemanticAction, SemanticNode, Semantics, Tre
 pub use rich::{LinkBoxes, RichSpan, RichText};
 pub use shared::Handle;
 pub use style::State;
-pub use text::Text;
+pub use text::{Text, paint_glyph};
 pub use theme::{Paint, Theme, Token};
 pub use thumb::ScrollThumb;
 pub use tree::Tree;

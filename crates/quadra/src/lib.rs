@@ -29,13 +29,14 @@ pub use quadra_reactive::{
     Memo, Scope, Signal, batch, effect, expect, memo, on_cleanup, provide, signal, untrack, use_context,
 };
 pub use quadra_tree::{
-    Action, Along, FocusNext, FocusPrevious, KeyEvent, Keymap, KeymapError, Keystroke, Paint, PointerEvent,
-    PointerKind, Role, SemanticAction, Side, State, Theme, Token,
+    Action, Along, Fit, FocusNext, FocusPrevious, KeyEvent, Keymap, KeymapError, Keystroke, Paint,
+    PointerEvent, PointerKind, Role, SemanticAction, Side, State, Theme, Token,
 };
 pub use quadra_ui::{
-    AnyView, Div, IntoProp, MountCx, NodeRef, Place, Refine, Region, Span, TextView, Timeline, View, Window,
-    column, div, dynamic, each, each_frame, inline, overlay, rich_text, row, scroll, scroll_strip, scroll_x,
-    show, span, text, text_area, text_input, timeline, tween, uniform_list, virtual_list, window,
+    AnyView, Div, ImageSource, ImageView, Images, IntoProp, MountCx, NodeRef, Place, Refine, Region, Span,
+    TextView, Timeline, View, Window, column, div, dynamic, each, each_frame, image, inline, overlay,
+    rich_text, row, scroll, scroll_strip, scroll_x, show, span, text, text_area, text_input, timeline, tween,
+    uniform_list, virtual_list, window,
 };
 
 /// An app on the backends of this operating system: Win32 windows, the D3D11 renderer and

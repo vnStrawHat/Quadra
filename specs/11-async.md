@@ -107,10 +107,36 @@ futures. That is a decision of the app, recorded in its own spec.
 ## Images and other loaders
 
 Decoding runs on the pool, through `ImageDecoder` (10): the system codecs on Windows, a decoder
-of flat test images in the harness. The size limits of behaviour/08 are checked from the header
-before any pixel is decoded. `image(source)` shows a placeholder, decodes in the background, and
-sets the node's image when done; the node is flagged for layout if its intrinsic size was
-unknown, otherwise for paint. Decoded images are cached at device size under a byte budget.
+of flat test images on the headless platform. `image(source)` is the view:
+
+- **The source** is a path, a file built into the program (`&'static [u8]`) or bytes in
+  memory. The file is read on the pool, and the limits of behaviour/08 are checked before
+  any pixel is decoded: its length before it is read, then what its header says (`admit`:
+  16 384 pixels a side, 16 Mi pixels in all, 16 384 pixels a byte of file at most).
+- **Its size** is the file's, in logical pixels, no wider than there is room; with one side
+  given the other follows the image's shape; with both, `.fit(Fit::Contain | Cover | Fill)`
+  says how a box of another shape is filled (`Contain` by default). Until the header is
+  read it has no size of its own, so a box that should not jump is given one.
+- **Its pixels** are decoded at the size it is shown at in device pixels, never more than
+  the file has; shown at another size (a window that is resized, another scale) it is drawn
+  scaled from what it has while the new size is decoded. A JPEG is scaled by its codec as
+  it is decoded; anything else is premultiplied first, so what is transparent does not shade
+  its edges.
+- **It is painted** from tiles of the colour atlas (07): the pixels are cut into pieces of
+  512 at most, each a tile, so an image of any size shows, pieces of one image meet on
+  whole device pixels, and in a page that scrolls only the pieces near the window are
+  uploaded. Rounded corners are a clip.
+- **`Images`**, one per app and provided as context, holds the decoder and what was
+  decoded: views of one file at one size share its pixels and its tiles; a view that comes
+  back (a row of a list) finds its size and its last picture and shows in its first frame;
+  pictures nobody shows are kept up to 32 MiB, the oldest going first. `forget(path)`
+  drops what is known of a file that changed. Bytes in memory are not shared.
+- **Failure** (no file, no image, too large, a codec that fails) leaves the box empty and
+  is told to `.on_load(..)`, which gets the image's size otherwise. `.label(..)` is what
+  a reader is told; the node's role is `Image`.
+- Not yet: the orientation a camera wrote into a file, frames after the first, and letting
+  go of the decoded pixels once they are uploaded (they are kept beside their tiles, so a
+  lost device needs no decoding).
 
 ## Rules
 

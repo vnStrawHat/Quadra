@@ -179,3 +179,27 @@ fn a_diagram_is_drawn_in_the_middle_and_one_that_is_not_shows_its_source() {
     let sequence = h.get_by_role(Role::Image, "Sequence diagram: User, App").node();
     assert!(h.tree.window_rect(sequence).height > 150.0 && strokes(&h) > 20, "{}", strokes(&h));
 }
+
+#[test]
+fn a_paragraph_of_images_shows_them_and_one_that_cannot_show_is_its_words() {
+    // A file beside the document; the harness decodes flat test images.
+    let folder = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.tmp/md-images");
+    std::fs::create_dir_all(&folder).unwrap();
+    std::fs::write(folder.join("chart.flat"), quadra_platform::FlatImages::file(1600, 400, 0x2040_60ff))
+        .unwrap();
+    let source = "Before.\n\n![A chart](chart.flat)\n\n![Gone](gone.png) ![Far](https://example.com/far.png)\n\nWords and ![a mark](chart.flat) in a line.\n";
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || quadra_kit::root().child(markdown(source).base(folder)));
+    h.settle();
+
+    // Wider than the page: as wide as the page, in its own shape.
+    let chart = h.get_by_role(Role::Image, "A chart").node();
+    let chart = h.tree.rect(chart);
+    assert!(chart.width > 400.0 && chart.width <= 800.0 && chart.height == chart.width / 4.0, "{chart:?}");
+    // No such file, and a file elsewhere, which is never fetched: their words and where.
+    assert!(h.has_text("Gone (gone.png)") && h.has_text("Far (https://example.com/far.png)"));
+    assert_eq!(named(&h, Role::Image), ["A chart", "Gone"], "the one that failed is an empty box");
+    // Among words an image is its words.
+    assert!(h.has_text("Words and [a mark] in a line."));
+}

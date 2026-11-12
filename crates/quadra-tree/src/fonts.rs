@@ -13,9 +13,10 @@ pub const SUBPIXEL_STEPS: u8 = 4;
 
 /// The slices of the glyph atlases are this many pixels square.
 const SLICE: u32 = 1024;
-/// What the atlases try to stay within: sixteen slices of coverage, four of colour.
+/// What the atlases try to stay within: sixteen slices of coverage, and sixteen of colour,
+/// which is where images are (a screen of 4K is eight of them).
 const COVERAGE_BUDGET: usize = 16 << 20;
-const COLOR_BUDGET: usize = 16 << 20;
+const COLOR_BUDGET: usize = 64 << 20;
 
 /// A glyph as it is rasterized: at a device size and a subpixel phase.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -27,12 +28,13 @@ pub struct GlyphKey {
     pub phase: u8,
 }
 
-/// What a tile of the atlases is of: a glyph, or the mask of a drawing at a size in device
-/// pixels.
+/// What a tile of the atlases is of: a glyph, the mask of a drawing at a size in device
+/// pixels, or the piece of a decoded image that starts at a pixel of it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TileKey {
     Glyph(GlyphKey),
     Mask { shape: u64, width: u32, height: u32 },
+    Image { image: u64, x: u32, y: u32 },
 }
 
 /// Where a glyph's bitmap sits against the pen position on the baseline.
@@ -97,6 +99,25 @@ impl Fonts {
         let meta = GlyphMeta { left: 0.0, top: 0.0, format: GlyphFormat::Coverage };
         let pixels = if width == 0 || height == 0 { Vec::new() } else { render() };
         self.glyphs.insert(key, width, height, &pixels, meta)
+    }
+
+    /// The tile of a piece of a decoded image: `pixels` gives the piece, premultiplied RGBA,
+    /// the first time it is asked for. `None` when it is larger than an atlas slice.
+    pub fn image(
+        &mut self,
+        image: u64,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+        pixels: impl FnOnce() -> Vec<u8>,
+    ) -> Option<GlyphTile> {
+        let key = TileKey::Image { image, x, y };
+        if let Some(tile) = self.color_glyphs.get(&key) {
+            return Some(tile);
+        }
+        let meta = GlyphMeta { left: 0.0, top: 0.0, format: GlyphFormat::Color };
+        self.color_glyphs.insert(key, width, height, &pixels(), meta)
     }
 
     /// Forgets every tile: the GPU lost them. Text paints again and rasterizes what it needs.

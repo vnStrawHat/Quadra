@@ -28,6 +28,8 @@ windows = { version = "0.62", features = [
     "Win32_Graphics_Dxgi",
     "Win32_Graphics_Dxgi_Common",
     "Win32_Graphics_Gdi",
+    "Win32_Graphics_Imaging",
+    "Win32_System_Com",
     "Win32_System_DataExchange",
     "Win32_System_LibraryLoader",
     "Win32_System_Memory",
@@ -46,6 +48,7 @@ windows = { version = "0.62", features = [
     "Win32_System_Variant",
     "Win32_UI_Accessibility",
 ] }
+quadra-layout = { path = "../quadra-layout" }
 quadra-reactive = { path = "../quadra-reactive" }
 quadra-text = { path = "../quadra-text" }
 quadra-tree = { path = "../quadra-tree" }

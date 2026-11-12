@@ -8,6 +8,7 @@ pub mod diagram;
 pub mod diff;
 pub mod display;
 pub mod fields;
+pub mod image;
 pub mod layout;
 pub mod live;
 pub mod markdown;

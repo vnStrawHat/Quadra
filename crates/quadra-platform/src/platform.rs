@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 
 use crate::clipboard::Clipboard;
 use crate::event::PlatformEvent;
+use crate::image::ImageDecoder;
 use quadra_prim::Point;
 
 use crate::window::{HitRegion, PlatformWindow, WindowId, WindowOptions};
@@ -53,6 +54,9 @@ pub trait Platform {
     fn cancel_timer(&self, id: TimerId);
     /// The clipboard. The headless platform's is a variable in memory.
     fn clipboard(&self) -> Rc<dyn Clipboard>;
+    /// The decoder of image files: the system's codecs. The headless platform's reads flat
+    /// test images.
+    fn image_decoder(&self) -> Arc<dyn ImageDecoder>;
     /// The time, which only moves forward. The headless platform's is moved by its test.
     fn now(&self) -> Instant;
 }

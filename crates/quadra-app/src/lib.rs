@@ -20,7 +20,7 @@ use quadra_reactive::{Scope, Signal, provide, signal};
 use quadra_render::{DeviceSize, Pixels, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
 use quadra_tree::{Fonts, Keymap, Theme, Tree};
-use quadra_ui::{View, mount_with};
+use quadra_ui::{Images, View, mount_with};
 
 pub use report::{AppError, FrameReport, Result};
 
@@ -70,6 +70,7 @@ impl<R: Renderer> App<R> {
         let theme = root.run(|| {
             provide(timers.clone());
             provide(tasks.clone());
+            provide(Images::new(platform.image_decoder()));
             provide(platform.clipboard());
             let theme = signal(Rc::<Theme>::default());
             provide(theme);

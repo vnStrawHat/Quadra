@@ -2,10 +2,12 @@
 //! blocks in a column, each a child of its own that stays while its source does.
 
 mod code;
+mod picture;
 mod table;
 
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use quadra_kit::{fonts, icon, icons, size, token};
@@ -38,18 +40,26 @@ type OnLink = Rc<dyn Fn(&str)>;
 pub struct Markdown {
     source: Prop<String>,
     on_link: Option<OnLink>,
+    base: Option<PathBuf>,
 }
 
 /// A document, rendered. The source is a property: when it changes, the blocks whose source
 /// did not change keep their nodes.
 pub fn markdown<M>(source: impl IntoProp<String, M>) -> Markdown {
-    Markdown { source: source.into_prop(), on_link: None }
+    Markdown { source: source.into_prop(), on_link: None, base: None }
 }
 
 impl Markdown {
     /// Runs `f` with the target of a link when it is clicked with Ctrl held.
     pub fn on_link(mut self, f: impl Fn(&str) + 'static) -> Self {
         self.on_link = Some(Rc::new(f));
+        self
+    }
+
+    /// The folder the document is in: where its images are looked for when their paths
+    /// do not start at a root.
+    pub fn base(mut self, folder: impl Into<PathBuf>) -> Self {
+        self.base = Some(folder.into());
         self
     }
 }
@@ -111,8 +121,8 @@ fn cut(text: &str, styled: impl Fn(&str) -> Run, out: &mut Vec<Run>) {
 fn spans(source: &str) -> Vec<Run> {
     let mut out = Vec::new();
     for part in parse_inline(source) {
-        // ponytail: an image is its words in brackets, and a formula its source, until
-        // rich text holds what is not text.
+        // An image among words is its words in brackets: a paragraph of images alone shows
+        // them (`picture`).
         let said = if part.image.is_some() { format!("[{}]", part.text) } else { part.text.clone() };
         let styled = |text: &str| {
             let run = span(text);
@@ -201,13 +211,16 @@ fn chart(source: &str) -> Div {
     figure(row().text_size(size::TEXT_MD.size).child(diagram), fault, source)
 }
 
-fn block(kind: &Kind, on_link: &Option<OnLink>) -> Div {
+fn block(kind: &Kind, on_link: &Option<OnLink>, base: Option<&Path>) -> Div {
     let words = |source: &str| match spans(source) {
         runs if runs.is_empty() => column(),
         runs => column().child(rich(runs, on_link)),
     };
     match kind {
-        Kind::Paragraph { text } => words(text),
+        Kind::Paragraph { text } => match parse_inline(text) {
+            parts if picture::only_images(&parts) => picture::pictures(&parts, base),
+            _ => words(text),
+        },
         Kind::Heading { level, text } => heading(*level, text, on_link),
         Kind::Item { number, depth, task, text } => item(*number, *depth, *task, text, on_link),
         Kind::Code { lang, text } if lang == "mermaid" => chart(text),
@@ -228,7 +241,7 @@ fn block(kind: &Kind, on_link: &Option<OnLink>) -> Div {
 
 impl View for Markdown {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let on_link = self.on_link;
+        let (on_link, base) = (self.on_link, self.base);
         let read: Box<dyn Fn() -> String> = match self.source {
             Prop::Value(source) => Box::new(move || source.clone()),
             Prop::Reactive(read) => read,
@@ -238,7 +251,8 @@ impl View for Markdown {
         let blocks = memo(move || entries(&read()));
         let shown = move |entry: quadra_reactive::Signal<Entry>| {
             let kind = entry.with_untracked(|entry| entry.kind.clone());
-            column().padding_top(move || entry.with(|entry| entry.gap)).child(block(&kind, &on_link))
+            let block = block(&kind, &on_link, base.as_deref());
+            column().padding_top(move || entry.with(|entry| entry.gap)).child(block)
         };
         let page = column().width(Length::Fill).text_color(token::TEXT).text_size(BODY).line_height(1.5);
         each(move || blocks.get(), |entry| entry.key, shown).container(page).mount(cx)

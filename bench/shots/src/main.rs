@@ -50,6 +50,8 @@ const OPENERS: [(&str, &str); 14] = [
 /// Lets the window live for `ms`: frames, timers, what moves.
 fn pass(platform: &HeadlessPlatform, app: &mut Shots, ms: u64) {
     for _ in 0..ms.div_ceil(75) {
+        // What the pool decodes is real work in real time: it is waited for.
+        quadra_async::wait_idle(Duration::from_secs(10));
         platform.waker().wake();
         platform.step(app);
         platform.advance(Duration::from_millis(75), app);
@@ -121,6 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(&out)?;
 
     let platform = HeadlessPlatform::new();
+    platform.set_image_decoder(std::sync::Arc::new(quadra_native_win::WicImages));
     let text = DirectWrite::new().map_err(AppError::Text)?;
     let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
     let mut app = quadra_kit::install(app, &if is_dark { dark() } else { light() })?;

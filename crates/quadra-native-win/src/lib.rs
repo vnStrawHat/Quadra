@@ -11,6 +11,7 @@ mod delivery;
 mod dwrite;
 mod frame;
 mod gpu;
+mod image;
 mod ime;
 mod input;
 mod layers;
@@ -25,5 +26,6 @@ mod window;
 mod wndproc;
 
 pub use dwrite::DirectWrite;
+pub use image::WicImages;
 pub use platform::WinPlatform;
 pub use renderer::D3d11Renderer;

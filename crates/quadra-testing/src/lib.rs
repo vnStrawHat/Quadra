@@ -22,7 +22,7 @@ use quadra_reactive::provide;
 use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
 use quadra_text::FakeBackend;
 use quadra_tree::{Fonts, FrameStats, NodeId, PointerInput, Tree};
-use quadra_ui::{View, mount_with};
+use quadra_ui::{Images, View, mount_with};
 
 pub use find::Found;
 
@@ -41,6 +41,8 @@ pub struct Harness {
     platform: HeadlessPlatform,
     timers: Rc<Timers>,
     tasks: Rc<Executor>,
+    /// The images those views find: flat test images, decoded on the pool as in an app.
+    pub images: Rc<Images>,
     /// The clipboard those views find: a variable, never the real one.
     pub clipboard: Rc<dyn Clipboard>,
 }
@@ -79,16 +81,31 @@ impl Harness {
         let (timers, tasks) = (Timers::new(Rc::new(platform.clone())), Executor::new(&platform));
         let (size, clipboard, clock) = (Size::new(800.0, 600.0), platform.clipboard(), platform.clone());
         tree.set_clock(move || clock.now()); // what animates goes by the harness's time
-        Harness { tree, renderer, fonts, surface, size, scale: 1.0, platform, timers, tasks, clipboard }
+        let images = Images::new(platform.image_decoder());
+        Harness {
+            tree,
+            renderer,
+            fonts,
+            surface,
+            size,
+            scale: 1.0,
+            platform,
+            timers,
+            tasks,
+            images,
+            clipboard,
+        }
     }
 
     /// Builds a view as an app's window does, where it finds timers, tasks and the clipboard
     /// in its context, and mounts it as the root.
     pub fn mount<V: View>(&mut self, build: impl FnOnce() -> V) -> NodeId {
         let (timers, tasks, clipboard) = (self.timers.clone(), self.tasks.clone(), self.clipboard.clone());
+        let images = self.images.clone();
         mount_with(&mut self.tree, move || {
             provide(timers);
             provide(tasks);
+            provide(images);
             provide(clipboard);
             build()
         })

@@ -46,6 +46,7 @@ struct Inner {
     woken: Arc<AtomicBool>,
     quit: Cell<bool>,
     clipboard: Rc<MemoryClipboard>,
+    decoder: RefCell<Arc<dyn crate::image::ImageDecoder>>,
 }
 
 #[derive(Clone)]
@@ -71,6 +72,7 @@ impl HeadlessPlatform {
             woken: Arc::new(AtomicBool::new(false)),
             quit: Cell::new(false),
             clipboard: Rc::default(),
+            decoder: RefCell::new(Arc::new(crate::image::FlatImages)),
         }))
     }
 
@@ -125,6 +127,12 @@ impl HeadlessPlatform {
     /// The title a window was last given.
     pub fn title(&self, window: WindowId) -> Option<String> {
         self.window(window).map(|w| w.title.borrow().clone())
+    }
+
+    /// Gives the platform another decoder than that of flat test images: the system's, for a
+    /// tool that draws real files without a window. An app takes it when it is made.
+    pub fn set_image_decoder(&self, decoder: Arc<dyn crate::image::ImageDecoder>) {
+        self.0.decoder.replace(decoder);
     }
 
     /// One turn of the loop: the queued events, a wake if a waker fired, then a frame for
@@ -234,6 +242,10 @@ impl Platform for HeadlessPlatform {
 
     fn clipboard(&self) -> Rc<dyn Clipboard> {
         self.0.clipboard.clone()
+    }
+
+    fn image_decoder(&self) -> Arc<dyn crate::image::ImageDecoder> {
+        self.0.decoder.borrow().clone()
     }
 }
 

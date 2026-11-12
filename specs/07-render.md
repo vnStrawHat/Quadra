@@ -92,7 +92,8 @@ the vector holds a **marker**: an entry of kind "layer" that names the child and
 itself. The instances between two markers are a run, drawn in one call. Because markers live in
 the vector, copying a clean subtree carries its child layers along; the list of breaks is found
 again by one scan when the vector is rebuilt, and never changes when instances are overwritten
-in place. An image too large for the atlas will be a marker of its own kind (with images).
+in place. An image larger than a tile is several tiles (below), so the list needs no marker
+of another kind.
 
 Each node stores its range **relative to its parent's range**, covering what it painted before
 its children, its children, and what it painted after them.
@@ -162,7 +163,11 @@ rectangles at present are not used in the first release.
   a reused rectangle.
 - Each atlas has a byte budget. Beyond it, least-recently-used free tiles are dropped first;
   if everything is in use the atlas grows past the budget and reports it.
-- Images above the tile limit get their own texture and a marker of their own kind.
+- An image is cut into pieces of 512 pixels at most, each a tile of the colour atlas
+  (`Fonts::image`): one of any size shows, with no texture and no draw call of its own, and
+  the pieces that do not show take no room. Pieces are drawn on whole device pixels; one
+  that is scaled samples half a texel inside its tile. The colour atlas tries to stay within
+  64 MiB.
 - An atlas is keyed by whoever uses it (a glyph cache by face, glyph, size and phase) and a
   tile carries what its owner knows about it (a glyph's offsets). The packing and the
   upload queue do not depend on either: that part is what a renderer is given
@@ -176,7 +181,7 @@ Every GPU resource can be rebuilt from CPU state:
 |---|---|
 | Layer buffers | The layers' instance vectors |
 | Atlas contents | Rasterizing again on demand; the atlas epoch changes and text nodes repaint |
-| Image textures | The decoded-image cache, or decoding again |
+| Image tiles | The decoded pixels each picture keeps |
 | Pipelines, shaders | Embedded bytecode |
 
 - `Renderer` methods return `Result`. `DeviceLost` makes the app create a new device, bump the
@@ -241,5 +246,5 @@ check that copy against the scene, read layers and instances, and count draws.
 | Scroll offset inside every bound | A layer translation |
 | Overlap reordering to merge batches across atlas pages | Texture arrays; paint order is draw order |
 | Paint patches as a special case | In-place replacement as the normal case |
-| Glyph tiles never freed; images in the glyph atlas up to a page | Counted tiles with a budget; large images as textures |
+| Glyph tiles never freed; images in the glyph atlas up to a page | Counted tiles with a budget; an image of any size as pieces |
 | GPU errors printed | `Result`, recovery from device loss |

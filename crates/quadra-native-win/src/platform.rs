@@ -254,4 +254,8 @@ impl Platform for WinPlatform {
     fn clipboard(&self) -> Rc<dyn Clipboard> {
         Rc::new(WinClipboard(self.0.message_window.get().0 as isize))
     }
+
+    fn image_decoder(&self) -> std::sync::Arc<dyn quadra_platform::ImageDecoder> {
+        std::sync::Arc::new(crate::image::WicImages)
+    }
 }

@@ -131,6 +131,7 @@ name = "quadra-bench-shots"
 version = "0.1.0"
 dependencies = [
  "quadra-app",
+ "quadra-async",
  "quadra-gallery",
  "quadra-kit",
  "quadra-native-win",
@@ -227,6 +228,7 @@ dependencies = [
  "accesskit",
  "accesskit_windows",
  "quadra-a11y",
+ "quadra-layout",
  "quadra-platform",
  "quadra-prim",
  "quadra-reactive",

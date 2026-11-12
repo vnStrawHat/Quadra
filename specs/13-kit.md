@@ -846,8 +846,13 @@ What it reads and how it looks is behaviour/21. As built:
     drawn is its source in a box, with why under it.
   - Not yet: a filled shape larger than a slice of the atlas (it has its outline and no
     fill); links and messages, to a reader.
-- Not yet: a line made higher by a formula higher than it; images, which show their words
-  in brackets;
+- **Images** (behaviour/21): a paragraph that holds only images shows them, one under
+  another, each as large as its file says and no wider than the page, named by its words
+  for a reader. `markdown(source).base(folder)` says where paths that do not start at a
+  root are looked for. A file that is not there or is no image, and an image that is
+  elsewhere (nothing is fetched), show a small mark, the words and the path. An image among
+  the words of a line is its words in brackets.
+- Not yet: a line made higher by a formula higher than it; an image in a line of words;
   one selection over the blocks; the hint over a link; where each block is, for an outline
   and for scrolling two panes together; a list of the blocks that show, for documents of
   tens of thousands of lines; a table wider than the page.

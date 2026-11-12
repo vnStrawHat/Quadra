@@ -16,6 +16,7 @@ path = "src/main.rs"
 
 [dependencies]
 quadra-app = { path = "../../crates/quadra-app" }
+quadra-async = { path = "../../crates/quadra-async" }
 quadra-gallery = { path = "../../examples/gallery" }
 quadra-kit = { path = "../../crates/quadra-kit" }
 quadra-native-win = { path = "../../crates/quadra-native-win" }

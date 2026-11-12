@@ -7,6 +7,7 @@
 mod clipboard;
 mod event;
 mod headless;
+mod image;
 mod keys;
 mod platform;
 mod window;
@@ -14,6 +15,10 @@ mod window;
 pub use clipboard::{Clipboard, MemoryClipboard};
 pub use event::{Mods, MouseButton, PlatformEvent, PointerKind};
 pub use headless::HeadlessPlatform;
+pub use image::{
+    Decoded, FlatImages, ImageDecoder, ImageError, ImageInfo, MAX_IMAGE_FILE_BYTES, MAX_IMAGE_PIXELS,
+    MAX_IMAGE_SIDE, MAX_PIXELS_PER_BYTE, admit,
+};
 pub use keys::Key;
 pub use platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
 pub use window::{Cursor, HitRegion, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size};

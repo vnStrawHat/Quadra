@@ -35,6 +35,9 @@ pub trait View {
 
 - Built-in views: `div()` (box), `row()`, `column()`, `grid()`, `text(..)`, `image(..)`,
   `scroll(..)`, `text_input(..)`, `canvas(..)`, and the control-flow views below.
+- `image(source)` (11, "Images") is a leaf with a few methods of its own: `.width(..)`,
+  `.height(..)`, `.grow()`, `.fit(..)`, `.radius(..)`, `.label(..)`, `.on_load(..)`. For
+  padding, a background or a border it is put in a box.
 - A component built from other views implements `Component { fn build(self) -> AnyView }`, or
   is simply a function returning `impl View`.
 - `AnyView` is a boxed view. Containers box their children when they are added, so a tree of

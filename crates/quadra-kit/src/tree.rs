@@ -14,7 +14,7 @@ use crate::action::{Confirm, MoveFirst, MoveInto, MoveLast, MoveNext, MoveOut, M
 use crate::icon::icon;
 use crate::{icons, token};
 
-/// How far a level is in from the one around it, and the height of a row.
+/// How far a level is in from the one around it, and the height of a row, unless told.
 const INDENT: f32 = 20.0;
 const ROW: f32 = 26.0;
 
@@ -25,6 +25,10 @@ pub struct TreeNode {
     pub label: String,
     pub icon: Option<&'static str>,
     pub children: Vec<TreeNode>,
+    /// The colour of the label, when it is not that of the text around.
+    pub color: Option<Paint>,
+    /// What follows the label, and its colour.
+    pub detail: Option<(String, Paint)>,
 }
 
 impl TreeNode {
@@ -41,6 +45,19 @@ impl TreeNode {
         self.children = inside.into_iter().collect();
         self
     }
+
+    /// A colour for the label, or a role of the theme.
+    pub fn color(mut self, color: impl Into<Paint>) -> Self {
+        self.color = Some(color.into());
+        self
+    }
+
+    /// Something after the label: a value, a count. Of what holds things it shows only
+    /// while that is closed: it says in short what is not seen.
+    pub fn detail(mut self, text: impl Into<String>, color: impl Into<Paint>) -> Self {
+        self.detail = Some((text.into(), color.into()));
+        self
+    }
 }
 
 /// A row: a thing that shows, how deep it is, and the row of what it is in.
@@ -49,6 +66,8 @@ struct Shown {
     id: String,
     label: String,
     icon: Option<&'static str>,
+    color: Option<Paint>,
+    detail: Option<(String, Paint)>,
     depth: usize,
     parent: Option<usize>,
     /// Whether it holds anything, and whether it is open.
@@ -64,10 +83,11 @@ fn walk(
     out: &mut Vec<Shown>,
 ) {
     for node in nodes {
-        let (holds, is_open) = (!node.children.is_empty(), open.contains(&node.id));
-        let (id, label) = (node.id.clone(), node.label.clone());
-        out.push(Shown { id, label, icon: node.icon, depth, parent, holds, open: holds && is_open });
-        if holds && is_open {
+        let holds = !node.children.is_empty();
+        let (id, label, is_open) = (node.id.clone(), node.label.clone(), holds && open.contains(&node.id));
+        let (icon, color, detail) = (node.icon, node.color, node.detail.clone().filter(|_| !is_open));
+        out.push(Shown { id, label, icon, color, detail, depth, parent, holds, open: is_open });
+        if is_open {
             walk(&node.children, open, depth + 1, Some(out.len() - 1), out);
         }
     }
@@ -77,12 +97,14 @@ pub struct Tree {
     roots: Box<dyn Fn() -> Vec<TreeNode>>,
     chosen: Signal<Option<String>>,
     open: Option<Signal<HashSet<String>>>,
+    /// The height of a row, and how far a level is in.
+    sizes: (f32, f32),
 }
 
 /// A tree of what `roots` gives, asked again when what it reads changes. `chosen` holds the
 /// id of the selected thing, if any. Give the tree a height, or let it grow.
 pub fn tree(roots: impl Fn() -> Vec<TreeNode> + 'static, chosen: Signal<Option<String>>) -> Tree {
-    Tree { roots: Box::new(roots), chosen, open: None }
+    Tree { roots: Box::new(roots), chosen, open: None, sizes: (ROW, INDENT) }
 }
 
 impl Tree {
@@ -91,17 +113,28 @@ impl Tree {
         self.open = Some(ids);
         self
     }
+
+    pub fn row_height(mut self, px: f32) -> Self {
+        self.sizes.0 = px;
+        self
+    }
+
+    /// How far a level is in from the one around it.
+    pub fn indent(mut self, px: f32) -> Self {
+        self.sizes.1 = px;
+        self
+    }
 }
 
 /// What a row shows: guides for the levels it is in, a chevron if it holds something, its
-/// icon and its label.
-fn line(at: &Shown) -> Div {
-    let left = 8.0 + at.depth as f32 * INDENT;
-    let mut line = row().align_items(Align::Center).gap(2.0).grow(1.0).height(ROW);
+/// icon, its label and its detail.
+fn line(at: &Shown, (height, indent): (f32, f32)) -> Div {
+    let left = 8.0 + at.depth as f32 * indent;
+    let mut line = row().align_items(Align::Center).gap(2.0).grow(1.0).height(height);
     line = line.padding_left(left).padding_right(8.0).cursor(Cursor::Pointer);
     line = line.role(Role::TreeItem).label(at.label.clone());
     for level in 0..at.depth {
-        let guide = div().absolute().left(8.0 + level as f32 * INDENT + 7.0).top(0.0).bottom(0.0);
+        let guide = div().absolute().left(8.0 + level as f32 * indent + 7.0).top(0.0).bottom(0.0);
         line = line.child(guide.width(1.0).bg(token::TEXT.alpha(0.1)));
     }
     line = match at.holds {
@@ -114,12 +147,20 @@ fn line(at: &Shown) -> Div {
     if let Some(body) = at.icon {
         line = line.child(icon(body).size(16.0).color(token::TEXT_2));
     }
-    line.child(div().padding_left(4.0).child(text(at.label.clone())))
+    let label = text(at.label.clone());
+    let label = at.color.map_or_else(|| text(at.label.clone()), |color| label.color(color));
+    let line = line.child(div().padding_left(4.0).child(label));
+    match &at.detail {
+        Some((detail, color)) => {
+            line.child(div().padding_left(6.0).child(text(detail.clone()).color(*color)))
+        }
+        None => line,
+    }
 }
 
 impl View for Tree {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (roots, chosen, focused) = (self.roots, self.chosen, signal(false));
+        let (roots, chosen, focused, sizes) = (self.roots, self.chosen, signal(false), self.sizes);
         let open = self.open.unwrap_or_else(|| signal(HashSet::new()));
         let shown = memo(move || {
             let mut all = Vec::new();
@@ -139,7 +180,7 @@ impl View for Tree {
         };
         let rows = uniform_list(
             move || shown.get().len(),
-            ROW,
+            sizes.0,
             signal(0.0),
             move |at| {
                 // A row is built again when the thing at its place is another one, or opens.
@@ -149,7 +190,7 @@ impl View for Tree {
                     let id = at.id.clone();
                     let on = move || chosen.with(|chosen| chosen.as_deref() == Some(id.as_str()));
                     let (is, ring, id) = (on.clone(), on.clone(), at.id.clone());
-                    let line = line(&at).selected(on);
+                    let line = line(&at, sizes).selected(on);
                     let line = line
                         .hover(|s| s.bg(token::RAISED_HOVER))
                         .when(State::SELECTED, |s| s.bg(token::PRESS));

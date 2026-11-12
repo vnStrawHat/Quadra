@@ -63,6 +63,10 @@ div().bg(token::ACCENT.alpha(0.12))
   constant, in a state variant, or reactive. `Token` is a number and `Theme` the colour of
   each number, both in `quadra-tree`, which knows no role by name: the names are the kit's.
   A role the theme has no colour for is transparent.
+- The colours of code are roles too: a theme file's `syntax` gives each of
+  `token::SYNTAX_KEYWORD`, `SYNTAX_STRING`, `SYNTAX_NUMBER` and the rest its colour (a name
+  that is none of them is an error), for the editor, the markdown of code and the value
+  viewer.
 - A node keeps the values of its style that are roles beside its own style, and they are
   applied over it with the theme of the moment, before the variants of its states. A colour
   given after a role for the same property takes its place. A node whose style holds no
@@ -335,7 +339,12 @@ As built so far:
   then goes into it, the left one closes what is open then goes out to what holds it, and
   Enter and Space open and close (key context `action::TREE`). The ids of the open things
   are a signal the caller may own (`.open(..)`). To a reader: a tree of items, expanded or
-  collapsed. Not yet: children that are asked for when a thing opens, several selected.
+  collapsed. A label may have a colour of its own (`.color(..)`), and a thing a detail
+  after its label, in a colour (`.detail(text, colour)`): of what holds things it shows
+  only while that is closed, and says in short what is not seen. `.row_height(px)` and
+  `.indent(px)` are for a denser tree; the key for copying is bound in a tree, for what is
+  around it to handle. Not yet: children that are asked for when a thing opens, several
+  selected.
 - **`settings(current)`** is the preferences of an app in pages (behaviour/15, "Settings"
   and "Settings, cards", has the numbers): a column of the pages at the left, the chosen one
   at the right. A page is `SettingsPage::new(title).icon(..).about(..).group(..)`, a group
@@ -617,6 +626,30 @@ What the charts are and look like is behaviour/19, "Charts". As built:
 - Not yet: a legend, a chart of categories with bars upright, more than eight colours; of
   more samples than the plot has pixel columns, the peaks between two columns are not
   drawn; a reader is not told the values of a line.
+
+## Data (`quadra-data`)
+
+What these are and look like is behaviour/19. As built:
+
+- **A value** (`Value`) is what JSON and YAML say: nothing, a truth, a number as it was
+  written, a text, a list, or a map whose keys keep their order. `get(key)`, `at(path)`
+  and `summary()` (a scalar as it is written, `{n}` and `[n]` for what holds n things) read
+  it. A path is `.spec.containers[0].image`; a key that is not a plain word is written
+  `["app.kubernetes.io/name"]`, so no two things of a value have the same path.
+- **`parse_json(text)`** reads JSON whole: an error says its line. **`parse_yaml(text)`**
+  reads the YAML that manifests are written in: mappings and sequences by indentation
+  (a sequence may sit at the indentation of its key), `- ` items that hold maps, flow
+  `{}` and `[]` on one line, plain, single- and double-quoted scalars, `|` and `>` block
+  scalars, comments, and the first document of a file. Anchors and tags are skipped;
+  aliases are not resolved. Neither reader goes deeper than 128 levels: what does is an
+  error, not a crash.
+- **`value_view(value)`** shows a value as the kit's tree (rows that open and close, the
+  arrows, one selected): a row is a key in the colour of properties in code, or the place
+  in a list in the faint text, then the value in the colour of its kind in code (text,
+  number, constant); what holds things says how many while it is closed. Rows are in the
+  mono face, 24 px, a level 16 px in; the first two levels start open, and a value that
+  changes keeps open what is still there. Over the rows a bar says the path of the
+  selected row, and `Copy path`, or the key for copying, puts it on the clipboard.
 
 ## Porting the kit
 

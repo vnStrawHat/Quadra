@@ -108,6 +108,24 @@ roles! {
     SUCCEEDED = "succeeded";
     TERMINATING = "terminating";
     UNKNOWN = "unknown";
+    /// The colours of code: a theme file's `syntax`, under these names without `syntax_`.
+    SYNTAX_KEYWORD = "syntax_keyword";
+    SYNTAX_CONTROL = "syntax_control";
+    SYNTAX_STRING = "syntax_str";
+    SYNTAX_NUMBER = "syntax_number";
+    SYNTAX_CONSTANT = "syntax_constant";
+    SYNTAX_TYPE = "syntax_typ";
+    SYNTAX_FUNCTION = "syntax_function";
+    SYNTAX_VARIABLE = "syntax_variable";
+    SYNTAX_PROPERTY = "syntax_property";
+    SYNTAX_OPERATOR = "syntax_operator";
+    SYNTAX_PUNCTUATION = "syntax_punctuation";
+    SYNTAX_COMMENT = "syntax_comment";
+    SYNTAX_TAG = "syntax_tag";
+    SYNTAX_ATTRIBUTE = "syntax_attribute";
+    SYNTAX_REGEXP = "syntax_regexp";
+    SYNTAX_ESCAPE = "syntax_escape";
+    SYNTAX_INVALID = "syntax_invalid";
     /// The colours of the series of a chart: a theme file's `series`. Unset, the accent.
     SERIES_1 = "series_1";
     SERIES_2 = "series_2";

@@ -170,7 +170,9 @@ pub fn keymap() -> Keymap {
     keymap.bind_in(TABLE, "pageup", PagePrevious).expect(well_formed);
     keymap.bind_in(TABLE, "shift-down", ExtendNext).expect(well_formed);
     keymap.bind_in(TABLE, "shift-up", ExtendPrevious).expect(well_formed);
+    // A tree does nothing with it: what is around it copies what the selected row stands for.
     keymap.bind_in(TABLE, "ctrl-c", Copy).expect(well_formed);
+    keymap.bind_in(TREE, "ctrl-c", Copy).expect(well_formed);
     for context in [MENU, TREE] {
         keymap.bind_in(context, "space", Confirm).expect(well_formed);
         keymap.bind_in(context, "right", MoveInto).expect(well_formed);

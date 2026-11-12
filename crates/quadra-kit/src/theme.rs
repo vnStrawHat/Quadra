@@ -38,8 +38,6 @@ pub struct KitTheme {
     pub name: String,
     pub mode: Mode,
     colors: Vec<Color>,
-    /// The colour of types in code: what the cyan is when a theme gives none.
-    type_color: Color,
 }
 
 const KEYS: [&str; 8] = ["name", "mode", "palette", "syntax", "editor", "terminal", "series", "controls"];
@@ -103,7 +101,7 @@ impl KitTheme {
 
     fn empty() -> KitTheme {
         let colors = vec![Color::TRANSPARENT; NAMES.len()];
-        KitTheme { name: String::new(), mode: Mode::Dark, colors, type_color: Color::TRANSPARENT }
+        KitTheme { name: String::new(), mode: Mode::Dark, colors }
     }
 
     /// A theme file over `self`: the colours it lists replace this theme's.
@@ -134,9 +132,16 @@ impl KitTheme {
             };
             self.colors[role] = color(value, &path)?;
         }
-        // ponytail: the roles of code and the terminal come with their crates; until then
-        // their colours are only checked to be colours.
-        for key in ["syntax", "editor", "terminal"] {
+        for (name, value) in section(&file, "syntax")?.into_iter().flatten() {
+            let (path, role) = (format!("syntax.{name}"), format!("syntax_{name}"));
+            let Some(role) = NAMES.iter().position(|name| *name == role) else {
+                return wrong(&path, "not a colour of code");
+            };
+            self.colors[role] = color(value, &path)?;
+        }
+        // ponytail: the roles of the editor and the terminal come with their crates; until
+        // then their colours are only checked to be colours.
+        for key in ["editor", "terminal"] {
             for (name, value) in section(&file, key)?.into_iter().flatten() {
                 let path = format!("{key}.{name}");
                 match value {
@@ -148,12 +153,7 @@ impl KitTheme {
                             color(value, &format!("{path}[{i}]"))?;
                         }
                     }
-                    value => {
-                        let read = color(value, &path)?;
-                        if key == "syntax" && name == "typ" {
-                            self.type_color = read;
-                        }
-                    }
+                    value => drop(color(value, &path)?),
                 }
             }
         }
@@ -190,6 +190,7 @@ impl KitTheme {
             (TABLE_HEAD_FG, TEXT_2),
             (TABLE_ROW_BORDER, LINE_STRONG),
             (TEXT_ON_STATUS, TEXT_ON_ACCENT),
+            (CYAN, SYNTAX_TYPE),
         ];
         for (role, other) in follows.into_iter().chain(SERIES.map(|series| (series, ACCENT))) {
             if unset(&self, role) {
@@ -205,7 +206,6 @@ impl KitTheme {
                 ERROR_HOVER,
                 Color::parse_hex(&self.color(ERROR).lerp(self.color(CANVAS), 0.15).hex()).unwrap_or_default(),
             ),
-            (CYAN, self.type_color),
         ]);
         for (role, derived) in tints {
             if unset(&self, role) {

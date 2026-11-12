@@ -10,23 +10,29 @@ use super::draw::Measure;
 use super::flow::{LONGEST_LINK, MOST_SUBGRAPHS};
 use super::{Chart, read};
 
-const CORPUS: [&str; 5] = [
+const CORPUS: [&str; 7] = [
     "graph TD\nA[Start] --> B{Is it?}\nB -->|Yes| C[OK]\nC --> D[Rethink]\nD --> B\nB ---->|No| E[End]\nsubgraph work [Work]\nC\nD\nend\nF((Hub)) --> A & C & E",
     "flowchart LR\nA --> B\nB --- C\nC -.-> D\nD ==> E\nE --o F\nF --x G\nG <--> H\nH --->|long| I\nI -- text --> J\nJ -. dots .-> K",
     "graph TD\na[Rect]\nb(Round)\nc([Stadium])\nd((Circle))\ne{Diamond}\nf{{Hex}}\ng[[Sub]]\nh[(DB)]\ni>Flag]\nj[\"Quoted [x]\"]\nk:::cls\nclassDef cls fill:#f00\n%% comment",
     "---\ntitle: x\n---\nflowchart BT\nsubgraph a\nsubgraph b [B]\nx --> y\nend\nend\ny --> x; x --> x",
     "graph\nA-->B-->C-->A\nA & B & C --> D & E & F\n漢字 --> 😀[\"Xin chào\"]",
+    "sequenceDiagram\nparticipant A as Alice\nactor B\nA->>B: Hello\nB-->>A: Hi\nA-)B: async\nNote right of A: thinking\nNote over A,B: both\nloop Every minute\nA->>B: ping\nend\nalt ok\nB->>A: yes\nelse no\nB->>A: no\nend",
+    "sequenceDiagram\nautonumber\nA->>+B: open\nB-->>-A: close\nA-xB: lost\nopt maybe\nA->>A: self\nend\nrect rgb(0,0,0)\nA->>B: x\nend\npar a\nA->>B: 1\nand b\nB->>A: 2\nend",
 ];
 
 /// What is deep, long or wide, which a change of a byte does not make.
 fn deep(rng: &mut Rng) -> String {
     let n = 50 + rng.below(600);
-    match rng.below(4) {
+    match rng.below(6) {
         0 => format!("graph TD\n{}a --> b\n{}", "subgraph s\n".repeat(n % 150), "end\n".repeat(rng.below(n))),
         1 => format!("graph LR\na {}> b", "-".repeat(n)),
         // Many nodes, in a chain or in cycles.
         2 => (0..n).fold("flowchart TD".to_string(), |all, k| {
             format!("{all}\nn{k} --> n{}", (k + 1 + rng.below(3)) % n)
+        }),
+        4 => format!("sequenceDiagram\n{}A->>B: x\n{}", "loop l\n".repeat(n), "end\n".repeat(rng.below(n))),
+        5 => (0..n).fold("sequenceDiagram".to_string(), |all, k| {
+            format!("{all}\nP{}->>P{}: m{k}", k % 97, rng.below(97))
         }),
         // Wide groups: every pair is a link.
         _ => {

@@ -798,9 +798,9 @@ What it reads and how it looks is behaviour/21. As built:
     face, in the colour of what is wrong.
 - **Diagrams** (`quadra_md::mermaid`; what is drawn is behaviour/21, "Diagrams").
   `diagram(source)` reads the source once and is a node as large as the diagram. Its kind is
-  the first word after blank lines, `%%` comments and front matter. Flowcharts are drawn;
-  another kind, and a source with a fault, which is told with its line, is `fault()`, and
-  the view is then a node of no size.
+  the first word after blank lines, `%%` comments and front matter. Flowcharts and sequence
+  diagrams are drawn; another kind, and a source with a fault, which is told with its
+  line, is `fault()`, and the view is then a node of no size.
   - **A flowchart** is read from left to right, a statement at a time: nodes in nine
     shapes, links with a stroke (solid, dotted, thick), a head at either end, a label and a
     length, chains, groups with `&`, subgraphs in each other. A label is decoded in one
@@ -821,6 +821,16 @@ What it reads and how it looks is behaviour/21. As built:
     kept side by side; nodes go to the median of what they are linked to, a rank spread
     out again each time. A link is a smooth curve along its nodes, cut where it meets the
     outline of what it joins and short of its heads.
+  - **A sequence diagram** (`seq.rs`) is read a line at a time: participants and actors
+    with the names they go by, messages (solid or dashed, with an arrow, a cross, an open
+    head or none), notes left of, right of or over participants, frames with their parts
+    (`loop`, `alt` and `else`, `opt`, `par` and `and`, `critical` and `option`, `break`)
+    and `autonumber`; what activates, boxes and titles are read and not drawn, and a frame
+    never closed ends with the diagram. It holds 200 participants and 5000 messages, notes
+    and frames at most. Its layout (`seq/layout.rs`) puts the participants in columns as
+    far apart as the widest thing between them, what happens one under the other, and a
+    frame about what it holds, wider by the frames in it; a participant is at both ends of
+    its lifeline, a note hides the lifelines under it.
   - **A drawing** (`draw::Drawing`) is what a layout gives: boxes, lines, filled polygons,
     lines of shaped text and heads, in the space of the diagram, their colours roles of
     the theme. It is made once a font and painted by walking it, and another theme costs
@@ -829,12 +839,13 @@ What it reads and how it looks is behaviour/21. As built:
     arrow are masks in the glyph atlas, known by their points; text is glyphs with their
     baselines on whole pixels. One painting makes 20 000 dashes at most: past them a
     dashed line is drawn whole.
-  - To a reader a diagram is a picture, named by its kind and what its nodes say.
+  - To a reader a diagram is a picture, named by its kind and what its nodes or its
+    participants say.
   - In a document a fence of `mermaid` is the diagram in the middle, its text that of the
     kit's controls, and scrolls sideways when it is wider than the page; one that is not
     drawn is its source in a box, with why under it.
-  - Not yet: sequence diagrams; a filled shape larger than a slice of the atlas (it has
-    its outline and no fill); the links, to a reader.
+  - Not yet: a filled shape larger than a slice of the atlas (it has its outline and no
+    fill); links and messages, to a reader.
 - Not yet: a line made higher by a formula higher than it; images, which show their words
   in brackets;
   one selection over the blocks; the hint over a link; where each block is, for an outline

@@ -15,6 +15,11 @@ pub fn is_id(c: u8) -> bool {
     c.is_ascii_alphanumeric() || c == b'_' || c >= 0x80
 }
 
+/// A text for a fault to show: forty characters of it at most.
+pub fn shown(text: &str) -> &str {
+    text.char_indices().nth(40).map_or(text, |(end, _)| &text[..end])
+}
+
 impl<'a> Scan<'a> {
     pub fn new(s: &'a str) -> Scan<'a> {
         Scan { s, i: 0, seen: [(usize::MAX, None); 8] }
@@ -24,10 +29,9 @@ impl<'a> Scan<'a> {
         &self.s[self.i..]
     }
 
-    /// What is left, for a fault to show: forty characters of it at most.
+    /// What is left, for a fault to show.
     pub fn rest_shown(&self) -> &'a str {
-        let rest = self.rest();
-        rest.char_indices().nth(40).map_or(rest, |(end, _)| &rest[..end])
+        shown(self.rest())
     }
 
     pub fn done(&self) -> bool {

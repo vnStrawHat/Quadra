@@ -173,4 +173,9 @@ fn a_diagram_is_drawn_in_the_middle_and_one_that_is_not_shows_its_source() {
     source.set("```mermaid\ngraph TD\nA -->\n```\n".to_string());
     h.frame();
     assert!(h.has_text("Diagram: line 2: expected a node at ``"));
+    // A sequence diagram is named by its participants; its lifelines are dashes.
+    source.set("```mermaid\nsequenceDiagram\nactor U as User\nU->>App: Save\n```\n".to_string());
+    h.frame();
+    let sequence = h.get_by_role(Role::Image, "Sequence diagram: User, App").node();
+    assert!(h.tree.window_rect(sequence).height > 150.0 && strokes(&h) > 20, "{}", strokes(&h));
 }

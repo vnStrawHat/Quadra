@@ -1,7 +1,7 @@
 //! Diagrams drawn from their source (specs/13, "Diagrams"): `diagram(source)` reads what
 //! is between the fences of a `mermaid` block once, and is a node as large as the diagram
-//! laid out. Flowcharts are drawn; another kind, or a source with a fault, says what is
-//! wrong, for who shows it to show the source.
+//! laid out. Flowcharts and sequence diagrams are drawn; another kind, or a source with a
+//! fault, says what is wrong, for who shows it to show the source.
 
 mod curve;
 mod draw;
@@ -10,6 +10,7 @@ mod flow;
 mod fuzz;
 mod paint;
 mod scan;
+mod seq;
 #[cfg(test)]
 mod tests;
 
@@ -21,10 +22,12 @@ use quadra_ui::{MountCx, View};
 
 use draw::{Drawing, Measure};
 use flow::Flow;
+use seq::Seq;
 
 /// What a diagram is, read from its source.
 enum Chart {
     Flow(Flow),
+    Seq(Seq),
 }
 
 /// Reads a diagram: its kind is the first word of the first line that is not blank, a
@@ -47,6 +50,7 @@ fn read(source: &str) -> Result<Chart, String> {
             let dir = words.next().unwrap_or("TD").to_uppercase();
             flow::parse(&dir, &lines[at + 1..], at + 1).map(Chart::Flow)
         }
+        "sequenceDiagram" => seq::parse(&lines[at + 1..], at + 1).map(Chart::Seq),
         kind => Err(format!("diagram kind `{}` is not supported", kind.chars().take(40).collect::<String>())),
     }
 }
@@ -55,15 +59,21 @@ impl Chart {
     fn layout(&self, m: &mut Measure) -> Drawing {
         match self {
             Chart::Flow(flow) => flow::place::layout(flow, m),
+            Chart::Seq(seq) => seq::layout::layout(seq, m),
         }
     }
 
-    /// What the diagram is to who cannot see it: its kind, and what its nodes say.
-    // ponytail: the links are not said; "A to B" for each when a reader asks for them.
+    /// What the diagram is to who cannot see it: its kind, and what its nodes or its
+    /// participants say.
+    // ponytail: links and messages are not said; "A to B" for each when a reader asks.
     fn says(&self) -> String {
-        let Chart::Flow(flow) = self;
-        let labels: Vec<&str> = flow.nodes.iter().map(|node| node.label.as_str()).collect();
-        format!("Flowchart: {}", labels.join(", ").replace('\n', " "))
+        let (kind, labels): (_, Vec<&str>) = match self {
+            Chart::Flow(flow) => ("Flowchart", flow.nodes.iter().map(|node| node.label.as_str()).collect()),
+            Chart::Seq(seq) => {
+                ("Sequence diagram", seq.actors.iter().map(|actor| actor.label.as_str()).collect())
+            }
+        };
+        format!("{kind}: {}", labels.join(", ").replace('\n', " "))
     }
 }
 

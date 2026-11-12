@@ -15,15 +15,19 @@ pub enum Ink {
     Panel,
     /// Behind the label of a link.
     Canvas,
-    /// The borders of nodes and frames.
+    /// The borders of nodes and frames, and lifelines.
     Line,
     Text,
     /// The titles of frames.
     Faint,
     /// Links and their heads.
     Accent,
-    /// The fill of the frame of a subgraph.
+    /// The fill of the frame of a subgraph, and of a frame of a sequence.
     Frame,
+    /// Text on the accent: the numbers of messages.
+    OnAccent,
+    /// The fill of a note.
+    Note,
 }
 
 /// What a link ends with.
@@ -32,6 +36,8 @@ pub enum Head {
     None,
     /// A filled triangle.
     Arrow,
+    /// Two strokes: a message that is not waited for.
+    Open,
     Circle,
     Cross,
 }

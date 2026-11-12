@@ -10,6 +10,7 @@ use super::{Chart, read};
 fn flow(source: &str) -> Flow {
     match read(source) {
         Ok(Chart::Flow(flow)) => flow,
+        Ok(_) => panic!("no flowchart"),
         Err(fault) => panic!("{fault}"),
     }
 }

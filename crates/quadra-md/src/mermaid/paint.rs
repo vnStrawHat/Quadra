@@ -14,7 +14,7 @@ use super::curve::dashes;
 use super::draw::{Drawing, Head, Op};
 
 /// The colour of each ink, in the order of `Ink`.
-pub type Inks = [Color; 8];
+pub type Inks = [Color; 10];
 
 pub fn inks(theme: &Theme) -> Inks {
     let of = |role, alpha| theme.resolve(Paint::Token(role, alpha));
@@ -27,6 +27,8 @@ pub fn inks(theme: &Theme) -> Inks {
         of(token::TEXT_2, 1.0),
         of(token::ACCENT, 1.0),
         of(token::ACCENT, 0.05),
+        of(token::TEXT_ON_ACCENT, 1.0),
+        of(token::ACCENT, 0.12),
     ]
 }
 
@@ -145,6 +147,10 @@ fn paint_head(cx: &mut PaintCx, tip: Point, from: Point, head: Head, color: Colo
                 &[tip, at(length / scale, half / scale), at(length / scale, -half / scale)],
                 color,
             );
+        }
+        Head::Open => {
+            line(at(9.0, 4.5), tip);
+            line(at(9.0, -4.5), tip);
         }
         Head::Circle => {
             let (middle, r) = (at(4.0, 0.0), 4.0 * scale);

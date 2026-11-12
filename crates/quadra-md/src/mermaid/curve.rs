@@ -85,7 +85,7 @@ pub fn head_len(head: Head, width: f32) -> f32 {
         Head::Arrow => 7.0 + 2.0 * width,
         Head::Circle => 8.0,
         Head::Cross => 5.0,
-        Head::None => 0.0,
+        Head::None | Head::Open => 0.0,
     }
 }
 

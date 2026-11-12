@@ -84,6 +84,9 @@ fn line(state: &State, place: Signal<usize>) -> Div {
     let line =
         line.hover(|s| s.bg(token::RAISED_HOVER.alpha(0.6))).when(On::SELECTED, |s| s.bg(token::PRESS));
     let mut line = line.on_click(move |e| pick.pick(place.get_untracked(), e.mods));
+    if let Some(live) = state.live {
+        line = line.child(live.tints(state, place));
+    }
     for (c, at) in state.columns.iter().enumerate() {
         let (widths, says, row_of) = (state.widths, state.cell.clone(), data.clone());
         let value = move || says(row_of(), c);

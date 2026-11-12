@@ -30,7 +30,7 @@ const SIZE: (f32, f32) = (1200.0, 800.0);
 /// The pages that open something, and the test id (or the name) of what opens it: a click,
 /// but a hover for the tooltip and the hover card, a right click on the page for the context
 /// menu, and for the dock a tab torn off and held over the bottom edge of its pane.
-const OPENERS: [(&str, &str); 13] = [
+const OPENERS: [(&str, &str); 14] = [
     ("menu", "mn-file"),
     ("select", "sel-ns"),
     ("date-picker", "dp-date"),
@@ -44,6 +44,7 @@ const OPENERS: [(&str, &str); 13] = [
     ("dock", "main.rs"),
     ("context-menu", ""),
     ("line-chart", "cpu"),
+    ("live-table", "live-update"),
 ];
 
 /// Lets the window live for `ms`: frames, timers, what moves.
@@ -144,7 +145,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         if !open(&platform, &mut app, window, page.id, opener) {
             continue;
         }
-        pass(&platform, &mut app, 750);
+        // What opens has opened; the tints of a table that changed are still to be seen.
+        pass(&platform, &mut app, if page.id == "live-table" { 300 } else { 750 });
         save(&mut app, window, out.join(format!("{}-open.png", page.id)))?;
         // Closed again, the pointer away, and the notices gone, before the next page.
         let key =

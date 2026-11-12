@@ -309,7 +309,19 @@ As built so far:
   arrows, the page keys, Home and End move the row the keys are on and select it, Shift
   with an arrow grows the selection, and Ctrl-C copies the selected rows as lines of cells
   with tabs between (key context `action::TABLE`). The selection is of rows as the data
-  numbers them, in a signal the caller may own (`.selected(..)`). Not yet: scrolling
+  numbers them, in a signal the caller may own (`.selected(..)`).
+- **Live data** (`table/live.rs`): `.keys(|row| ..)` says what each row is known by. When
+  the data changes, the selection, the row the keys are on and the one a range starts from
+  are put where their keys are now (a row that has gone is not selected any more), under
+  the order of the sort, which is worked out again. A cell that says something else than
+  it did under the same key is tinted with the accent at 30 %, which fades in 800 ms; a
+  row that is new is not tinted, and neither is an age, which changes all the time. The
+  tints are boxes under what the cells say, one a changed cell that shows, each a layer:
+  while one fades, a frame writes its opacity and nothing is laid out or painted; when all
+  have faded the frames stop and the boxes are gone. A change of the data reads the key
+  and the cells of every row, so this is for tables of thousands of rows, not millions.
+  Not yet: a source that says which rows it changed.
+- Of the table, not yet: scrolling
   sideways and pinned columns, hidden columns, a cursor on cells, cells that flash when
   they change.
 - **`tree(roots, chosen)`** shows things inside things (`TreeNode::new(id, label)
@@ -532,7 +544,8 @@ the popup closes the focus goes back to what had it.
 ```
 quadra-kit     buttons, inputs, selection controls, lists, tabs, panels, overlays, feedback,
                navigation, titlebar, layout helpers, themes, icons
-quadra-data    table, tree, property grid, log view, value viewer         (behaviour/16, 19)
+quadra-data    log view, value viewer with its JSON and YAML readers      (behaviour/19; the
+               table, with its live data, and the tree are the kit's)
 quadra-viz     charts                                                      (behaviour/19)
 quadra-term    terminal: parser, screen, scrollback, surface widget, Pty   (behaviour/17; on hold, 00)
 quadra-code    code editor: buffer, syntax tokens, surface widget          (behaviour/18)

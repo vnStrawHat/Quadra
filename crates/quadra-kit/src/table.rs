@@ -2,6 +2,7 @@
 //! Rows are mounted as they show; a column is sorted by a click on its title and made wider
 //! by dragging its edge; rows are selected by the pointer and the keys, and copied.
 
+mod live;
 mod view;
 
 use std::rc::Rc;
@@ -84,6 +85,7 @@ pub struct Table {
     rows: Rows,
     cell: Cell,
     chosen: Option<Signal<Vec<usize>>>,
+    key: Option<live::Key>,
     row_height: f32,
 }
 
@@ -95,7 +97,8 @@ pub fn table(
     cell: impl Fn(usize, usize) -> String + 'static,
 ) -> Table {
     let columns = columns.into_iter().collect();
-    Table { columns, rows: Rc::new(rows), cell: Rc::new(cell), chosen: None, row_height: 26.0 }
+    let (rows, cell) = (Rc::new(rows), Rc::new(cell));
+    Table { columns, rows, cell, chosen: None, key: None, row_height: 26.0 }
 }
 
 impl Table {
@@ -107,6 +110,15 @@ impl Table {
 
     pub fn row_height(mut self, px: f32) -> Self {
         self.row_height = px;
+        self
+    }
+
+    /// Live data: what each row is known by. The selection and the row the keys are on
+    /// stay with their rows when the data changes, and a cell that says something else
+    /// than it did is tinted for a moment. Every row is read at each change: for
+    /// thousands of rows, not millions.
+    pub fn keys(mut self, key: impl Fn(usize) -> String + 'static) -> Self {
+        self.key = Some(Rc::new(key));
         self
     }
 }
@@ -128,6 +140,8 @@ pub(crate) struct State {
     anchor: Signal<Option<usize>>,
     focused: Signal<bool>,
     row_height: f32,
+    /// What a table of live data keeps.
+    live: Option<live::Live>,
 }
 
 impl State {
@@ -208,19 +222,21 @@ impl View for Table {
             }
             Rc::new(order)
         });
-        let state = State {
+        let mut state = State {
             widths: signal(columns.iter().map(|column| column.width).collect()),
             chosen: self.chosen.unwrap_or_else(|| signal(Vec::new())),
             cursor: signal(None),
             anchor: signal(None),
             focused: signal(false),
             row_height: self.row_height,
+            live: None,
             columns,
             rows,
             cell,
             sort,
             order,
         };
+        state.live = self.key.map(|key| live::watch(&state, key, cx.handle.clone()));
         view::build(state, use_context::<Rc<dyn Clipboard>>()).mount(cx)
     }
 }

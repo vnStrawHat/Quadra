@@ -854,7 +854,28 @@ What it reads and how it looks is behaviour/21. As built:
 
 ## Code (`quadra-code`)
 
-What the editor does is behaviour/18. As built, its tokenizers:
+What the editor does is behaviour/18. As built, its buffer and its tokenizers:
+
+- **The buffer** (`Buffer`) is the text of a document: pieces of a few kilobytes in a row,
+  and before each the bytes and the line breaks of the pieces before it. Offsets are bytes
+  between characters. `insert(at, text)` and `delete(range)` move the bytes of one piece
+  (a piece that grows past 4 KB is cut into pieces of half of that, after a line break
+  where there is one; what a deletion leaves joins its neighbour when it is small) and
+  count again what is before the pieces after it. `line_start`, `line_end`, `line_of`,
+  `slice` and `line` find their piece by halving and look through that piece alone; a
+  line is lent, not copied, when it is in one piece, which it mostly is. A text has a
+  line more than it has line breaks. A file with CR LF is held with LF and written back
+  as it was (`crlf`, `file_text`).
+  - It is not the piece table of the V tree, whose line starts were one array that every
+    change shifted from its line to the end: here a change costs the count of pieces after
+    it, a hundredth of the count of lines, and a piece is plain text.
+  - Measured (release, ten megabytes in 260 000 lines): opened in 6 ms; a letter typed
+    or deleted in 5 to 10 µs; a line read in 0.6 µs. The budgets are 200 ms and 2 ms
+    (behaviour/18).
+  - A test changes a text at random beside a plain string and compares all of both: the
+    text, every line, where each starts and ends.
+  - Not yet: a tree of pieces for files of gigabytes (a change counts hundreds of
+    thousands of pieces there).
 
 - **A tokenizer reads a line at a time.** `Tokenizer::tokenize(line, state, out)` adds the
   tokens of the line to `out` (a `Token` is the bytes `start..end` and a `TokenKind`; what
@@ -888,8 +909,8 @@ What the editor does is behaviour/18. As built, its tokenizers:
   find). The seeded test (12, "Fuzzing") holds every tokenizer to both.
 - A tokenizer allocates nothing: tokens go into the caller's vector, and words are compared
   where they are.
-- Not yet: the buffer, the document with its cursors and its undo, the highlighter that
-  keeps the states of lines, and the editor's widget; what is inside `<script>` and
+- Not yet: the document with its cursors and its undo, the highlighter that keeps the
+  states of lines, and the editor's widget; what is inside `<script>` and
   `<style>` is plain text; regular expressions in JavaScript are not told from division.
 
 ## Porting the kit

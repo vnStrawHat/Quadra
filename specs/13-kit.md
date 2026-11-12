@@ -66,7 +66,8 @@ div().bg(token::ACCENT.alpha(0.12))
 - The colours of code are roles too: a theme file's `syntax` gives each of
   `token::SYNTAX_KEYWORD`, `SYNTAX_STRING`, `SYNTAX_NUMBER` and the rest its colour (a name
   that is none of them is an error), for the editor, the markdown of code and the value
-  viewer.
+  viewer; and so are the sixteen colours text asks for by number (`token::ANSI`, a file's
+  `terminal.ansi`), for the log and the terminal.
 - A node keeps the values of its style that are roles beside its own style, and they are
   applied over it with the theme of the moment, before the variants of its states. A colour
   given after a role for the same property takes its place. A node whose style holds no
@@ -650,6 +651,29 @@ What these are and look like is behaviour/19. As built:
   mono face, 24 px, a level 16 px in; the first two levels start open, and a value that
   changes keeps open what is still there. Over the rows a bar says the path of the
   selected row, and `Copy path`, or the key for copying, puts it on the clipboard.
+- **A log** (`Log`) is what an app appends lines to, each with the time it was written, in
+  milliseconds since 1970, or none: `log.append(lines)`, `log.push(at_ms, text)`,
+  `log.clear()`. The lines are packed in one buffer of bytes with an offset and a time
+  each (a line of 100 bytes costs about 112), up to 4 GB of text; a million lines are held.
+- A line may colour itself with the escape sequences terminals know (SGR): the sixteen
+  colours, which are the theme's (`token::ANSI`, a theme file's `terminal.ansi`), the 256
+  and the 16 million, bold and faint; other sequences are dropped. Only the lines that
+  show are decoded.
+- **`log_view(&log)`** shows the lines in the mono face, 12 px, a row of 18 px each, the
+  time of each before it (`12:04:05.123`, UTC; `.timestamps(false)` leaves them out): a
+  `uniform_list`, so only the rows that show exist. A line is not wrapped.
+- It **follows**: the newest line stays in view while lines come. Scrolling up stops
+  that; scrolling to the end again, or `Follow` in the bar, takes it up again. Following
+  is a place past the end of the list, which the list keeps at its end: lines that come
+  cost no scrolling.
+- The bar has a **filter**: a text, found whatever its case, or with `.*` a pattern
+  (`regex-lite`, whatever the case too). Lines that do not match are not listed, and the
+  bar says `n of m`; with `Dim` they are all listed, the others faint. A filter is matched
+  against what a line says, without its escape sequences. A new filter reads every line
+  once (a byte search for a text); lines that come are tested as they come. A pattern
+  that is not one filters nothing, and the bar says so.
+- Not yet: a line selected or copied; scrolling sideways (a long line is cut at the edge);
+  a limit on the lines held.
 
 ## Porting the kit
 

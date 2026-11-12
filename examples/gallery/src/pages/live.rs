@@ -1,9 +1,9 @@
-//! Live data: the table of rows known by their keys, and the value viewer.
+//! Live data: the table of rows known by their keys, the log view and the value viewer.
 
 use std::rc::Rc;
 
-use quadra::{Div, signal};
-use quadra_data::{Value, parse_json, value_view};
+use quadra::{Div, column, signal};
+use quadra_data::{Log, Value, log_view, parse_json, value_view};
 use quadra_kit::{CellKind, Column, button, table};
 
 use crate::common::{demo, framed, page, stack};
@@ -62,8 +62,40 @@ pub fn live_table_page() -> Div {
         about,
         [demo(
             "Services",
-            stack().child(change).child(framed(rows).height(320.0)),
+            stack().child(change).child(framed(column().height(320.0).child(rows))),
             "table(columns, rows, cell).keys(|row| ..) // what each row is known by",
+        )],
+    )
+}
+
+/// Lines as a server writes them: requests, with a warning and an error now and then.
+fn requests(from: usize, n: usize) -> Vec<(i64, String)> {
+    let line = |k: usize| match k % 9 {
+        4 => format!("\u{1b}[33mWARN \u{1b}[0m cache miss for key user:{k}"),
+        7 => format!("\u{1b}[31mERROR\u{1b}[0m upstream timed out after 3000ms (attempt {})", k % 3 + 1),
+        _ => format!("\u{1b}[32mINFO \u{1b}[0m GET /api/v1/items/{} 200 {}ms", k * 7 % 500, k * 13 % 90),
+    };
+    (from..from + n).map(|k| (1_793_966_400_000 + k as i64 * 250, line(k))).collect()
+}
+
+pub fn log_view_page() -> Div {
+    let (log, sent) = (Log::new(), signal(200));
+    log.append(requests(0, 200));
+    let more = log.clone();
+    let add = button("Add 1 000 lines").test_id("log-more").on_click(move || {
+        more.append(requests(sent.get_untracked(), 1000));
+        sent.update(|sent| *sent += 1000);
+    });
+    let about = "An append-only log with ANSI colors, timestamps and follow mode: scroll up to stop \
+                 following, back to the bottom (or Follow) to resume. The filter hides or dims other \
+                 lines; .* makes it a regular expression.";
+    page(
+        "Log view",
+        about,
+        [demo(
+            "Requests",
+            stack().child(add).child(framed(column().height(340.0).child(log_view(&log)))),
+            "log.append(lines)  // and log_view(&log) follows",
         )],
     )
 }
@@ -81,7 +113,7 @@ pub fn value_viewer_page() -> Div {
         about,
         [demo(
             "Deployment (JSON)",
-            framed(value_view(value)).height(340.0),
+            framed(column().height(340.0).child(value_view(value))),
             "value_view(Rc::new(parse_json(text)?))  // or parse_yaml",
         )],
     )

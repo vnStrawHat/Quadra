@@ -145,6 +145,7 @@ implementation described by specs 00–14 of the V repository.
   | `windows` | Win32, D3D11, DXGI, DirectWrite, the system image codecs | `quadra-native-win`, `quadra-shell` |
   | `accesskit`, `accesskit_windows` | The accessibility bridge to the OS (R11) | `quadra-native-win` |
   | `serde_json` (with `serde`, no derive) | Reading and writing themes, settings and keymaps | `quadra-app`, `quadra-kit` (theme files) |
+  | `regex-lite` | The patterns a user types to filter a log (and to find in text, when the editor does): the syntax everyone knows, which Quadra gains nothing by writing again. It has no dependency and is small on purpose (slower than `regex`, which is four crates and far larger in the binary). Removing it costs the filter by pattern, or an engine of our own | `quadra-data` (the log's filter) |
 
   One version of `windows` is used: the one the accessibility adapter depends on. It brings
   three build-time crates of its own macros (`syn`, `quote`, `proc-macro2`); nothing of them

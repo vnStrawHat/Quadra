@@ -169,9 +169,10 @@ stays a fraction of a pixel, columns are whole device pixels; `QUADRA_SCALE=1.5 
 a pointer handler has the size of its node, `e.size`). The live table is the kit's table with `.keys(|row| ..)`
 (`quadra-kit/src/table/live.rs`: what is chosen follows its keys, changed cells are tinted and fade). `quadra-data` has `Value`,
 `parse_json`, `parse_yaml` (its own readers) and `value_view` (the kit's tree with `TreeNode::color`, `.detail`; the colours of
-code are roles, `token::SYNTAX_*`). The gallery has 69 of the 73 reference pages, each drawn offscreen and compared
-(`tools/shots.sh`); left: markdown, the editor, the log view (R4: the log view in `quadra-data`, then
-`quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
+code are roles, `token::SYNTAX_*`), `Log` and `log_view` (a `uniform_list`; following is a scroll place past the end; SGR
+colours are `token::ANSI`; the filter by pattern is `regex-lite`, admitted in specs/01 R15). **`quadra-data` is done.** The
+gallery has 70 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`); left: markdown, the editor
+(R4: `quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`
 (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range

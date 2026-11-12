@@ -145,6 +145,10 @@ roles! {
     ANSI_13 = "ansi_13";
     ANSI_14 = "ansi_14";
     ANSI_15 = "ansi_15";
+    /// The tints of a line that was added and of one that was removed: a theme file's
+    /// `editor.diff_add` and `editor.diff_remove`.
+    DIFF_ADD = "diff_add";
+    DIFF_REMOVE = "diff_remove";
     /// The colours of the series of a chart: a theme file's `series`. Unset, the accent.
     SERIES_1 = "series_1";
     SERIES_2 = "series_2";

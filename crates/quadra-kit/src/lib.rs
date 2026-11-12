@@ -9,6 +9,7 @@ mod choice;
 mod combobox;
 mod date;
 mod dialog;
+mod diff;
 mod display;
 mod field;
 pub mod fonts;
@@ -54,6 +55,7 @@ pub use choice::{Choice, radio_group, segmented};
 pub use combobox::{Combobox, combobox};
 pub use date::{Date, DatePicker, calendar, date_picker};
 pub use dialog::{Dialog, Drawer, confirm, dialog, drawer};
+pub use diff::{Diff, DiffMode, Step, diff, diff_lines};
 pub use display::{
     Tone, avatar, badge, card, card_head, divider, heading, kbd, key_hint, key_label, label, tag, vdivider,
 };

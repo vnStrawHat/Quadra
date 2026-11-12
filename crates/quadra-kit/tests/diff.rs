@@ -1,0 +1,146 @@
+//! The diff (specs/13, "Components"): the lines of two texts as one column and side by
+//! side, the part of a line that changed, and the folds.
+
+use std::rc::Rc;
+
+use quadra_kit::{DiffMode, dark, diff, token};
+use quadra_platform::{Key, Mods};
+use quadra_reactive::{Signal, signal};
+use quadra_testing::Harness;
+use quadra_tree::Role;
+
+const OLD: &str = "fn main() {\n    let x = 1;\n    run(x);\n}\n";
+const NEW: &str = "fn main() {\n    let x = 22;\n    run(x);\n    done();\n}\n";
+
+fn page(old: &str) -> (Harness, Signal<String>, Signal<DiffMode>) {
+    let (old, mode) = (signal(old.to_string()), signal(DiffMode::Inline));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    h.mount(move || quadra_kit::root().child(diff(old, NEW).mode(mode)));
+    h.frame();
+    (h, old, mode)
+}
+
+/// The lines that show, from the top and then from the left: where each starts, and its name.
+fn lines(h: &Harness) -> Vec<(f32, f32, String)> {
+    let tree = h.tree.semantic_tree();
+    let lines = tree.nodes.iter().filter(|n| n.semantics.role == Role::ListItem);
+    let mut lines: Vec<_> = lines.map(|n| (n.bounds.y, n.bounds.x, n.semantics.name.clone())).collect();
+    lines.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    lines
+}
+
+fn names(h: &Harness) -> Vec<String> {
+    lines(h).into_iter().map(|(_, _, name)| name).collect()
+}
+
+/// The instances painted in a colour: where each starts and how wide it is.
+fn filled(h: &Harness, color: quadra_prim::Color) -> Vec<(f32, f32)> {
+    let layers = h.renderer.steps().iter().filter_map(|step| match step {
+        quadra_render::Step::Layer { id, .. } => Some(h.tree.scene().layer(*id)),
+        quadra_render::Step::Run { .. } => None,
+    });
+    let of = layers.flat_map(|layer| layer.instances().iter());
+    of.filter(|i| i.color == color.to_array()).map(|i| (i.bounds[0], i.bounds[2])).collect()
+}
+
+#[test]
+fn the_lines_are_one_column_or_the_old_text_beside_the_new() {
+    let (mut h, old, mode) = page(OLD);
+    // One column: the line that goes, then the one that comes, each on a row of 18 px.
+    let inline = [
+        "fn main() {",
+        "Removed:     let x = 1;",
+        "Added:     let x = 22;",
+        "    run(x);",
+        "Added:     done();",
+        "}",
+    ];
+    assert_eq!(names(&h), inline);
+    assert!(lines(&h).iter().enumerate().all(|(i, line)| (line.0, line.1) == (i as f32 * 18.0, 0.0)));
+    // What changed in the line that was edited is filled: one letter of 7.2 px where it
+    // was "1", two where it is "22", after two numbers, the mark and twelve letters, from
+    // a whole pixel to a whole pixel.
+    let ink = |role| dark().color(role).alpha(0.3);
+    let at = (2.0 * (2.0 * 7.2 + 16.0) + 16.0 + 12.0 * 7.2_f32).round();
+    let close = |found: Vec<(f32, f32)>, x: f32, width: f32| {
+        found.len() == 1 && (found[0].0 - x).abs() < 0.01 && (found[0].1 - width).abs() < 0.01
+    };
+    assert!(close(filled(&h, ink(token::ERROR)), at, 7.0), "{:?}", filled(&h, ink(token::ERROR)));
+    assert!(close(filled(&h, ink(token::OK)), at, 15.0), "{:?}", filled(&h, ink(token::OK)));
+
+    // Side by side: a line of both in both halves, the edited line beside what it became,
+    // and nothing beside the line that only came.
+    mode.set(DiffMode::SideBySide);
+    h.frame();
+    let sides = lines(&h);
+    let said: Vec<&str> = sides.iter().map(|line| line.2.as_str()).collect();
+    assert_eq!(
+        said[..4],
+        ["fn main() {", "fn main() {", "Removed:     let x = 1;", "Added:     let x = 22;"]
+    );
+    assert_eq!(said[4..], ["    run(x);", "    run(x);", "Added:     done();", "}", "}"]);
+    assert_eq!(((sides[2].0, sides[2].1), (sides[3].0, sides[3].1)), ((18.0, 0.0), (18.0, 401.0)));
+    assert_eq!((sides[6].0, sides[6].1), (54.0, 401.0));
+
+    // Another text: the lines are compared again.
+    old.set(NEW.replace("run", "walk"));
+    h.frame();
+    assert_eq!(names(&h)[4..6], ["Removed:     walk(x);", "Added:     run(x);"]);
+    mode.set(DiffMode::Inline);
+    old.set(NEW.to_string());
+    h.frame();
+    assert_eq!(names(&h), ["fn main() {", "    let x = 22;", "    run(x);", "    done();", "}"]);
+}
+
+/// A text of `n` numbered lines.
+fn numbered(n: usize) -> String {
+    (0..n).map(|i| format!("line {i}\n")).collect()
+}
+
+#[test]
+fn lines_far_from_a_change_fold_into_a_row_that_opens() {
+    let old = numbered(40).replace("line 20\n", "line twenty\n");
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    let text = signal(old);
+    h.mount(move || quadra_kit::root().child(diff(text, numbered(40)).context(2)));
+    h.frame();
+    // Two lines kept on each side of the change, and a row for the others.
+    let around = ["line 18", "line 19", "Removed: line twenty", "Added: line 20", "line 21", "line 22"];
+    assert_eq!(names(&h), around);
+    assert!(h.has_text("18 unchanged lines") && h.has_text("17 unchanged lines"));
+    // A click shows the lines of one fold; Enter on the other, those of the other.
+    h.get_by_role(Role::Button, "18 unchanged lines").click();
+    h.frame();
+    assert_eq!((names(&h).len(), &names(&h)[0][..]), (24, "line 0"));
+    h.get_by_role(Role::Button, "17 unchanged lines").focus();
+    h.key(Key::Enter, Mods::default());
+    h.frame();
+    assert!(names(&h).contains(&"line 30".to_string()) && !h.has_text("17 unchanged lines"));
+    // Other texts: the folds are closed.
+    text.set(numbered(40).replace("line 5\n", ""));
+    h.frame();
+    assert_eq!(names(&h), ["line 3", "line 4", "Added: line 5", "line 6", "line 7"]);
+    assert!(h.has_text("3 unchanged lines") && h.has_text("32 unchanged lines"));
+}
+
+#[test]
+fn texts_of_a_hundred_thousand_lines_cost_what_the_rows_that_show_cost() {
+    let (old, mode) = (numbered(100_000).replace("line 500\n", ""), signal(DiffMode::Inline));
+    let new = numbered(100_000).replace("line 70000\n", "line seventy thousand\n");
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || quadra_kit::root().child(diff(old, new).mode(mode)));
+    h.frame();
+    // Some thirty-four rows of a few nodes each, of the 100 001 there are.
+    let mounted = h.tree.len();
+    assert!(mounted < 600 && names(&h)[0] == "line 0", "{mounted} nodes");
+    // Laid out side by side: the rows that show are built again, and no more.
+    mode.set(DiffMode::SideBySide);
+    let (stats, _) = h.frame();
+    assert!(stats.nodes_laid_out < 3000 && h.tree.len() < mounted * 2, "{stats:?}");
+    assert_eq!(names(&h)[..2], ["line 0", "line 0"]);
+}

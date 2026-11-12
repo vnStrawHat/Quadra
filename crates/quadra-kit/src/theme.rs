@@ -153,7 +153,14 @@ impl KitTheme {
                             self.colors[token::ANSI[i].0 as usize] = color(value, &format!("{path}[{i}]"))?;
                         }
                     }
-                    value => drop(color(value, &path)?),
+                    value => {
+                        let read = color(value, &path)?;
+                        // The tints of a diff are roles of the kit already.
+                        let diff = |role: &&str| name.starts_with("diff_") && *role == name;
+                        if let Some(role) = NAMES.iter().position(diff) {
+                            self.colors[role] = read;
+                        }
+                    }
                 }
             }
         }

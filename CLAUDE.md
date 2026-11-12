@@ -171,7 +171,9 @@ a pointer handler has the size of its node, `e.size`). The live table is the kit
 `parse_json`, `parse_yaml` (its own readers) and `value_view` (the kit's tree with `TreeNode::color`, `.detail`; the colours of
 code are roles, `token::SYNTAX_*`), `Log` and `log_view` (a `uniform_list`; following is a scroll place past the end; SGR
 colours are `token::ANSI`; the filter by pattern is `regex-lite`, admitted in specs/01 R15). **`quadra-data` is done.** The
-gallery has 70 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`); left: markdown, the editor
+kit has `diff(old, new)` (`quadra-kit/src/diff.rs`, `diff/lines.rs` the line script, `diff/rows.rs` the rows; `.mode(DiffMode::Inline |
+SideBySide)`, `.context(n)` folds; `span(..).background(..)` is the fill behind a span of rich text; `token::DIFF_ADD`, `DIFF_REMOVE`). The
+gallery has 70 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`), and `diff`, which has no reference; left: markdown, the editor
 (R4: `quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`

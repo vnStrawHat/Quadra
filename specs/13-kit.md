@@ -67,7 +67,9 @@ div().bg(token::ACCENT.alpha(0.12))
   `token::SYNTAX_KEYWORD`, `SYNTAX_STRING`, `SYNTAX_NUMBER` and the rest its colour (a name
   that is none of them is an error), for the editor, the markdown of code and the value
   viewer; and so are the sixteen colours text asks for by number (`token::ANSI`, a file's
-  `terminal.ansi`), for the log and the terminal.
+  `terminal.ansi`), for the log and the terminal, and the tints of lines added and removed
+  (`token::DIFF_ADD`, `DIFF_REMOVE`, a file's `editor.diff_add` and `editor.diff_remove`),
+  for the diff and the editor.
 - A node keeps the values of its style that are roles beside its own style, and they are
   applied over it with the theme of the moment, before the variants of its states. A colour
   given after a role for the same property takes its place. A node whose style holds no
@@ -374,6 +376,37 @@ As built so far:
     (key context `action::CONTROL`). To a reader: a tree of items, selected, expanded or
     collapsed (it can expand and collapse them); the page's title is a heading and each row
     a group named by its title.
+- **`diff(old, new)`** shows what differs between two texts, line by line. The texts are
+  properties: when one changes the lines are compared again.
+  - What differs is the shortest script of lines removed and added (`diff_lines`, a plain
+    function over two lists of lines, which an app can use for its own counts): what the
+    texts start and end with alike is set aside, and the rest is searched by distance. Texts
+    more than 1 500 lines apart there are not searched: all of the one is removed, then all
+    of the other added. In a run of changes the lines removed come before those added.
+  - `.mode(..)` is a property, `DiffMode::Inline` unless told. **Inline** is one column:
+    every line of the script on a row of its own, with its number in the old text and in the
+    new, a `-` or a `+`, and the row tinted (`token::DIFF_REMOVE`, `token::DIFF_ADD`).
+    **Side by side** (`DiffMode::SideBySide`) is the old text at the left and the new at the
+    right, each with its numbers, in halves of the same width: a line of both is on one row
+    in both halves, the lines of a run of changes are paired in order, and a line with no
+    partner has an empty half beside it. Both halves are one list: they scroll together.
+  - **A line that was edited** shows where: a removed line and the added one it is paired
+    with (in order, within their run) have what is between their common start and end
+    tinted more (the colour of its mark at 30 %), when at least half of the shorter is
+    common, spaces not counted. Otherwise they are two lines and nothing is marked.
+  - `.context(n)` folds the lines alike that are more than `n` lines from a change into one
+    row that says how many they are; a click on it, or Enter, shows them. Without it every
+    line shows. A fold of one line is not made. Other texts close the folds.
+  - Rows are those of a `uniform_list`, in the mono face, 18 px each: a text of a hundred
+    thousand lines costs what the rows that show cost, after the comparison. A long line is
+    cut at the edge of its half; a tab is four spaces.
+  - To a reader: a list named "Diff", and each line an item named by what it is and says
+    ("Removed: ..", "Added: ..", or the line); a fold is a button.
+  - Not yet: scrolling sideways and wrapping; a selection and copying; going to the next
+    change by a key; pairing the lines of a run by how alike they are; words that changed
+    in several places of a line; the colours of code in the lines; the linear-space search
+    for texts far apart; the comparison off the thread of the window (13 ms for 100 000
+    lines of which 700 changed).
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

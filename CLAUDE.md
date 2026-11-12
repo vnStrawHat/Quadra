@@ -163,9 +163,12 @@ docking), and `settings` (`settings.rs`: rules and cards). Boxes have a pose (`.
 (`.animate(timeline()..)`): `quadra-tree/src/motion.rs`, run by the tree at the start of a frame.
 Rich text is in (`rich_text([span(..)..])`; `Paragraph::rich` with `Shaping` runs, the widget `RichText`,
 `Widget::theme` for widgets that paint with roles). **Phase R3 is done** (docs/progress.md, "The exit of
-R3": both themes compared, a mean of 1 % of the pixels differ). The gallery has 64 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`);
-left: the pages that wait for R4 (markdown, terminal,
-editor, live table, log view, value viewer, the three charts). Next: local time and the app's language (i18n); the components in the order of specs/13, each with its
+R3": both themes compared, a mean of 1 % of the pixels differ). **R4 has started**: `quadra-viz` is done (`sparkline`, `line_chart`, `bar_chart`; the widget `Plot` draws a line a device pixel
+column at a time and the shader works out the cover of each pixel, so **a chart line must never show steps**: where the line is
+stays a fraction of a pixel, columns are whole device pixels; `QUADRA_SCALE=1.5 tools/shots.sh ..` draws the pages at 150 % to look;
+a pointer handler has the size of its node, `e.size`). The gallery has 67 of the 73 reference pages, each drawn offscreen and
+compared (`tools/shots.sh`); left: markdown, the editor, the live table, the log view, the value viewer (R4: `quadra-data`, then
+`quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them; the rest of `quadra-async`
 (tasks, the pool, inboxes) when the first thing needs it. For readers still to do: text ranges and the caret of an input, range

@@ -97,3 +97,16 @@ fn what_is_wrong_in_a_file_is_named_by_its_path() {
         format!("series[1]: {colour}")
     );
 }
+
+#[test]
+fn the_series_of_a_chart_are_roles_and_the_accent_where_a_file_lists_fewer() {
+    let dark = dark();
+    assert_eq!((dark.color(token::SERIES[0]), dark.color(token::SERIES[7])), {
+        (Color::rgb(0x4CC2E6), Color::rgb(0x7EB8F6))
+    });
+    let two = theme_from_json(r##"{"mode": "dark", "series": ["#112233", "#445566"]}"##).unwrap();
+    assert_eq!(
+        [token::SERIES[0], token::SERIES[1], token::SERIES[2]].map(|role| two.color(role)),
+        [Color::rgb(0x112233), Color::rgb(0x445566), two.color(token::ACCENT)]
+    );
+}

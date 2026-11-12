@@ -70,6 +70,8 @@ div().bg(token::ACCENT.alpha(0.12))
 - `Tree::set_theme` styles again the nodes whose style holds a role; an equal theme does
   nothing. The app has one theme for all its windows, as a signal in the context of every
   view (`Signal<Rc<Theme>>`): writing it is how a view changes the theme.
+- The colours of charts are roles too: `token::SERIES`, eight of them, from the theme file's
+  `series` (one it does not list is the accent).
 - Not yet: a theme for a subtree; tokens for radii, spacing, fonts and durations.
 - Component-level tokens (`button.primary.bg`) resolve to palette tokens in the theme file, so
   a theme can restyle one component without code.
@@ -554,6 +556,54 @@ instances for what changed, and expose semantics for their content.
 - State they show (a terminal's screen) is a signal mutated in place with `update`, which
   flags the widget for paint. The widget keeps its own damage tracking to repaint only changed
   rows.
+
+## Charts (`quadra-viz`)
+
+What the charts are and look like is behaviour/19, "Charts". As built:
+
+- **The plot** is the one widget: lines over a box, each a list of values spread over the
+  box's width, the largest value the plot is told at the top. It paints a line a device
+  pixel column at a time, on the pixel grid: one line primitive in column mode a column
+  (07), which carries how tall the line is there and how far it falls across the column, so
+  every slope has an even width and exact edges; and, for a line with an area, one quad a
+  column under it. Where the line is in a column stays a fraction of a pixel, at every
+  scale of the display: a line must never show steps (the reference's did, when its
+  columns were logical pixels that covered all or nothing). Nothing is rasterized and
+  nothing enters an atlas: values that change
+  every second overwrite the plot's instances in place, as many as before. The geometry
+  (`line_spans`, `nice_max`, `value_at`, `short`, `hh_mm`) is plain functions, tested alone.
+  A number beside a chart has three digits that say something, or fewer: 166, 12.3, 0.25,
+  1.5k.
+- Colours are roles: a theme's `series` are the eight roles `token::SERIES`, the accent
+  where a theme lists fewer, and a plot is given the theme as any widget that paints with
+  roles is.
+- **`sparkline(values)`** is a plot of one line 1.5 px thick over an area at 12 %, 120 by 24
+  px unless told (`.size(w, h)`), in the first series colour unless told (`.color(..)`), its
+  top 1.1 times its largest value unless told (`.max(v)`). `values` is a constant or
+  something reactive.
+- **`line_chart([Series::new(name, values), ..])`** is built from views around plots, one a
+  series: the values of each are a constant or something reactive, and a series that
+  changes paints its own plot. All share the top, the largest value of any rounded up to 1,
+  2, 2.5 or 5 times a power of ten: four grid lines with their values at the left, in mono
+  10 px. `.time(start_ms, step_ms)` puts the times of the first, the middle and the last
+  sample under the plot; `.unit(..)` follows a value where one is said; `.height(px)`, 200
+  unless told. One series has an area under it; several have none.
+- The pointer over the plot shows a hairline at the nearest sample and a box with the time
+  and each series' value there, a swatch of its colour before it. The box is to the right
+  of the hairline in the left half of the plot and to its left in the right half. It is
+  state of the chart (a signal the pointer writes), and views bound to it: a pointer that
+  moves and stays nearest to the same sample costs no frame (the handler has the size of
+  its box with the event, 09).
+- **`bar_chart(bars)`** is views alone: a row a bar (`Bar::new(label, value)`), its label
+  in mono 12 px, a track with the bar in it as wide as its share of the rounded maximum (2
+  px at least), and its value. `bars` is a constant or something reactive; rows are kept by
+  their label.
+- To a reader a sparkline is an image, named by `.label(..)`, and so is the plot of a line
+  chart, named by its series; the values a chart says in text (its scale, its times, its
+  bars) are texts.
+- Not yet: a legend, a chart of categories with bars upright, more than eight colours; of
+  more samples than the plot has pixel columns, the peaks between two columns are not
+  drawn; a reader is not told the values of a line.
 
 ## Porting the kit
 

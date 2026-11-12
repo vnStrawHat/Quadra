@@ -144,6 +144,7 @@ version = "0.1.0"
 dependencies = [
  "quadra",
  "quadra-kit",
+ "quadra-viz",
 ]
 
 [[package]]
@@ -271,6 +272,20 @@ name = "quadra-vector"
 version = "0.1.0"
 dependencies = [
  "quadra-prim",
+]
+
+[[package]]
+name = "quadra-viz"
+version = "0.1.0"
+dependencies = [
+ "quadra-kit",
+ "quadra-layout",
+ "quadra-prim",
+ "quadra-reactive",
+ "quadra-render",
+ "quadra-testing",
+ "quadra-tree",
+ "quadra-ui",
 ]
 
 [[package]]

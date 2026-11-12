@@ -4,7 +4,7 @@
 use quadra_native_win::D3d11Renderer;
 use quadra_prim::{Affine, Color, Corners, Edges, Rect};
 use quadra_render::{
-    Clip, DeviceSize, Instance, LayerConstants, Pixels, Quad, Renderer, Scene, SurfaceTarget,
+    Clip, DeviceSize, Instance, LayerConstants, Line, LineMode, Pixels, Quad, Renderer, Scene, SurfaceTarget,
 };
 
 const RED: u32 = 0xFF0000;
@@ -110,6 +110,38 @@ fn corners_borders_and_clips_are_antialiased_shapes() {
     assert_eq!(at(&pixels, 10, 28), BLUE); // the border
     assert_eq!(at(&pixels, 8, 8), 0xFFFFFF); // outside the rounded corner
     assert_eq!((at(&pixels, 38, 28), at(&pixels, 42, 28)), (RED, 0xFFFFFF)); // clipped at 40
+}
+
+#[test]
+fn a_chart_line_covers_each_pixel_by_how_much_of_it_the_line_is_in() {
+    let mut r = D3d11Renderer::new(true).unwrap();
+    let mut scene = Scene::new();
+    let root = scene.add_layer();
+    scene.set_roots(&[root]);
+    // A line 2 px tall that falls 2.5 px a column, a column an instance: it starts at a
+    // quarter of a pixel, and no column starts on a whole one twice running.
+    let (tall, fall) = (2.0, 2.5);
+    let column = |x: u32| {
+        let bounds = Rect::new(8.0 + x as f32, 10.25 + x as f32 * fall - 1.0, 1.0, tall + fall + 2.0);
+        let mode = LineMode::Column { rise: fall };
+        Line { bounds, color: Color::BLACK, thickness: tall, mode }.instance(&Clip::NONE)
+    };
+    scene.layer_mut(root).set(&(0..16).map(column).collect::<Vec<_>>());
+    let pixels = draw(&mut r, &mut scene);
+    for x in 0..16 {
+        // How much of each pixel of the column is ink: black on white.
+        let ink: Vec<f32> = (0..64).map(|y| 1.0 - (at(&pixels, 8 + x, y) >> 16) as f32 / 255.0).collect();
+        // All of the line is there, whatever part of a pixel it starts at...
+        let all: f32 = ink.iter().sum();
+        assert!((all - tall).abs() < 0.05, "column {x} holds {all} px of ink");
+        // ...its middle is where the line's is, to a twentieth of a pixel: nothing was moved
+        // to a whole pixel, which is what makes a slope steps...
+        let middle = ink.iter().enumerate().map(|(y, ink)| (y as f32 + 0.5) * ink).sum::<f32>() / all;
+        let wanted = 10.25 + x as f32 * fall + (tall + fall) / 2.0;
+        assert!((middle - wanted).abs() < 0.05, "column {x} is at {middle}, not {wanted}");
+        // ...and its ends are shades.
+        assert!(ink.iter().filter(|ink| **ink > 0.03 && **ink < 0.97).count() >= 2);
+    }
 }
 
 #[test]

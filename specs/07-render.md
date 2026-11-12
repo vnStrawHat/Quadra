@@ -21,6 +21,17 @@ gradients, shadows, lines, glyphs and small images.
 There is no per-instance transform: a transform belongs to a layer. The exact packing is fixed
 in phase R1 by measuring; it starts from the V layout without its transform index.
 
+A line is an underline (straight or wavy), a segment of a stroke, or **a column of a chart's
+line**: an instance one device pixel wide that says how tall the line is in that column and
+how far it falls across it. The shader works out from the two how much of each pixel of the
+column the line covers, exactly (the cover of a slanted band over a column is a trapezoid
+along it), so a line of any slope is as smooth as its pixels allow, and nothing is
+rasterized on the CPU. What emits a column keeps the line's place a fraction of a pixel:
+its `bounds` are whole pixels across and not down. A place rounded to pixels, or a column
+that is not one pixel on the grid, is what draws a slope as steps. A test of pixels holds
+it: each column has all of the line's ink, its middle where the line's is to a twentieth
+of a pixel, and shades at its ends.
+
 Colours are straight alpha in the instance and blended premultiplied, in the encoded (sRGB)
 space, as design tools and the V renderer do. The V pixel snapshots are the reference.
 

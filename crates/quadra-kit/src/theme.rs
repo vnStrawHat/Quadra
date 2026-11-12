@@ -134,8 +134,8 @@ impl KitTheme {
             };
             self.colors[role] = color(value, &path)?;
         }
-        // ponytail: the roles of code, the terminal and charts come with their crates; until
-        // then their colours are only checked to be colours.
+        // ponytail: the roles of code and the terminal come with their crates; until then
+        // their colours are only checked to be colours.
         for key in ["syntax", "editor", "terminal"] {
             for (name, value) in section(&file, key)?.into_iter().flatten() {
                 let path = format!("{key}.{name}");
@@ -160,8 +160,13 @@ impl KitTheme {
         match file.get("series") {
             None => {}
             Some(Value::Array(list)) => {
+                // A file's series replace all of the theme's: what it lists fewer is unset.
+                token::SERIES.iter().for_each(|role| self.set(*role, Color::TRANSPARENT));
                 for (i, value) in list.iter().enumerate() {
-                    color(value, &format!("series[{i}]"))?;
+                    let read = color(value, &format!("series[{i}]"))?;
+                    if let Some(role) = token::SERIES.get(i) {
+                        self.set(*role, read);
+                    }
                 }
             }
             Some(_) => return wrong("series", "a list of colours"),
@@ -186,7 +191,7 @@ impl KitTheme {
             (TABLE_ROW_BORDER, LINE_STRONG),
             (TEXT_ON_STATUS, TEXT_ON_ACCENT),
         ];
-        for (role, other) in follows {
+        for (role, other) in follows.into_iter().chain(SERIES.map(|series| (series, ACCENT))) {
             if unset(&self, role) {
                 self.set(role, self.color(other));
             }

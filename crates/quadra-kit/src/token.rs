@@ -108,4 +108,17 @@ roles! {
     SUCCEEDED = "succeeded";
     TERMINATING = "terminating";
     UNKNOWN = "unknown";
+    /// The colours of the series of a chart: a theme file's `series`. Unset, the accent.
+    SERIES_1 = "series_1";
+    SERIES_2 = "series_2";
+    SERIES_3 = "series_3";
+    SERIES_4 = "series_4";
+    SERIES_5 = "series_5";
+    SERIES_6 = "series_6";
+    SERIES_7 = "series_7";
+    SERIES_8 = "series_8";
 }
+
+/// The colours of the series of a chart, in order.
+pub const SERIES: [Token; 8] =
+    [SERIES_1, SERIES_2, SERIES_3, SERIES_4, SERIES_5, SERIES_6, SERIES_7, SERIES_8];

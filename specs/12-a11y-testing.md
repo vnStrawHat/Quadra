@@ -137,7 +137,9 @@ makes a hover lay out a node fails a test, whatever its timing.
   tooltip, a context menu) is drawn a second time with it open, as `<page>-open.png`: the
   tool finds the opener by its test id in the semantic tree and sends the headless platform
   the pointer events of a click, a rest or a click with the other button, then Escape, a
-  pointer that leaves, and the time the toasts last. `tools/shots.sh`
+  pointer that leaves, and the time the toasts last. With `QUADRA_SCALE=1.5` the pages are
+  drawn as a display at 150 % shows them: what is drawn a device pixel at a time (the lines
+  of charts) is looked at there too. `tools/shots.sh`
   runs it, and `tools/compare_shots.py` says for each picture what share of the pixels of
   the page differ from the reference by more than a tolerance; a band of rows may sit a
   pixel or two higher or lower than in the reference (the V pictures have lines of text of

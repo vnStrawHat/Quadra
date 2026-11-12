@@ -1,6 +1,7 @@
 //! The pages, a file a group of the sidebar.
 
 pub mod actions;
+pub mod charts;
 pub mod choices;
 pub mod data;
 pub mod display;

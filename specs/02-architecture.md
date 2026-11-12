@@ -51,8 +51,9 @@ Dependency rules:
 - Only `quadra-native-win` and `quadra-shell` contain OS code and `unsafe` (01, R16).
 - `quadra-testing` builds an app from the headless platform, the null renderer and the fake
   text backend. Everything above the traits runs under it unchanged.
-- A domain crate depends on `quadra` and `quadra-kit`, never the reverse. An app that shows no
-  terminal does not compile one.
+- A domain crate depends on `quadra-kit` and, as the kit does, on the crates under it (not
+  on the facade, which brings the backends of an operating system), never the reverse. An
+  app that shows no terminal does not compile one.
 
 ## Threads
 

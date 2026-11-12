@@ -20,7 +20,7 @@ use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{
     HeadlessPlatform, Key, Mods, MouseButton, Platform, PlatformEvent, PointerKind, WindowId, WindowOptions,
 };
-use quadra_prim::Point;
+use quadra_prim::{Point, Size};
 
 type Shots = App<D3d11Renderer>;
 
@@ -30,7 +30,7 @@ const SIZE: (f32, f32) = (1200.0, 800.0);
 /// The pages that open something, and the test id (or the name) of what opens it: a click,
 /// but a hover for the tooltip and the hover card, a right click on the page for the context
 /// menu, and for the dock a tab torn off and held over the bottom edge of its pane.
-const OPENERS: [(&str, &str); 12] = [
+const OPENERS: [(&str, &str); 13] = [
     ("menu", "mn-file"),
     ("select", "sel-ns"),
     ("date-picker", "dp-date"),
@@ -43,6 +43,7 @@ const OPENERS: [(&str, &str); 12] = [
     ("drawer", "drawer-right"),
     ("dock", "main.rs"),
     ("context-menu", ""),
+    ("line-chart", "cpu"),
 ];
 
 /// Lets the window live for `ms`: frames, timers, what moves.
@@ -94,7 +95,7 @@ fn open(platform: &HeadlessPlatform, app: &mut Shots, window: WindowId, page: &s
         }
         return true;
     }
-    let rests = page == "tooltip" || page == "hover-card";
+    let rests = ["tooltip", "hover-card", "line-chart"].contains(&page);
     let button = if rests { MouseButton::None } else { MouseButton::Left };
     point(platform, window, at, button);
     if let Some(at) = inside(app, window, "to-err").filter(|_| page == "toast") {
@@ -130,6 +131,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         gallery.view()
     })?;
     let gallery = shown.get().ok_or("the gallery was not built")?;
+    // QUADRA_SCALE draws the pages as a display at that scale shows them: 1.5 for 150 %.
+    if let Some(scale) = std::env::var("QUADRA_SCALE").ok().and_then(|scale| scale.parse().ok()) {
+        platform.resize(window, Size::new(SIZE.0, SIZE.1), scale);
+    }
     for page in PAGES.iter().filter(|page| only.is_empty() || only.iter().any(|id| id == page.id)) {
         gallery.page.set(page.id);
         // The page is built and laid out, and what moves has moved for a moment.

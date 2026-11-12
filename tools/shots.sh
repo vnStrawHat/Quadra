@@ -4,6 +4,7 @@
 #   tools/shots.sh [dark|light] [page ..]
 # The pictures go to .tmp/shots/<theme>. QUADRA_REFERENCE names the folder that holds the
 # reference pictures of that theme (the screenshots of the V gallery are the first ones).
+# QUADRA_SCALE draws them as a display at that scale shows them (1.5: 150 %).
 set -u
 cd "$(dirname "$0")/.."
 theme="${1:-dark}"

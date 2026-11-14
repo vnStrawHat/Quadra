@@ -41,8 +41,9 @@ fn count(h: &Harness, color: Color) -> usize {
 #[test]
 fn spans_are_one_paragraph_in_their_own_sizes_and_colours() {
     let (mut h, words, _) = mounted(100.0);
-    // One line: 3 and 2 and 3 characters of 6 px, two of 12; it is named by all of it.
-    assert_eq!(h.tree.rect(words).size(), Size::new(100.0, 14.0));
+    // One line: 3 and 2 and 3 characters of 6 px, two of 12; it is named by all of it. The
+    // line is as high as the larger run's would be: twice 14.
+    assert_eq!(h.tree.rect(words).size(), Size::new(100.0, 28.0));
     assert!(h.has_text("ab cdef gh"));
     // Two large letters, two of the link and the line under it are in the theme's colour;
     // the four others are in the text's.
@@ -53,9 +54,10 @@ fn spans_are_one_paragraph_in_their_own_sizes_and_colours() {
     let (stats, _) = h.frame();
     assert_eq!((count(&h, RED), count(&h, BLUE), stats.nodes_laid_out), (5, 0, 0));
 
-    // 50 px: "cdef" is one word, though of two spans, and goes to a line of its own.
+    // 50 px: "cdef" is one word, though of two spans, and goes to a line of its own, which
+    // alone is higher.
     let (h, words, _) = mounted(50.0);
-    assert_eq!(h.tree.rect(words).height, 42.0);
+    assert_eq!(h.tree.rect(words).height, 14.0 + 28.0 + 14.0);
 }
 
 #[test]
@@ -80,7 +82,7 @@ fn a_link_takes_the_pointer_and_its_click() {
     let (mut h, _, clicked) = mounted(50.0);
     h.click(5.0, 7.0);
     assert_eq!(clicked.get_untracked(), "");
-    h.click(5.0, 35.0);
+    h.click(5.0, 49.0);
     assert_eq!(clicked.get_untracked(), "there");
 }
 

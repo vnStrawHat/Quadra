@@ -226,12 +226,16 @@ impl Paragraph {
         let line_px = self.style.line_px();
         let bytes = self.text.as_bytes();
         self.lines.clear();
-        // The text's baseline in a line, and where each box is with how far it reaches.
+        // The text's baseline in a line, and what reaches further over it or under it: a box,
+        // or a run larger than the text, whose line would be as much larger.
         let base = (line_px - self.ascent - self.descent) / 2.0 + self.ascent;
         let (mut boxes, mut from) = (Vec::new(), 0);
         for (end, shaping) in &self.runs {
+            let larger = shaping.size.map_or(1.0, |size| size / self.style.size);
             if shaping.advance.is_some() {
-                boxes.push((from, shaping.reach));
+                boxes.push((from..from + 1, shaping.reach));
+            } else if larger > 1.0 {
+                boxes.push((from..*end, (base * larger, (line_px - base) * larger)));
             }
             from = *end;
         }
@@ -245,7 +249,10 @@ impl Paragraph {
             let to = self.glyphs.partition_point(|g| (g.cluster as usize) < range.end);
             widest = widest.max(width);
             let (mut above, mut below) = (base, line_px - base);
-            for &(_, (up, down)) in boxes.iter().filter(|(at, _)| range.contains(at)) {
+            let on = |at: &std::ops::Range<usize>| {
+                at.start < range.end.max(range.start + 1) && at.end > range.start
+            };
+            for &(_, (up, down)) in boxes.iter().filter(|(at, _)| on(at)) {
                 (above, below) = (above.max(up.ceil()), below.max(down.ceil()));
             }
             let (start, end, height) = (range.start, range.end, above + below);

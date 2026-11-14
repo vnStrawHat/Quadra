@@ -126,7 +126,9 @@ family, the size, the weight and the slant (`Shaping`).
 - A style of the paragraph that changes shapes the runs again from it: a run that says no
   size has the new one.
 - The lines are as high as the paragraph's style says, and every run stands on their
-  baseline. Not yet: a line that is higher for a larger run on it.
+  baseline; a line with a run larger than the style is as high as that run's line would
+  be (its part over the baseline and under it, each grown by the run's size over the
+  style's), on whole pixels, as a line with a box that reaches further is.
 - **Cells** (`width.rs`): `char_width`, `grapheme_width`, `display_width` and `cell_step`
   count the cells of text where every cell is as wide as the next (code, a table written
   in text, a terminal): a mark that joins the letter before it has none, an East Asian

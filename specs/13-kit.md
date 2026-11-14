@@ -111,8 +111,8 @@ An app uses the kit with `quadra_kit::install(app, &theme)`, which loads the bun
 and with `quadra_kit::root()` as the box at the root of each window: the canvas, and the UI
 text (face, 14 on 23, the theme's text colour) for everything in the window. The numbers of
 the design language (type scale, control heights, radii, weights) are constants in
-`quadra_kit::size`; a theme does not vary them yet. Not yet: the UI face shaped without
-contextual alternates.
+`quadra_kit::size`. `install` shapes the UI face without its contextual alternates
+(`calt` off).
 
 ## Components
 

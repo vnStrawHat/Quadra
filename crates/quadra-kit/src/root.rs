@@ -1,7 +1,7 @@
 //! What an app does to use the kit: its fonts and a theme for the app, and the box at the
 //! root of each window that gives the window the look of the design language.
 
-use quadra_app::{App, AppError};
+use quadra_app::{App, AppError, Feature};
 use quadra_render::Renderer;
 use quadra_ui::{Div, column};
 
@@ -12,6 +12,8 @@ use crate::{fonts, size, token};
 /// theme signal of its context with another [`KitTheme::theme`].
 pub fn install<R: Renderer>(mut app: App<R>, theme: &KitTheme) -> Result<App<R>, AppError> {
     app.load_fonts(&fonts::files())?;
+    // The face of the UI is shaped without its contextual alternates (behaviour/15, "Type").
+    app.font_features(fonts::UI, &[Feature::off(b"calt")]);
     // What shows before a window's first frame, and at its edge while it is resized.
     let app = app.clear_color(theme.color(token::CANVAS)).theme(theme.theme());
     Ok(app.keymap(crate::keymap()))

@@ -3,13 +3,13 @@
 
 use std::rc::Rc;
 
+use quadra_base::press::toggle;
 use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, Paint, Role, State};
+use quadra_tree::{NodeId, Paint, State};
 use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, dynamic, row, show, text};
 
-use crate::action::{CONTROL, Confirm};
 use crate::icon::icon;
 use crate::{icons, size, token};
 
@@ -110,7 +110,6 @@ impl Toggle {
             Prop::Value(mixed) => Rc::new(move || mixed),
             Prop::Reactive(read) => Rc::new(read),
         };
-        let turn = move || on.update(|on| *on = !*on);
         let off: Off = match self.disabled {
             Prop::Value(off) => Rc::new(move || off),
             Prop::Reactive(read) => Rc::new(read),
@@ -118,12 +117,11 @@ impl Toggle {
         let part = off.clone();
         let control = if self.is_switch { switch_track(on, part) } else { check_box(on, part, mixed) };
         let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).radius(size::RADIUS_SM);
-        let face = face.role(if self.is_switch { Role::Switch } else { Role::Checkbox }).checked(on);
-        let face = face.focusable().key_context(CONTROL).cursor(Cursor::Pointer);
+        let face = face.cursor(Cursor::Pointer);
         // The keyboard's focus is a line around the control and its label.
         let face = face.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
-        let face = face.disabled(move || off()).when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
-        let face = face.on_click(move |_| turn()).on_action::<Confirm>(move |_| turn());
+        let face = face.when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
+        let face = toggle(on, face, self.is_switch, move || off());
         let face = match self.test_id {
             Some(id) => face.test_id(id),
             None => face,

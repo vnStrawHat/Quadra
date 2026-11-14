@@ -1,13 +1,13 @@
 //! The accordion (specs/behaviour/09, "Layout"): sections under one another, each opened and
 //! closed by its head. Whether a section is open is a signal of the caller's.
 
+use quadra_base::disclose;
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, Role};
-use quadra_ui::{AnyView, Div, MountCx, View, column, div, dynamic, row, show, text};
+use quadra_tree::NodeId;
+use quadra_ui::{AnyView, Div, MountCx, View, column, div, dynamic, row, text};
 
-use crate::action::{CONTROL, Confirm};
 use crate::icon::icon;
 use crate::{icons, size, token};
 
@@ -40,16 +40,14 @@ impl Accordion {
 /// The head of a section: a chevron, right when closed and down when open, then the title.
 /// A click, Enter and Space open and close it.
 fn head(title: String, open: Signal<bool>) -> Div {
-    let toggle = move || open.update(|open| *open = !*open);
     let chevron = move || {
         let body = if open.get() { icons::CHEVRON_DOWN } else { icons::CHEVRON_RIGHT };
         icon(body).size(14.0).color(token::TEXT_2)
     };
     let head = row().align_items(Align::Center).gap(4.0).padding_x(8.0).height(size::H_MD);
-    let head = head.cursor(Cursor::Pointer).role(Role::Button).expanded(move || open.get());
-    let head = head.focusable().key_context(CONTROL).on_action::<Confirm>(move |_| toggle());
+    let head = head.cursor(Cursor::Pointer);
     let head = head.hover(|s| s.bg(token::PANEL_HOVER)).focus_visible(|s| s.bg(token::PANEL_HOVER));
-    head.on_click(move |_| toggle()).child(dynamic(chevron)).child(text(title))
+    disclose::head(head, open).child(dynamic(chevron)).child(text(title))
 }
 
 impl View for Accordion {
@@ -61,7 +59,7 @@ impl View for Accordion {
             let head = if i > 0 { head.border_top(1.0).border_color(token::LINE) } else { head };
             let inside =
                 move || div().padding_left(26.0).padding_right(12.0).padding_bottom(12.0).child(body());
-            all = all.child(head).child(show(move || open.get(), inside));
+            all = all.child(head).child(disclose::body(open, inside));
         }
         all.mount(cx)
     }

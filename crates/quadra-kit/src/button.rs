@@ -3,16 +3,13 @@
 //! until the pointer is over it; an outlined one has a hairline border; a tinted one a fill
 //! at low opacity, a border of its colour and an icon in it; a link is accent text.
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
+use quadra_base::press;
 use quadra_layout::{Align, Display, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::memo;
-use quadra_tree::{NodeId, Paint, Role, State};
+use quadra_tree::{NodeId, Paint, State};
 use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, row, show, text};
 
-use crate::action::{CONTROL, Confirm};
 use crate::icon::icon;
 use crate::progress::spinner;
 use crate::{size, token};
@@ -198,7 +195,7 @@ impl Button {
         };
         let label = if self.muted { token::TEXT_2.into() } else { label };
         let face = face.radius(size::RADIUS_MD).bg(fill).text_color(label);
-        let face = face.role(Role::Button).focusable().key_context(CONTROL).cursor(Cursor::Pointer);
+        let face = face.cursor(Cursor::Pointer);
         let face = match self.size {
             Size::Xs => face.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height()),
             _ => face,
@@ -217,40 +214,39 @@ impl Button {
         // On: the accent for the label, and the selected step for a button with no fill
         // that has a label; an icon alone turns the accent and takes no fill.
         let face = match self.toggled {
-            Some(on) => {
+            Some(_) => {
                 let filled = fill != Paint::default() || self.label.is_none();
                 let pressed = if filled { fill } else { token::PRESS.into() };
-                face.checked(on).when(State::CHECKED, |s| s.text_color(token::ACCENT_TEXT).bg(pressed))
+                face.when(State::CHECKED, |s| s.text_color(token::ACCENT_TEXT).bg(pressed))
             }
             None => face,
         };
         // Disabled: as it is at rest, whatever the pointer does, in the colour of what is off.
         let quiet = |s: quadra_ui::Refine| s.bg(fill).border_color(border).text_color(token::TEXT_DISABLED);
-        let face = face.disabled(move || off.get()).when(State::DISABLED, quiet);
+        let face = face.when(State::DISABLED, quiet);
         // Busy looks as it did, with a spinner where an icon goes; its click does nothing.
         let busy = self.loading.map(|loading| match loading {
             Prop::Value(busy) => memo(move || busy),
             Prop::Reactive(read) => memo(read),
         });
-        let idle = move || !busy.is_some_and(|busy| busy.get());
         let face = if self.full { face.grow(1.0) } else { face };
         let face = match self.test_id {
             Some(id) => face.test_id(id),
             None => face,
         };
+        // What it does, by the pointer and the keyboard alike: the base's.
+        let pressed = press::press(face).disabled(move || off.get());
+        let pressed = match busy {
+            Some(busy) => pressed.busy(busy),
+            None => pressed,
+        };
+        let pressed = match self.toggled {
+            Some(on) => pressed.toggled(on),
+            None => pressed,
+        };
         let face = match self.click {
-            Some(click) => {
-                // The pointer and the keyboard do the same thing.
-                let click = Rc::new(RefCell::new(click));
-                let by_key = click.clone();
-                let press = move |click: &RefCell<Box<dyn FnMut()>>| {
-                    if idle() {
-                        (click.borrow_mut())()
-                    }
-                };
-                face.on_click(move |_| press(&click)).on_action::<Confirm>(move |_| press(&by_key))
-            }
-            None => face,
+            Some(click) => pressed.on_click(click).build(),
+            None => pressed.build(),
         };
         let face = match self.name {
             Some(name) => face.label(name),

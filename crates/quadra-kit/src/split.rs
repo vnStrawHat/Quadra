@@ -1,15 +1,11 @@
-//! The split (specs/behaviour/09, "Layout"): two panes and the seam between them, which is
-//! dragged to give one pane more of the room. The share of the first pane is a signal of the
-//! caller's, from 0 to 1.
+//! The split (specs/behaviour/09, "Layout"): the base's (`quadra_base::split`) with the kit's
+//! seam, a line of one pixel in a grip of 6 with the cursor of a resize.
 
-use std::cell::Cell;
-use std::rc::Rc;
-
-use quadra_layout::{Direction, Justify, Length, Overflow};
+use quadra_base::split as base;
+use quadra_layout::{Direction, Justify};
 use quadra_platform::Cursor;
-use quadra_prim::Size;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, PointerEvent, PointerKind};
+use quadra_tree::NodeId;
 use quadra_ui::{AnyView, MountCx, View, div};
 
 use crate::token;
@@ -47,50 +43,13 @@ impl Split {
 
 impl View for Split {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (share, stacked, least) = (self.share, self.stacked, self.least);
-        let along = move |size: Size| if stacked { size.height } else { size.width };
-        let part = move || Length::Pct(share.get() * 100.0);
-        let pane = || div().overflow_x(Overflow::Hidden).overflow_y(Overflow::Hidden);
-        let (first, second) = (pane().shrink(0.0).child(self.first), pane().grow(1.0).child(self.second));
-        let (first, line) = match stacked {
-            true => (first.height(part), div().height(1.0)),
-            false => (first.width(part), div().width(1.0)),
+        let line = if self.stacked { div().height(1.0) } else { div().width(1.0) };
+        let seam = div().shrink(0.0).justify(Justify::Center).child(line.bg(token::LINE_STRONG));
+        let seam = match self.stacked {
+            true => seam.height(GRIP).direction(Direction::Column).cursor(Cursor::ResizeVertical),
+            false => seam.width(GRIP).cursor(Cursor::ResizeHorizontal),
         };
-
-        // The seam: the press on it takes the pointer, and the share follows the pointer by
-        // as much of the whole as it moves. The whole is known once the split is laid out.
-        let whole: Rc<Cell<Option<Signal<Size>>>> = Rc::default();
-        let held: Rc<Cell<Option<(f32, f32)>>> = Rc::default();
-        let at = move |e: &PointerEvent| if stacked { e.at.y } else { e.at.x };
-        let (press, drag, total) = (held.clone(), held.clone(), whole.clone());
-        let grip = div().shrink(0.0).justify(Justify::Center).child(line.bg(token::LINE_STRONG));
-        let grip = match stacked {
-            true => grip.height(GRIP).direction(Direction::Column).cursor(Cursor::ResizeVertical),
-            false => grip.width(GRIP).cursor(Cursor::ResizeHorizontal),
-        };
-        let grip = grip.on_pointer(PointerKind::Down, move |e| {
-            press.set(Some((at(e), share.get_untracked())));
-            e.capture_pointer();
-            e.stop();
-        });
-        let grip = grip.on_pointer(PointerKind::Move, move |e| {
-            let (Some((from, was)), Some(whole)) = (drag.get(), total.get()) else { return };
-            let whole = along(whole.get_untracked());
-            if whole > 2.0 * least {
-                let to = was + (at(e) - from) / whole;
-                share.set(to.clamp(least / whole, 1.0 - least / whole));
-            }
-        });
-        let grip = grip.on_pointer(PointerKind::Up, move |_| held.set(None));
-        let grip = grip.on_click(move |e| {
-            if e.clicks == 2 {
-                share.set(0.5);
-            }
-        });
-
-        let frame = div().grow(1.0).direction(if stacked { Direction::Column } else { Direction::Row });
-        let id = frame.child(first).child(grip).child(second).mount(cx);
-        whole.set(Some(cx.tree.size_signal(id)));
-        id
+        let split = base::split(self.first, self.second, self.share, seam).least(self.least);
+        if self.stacked { split.stacked() } else { split }.mount(cx)
     }
 }

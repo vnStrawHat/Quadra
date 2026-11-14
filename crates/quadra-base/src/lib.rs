@@ -4,6 +4,10 @@
 
 pub mod action;
 pub mod choice;
+pub mod disclose;
+pub mod list;
 pub mod popup;
+pub mod press;
+pub mod split;
 
 pub use action::keymap;

@@ -98,10 +98,9 @@ its name in the kit (`quadra_kit::checkbox` stays).
 |---|---|---|---|
 | `action` | actions, contexts, `keymap()` | none | `action.rs` |
 | `popup` | open beside an opener, at a place or along an edge; focus in, Tab inside, Escape, a press outside, focus back; `open_now`, `hang` | the plane, the content | `popup.rs` |
-| `press` | a button: a click and `Confirm` do one thing, not while disabled or loading; pressed when a toggle | the face | `button.rs` |
-| `toggle` | checked, mixed, a click on the face or its label, `Confirm` | the face (readers: on, mixed, disabled) | `toggle.rs` |
+| `press` | a button: a click and `Confirm` do one thing, not while disabled or busy; pressed when a toggle. `press::toggle`: a checkbox or a switch, turned by a click on the face (its label in it), `Confirm` or a reader | the face | `button.rs`, `toggle.rs` |
 | `choice` | one of a few: the group is one stop of Tab, the arrows go round | the group, an option (readers: index, chosen) | `choice.rs`, `tabs.rs` |
-| `list` | selection, the arrows, Home, End, activation, rows mounted as they show | a row (index), the row height | `list.rs`, `sidebar.rs` |
+| `list` | selection, the arrows, Home, End, activation, rows mounted as they show; `places`, a few places chosen by id (a sidebar) | a row (index), the row height, the frame, what an empty list says; a place | `list.rs`, `sidebar.rs` |
 | `menu` | rows that can be chosen, a highlight the arrows move, submenus, scrolling to the highlight, a choice closes all | a row (the item, its state), a heading, a separator, the plane | `menu.rs`, `menu/rows.rs`, `select.rs`, `select/search.rs` |
 | `pick` | options a text matches (`fuzzy`, `fuzzy_hits`), the arrows over the matches with the focus in the field, Enter or a click takes one | the field, a row (the match), the list | `combobox.rs`, `palette.rs` |
 | `hint` | a tooltip and a hover card: shown after a rest, gone on leaving or a press; a card stays while the pointer is on it | the bubble, the card | `tooltip.rs`, `hover_card.rs` |
@@ -148,7 +147,7 @@ and its tests drive them through the semantic tree. It is not a second gallery.
 1. This spec.
 2. Shadows in the theme.
 3. `action` and `keymap`; `popup`; `choice`. These are what the rest uses.
-4. The controls: `press`, `toggle`, `list`, `disclose`, `split`.
+4. The controls: `press` (with `toggle`), `list`, `disclose`, `split`.
 5. The popups: `menu`, `pick`, `hint`, `dialog`, `notices`.
 6. The values: `slider`, `number`, `time`, `rules`.
 7. The data: `table`, `tree`, `settings`, `work`.

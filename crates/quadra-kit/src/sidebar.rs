@@ -1,13 +1,13 @@
 //! The sidebar (specs/behaviour/09, "Navigation"): the places of an app in groups, one of
 //! them chosen. It folds to its icons alone.
 
+use quadra_base::list;
 use quadra_layout::{Align, Display, Justify, Length};
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo, signal};
-use quadra_tree::{NodeId, Paint, Role, Side, State};
+use quadra_tree::{NodeId, Paint, Side, State};
 use quadra_ui::{AnyView, Div, MountCx, View, column, div, row, scroll, text};
 
-use crate::action::{LIST, MoveFirst, MoveLast, MoveNext, MovePrevious};
 use crate::display::{chosen_mark, label};
 use crate::icon::icon;
 use crate::token;
@@ -94,25 +94,10 @@ impl View for Sidebar {
                 places = places.child(place(item, chosen, words, move || folded.get()));
             }
         }
-        // The arrows move the choice along the places, and stop at the ends.
-        let go = move |to: fn(Option<usize>, usize) -> usize| {
-            let (at, last) =
-                (ids.iter().position(|id| *id == chosen.get_untracked()), ids.len().checked_sub(1));
-            if let Some(last) = last {
-                chosen.set(ids[to(at, last)]);
-            }
-        };
-        let (next, previous, first, last) = (go.clone(), go.clone(), go.clone(), go);
         let side = column().shrink(0.0).width(move || Length::Px(if folded.get() { 40.0 } else { width }));
         let side = side.bg(token::PANEL).border_right(1.0).border_color(token::LINE_STRONG);
-        let side = side.role(Role::Tree).focusable().key_context(LIST);
         let side = side.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
-        let side = side.on_action::<MoveNext>(move |_| next(|at, last| at.map_or(0, |i| (i + 1).min(last))));
-        let side =
-            side.on_action::<MovePrevious>(move |_| previous(|at, _| at.map_or(0, |i| i.saturating_sub(1))));
-        let side = side.on_action::<MoveFirst>(move |_| first(|_, _| 0));
-        let side = side.on_action::<MoveLast>(move |_| last(|_, last| last));
-        side.child(scroll(signal(0.0), places)).mount(cx)
+        list::places(side, ids, chosen).child(scroll(signal(0.0), places)).mount(cx)
     }
 }
 
@@ -127,9 +112,9 @@ fn place(
     let id = item.id;
     let line = row().align_items(Align::Center).gap(6.0).height(26.0).padding_left(10.0).padding_right(8.0);
     let line = line.justify(move || if folded() { Justify::Center } else { Justify::Start });
-    let line = line.cursor(Cursor::Pointer).role(Role::TreeItem).label(item.label.clone());
+    let line = line.cursor(Cursor::Pointer).label(item.label.clone());
     let on = move || chosen.get() == id;
-    let line = line.selected(on).on_click(move |_| chosen.set(id));
+    let line = list::place(line, id, chosen);
     let line = line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
     let tone = move || Paint::from(if on() { token::ACCENT_TEXT } else { token::TEXT_2 });
     let line = match item.icon {

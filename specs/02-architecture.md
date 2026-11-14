@@ -40,7 +40,8 @@ quadra-native-win      Win32 platform, D3D11 renderer, DirectWrite backend, the 
 quadra-shell           tray, notifications, single instance, crash reports, file dialogs
 quadra-testing         harness, fake text, null renderer, snapshots
 quadra                 the facade apps depend on
-quadra-kit             components and themes
+quadra-base            components without a look: state, keys, focus, semantics, popups (17)
+quadra-kit             components and themes: a look over quadra-base
 quadra-term  quadra-code  quadra-md  quadra-data  quadra-viz        domain crates
 ```
 

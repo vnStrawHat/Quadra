@@ -110,13 +110,13 @@ Each phase ends with its gate green and `docs/progress.md` updated.
 | **R3** Kit | Core components and the gallery | The gallery matches the V screenshots within the snapshot tolerance |
 | **R4** Domain crates | `quadra-code`, `quadra-md`, `quadra-data`, `quadra-viz` | Their tests and fuzzers pass; their gallery pages match |
 | **R5** Release | App services (settings, i18n, assets, logging), shell services, API documentation, packaging of the gallery, the manual checks on a real desktop | Quadra is complete; the apps can start |
-| **R6** Base components (planned, not started) | Components without a look, open tokens, and the paints design systems use; see "R6" below | `quadra-kit` is built on the base alone and the gallery looks as before; a second kit of another look is made from the base without touching it |
+| **R6** Base components (in progress) | Components without a look (17), open tokens, and the paints design systems use; see "R6" below | `quadra-kit` is built on the base alone and the gallery looks as before; a second kit of another look is made from the base without touching it |
 
-### R6: base components (planned 2026-11-14, not started)
+### R6: base components (planned 2026-11-14, started 2026-11-14)
 
 The user's long-term plan: components without a look, so that a user builds a kit of their
-own to the design system they want (one like a vendor's, or a brand's own). Not started: it
-waits for the user to say so, after R5's manual checks.
+own to the design system they want (one like a vendor's, or a brand's own). Started by the
+user on 2026-11-14; specs/17 is the design of the base and of the open tokens.
 
 - **A crate of base components** (`quadra-base`): each component is what it does, and none
   of how it looks: its state (open, selected, value), its keys (actions in the keymap), its

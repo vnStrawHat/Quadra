@@ -100,9 +100,54 @@ impl Lex<'_> {
             self.lang_ident(sp, selector);
             return 0;
         }
+        if c == b'/' && sp.slash_regex && self.pattern(sp) {
+            return 0;
+        }
         self.i += 1;
         self.add(a, mark(c));
         0
+    }
+
+    /// A pattern between slashes, with its flags, where a value starts: not after a name, a
+    /// number, a string or a closing bracket, but after an operator, an opening one, the
+    /// start of the line or a word like `return`. False, and nothing read, otherwise or when
+    /// the line ends before the pattern does.
+    fn pattern(&mut self, sp: &LangSpec) -> bool {
+        let a = self.i;
+        let mut b = a;
+        while b > 0 && matches!(self.s[b - 1], b' ' | b'\t') {
+            b -= 1;
+        }
+        let p = self.before(b);
+        let value = if is_ident(p) {
+            let start = (0..b).rev().take_while(|&k| is_ident(self.s[k])).last().unwrap_or(b);
+            let word = std::str::from_utf8(&self.s[start..b]).unwrap_or("");
+            let opens = |set: &str| set.split(' ').any(|w| w == word);
+            !(opens(sp.keywords) || opens(sp.control))
+        } else {
+            matches!(p, b')' | b']' | b'}' | b'"' | b'\'' | b'`')
+        };
+        if value {
+            return false;
+        }
+        let (mut k, mut class) = (a + 1, false);
+        loop {
+            match self.byte(k) {
+                0 if k >= self.s.len() => return false,
+                b'\\' => k += 1,
+                b'[' => class = true,
+                b']' => class = false,
+                b'/' if !class => break,
+                _ => {}
+            }
+            k += 1;
+        }
+        self.i = k + 1;
+        while self.at(0).is_ascii_alphabetic() {
+            self.i += 1;
+        }
+        self.add(a, TokenKind::Regexp);
+        true
     }
 
     fn line_comment(&self, sp: &LangSpec) -> bool {

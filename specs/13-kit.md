@@ -1136,9 +1136,17 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     a line where some were removed.
 - In the find bar's query Enter goes to the next match and Shift-Enter to the one before
   (an input submits on Enter alone, and leaves Shift-Enter to what is around it).
-- Not yet: the line at the top and scrolling to a line, for a preview that follows;
-  a glyph wider or narrower than its cells centred in them; what is inside `<script>` and
-  `<style>` is plain text; regular expressions in JavaScript are not told from division.
+- `.top_line(line)`: the line at the top of the view, a signal kept as it scrolls (the
+  wheel, the keys); setting it scrolls that line to the top, as far as the view goes, and
+  the line it then shows is told back. For a preview that follows the editor.
+- A character whose glyph is wider or narrower than the cells it takes (one of two cells
+  in a face without it) is drawn in the middle of them.
+- In markup what a `<script>` holds is read as JavaScript and what a `<style>` holds as
+  CSS, over lines (the state of markup carries theirs), up to the tag that ends it, in a
+  string or not, as a browser does. In JavaScript and TypeScript a `/` where a value starts
+  (after an operator, an opening bracket, the start of a line, or a word like `return`)
+  opens a pattern with its flags; after a name, a number, a string or a closing bracket it
+  divides, and one whose line ends first divides too.
 
 ## Porting the kit
 

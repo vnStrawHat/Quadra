@@ -169,10 +169,15 @@ fn line(w: &mut EditorWidget, cx: &mut PaintCx, f: &Frame, n: usize) {
     // Walking the glyphs, which are in the order of the text: the column of the character
     // a glyph is of, its row, and the token that holds it.
     let (mut at, mut col, mut token, mut r) = (0, 0, 0, 0);
-    let (mut cluster, mut base) = (usize::MAX, 0.0);
-    for g in &word.glyphs {
+    let (mut cluster, mut base, mut shift) = (usize::MAX, 0.0, 0.0);
+    for (k, g) in word.glyphs.iter().enumerate() {
         let c = g.cluster as usize;
         if c != cluster {
+            // A character wider or narrower than its cells is in the middle of them.
+            let wide: f32 =
+                word.glyphs[k..].iter().take_while(|h| h.cluster == g.cluster).map(|h| h.advance).sum();
+            let cells = cell_step(&shown, c).1 as f32 * w.cell;
+            shift = if cells > 0.0 && (cells - wide).abs() > 0.01 { (cells - wide) / 2.0 } else { 0.0 };
             while at < c {
                 let (end, width) = cell_step(&shown, at);
                 col = if shown.as_bytes()[at] == b'\t' { (col / tab + 1) * tab } else { col + width };
@@ -187,7 +192,7 @@ fn line(w: &mut EditorWidget, cx: &mut PaintCx, f: &Frame, n: usize) {
         if shown.as_bytes().get(c) == Some(&b'\t') || !f.shows(row) {
             continue;
         }
-        let x = f.left + (col - starts[r].1) as f32 * w.cell + (g.x - base);
+        let x = f.left + (col - starts[r].1) as f32 * w.cell + (g.x - base) + shift;
         if x > f.area.right() || x + g.advance < f.area.x {
             continue;
         }

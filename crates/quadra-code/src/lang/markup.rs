@@ -1,8 +1,18 @@
 //! Markup and diffs. The states of markup: 0 text, 1 in a `<!-- -->`, 2 in a tag (its
-//! attributes may go on over lines).
+//! attributes may go on over lines), 3 and 4 in a `<script>` or `<style>` tag; past one
+//! of those, [`SCRIPT`] or [`STYLE`] with the state of that language in [`INNER`].
 
+use super::{LangSpec, c::JS, data::CSS, scan};
 use crate::lex::{Lex, is_ident};
 use crate::token::{Token, TokenKind};
+
+const SCRIPT_TAG: u32 = 3;
+const STYLE_TAG: u32 = 4;
+/// In what a `<script>` holds: JavaScript up to `</script`.
+const SCRIPT: u32 = 1 << 28;
+/// In what a `<style>` holds: CSS up to `</style`.
+const STYLE: u32 = 1 << 29;
+const INNER: u32 = SCRIPT - 1;
 
 /// What a name of a tag or of an attribute is made of, after its first letter.
 fn in_name(c: u8) -> bool {
@@ -10,16 +20,22 @@ fn in_name(c: u8) -> bool {
 }
 
 impl Lex<'_> {
-    // ponytail: what is in <script> and <style> stays plain text; the rows of those
-    // languages when code in markup shows in real documents.
     pub(super) fn markup(&mut self, state: u32) -> u32 {
         let mut state = state;
         while !self.done() {
             let (a, c) = (self.i, self.s[self.i]);
-            if state == 1 {
+            if state & (SCRIPT | STYLE) != 0 {
+                state = self.embedded(state);
+            } else if state == 1 {
                 state = self.markup_comment(a);
-            } else if state == 2 {
-                state = self.tag_attrs();
+            } else if matches!(state, 2 | SCRIPT_TAG | STYLE_TAG) {
+                // What a `<script>` or `<style>` holds starts where its tag closes.
+                state = match (self.tag_attrs(), state) {
+                    (0, SCRIPT_TAG) => SCRIPT,
+                    (0, STYLE_TAG) => STYLE,
+                    (0, _) => 0,
+                    (_, open) => open,
+                };
             } else if self.starts_at("<!--", false) {
                 self.i += 4;
                 state = self.markup_comment(a);
@@ -33,7 +49,12 @@ impl Lex<'_> {
                 self.skip_while(in_name);
                 let declares = matches!(self.byte(a + 1), b'!' | b'?');
                 self.add(b, if declares { TokenKind::Keyword } else { TokenKind::Tag });
-                state = 2;
+                let name = &self.s[b..self.i];
+                state = match named {
+                    true if name.eq_ignore_ascii_case(b"script") => SCRIPT_TAG,
+                    true if name.eq_ignore_ascii_case(b"style") => STYLE_TAG,
+                    _ => 2,
+                };
             } else if c == b'&' && (is_ident(self.at(1)) || self.at(1) == b'#') {
                 // An entity is a dozen bytes at most, and ends with a `;`.
                 self.i += 1;
@@ -49,6 +70,23 @@ impl Lex<'_> {
             }
         }
         state
+    }
+
+    /// Reads what a `<script>` or `<style>` holds, by the rows of its language, up to the tag
+    /// that ends it (in a string or not, as a browser does).
+    fn embedded(&mut self, state: u32) -> u32 {
+        let (spec, end): (&LangSpec, &[u8]) =
+            if state & SCRIPT != 0 { (&JS, b"</script") } else { (&CSS, b"</style") };
+        let rest = &self.s[self.i..];
+        let found = rest.windows(end.len()).position(|w| w.eq_ignore_ascii_case(end));
+        let stop = self.i + found.unwrap_or(rest.len());
+        let text = std::str::from_utf8(&self.s[self.i..stop]).unwrap_or("");
+        let mut tokens = Vec::new();
+        let inner = scan::tokenize(spec, text, state & INNER, &mut tokens);
+        let at = self.i;
+        self.out.extend(tokens.into_iter().map(|t| Token { start: t.start + at, end: t.end + at, ..t }));
+        self.i = stop;
+        if found.is_some() { 0 } else { (state & !INNER) | inner }
     }
 
     fn markup_comment(&mut self, a: usize) -> u32 {

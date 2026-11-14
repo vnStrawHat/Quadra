@@ -137,7 +137,7 @@ pub const RUST: LangSpec = LangSpec {
     ..LIKE_C
 };
 
-// ponytail: a pattern between slashes and tags in code are not known; /x/ reads as operators.
+// ponytail: tags in code (JSX) are not known; they read as operators.
 pub const JS: LangSpec = LangSpec {
     names: "js javascript jsx mjs cjs node",
     keywords: js_kw!(),
@@ -147,6 +147,7 @@ pub const JS: LangSpec = LangSpec {
     interps: &["${"],
     interp_in: "`",
     at_attr: true,
+    slash_regex: true,
     ..LIKE_C
 };
 
@@ -163,6 +164,7 @@ pub const TS: LangSpec = LangSpec {
     interps: &["${"],
     interp_in: "`",
     at_attr: true,
+    slash_regex: true,
     ..LIKE_C
 };
 

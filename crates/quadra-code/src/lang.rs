@@ -93,6 +93,8 @@ pub struct LangSpec {
     pub colon_label: bool,
     /// The words of a line with `{` are selectors.
     pub selectors: bool,
+    /// A `/` where a value starts opens a pattern (`/a+/g`); after a value it divides.
+    pub slash_regex: bool,
 }
 
 /// A row that says nothing: rows are written as what they have otherwise.
@@ -136,6 +138,7 @@ pub const PLAIN: LangSpec = LangSpec {
     label_colon: false,
     colon_label: false,
     selectors: false,
+    slash_regex: false,
 };
 
 /// Every row.

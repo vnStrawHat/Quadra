@@ -8,15 +8,15 @@ mod marks;
 mod paint;
 mod pointer;
 mod rows;
+mod time;
 mod widget;
 
 use std::cell::Cell;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use quadra_async::{Timers, interval};
 use quadra_platform::{Clipboard, Cursor, Mods};
-use quadra_reactive::{Scope, signal, use_context};
+use quadra_reactive::{Signal, signal, use_context};
 use quadra_tree::{NodeId, PointerKind, Style, TextValues, Tree};
 use quadra_ui::{MountCx, NodeRef, View, column, div, scroll, show};
 
@@ -29,8 +29,6 @@ pub use widget::EditorWidget;
 use crate::highlight::{Highlight, Highlighter};
 use crate::token::{Tokenizer, tokenizer_for};
 
-const CARET_BLINK: Duration = Duration::from_millis(530);
-
 pub struct Editor {
     text: String,
     path: String,
@@ -40,6 +38,7 @@ pub struct Editor {
     wrap: bool,
     on_link: Option<pointer::OnLink>,
     base: Option<String>,
+    top: Option<Signal<usize>>,
 }
 
 /// A code editor over a text, in the kit's mono face at 15 px with lines of 25. Give it a
@@ -53,6 +52,7 @@ pub fn editor(text: impl Into<String>) -> Editor {
         wrap: false,
         on_link: None,
         base: None,
+        top: None,
     }
 }
 
@@ -89,6 +89,13 @@ impl Editor {
         self
     }
 
+    /// The line at the top of the view, a signal kept as it scrolls: setting it scrolls that
+    /// line to the top, as far as the view goes. For a preview that follows the editor.
+    pub fn top_line(mut self, line: Signal<usize>) -> Self {
+        self.top = Some(line);
+        self
+    }
+
     /// The size of the text and the height of a line, in pixels.
     pub fn font(mut self, size: f32, line: f32) -> Self {
         self.font = (size, line);
@@ -101,11 +108,15 @@ impl View for Editor {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (find, widget, bar, epoch) =
             (Finding::new(), Rc::new(Cell::new(None)), NodeRef::new(), cx.handle.now());
+        let scroll_y = signal(0.0);
+        if let Some(top) = self.top {
+            time::follow_top(cx, widget.clone(), scroll_y, top);
+        }
         let surface = Surface { editor: self, find, widget: widget.clone(), bar: bar.clone(), epoch };
         let handle = cx.handle.clone();
         let shown = move || find_bar::bar(find, handle.clone(), widget.clone(), epoch, bar.clone());
         let over = show(move || find.open.get(), shown).container(div().absolute().top(6.0).right(16.0));
-        column().grow(1.0).child(scroll(signal(0.0), surface)).child(over).mount(cx)
+        column().grow(1.0).child(scroll(scroll_y, surface)).child(over).mount(cx)
     }
 }
 
@@ -242,43 +253,10 @@ impl View for Surface {
                 });
             }
         });
-        blink(cx, id);
+        time::blink(cx, id);
         pointer::pointer(cx, id, epoch, editor_link);
         id
     }
-}
-
-/// While it has the focus the caret blinks, on a timer that lives as long as the focus.
-fn blink(cx: &mut MountCx, id: NodeId) {
-    let (owner, blinks) = (Scope::current(), use_context::<Rc<Timers>>().is_some());
-    let session: Cell<Option<Scope>> = Cell::new(None);
-    let writer = cx.handle.clone();
-    cx.tree.on_focus(id, move |gained| {
-        if let Some(ended) = session.take() {
-            ended.dispose();
-        }
-        if gained && blinks {
-            let scope = owner.run(Scope::child);
-            let writer = writer.clone();
-            scope.run(|| {
-                interval(CARET_BLINK, move || {
-                    writer.with(move |tree| {
-                        if let Some(w) = tree.widget_mut::<EditorWidget>(id) {
-                            w.caret_on = !w.caret_on;
-                            tree.mark_paint(id);
-                        }
-                    })
-                })
-            });
-            session.set(Some(scope));
-        }
-        writer.with(move |tree| {
-            if let Some(w) = tree.widget_mut::<EditorWidget>(id) {
-                (w.focused, w.caret_on) = (gained, true);
-                tree.mark_paint(id);
-            }
-        });
-    });
 }
 
 /// How many rows a motion goes, down; none for one that is not up or down.

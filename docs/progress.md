@@ -79,8 +79,9 @@ today's date and the names of days and months in the app's language (local time 
 R5); a cursor on the cells of a table; a tree whose children are asked for when it opens,
 and several selected; of rich text, links for the keyboard
 and a reader, and a selection. Since 2026-11-14 a drawer slides in, a toast waits while the
-pointer is on it, a tooltip is the description of its view for a reader, and the menu key and
-Shift-F10 open a context menu.
+pointer is on it, a tooltip is the description of its view for a reader, the menu key and
+Shift-F10 open a context menu, and the palette picks other things than commands
+(`.placeholder`, `.empty`, `Command::detail`).
 
 ### The exit of R2 (specs/00, Phases)
 

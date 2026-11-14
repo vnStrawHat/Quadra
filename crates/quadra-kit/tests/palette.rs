@@ -127,3 +127,34 @@ fn letters_match_in_order_and_score_by_where_they_are() {
     assert!(fuzzy("s", "Save").unwrap() > fuzzy("a", "Save").unwrap());
     assert_eq!(fuzzy("", "anything"), Some(0));
 }
+
+#[test]
+fn a_palette_picks_other_things_with_words_of_its_own() {
+    let (open, took) = (signal(true), signal(String::new()));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    h.mount(move || {
+        let files = move || {
+            ["main.rs", "lib.rs"]
+                .map(|name| {
+                    Command::new(name, move || took.set(name.to_string())).detail(format!("src/{name}"))
+                })
+                .to_vec()
+        };
+        let pick = command_palette(open, files).placeholder("Go to file…").empty("No files");
+        quadra_kit::root().child(pick)
+    });
+    h.frame();
+    h.frame();
+    // The detail shows and is not searched: "src" matches neither title.
+    assert!(h.has_text("src/main.rs"));
+    h.get_by_role(Role::TextInput, "Go to file…").set_value("src");
+    h.frame();
+    assert!(h.has_text("No files"));
+    h.get_by_role(Role::TextInput, "Go to file…").set_value("lib");
+    h.frame();
+    h.key(Key::Enter, Mods::NONE);
+    h.frame();
+    assert_eq!((took.get_untracked(), open.get_untracked()), ("lib.rs".to_string(), false));
+}

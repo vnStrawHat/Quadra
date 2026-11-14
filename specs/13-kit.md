@@ -616,7 +616,9 @@ the popup closes the focus goes back to what had it.
   and lasts as long again when it leaves (`Queue::hold`). A tooltip's words are the
   description of its view for a reader, whether it shows or not.
 - The menu key and Shift-F10 open a context menu under what has the focus in its view.
-- Not yet: a picker of other things than commands.
+- A picker of other things (files, branches, symbols) is the palette of commands whose
+  doing is to take each: `.placeholder(..)` and `.empty(..)` give it its own words, and
+  `Command::detail(..)` muted words after a title that the query does not search.
 
 ## Crates
 

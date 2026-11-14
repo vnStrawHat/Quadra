@@ -196,3 +196,97 @@ fn the_find_bar_finds_goes_to_matches_replaces_and_gives_the_focus_back() {
     e.keys(&[(Key::Escape, NONE)]);
     assert_eq!((cursors > 1, e.w().doc.cursors.len()), (true, 1));
 }
+
+/// An editor ten cells wide (the gutter's 54 px and 60 more) that wraps, with the focus.
+fn wrapped(text: &str) -> Ed {
+    let mut h = Harness::new();
+    let mut keys = Keymap::default();
+    bind_keys(&mut keys);
+    h.tree.set_keymap(Rc::new(keys));
+    let text = text.to_string();
+    h.mount(move || column().size(114.0, 140.0).child(editor(text).wrap(true).font(10.0, 14.0)));
+    h.frame();
+    let id = h.query(|n| n.semantics.role == Role::TextInput)[0];
+    h.tree.focus(id);
+    h.frame();
+    Ed { h, id }
+}
+
+#[test]
+fn wrapped_lines_break_after_blanks_and_the_rows_drive_up_down_and_the_pointer() {
+    // "alpha beta " | "gamma " | "delta", then a word longer than a row in pieces of ten.
+    let mut e = wrapped("alpha beta gamma delta\nabcdefghijklmnopqrstuvwxy");
+    assert_eq!(e.h.tree.rect(e.id).height, 6.0 * 14.0);
+    let rows: Vec<_> = (0..6).map(|row| e.w().row_span(row)).collect();
+    assert_eq!(rows, vec![0..11, 11..17, 17..22, 23..33, 33..43, 43..48]);
+    // Down goes a row, in the column it came from; End is the line's.
+    e.keys(&[(Key::Right, NONE), (Key::Right, NONE), (Key::Down, NONE)]);
+    assert_eq!(e.head(), 13);
+    e.keys(&[(Key::Down, NONE), (Key::Down, NONE)]);
+    assert_eq!(e.head(), 25);
+    e.keys(&[(Key::Up, NONE), (Key::End, NONE)]);
+    assert_eq!(e.head(), 22);
+    // A click on the third row, two cells in; past a row's end stays in the row.
+    e.h.click(54.0 + 2.0 * 6.0, 2.0 * 14.0 + 7.0);
+    assert_eq!(e.head(), 19);
+    e.h.advance(Duration::from_secs(1));
+    e.h.click(54.0 + 9.0 * 6.0, 1.0 * 14.0 + 7.0);
+    assert_eq!(e.head(), 16); // the blank that hangs at the end of "gamma "
+    // Typing makes a row more, and the editor taller.
+    e.keys(&[(Key::End, Mods::CTRL)]);
+    e.h.type_text("zzzzzz");
+    e.h.frame();
+    assert_eq!(e.h.tree.rect(e.id).height, 7.0 * 14.0);
+    assert_eq!(e.w().scroll_x, 0.0);
+}
+
+#[test]
+fn ctrl_and_a_press_on_a_link_opens_it_and_moves_no_cursor() {
+    use quadra_platform::MouseButton;
+    use quadra_prim::Point;
+    let opened = std::rc::Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
+    let seen = opened.clone();
+    let mut h = Harness::new();
+    let text = "see www.example.com/a now".to_string();
+    h.mount(move || {
+        let on = editor(text).font(10.0, 14.0).on_link(move |url| seen.borrow_mut().push(url.to_string()));
+        column().size(400.0, 140.0).child(on)
+    });
+    h.frame();
+    let id = h.query(|n| n.semantics.role == Role::TextInput)[0];
+    let at = Point::new(54.0 + 8.0 * 6.0, 7.0); // on "example"
+    let now = h.now();
+    h.tree.pointer(PointerInput::Move, MouseButton::None, at, Mods::CTRL, now);
+    h.frame();
+    let mut e = Ed { h, id };
+    assert_eq!(e.h.tree.cursor(), quadra_platform::Cursor::Pointer); // the pointer of a link
+    e.h.tree.pointer(PointerInput::Down, MouseButton::Left, at, Mods::CTRL, now);
+    e.h.tree.pointer(PointerInput::Up, MouseButton::Left, at, Mods::CTRL, now);
+    e.h.frame();
+    assert_eq!(*opened.borrow(), vec!["https://www.example.com/a".to_string()]);
+    assert_eq!((e.head(), e.w().doc.cursors.len()), (0, 1));
+    // Without Ctrl it is text like any other: the press puts the cursor.
+    e.h.advance(Duration::from_secs(1));
+    e.h.click(at.x, at.y);
+    assert_eq!(e.head(), 8);
+}
+
+#[test]
+fn the_gutter_marks_what_differs_from_the_base() {
+    use quadra_code::{Mark, marks};
+    let base = "a\nb\nc\nd\ne";
+    assert_eq!(marks(base, "a\nB\nc\nd\ne"), [Mark::None, Mark::Changed, Mark::None, Mark::None, Mark::None]);
+    assert_eq!(marks(base, "a\nb\nnew\nc\nd\ne")[2], Mark::Added);
+    assert_eq!(marks(base, "a\nc\nd\ne"), [Mark::None, Mark::Removed, Mark::None, Mark::None]);
+    assert_eq!(marks(base, "a\nb\nc\nd"), [Mark::None, Mark::None, Mark::None, Mark::Removed]);
+    // The editor finds them again as it is edited.
+    let mut h = Harness::new();
+    h.mount(move || column().size(400.0, 140.0).child(editor(base).base(base).font(10.0, 14.0)));
+    h.frame();
+    let id = h.query(|n| n.semantics.role == Role::TextInput)[0];
+    h.tree.focus(id);
+    let mut e = Ed { h, id };
+    assert!(e.w().marks.iter().all(|m| *m == Mark::None));
+    e.h.type_text("x");
+    assert_eq!(e.w().marks[0], Mark::Changed);
+}

@@ -58,6 +58,22 @@ spec:
       restartPolicy: Always
 "#;
 
+const NOTE_BASE: &str = "# Notes
+
+The editor wraps a paragraph at its width when it is told to, as prose wants: a line breaks after the last blank that fits, and a word longer than a row breaks inside it.
+
+Links open with Ctrl and a press: https://example.com/notes.
+";
+
+const NOTE: &str = "# Notes
+
+The editor wraps a paragraph at its width when it is told to, as prose wants: a line breaks after the last blank that fits, and a word longer than a row breaks inside it.
+
+The gutter marks what differs from the text it is told is the base.
+
+Links open with Ctrl and a press: https://example.com/notes.
+";
+
 pub fn editor_page() -> Div {
     let about = "A code editor: a buffer of pieces, several cursors, undo by groups, colours read a \
                  line at a time as far as the view shows. Try ctrl-d, alt-up/down, ctrl-alt-down, \
@@ -70,6 +86,13 @@ pub fn editor_page() -> Div {
                 "V",
                 framed(column().height(380.0).child(editor(V_SAMPLE).path("main.v"))),
                 "editor(source).path(\"main.v\")",
+            ),
+            demo(
+                "Prose, wrapped, marked against its base",
+                framed(
+                    column().height(220.0).child(editor(NOTE).path("notes.md").wrap(true).base(NOTE_BASE)),
+                ),
+                "editor(text).path(\"notes.md\").wrap(true).base(saved).on_link(open)",
             ),
             demo(
                 "YAML",

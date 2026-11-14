@@ -1,4 +1,4 @@
-//! Painting the editor (specs/13, "Code"): the lines of the band its layer paints, and no
+//! Painting the editor (specs/13, "Code"): the rows of the band its layer paints, and no
 //! other. Under the text the lines of the cursors, the selections, the matches and the
 //! brackets; the text a glyph at the column of its character; the cursors; the gutter.
 
@@ -11,41 +11,50 @@ use quadra_tree::{PaintCx, paint_glyph};
 
 use super::widget::EditorWidget;
 
-/// The lines `first..last` that show, and where things go.
+/// The rows `first..last` that show, and where things go.
 struct Frame {
     first: usize,
     last: usize,
-    /// The x of the column 0, and the top of the line 0.
+    /// The x of the column 0, and the top of the row 0.
     left: f32,
     top: f32,
     /// The text's area, right of the gutter.
     area: Rect,
 }
 
+impl Frame {
+    fn shows(&self, row: usize) -> bool {
+        (self.first..self.last).contains(&row)
+    }
+}
+
 pub(super) fn paint(w: &mut EditorWidget, cx: &mut PaintCx) {
     w.highlight.sync(&mut w.doc);
+    w.sync_rows();
     let rect = cx.rect;
-    let lines = w.doc.buffer.line_count();
+    let rows = w.row_count();
     let band = cx.visible.unwrap_or(rect);
-    let line_of_y = |y: f32| ((y - rect.y) / w.line_px).max(0.0);
-    let first = (line_of_y(band.y).floor() as usize).min(lines);
-    let last = (line_of_y(band.bottom()).ceil() as usize).min(lines);
+    let row_of_y = |y: f32| ((y - rect.y) / w.line_px).max(0.0);
+    let first = (row_of_y(band.y).floor() as usize).min(rows);
+    let last = (row_of_y(band.bottom()).ceil() as usize).min(rows);
     let area = Rect::new(rect.x + w.gutter, rect.y, w.text_width(), rect.height);
     let f = Frame { first, last, left: area.x - w.scroll_x, top: rect.y, area };
     let outer = cx.clip;
     cx.clip = outer.then(cx.device(area), 0.0);
     under(w, cx, &f);
     w.tiles.clear();
-    for n in first..last {
-        line(w, cx, &f, n);
+    if first < last {
+        for n in w.row_line(first)..=w.row_line(last - 1) {
+            line(w, cx, &f, n);
+        }
     }
     if w.focused {
         for c in w.doc.cursors.clone() {
-            let n = w.doc.buffer.line_of(c.head);
-            if (first..last).contains(&n) {
-                let x = f.left + w.x_of(c.head) + preedit_cols(w, c.head) as f32 * w.cell;
+            let (row, x) = w.place(c.head);
+            if f.shows(row) {
+                let x = f.left + x + preedit_cols(w, c.head) as f32 * w.cell;
                 let color = if w.caret_on { w.colors.cursor } else { Color::TRANSPARENT };
-                let bounds = cx.device(Rect::new(x, f.top + n as f32 * w.line_px, 2.0, w.line_px));
+                let bounds = cx.device(Rect::new(x, f.top + row as f32 * w.line_px, 2.0, w.line_px));
                 cx.push(Quad { bounds, background: color, ..Quad::default() }.instance(&cx.clip));
             }
         }
@@ -62,22 +71,25 @@ fn preedit_cols(w: &EditorWidget, head: usize) -> usize {
     }
 }
 
-/// A box over a range of the text in each of its lines that show; a range that goes on
-/// past the end of a line shows half a cell of its line break.
+/// A box over a range of the text in each of its rows that show; a range that goes on past
+/// the end of a line shows half a cell of its line break.
 fn boxes(w: &EditorWidget, f: &Frame, range: Range<usize>, mut each: impl FnMut(Rect)) {
-    let buffer = &w.doc.buffer;
-    let (from, to) = (buffer.line_of(range.start), buffer.line_of(range.end));
-    for n in from.max(f.first)..=to.min(f.last.saturating_sub(1)) {
-        if n >= f.last {
+    let ((from, x0), (to, x1)) = (w.place(range.start), w.place(range.end));
+    for row in from.max(f.first)..=to.min(f.last.saturating_sub(1)) {
+        if row >= f.last {
             break;
         }
-        let x0 = if n == from { w.x_of(range.start) } else { 0.0 };
-        let x1 = if n == to {
-            w.x_of(range.end)
+        let left = if row == from { x0 } else { 0.0 };
+        let right = if row == to {
+            x1
         } else {
-            w.columns(&buffer.line(n)) as f32 * w.cell + w.cell / 2.0
+            // As far as the row goes, and half a cell of the line break after the last.
+            let span = w.row_span(row);
+            let width = (w.doc.col_of(span.end) - w.doc.col_of(span.start)) as f32 * w.cell;
+            let last_of_line = row + 1 == w.line_rows(w.row_line(row)).end;
+            width + if last_of_line { w.cell / 2.0 } else { 0.0 }
         };
-        each(Rect::new(f.left + x0, f.top + n as f32 * w.line_px, x1 - x0, w.line_px));
+        each(Rect::new(f.left + left, f.top + row as f32 * w.line_px, right - left, w.line_px));
     }
 }
 
@@ -87,9 +99,8 @@ fn under(w: &EditorWidget, cx: &mut PaintCx, f: &Frame) {
     };
     if w.focused {
         for c in &w.doc.cursors {
-            let n = w.doc.buffer.line_of(c.head);
-            if (f.first..f.last).contains(&n) {
-                let band = Rect::new(f.area.x, f.top + n as f32 * w.line_px, f.area.width, w.line_px);
+            for row in w.line_rows(w.doc.buffer.line_of(c.head)).filter(|&row| f.shows(row)) {
+                let band = Rect::new(f.area.x, f.top + row as f32 * w.line_px, f.area.width, w.line_px);
                 fill(cx, band, w.colors.line);
             }
         }
@@ -97,13 +108,20 @@ fn under(w: &EditorWidget, cx: &mut PaintCx, f: &Frame) {
     for c in w.doc.cursors.iter().filter(|c| !c.is_empty()) {
         boxes(w, f, c.range(), |r| fill(cx, r, w.colors.selection));
     }
-    // The matches from the first that ends in a line that shows.
-    let start = w.doc.buffer.line_start(f.first);
-    let end = if f.last < w.doc.buffer.line_count() { w.doc.buffer.line_start(f.last) } else { usize::MAX };
+    // The matches from the first that ends in a row that shows.
+    let start = if f.first < w.row_count() { w.row_span(f.first).start } else { usize::MAX };
+    let end = if f.last < w.row_count() { w.row_span(f.last).start } else { usize::MAX };
     let from = w.matches.partition_point(|m| m.end < start);
     for (i, m) in w.matches.iter().enumerate().skip(from).take_while(|(_, m)| m.start < end) {
         let color = if w.current == Some(i) { w.colors.find_current } else { w.colors.find };
         boxes(w, f, m.clone(), |r| fill(cx, r, color));
+    }
+    // The link Ctrl would open, underlined.
+    if let Some((range, _)) = w.link.as_ref().filter(|_| w.link_hot) {
+        boxes(w, f, range.clone(), |r| {
+            let under = Rect::new(r.x, r.y + w.line_px - 4.0, r.width, 1.0);
+            fill(cx, under, w.colors.cursor)
+        });
     }
     if w.focused
         && let Some((a, b)) = w.doc.bracket_pair()
@@ -114,8 +132,8 @@ fn under(w: &EditorWidget, cx: &mut PaintCx, f: &Frame) {
     }
 }
 
-/// Paints a line's text: each glyph at the column of its character, in the colour of the
-/// kind of its token; with the composition at the primary cursor, underlined.
+/// Paints a line's text: each glyph at the column of its character in its row, in the
+/// colour of the kind of its token; with the composition at the primary cursor, underlined.
 fn line(w: &mut EditorWidget, cx: &mut PaintCx, f: &Frame, n: usize) {
     w.highlight.tokens(&w.doc.buffer, n, &mut w.tokens);
     let mut shown = w.doc.buffer.line(n).into_owned();
@@ -129,15 +147,28 @@ fn line(w: &mut EditorWidget, cx: &mut PaintCx, f: &Frame, n: usize) {
         shown.insert_str(head - start, text);
         composed = head - start..head - start + text.len();
     }
-    let top = f.top + n as f32 * w.line_px;
-    let (size, scale, tab) = (w.style.size, cx.scale, w.doc.tab_size.max(1));
+    let rows = w.line_rows(n);
+    let tab = w.doc.tab_size.max(1);
+    // Where each row starts in what is shown, and its column.
+    let starts: Vec<(usize, usize)> = rows
+        .clone()
+        .map(|row| {
+            let at = w.row_span(row).start - start;
+            let at = if at > composed.start { at + composed.len() } else { at };
+            (at, w.columns(&shown[..at]))
+        })
+        .collect();
+    let (size, scale) = (w.style.size, cx.scale);
     let face = cx.fonts.text.face_for(&w.style);
     let (ascent, descent) = cx.fonts.text.line_metrics(&w.style);
-    let baseline = ((top + (w.line_px - ascent - descent) / 2.0 + ascent) * scale).round();
+    let baseline = |row: usize| {
+        let top = f.top + row as f32 * w.line_px;
+        ((top + (w.line_px - ascent - descent) / 2.0 + ascent) * scale).round()
+    };
     let word = cx.fonts.text.word(&shown, face, size);
     // Walking the glyphs, which are in the order of the text: the column of the character
-    // a glyph is of, and the token that holds it.
-    let (mut at, mut col, mut token) = (0, 0, 0);
+    // a glyph is of, its row, and the token that holds it.
+    let (mut at, mut col, mut token, mut r) = (0, 0, 0, 0);
     let (mut cluster, mut base) = (usize::MAX, 0.0);
     for g in &word.glyphs {
         let c = g.cluster as usize;
@@ -147,14 +178,18 @@ fn line(w: &mut EditorWidget, cx: &mut PaintCx, f: &Frame, n: usize) {
                 col = if shown.as_bytes()[at] == b'\t' { (col / tab + 1) * tab } else { col + width };
                 at = end;
             }
+            while r + 1 < starts.len() && c >= starts[r + 1].0 {
+                r += 1;
+            }
             (cluster, base) = (c, g.x);
         }
-        if shown.as_bytes().get(c) == Some(&b'\t') {
+        let row = rows.start + r;
+        if shown.as_bytes().get(c) == Some(&b'\t') || !f.shows(row) {
             continue;
         }
-        let x = f.left + col as f32 * w.cell + (g.x - base);
-        if x > f.area.right() {
-            break;
+        let x = f.left + (col - starts[r].1) as f32 * w.cell + (g.x - base);
+        if x > f.area.right() || x + g.advance < f.area.x {
+            continue;
         }
         let color = if composed.contains(&c) {
             w.colors.text
@@ -168,34 +203,43 @@ fn line(w: &mut EditorWidget, cx: &mut PaintCx, f: &Frame, n: usize) {
                 _ => w.colors.text,
             }
         };
-        if x + g.advance < f.area.x {
-            continue;
-        }
-        let pen = Point::new(x * scale, baseline - (g.y * scale).round());
+        let pen = Point::new(x * scale, baseline(row) - (g.y * scale).round());
         w.tiles.extend(paint_glyph(cx, (g.face, g.id), size * scale, pen, color));
     }
-    let cols = w.columns(&shown);
-    w.widest = w.widest.max((cols + 4) as f32 * w.cell);
+    if !w.wrap {
+        w.widest = w.widest.max((w.columns(&shown) + 4) as f32 * w.cell);
+    }
     if !composed.is_empty() {
         let x0 = w.columns(&shown[..composed.start]) as f32 * w.cell;
         let x1 = w.columns(&shown[..composed.end]) as f32 * w.cell;
-        let bounds = Rect::new(f.left + x0, top + w.line_px - 2.0, x1 - x0, 1.0);
+        let (row, _) = w.place(head);
+        let from = w.columns(&shown[..starts[row - rows.start].0]) as f32 * w.cell;
+        let top = f.top + row as f32 * w.line_px;
+        let bounds = Rect::new(f.left + x0 - from, top + w.line_px - 2.0, x1 - x0, 1.0);
         cx.quad(Quad { bounds, background: w.colors.text, ..Quad::default() });
     }
 }
 
-/// The numbers of the lines, right of at least four digits, brighter on the lines of the
-/// cursors while the editor has the focus.
+/// The numbers of the lines on their first rows, right of at least four digits, brighter on
+/// the lines of the cursors while the editor has the focus.
 fn gutter(w: &mut EditorWidget, cx: &mut PaintCx, f: &Frame) {
     let (size, scale) = (w.style.size, cx.scale);
     let face = cx.fonts.text.face_for(&w.style);
     let (ascent, descent) = cx.fonts.text.line_metrics(&w.style);
     let right = cx.rect.x + w.gutter - 3.0 * w.cell;
-    for n in f.first..f.last {
+    if f.first >= f.last {
+        return;
+    }
+    for n in w.row_line(f.first)..=w.row_line(f.last - 1) {
+        let row = w.line_rows(n).start;
+        if !f.shows(row) {
+            continue;
+        }
         let number = (n + 1).to_string();
         let active = w.focused && w.doc.cursors.iter().any(|c| w.doc.buffer.line_of(c.head) == n);
         let color = if active { w.colors.gutter_active } else { w.colors.gutter };
-        let top = f.top + n as f32 * w.line_px;
+        let top = f.top + row as f32 * w.line_px;
+        w.paint_mark(cx, n, top);
         let baseline = ((top + (w.line_px - ascent - descent) / 2.0 + ascent) * scale).round();
         let word = cx.fonts.text.word(&number, face, size);
         let left = right - word.width;

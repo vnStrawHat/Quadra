@@ -4,8 +4,10 @@
 
 mod find_bar;
 mod keys;
+mod marks;
 mod paint;
 mod pointer;
+mod rows;
 mod widget;
 
 use std::cell::Cell;
@@ -21,10 +23,11 @@ use quadra_ui::{MountCx, NodeRef, View, column, div, scroll, show};
 use find_bar::Finding;
 
 pub use keys::{EDITOR_CONTEXT, EditorCommand, bind_keys};
+pub use marks::{Mark, marks};
 pub use widget::EditorWidget;
 
 use crate::highlight::{Highlight, Highlighter};
-use crate::token::tokenizer_for;
+use crate::token::{Tokenizer, tokenizer_for};
 
 const CARET_BLINK: Duration = Duration::from_millis(530);
 
@@ -34,12 +37,23 @@ pub struct Editor {
     highlight: Option<Box<dyn Highlight>>,
     /// The size of the text and the height of a line, in pixels.
     font: (f32, f32),
+    wrap: bool,
+    on_link: Option<pointer::OnLink>,
+    base: Option<String>,
 }
 
 /// A code editor over a text, in the kit's mono face at 15 px with lines of 25. Give it a
 /// height, or let it grow.
 pub fn editor(text: impl Into<String>) -> Editor {
-    Editor { text: text.into(), path: String::new(), highlight: None, font: (15.0, 25.0) }
+    Editor {
+        text: text.into(),
+        path: String::new(),
+        highlight: None,
+        font: (15.0, 25.0),
+        wrap: false,
+        on_link: None,
+        base: None,
+    }
 }
 
 impl Editor {
@@ -52,6 +66,26 @@ impl Editor {
     /// Colours the lines with another highlighter than the tokenizer the path names.
     pub fn highlighter(mut self, highlight: impl Highlight + 'static) -> Self {
         self.highlight = Some(Box::new(highlight));
+        self
+    }
+
+    /// What Ctrl and a press on a link in the text do with its URL: open it, or follow it
+    /// in the app. Without it links are not underlined or opened.
+    pub fn on_link(mut self, f: impl Fn(&str) + 'static) -> Self {
+        self.on_link = Some(Rc::new(f));
+        self
+    }
+
+    /// The text the gutter marks what was added, changed and removed against: the file as
+    /// it was saved, or as version control has it.
+    pub fn base(mut self, text: impl Into<String>) -> Self {
+        self.base = Some(text.into());
+        self
+    }
+
+    /// Breaks lines at the editor's width, as prose wants: no line scrolls sideways.
+    pub fn wrap(mut self, wrap: bool) -> Self {
+        self.wrap = wrap;
         self
     }
 
@@ -88,14 +122,20 @@ fn edit(
     // A page is the lines of the view the editor scrolls in.
     let view = tree.parent(id).map_or(0.0, |port| tree.rect(port).height);
     let Some(w) = tree.widget_mut::<EditorWidget>(id) else { return };
-    let (lines, version) = (w.doc.buffer.line_count(), w.doc.version);
+    w.sync_rows();
+    let (lines, version, rows) = (w.doc.buffer.line_count(), w.doc.version, w.row_count());
     w.doc.now = now;
     f(w, ((view / w.line_px) as usize).max(1));
     w.caret_on = true; // a caret in use does not blink away
     w.follow_caret();
-    let (relaid, changed) = (w.doc.buffer.line_count() != lines, w.doc.version != version);
+    w.sync_rows();
+    let changed = w.doc.version != version;
+    let relaid = w.doc.buffer.line_count() != lines || w.row_count() != rows;
     if changed && w.find.is_some() {
         w.refind(); // the matches of the text as it is now
+    }
+    if changed {
+        w.remark();
     }
     let caret = w.caret_rect();
     if relaid {
@@ -124,8 +164,14 @@ struct Surface {
 impl View for Surface {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let Surface { editor, find, widget: slot, bar, epoch } = self;
-        let tokens = || Box::new(Highlighter::new(tokenizer_for(&editor.path))) as Box<dyn Highlight>;
-        let widget = EditorWidget::new(&editor.text, editor.highlight.unwrap_or_else(tokens));
+        let tokenizer = tokenizer_for(&editor.path);
+        let tokens = || Box::new(Highlighter::new(tokenizer)) as Box<dyn Highlight>;
+        let mut widget = EditorWidget::new(&editor.text, editor.highlight.unwrap_or_else(tokens));
+        widget.wrap = editor.wrap;
+        widget.prose = matches!(tokenizer, Tokenizer::Plain | Tokenizer::Markdown);
+        widget.base = editor.base;
+        widget.remark();
+        let editor_link = editor.on_link.clone();
         let (size, line) = editor.font;
         let family = Some(quadra_kit::fonts::MONO.into());
         let text =
@@ -167,6 +213,10 @@ impl View for Surface {
                     (EditorCommand::Paste, Some(clipboard)) => {
                         w.doc.paste(&clipboard.read_text().unwrap_or_default())
                     }
+                    // Wrapped, up and down go by rows.
+                    (EditorCommand::Move(motion, extend), _) if w.wrap && rows_by(motion, page).is_some() => {
+                        w.move_rows(rows_by(motion, page).unwrap_or(0), extend)
+                    }
                     _ => command.run(&mut w.doc, page),
                 });
                 // The bar has the focus once it is there.
@@ -193,7 +243,7 @@ impl View for Surface {
             }
         });
         blink(cx, id);
-        pointer::pointer(cx, id, epoch);
+        pointer::pointer(cx, id, epoch, editor_link);
         id
     }
 }
@@ -229,4 +279,16 @@ fn blink(cx: &mut MountCx, id: NodeId) {
             }
         });
     });
+}
+
+/// How many rows a motion goes, down; none for one that is not up or down.
+fn rows_by(motion: crate::doc::Move, page: usize) -> Option<isize> {
+    use crate::doc::Move;
+    match motion {
+        Move::Up => Some(-1),
+        Move::Down => Some(1),
+        Move::PageUp => Some(-(page as isize)),
+        Move::PageDown => Some(page as isize),
+        _ => None,
+    }
 }

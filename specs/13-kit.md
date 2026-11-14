@@ -996,7 +996,9 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   - The colours are roles of the theme, a theme file's `editor`: `token::EDITOR_CURSOR`,
     `EDITOR_LINE`, `EDITOR_GUTTER`, `EDITOR_GUTTER_ACTIVE`, `EDITOR_SELECTION`,
     `EDITOR_FIND`, `EDITOR_FIND_CURRENT`, `EDITOR_BRACKET`; the text the kinds' `syntax`,
-    and what no token covers a variable's (as the reference painted it).
+    and what no token covers a variable's in code (as the reference painted it) and
+    `EDITOR_FOREGROUND` in prose (plain text, Markdown). The marks of the gutter are `OK`,
+    `WARN` and `ERROR`.
   - **Keys** are bindings of the context `editor` to `EditorCommand`, an action
     (`bind_keys(&mut keymap)` adds them; an app adds them to its keymap): those of
     behaviour/18, "Keys". Tab indents there, being of the nearest context. Escape closes the
@@ -1020,9 +1022,27 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     Replace puts the text in place of the chosen match and goes to the next; All replaces
     every match as one undo. The matches are found again as the query, a switch or the text
     changes, and painted under the text, the chosen one stronger.
-- Not yet: soft wrap; Shift-Enter in the query (the input submits on Enter whatever is
-  held); links; the marks of a diff; a glyph wider or narrower
-  than its cells centred in them; what is inside `<script>` and
+  - **Soft wrap** (`editor(..).wrap(true)`, for prose): a line is broken into rows at the
+    text's width in cells, after the last blank that fits; a word longer than a row breaks
+    inside it, and blanks hang past the edge. The rows (`editor/rows.rs`: the first row of
+    each line, where each row starts) are built again when the text, the width or the tab
+    size changes, a pass over the bytes (ponytail: from the changed line on, if long wrapped
+    documents make typing slow). Rows drive every y: paint (the band of a line over all its
+    rows, its number on the first), the pointer, the caret kept in view, the height. Up,
+    down and the page keys go by rows in the column they came from; Home and End stay the
+    line's. Nothing scrolls sideways.
+  - **Links** (`.on_link(|url| ..)`): the URLs of the line under the pointer are found as
+    it moves (`quadra_text::find_urls`, that line alone); with Ctrl held one is underlined
+    and the pointer is a hand, and Ctrl and a press give its URL to the app and move no
+    cursor. Without the hook links are text.
+  - **The marks of a diff** (`.base(text)`): each line is marked against the base as added,
+    changed or after lines removed (`marks(old, new)`, from the kit's `diff_lines`), found
+    again after each change (ponytail: the whole text, against the changed lines only if
+    large files with a base make typing slow); a bar beside the numbers, a short one above
+    a line where some were removed.
+- Not yet: Shift-Enter in the query (the input submits on Enter whatever is held); the
+  hint over a link; the line at the top and scrolling to a line, for a preview that follows;
+  a glyph wider or narrower than its cells centred in them; what is inside `<script>` and
   `<style>` is plain text; regular expressions in JavaScript are not told from division.
 
 ## Porting the kit

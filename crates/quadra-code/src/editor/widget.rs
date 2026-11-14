@@ -6,11 +6,13 @@ use std::ops::Range;
 use quadra_a11y::{Role, Semantics};
 use quadra_kit::token;
 use quadra_layout::Known;
-use quadra_prim::{Color, Point, Rect, Size};
+use quadra_prim::{Color, Rect, Size};
 use quadra_reactive::Signal;
 use quadra_text::TextStyle;
 use quadra_tree::{GlyphTile, Inherited, MeasureCx, PaintCx, Theme, Widget};
 
+use super::marks::Mark;
+use super::rows::Rows;
 use crate::doc::Doc;
 use crate::doc::motion::columns;
 use crate::find::{Query, next_match};
@@ -58,6 +60,19 @@ pub struct EditorWidget {
     pub(super) width: f32,
     /// The widest line painted so far: how far it scrolls sideways.
     pub(super) widest: f32,
+    /// The text the marks of the gutter compare with, the marks, and their colours.
+    pub(super) base: Option<String>,
+    pub marks: Vec<Mark>,
+    pub(super) mark_colors: [Color; 3],
+    /// The link under the pointer, and whether Ctrl is held over it.
+    pub(super) link: Option<(Range<usize>, String)>,
+    pub(super) link_hot: bool,
+    /// It holds prose (plain text, Markdown): what no token covers is the editor's text
+    /// colour, not a variable's.
+    pub prose: bool,
+    /// Lines are broken at the text's width, into the rows that `rows` holds.
+    pub wrap: bool,
+    pub(super) rows: Option<Rows>,
     pub(super) tiles: Vec<GlyphTile>,
     pub(super) tokens: Vec<Token>,
 }
@@ -82,6 +97,14 @@ impl EditorWidget {
             gutter: 0.0,
             width: 0.0,
             widest: 0.0,
+            base: None,
+            marks: Vec::new(),
+            mark_colors: [Color::TRANSPARENT; 3],
+            link: None,
+            link_hot: false,
+            prose: false,
+            wrap: false,
+            rows: None,
             tiles: Vec::new(),
             tokens: Vec::new(),
         }
@@ -90,48 +113,6 @@ impl EditorWidget {
     /// The width of the text, right of the gutter.
     pub(super) fn text_width(&self) -> f32 {
         (self.width - self.gutter).max(0.0)
-    }
-
-    /// The x of an offset from the left of the text, before scrolling.
-    pub(super) fn x_of(&self, offset: usize) -> f32 {
-        self.doc.col_of(offset) as f32 * self.cell
-    }
-
-    /// The caret of the primary cursor, from the node's corner.
-    pub fn caret_rect(&self) -> Rect {
-        let head = self.doc.primary().head;
-        let line = self.doc.buffer.line_of(head);
-        let x = self.gutter + self.x_of(head) - self.scroll_x;
-        Rect::new(x, line as f32 * self.line_px, 2.0, self.line_px)
-    }
-
-    /// The offset nearest a point from the node's corner.
-    pub fn offset_at(&self, at: Point) -> usize {
-        let last = self.doc.buffer.line_count() - 1;
-        let line = ((at.y / self.line_px).floor().max(0.0) as usize).min(last);
-        self.doc.offset_at_col(line, self.col_at(at.x))
-    }
-
-    /// The column nearest an x from the node's corner.
-    pub(super) fn col_at(&self, x: f32) -> usize {
-        ((x - self.gutter + self.scroll_x) / self.cell).round().max(0.0) as usize
-    }
-
-    /// Scrolls sideways as little as keeps the caret in view, four cells from the edges.
-    pub fn follow_caret(&mut self) {
-        let (x, room, margin) = (self.x_of(self.doc.primary().head), self.text_width(), 4.0 * self.cell);
-        self.widest = self.widest.max(x + margin);
-        if x < self.scroll_x + margin {
-            self.scroll_x = (x - margin).max(0.0);
-        } else if x > self.scroll_x + room - margin {
-            self.scroll_x = x - room + margin;
-        }
-    }
-
-    /// Scrolls sideways by `dx`, as far as the widest line painted.
-    pub fn scroll_by(&mut self, dx: f32) -> bool {
-        let to = (self.scroll_x + dx).clamp(0.0, (self.widest - self.text_width()).max(0.0));
-        std::mem::replace(&mut self.scroll_x, to) != to
     }
 
     /// Finds the query again in the text as it is, chooses the match at or after the
@@ -182,7 +163,7 @@ impl Widget for EditorWidget {
         true
     }
 
-    /// As wide as the view, as high as the lines.
+    /// As wide as the view, as high as the rows: the lines, or what they wrap into.
     fn measure(&mut self, cx: &mut MeasureCx, known: Known, avail: Size) -> Size {
         let face = cx.text.face_for(&self.style);
         self.cell = cx.text.word("M", face, self.style.size).width.max(1.0);
@@ -191,7 +172,8 @@ impl Widget for EditorWidget {
         let digits = lines.to_string().len().max(4);
         self.gutter = (digits + 5) as f32 * self.cell;
         self.width = known.width.unwrap_or(if avail.width.is_finite() { avail.width } else { 0.0 });
-        Size::new(self.width, lines as f32 * self.line_px)
+        self.sync_rows();
+        Size::new(self.width, self.row_count() as f32 * self.line_px)
     }
 
     fn paint(&mut self, cx: &mut PaintCx) {
@@ -205,7 +187,7 @@ impl Widget for EditorWidget {
     fn theme(&mut self, theme: &Theme) -> bool {
         let syntax = crate::syntax::KINDS.map(|kind| theme.color(crate::syntax::role(kind)));
         let colors = Colors {
-            text: theme.color(token::SYNTAX_VARIABLE),
+            text: theme.color(if self.prose { token::EDITOR_FOREGROUND } else { token::SYNTAX_VARIABLE }),
             cursor: theme.color(token::EDITOR_CURSOR),
             line: theme.color(token::EDITOR_LINE),
             gutter: theme.color(token::EDITOR_GUTTER),
@@ -216,7 +198,9 @@ impl Widget for EditorWidget {
             bracket: theme.color(token::EDITOR_BRACKET),
             syntax,
         };
-        std::mem::replace(&mut self.colors, colors) != colors
+        let marks = super::marks::colors(theme);
+        let marked = std::mem::replace(&mut self.mark_colors, marks) != marks;
+        (std::mem::replace(&mut self.colors, colors) != colors) | marked
     }
 
     fn caret(&self) -> Option<Rect> {

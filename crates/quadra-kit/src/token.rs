@@ -160,7 +160,9 @@ roles! {
     DIFF_ADD = "diff_add";
     DIFF_REMOVE = "diff_remove";
     /// The code editor's: a theme file's `editor`, each `editor.<name>` the role
-    /// `editor_<name>` (its text, where no kind of token colours it, is a variable's).
+    /// `editor_<name>`. The text of prose, where no kind of token colours it (in code it is
+    /// a variable's).
+    EDITOR_FOREGROUND = "editor_foreground";
     EDITOR_CURSOR = "editor_cursor";
     /// The band of a line that has a cursor.
     EDITOR_LINE = "editor_line_highlight";

@@ -164,6 +164,7 @@ dependencies = [
  "quadra-testing",
  "quadra-text",
  "quadra-tree",
+ "regex-lite",
 ]
 
 [[package]]

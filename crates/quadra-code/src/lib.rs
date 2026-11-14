@@ -4,6 +4,8 @@
 
 mod buffer;
 mod doc;
+mod find;
+mod highlight;
 mod lang;
 mod lex;
 mod md;
@@ -14,6 +16,8 @@ mod yaml;
 
 pub use buffer::Buffer;
 pub use doc::{Cursor, Doc, Edit, Move};
+pub use find::{Query, next_match};
+pub use highlight::Highlighter;
 pub use lang::LangSpec;
 pub use syntax::role;
 pub use token::{Token, TokenKind, Tokenizer, tokenizer_for};

@@ -960,8 +960,22 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   find). The seeded test (12, "Fuzzing") holds every tokenizer to both.
 - A tokenizer allocates nothing: tokens go into the caller's vector, and words are compared
   where they are.
-- Not yet: the highlighter that keeps the states of lines, finding, and the editor's
-  widget; what is inside `<script>` and
+- **The highlighter** (`Highlighter`) keeps the state each line ends in for the lines
+  before `valid`; `sync(doc)` takes the document's `dirty` and lowers `valid` to it, and
+  `tokens(buffer, line, out)` reads the stale lines before `line` and then the line. A view
+  asks for the lines it shows, so a letter typed deep in a file costs those lines; the
+  lines below them stay stale until they show. A test edits at random and holds every
+  line's tokens to those of reading the text from its start.
+- **Finding** (`Query`: the text, `case`, `word`, `regex`) gives every place it matches
+  (`matches(doc)`, or what is wrong with a pattern). A query that is no pattern is one all
+  the same, each letter a class of its two cases, so a letter of Vietnamese matches its
+  other case and the offsets are the text's; a whole word has no letter, digit or `_`
+  beside it. The pattern is `regex-lite`'s (specs/01, R15). `next_match` goes round the
+  ends; `Doc::replace` and `replace_all` (one undo) put a text in place of matches. The
+  matches are found again for each version of the document while finding shows (as the V
+  tree did), on a copy of the text (ponytail: piece by piece if files of tens of megabytes
+  make it slow); a replacement is literal.
+- Not yet: the editor's widget; what is inside `<script>` and
   `<style>` is plain text; regular expressions in JavaScript are not told from division.
 
 ## Porting the kit

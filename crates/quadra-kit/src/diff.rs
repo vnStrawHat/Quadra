@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 use quadra_platform::Clipboard;
 use quadra_reactive::{effect, memo, signal, untrack, use_context};
-use quadra_tree::NodeId;
+use quadra_tree::{NodeId, Token};
 use quadra_ui::{IntoProp, MountCx, Prop, View, column, div, dynamic, uniform_list};
 
 use crate::{fonts, token};
@@ -25,17 +25,23 @@ use view::build;
 const ROW: f32 = 18.0;
 const LETTER: f32 = 7.2;
 
+/// The colours of the lines of a text: for each line, parts of it and the role of each.
+pub type LineColours = Vec<Vec<(Range<usize>, Token)>>;
+
+type Colourer = Rc<dyn Fn(&str) -> LineColours>;
+
 pub struct Diff {
     old: Prop<String>,
     new: Prop<String>,
     mode: Prop<DiffMode>,
     context: Option<usize>,
+    colours: Option<Colourer>,
 }
 
 /// What differs between two texts, line by line. Give it a height, or let it grow.
 pub fn diff<A, B>(old: impl IntoProp<String, A>, new: impl IntoProp<String, B>) -> Diff {
     let mode = Prop::Value(DiffMode::Inline);
-    Diff { old: old.into_prop(), new: new.into_prop(), mode, context: None }
+    Diff { old: old.into_prop(), new: new.into_prop(), mode, context: None, colours: None }
 }
 
 impl Diff {
@@ -49,6 +55,13 @@ impl Diff {
     /// shows them when it is clicked.
     pub fn context(mut self, lines: usize) -> Self {
         self.context = Some(lines);
+        self
+    }
+
+    /// Colours the lines of both texts: `f` is given a whole text and gives the colours of
+    /// each of its lines (`quadra_code::line_colours(path)` colours code).
+    pub fn colours(mut self, f: impl Fn(&str) -> LineColours + 'static) -> Self {
+        self.colours = Some(Rc::new(f));
         self
     }
 }
@@ -110,6 +123,10 @@ impl View for Diff {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (old, new, mode, context) = (reader(self.old), reader(self.new), reader(self.mode), self.context);
         let sides = compare::compare(old, new);
+        let colourer = self.colours;
+        let painted = memo(move || {
+            Rc::new(colourer.as_ref().map(|f| sides.with(|s| (f(&s.old.text), f(&s.new.text)))))
+        });
         // The folds that were opened, by their first line; other texts close them.
         let open = signal(Vec::new());
         effect(move || {
@@ -136,9 +153,9 @@ impl View for Diff {
             move |place| {
                 let mode = mode.clone();
                 let built = dynamic(move || {
-                    let (sides, rows) = (sides.get(), listed.get());
-                    let row =
-                        rows.get(place.get()).map(|at| build(&sides, *at, mode(), gutter.get(), (open, sx)));
+                    let (sides, rows, painted) = (sides.get(), listed.get(), painted.get());
+                    let how = (mode(), gutter.get(), painted.as_ref().as_ref());
+                    let row = rows.get(place.get()).map(|at| build(&sides, *at, how, (open, sx)));
                     row.unwrap_or_else(div).grow(1.0)
                 });
                 let shown = shown.clone();

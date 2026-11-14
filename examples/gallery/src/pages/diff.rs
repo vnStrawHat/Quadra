@@ -1,6 +1,7 @@
 //! The diff: two versions of a file, as one column or side by side.
 
 use quadra::{Div, column, row, signal};
+use quadra_code::line_colours;
 use quadra_kit::{DiffMode, diff, segmented};
 
 use crate::common::{demo, framed, page, stack};
@@ -96,8 +97,12 @@ pub fn diff_page() -> Div {
         [
             demo(
                 "A deployment, before and after",
-                stack().child(modes).child(framed(column().height(260.0).child(diff(OLD, NEW).mode(mode)))),
-                "diff(old, new).mode(mode)",
+                stack().child(modes).child(framed(
+                    column()
+                        .height(260.0)
+                        .child(diff(OLD, NEW).mode(mode).colours(line_colours("deploy.yaml"))),
+                )),
+                "diff(old, new).mode(mode).colours(line_colours(\"deploy.yaml\"))",
             ),
             demo(
                 "Side by side, folded",

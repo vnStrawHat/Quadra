@@ -4,12 +4,12 @@
 use quadra_layout::{Align, Justify, Overflow};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
-use quadra_tree::Role;
+use quadra_tree::{Role, Token};
 use quadra_ui::{Div, div, rich_text, row, span, text};
 
 use super::lines::changed_part;
 use super::rows::{DiffMode, Row};
-use super::{ROW, Sides};
+use super::{LineColours, ROW, Sides};
 use crate::token;
 
 #[derive(Clone, Copy, PartialEq)]
@@ -26,7 +26,7 @@ fn line(
     numbers: &[Option<usize>],
     gutter: f32,
     mark: Mark,
-    said: &str,
+    (said, colours): (&str, &[(std::ops::Range<usize>, Token)]),
     other: Option<&str>,
     sx: Signal<f32>,
 ) -> Div {
@@ -35,20 +35,32 @@ fn line(
         Mark::Removed => ("-", Some((token::DIFF_REMOVE, token::ERROR)), format!("Removed: {said}")),
         Mark::Added => ("+", Some((token::DIFF_ADD, token::OK)), format!("Added: {said}")),
     };
-    // ponytail: a tab is four spaces; stops when the editor says where they are.
-    let shown = |line: &str| line.replace('\t', "    ");
-    let (said, other) = (shown(said), other.map(shown));
     let part = other.and_then(|other| match mark {
-        Mark::Removed => changed_part(&said, &other).map(|(part, _)| part),
-        Mark::Added => changed_part(&other, &said).map(|(_, part)| part),
+        Mark::Removed => changed_part(said, other).map(|(part, _)| part),
+        Mark::Added => changed_part(other, said).map(|(_, part)| part),
         Mark::Same => None,
     });
     let part = part.unwrap_or(0..0);
-    let before = span(&said[..part.start]);
-    let changed = span(&said[part.clone()]).background(tint.map_or(token::CANVAS, |(_, ink)| ink).alpha(0.3));
-    let spans =
-        [(before, part.start), (changed, part.len()), (span(&said[part.end..]), said.len() - part.end)];
-    let spans: Vec<_> = spans.into_iter().filter(|(_, len)| *len > 0).map(|(span, _)| span).collect();
+    // Pieces where a colour or the part that changed starts or ends.
+    let mut cuts = vec![0, part.start, part.end, said.len()];
+    cuts.extend(colours.iter().flat_map(|(range, _)| [range.start, range.end]));
+    cuts.retain(|&cut| said.is_char_boundary(cut));
+    cuts.sort_unstable();
+    cuts.dedup();
+    // ponytail: a tab is four spaces; stops when the editor says where they are.
+    let shown = |line: &str| line.replace('\t', "    ");
+    let piece = |cut: &[usize]| {
+        let piece = span(shown(&said[cut[0]..cut[1]]));
+        let piece = match colours.iter().find(|(range, _)| range.contains(&cut[0])) {
+            Some((_, role)) => piece.color(*role),
+            None => piece,
+        };
+        match part.contains(&cut[0]) {
+            true => piece.background(tint.map_or(token::CANVAS, |(_, ink)| ink).alpha(0.3)),
+            false => piece,
+        }
+    };
+    let spans: Vec<_> = cuts.windows(2).map(piece).collect();
 
     let number = |n: &Option<usize>| {
         let cell = row().width(gutter).shrink(0.0).justify(Justify::End).padding_right(8.0);
@@ -70,7 +82,7 @@ fn line(
     }
     // A long line is cut at the edge and scrolls sideways; the numbers stay.
     // As wide as the line at least (a byte is a cell or more of it): it never wraps.
-    let wide = said.len() as f32 * 7.2 + 8.0;
+    let wide = (said.len() + 3 * said.matches('\t').count()) as f32 * 7.2 + 8.0;
     let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).child(rich_text(spans));
     line.child(div().width(0.0).grow(1.0).height(ROW).overflow_x(Overflow::Hidden).child(words))
 }
@@ -94,14 +106,19 @@ fn fold(old: usize, count: usize, open: Signal<Vec<usize>>) -> Div {
 pub(super) fn build(
     sides: &Sides,
     at: Row,
-    mode: DiffMode,
-    gutter: f32,
+    (mode, gutter, painted): (DiffMode, f32, Option<&(LineColours, LineColours)>),
     (open, sx): (Signal<Vec<usize>>, Signal<f32>),
 ) -> Div {
-    let (was, is) = (|i: usize| sides.old.line(i), |j: usize| sides.new.line(j));
-    let one = |n: usize, mark: Mark, said: &str, other: Option<&str>| {
-        line(&[Some(n)], gutter, mark, said, other, sx)
-    };
+    fn of(colours: Option<&LineColours>, i: usize) -> &[(std::ops::Range<usize>, Token)] {
+        colours.and_then(|c| c.get(i)).map_or(&[][..], Vec::as_slice)
+    }
+    fn words<T>((said, _): (&str, T)) -> &str {
+        said
+    }
+    let was = |i: usize| (sides.old.line(i), of(painted.map(|p| &p.0), i));
+    let is = |j: usize| (sides.new.line(j), of(painted.map(|p| &p.1), j));
+    let one =
+        |n: usize, mark: Mark, said, other: Option<&str>| line(&[Some(n)], gutter, mark, said, other, sx);
     let none = || row().height(ROW).bg(token::PANEL);
     match (at, mode) {
         (Row::Same { old, new }, DiffMode::Inline) => {
@@ -111,14 +128,16 @@ pub(super) fn build(
             halves(one(old, Mark::Same, was(old), None), one(new, Mark::Same, is(new), None))
         }
         (Row::Removed { old, with }, _) => {
-            line(&[Some(old), None], gutter, Mark::Removed, was(old), with.map(is), sx)
+            let other = with.map(|j| words(is(j)));
+            line(&[Some(old), None], gutter, Mark::Removed, was(old), other, sx)
         }
         (Row::Added { new, with }, _) => {
-            line(&[None, Some(new)], gutter, Mark::Added, is(new), with.map(was), sx)
+            let other = with.map(|i| words(was(i)));
+            line(&[None, Some(new)], gutter, Mark::Added, is(new), other, sx)
         }
         (Row::Pair { old, new }, _) => halves(
-            old.map_or_else(none, |i| one(i, Mark::Removed, was(i), new.map(is))),
-            new.map_or_else(none, |j| one(j, Mark::Added, is(j), old.map(was))),
+            old.map_or_else(none, |i| one(i, Mark::Removed, was(i), new.map(|j| words(is(j))))),
+            new.map_or_else(none, |j| one(j, Mark::Added, is(j), old.map(|i| words(was(i))))),
         ),
         (Row::Fold { old, count }, _) => fold(old, count, open),
     }

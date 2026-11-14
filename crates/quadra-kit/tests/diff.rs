@@ -186,3 +186,22 @@ fn the_wheel_with_shift_moves_what_the_lines_say_and_not_their_numbers() {
     assert!(after.len() == 1 && after[0].0 < before[0].0, "{before:?} {after:?}");
     assert_eq!(lines(&h), numbers); // the rows stay where they were
 }
+
+#[test]
+fn lines_take_the_colours_they_are_given() {
+    // "fn" in the colour of a keyword wherever a line starts with it, in both texts.
+    let colours = |text: &str| {
+        let line =
+            |line: &str| if line.starts_with("fn") { vec![(0..2, token::SYNTAX_KEYWORD)] } else { vec![] };
+        text.split('\n').map(line).collect()
+    };
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || quadra_kit::root().child(diff(OLD, NEW).colours(colours)));
+    h.frame();
+    // Two letters of the first line, after its numbers and its mark; and nothing else.
+    let keyword = filled(&h, dark().color(token::SYNTAX_KEYWORD));
+    let x = 2.0 * (2.0 * 7.2 + 16.0) + 16.0;
+    assert_eq!(keyword.len(), 2, "{keyword:?}");
+    assert!(keyword.iter().all(|(at, _)| *at >= x - 1.0 && *at < x + 15.0), "{keyword:?}");
+}

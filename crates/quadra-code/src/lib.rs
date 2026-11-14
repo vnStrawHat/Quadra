@@ -21,5 +21,5 @@ pub use editor::{EDITOR_CONTEXT, Editor, EditorCommand, EditorWidget, Mark, bind
 pub use find::{Query, next_match};
 pub use highlight::{Highlight, Highlighter};
 pub use lang::LangSpec;
-pub use syntax::role;
+pub use syntax::{line_colours, role};
 pub use token::{Token, TokenKind, Tokenizer, tokenizer_for};

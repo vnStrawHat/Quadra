@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use quadra_layout::Known;
 use quadra_platform::Decoded;
 use quadra_prim::{Color, Corners, Rect, Size};
-use quadra_render::{Kind, Sprite};
+use quadra_render::{Clip, Kind, Sprite};
 
 use crate::fonts::GlyphTile;
 use crate::widget::{MeasureCx, PaintCx, Widget};
@@ -131,43 +131,49 @@ impl Widget for Picture {
             (self.shown)(want.0, want.1);
         }
         let Some(image) = self.image.clone() else { return };
-        let pixels = &image.pixels;
-        let (sx, sy) = (dest.width / pixels.width as f32, dest.height / pixels.height as f32);
-        let exact = sx == 1.0 && sy == 1.0;
         let clip = cx.clip.then(outer, self.radius * cx.scale);
-        let s = cx.scale;
-        let visible = cx.visible.map(|v| Rect::new(v.x * s, v.y * s, v.width * s, v.height * s));
         let mut tiles = Vec::new();
-        for py in (0..pixels.height).step_by(PIECE as usize) {
-            for px in (0..pixels.width).step_by(PIECE as usize) {
-                let (w, h) = (PIECE.min(pixels.width - px), PIECE.min(pixels.height - py));
-                // Whole device pixels, so two pieces meet with neither a gap nor a pixel twice.
-                let (x0, y0) = ((dest.x + px as f32 * sx).round(), (dest.y + py as f32 * sy).round());
-                let (x1, y1) =
-                    ((dest.x + (px + w) as f32 * sx).round(), (dest.y + (py + h) as f32 * sy).round());
-                let bounds = Rect::new(x0, y0, x1 - x0, y1 - y0);
-                if !bounds.intersects(clip.rect) || visible.is_some_and(|v| !bounds.intersects(v)) {
-                    continue;
-                }
-                let cut = || {
-                    let row = pixels.width as usize * 4;
-                    let rows = pixels.pixels.chunks_exact(row).skip(py as usize).take(h as usize);
-                    rows.flat_map(|r| &r[px as usize * 4..(px + w) as usize * 4]).copied().collect()
-                };
-                let Some(tile) = cx.fonts.image(image.id, px, py, w, h, cut) else { continue };
-                let mut uv = tile.uv;
-                if !exact {
-                    // Half a texel in: a piece that is scaled takes nothing from its neighbours
-                    // in the atlas.
-                    let (u, v) = ((uv[2] - uv[0]) / w as f32 / 2.0, (uv[3] - uv[1]) / h as f32 / 2.0);
-                    uv = [uv[0] + u, uv[1] + v, uv[2] - u, uv[3] - v];
-                }
-                let (slice, color) = (tile.rect.slice, Color::WHITE);
-                let sprite = Sprite { bounds, uv, slice, color, radii: Corners::default(), glyph: false };
-                cx.push(sprite.instance(Kind::Poly, &clip));
-                tiles.push(tile);
-            }
-        }
+        paint_image(cx, &image, dest, &clip, &mut tiles);
         self.tiles = tiles; // the old ones are let go after the new are held
+    }
+}
+
+/// Paints an image into `dest`, in device pixels, from the pieces of the colour atlas that
+/// show inside `clip`, and holds their tiles in `tiles`: what a picture paints, and a box of
+/// a line that is an image.
+pub fn paint_image(cx: &mut PaintCx, image: &Image, dest: Rect, clip: &Clip, tiles: &mut Vec<GlyphTile>) {
+    let pixels = &image.pixels;
+    let (sx, sy) = (dest.width / pixels.width as f32, dest.height / pixels.height as f32);
+    let exact = sx == 1.0 && sy == 1.0;
+    let s = cx.scale;
+    let visible = cx.visible.map(|v| Rect::new(v.x * s, v.y * s, v.width * s, v.height * s));
+    for py in (0..pixels.height).step_by(PIECE as usize) {
+        for px in (0..pixels.width).step_by(PIECE as usize) {
+            let (w, h) = (PIECE.min(pixels.width - px), PIECE.min(pixels.height - py));
+            // Whole device pixels, so two pieces meet with neither a gap nor a pixel twice.
+            let (x0, y0) = ((dest.x + px as f32 * sx).round(), (dest.y + py as f32 * sy).round());
+            let (x1, y1) = ((dest.x + (px + w) as f32 * sx).round(), (dest.y + (py + h) as f32 * sy).round());
+            let bounds = Rect::new(x0, y0, x1 - x0, y1 - y0);
+            if !bounds.intersects(clip.rect) || visible.is_some_and(|v| !bounds.intersects(v)) {
+                continue;
+            }
+            let cut = || {
+                let row = pixels.width as usize * 4;
+                let rows = pixels.pixels.chunks_exact(row).skip(py as usize).take(h as usize);
+                rows.flat_map(|r| &r[px as usize * 4..(px + w) as usize * 4]).copied().collect()
+            };
+            let Some(tile) = cx.fonts.image(image.id, px, py, w, h, cut) else { continue };
+            let mut uv = tile.uv;
+            if !exact {
+                // Half a texel in: a piece that is scaled takes nothing from its neighbours
+                // in the atlas.
+                let (u, v) = ((uv[2] - uv[0]) / w as f32 / 2.0, (uv[3] - uv[1]) / h as f32 / 2.0);
+                uv = [uv[0] + u, uv[1] + v, uv[2] - u, uv[3] - v];
+            }
+            let (slice, color) = (tile.rect.slice, Color::WHITE);
+            let sprite = Sprite { bounds, uv, slice, color, radii: Corners::default(), glyph: false };
+            cx.push(sprite.instance(Kind::Poly, clip));
+            tiles.push(tile);
+        }
     }
 }

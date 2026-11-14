@@ -17,7 +17,8 @@ use quadra_reactive::{memo, signal};
 use quadra_text::find_urls;
 use quadra_tree::{NodeId, Role};
 use quadra_ui::{
-    Div, IntoProp, MountCx, Prop, Span as Run, View, column, div, each, rich_text, row, scroll_x, span, text,
+    Div, IntoProp, MountCx, Prop, Span as Run, View, column, div, each, inline, inline_image, rich_text, row,
+    scroll_x, span, text,
 };
 
 use crate::block::{Kind, parse};
@@ -120,10 +121,20 @@ fn cut(text: &str, styled: impl Fn(&str) -> Run, out: &mut Vec<Run>) {
 
 /// The spans of a block's text.
 fn spans(source: &str) -> Vec<Run> {
-    let mut out = Vec::new();
+    spans_with(source, &Vec::new())
+}
+
+/// The same, with the images among the words as `shown` says, in their order; one it does
+/// not say yet is its words in brackets.
+fn spans_with(source: &str, shown: &picture::Shown) -> Vec<Run> {
+    let (mut out, mut images) = (Vec::new(), shown.iter());
     for part in parse_inline(source) {
-        // An image among words is its words in brackets: a paragraph of images alone shows
-        // them (`picture`).
+        if part.image.is_some()
+            && let Some(Some((size, pixels))) = images.next()
+        {
+            out.push(inline(inline_image(*size, pixels.clone(), part.text.clone())));
+            continue;
+        }
         let said = if part.image.is_some() { format!("[{}]", part.text) } else { part.text.clone() };
         let styled = |text: &str| {
             let run = span(text);
@@ -220,6 +231,13 @@ fn block(kind: &Kind, on_link: &Option<OnLink>, base: Option<&Path>) -> Div {
     match kind {
         Kind::Paragraph { text } => match parse_inline(text) {
             parts if picture::only_images(&parts) => picture::pictures(&parts, base),
+            parts if parts.iter().any(|part| part.image.is_some()) => {
+                let on_link = on_link.clone();
+                let words = move |source: &str, shown: &picture::Shown| {
+                    column().child(rich(spans_with(source, shown), &on_link))
+                };
+                picture::in_words(text, &parts, base, words)
+            }
             _ => words(text),
         },
         Kind::Heading { level, text } => heading(*level, text, on_link),

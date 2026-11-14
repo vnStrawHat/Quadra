@@ -212,8 +212,11 @@ fn a_paragraph_of_images_shows_them_and_one_that_cannot_show_is_its_words() {
     // No such file, and a file elsewhere, which is never fetched: their words and where.
     assert!(h.has_text("Gone (gone.png)") && h.has_text("Far (https://example.com/far.png)"));
     assert_eq!(named(&h, Role::Image), ["A chart", "Gone"], "the one that failed is an empty box");
-    // Among words an image is its words.
-    assert!(h.has_text("Words and [a mark] in a line."));
+    // Among words an image is in the line, its bottom on the baseline, no side over 320 px:
+    // the line is as high as it. To a reader it is its words.
+    let line = h.get_by_text("Words and a mark in a line.").node();
+    let line = h.tree.rect(line);
+    assert!(line.height >= 80.0 && line.height < 100.0, "{line:?}");
 }
 
 #[test]

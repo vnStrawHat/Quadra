@@ -35,7 +35,7 @@ mod window;
 pub use div::{Div, Refine, Timeline, column, div, row, timeline};
 pub use drawing::{DrawingView, drawing};
 pub use flow::{Region, dynamic, each, mount_in, show};
-pub use image::{ImageSource, ImageView, Images, image};
+pub use image::{ImageSource, ImageView, Images, InlineImage, image, image_info, image_pixels, inline_image};
 pub use input::{TextInput, text_area, text_input};
 pub use list::{ListView, uniform_list, virtual_list};
 pub use node_ref::NodeRef;

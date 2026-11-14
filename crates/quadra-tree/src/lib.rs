@@ -55,7 +55,7 @@ pub use motion::{Step, Timeline, Transition};
 pub use node::{NodeId, PaintStyle, Pose, Style};
 pub use overlay::{Along, Anchor, Side};
 pub use patch::Patch;
-pub use picture::{Fit, Image, Picture};
+pub use picture::{Fit, Image, Picture, paint_image};
 pub use quadra_a11y::{
     Mirror, RangeValue, Relation, Role, SemanticAction, SemanticNode, Semantics, TreeUpdate,
 };

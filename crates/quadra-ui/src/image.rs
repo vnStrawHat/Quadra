@@ -2,6 +2,7 @@
 //! background pool at the size it is shown at, and painted when it arrives.
 
 mod cache;
+mod load;
 
 use std::cell::{Cell, RefCell};
 use std::future::poll_fn;
@@ -20,6 +21,7 @@ use quadra_tree::{Fit, Image, NodeId, Picture, Role, Style};
 
 pub use cache::Images;
 use cache::SourceKey;
+pub use load::{InlineImage, image_info, image_pixels, inline_image};
 
 use crate::view::{MountCx, View};
 

@@ -2,11 +2,17 @@
 //! them, each no wider than the page; one that cannot be shown is its words and where it is.
 
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
+use quadra_async::spawn;
 use quadra_kit::{icon, icons, size, token};
 use quadra_layout::Align as Across;
-use quadra_reactive::signal;
-use quadra_ui::{Div, column, image, row, show, text};
+use quadra_prim::Size;
+use quadra_reactive::{signal, use_context};
+use quadra_tree::Image;
+use quadra_ui::{
+    Div, ImageSource, Images, column, dynamic, image, image_info, image_pixels, row, show, text,
+};
 
 use crate::inline::Span;
 
@@ -54,4 +60,44 @@ pub(crate) fn pictures(parts: &[Span], base: Option<&Path>) -> Div {
         });
     }
     out
+}
+
+/// What an image among words shows as: so large, and its pixels once they are decoded.
+pub(super) type Shown = Vec<Option<(Size, Option<Rc<Image>>)>>;
+
+/// The most a side of an image among words is: larger, it is made smaller in its shape.
+const MOST: f32 = 320.0;
+
+/// A paragraph with images among its words. Each image is its words in brackets until its
+/// file says how large it is; then a box of its line that large (no side over 320 px), and
+/// its pixels when they are decoded. What is elsewhere stays its words.
+pub(super) fn in_words(
+    source: &str,
+    parts: &[Span],
+    base: Option<&Path>,
+    words: impl Fn(&str, &Shown) -> Div + 'static,
+) -> Div {
+    let paths: Vec<Option<PathBuf>> =
+        parts.iter().filter_map(|part| part.image.as_ref().map(|target| local(target, base))).collect();
+    let shown = signal(vec![None; paths.len()]);
+    if let Some(images) = use_context::<Rc<Images>>() {
+        spawn(async move {
+            for (k, path) in paths.into_iter().enumerate() {
+                let Some(source) = path.map(ImageSource::Path) else { continue };
+                let Ok(info) = image_info(&images, &source).await else { continue };
+                let (w, h) = (info.width as f32, info.height as f32);
+                let fit = (MOST / w.max(h)).min(1.0);
+                let size = Size::new((w * fit).round().max(1.0), (h * fit).round().max(1.0));
+                shown.update(|all: &mut Shown| all[k] = Some((size, None)));
+                // Twice as many pixels for a screen of twice the scale, never more than the file.
+                let want = ((size.width * 2.0).min(w) as u32, (size.height * 2.0).min(h) as u32);
+                if let Ok(pixels) = image_pixels(&images, &source, want).await {
+                    shown.update(|all: &mut Shown| all[k] = Some((size, Some(pixels))));
+                }
+            }
+        })
+        .detach();
+    }
+    let source = source.to_string();
+    column().child(dynamic(move || shown.with(|shown| words(&source, shown))))
 }

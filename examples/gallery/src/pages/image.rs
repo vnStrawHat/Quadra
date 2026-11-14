@@ -17,6 +17,8 @@ const NOTE: &str = "A picture beside the document, no wider than the page:
 
 ![Hills at dusk](hills.png)
 
+One among words stands in their line, on its baseline: ![the mark](mark.png) and the words go on.
+
 One that is not there is its words:
 
 ![The missing chart](charts/missing.png)

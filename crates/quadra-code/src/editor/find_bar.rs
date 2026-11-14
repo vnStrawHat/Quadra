@@ -82,9 +82,10 @@ pub(super) fn command(w: &mut EditorWidget, f: Finding, command: EditorCommand) 
             w.go_to_match(back);
             true
         }
-        EditorCommand::Collapse => {
+        // Escape closes the bar if it is open, and gives one cursor only if it is not.
+        EditorCommand::Collapse if f.open.get_untracked() => {
             f.open.set(false);
-            false
+            true
         }
         _ => false,
     }

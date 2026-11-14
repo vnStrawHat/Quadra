@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tools/bench.sh [scene...]: builds the bench app (target/release/compare.exe). With scene
-# names (list, grid, document) it runs each without a window, as fast as it goes, and prints
+# names (list, grid, document, editor, editor-scroll) it runs each without a window, as fast as it goes, and prints
 # what a frame did and how long each pass took (docs/benchmarks.md).
 set -euo pipefail
 cd "$(dirname "$0")/.."

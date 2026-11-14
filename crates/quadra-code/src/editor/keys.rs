@@ -34,7 +34,7 @@ pub enum EditorCommand {
     Copy,
     Cut,
     Paste,
-    /// One cursor, where the primary is; with the find bar open, it closes.
+    /// One cursor, where the primary is; with the find bar open, the bar closes instead.
     Collapse,
     /// Opens the find bar, or with the replacing row.
     Find,

@@ -999,8 +999,8 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     and what no token covers a variable's (as the reference painted it).
   - **Keys** are bindings of the context `editor` to `EditorCommand`, an action
     (`bind_keys(&mut keymap)` adds them; an app adds them to its keymap): those of
-    behaviour/18, "Keys". Tab indents there, being of the nearest context. Escape gives one
-    cursor. Typed text, a composition (shown at the cursor, underlined, not yet in the
+    behaviour/18, "Keys". Tab indents there, being of the nearest context. Escape closes the
+    find bar, or with none open gives one cursor. Typed text, a composition (shown at the cursor, underlined, not yet in the
     document), the pointer (a click puts the cursor, Shift extends it, Ctrl adds one, a drag
     selects, two clicks a word, three a line, Alt and a drag a column) and the clipboard of
     the context are those of a text input. The time of a command is the window's clock, so

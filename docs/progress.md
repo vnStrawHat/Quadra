@@ -148,6 +148,14 @@ whose every cell changes every frame, costs what the V build's costs.
   6 ms and one frame (docs/benchmarks.md).
 - **On hold**: `quadra-term`, by the user's decision; the surface widget it needs is the
   one the editor exercises.
+- **Manual checks on a real desktop** (the editor has only been drawn without a window), in
+  the gallery's page `editor`:
+  1. Composing Vietnamese (Telex) in the editor: the composition underlined at the caret,
+     the input method's window beside it.
+  2. The caret blinking; a drag that selects, Alt and a drag that selects a column, the
+     wheel with Shift sideways on a long line.
+  3. Ctrl-F: the query has the focus as the bar appears; Escape gives it back.
+  4. Ctrl-/ makes lines comments on the keyboard's layout.
 
 ### The exit of R6 (specs/00, Phases)
 

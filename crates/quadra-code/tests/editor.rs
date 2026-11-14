@@ -186,4 +186,13 @@ fn the_find_bar_finds_goes_to_matches_replaces_and_gives_the_focus_back() {
     e.h.frame();
     assert_eq!(e.text(), "1 two 1\nthree 1");
     assert!(e.h.has_text("No results"));
+
+    // Escape in the editor closes the bar and leaves the cursors; a second gives one.
+    e.h.tree.focus(e.id);
+    e.keys(&[(Key::Home, Mods::CTRL), (Key::Down, Mods::ALT | Mods::SHIFT), (Key::Escape, NONE)]);
+    e.h.frame();
+    assert!(!e.h.has_text("No results"));
+    let cursors = e.w().doc.cursors.len();
+    e.keys(&[(Key::Escape, NONE)]);
+    assert_eq!((cursors > 1, e.w().doc.cursors.len()), (true, 1));
 }

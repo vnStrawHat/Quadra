@@ -129,7 +129,6 @@ where
     F: Fn() -> Vec<MenuItem> + 'static,
 {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        // ponytail: the pointer opens it; the menu key and Shift-F10 when keys do too.
         let (of, items) = (self.of.mount(cx), Rc::new(self.items));
         quadra_base::menu::on_context(cx, of, move |tree, owner, at| {
             // Under the pointer by the gap of a popup: the pointer is then over none of its rows.

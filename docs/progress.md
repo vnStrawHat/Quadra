@@ -77,9 +77,10 @@ What the kit does not do yet, and no page of the V gallery shows (13 has each be
 component): a theme for a subtree, and tokens for radii, spacing, fonts and durations;
 today's date and the names of days and months in the app's language (local time and i18n,
 R5); a cursor on the cells of a table; a tree whose children are asked for when it opens,
-and several selected; the menu key for a context menu; of rich text, links for the keyboard
+and several selected; of rich text, links for the keyboard
 and a reader, and a selection. Since 2026-11-14 a drawer slides in, a toast waits while the
-pointer is on it, and a tooltip is the description of its view for a reader.
+pointer is on it, a tooltip is the description of its view for a reader, and the menu key and
+Shift-F10 open a context menu.
 
 ### The exit of R2 (specs/00, Phases)
 

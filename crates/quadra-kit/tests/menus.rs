@@ -31,7 +31,7 @@ fn page() -> Page {
             move || done.update(|all| all.push(what.clone()))
         };
         let on_box = move || vec![MenuItem::new("Rename").on_select(did("rename")), MenuItem::new("Delete")];
-        let area = context_menu(div().size(300.0, 100.0).child(text("a file")), on_box);
+        let area = context_menu(div().size(300.0, 100.0).focusable().child(text("a file")), on_box);
         let (file_at, long_at) = (NodeRef::new(), NodeRef::new());
         let share = move || vec![MenuItem::new("Mail").on_select(did("mail")), MenuItem::new("Link")];
         let file = move || vec![MenuItem::new("Open"), MenuItem::new("Share").submenu(share())];
@@ -104,6 +104,17 @@ fn the_other_button_opens_a_menu_at_the_pointer() {
     p.h.click(600.0, 500.0);
     p.settle();
     assert_eq!((p.menus(), p.h.tree.len()), (0, nodes));
+
+    // The menu key and Shift-F10 open it under what has the focus.
+    p.h.click(50.0, 50.0);
+    p.settle();
+    p.key(Key::Menu);
+    let panel = p.h.tree.window_rect(p.h.tree.overlays().next().unwrap());
+    assert_eq!((p.menus(), panel.x, panel.y), (1, 0.0, 104.0));
+    p.key(Key::Escape);
+    p.h.key(Key::F10, Mods::SHIFT);
+    p.settle();
+    assert_eq!(p.menus(), 1);
 }
 
 #[test]

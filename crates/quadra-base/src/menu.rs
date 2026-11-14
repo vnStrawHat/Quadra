@@ -8,7 +8,7 @@
 
 use std::rc::Rc;
 
-use quadra_platform::MouseButton;
+use quadra_platform::{Key, Mods, MouseButton};
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, signal};
 use quadra_tree::{NodeId, PointerKind, Role, Tree};
@@ -167,12 +167,25 @@ pub fn rows(list: Div, lines: Vec<Line>, ends: Ends) -> Div {
 /// opened with `popup::open_now`, in the scope `of` was mounted in. No node is added.
 pub fn on_context(cx: &mut MountCx, of: NodeId, open: impl Fn(&mut Tree, Scope, Point) + 'static) {
     let (owner, handle, open) = (Scope::current(), cx.handle.clone(), Rc::new(open));
+    let (keys, by_key) = (cx.handle.clone(), open.clone());
     cx.tree.on_pointer(of, PointerKind::Click, move |e| {
         if e.button != MouseButton::Right {
             return;
         }
         let (at, open) = (e.at, open.clone());
         handle.with(move |tree| open(tree, owner, at));
+        e.stop();
+    });
+    // The menu key and Shift-F10 open it under what has the focus inside `of`.
+    cx.tree.on_key(of, true, move |e| {
+        if !(e.key == Key::Menu || e.key == Key::F10 && e.mods == Mods::SHIFT) {
+            return;
+        }
+        let (target, open) = (e.target, by_key.clone());
+        keys.with(move |tree| {
+            let rect = tree.window_rect(target);
+            open(tree, owner, Point::new(rect.x, rect.y + rect.height))
+        });
         e.stop();
     });
 }

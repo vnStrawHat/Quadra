@@ -610,7 +610,8 @@ the popup closes the focus goes back to what had it.
   its place; composed only). A toast, or a card that lasts, waits while the pointer is on it
   and lasts as long again when it leaves (`Queue::hold`). A tooltip's words are the
   description of its view for a reader, whether it shows or not.
-- Not yet: a picker of other things than commands; the menu key for a context menu.
+- The menu key and Shift-F10 open a context menu under what has the focus in its view.
+- Not yet: a picker of other things than commands.
 
 ## Crates
 

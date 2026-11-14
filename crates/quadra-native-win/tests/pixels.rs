@@ -4,8 +4,8 @@
 use quadra_native_win::D3d11Renderer;
 use quadra_prim::{Affine, Color, Corners, Edges, Point, Rect};
 use quadra_render::{
-    Clip, DeviceSize, Instance, LayerConstants, Line, LineMode, Pixels, Quad, Renderer, Scene, SurfaceTarget,
-    stroke,
+    BorderStyle, Clip, DeviceSize, Instance, LayerConstants, Line, LineMode, Pixels, Quad, Renderer, Scene,
+    SurfaceTarget, stroke,
 };
 
 const RED: u32 = 0xFF0000;
@@ -111,6 +111,36 @@ fn corners_borders_and_clips_are_antialiased_shapes() {
     assert_eq!(at(&pixels, 10, 28), BLUE); // the border
     assert_eq!(at(&pixels, 8, 8), 0xFFFFFF); // outside the rounded corner
     assert_eq!((at(&pixels, 38, 28), at(&pixels, 42, 28)), (RED, 0xFFFFFF)); // clipped at 40
+}
+
+#[test]
+fn a_dashed_or_dotted_border_shows_the_fill_between_its_marks() {
+    let mut r = D3d11Renderer::new(true).unwrap();
+    let mut scene = Scene::new();
+    let root = scene.add_layer();
+    scene.set_roots(&[root]);
+    let framed = |y: f32, width: f32, border_style: BorderStyle| Quad {
+        bounds: Rect::new(2.0, y, 60.0, 24.0),
+        background: Color::rgb(RED),
+        border_widths: Edges::all(width),
+        border_color: Color::rgb(BLUE),
+        border_style,
+        ..Quad::default()
+    };
+    let (dashed, dotted) = (framed(2.0, 2.0, BorderStyle::Dashed), framed(34.0, 4.0, BorderStyle::Dotted));
+    scene.layer_mut(root).set(&[dashed.instance(&Clip::NONE), dotted.instance(&Clip::NONE)]);
+    let pixels = draw(&mut r, &mut scene);
+    // Dashes and gaps of about 6 along the top (58 between the corners' middles is five
+    // periods), from a half dash at the corner; the fill shows in a gap.
+    assert_eq!(
+        (at(&pixels, 2, 3), at(&pixels, 4, 3), at(&pixels, 8, 3), at(&pixels, 14, 3)),
+        (BLUE, BLUE, RED, BLUE)
+    );
+    assert_eq!((at(&pixels, 2, 8), at(&pixels, 2, 14), at(&pixels, 30, 14)), (RED, BLUE, RED)); // the left side (two periods); inside
+    // Dots 4 wide every 8 px (seven between the corners' middles): one at the corner, the
+    // fill between.
+    assert_eq!((at(&pixels, 3, 36), at(&pixels, 7, 36), at(&pixels, 11, 36)), (BLUE, RED, BLUE));
+    assert_eq!(at(&pixels, 30, 46), RED);
 }
 
 #[test]

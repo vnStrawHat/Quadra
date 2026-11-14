@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use quadra::{Color, WindowOptions, row, signal, text};
+use quadra::{BorderStyle, Color, Gradient, WindowOptions, row, signal, text};
 use quadra_plain::{
     button, checkbox, dialog, labeled, list, radio_group, root, select, slider, switch, tabs,
 };
@@ -12,6 +12,17 @@ use quadra_plain::{
 /// A row of things on one middle line.
 fn line() -> quadra::Div {
     row().gap(8.0).align_items(quadra::Align::Center)
+}
+
+/// What the renderer draws besides flat boxes: gradients, and borders that are not solid.
+fn paints() -> quadra::Div {
+    let (ink, sky, rose) = (Color::rgb(0x1A1A1A), Color::rgb(0x3B82F6), Color::rgb(0xF43F5E));
+    let boxed = || quadra::div().size(56.0, 40.0);
+    line()
+        .child(boxed().gradient(Gradient::linear(0.0, [sky, rose])))
+        .child(boxed().gradient(Gradient::conic(0.0, [sky, rose, sky])).radius(20.0))
+        .child(boxed().border(1.0).border_color(ink).border_style(BorderStyle::Dashed))
+        .child(boxed().border(2.0).border_color(ink).border_style(BorderStyle::Dotted).radius(8.0))
 }
 
 fn main() -> quadra::Result<()> {
@@ -41,6 +52,7 @@ fn main() -> quadra::Result<()> {
             ))
             .child(labeled("Fruit", select(&["Apple", "Pear", "Fig"], fruit)))
             .child(labeled("Things", list(things, picked, 120.0)))
+            .child(labeled("Paints", paints()))
             .child(dialog(
                 open,
                 "Save the changes?",
@@ -48,6 +60,6 @@ fn main() -> quadra::Result<()> {
                 vec![("No", no), ("Yes", yes)],
             ))
     };
-    let options = WindowOptions::new("Quadra Plain").size(520.0, 560.0);
+    let options = WindowOptions::new("Quadra Plain").size(520.0, 620.0);
     quadra::app()?.clear_color(Color::rgb(0xFFFFFF)).window(options, view)?.run()
 }

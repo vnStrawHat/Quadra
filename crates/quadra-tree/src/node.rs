@@ -7,6 +7,7 @@ use quadra_layout::LayoutId;
 use quadra_platform::Cursor;
 use quadra_prim::{Color, Corners, Point};
 use quadra_reactive::Scope;
+use quadra_render::BorderStyle;
 
 use crate::inherit::TextValues;
 use crate::input::Handler;
@@ -39,6 +40,7 @@ pub(crate) mod flag {
 pub struct PaintStyle {
     pub background: Color,
     pub border_color: Color,
+    pub border_style: BorderStyle,
     pub radii: Corners,
     /// A line of one pixel along the node's edge, over what the node paints and taking no
     /// room: a mark of the focus.

@@ -53,6 +53,8 @@ const _: () = assert!(std::mem::size_of::<Instance>() == 144);
 /// Quad flags.
 pub const FLAG_GRADIENT: u32 = 1;
 pub const FLAG_BORDER: u32 = 2;
+pub const FLAG_DASHED: u32 = 4;
+pub const FLAG_DOTTED: u32 = 8;
 /// Sprite flag: text coverage, corrected and blended per channel.
 pub const FLAG_GLYPH: u32 = 1;
 
@@ -116,6 +118,17 @@ pub struct Ramp {
     pub slice: u32,
 }
 
+/// How a border is drawn along its sides.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum BorderStyle {
+    #[default]
+    Solid,
+    /// Dashes three widths long, three apart.
+    Dashed,
+    /// Discs as wide as the border, one width apart.
+    Dotted,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Quad {
     pub bounds: Rect,
@@ -124,6 +137,7 @@ pub struct Quad {
     pub gradient: Option<Ramp>,
     pub border_widths: Edges,
     pub border_color: Color,
+    pub border_style: BorderStyle,
     pub radii: Corners,
 }
 
@@ -156,7 +170,12 @@ impl Quad {
         }
         if self.has_border() {
             i.color2 = self.border_color.to_array();
-            i.flags |= FLAG_BORDER;
+            i.flags |= FLAG_BORDER
+                | match self.border_style {
+                    BorderStyle::Solid => 0,
+                    BorderStyle::Dashed => FLAG_DASHED,
+                    BorderStyle::Dotted => FLAG_DOTTED,
+                };
         }
         i
     }

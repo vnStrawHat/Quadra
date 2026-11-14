@@ -38,7 +38,8 @@ pub(crate) fn paint_own(
     for &Cast { down, blur, color } in theme.casts(node.paint.shadows) {
         cx.shadow(Shadow { bounds: rect.translate(0.0, down), radii, blur, color });
     }
-    cx.quad(Quad { bounds: rect, background, gradient, border_widths: style.border, border_color, radii });
+    let (border_widths, border_style) = (style.border, node.paint.border_style);
+    cx.quad(Quad { bounds: rect, background, gradient, border_widths, border_color, border_style, radii });
     cx.keep = false;
     if let Some(widget) = &mut node.widget {
         widget.paint(&mut cx);

@@ -3,7 +3,7 @@
 
 use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position};
 use quadra_prim::{Corners, Point};
-use quadra_tree::{Paint, Patch};
+use quadra_tree::{BorderStyle, Paint, Patch};
 
 use super::Div;
 use crate::prop::IntoProp;
@@ -87,6 +87,8 @@ props! {
     /// The background colour.
     bg: Paint => Background;
     border_color: Paint => BorderColor;
+    /// Solid, dashed or dotted.
+    border_style: BorderStyle => BorderStyle;
     /// The same radius on every corner.
     radius: f32 => Radius;
     /// A radius for each corner: the ends of a row of cells in a rounded frame.

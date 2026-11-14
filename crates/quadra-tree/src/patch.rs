@@ -7,6 +7,7 @@ use quadra_prim::{Corners, Edges, Point};
 
 use crate::node::Style;
 use crate::theme::{Paint, Theme};
+use quadra_render::BorderStyle;
 
 /// One value of a style: what a reactive property writes, and what a state variant is a list
 /// of. Each is named after the setter of the box view that makes it.
@@ -58,6 +59,8 @@ pub enum Patch {
     OverflowY(Overflow),
     Background(Paint),
     BorderColor(Paint),
+    /// Solid, dashed or dotted.
+    BorderStyle(BorderStyle),
     /// The same radius on every corner.
     Radius(f32),
     /// A radius for each corner.
@@ -93,6 +96,7 @@ impl Patch {
         match self {
             Patch::Background(v) => p.background = theme.resolve(v),
             Patch::BorderColor(v) => p.border_color = theme.resolve(v),
+            Patch::BorderStyle(v) => p.border_style = v,
             Patch::Radius(v) => p.radii = Corners::all(v),
             Patch::Radii(v) => p.radii = v,
             Patch::Outline(v) => p.outline = theme.resolve(v),
@@ -155,7 +159,10 @@ impl Patch {
     pub(crate) fn part(self) -> Part {
         use Patch::*;
         match self {
-            Background(_) | BorderColor(_) | Radius(_) | Radii(_) | Outline(_) | Elevation(_) => Part::Paint,
+            Background(_) | BorderColor(_) | BorderStyle(_) | Radius(_) | Radii(_) | Outline(_) => {
+                Part::Paint
+            }
+            Elevation(_) => Part::Paint,
             TextColor(_) | TextSize(_) | FontWeight(_) | Italic(_) | LineHeight(_) => Part::Text,
             PlaceholderColor(_) | SelectionColor(_) | CaretColor(_) => Part::Text,
             Translate(_) | Scale(_) | Rotate(_) | Opacity(_) => Part::Pose,

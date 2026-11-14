@@ -15,7 +15,7 @@ struct Instance {
     float4 params;   // kind specific; .w = clip corner radius
     uint kind;       // 0 quad, 1 shadow, 2 mono, 3 poly, 4 line (5 marks a child layer: never drawn)
     uint slice;      // slice of the atlas texture array
-    uint flags;      // quad: 1 = gradient, 2 = border; mono and poly: 1 = text glyph
+    uint flags;      // quad: 1 = gradient, 2 = border, 4 = dashed, 8 = dotted; mono and poly: 1 = text glyph
     uint reserved;
 };
 
@@ -110,6 +110,46 @@ float4 gradient(Instance p, float2 q, float2 half_size) {
     return poly_atlas.SampleLevel(atlas_sampler, float3(lerp(p.uv.x, p.uv.z, saturate(t)), p.uv.y, p.slice), 0);
 }
 
+// How much of a dashed (flags 4) or dotted (8) border's pixel is ink. The pixel goes by the
+// side it is nearest to in that side's widths, seen in a frame where that side is the top and
+// runs clockwise. The pattern runs along the middle of the border, round the corners' arcs too,
+// stretched to whole periods from the middle of one corner's arc to the middle of the next,
+// with a half mark at each end: two sides meet in one mark at a corner.
+#define QUARTER 0.78539816
+float border_mark(Instance p, float2 px) {
+    float2 q = px - p.bounds.xy, s = p.bounds.zw;
+    float4 b = p.border, r = p.radii; // b: t r b l; r: tl tr br bl
+    float4 away = float4(q.y, s.x - q.x, s.y - q.y, q.x) / max(b, 1e-3);
+    float m = min(min(away.x, away.y), min(away.z, away.w));
+    float2 f;
+    float len, w, r0, r1;
+    if (m == away.x) { f = q; len = s.x; w = b.x; r0 = r.x; r1 = r.y; }
+    else if (m == away.y) { f = float2(q.y, s.x - q.x); len = s.y; w = b.y; r0 = r.y; r1 = r.z; }
+    else if (m == away.z) { f = s - q; len = s.x; w = b.z; r0 = r.z; r1 = r.w; }
+    else { f = float2(s.y - q.y, q.x); len = s.y; w = b.w; r0 = r.w; r1 = r.x; }
+    r0 = max(r0, w * 0.5);
+    r1 = max(r1, w * 0.5);
+    float c0 = QUARTER * (r0 - w * 0.5), c1 = QUARTER * (r1 - w * 0.5);
+    float run = c0 + max(len - r0 - r1, 0) + c1;
+    float along = c0 + f.x - r0, across = f.y;
+    if (f.x < r0 && f.y < r0) { // on the arc of the corner the side starts at
+        float2 d = r0 - f;
+        along = (atan2(d.y, d.x) - QUARTER) * (r0 - w * 0.5);
+        across = r0 - length(d);
+    } else if (f.x > len - r1 && f.y < r1) { // the one it ends at
+        float2 d = float2(f.x - (len - r1), r1 - f.y);
+        along = run - (atan2(d.y, d.x) - QUARTER) * (r1 - w * 0.5);
+        across = r1 - length(d);
+    }
+    bool dotted = (p.flags & 8) != 0;
+    float period = dotted ? 2 * w : 6 * w;
+    period = run / max(round(run / max(period, 1)), 1);
+    float at = frac(along / period) * period;
+    float edge = min(at, period - at); // from the nearest end of a period
+    if (dotted) return saturate(w * 0.5 + 0.5 - length(float2(edge, across - w * 0.5)));
+    return saturate(period * 0.25 + 0.5 - edge);
+}
+
 float4 shade_quad(Instance p, float2 px) {
     float2 half_size = p.bounds.zw * 0.5;
     float2 center = p.bounds.xy + half_size;
@@ -126,7 +166,9 @@ float4 shade_quad(Instance p, float2 px) {
         float2 inner_half = max((inner_max - inner_min) * 0.5, 0);
         float4 inner_radii = max(p.radii - float4(max(b.w, b.x), max(b.y, b.x), max(b.y, b.z), max(b.w, b.z)), 0);
         float inside = saturate(0.5 - sdf_rrect(px, inner_min + inner_half, inner_half, inner_radii));
-        c = lerp(premul(p.color2, 1), c, inside);
+        float ink = 1;
+        [branch] if (p.flags & 12) ink = border_mark(p, px); // a gap shows the fill
+        c = lerp(c, premul(p.color2, 1), (1 - inside) * ink);
     }
     return c * coverage;
 }

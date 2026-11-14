@@ -59,6 +59,15 @@ apply as to any fill, in the same instance. A quad that is not a gradient does n
 than before. A node's gradient is set by `Tree::set_gradient` (`.gradient(..)` on a box);
 it is not a state variant.
 
+**A border is solid, dashed or dotted** (`BorderStyle`, `.border_style(..)` on a box, a
+paint value as its colour is). A pixel of the border goes by the side it is nearest to, as
+much of that side's width as it is away; along the middle of the border a dash is three
+widths long with a gap of three, a dot a disc as wide as the border with a gap of one width.
+A side's pattern runs from the middle of one corner's arc to the middle of the next, round
+the arcs too, stretched a little so that a whole number of periods fits, with a half dash or
+a half dot at each end: two sides meet in one mark at a corner. A gap shows the box's fill.
+The quad's flags say which (4 dashed, 8 dotted); a solid border does no more work.
+
 ## Layers
 
 A layer is a subtree with its own display list and constants:

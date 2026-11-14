@@ -2,8 +2,9 @@
 
 use quadra_layout::Direction;
 use quadra_platform::{Cursor, HitRegion, MouseButton};
+
 use quadra_tree::{
-    Action, Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Theme, Tree,
+    Action, Gradient, Handle, KeyEvent, NodeId, Patch, PointerEvent, PointerKind, State, Style, Theme, Tree,
 };
 
 use crate::node_ref::NodeRef;
@@ -174,6 +175,11 @@ impl Div {
     pub fn font_family(mut self, family: &str) -> Self {
         self.style.text.family = Some(family.into());
         self
+    }
+
+    /// Fills the box with a gradient over its background, inside its border and radii.
+    pub fn gradient(self, gradient: Gradient) -> Self {
+        self.on_mount(move |tree, id| tree.set_gradient(id, Some(gradient)))
     }
 
     /// The shape the pointer has over the box and what it holds.

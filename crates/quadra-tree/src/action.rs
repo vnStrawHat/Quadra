@@ -82,7 +82,7 @@ impl Tree {
     /// while the focus is on the node or inside it.
     pub fn set_key_context(&mut self, id: NodeId, context: &str) {
         if let Some(node) = self.get_mut(id) {
-            node.key_context = Some(Rc::from(context));
+            node.key_context = Some(Rc::new(context.to_string()));
         }
     }
 
@@ -129,10 +129,10 @@ impl Tree {
     /// an action that something handled (true), the start of a sequence (true: the key is
     /// taken), or nothing (false: the key goes on as a key).
     pub(crate) fn key_binding(&mut self, stroke: Keystroke, target: NodeId) -> bool {
-        let contexts: Vec<Rc<str>> = self
-            .path(target)
-            .into_iter()
-            .filter_map(|id| self.nodes[id.index as usize].key_context.clone())
+        let path = self.path(target);
+        let contexts: Vec<&str> = path
+            .iter()
+            .filter_map(|id| self.nodes[id.index as usize].key_context.as_deref().map(String::as_str))
             .collect();
         let found = self.keys.map.find(&self.keys.pending, stroke, &contexts);
         match found {

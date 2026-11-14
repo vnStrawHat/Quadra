@@ -2,8 +2,8 @@
 
 use quadra_prim::{Affine, Color, Edges, Rect};
 use quadra_render::{
-    Clip, DeviceSize, Dirty, Instance, LayerConstants, NullRenderer, Quad, RenderError, Renderer, Scene,
-    Step, SurfaceTarget, push_quad,
+    Clip, DeviceSize, Dirty, FLAG_BORDER, FLAG_GRADIENT, GradientKind, Instance, LayerConstants,
+    NullRenderer, Quad, Ramp, RenderError, Renderer, Scene, Step, SurfaceTarget, push_quad,
 };
 
 fn quad(x: f32, color: u32) -> Instance {
@@ -33,14 +33,24 @@ fn an_instance_is_144_bytes_and_quads_follow_their_rules() {
     let both = Quad {
         bounds,
         background: Color::BLACK,
-        gradient_to: Some(Color::WHITE),
+        gradient: Some(Ramp { kind: GradientKind::Conic(90.0), uv: [0.1, 0.2, 0.3, 0.2], slice: 2 }),
         border_widths: Edges::all(1.0),
         border_color: Color::rgb(0xFF0000),
         ..Quad::default()
     };
-    push_quad(&mut out, &both, &Clip::NONE); // the shader keeps one second colour: two instances
-    assert_eq!(out.len(), 2);
-    assert_eq!((out[0].color2, out[1].color2), (Color::WHITE.to_array(), Color::rgb(0xFF0000).to_array()));
+    push_quad(&mut out, &both, &Clip::NONE); // a gradient and a border: one instance
+    assert_eq!(out.len(), 1);
+    let i = out[0];
+    assert_eq!(
+        (i.color2, i.params[..2].to_vec(), i.uv, i.slice, i.flags),
+        (
+            Color::rgb(0xFF0000).to_array(),
+            vec![90.0, 3.0],
+            [0.1, 0.2, 0.3, 0.2],
+            2,
+            FLAG_GRADIENT | FLAG_BORDER
+        )
+    );
     let inner =
         Clip::NONE.then(Rect::new(0.0, 0.0, 50.0, 50.0), 6.0).then(Rect::new(10.0, 10.0, 100.0, 20.0), 0.0);
     assert_eq!((inner.rect, inner.radius), (Rect::new(10.0, 10.0, 40.0, 20.0), 6.0));

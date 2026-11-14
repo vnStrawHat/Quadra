@@ -6,6 +6,7 @@
 //! layer says changed.
 
 mod atlas;
+mod gradient;
 mod hasher;
 mod instance;
 mod layer;
@@ -16,9 +17,10 @@ mod scene;
 mod stroke;
 
 pub use atlas::{Atlas, AtlasStats, Tile, TileRef};
+pub use gradient::{Gradient, GradientKind, RAMP};
 pub use hasher::{FastBuild, FastHasher};
 pub use instance::{
-    Clip, FLAG_BORDER, FLAG_GLYPH, FLAG_GRADIENT, Instance, Kind, Line, LineMode, Quad, Shadow, Sprite,
+    Clip, FLAG_BORDER, FLAG_GLYPH, FLAG_GRADIENT, Instance, Kind, Line, LineMode, Quad, Ramp, Shadow, Sprite,
     push_quad,
 };
 pub use layer::{Dirty, Layer, LayerConstants, LayerId, Rebuild};

@@ -30,6 +30,7 @@ pub(crate) fn paint_own(
     refresh(nodes, index, text_at);
     let node = &mut nodes[index];
     let keep = node.styled.as_ref().is_some_and(|styled| styled.has_variants());
+    let gradient = node.fill.as_deref_mut().and_then(|fill| fill.ramp(fonts));
     let mut cx = PaintCx { rect, scale, visible: band, clip: Clip::NONE, keep, fonts, out };
     let (background, border_color, radii, outline) =
         (node.paint.background, node.paint.border_color, node.paint.radii, node.paint.outline);
@@ -37,14 +38,7 @@ pub(crate) fn paint_own(
     for &Cast { down, blur, color } in theme.casts(node.paint.shadows) {
         cx.shadow(Shadow { bounds: rect.translate(0.0, down), radii, blur, color });
     }
-    cx.quad(Quad {
-        bounds: rect,
-        background,
-        border_widths: style.border,
-        border_color,
-        radii,
-        ..Quad::default()
-    });
+    cx.quad(Quad { bounds: rect, background, gradient, border_widths: style.border, border_color, radii });
     cx.keep = false;
     if let Some(widget) = &mut node.widget {
         widget.paint(&mut cx);

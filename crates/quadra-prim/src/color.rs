@@ -74,6 +74,51 @@ impl Color {
         Color { r: mix(self.r, to.r), g: mix(self.g, to.g), b: mix(self.b, to.b), a: mix(self.a, to.a) }
     }
 
+    /// The colour `t` of the way to `to`, mixed in Oklab with alpha premultiplied, as design
+    /// tools mix the stops of a gradient: lightness, hue and alpha go evenly.
+    pub fn mix_oklab(self, to: Color, t: f32) -> Color {
+        let (from, to) = (self.oklab(), to.oklab());
+        let a = self.a + (to[3] - self.a) * t;
+        if a <= 0.0 {
+            return Color::TRANSPARENT;
+        }
+        let mix = |i: usize| (from[i] * self.a + (to[i] * to[3] - from[i] * self.a) * t) / a;
+        Color::from_oklab([mix(0), mix(1), mix(2)], a)
+    }
+
+    /// Lightness, the two axes of hue, and alpha: the published matrices, digits and all.
+    #[allow(clippy::excessive_precision)]
+    fn oklab(self) -> [f32; 4] {
+        let lin = |c: f32| if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) };
+        let (r, g, b) = (lin(self.r), lin(self.g), lin(self.b));
+        let l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b).cbrt();
+        let m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b).cbrt();
+        let s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b).cbrt();
+        [
+            0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+            self.a,
+        ]
+    }
+
+    #[allow(clippy::excessive_precision)]
+    fn from_oklab([ok_l, ok_a, ok_b]: [f32; 3], a: f32) -> Color {
+        let l = (ok_l + 0.3963377774 * ok_a + 0.2158037573 * ok_b).powi(3);
+        let m = (ok_l - 0.1055613458 * ok_a - 0.0638541728 * ok_b).powi(3);
+        let s = (ok_l - 0.0894841775 * ok_a - 1.2914855480 * ok_b).powi(3);
+        let enc = |c: f32| {
+            let c = c.clamp(0.0, 1.0);
+            if c <= 0.0031308 { c * 12.92 } else { 1.055 * c.powf(1.0 / 2.4) - 0.055 }
+        };
+        Color {
+            r: enc(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+            g: enc(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+            b: enc(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s),
+            a,
+        }
+    }
+
     /// `[r, g, b, a]`, as GPU instance data wants it.
     pub fn to_array(self) -> [f32; 4] {
         [self.r, self.g, self.b, self.a]
@@ -112,5 +157,16 @@ mod tests {
         assert_eq!(Color::hsla(-120.0, 1.0, 0.5, 1.0).hex(), "#0000ffff");
         assert_eq!(Color::BLACK.lerp(Color::WHITE, 0.5).hex(), "#808080ff");
         assert!(Color::WHITE.alpha(0.0).is_transparent() && !Color::BLACK.is_transparent());
+    }
+
+    #[test]
+    fn oklab_mixes_keep_the_ends_and_go_through_a_violet() {
+        let (red, blue) = (Color::rgb(0xFF0000), Color::rgb(0x0000FF));
+        assert_eq!((red.mix_oklab(blue, 0.0).hex(), red.mix_oklab(blue, 1.0).hex()), (red.hex(), blue.hex()));
+        // Not the dark #800080 of encoded values: lighter, and bluer.
+        assert_eq!(red.mix_oklab(blue, 0.5).hex(), "#8c53a2ff");
+        assert_eq!(Color::BLACK.mix_oklab(Color::WHITE, 0.5).hex(), "#636363ff");
+        // A transparent end has no colour of its own: the other's shows as it fades.
+        assert_eq!(red.mix_oklab(Color::TRANSPARENT, 0.5).hex(), "#ff000080");
     }
 }

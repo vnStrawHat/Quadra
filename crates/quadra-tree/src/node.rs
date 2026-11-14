@@ -120,7 +120,8 @@ pub(crate) struct Node {
     /// What the node is to the OS in a window with its own frame.
     pub region: quadra_platform::HitRegion,
     /// Its name as a context of key bindings (specs/09).
-    pub key_context: Option<Rc<str>>,
+    /// A thin pointer: the node stays four cache lines.
+    pub key_context: Option<Rc<String>>,
     /// What it is to a user, when that was said (specs/12).
     pub semantics: Option<Box<Semantics>>,
     /// The states that are set (specs/04, "State bits").
@@ -129,4 +130,6 @@ pub(crate) struct Node {
     pub styled: Option<Box<Styled>>,
     /// How its changes ease, when they do (specs/05, "The pose and transitions").
     pub motion: Option<Box<Motion>>,
+    /// The gradient over its background, when it has one (specs/07).
+    pub fill: Option<Box<crate::fill::Fill>>,
 }

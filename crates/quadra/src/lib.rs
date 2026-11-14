@@ -46,9 +46,11 @@ pub use quadra_prim::{Color, Corners, Ease, Edges, Point, Rect, Size};
 pub use quadra_reactive::{
     Memo, Scope, Signal, batch, effect, expect, memo, on_cleanup, provide, signal, untrack, use_context,
 };
+
 pub use quadra_tree::{
-    Action, Along, Fit, FocusNext, FocusPrevious, GoBack, GoForward, KeyEvent, Keymap, KeymapError,
-    Keystroke, Paint, PointerEvent, PointerKind, Role, SemanticAction, Side, State, Theme, Token,
+    Action, Along, Fit, FocusNext, FocusPrevious, GoBack, GoForward, Gradient, GradientKind, KeyEvent,
+    Keymap, KeymapError, Keystroke, Paint, PointerEvent, PointerKind, Role, SemanticAction, Side, State,
+    Theme, Token,
 };
 pub use quadra_ui::{
     AnyView, Div, ImageSource, ImageView, Images, IntoProp, MountCx, NodeRef, Place, Refine, Region, Span,

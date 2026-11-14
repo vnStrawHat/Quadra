@@ -13,9 +13,9 @@ gradients, shadows, lines, glyphs and small images.
 |---|---|
 | `bounds` | Rectangle in the layer's device pixels |
 | `clip`, clip radius | Rounded clip rectangle, in the same space |
-| `color`, `color2` | Fill or tint; border, gradient end or shadow colour |
+| `color`, `color2` | Fill or tint; border or shadow colour |
 | `radii`, `border` | Corner radii and border widths |
-| `uv`, `slice` | Atlas rectangle and the slice of the atlas texture array |
+| `uv`, `slice` | Atlas rectangle and the slice of the atlas texture array (a gradient's ramp) |
 | `params`, `kind`, `flags` | Per-kind parameters |
 
 There is no per-instance transform: a transform belongs to a layer. The exact packing is fixed
@@ -43,6 +43,21 @@ the strokes of a formula are drawn so (13).
 
 Colours are straight alpha in the instance and blended premultiplied, in the encoded (sRGB)
 space, as design tools and the V renderer do. The V pixel snapshots are the reference.
+
+**A gradient** fills a box with colours at stops along it (`quadra_prim::Gradient`): along a
+line at an angle (`linear`, 0 degrees from left to right, 90 from top to bottom), out from the
+middle to the corners (`radial`, an ellipse of the box's shape), or round the middle
+(`conic`, from an angle, 0 at the top, clockwise). Between two stops the colours are mixed in
+Oklab with alpha premultiplied, as design tools mix them: red to blue goes through a violet,
+not the dark grey of a mix of encoded values. The mix is not worked out per pixel: it is
+baked once into a **ramp**, a row of 256 texels premultiplied in the colour atlas, keyed by
+the stops, so one ramp serves every box with those stops and goes when none uses it. The
+quad's instance names the ramp (`uv`: the row, inset half a texel; `slice`), and `params`
+say the kind (`y`: 1 linear, 2 radial, 3 conic) and the angle (`x`). The shader works out
+how far along the gradient a pixel is and samples the ramp there; a box's border and radii
+apply as to any fill, in the same instance. A quad that is not a gradient does no more work
+than before. A node's gradient is set by `Tree::set_gradient` (`.gradient(..)` on a box);
+it is not a state variant.
 
 ## Layers
 

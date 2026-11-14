@@ -7,6 +7,9 @@ use std::rc::Rc;
 use quadra_render::{Atlas, AtlasKind, TileRef};
 use quadra_text::{FaceId, GlyphFormat, TextBackend, TextSystem};
 
+/// Where the tile of a gradient's ramp says it starts: no piece of an image does.
+pub const RAMP_X: u32 = u32::MAX;
+
 /// The horizontal positions within a pixel a glyph is rasterized at. Vertical positions are
 /// whole pixels.
 pub const SUBPIXEL_STEPS: u8 = 4;
@@ -29,7 +32,9 @@ pub struct GlyphKey {
 }
 
 /// What a tile of the atlases is of: a glyph, the mask of a drawing at a size in device
-/// pixels, or the piece of a decoded image that starts at a pixel of it.
+/// pixels, or the piece of a decoded image that starts at a pixel of it. The ramp of a gradient
+/// is an image piece at `RAMP_X`, where no piece starts: a variant of its own costs every
+/// glyph's lookup (measured, `tools/bench.sh grid`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TileKey {
     Glyph(GlyphKey),
@@ -118,6 +123,17 @@ impl Fonts {
         }
         let meta = GlyphMeta { left: 0.0, top: 0.0, format: GlyphFormat::Color };
         self.color_glyphs.insert(key, width, height, &pixels(), meta)
+    }
+
+    /// The tile of a gradient's ramp, known by `key`: `texels` gives its row, premultiplied
+    /// RGBA, the first time it is asked for.
+    pub fn ramp(&mut self, key: u64, texels: impl FnOnce() -> Vec<u8>) -> Option<GlyphTile> {
+        let key = TileKey::Image { image: key, x: RAMP_X, y: 0 };
+        if let Some(tile) = self.color_glyphs.get(&key) {
+            return Some(tile);
+        }
+        let meta = GlyphMeta { left: 0.0, top: 0.0, format: GlyphFormat::Color };
+        self.color_glyphs.insert(key, quadra_render::RAMP, 1, &texels(), meta)
     }
 
     /// Forgets every tile: the GPU lost them. Text paints again and rasterizes what it needs.

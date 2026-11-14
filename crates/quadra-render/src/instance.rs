@@ -3,6 +3,7 @@
 
 use quadra_prim::{Color, Corners, Edges, Rect};
 
+use crate::gradient::GradientKind;
 use crate::layer::LayerId;
 
 #[repr(u32)]
@@ -30,7 +31,7 @@ pub struct Instance {
     pub clip: [f32; 4],
     /// Fill or tint, straight alpha.
     pub color: [f32; 4],
-    /// Border colour, gradient end, or shadow colour.
+    /// Border colour, or shadow colour.
     pub color2: [f32; 4],
     /// Corner radii: top-left, top-right, bottom-right, bottom-left.
     pub radii: [f32; 4],
@@ -38,7 +39,7 @@ pub struct Instance {
     pub border: [f32; 4],
     /// Atlas rectangle: u0, v0, u1, v1.
     pub uv: [f32; 4],
-    /// Quad: gradient angle, gradient on. Shadow: blur. Line: thickness, mode, rise.
+    /// Quad: gradient angle, gradient kind. Shadow: blur. Line: thickness, mode, rise.
     pub params: [f32; 4],
     pub kind: u32,
     /// The slice of the atlas texture array; for a marker, the child layer.
@@ -106,13 +107,21 @@ impl Clip {
     }
 }
 
+/// A gradient on a quad: the way it goes, and its ramp in the colour atlas, inset half a
+/// texel at each end and in the middle of its row.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Ramp {
+    pub kind: GradientKind,
+    pub uv: [f32; 4],
+    pub slice: u32,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Quad {
     pub bounds: Rect,
     pub background: Color,
-    pub gradient_to: Option<Color>,
-    /// Degrees; 0 is left to right.
-    pub gradient_angle: f32,
+    /// Fills the quad over its background.
+    pub gradient: Option<Ramp>,
     pub border_widths: Edges,
     pub border_color: Color,
     pub radii: Corners,
@@ -126,23 +135,24 @@ impl Quad {
 
     /// Whether there is anything of the quad to see: a size, and a fill or a border.
     pub fn is_visible(&self) -> bool {
-        let filled = !self.background.is_transparent() || self.gradient_to.is_some();
+        let filled = !self.background.is_transparent() || self.gradient.is_some();
         !self.bounds.is_empty() && (filled || self.has_border())
     }
 
-    /// The one instance of this quad. The shader keeps one second colour, so a gradient and a
-    /// border cannot share an instance: [`push_quad`] splits them.
+    /// The one instance of this quad.
     pub fn instance(&self, clip: &Clip) -> Instance {
         let mut i = Instance::base(Kind::Quad, self.bounds, clip);
         i.color = self.background.to_array();
         i.radii = corners4(self.radii);
         let b = self.border_widths;
         i.border = [b.top, b.right, b.bottom, b.left];
-        if let Some(to) = self.gradient_to {
-            i.color2 = to.to_array();
-            i.params[0] = self.gradient_angle;
-            i.params[1] = 1.0;
-            i.flags = FLAG_GRADIENT;
+        if let Some(Ramp { kind, uv, slice }) = self.gradient {
+            (i.params[0], i.params[1]) = match kind {
+                GradientKind::Linear(angle) => (angle, 1.0),
+                GradientKind::Radial => (0.0, 2.0),
+                GradientKind::Conic(from) => (from, 3.0),
+            };
+            (i.uv, i.slice, i.flags) = (uv, slice, FLAG_GRADIENT);
         }
         if self.has_border() {
             i.color2 = self.border_color.to_array();
@@ -152,17 +162,11 @@ impl Quad {
     }
 }
 
-/// Appends a quad: nothing when it cannot be seen, two instances for a gradient with a border.
+/// Appends a quad: nothing when it cannot be seen.
 pub fn push_quad(out: &mut Vec<Instance>, q: &Quad, clip: &Clip) {
-    if !q.is_visible() {
-        return;
+    if q.is_visible() {
+        out.push(q.instance(clip));
     }
-    if q.gradient_to.is_some() && q.has_border() {
-        out.push(Quad { border_widths: Edges::default(), ..*q }.instance(clip));
-        out.push(Quad { background: Color::TRANSPARENT, gradient_to: None, ..*q }.instance(clip));
-        return;
-    }
-    out.push(q.instance(clip));
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]

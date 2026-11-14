@@ -243,7 +243,7 @@ impl Keymap {
 
     /// What `stroke` means after the `pending` keys of a sequence, where the focus has the
     /// `contexts` around it, the nearest first.
-    pub(crate) fn find(&self, pending: &[Keystroke], stroke: Keystroke, contexts: &[Rc<str>]) -> Match {
+    pub(crate) fn find(&self, pending: &[Keystroke], stroke: Keystroke, contexts: &[&str]) -> Match {
         let mut best: Option<(usize, &Binding)> = None;
         let mut longer = false;
         for binding in &self.bindings {
@@ -254,7 +254,7 @@ impl Keymap {
             // How near the focus its context is: the nearest is the largest.
             let near = match &binding.context {
                 None => 0,
-                Some(name) => match contexts.iter().position(|c| c == name) {
+                Some(name) => match contexts.iter().position(|c| *c == &**name) {
                     Some(at) => contexts.len() - at,
                     None => continue,
                 },

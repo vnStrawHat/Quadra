@@ -8,10 +8,10 @@ struct Instance {
     float4 bounds;   // x, y, width, height
     float4 clip;     // clip rect, in the same space
     float4 color;    // straight alpha
-    float4 color2;   // border / gradient end / shadow color
+    float4 color2;   // border / shadow color
     float4 radii;    // tl, tr, br, bl
     float4 border;   // widths t, r, b, l (shadow: inset of the casting box)
-    float4 uv;       // atlas u0, v0, u1, v1
+    float4 uv;       // atlas u0, v0, u1, v1 (a gradient's ramp)
     float4 params;   // kind specific; .w = clip corner radius
     uint kind;       // 0 quad, 1 shadow, 2 mono, 3 poly, 4 line (5 marks a child layer: never drawn)
     uint slice;      // slice of the atlas texture array
@@ -95,18 +95,27 @@ float erf_approx(float x) {
     return s * y;
 }
 
+// A gradient's colour at a pixel: how far along it the pixel is (params.y: 1 linear at the
+// angle params.x, 2 radial, 3 conic from params.x), sampled from its ramp, premultiplied.
+float4 gradient(Instance p, float2 q, float2 half_size) {
+    float ang = radians(p.params.x), t;
+    if (p.params.y < 1.5) { // the line's length reaches the corners, as design tools have it
+        float2 dir = float2(cos(ang), sin(ang));
+        t = dot(q, dir) / max(dot(abs(dir), half_size) * 2, 1) + 0.5;
+    } else if (p.params.y < 2.5) {
+        t = length(q / max(half_size, 0.5)) * 0.70710678;
+    } else {
+        t = frac((atan2(q.x, -q.y) - ang) * 0.15915494);
+    }
+    return poly_atlas.SampleLevel(atlas_sampler, float3(lerp(p.uv.x, p.uv.z, saturate(t)), p.uv.y, p.slice), 0);
+}
+
 float4 shade_quad(Instance p, float2 px) {
     float2 half_size = p.bounds.zw * 0.5;
     float2 center = p.bounds.xy + half_size;
     float coverage = saturate(0.5 - sdf_rrect(px, center, half_size, p.radii));
-    float4 fill = p.color;
-    if (p.flags & 1) {
-        float ang = radians(p.params.x);
-        float2 dir = float2(cos(ang), sin(ang));
-        float t = dot((px - p.bounds.xy) / max(p.bounds.zw, 1) - 0.5, dir) + 0.5;
-        fill = lerp(p.color, p.color2, saturate(t));
-    }
-    float4 c = premul(fill, 1);
+    float4 c = premul(p.color, 1);
+    [branch] if (p.flags & 1) c = gradient(p, px - center, half_size); // HLSL's ?: runs both sides
     if (p.flags & 2) {
         float4 b = p.border; // t r b l
         // Sides without a border push the inner edge outside the box, so their

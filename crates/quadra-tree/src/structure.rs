@@ -78,7 +78,7 @@ impl Tree {
         node.handlers = Vec::new();
         (node.focusable, node.focus_scope, node.key_context) = (false, false, None);
         node.semantics = None;
-        (node.state, node.styled) = (crate::State::NONE, None);
+        (node.state, node.styled, node.fill) = (crate::State::NONE, None, None);
         self.sizes.remove(&id.index);
         if let Some(state) = node.layer.take().filter(|s| s.id != self.root_layer) {
             self.scene.remove_layer(state.id);

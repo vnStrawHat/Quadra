@@ -198,6 +198,7 @@ impl Tree {
             state: State::NONE,
             styled: None,
             motion: None,
+            fill: None,
         };
         if index as usize == self.nodes.len() {
             self.nodes.push(node);

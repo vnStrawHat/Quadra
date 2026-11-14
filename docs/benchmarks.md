@@ -19,8 +19,8 @@ scene with `BENCH_PHASES=1`, microseconds a frame:
 | document | 118 | 207 | 111 | 2 |
 | list | 41 | 67 | 123 | 3 |
 
-So the one shader is not what costs a frame: the GPU's part is a tenth of a frame at 60 Hz in
-the heaviest scene, and shaders by class of instance wait until a scene shows otherwise. The
+So the one shader is not what costs a frame: the GPU's part is about one percent of a frame
+at 60 Hz in the heaviest scene, and shaders by class of instance wait until a scene shows otherwise. The
 headless paint pass of `grid` is as before the gradients and borders (178 to 180 µs).
 
 ## 2026-11-11 — with the accessibility bridge (on fffd71e plus this commit)

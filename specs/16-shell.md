@@ -37,22 +37,29 @@ opens it: a link from content that is not the user's goes through
 
 ## Tray and notifications
 
-`Tray::add(icon, tooltip, menu)` puts an icon in the notification area; its clicks and the
-items of its menu come back to the app as messages of an inbox (11): the icon has a hidden
-window of its own, and no `PlatformEvent` is added for it. `notify(title, text)` shows a
-notification from the icon. An app of the tray says `quit_on_last_window(false)` (15).
+`Tray::add(image, tooltip, menu, events)` puts an icon in the notification area (the
+app's picture, `TrayImage` in RGBA, or the system's) and gives a `TrayIcon`, which takes it
+away when dropped; its clicks and the items of its menu (`TrayEvent::Click`,
+`DoubleClick`, `Item(i)`) come back to the app through the `Sender` of an inbox (11): the
+icon has a hidden window of its own, and no `PlatformEvent` is added for it.
+`icon.notify(title, text)` shows a notification from the icon. An app of the tray says
+`quit_on_last_window(false)` (15). `tray()` finds the app's in a view's context; the fake
+records what it is asked and `FakeShell::click_tray` is the user.
 
 ## One instance
 
-`single_instance(id) -> Instance`: the first process to ask holds a named mutex and a hidden
-window of its own; a later one finds the window, sends it its arguments and is told to end
-(`Instance::Second`). The first receives them through an inbox, on its UI thread.
+`single_instance(id, args) -> Instance`: the first process to ask in the user's session
+holds a named mutex and a hidden window of its own (`Instance::First(inbox)`); a later one
+finds the window, sends it the folder it started in and its arguments (`WM_COPYDATA`) and
+is told to end (`Instance::Second`). The first receives each `Launch { folder, args }`
+through the inbox, on its UI thread (`.on_data(..)` in a view).
 
 ## Crash reports
 
-With the app's folders (15), `crash_reports(folder)` installs a handler of unhandled
-exceptions that writes a minidump and the last lines of the log to `crashes/`, beside the
-panic reports of the app.
+`crash_reports(folder)`, with the app's `crashes` folder (15), installs a handler of
+unhandled exceptions that writes `<date-time>.dmp`, a minidump of the process at the
+exception, and `<date-time>.txt`, the last 100 lines of the log, beside the panic reports
+of the app; the process then ends as it would have.
 
 ## Packaging
 

@@ -269,6 +269,7 @@ name = "quadra-shell"
 version = "0.1.0"
 dependencies = [
  "quadra-app",
+ "quadra-async",
  "quadra-platform",
  "quadra-reactive",
  "quadra-render",

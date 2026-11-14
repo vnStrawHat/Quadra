@@ -19,7 +19,10 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{HSTRING, Interface, PCWSTR, w};
 
-use crate::{Answer, Dialogs, FileDialog, Message, MessageKind, Opener};
+use crate::tray::WinTray;
+use crate::{
+    Answer, Dialogs, FileDialog, Message, MessageKind, Opener, Tray, TrayEvent, TrayIcon, TrayImage,
+};
 
 /// The shell of Windows. The dialogs make the UI thread a single-threaded COM apartment
 /// when it is none yet, which they need.
@@ -160,5 +163,27 @@ impl Opener for WinShell {
     fn reveal(&self, path: &Path) -> bool {
         let select = HSTRING::from(format!("/select,\"{}\"", path.display()));
         shell_open(&HSTRING::from("explorer.exe"), Some(&select))
+    }
+}
+
+impl Tray for WinShell {
+    fn add(
+        &self,
+        image: Option<&TrayImage>,
+        tooltip: &str,
+        menu: &[&str],
+        events: quadra_async::Sender<TrayEvent>,
+    ) -> Option<Box<dyn TrayIcon>> {
+        Some(Box::new(WinTray::add(image, tooltip, menu, events)?))
+    }
+}
+
+impl TrayIcon for WinTray {
+    fn notify(&self, title: &str, text: &str) {
+        WinTray::notify(self, title, text);
+    }
+
+    fn set_tooltip(&mut self, tooltip: &str) {
+        WinTray::set_tooltip(self, tooltip);
     }
 }

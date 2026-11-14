@@ -8,13 +8,16 @@ use std::rc::Rc;
 
 use quadra_reactive::provide;
 
-use crate::{Answer, Dialogs, FileDialog, Message, Opener};
+use quadra_async::Sender;
+
+use crate::{Answer, Dialogs, FileDialog, Message, Opener, Tray, TrayEvent, TrayIcon, TrayImage};
 
 #[derive(Default)]
 pub struct FakeShell {
     files: RefCell<VecDeque<Vec<PathBuf>>>,
     answers: RefCell<VecDeque<Answer>>,
-    asked: RefCell<Vec<String>>,
+    asked: Rc<RefCell<Vec<String>>>,
+    tray: RefCell<Option<Sender<TrayEvent>>>,
 }
 
 impl FakeShell {
@@ -26,6 +29,14 @@ impl FakeShell {
     pub fn provide(self: &Rc<Self>) {
         provide::<Rc<dyn Dialogs>>(self.clone());
         provide::<Rc<dyn Opener>>(self.clone());
+        provide::<Rc<dyn Tray>>(self.clone());
+    }
+
+    /// The user does something to the icon the app last put in the tray.
+    pub fn click_tray(&self, event: TrayEvent) {
+        if let Some(events) = &*self.tray.borrow() {
+            events.push(event);
+        }
     }
 
     /// What the next dialog of files answers: the files chosen; none when not queued.
@@ -84,5 +95,31 @@ impl Opener for FakeShell {
     fn reveal(&self, path: &Path) -> bool {
         self.ask("reveal", &path.display().to_string());
         true
+    }
+}
+
+struct FakeIcon(Rc<RefCell<Vec<String>>>);
+
+impl TrayIcon for FakeIcon {
+    fn notify(&self, title: &str, text: &str) {
+        self.0.borrow_mut().push(format!("notify: {title}: {text}"));
+    }
+
+    fn set_tooltip(&mut self, tooltip: &str) {
+        self.0.borrow_mut().push(format!("tooltip: {tooltip}"));
+    }
+}
+
+impl Tray for FakeShell {
+    fn add(
+        &self,
+        _image: Option<&TrayImage>,
+        tooltip: &str,
+        menu: &[&str],
+        events: Sender<TrayEvent>,
+    ) -> Option<Box<dyn TrayIcon>> {
+        self.ask("tray", &format!("{tooltip} [{}]", menu.join(", ")));
+        *self.tray.borrow_mut() = Some(events);
+        Some(Box::new(FakeIcon(self.asked.clone())))
     }
 }

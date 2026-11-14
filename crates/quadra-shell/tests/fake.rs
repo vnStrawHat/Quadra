@@ -7,7 +7,9 @@ use std::rc::Rc;
 use quadra_app::App;
 use quadra_platform::{HeadlessPlatform, Platform, PlatformEvent, WindowOptions};
 use quadra_render::NullRenderer;
-use quadra_shell::{Answer, Dialogs, FakeShell, FileDialog, Message, MessageKind, Opener, dialogs, opener};
+use quadra_shell::{
+    Answer, Dialogs, FakeShell, FileDialog, Message, MessageKind, Opener, Tray, TrayEvent, dialogs, opener,
+};
 use quadra_text::FakeBackend;
 use quadra_ui::{column, window};
 
@@ -72,4 +74,28 @@ fn what_is_opened_is_kept_and_the_dialogs_answer_what_was_queued() {
     };
     assert!(opened().open("https://example.com"));
     assert_eq!(shell.asked().last().unwrap(), "open: https://example.com");
+}
+
+#[test]
+fn the_tray_tells_the_app_what_the_user_did() {
+    let shell = FakeShell::new();
+    let events = quadra_async::inbox();
+    let mut icon = shell.add(None, "Sync", &["Open", "Quit"], events.sender()).unwrap();
+    icon.notify("Synced", "3 files");
+    icon.set_tooltip("Sync: idle");
+    shell.click_tray(TrayEvent::Item(1));
+    let asked = ["tray: Sync [Open, Quit]", "notify: Synced: 3 files", "tooltip: Sync: idle"];
+    assert_eq!(shell.asked(), asked);
+    let seen = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let platform = HeadlessPlatform::new();
+    let mut app = App::with(Rc::new(platform.clone()), NullRenderer::new(), Box::new(FakeBackend::new()));
+    let got = seen.clone();
+    app.open_window(WindowOptions::new("tray"), move || {
+        events.on_data(move |burst| got.borrow_mut().append(burst));
+        column()
+    })
+    .unwrap();
+    platform.waker().wake();
+    platform.step(&mut app);
+    assert_eq!(*seen.borrow(), [TrayEvent::Item(1)]);
 }

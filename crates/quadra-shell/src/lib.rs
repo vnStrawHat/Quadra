@@ -3,17 +3,23 @@
 //! service is a trait with a Windows implementation and a fake that tests drive
 //! ([`FakeShell`]); views find the app's in their context.
 
+mod crash;
 mod fake;
+mod instance;
+mod tray;
 mod win;
 
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use quadra_app::App;
+use quadra_async::Sender;
 use quadra_reactive::expect;
 use quadra_render::Renderer;
 
+pub use crash::crash_reports;
 pub use fake::FakeShell;
+pub use instance::{Instance, Launch, single_instance};
 pub use win::WinShell;
 
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,
@@ -105,10 +111,56 @@ pub trait Opener {
     fn reveal(&self, path: &std::path::Path) -> bool;
 }
 
-/// Gives the app's views the OS's dialogs and opener ([`dialogs`], [`opener`]).
+/// What the icon in the tray tells the app.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TrayEvent {
+    Click,
+    DoubleClick,
+    /// An item of its menu was chosen: its index.
+    Item(usize),
+}
+
+/// The picture of an icon in the tray: straight RGBA, `width` by `height` (16 or 32).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TrayImage {
+    pub width: u32,
+    pub height: u32,
+    pub rgba: Vec<u8>,
+}
+
+/// The notification area. An app of the tray says `quit_on_last_window(false)` (specs/15).
+pub trait Tray {
+    /// Puts an icon there, the app's picture or the system's: its clicks and the items of its
+    /// menu (right click) go to `events`. None when the OS refused it.
+    fn add(
+        &self,
+        image: Option<&TrayImage>,
+        tooltip: &str,
+        menu: &[&str],
+        events: Sender<TrayEvent>,
+    ) -> Option<Box<dyn TrayIcon>>;
+}
+
+/// An icon in the tray. Dropping it takes it away.
+// ponytail: an icon is not added again when the taskbar restarts (TaskbarCreated).
+pub trait TrayIcon {
+    /// A notification from the icon.
+    fn notify(&self, title: &str, text: &str);
+    fn set_tooltip(&mut self, tooltip: &str);
+}
+
+/// Gives the app's views the OS's dialogs, opener and tray ([`dialogs`], [`opener`],
+/// [`tray`]).
 pub fn install<R: Renderer>(app: App<R>) -> App<R> {
     let shell = Rc::new(WinShell);
-    app.provide::<Rc<dyn Dialogs>>(shell.clone()).provide::<Rc<dyn Opener>>(shell)
+    let app = app.provide::<Rc<dyn Dialogs>>(shell.clone()).provide::<Rc<dyn Opener>>(shell.clone());
+    app.provide::<Rc<dyn Tray>>(shell)
+}
+
+/// The app's tray. Call it while a view is built.
+#[track_caller]
+pub fn tray() -> Rc<dyn Tray> {
+    expect::<Rc<dyn Tray>>()
 }
 
 /// The app's dialogs. Call it while a view is built, and keep it for its handlers.

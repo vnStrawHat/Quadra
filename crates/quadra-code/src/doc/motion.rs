@@ -47,7 +47,7 @@ fn word_run(bytes: &[u8], back: bool) -> usize {
 }
 
 /// The columns of a text: a tab goes to the next stop.
-pub(super) fn columns(text: &str, tab: usize) -> usize {
+pub(crate) fn columns(text: &str, tab: usize) -> usize {
     let (mut col, mut at) = (0, 0);
     while at < text.len() {
         let (end, width) = cell_step(text, at);

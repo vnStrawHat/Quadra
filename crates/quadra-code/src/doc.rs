@@ -4,7 +4,7 @@
 
 mod commands;
 mod lines;
-mod motion;
+pub(crate) mod motion;
 mod select;
 
 use std::ops::Range;

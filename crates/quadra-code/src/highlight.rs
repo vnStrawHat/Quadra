@@ -39,6 +39,9 @@ impl Highlighter {
     /// The state `line` starts in, reading the stale lines before it.
     pub fn start_state(&mut self, buffer: &Buffer, line: usize) -> u32 {
         let line = line.min(buffer.line_count());
+        if self.tokenizer == Tokenizer::Plain {
+            return 0; // nothing is open at the end of a line
+        }
         let mut out = Vec::new();
         while self.valid < line {
             let state = self.ends.last().copied().unwrap_or(0);

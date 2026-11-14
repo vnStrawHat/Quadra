@@ -975,7 +975,36 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   matches are found again for each version of the document while finding shows (as the V
   tree did), on a copy of the text (ponytail: piece by piece if files of tens of megabytes
   make it slow); a replacement is literal.
-- Not yet: the editor's widget; what is inside `<script>` and
+- **The editor** (`editor(text).path(name)`) is a scroll view around one widget,
+  `EditorWidget`, which holds the document, its highlighter and what finding found. The
+  widget is as high as its lines and as wide as the view; the scroll view scrolls it up and
+  down, its wheel and its bar, and it scrolls itself sideways (the wheel with Shift, or
+  sideways; the caret is kept in view), as far as the widest line it has painted. It paints
+  the lines of the band its layer paints, not the document: under the text the line of each
+  cursor (with the focus), the selections, the matches and the bracket that matches; the
+  text, a glyph at the column of its character (`Doc::col_of`: a tab to its stop, a wide
+  character two cells), each in the colour of its token's kind; the cursors, a bar each,
+  always painted and clear while the blink hides them; and the gutter, the numbers of the
+  lines at the right of at least four digits, two cells before them and three after,
+  brighter on the lines of the cursors. The face is the text values at its node (the kit's
+  mono face at 15 px, lines of 25).
+  - The colours are roles of the theme, a theme file's `editor`: `token::EDITOR_FOREGROUND`,
+    `EDITOR_CURSOR`, `EDITOR_LINE`, `EDITOR_GUTTER`, `EDITOR_GUTTER_ACTIVE`,
+    `EDITOR_SELECTION`, `EDITOR_FIND`, `EDITOR_FIND_CURRENT`, `EDITOR_BRACKET`; the text
+    the kinds' `syntax`.
+  - **Keys** are bindings of the context `editor` to `EditorCommand`, an action
+    (`bind_keys(&mut keymap)` adds them; an app adds them to its keymap): those of
+    behaviour/18, "Keys". Tab indents there, being of the nearest context. Escape gives one
+    cursor. Typed text, a composition (shown at the cursor, underlined, not yet in the
+    document), the pointer (a click puts the cursor, Shift extends it, Ctrl adds one, a drag
+    selects, two clicks a word, three a line, Alt and a drag a column) and the clipboard of
+    the context are those of a text input. The time of a command is the window's clock, so
+    typing after a pause is an undo of its own.
+  - After a command the caret is scrolled into view, and the widget is laid out again only
+    when the count of lines changed.
+  - What it says to a reader: a text input of many lines, its text and its selection.
+- Not yet: the find bar; soft wrap; links; the marks of a diff; a glyph wider or narrower
+  than its cells centred in them; what is inside `<script>` and
   `<style>` is plain text; regular expressions in JavaScript are not told from division.
 
 ## Porting the kit

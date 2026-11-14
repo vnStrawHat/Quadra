@@ -5,6 +5,27 @@ use quadra_tree::Token as Role;
 
 use crate::token::TokenKind;
 
+/// Every kind, in the order of their numbers.
+pub(crate) const KINDS: [TokenKind; 17] = [
+    TokenKind::Keyword,
+    TokenKind::Control,
+    TokenKind::Str,
+    TokenKind::Number,
+    TokenKind::Constant,
+    TokenKind::Type,
+    TokenKind::Function,
+    TokenKind::Variable,
+    TokenKind::Property,
+    TokenKind::Operator,
+    TokenKind::Punctuation,
+    TokenKind::Comment,
+    TokenKind::Tag,
+    TokenKind::Attribute,
+    TokenKind::Regexp,
+    TokenKind::Escape,
+    TokenKind::Invalid,
+];
+
 pub fn role(kind: TokenKind) -> Role {
     match kind {
         TokenKind::Keyword => token::SYNTAX_KEYWORD,

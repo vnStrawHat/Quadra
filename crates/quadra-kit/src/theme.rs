@@ -157,8 +157,8 @@ impl KitTheme {
             };
             self.colors[role] = color(value, &path)?;
         }
-        // ponytail: the other roles of the editor and the terminal come with their crates;
-        // until then their colours are only checked to be colours.
+        // ponytail: the other roles of the terminal come with its crate; until then their
+        // colours are only checked to be colours, as the editor's that it does not use.
         for key in ["editor", "terminal"] {
             for (name, value) in section(&file, key)?.into_iter().flatten() {
                 let path = format!("{key}.{name}");
@@ -174,8 +174,9 @@ impl KitTheme {
                     value => {
                         let read = color(value, &path)?;
                         // The tints of a diff are roles of the kit already.
+                        let own = format!("{key}_{name}");
                         let diff = |role: &&str| name.starts_with("diff_") && *role == name;
-                        if let Some(role) = NAMES.iter().position(diff) {
+                        if let Some(role) = NAMES.iter().position(|role| *role == own || diff(role)) {
                             self.colors[role] = read;
                         }
                     }

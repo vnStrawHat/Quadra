@@ -159,6 +159,21 @@ roles! {
     /// `editor.diff_add` and `editor.diff_remove`.
     DIFF_ADD = "diff_add";
     DIFF_REMOVE = "diff_remove";
+    /// The code editor's: a theme file's `editor`, each `editor.<name>` the role
+    /// `editor_<name>`. Its text, where no kind of token colours it.
+    EDITOR_FOREGROUND = "editor_foreground";
+    EDITOR_CURSOR = "editor_cursor";
+    /// The band of a line that has a cursor.
+    EDITOR_LINE = "editor_line_highlight";
+    /// The numbers of the lines, and those of the lines that have a cursor.
+    EDITOR_GUTTER = "editor_gutter";
+    EDITOR_GUTTER_ACTIVE = "editor_gutter_active";
+    EDITOR_SELECTION = "editor_selection";
+    /// What finding found, and the match that is chosen.
+    EDITOR_FIND = "editor_find_match";
+    EDITOR_FIND_CURRENT = "editor_find_current";
+    /// Behind the bracket at a cursor and the one that matches it.
+    EDITOR_BRACKET = "editor_bracket_match";
     /// The colours of the series of a chart: a theme file's `series`. Unset, the accent.
     SERIES_1 = "series_1";
     SERIES_2 = "series_2";

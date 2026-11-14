@@ -4,6 +4,7 @@
 
 mod buffer;
 mod doc;
+mod editor;
 mod find;
 mod highlight;
 mod lang;
@@ -16,6 +17,7 @@ mod yaml;
 
 pub use buffer::Buffer;
 pub use doc::{Cursor, Doc, Edit, Move};
+pub use editor::{EDITOR_CONTEXT, Editor, EditorCommand, EditorWidget, bind_keys, editor};
 pub use find::{Query, next_match};
 pub use highlight::Highlighter;
 pub use lang::LangSpec;

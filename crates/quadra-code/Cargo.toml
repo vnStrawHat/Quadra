@@ -11,9 +11,17 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+quadra-a11y = { path = "../quadra-a11y" }
+quadra-async = { path = "../quadra-async" }
 quadra-kit = { path = "../quadra-kit" }
+quadra-layout = { path = "../quadra-layout" }
+quadra-platform = { path = "../quadra-platform" }
+quadra-prim = { path = "../quadra-prim" }
+quadra-reactive = { path = "../quadra-reactive" }
+quadra-render = { path = "../quadra-render" }
 quadra-text = { path = "../quadra-text" }
 quadra-tree = { path = "../quadra-tree" }
+quadra-ui = { path = "../quadra-ui" }
 regex-lite = "0.1"
 
 [dev-dependencies]

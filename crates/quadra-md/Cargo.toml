@@ -16,6 +16,7 @@ quadra-base = { path = "../quadra-base" }
 quadra-code = { path = "../quadra-code" }
 quadra-kit = { path = "../quadra-kit" }
 quadra-layout = { path = "../quadra-layout" }
+quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }
 quadra-reactive = { path = "../quadra-reactive" }
 quadra-render = { path = "../quadra-render" }
@@ -25,5 +26,4 @@ quadra-ui = { path = "../quadra-ui" }
 quadra-vector = { path = "../quadra-vector" }
 
 [dev-dependencies]
-quadra-platform = { path = "../quadra-platform" }
 quadra-testing = { path = "../quadra-testing" }

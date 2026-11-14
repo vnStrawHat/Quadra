@@ -932,7 +932,13 @@ What it reads and how it looks is behaviour/21. As built:
   (each as high as it is, counted at 48 px until it is mounted): only the blocks that show
   are mounted, so ten thousand sections mount a few dozen; its places are those of the
   blocks mounted.
-- Not yet: one selection over the blocks.
+- One selection over the blocks: a press in a document and a drag select from the text
+  under the press to the text under the pointer (the nearest, between them), the texts of
+  the blocks between them whole, in the order of the document; each paints what it has
+  of it in the selection colour (`RichText::select`). Ctrl-C copies it, a text a line, a
+  box said by what it says; Ctrl-A selects all of it; losing the focus lets it go. Ctrl and
+  a press is for links. What is drawn and is no text (a diagram, a display formula) is not
+  in it; in a document that scrolls itself, what is mounted is.
 
 ## Code (`quadra-code`)
 

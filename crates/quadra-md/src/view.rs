@@ -5,6 +5,7 @@ mod code;
 mod doc;
 mod hint;
 mod picture;
+mod select;
 mod table;
 
 use std::collections::HashMap;

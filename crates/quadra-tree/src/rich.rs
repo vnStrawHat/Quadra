@@ -2,6 +2,7 @@
 //! text values that hold at the node (specs/05, "Rules"; specs/08, "Paragraphs").
 
 use std::cell::RefCell;
+use std::ops::Range;
 use std::rc::Rc;
 
 use quadra_a11y::{Role, Semantics};
@@ -66,6 +67,9 @@ pub struct RichText {
     tiles: Vec<GlyphTile>,
     /// What is in its lines and is no text, each with the number of its span.
     boxes: Vec<(usize, Box<dyn InlineBox>)>,
+    /// What is selected, by whoever selects across texts (a document), and its fill.
+    selected: Range<usize>,
+    selection: Color,
 }
 
 impl RichText {
@@ -73,8 +77,22 @@ impl RichText {
         let (text, style, color) = (text.into(), TextStyle::default(), Color::BLACK);
         let (links, tiles) = (LinkBoxes::default(), Vec::new());
         let colors = Vec::new(); // the tree gives the theme when the node is added
-        let boxes = Vec::new();
-        RichText { text, spans, colors, style, color, paragraph: None, stale: false, links, tiles, boxes }
+        let (boxes, selected, selection) = (Vec::new(), 0..0, Color::TRANSPARENT);
+        let paragraph = None;
+        RichText {
+            text,
+            spans,
+            colors,
+            style,
+            color,
+            paragraph,
+            stale: false,
+            links,
+            tiles,
+            boxes,
+            selected,
+            selection,
+        }
     }
 
     /// Puts a box in the place of a span, by the span's number.
@@ -91,6 +109,40 @@ impl RichText {
     /// Where its links are: filled when it is painted.
     pub fn links(&self) -> LinkBoxes {
         self.links.clone()
+    }
+
+    /// How long its text is, in bytes.
+    pub fn len(&self) -> usize {
+        self.text.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty()
+    }
+
+    /// The offset in the text nearest a point from the node's corner.
+    pub fn index_at(&self, at: Point) -> usize {
+        let Some(paragraph) = &self.paragraph else { return 0 };
+        paragraph.index_near(paragraph.line_at_y(at.y), at.x)
+    }
+
+    /// Selects a range of the text, empty for none; true when that is another.
+    pub fn select(&mut self, range: Range<usize>) -> bool {
+        std::mem::replace(&mut self.selected, range.clone()) != range
+    }
+
+    /// What is selected, a box said by what it says it is.
+    pub fn selected(&self) -> String {
+        let (range, mut from, mut out) = (self.selected.clone(), self.selected.start, String::new());
+        for (span, inline) in &self.boxes {
+            let at = self.range(*span);
+            if at.start >= range.start && at.end <= range.end {
+                out.extend([&self.text[from..at.start], inline.says()]);
+                from = at.end;
+            }
+        }
+        out.push_str(&self.text[from..range.end]);
+        out
     }
 }
 
@@ -167,6 +219,10 @@ impl Widget for RichText {
             start = span.end;
         }
         drop(links);
+        for part in paragraph.spans(self.selected.clone(), 0.0) {
+            let bounds = Rect::new(cx.rect.x + part.x, cx.rect.y + part.y, part.width, part.height);
+            cx.quad(Quad { bounds, background: self.selection, ..Quad::default() });
+        }
         for k in 0..self.boxes.len() {
             let span = self.boxes[k].0;
             if let Some(part) = paragraph.spans(self.range(span), 0.0).next() {
@@ -179,7 +235,7 @@ impl Widget for RichText {
     }
 
     fn inherit(&mut self, inherited: &Inherited) {
-        self.color = inherited.color;
+        (self.color, self.selection) = (inherited.color, inherited.selection);
         if self.style != inherited.style {
             self.style.clone_from(&inherited.style);
             self.stale = true;

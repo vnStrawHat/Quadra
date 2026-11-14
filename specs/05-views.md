@@ -315,6 +315,8 @@ locale at the window root; a subtree can provide its own.
     baseline, or lower under it, than its text is made that much higher, on whole pixels;
     each line has its height and its baseline (`Line::height`, `Line::baseline`), and a
     line with no such box is the style's.
-  - Not yet: links reached by Tab and by a reader, a selection.
+  - Its text can be selected by whoever selects across texts (`select`, `selected`, `index_at`):
+    a document does.
+  - Not yet: links reached by Tab and by a reader.
 - A field lays its text out at layout; what reads the lines before the next layout (a key
   that moves the caret by lines, a click, in the same turn as an edit) lays it out first.

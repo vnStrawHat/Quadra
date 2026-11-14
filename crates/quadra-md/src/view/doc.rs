@@ -171,6 +171,7 @@ impl View for Markdown {
                 id
             }
         };
+        super::select::selectable(cx, id);
         if let Some(out) = self.places {
             // After a layout that moved the blocks: the page changed size, or scrolled.
             let (size, handle) = (cx.tree.size_signal(id), cx.handle.clone());

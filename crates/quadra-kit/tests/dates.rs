@@ -103,6 +103,24 @@ fn a_date_picker_opens_a_calendar_and_a_day_closes_it() {
     settle(&mut h);
     assert_eq!((day.get_untracked(), h.tree.overlays().count()), (Date::new(2026, 11, 20), 0));
     assert!(h.semantics().contains("Button \"20/11/2026\" [collapsed]"));
+
+    // Opened again, the days have the focus: the arrows move by a day and a week, the pages
+    // by a month, the month that shows going with them, and Enter takes the day.
+    h.get_by_role(Role::Button, "20/11/2026").focus();
+    h.key(Key::Enter, Mods::NONE);
+    settle(&mut h);
+    let moves = [(Key::Right, (11, 21)), (Key::Down, (11, 28)), (Key::Down, (12, 5)), (Key::Left, (12, 4))];
+    for (key, (month, date)) in moves {
+        h.key(key, Mods::NONE);
+        settle(&mut h);
+        assert_eq!(day.get_untracked(), Date::new(2026, month, date), "after {key:?}");
+    }
+    assert!(h.has_text("Tháng 12 2026"));
+    h.key(Key::PageUp, Mods::NONE);
+    h.key(Key::Up, Mods::NONE);
+    h.key(Key::Enter, Mods::NONE);
+    settle(&mut h);
+    assert_eq!((day.get_untracked(), h.tree.overlays().count()), (Date::new(2026, 10, 28), 0));
 }
 
 #[test]

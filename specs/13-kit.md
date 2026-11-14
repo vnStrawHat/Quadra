@@ -282,8 +282,11 @@ As built so far:
   Monday, and the days in weeks of seven, each a cell of 32 by 28 that a click chooses; the
   chosen day is tinted with an accent label. The arrows change the month that shows, not
   the date. `date_picker(value)` is a field of 180 px that shows the date and opens that
-  calendar in a popup; a day chosen closes it. Not yet: today (the platform has no local
-  time), the arrows of the keyboard over the days, names in the app's language.
+  calendar in a popup; a day chosen closes it. Today (`local_now`) is in the accent and
+  stronger. The days take the focus (in the picker as soon as it opens): the arrows move
+  the day by one and by a week, Page Up and Page Down by a month, the month that shows
+  following it, and Enter takes it. The names of months and days, the first day of the week
+  and how a date is written are the app's language (`language()`).
 - **`time_input(value)`** edits a `TimeOfDay` in a field of 120 px: hours and minutes are
   two parts that take the focus each, sliders to a reader. The arrows step the part with
   the focus, round its ends (`.minute_step(..)` for the minutes), Home and End go to its

@@ -3,9 +3,10 @@
 //! first day of the week and how a date is written are those of the app's language.
 
 use quadra_app::i18n::language;
+use quadra_app::time::local_now;
 use quadra_base::{disclose, time};
 use quadra_layout::{Align, Justify};
-use quadra_platform::Cursor;
+use quadra_platform::{Cursor, Key};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, State};
 use quadra_ui::{Div, MountCx, NodeRef, View, column, div, dynamic, row, text};
@@ -18,9 +19,10 @@ use crate::{icons, size, token};
 pub use quadra_app::time::Date;
 
 /// The calendar of the month that `value` is in, and of the others by its arrows. A click on
-/// a day writes it to `value` and runs `picked`.
-fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
-    let (at, lang) = (value.get_untracked(), language());
+/// a day writes it to `value` and runs `picked`; so does Enter on the days, which the arrows
+/// of the keyboard move over. With `focused` the days take the focus when they show.
+fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static, focused: bool) -> Div {
+    let (at, lang, today) = (value.get_untracked(), language(), local_now().date);
     // The month that shows: the arrows change it, and not the date.
     let shown = signal((at.year, at.month));
     let turn = move |by: i32| {
@@ -50,6 +52,7 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
         row().gap(2.0).text_color(token::TEXT_2).children((0..7).map(name).collect::<Vec<_>>())
     });
     // The days in weeks of seven, the first week begun where its first day falls.
+    let take = picked.clone();
     let days = dynamic(move || {
         let (year, month) = shown.get();
         let words = lang.locale();
@@ -62,6 +65,11 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
             let on = on.hover(|s| s.bg(token::PANEL_HOVER));
             let on = on.when(State::SELECTED, |s| s.bg(token::ACCENT_TINT).text_color(token::ACCENT_TEXT));
             let on = time::day(on, words.date(date), date, value, picked);
+            // Today is in the accent, and stronger.
+            let on = match date == today {
+                true => on.text_color(token::ACCENT_TEXT).font_weight(size::WEIGHT_STRONG),
+                false => on,
+            };
             cells.push(on.child(text(day.to_string())));
         }
         let mut weeks = column().gap(2.0);
@@ -71,14 +79,45 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
         }
         weeks
     });
+    // The arrows move the day by one and by a week, the pages by a month; the month that
+    // shows follows the day. Enter takes it.
+    let grid = column().gap(2.0).focusable().radius(token::RADIUS_MD);
+    let grid = grid.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
+    let grid = grid.on_key_down(move |e| {
+        let date = value.get_untracked();
+        let to = match e.key {
+            Key::Left => date.add_days(-1),
+            Key::Right => date.add_days(1),
+            Key::Up => date.add_days(-7),
+            Key::Down => date.add_days(7),
+            Key::PageUp | Key::PageDown => {
+                let by = if e.key == Key::PageUp { -1 } else { 1 };
+                let months = date.year * 12 + date.month as i32 - 1 + by;
+                let (year, month) = (months.div_euclid(12), months.rem_euclid(12) as u8 + 1);
+                Date::new(year, month, date.day.min(Date::days_in(year, month)))
+            }
+            Key::Enter => {
+                e.stop();
+                return take();
+            }
+            _ => return,
+        };
+        e.stop();
+        value.set(to);
+        shown.set((to.year, to.month));
+    });
+    let grid = match focused {
+        true => grid.on_mount(|tree, id| tree.after_layout(move |tree| tree.focus(id))),
+        false => grid,
+    };
     // The names of the days are the first row of the weeks: 2 px over the next.
-    column().gap(8.0).padding(8.0).child(head).child(column().gap(2.0).child(names).child(days))
+    column().gap(8.0).padding(8.0).child(head).child(grid.child(names).child(days))
 }
 
 /// A month calendar in the page: `value` holds the chosen day, and a click on a day writes
 /// it.
 pub fn calendar(value: Signal<Date>) -> Div {
-    let page = month(value, || {}).bg(token::OVERLAY_BG).radius(token::RADIUS_XL);
+    let page = month(value, || {}, false).bg(token::OVERLAY_BG).radius(token::RADIUS_XL);
     page.border(1.0).border_color(token::LINE_STRONG).elevation(1).shrink(0.0)
 }
 
@@ -117,7 +156,7 @@ impl View for DatePicker {
         let face = face.child(icon(icons::CALENDAR).size(14.0).color(token::TEXT_2));
         let face = face.child(text(move || said.locale().date(value.get())));
         // A day chosen closes the calendar.
-        let days = popover(open, &opener, move || month(value, move || open.set(false)));
+        let days = popover(open, &opener, move || month(value, move || open.set(false), true));
         div().shrink(0.0).child(face).child(days).mount(cx)
     }
 }

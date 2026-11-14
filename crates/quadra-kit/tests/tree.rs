@@ -5,10 +5,11 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use quadra_kit::{TreeNode, dark, icons, tree};
-use quadra_platform::{Key, Mods};
+use quadra_platform::{Key, Mods, MouseButton};
+use quadra_prim::Point;
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
-use quadra_tree::Role;
+use quadra_tree::{PointerInput, Role};
 
 struct Page {
     h: Harness,
@@ -131,4 +132,61 @@ fn the_arrows_move_open_and_close() {
     let rows = p.key(Key::End);
     assert!(rows.last().unwrap() == "README.md*" && rows.iter().any(|row| row == "  Page 999"), "{rows:?}");
     assert_eq!(p.key(Key::Home)[0], "> src*");
+}
+
+/// Clicks a row with modifiers held, through the pointer.
+fn click_with(p: &mut Page, name: &str, mods: Mods) -> Vec<String> {
+    let id = p.h.get_by_role(Role::TreeItem, name).node();
+    let rect = p.h.tree.window_rect(id);
+    let at = Point::new(rect.x + rect.width / 2.0, rect.y + rect.height / 2.0);
+    let now = p.h.now();
+    for input in [PointerInput::Move, PointerInput::Down, PointerInput::Up] {
+        p.h.tree.pointer(input, MouseButton::Left, at, mods, now);
+    }
+    p.settle();
+    p.rows()
+}
+
+#[test]
+fn a_lazy_thing_is_given_what_it_holds_and_several_are_selected() {
+    let (chosen, open, given, many) =
+        (signal(None), signal(HashSet::new()), signal(false), signal(Vec::new()));
+    let told: Rc<std::cell::RefCell<Vec<String>>> = Rc::default();
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    let heard = told.clone();
+    h.mount(move || {
+        let roots = move || {
+            let more = given.get().then(|| vec![TreeNode::new("x", "x"), TreeNode::new("y", "y")]);
+            let far = TreeNode::new("far", "far").lazy().children(more.unwrap_or_default());
+            vec![TreeNode::new("a", "a"), TreeNode::new("b", "b"), far, TreeNode::new("c", "c")]
+        };
+        let heard = heard.clone();
+        let on_open = move |id: &str| {
+            heard.borrow_mut().push(id.to_string());
+            given.set(true);
+        };
+        quadra_kit::root().child(tree(roots, chosen).open(open).many(many).on_open(on_open))
+    });
+    h.frame();
+    let mut p = Page { h, chosen, open };
+    // What is lazy shows as closed, and opening it asks for what it holds.
+    assert_eq!(p.rows(), ["a", "b", "> far", "c"]);
+    p.click("far");
+    assert_eq!(p.click("far"), ["a", "b", "v far*", "  x", "  y", "c"]);
+    assert_eq!(*told.borrow(), ["far"]);
+    // A click selects one, Ctrl adds or takes away one, Shift those from the keys' one.
+    assert_eq!(p.click("a")[..2], ["a*", "b"]);
+    assert_eq!(click_with(&mut p, "c", Mods::CTRL), ["a*", "b", "v far", "  x", "  y", "c*"]);
+    assert_eq!(many.get_untracked(), ["a", "c"]);
+    assert_eq!(click_with(&mut p, "a", Mods::CTRL)[0], "a");
+    assert_eq!(many.get_untracked(), ["c"]);
+    assert_eq!(click_with(&mut p, "x", Mods::SHIFT), ["a*", "b*", "v far*", "  x*", "  y", "c"]);
+    // The keys select one alone.
+    let frame = p.h.query(|n| n.semantics.role == Role::Tree)[0];
+    p.h.tree.focus(frame);
+    assert_eq!(p.key(Key::Up), ["a", "b", "v far*", "  x", "  y", "c"]);
+    assert_eq!(many.get_untracked(), ["far"]);
+    assert_eq!(*told.borrow(), ["far"]);
 }

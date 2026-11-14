@@ -368,8 +368,12 @@ As built so far:
   after its label, in a colour (`.detail(text, colour)`): of what holds things it shows
   only while that is closed, and says in short what is not seen. `.row_height(px)` and
   `.indent(px)` are for a denser tree; the key for copying is bound in a tree, for what is
-  around it to handle. Not yet: children that are asked for when a thing opens, several
-  selected.
+  around it to handle. A thing may hold what is not given yet (`TreeNode::lazy()`): it shows
+  as closed, and opening it tells the tree's `.on_open(|id| ..)`, which gives its children
+  through the roots. With `.many(selected)` several are selected: a click selects one, Ctrl
+  and a click adds or takes away one, Shift and a click selects those from the one the keys
+  are on to it, in the order shown; the keys select the one they move to alone, and the
+  focus ring follows the keys, not what is selected.
 - **`settings(current)`** is the preferences of an app in pages (behaviour/15, "Settings"
   and "Settings, cards", has the numbers): a column of the pages at the left, the chosen one
   at the right. A page is `SettingsPage::new(title).icon(..).about(..).group(..)`, a group

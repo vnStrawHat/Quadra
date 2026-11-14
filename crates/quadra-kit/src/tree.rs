@@ -15,6 +15,9 @@ use crate::icon::icon;
 use crate::{icons, token};
 
 /// How far a level is in from the one around it, and the height of a row, unless told.
+/// What is told the id of a thing that opens.
+type Told = Box<dyn Fn(&str)>;
+
 const INDENT: f32 = 20.0;
 const ROW: f32 = 26.0;
 
@@ -30,6 +33,8 @@ pub struct TreeNode {
     pub color: Option<Paint>,
     /// What follows the label, and its colour.
     pub detail: Option<(String, Paint)>,
+    /// It holds things that are given when it opens (`Tree::on_open`).
+    pub lazy: bool,
 }
 
 impl TreeNode {
@@ -59,6 +64,13 @@ impl TreeNode {
         self.detail = Some((text.into(), color.into()));
         self
     }
+
+    /// It holds things not given yet: it shows as closed, and the tree's `on_open` is told
+    /// when it opens, to give them.
+    pub fn lazy(mut self) -> Self {
+        self.lazy = true;
+        self
+    }
 }
 
 /// What a row of a thing shows (the base walks the things: `quadra_base::tree`).
@@ -82,6 +94,10 @@ impl Branch for TreeNode {
     }
 
     /// The detail of what holds things shows only while that is closed.
+    fn lazy(&self) -> bool {
+        self.lazy && self.children.is_empty()
+    }
+
     fn row(&self, open: bool) -> Look {
         let detail = self.detail.clone().filter(|_| !open);
         Look { label: self.label.clone(), icon: self.icon, color: self.color, detail }
@@ -94,12 +110,14 @@ pub struct Tree {
     open: Option<Signal<HashSet<String>>>,
     /// The height of a row, and how far a level is in.
     sizes: (f32, f32),
+    on_open: Option<Told>,
+    many: Option<Signal<Vec<String>>>,
 }
 
 /// A tree of what `roots` gives, asked again when what it reads changes. `chosen` holds the
 /// id of the selected thing, if any. Give the tree a height, or let it grow.
 pub fn tree(roots: impl Fn() -> Vec<TreeNode> + 'static, chosen: Signal<Option<String>>) -> Tree {
-    Tree { roots: Box::new(roots), chosen, open: None, sizes: (ROW, INDENT) }
+    Tree { roots: Box::new(roots), chosen, open: None, sizes: (ROW, INDENT), on_open: None, many: None }
 }
 
 impl Tree {
@@ -117,6 +135,19 @@ impl Tree {
     /// How far a level is in from the one around it.
     pub fn indent(mut self, px: f32) -> Self {
         self.sizes.1 = px;
+        self
+    }
+
+    /// Told the id of a thing when it opens: to give what a lazy one holds.
+    pub fn on_open(mut self, f: impl Fn(&str) + 'static) -> Self {
+        self.on_open = Some(Box::new(f));
+        self
+    }
+
+    /// Several things are selected, their ids in `selected`: Ctrl and a click adds or takes
+    /// one away, Shift and a click selects from the one the keys are on.
+    pub fn many(mut self, selected: Signal<Vec<String>>) -> Self {
+        self.many = Some(selected);
         self
     }
 }
@@ -162,8 +193,8 @@ impl View for Tree {
         let sizes = self.sizes;
         let open = self.open.unwrap_or_else(|| signal(HashSet::new()));
         let face = move |at: &Shown<Look>, state: tree::Line| {
-            let (on, focused) = (state.on, state.focused);
-            let (lit, ring) = (on.clone(), on.clone());
+            let (on, focused, ring) = (state.on, state.focused, state.here);
+            let lit = on.clone();
             let line = line(at, sizes, move || lit());
             let line =
                 line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
@@ -173,6 +204,15 @@ impl View for Tree {
             })
         };
         let frame = column().grow(1.0).padding_y(4.0);
-        tree::tree(self.roots, self.chosen, open, sizes.0, face).frame(frame).mount(cx)
+        let base = tree::tree(self.roots, self.chosen, open, sizes.0, face).frame(frame);
+        let base = match self.on_open {
+            Some(told) => base.on_open(told),
+            None => base,
+        };
+        let base = match self.many {
+            Some(many) => base.many(many),
+            None => base,
+        };
+        base.mount(cx)
     }
 }

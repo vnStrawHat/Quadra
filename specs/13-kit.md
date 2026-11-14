@@ -675,9 +675,16 @@ What the charts are and look like is behaviour/19, "Charts". As built:
 - To a reader a sparkline is an image, named by `.label(..)`, and so is the plot of a line
   chart, named by its series; the values a chart says in text (its scale, its times, its
   bars) are texts.
-- Not yet: a legend, a chart of categories with bars upright, more than eight colours; of
-  more samples than the plot has pixel columns, the peaks between two columns are not
-  drawn; a reader is not told the values of a line.
+- `.legend()` on a line chart puts each series' name beside a swatch of its colour in a row
+  under it, which wraps. `series_color(i)` is a paint: the theme's eight, then the eight
+  at 60 %, then at 35 %.
+- `.upright(height)` on a bar chart stands its bars side by side, each in a column of its
+  own, as tall as its share, its value over the column and its label under it: a chart of
+  categories.
+- A column of a plot covers the line at its two edges and every sample between them: of
+  more samples than the plot has pixel columns, a peak between two edges is drawn.
+- To a reader the plot of a line chart is an image named by what its lines say: each
+  series, its least and its most, and its last value (`cpu: 90 to 190m, last 140m`).
 
 ## Data (`quadra-data`)
 

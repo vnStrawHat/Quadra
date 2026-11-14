@@ -48,12 +48,13 @@ pub struct LineChart {
     step_ms: i64,
     unit: Rc<str>,
     height: f32,
+    legend: bool,
 }
 
 /// A chart of lines over the same samples, as wide as the box it is in and 200 px tall.
 pub fn line_chart(series: impl IntoIterator<Item = Series>) -> LineChart {
     let series = series.into_iter().collect();
-    LineChart { series, start_ms: 0, step_ms: 1000, unit: "".into(), height: 200.0 }
+    LineChart { series, start_ms: 0, step_ms: 1000, unit: "".into(), height: 200.0, legend: false }
 }
 
 impl LineChart {
@@ -74,6 +75,34 @@ impl LineChart {
         self.height = px;
         self
     }
+
+    /// The name of each series beside a swatch of its colour, in a row under the chart.
+    pub fn legend(mut self) -> Self {
+        self.legend = true;
+        self
+    }
+}
+
+/// A swatch of a colour and a name after it.
+fn named(name: &str, paint: Paint) -> Div {
+    let swatch = div().size(8.0, 8.0).shrink(0.0).radius(2.0).bg(paint);
+    row().shrink(0.0).align_items(Align::Center).gap(6.0).child(swatch).child(text(name.to_string()))
+}
+
+/// What a reader is told of the lines: each series, its least and its most, and its last.
+fn summary(lines: &[(String, Paint, Values)], unit: &str) -> String {
+    let says = |(name, _, read): &(String, Paint, Values)| {
+        let values = read();
+        let least = values.iter().copied().fold(f64::INFINITY, f64::min);
+        match values.last() {
+            Some(last) => {
+                let (least, most, last) = (short(least), short(max_of(&values)), short(*last));
+                format!("{name}: {least} to {most}{unit}, last {last}{unit}")
+            }
+            None => format!("{name}: no values"),
+        }
+    };
+    lines.iter().map(says).collect::<Vec<_>>().join("; ")
 }
 
 /// A property as what the plot takes and as something to read again.
@@ -159,15 +188,18 @@ impl Hover {
 impl View for LineChart {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (start, step, alone) = (self.start_ms, self.step_ms, self.series.len() == 1);
-        let names: Vec<&str> = self.series.iter().map(|series| series.name.as_str()).collect();
-        let names = names.join(", ");
         let (mut plots, mut lines) = (Vec::new(), Vec::new());
         for (i, series) in self.series.into_iter().enumerate() {
-            let paint = series.color.unwrap_or(series_color(i).into());
+            let paint = series.color.unwrap_or(series_color(i));
             let (values, read) = shared(series.values);
             plots.push((values, paint));
             lines.push((series.name, paint, read));
         }
+        let legend = self.legend.then(|| {
+            row().wrap(true).gap(16.0).padding_top(8.0).children(lines.iter().map(|l| named(&l.0, l.1)))
+        });
+        let (said, unit) = (lines.clone(), self.unit.clone());
+        let names = move || summary(&said, &unit);
         let all: Vec<Values> = lines.iter().map(|line| line.2.clone()).collect();
         let first = all.first().cloned();
         let count = memo(move || first.as_ref().map_or(0, |read| read().len()));
@@ -210,7 +242,10 @@ impl View for LineChart {
         let times = times.justify(Justify::Between).align_items(Align::Center);
 
         let chart = div().width(Length::Fill).height(self.height).shrink(0.0).font_family(fonts::MONO);
-        let chart = chart.text_size(10.0).text_color(token::TEXT_3);
-        chart.child(field).child(times).mount(cx)
+        let chart = chart.text_size(10.0).text_color(token::TEXT_3).child(field).child(times);
+        match legend {
+            Some(legend) => column().width(Length::Fill).child(chart).child(legend.text_size(12.0)).mount(cx),
+            None => chart.mount(cx),
+        }
     }
 }

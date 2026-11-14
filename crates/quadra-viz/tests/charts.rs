@@ -80,7 +80,7 @@ fn a_line_chart_says_its_scale_and_the_values_under_the_pointer() {
     for said in ["200", "150", "100", "50", "0", "12:00", "12:01", "12:03"] {
         assert!(h.has_text(said), "{said} is not said:\n{}", h.semantics());
     }
-    let plot = h.get_by_role(Role::Image, "a, b").node();
+    let plot = h.get_by_role(Role::Image, "a: 0 to 180m, last 150m; b: 10 to 40m, last 40m").node();
     assert_eq!(h.tree.window_rect(plot), quadra_prim::Rect::new(44.0, 6.0, 400.0, 100.0));
     assert!(!h.has_text("a 100m"));
 
@@ -143,4 +143,29 @@ fn a_bar_is_as_long_as_its_share_of_the_rounded_maximum() {
     h.frame();
     let api = bar_of(&mut h, "api");
     assert_eq!(h.tree.window_rect(api).width, 200.0);
+}
+
+#[test]
+fn upright_bars_stand_on_one_line_and_a_legend_names_the_series() {
+    let mut h = harness();
+    let bars = vec![Bar::new("api", 150.0), Bar::new("web", 50.0)];
+    h.mount(move || div().width(400.0).child(bar_chart(bars).upright(200.0)));
+    h.frame();
+    // The label's box, its column, the track, the bar.
+    let bar = |h: &mut Harness, label: &str| {
+        let text = h.get_by_text(label).node();
+        let column = h.tree.parent(h.tree.parent(text).unwrap()).unwrap();
+        h.tree.window_rect(h.tree.children(h.tree.children(column)[1])[0])
+    };
+    let (api, web) = (bar(&mut h, "api"), bar(&mut h, "web"));
+    assert!((api.height - 3.0 * web.height).abs() < 0.01 && api.bottom() == web.bottom(), "{api:?} {web:?}");
+    assert!(api.x < web.x && h.has_text("150"));
+
+    let mut h = harness();
+    h.mount(|| line_chart((0..9).map(|i| Series::new(format!("s{i}"), vec![1.0, 2.0]))).legend());
+    h.frame();
+    assert!(h.has_text("s0") && h.has_text("s8"));
+    // The ninth colour is the first, fainter.
+    let ninth = quadra_viz::series_color(8);
+    assert_eq!(ninth, quadra_kit::token::SERIES[0].alpha(0.6));
 }

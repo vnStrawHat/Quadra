@@ -38,6 +38,9 @@ pub fn line_chart_page() -> Div {
         .map(|i| Series::new(format!("pod-{i}"), wave(120, i as f64 * 1.3, 60.0 + i as f64 * 40.0, 25.0)));
     let one = one.time(START, 1000).unit("m").height(180.0);
     let many = line_chart(pods).time(START, 1000).unit("m").height(220.0);
+    let twelve = (0..12)
+        .map(|i| Series::new(format!("node-{i}"), wave(120, i as f64 * 0.7, 40.0 + i as f64 * 15.0, 12.0)));
+    let twelve = line_chart(twelve).time(START, 1000).height(220.0).legend();
     let about = "Up to 8 series on a time axis, a y axis rounded up to 1, 2, 2.5 or 5 times a power of \
                  ten, and a crosshair with the values under the mouse.";
     page(
@@ -54,6 +57,11 @@ pub fn line_chart_page() -> Div {
                 framed(div().padding(12.0).child(many)),
                 "the colours of series are the theme's",
             ),
+            demo(
+                "Twelve series, with a legend",
+                framed(div().padding(12.0).child(twelve)),
+                "line_chart(series).legend(): past eight, the colours again, fainter",
+            ),
         ],
     )
 }
@@ -65,10 +73,17 @@ pub fn bar_chart_page() -> Div {
     page(
         "Bar chart",
         "Labeled horizontal bars with their values, scaled to a rounded maximum.",
-        [demo(
-            "CPU by app",
-            framed(div().padding(12.0).child(bar_chart(bars).unit("m"))),
-            "bar_chart(vec![Bar::new(\"api\", 120.0)]).unit(\"m\")",
-        )],
+        [
+            demo(
+                "CPU by app",
+                framed(div().padding(12.0).child(bar_chart(bars.clone()).unit("m"))),
+                "bar_chart(vec![Bar::new(\"api\", 120.0)]).unit(\"m\")",
+            ),
+            demo(
+                "Upright",
+                framed(div().padding(12.0).child(bar_chart(bars).unit("m").upright(180.0))),
+                "bar_chart(bars).upright(180.0)",
+            ),
+        ],
     )
 }

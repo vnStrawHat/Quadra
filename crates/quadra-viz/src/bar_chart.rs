@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use quadra_kit::{fonts, token};
-use quadra_layout::{Align, Length};
+use quadra_layout::{Align, Justify, Length};
 use quadra_reactive::{Signal, memo};
 use quadra_tree::{NodeId, Paint};
 use quadra_ui::{Div, IntoProp, MountCx, Prop, View, column, div, each, row, text};
@@ -46,12 +46,14 @@ impl Bar {
 pub struct BarChart {
     bars: Prop<Vec<Bar>>,
     unit: Rc<str>,
+    /// Upright, this tall: a column a bar, side by side.
+    upright: Option<f32>,
 }
 
 /// Bars one under the other, each as long as its share of the largest value rounded up.
 /// `bars` is a constant or something reactive; a row is kept by its label.
 pub fn bar_chart<M>(bars: impl IntoProp<Vec<Bar>, M>) -> BarChart {
-    BarChart { bars: bars.into_prop(), unit: "".into() }
+    BarChart { bars: bars.into_prop(), unit: "".into(), upright: None }
 }
 
 impl BarChart {
@@ -60,14 +62,29 @@ impl BarChart {
         self.unit = unit.into();
         self
     }
+
+    /// Bars upright side by side, `height` px with their values over them and their labels
+    /// under them: a chart of categories.
+    pub fn upright(mut self, height: f32) -> Self {
+        self.upright = Some(height);
+        self
+    }
 }
 
 fn top(bars: &[Bar]) -> f64 {
     nice_max(max_of(bars.iter().map(|bar| &bar.value)))
 }
 
-/// A row: the label, the track with the bar, the value.
-fn line(label: String, share: Prop<Length>, paint: Prop<Paint>, says: Prop<String>) -> Div {
+/// A row: the label, the track with the bar, the value; upright, a column: the value, the
+/// track with the bar standing at its bottom, the label.
+fn line(upright: bool, label: String, share: Prop<Length>, paint: Prop<Paint>, says: Prop<String>) -> Div {
+    if upright {
+        let bar = div().width(Length::Fill).min_height(2.0).radius(2.0).height(share).bg(paint);
+        let track = column().grow(1.0).width(Length::Fill).justify(Justify::End).child(bar);
+        let label = div().height(18.0).text_size(12.0).text_color(token::TEXT_2).child(text(label));
+        let column = column().width(0.0).grow(1.0).align_items(Align::Center).gap(4.0);
+        return column.child(text(says)).child(track.max_width(48.0)).child(label);
+    }
     let label = div().width(LABEL).shrink(0.0).text_size(12.0).text_color(token::TEXT_2).child(text(label));
     let bar = div().height(Length::Fill).min_width(2.0).radius(2.0).width(share).bg(paint);
     let track = div().grow(1.0).height(14.0).radius(2.0).bg(token::LINE).child(bar);
@@ -77,8 +94,12 @@ fn line(label: String, share: Prop<Length>, paint: Prop<Paint>, says: Prop<Strin
 
 impl View for BarChart {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let unit = self.unit;
-        let chart = column().width(Length::Fill).padding_bottom(4.0).font_family(fonts::MONO);
+        let (unit, upright) = (self.unit, self.upright.is_some());
+        let chart = match self.upright {
+            Some(height) => row().height(height).gap(8.0).align_items(Align::Stretch),
+            None => column(),
+        };
+        let chart = chart.width(Length::Fill).padding_bottom(4.0).font_family(fonts::MONO);
         let chart = chart.text_size(10.0).text_color(token::TEXT_3);
         let says = move |bar: &Bar| format!("{}{unit}", short(bar.value));
         match self.bars {
@@ -86,7 +107,7 @@ impl View for BarChart {
                 let max = top(&bars);
                 let rows = bars.into_iter().map(|bar| {
                     let (share, paint, says) = (bar.share(max), bar.paint(), says(&bar));
-                    line(bar.label, Prop::Value(share), Prop::Value(paint), Prop::Value(says))
+                    line(upright, bar.label, Prop::Value(share), Prop::Value(paint), Prop::Value(says))
                 });
                 chart.children(rows).mount(cx)
             }
@@ -100,6 +121,7 @@ impl View for BarChart {
                     move |bar: Signal<Bar>| {
                         let says = says.clone();
                         line(
+                            upright,
                             bar.with_untracked(|bar| bar.label.clone()),
                             Prop::Reactive(Box::new(move || bar.with(|bar| bar.share(max.get())))),
                             Prop::Reactive(Box::new(move || bar.with(Bar::paint))),

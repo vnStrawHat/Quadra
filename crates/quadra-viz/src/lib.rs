@@ -7,14 +7,17 @@ mod geometry;
 mod line_chart;
 mod plot;
 
-use quadra_tree::Token;
+use quadra_tree::Paint;
 
 pub use bar_chart::{Bar, BarChart, bar_chart};
 pub use geometry::{Span, hh_mm, line_spans, max_of, nice_max, short, value_at};
 pub use line_chart::{LineChart, Series, line_chart};
 pub use plot::{Plot, Sparkline, sparkline};
 
-/// The colour of the series at `index`: the theme has eight, and a ninth is the first again.
-pub fn series_color(index: usize) -> Token {
-    quadra_kit::token::SERIES[index % quadra_kit::token::SERIES.len()]
+/// The colour of the series at `index`: the theme has eight; the next eight are those at
+/// 60 %, the eight after at 35 %, and so round again.
+pub fn series_color(index: usize) -> Paint {
+    let colors = &quadra_kit::token::SERIES;
+    let round = [1.0, 0.6, 0.35][index / colors.len() % 3];
+    colors[index % colors.len()].alpha(round)
 }

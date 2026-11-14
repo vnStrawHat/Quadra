@@ -40,26 +40,38 @@ pub struct Span {
 }
 
 /// The spans of values over `width` columns of a plot `height` tall whose top is `max`.
-/// Each covers the line from the column's left edge to its right one: a line `thick` across
-/// that falls d in a column is `thick * sqrt(1 + d²)` tall there. Nothing is rounded: a
-/// span says where the line is to a fraction of a pixel, and what draws it must keep that.
-// ponytail: a column reads the line at its two edges, so of more samples than columns the
-// peaks between are not drawn; take the lowest and the highest sample of a column then.
+/// Each covers the line from the column's left edge to its right one, and every sample
+/// between them: of more samples than columns, a peak between two edges is drawn. A line
+/// `thick` across that falls d in a column is `thick * sqrt(1 + d²)` tall there. Nothing is
+/// rounded: a span says where the line is to a fraction of a pixel, and what draws it must
+/// keep that.
 pub fn line_spans(values: &[f64], width: usize, height: f32, max: f64, thick: f32) -> Vec<Span> {
     if values.is_empty() {
         return Vec::new();
     }
-    let y_at = |column: usize| {
-        let share = if max > 0.0 { value_at(values, column as f64 / width as f64) / max } else { 0.0 };
+    let y_of = |value: f64| {
+        let share = if max > 0.0 { value / max } else { 0.0 };
         height - share.clamp(0.0, 1.0) as f32 * height
     };
-    let edges: Vec<f32> = (0..=width).map(y_at).collect();
-    let span = |pair: &[f32]| {
-        let (low, high) = (pair[0].min(pair[1]), pair[0].max(pair[1]));
+    let edges: Vec<f32> =
+        (0..=width).map(|column| y_of(value_at(values, column as f64 / width as f64))).collect();
+    // The highest and the lowest sample strictly inside each column.
+    let mut inside = vec![(f32::INFINITY, f32::NEG_INFINITY); width];
+    let last = values.len() - 1;
+    for (i, &value) in values.iter().enumerate().skip(1).take(last.saturating_sub(1)) {
+        let x = i as f64 * width as f64 / last as f64;
+        let column = x.floor() as usize;
+        if x > column as f64 && column < width {
+            let (y, (low, high)) = (y_of(value), inside[column]);
+            inside[column] = (low.min(y), high.max(y));
+        }
+    }
+    let span = |(pair, (low, high)): (&[f32], &(f32, f32))| {
+        let (low, high) = (pair[0].min(pair[1]).min(*low), pair[0].max(pair[1]).max(*high));
         let tall = thick * (1.0 + (high - low) * (high - low)).sqrt();
         Span { top: low - tall / 2.0, bottom: high + tall / 2.0, y: (pair[0] + pair[1]) / 2.0, thick: tall }
     };
-    edges.windows(2).map(span).collect()
+    edges.windows(2).zip(&inside).map(span).collect()
 }
 
 /// Milliseconds since 1970 as the hour and the minute of their day, in UTC: "13:30".
@@ -112,6 +124,11 @@ mod tests {
         assert!(flat.iter().all(|span| (span.top, span.bottom, span.thick) == (24.5, 25.5, 1.0)));
         assert_eq!(line_spans(&[500.0], 2, 50.0, 100.0, 1.0)[0].y, 0.0);
         assert!(line_spans(&[], 10, 50.0, 100.0, 1.0).is_empty());
+        // Ten samples a column: a spike between two edges reaches the top of its column.
+        let mut many = vec![0.0; 41];
+        many[15] = 100.0;
+        let spans = line_spans(&many, 4, 50.0, 100.0, 1.0);
+        assert!(spans[1].top < 0.0 && spans[0].top > 48.0 && spans[2].top > 48.0, "{spans:?}");
     }
 
     #[test]

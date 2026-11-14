@@ -149,3 +149,41 @@ fn the_caret_is_kept_in_view_and_only_the_lines_that_show_are_painted() {
     e.keys(&[(Key::Up, NONE), (Key::End, NONE)]);
     assert!(e.w().scroll_x > 0.0);
 }
+
+#[test]
+fn the_find_bar_finds_goes_to_matches_replaces_and_gives_the_focus_back() {
+    let mut e = ed("one two one\nthree one", "a.txt");
+    e.keys(&[(Key::F, Mods::CTRL)]);
+    e.h.frame();
+    assert_ne!(e.h.tree.focused(), Some(e.id)); // the query has it
+    e.h.type_text("one");
+    e.h.frame();
+    assert_eq!(e.w().matches, vec![0..3, 8..11, 18..21]);
+    assert!(e.h.has_text("1 of 3"));
+    e.keys(&[(Key::Enter, NONE)]);
+    assert_eq!(e.w().doc.primary().range(), 8..11);
+    assert!(e.h.has_text("2 of 3"));
+    e.keys(&[(Key::F3, Mods::SHIFT)]);
+    assert_eq!(e.w().doc.primary().range(), 0..3);
+    e.h.get_by_role(Role::Button, ".*").click();
+    e.h.frame();
+    e.h.get_by_role(Role::TextInput, "Find").set_value("o(");
+    e.h.frame();
+    assert!(e.h.has_text("Bad pattern"));
+    e.keys(&[(Key::Escape, NONE)]);
+    e.h.frame();
+    assert_eq!(e.h.tree.focused(), Some(e.id));
+    assert!(!e.h.has_text("Bad pattern"));
+    assert!(e.w().matches.is_empty());
+
+    // Ctrl-H: what replaces them, all at once and undone at once.
+    e.keys(&[(Key::H, Mods::CTRL)]);
+    e.h.frame();
+    e.h.get_by_role(Role::TextInput, "Find").set_value("one");
+    e.h.get_by_role(Role::TextInput, "Replace").set_value("1");
+    e.h.frame();
+    e.h.get_by_role(Role::Button, "All").click();
+    e.h.frame();
+    assert_eq!(e.text(), "1 two 1\nthree 1");
+    assert!(e.h.has_text("No results"));
+}

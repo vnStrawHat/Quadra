@@ -34,8 +34,13 @@ pub enum EditorCommand {
     Copy,
     Cut,
     Paste,
-    /// One cursor, where the primary is.
+    /// One cursor, where the primary is; with the find bar open, it closes.
     Collapse,
+    /// Opens the find bar, or with the replacing row.
+    Find,
+    Replace,
+    /// Selects the next match, or with `true` the one before.
+    FindNext(bool),
 }
 
 impl Action for EditorCommand {
@@ -97,6 +102,10 @@ pub fn bind_keys(keymap: &mut Keymap) {
         ("ctrl-v", Paste),
         ("shift-insert", Paste),
         ("escape", Collapse),
+        ("ctrl-f", Find),
+        ("ctrl-h", Replace),
+        ("f3", FindNext(false)),
+        ("shift-f3", FindNext(true)),
     ];
     for (keys, command) in rest {
         keymap.bind_in(EDITOR_CONTEXT, keys, command).expect(well_formed);
@@ -105,7 +114,7 @@ pub fn bind_keys(keymap: &mut Keymap) {
 
 impl EditorCommand {
     /// Does the command to a document; `page` is how many lines a page is. The clipboard's
-    /// commands are left to who has the clipboard.
+    /// commands and finding are left to the view, which has the clipboard and the bar.
     pub fn run(self, doc: &mut Doc, page: usize) {
         use EditorCommand::*;
         match self {
@@ -129,7 +138,7 @@ impl EditorCommand {
             MoveLines(down) => doc.move_lines(down),
             ToggleComment => doc.toggle_comment(),
             Collapse => doc.cursors = vec![doc.primary()],
-            Copy | Cut | Paste => {}
+            Copy | Cut | Paste | Find | Replace | FindNext(_) => {}
         }
     }
 }

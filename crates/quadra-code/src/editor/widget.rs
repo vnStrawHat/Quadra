@@ -7,11 +7,13 @@ use quadra_a11y::{Role, Semantics};
 use quadra_kit::token;
 use quadra_layout::Known;
 use quadra_prim::{Color, Point, Rect, Size};
+use quadra_reactive::Signal;
 use quadra_text::TextStyle;
 use quadra_tree::{GlyphTile, Inherited, MeasureCx, PaintCx, Theme, Widget};
 
 use crate::doc::Doc;
 use crate::doc::motion::columns;
+use crate::find::{Query, next_match};
 use crate::highlight::Highlight;
 use crate::token::Token;
 
@@ -34,9 +36,13 @@ pub struct EditorWidget {
     pub doc: Doc,
     /// What colours its lines.
     pub highlight: Box<dyn Highlight>,
-    /// Where finding found the query, and the match that is chosen.
+    /// What is looked for while the find bar is open, where it was found, and the match
+    /// that is chosen.
+    pub find: Option<Query>,
     pub matches: Vec<Range<usize>>,
     pub current: Option<usize>,
+    /// Told the place of the chosen match and the count, or `None` for a bad pattern.
+    pub(super) found: Option<Signal<Option<(usize, usize)>>>,
     /// What an input method is composing at the primary cursor, and its caret in it.
     pub preedit: Option<(String, usize)>,
     pub focused: bool,
@@ -61,8 +67,10 @@ impl EditorWidget {
         EditorWidget {
             doc: Doc::new(text),
             highlight,
+            find: None,
             matches: Vec::new(),
             current: None,
+            found: None,
             preedit: None,
             focused: false,
             caret_on: true,
@@ -124,6 +132,38 @@ impl EditorWidget {
     pub fn scroll_by(&mut self, dx: f32) -> bool {
         let to = (self.scroll_x + dx).clamp(0.0, (self.widest - self.text_width()).max(0.0));
         std::mem::replace(&mut self.scroll_x, to) != to
+    }
+
+    /// Finds the query again in the text as it is, chooses the match at or after the
+    /// primary cursor, and tells the bar.
+    pub(super) fn refind(&mut self) {
+        let found = match &self.find {
+            Some(query) => query.matches(&self.doc),
+            None => Ok(Vec::new()),
+        };
+        let told = found.as_ref().ok().map(|m| (0, m.len()));
+        self.matches = found.unwrap_or_default();
+        self.current = next_match(&self.matches, self.doc.primary().start(), false);
+        self.tell(told.map(|(_, n)| (self.current.map_or(0, |i| i + 1), n)));
+    }
+
+    fn tell(&self, what: Option<(usize, usize)>) {
+        if let Some(found) = self.found
+            && found.get_untracked() != what
+        {
+            found.set(what);
+        }
+    }
+
+    /// Selects the next match after the primary cursor, or the one before it.
+    pub(super) fn go_to_match(&mut self, back: bool) {
+        let from = if back { self.doc.primary().start() } else { self.doc.primary().end() };
+        let from = if back { from } else { from.max(self.doc.primary().start() + 1) };
+        let Some(i) = next_match(&self.matches, from, back) else { return };
+        let m = self.matches[i].clone();
+        self.doc.set_cursor(m.start, m.end, false);
+        self.current = Some(i);
+        self.tell(Some((i + 1, self.matches.len())));
     }
 
     /// The glyphs the last paint holds: those of the lines that showed.

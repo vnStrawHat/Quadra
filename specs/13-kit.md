@@ -1008,7 +1008,17 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   - After a command the caret is scrolled into view, and the widget is laid out again only
     when the count of lines changed.
   - What it says to a reader: a text input of many lines, its text and its selection.
-- Not yet: the find bar; soft wrap; links; the marks of a diff; a glyph wider or narrower
+  - **The find bar** stands at the top right of the editor while it is open (Ctrl-F; Ctrl-H
+    with the row that replaces; a selection of one line is the query). It has the query,
+    the switches of case, whole words and patterns, where the chosen match is of how many
+    ("2 of 5", "No results", "Bad pattern"), the match before and the next, and closing.
+    The query has the focus when it opens; Enter and F3 go to the next match, Shift-F3 and
+    the arrow up to the one before, Escape closes it and gives the editor the focus.
+    Replace puts the text in place of the chosen match and goes to the next; All replaces
+    every match as one undo. The matches are found again as the query, a switch or the text
+    changes, and painted under the text, the chosen one stronger.
+- Not yet: soft wrap; Shift-Enter in the query (the input submits on Enter whatever is
+  held); links; the marks of a diff; a glyph wider or narrower
   than its cells centred in them; what is inside `<script>` and
   `<style>` is plain text; regular expressions in JavaScript are not told from division.
 

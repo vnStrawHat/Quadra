@@ -2,6 +2,7 @@
 //! widget, and what edits it (typed text, composition, the commands of its keys, the
 //! clipboard, the pointer, the caret's blink).
 
+mod find_bar;
 mod keys;
 mod paint;
 mod pointer;
@@ -15,7 +16,9 @@ use quadra_async::{Timers, interval};
 use quadra_platform::{Clipboard, Cursor, Mods};
 use quadra_reactive::{Scope, signal, use_context};
 use quadra_tree::{NodeId, PointerKind, Style, TextValues, Tree};
-use quadra_ui::{MountCx, View, scroll};
+use quadra_ui::{MountCx, NodeRef, View, column, div, scroll, show};
+
+use find_bar::Finding;
 
 pub use keys::{EDITOR_CONTEXT, EditorCommand, bind_keys};
 pub use widget::EditorWidget;
@@ -60,8 +63,15 @@ impl Editor {
 }
 
 impl View for Editor {
+    /// The scroll view with the widget, and over it the find bar while it is open.
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        scroll(signal(0.0), Surface(self)).mount(cx)
+        let (find, widget, bar, epoch) =
+            (Finding::new(), Rc::new(Cell::new(None)), NodeRef::new(), cx.handle.now());
+        let surface = Surface { editor: self, find, widget: widget.clone(), bar: bar.clone(), epoch };
+        let handle = cx.handle.clone();
+        let shown = move || find_bar::bar(find, handle.clone(), widget.clone(), epoch, bar.clone());
+        let over = show(move || find.open.get(), shown).container(div().absolute().top(6.0).right(16.0));
+        column().grow(1.0).child(scroll(signal(0.0), surface)).child(over).mount(cx)
     }
 }
 
@@ -84,6 +94,9 @@ fn edit(
     w.caret_on = true; // a caret in use does not blink away
     w.follow_caret();
     let (relaid, changed) = (w.doc.buffer.line_count() != lines, w.doc.version != version);
+    if changed && w.find.is_some() {
+        w.refind(); // the matches of the text as it is now
+    }
     let caret = w.caret_rect();
     if relaid {
         tree.mark_layout(id);
@@ -99,13 +112,21 @@ fn edit(
     }
 }
 
-struct Surface(Editor);
+/// The widget, and what the find bar shares with it.
+struct Surface {
+    editor: Editor,
+    find: Finding,
+    widget: Rc<Cell<Option<NodeId>>>,
+    bar: NodeRef,
+    epoch: Instant,
+}
 
 impl View for Surface {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let tokens = || Box::new(Highlighter::new(tokenizer_for(&self.0.path))) as Box<dyn Highlight>;
-        let widget = EditorWidget::new(&self.0.text, self.0.highlight.unwrap_or_else(tokens));
-        let (size, line) = self.0.font;
+        let Surface { editor, find, widget: slot, bar, epoch } = self;
+        let tokens = || Box::new(Highlighter::new(tokenizer_for(&editor.path))) as Box<dyn Highlight>;
+        let widget = EditorWidget::new(&editor.text, editor.highlight.unwrap_or_else(tokens));
+        let (size, line) = editor.font;
         let family = Some(quadra_kit::fonts::MONO.into());
         let text =
             TextValues { family, size: Some(size), line_height: Some(line / size), ..TextValues::default() };
@@ -113,7 +134,8 @@ impl View for Surface {
         cx.tree.set_focusable(id, true);
         cx.tree.set_cursor(id, Some(Cursor::Text));
         cx.tree.set_key_context(id, EDITOR_CONTEXT);
-        let epoch = cx.handle.now();
+        slot.set(Some(id));
+        find_bar::follow(cx, id, find);
 
         let writer = cx.handle.clone();
         cx.tree.on_text(id, move |typed| {
@@ -136,16 +158,25 @@ impl View for Surface {
         let clipboard = use_context::<Rc<dyn Clipboard>>();
         let writer = cx.handle.clone();
         cx.tree.on_action::<EditorCommand>(id, move |&command| {
-            let (clipboard, at) = (clipboard.clone(), writer.now());
+            let (clipboard, at, bar) = (clipboard.clone(), writer.now(), bar.clone());
             writer.with(move |tree| {
                 edit(tree, id, (epoch, at), |w, page| match (command, &clipboard) {
+                    _ if find_bar::command(w, find, command) => {}
                     (EditorCommand::Copy, Some(clipboard)) => clipboard.write_text(&w.doc.copy_text()),
                     (EditorCommand::Cut, Some(clipboard)) => clipboard.write_text(&w.doc.cut()),
                     (EditorCommand::Paste, Some(clipboard)) => {
                         w.doc.paste(&clipboard.read_text().unwrap_or_default())
                     }
                     _ => command.run(&mut w.doc, page),
-                })
+                });
+                // The bar has the focus once it is there.
+                if matches!(command, EditorCommand::Find | EditorCommand::Replace) {
+                    tree.after_layout(move |tree| {
+                        if let Some(bar) = bar.get() {
+                            tree.focus_first(bar);
+                        }
+                    });
+                }
             });
         });
         // Sideways: the wheel turned so, or with Shift.

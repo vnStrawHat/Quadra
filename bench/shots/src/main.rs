@@ -29,8 +29,9 @@ const SIZE: (f32, f32) = (1200.0, 800.0);
 
 /// The pages that open something, and the test id (or the name) of what opens it: a click,
 /// but a hover for the tooltip and the hover card, a right click on the page for the context
-/// menu, and for the dock a tab torn off and held over the bottom edge of its pane.
-const OPENERS: [(&str, &str); 14] = [
+/// menu, for the dock a tab torn off and held over the bottom edge of its pane, and for the
+/// editor a click in its text and Ctrl-H.
+const OPENERS: [(&str, &str); 15] = [
     ("menu", "mn-file"),
     ("select", "sel-ns"),
     ("date-picker", "dp-date"),
@@ -45,6 +46,7 @@ const OPENERS: [(&str, &str); 14] = [
     ("context-menu", ""),
     ("line-chart", "cpu"),
     ("live-table", "live-update"),
+    ("editor", "editor"),
 ];
 
 /// Lets the window live for `ms`: frames, timers, what moves.
@@ -83,6 +85,16 @@ fn inside(app: &Shots, window: WindowId, id: &str) -> Option<Point> {
 fn open(platform: &HeadlessPlatform, app: &mut Shots, window: WindowId, page: &str, opener: &str) -> bool {
     if opener.is_empty() {
         point(platform, window, Point::new(450.0, 260.0), MouseButton::Right);
+        return true;
+    }
+    if page == "editor" {
+        point(platform, window, Point::new(520.0, 360.0), MouseButton::Left);
+        for down in [true, false] {
+            platform.push(
+                window,
+                PlatformEvent::Key { key: Key::H, code: 0, mods: Mods::CTRL, down, repeat: false },
+            );
+        }
         return true;
     }
     let Some(at) = inside(app, window, opener) else { return false };
@@ -126,7 +138,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     platform.set_image_decoder(std::sync::Arc::new(quadra_native_win::WicImages));
     let text = DirectWrite::new().map_err(AppError::Text)?;
     let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
-    let mut app = quadra_kit::install(app, &if is_dark { dark() } else { light() })?;
+    let app = quadra_kit::install(app, &if is_dark { dark() } else { light() })?;
+    let mut app = app.keymap(quadra_gallery::keymap());
     let shown: Rc<Cell<Option<Gallery>>> = Rc::default();
     let tell = shown.clone();
     let window = app.open_window(WindowOptions::new("shots").size(SIZE.0, SIZE.1), move || {

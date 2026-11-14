@@ -29,12 +29,33 @@ pub fn table_page() -> Div {
     page(
         "Table",
         about,
-        [demo(
-            "1,000,000 rows",
-            stack().child(people).child(count),
-            "table(columns, || 1_000_000, |row, column| ..)",
-        )],
+        [
+            demo(
+                "1,000,000 rows",
+                stack().child(people).child(count),
+                "table(columns, || 1_000_000, |row, column| ..)",
+            ),
+            demo(
+                "Wide, its first column pinned",
+                framed(wide()).height(240.0),
+                "table(..).pinned(1).hidden(columns)",
+            ),
+        ],
     )
+}
+
+/// Twelve months of figures beside the city they are of: the city stays while the months
+/// scroll sideways; the last three are hidden.
+fn wide() -> quadra_kit::Table {
+    const MONTHS: [&str; 12] =
+        ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let columns = std::iter::once(Column::new("Thành phố").width(200.0))
+        .chain(MONTHS.iter().map(|month| Column::new(*month).numeric().width(96.0)));
+    let cell = |row: usize, column: usize| match column {
+        0 => CITIES[row % CITIES.len()].to_string(),
+        c => (row as u64 * 53 + c as u64 * 17 % 89).to_string(),
+    };
+    table(columns, || 40, cell).pinned(1).hidden(signal(vec![10, 11, 12]))
 }
 
 pub fn tree_page() -> Div {

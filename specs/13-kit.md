@@ -336,8 +336,15 @@ As built so far:
   and the cells of every row, so this is for tables of thousands of rows, not millions.
   Not yet: a source that says which rows it changed.
 - A table whose columns are wider than it scrolls sideways (`scroll_x`), the header with
-  the rows. Not yet: pinned columns, hidden columns, a cursor on cells, cells that flash when
-  they change.
+  the rows.
+- `.pinned(n)`: the first `n` columns stay where they are; the others are in a box that
+  cuts them, after a line, moved left as the wheel turns sideways (or with Shift), as far as
+  the last column's end at the table's edge, the header with the rows. Moving them lays out
+  the rows that show and nothing else. ponytail: no scrollbar along the bottom then; one
+  when tables with pinned columns are used without a wheel that turns sideways.
+- `.hidden(columns)`: a signal of the columns, by their places, that do not show (their
+  parts are not displayed) and are not copied.
+- Not yet: a cursor on cells, cells that flash when they change, a menu of the columns.
 - **`tree(roots, chosen)`** shows things inside things (`TreeNode::new(id, label)
   .icon(..).children(..)`) as rows of 26 px: 20 px in for each level, with a faint guide for
   each, then a chevron if the thing holds something, its icon and its label. `roots` is

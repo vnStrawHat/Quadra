@@ -55,6 +55,8 @@ pub struct Sheet {
     pub cursor: Signal<Option<usize>>,
     pub anchor: Signal<Option<usize>>,
     pub focused: Signal<bool>,
+    /// The columns that do not show, and are not copied.
+    pub hidden: Signal<Vec<usize>>,
     /// What a table of live data keeps.
     pub live: Option<Live>,
 }
@@ -83,8 +85,8 @@ pub fn sheet(columns: Vec<Column>, rows: Rows, cell: Cells, chosen: Option<Signa
     });
     let widths = signal(columns.iter().map(|column| column.width).collect());
     let chosen = chosen.unwrap_or_else(|| signal(Vec::new()));
-    let (cursor, anchor, focused) = (signal(None), signal(None), signal(false));
-    Sheet { columns, rows, cell, widths, sort, order, chosen, cursor, anchor, focused, live: None }
+    let (cursor, anchor, focused, hidden) = (signal(None), signal(None), signal(false), signal(Vec::new()));
+    Sheet { columns, rows, cell, widths, sort, order, chosen, cursor, anchor, focused, hidden, live: None }
 }
 
 impl Sheet {
@@ -135,9 +137,10 @@ impl Sheet {
     pub fn copy_text(&self) -> String {
         let (chosen, count) = (self.chosen.get_untracked(), (self.rows)());
         let shown = (0..count).map(|place| self.data(place)).filter(|row| chosen.binary_search(row).is_ok());
+        let hidden = self.hidden.get_untracked();
         let line = |row: usize| {
-            let cells: Vec<String> = (0..self.columns.len()).map(|c| (self.cell)(row, c)).collect();
-            cells.join("\t")
+            let shown = (0..self.columns.len()).filter(|c| !hidden.contains(c));
+            shown.map(|c| (self.cell)(row, c)).collect::<Vec<_>>().join("\t")
         };
         shown.map(line).collect::<Vec<_>>().join("\n")
     }

@@ -176,3 +176,42 @@ fn a_column_is_made_wider_by_dragging_its_edge() {
     assert_eq!(cpu(&mut p.h).x, 48.0);
     assert_eq!(p.names()[0], "pod-0000"); // the press on the edge did not sort
 }
+
+#[test]
+fn a_pinned_column_stays_while_the_others_scroll_and_hidden_ones_do_not_show() {
+    let hidden = signal(Vec::new());
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    h.mount(move || {
+        let columns = (0..8).map(|c| Column::new(format!("C{c}")).width(150.0));
+        let table = table(columns, || 20, |row, column| format!("r{row}c{column}"));
+        quadra_ui::column().size(500.0, 400.0).child(table.pinned(1).hidden(hidden))
+    });
+    h.frame();
+    let x = |h: &mut Harness, name: &str| {
+        let node = h.get_by_text(name).node();
+        h.tree.window_rect(node).x
+    };
+    let (first, second) = (x(&mut h, "r0c0"), x(&mut h, "r0c1"));
+    let title = x(&mut h, "C1");
+    h.tree.wheel(Point::new(0.0, -3.0), false, Point::new(300.0, 60.0), Mods::SHIFT);
+    h.frame();
+    assert_eq!(x(&mut h, "r0c0"), first); // pinned
+    let moved = second - x(&mut h, "r0c1");
+    assert!(moved > 0.0 && title - x(&mut h, "C1") == moved, "the header moves with the rows");
+    // Scrolled to the end, the last column ends at the table's edge.
+    h.tree.wheel(Point::new(0.0, -100.0), false, Point::new(300.0, 60.0), Mods::SHIFT);
+    h.frame();
+    let last = h.get_by_text("r0c7").node();
+    let last = h.tree.window_rect(last);
+    assert!((last.right() - 500.0).abs() < 1.0, "{last:?}");
+
+    // A hidden column does not show, and copying leaves it out.
+    hidden.set(vec![1, 2, 3, 4, 5, 6]);
+    h.frame();
+    assert!(!h.has_text("r0c3") && h.has_text("r0c7"));
+    h.get_by_text("r2c0").click();
+    h.key(Key::C, Mods::CTRL);
+    assert_eq!(h.clipboard.read_text().as_deref(), Some("r2c0\tr2c7"));
+}

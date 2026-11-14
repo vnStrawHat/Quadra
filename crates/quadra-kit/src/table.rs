@@ -92,6 +92,8 @@ pub struct Table {
     chosen: Option<Signal<Vec<usize>>>,
     key: Option<Key>,
     row_height: f32,
+    hidden: Option<Signal<Vec<usize>>>,
+    pinned: usize,
 }
 
 /// A table of `rows` rows: `cell(row, column)` is what a cell says. Both are asked again
@@ -103,7 +105,7 @@ pub fn table(
 ) -> Table {
     let columns = columns.into_iter().collect();
     let (rows, cell) = (Rc::new(rows), Rc::new(cell));
-    Table { columns, rows, cell, chosen: None, key: None, row_height: 26.0 }
+    Table { columns, rows, cell, chosen: None, key: None, row_height: 26.0, hidden: None, pinned: 0 }
 }
 
 impl Table {
@@ -115,6 +117,20 @@ impl Table {
 
     pub fn row_height(mut self, px: f32) -> Self {
         self.row_height = px;
+        self
+    }
+
+    /// The columns, by their places, that do not show and are not copied: a signal the
+    /// caller writes (from a menu of the columns, say).
+    pub fn hidden(mut self, columns: Signal<Vec<usize>>) -> Self {
+        self.hidden = Some(columns);
+        self
+    }
+
+    /// The first `columns` columns stay where they are while the others scroll sideways
+    /// under the wheel turned so, or with Shift.
+    pub fn pinned(mut self, columns: usize) -> Self {
+        self.pinned = columns;
         self
     }
 
@@ -133,9 +149,14 @@ impl View for Table {
         let columns = Rc::new(self.columns);
         let known = columns.iter().map(Column::base).collect();
         let mut sheet = table::sheet(known, self.rows, self.cell, self.chosen);
+        if let Some(hidden) = self.hidden {
+            sheet.hidden = hidden;
+        }
         if let Some(key) = self.key {
             quadra_base::live::watch(&mut sheet, key, cx.handle.clone());
         }
-        view::build(sheet, columns, self.row_height, use_context::<Rc<dyn Clipboard>>()).mount(cx)
+        let clipboard = use_context::<Rc<dyn Clipboard>>();
+        let pinned = self.pinned.min(columns.len());
+        view::build(sheet, columns, (self.row_height, pinned), clipboard).mount(cx)
     }
 }

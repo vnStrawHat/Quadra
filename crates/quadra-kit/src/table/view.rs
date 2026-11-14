@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 use quadra_base::table::Sheet;
-use quadra_layout::{Align, Justify, Length, Overflow};
+use quadra_layout::{Align, Display, Justify, Length, Overflow};
 use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Paint, Role, State as On};
@@ -19,9 +19,10 @@ const GRIP: f32 = 5.0;
 
 /// The header: the titles on the plane of table heads over a line; the arrow of the column
 /// the rows are sorted by is in the accent.
-fn header(state: &Sheet, columns: &[Column]) -> Div {
-    let mut head = row().height(28.0).shrink(0.0).bg(token::TABLE_HEAD_BG).text_color(token::TABLE_HEAD_FG);
-    head = head.border_bottom(1.0).border_color(token::LINE).role(Role::Row);
+fn header(state: &Sheet, columns: &[Column], (pinned, sx): (usize, Signal<f32>)) -> Div {
+    let head = row().height(28.0).shrink(0.0).bg(token::TABLE_HEAD_BG).text_color(token::TABLE_HEAD_FG);
+    let head = head.border_bottom(1.0).border_color(token::LINE).role(Role::Row);
+    let mut titles = Vec::new();
     for (c, at) in columns.iter().enumerate() {
         let (sort, widths) = (state.sort, state.widths);
         let arrow = dynamic(move || match sort.get() {
@@ -43,17 +44,42 @@ fn header(state: &Sheet, columns: &[Column]) -> Div {
         let grip = div().width(GRIP).shrink(0.0).cursor(Cursor::ResizeHorizontal);
         let grip = state.grip(grip.hover(|s| s.bg(token::BORDER_FOCUSED)), c);
         let whole = row().shrink(0.0).width(move || Length::Px(widths.with(|all| all[c])));
-        head = head.child(whole.child(title).child(grip));
+        titles.push(shown(state, c, whole.child(title).child(grip)));
     }
-    head
+    split(head, titles, pinned, sx)
+}
+
+/// A column's part of a row, which shows while the column is not hidden.
+fn shown(state: &Sheet, c: usize, part: Div) -> Div {
+    let hidden = state.hidden;
+    part.display(move || if hidden.with(|all| all.contains(&c)) { Display::None } else { Display::Flex })
+}
+
+/// A row of parts: the pinned ones where they are, the others in a box that cuts them,
+/// moved left by `sx`. With none pinned, all of them in the row.
+fn split(row_of: Div, parts: Vec<Div>, pinned: usize, sx: Signal<f32>) -> Div {
+    if pinned == 0 {
+        return row_of.children(parts);
+    }
+    let mut parts = parts.into_iter();
+    let fixed: Vec<Div> = parts.by_ref().take(pinned).collect();
+    let rest =
+        row().absolute().top(0.0).bottom(0.0).left(move || -sx.get()).children(parts.collect::<Vec<_>>());
+    let cut = row().width(0.0).grow(1.0).height(Length::Fill).overflow_x(Overflow::Hidden).child(rest);
+    row_of.children(fixed).child(cut.border_left(1.0).border_color(token::LINE))
 }
 
 /// A row: its cells, each as its column shows them; tinted with the accent's mark at its left
 /// when selected, and outlined when the keys are on it and the table has the focus.
-fn line(state: &Sheet, columns: &[Column], height: f32, place: Signal<usize>) -> Div {
+fn line(
+    state: &Sheet,
+    columns: &[Column],
+    (height, pinned, sx): (f32, usize, Signal<f32>),
+    place: Signal<usize>,
+) -> Div {
     let (s, mark) = (state.clone(), state.clone());
     let data = move || s.data(place.get());
-    let shown = state.selected(place);
+    let chosen = state.selected(place);
     let ring = move || -> Paint {
         let here = mark.focused.get() && mark.cursor.get() == Some(place.get());
         if here { token::BORDER_FOCUSED.into() } else { Paint::default() }
@@ -67,6 +93,7 @@ fn line(state: &Sheet, columns: &[Column], height: f32, place: Signal<usize>) ->
     if let Some(live) = state.live {
         line = line.child(super::live::tints(live, state, place));
     }
+    let mut cells = Vec::new();
     for (c, at) in columns.iter().enumerate() {
         let (widths, says, row_of) = (state.widths, state.cell.clone(), data.clone());
         let value = move || says(row_of(), c);
@@ -77,34 +104,60 @@ fn line(state: &Sheet, columns: &[Column], height: f32, place: Signal<usize>) ->
             true => cell.justify(Justify::End).padding_right(16.0).font_family(fonts::MONO),
             false => cell,
         };
-        line = line.child(match at.kind {
-            CellKind::Text => cell.child(text(value)),
-            CellKind::Age => cell.child(text(move || age_text(value().trim().parse().unwrap_or(0)))),
-            CellKind::Status => cell.child(dynamic(move || {
-                let word = value();
-                status_label(Status::of(&word), &word)
-            })),
-        });
+        cells.push(shown(
+            state,
+            c,
+            match at.kind {
+                CellKind::Text => cell.child(text(value)),
+                CellKind::Age => cell.child(text(move || age_text(value().trim().parse().unwrap_or(0)))),
+                CellKind::Status => cell.child(dynamic(move || {
+                    let word = value();
+                    status_label(Status::of(&word), &word)
+                })),
+            },
+        ));
     }
     // After the cells: what reads a row by its children finds them where they were.
-    line.child(crate::display::chosen_mark(quadra_tree::Side::Left, shown))
+    split(line, cells, pinned, sx).child(crate::display::chosen_mark(quadra_tree::Side::Left, chosen))
 }
 
 /// The table: its header over its rows, with the focus and the keys on the whole.
 pub(crate) fn build(
     state: Sheet,
     columns: Rc<Vec<Column>>,
-    height: f32,
+    (height, pinned): (f32, usize),
     clipboard: Option<Rc<dyn Clipboard>>,
 ) -> Div {
     let (count, rows, cursor, of) = (state.rows.clone(), state.clone(), state.cursor, columns.clone());
-    let body =
-        uniform_list(move || count(), height, signal(0.0), move |place| line(&rows, &of, height, place));
+    let sx = signal(0.0f32);
+    // With columns pinned, the others move under the wheel sideways, as far as they go past
+    // the room they have.
+    let (widths, hidden) = (state.widths, state.hidden);
+    let end = move |width: f32| {
+        let (all, hidden) = (widths.get_untracked(), hidden.get_untracked());
+        let wide = |range: std::ops::Range<usize>| {
+            range.filter(|c| !hidden.contains(c)).map(|c| all[c]).sum::<f32>()
+        };
+        wide(pinned..all.len()) - (width - wide(0..pinned) - 1.0)
+    };
+    let body = uniform_list(
+        move || count(),
+        height,
+        signal(0.0),
+        move |place| {
+            let line = line(&rows, &of, (height, pinned, sx), place);
+            if pinned == 0 { line } else { crate::rows::sideways(line, sx, end) }
+        },
+    );
     let body = body.container(div().grow(1.0)).reveal(move || cursor.get());
     let all = state.frame(column().grow(1.0).overflow_x(Overflow::Hidden), clipboard);
+    let head = header(&state, &columns, (pinned, sx));
+    if pinned > 0 {
+        return all.child(crate::rows::sideways(head, sx, end)).child(body);
+    }
     // Columns wider than the table scroll sideways, the header with the rows.
     // ponytail: the rows' own scrollbar is at the right end of what scrolls sideways; a bar
     // at the table's edge when tables that wide are common.
-    let sheet = column().grow(1.0).child(header(&state, &columns)).child(body);
+    let sheet = column().grow(1.0).child(head).child(body);
     all.child(scroll_x(signal(0.0), sheet).container(div().grow(1.0)))
 }

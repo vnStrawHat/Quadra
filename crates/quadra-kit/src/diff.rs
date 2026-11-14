@@ -11,9 +11,9 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use quadra_platform::Clipboard;
-use quadra_reactive::{effect, memo, signal, untrack, use_context};
+use quadra_reactive::{Signal, effect, memo, signal, untrack, use_context};
 use quadra_tree::{NodeId, Token};
-use quadra_ui::{IntoProp, MountCx, Prop, View, column, div, dynamic, uniform_list};
+use quadra_ui::{IntoProp, MountCx, Prop, View, column, div, dynamic, uniform_list, virtual_list};
 
 use crate::{fonts, token};
 pub use lines::{Step, diff_lines};
@@ -36,12 +36,13 @@ pub struct Diff {
     mode: Prop<DiffMode>,
     context: Option<usize>,
     colours: Option<Colourer>,
+    wrap: bool,
 }
 
 /// What differs between two texts, line by line. Give it a height, or let it grow.
 pub fn diff<A, B>(old: impl IntoProp<String, A>, new: impl IntoProp<String, B>) -> Diff {
     let mode = Prop::Value(DiffMode::Inline);
-    Diff { old: old.into_prop(), new: new.into_prop(), mode, context: None, colours: None }
+    Diff { old: old.into_prop(), new: new.into_prop(), mode, context: None, colours: None, wrap: false }
 }
 
 impl Diff {
@@ -62,6 +63,13 @@ impl Diff {
     /// each of its lines (`quadra_code::line_colours(path)` colours code).
     pub fn colours(mut self, f: impl Fn(&str) -> LineColours + 'static) -> Self {
         self.colours = Some(Rc::new(f));
+        self
+    }
+
+    /// Long lines wrap at the width of their column, and a row is as high as its lines:
+    /// nothing scrolls sideways.
+    pub fn wrap(mut self) -> Self {
+        self.wrap = true;
         self
     }
 }
@@ -148,31 +156,36 @@ impl View for Diff {
         });
         let widest = memo(move || sides.with(|s| s.widest()) as f32 * LETTER);
         let (sx, sheet) = (signal(0.0), select::sheet_of(sides, listed));
-        let (rows_of, shown) = (sheet.clone(), mode.clone());
-        let list = uniform_list(
-            move || listed.with(|rows| rows.len()),
-            ROW,
-            signal(0.0),
-            move |place| {
-                let mode = mode.clone();
-                let built = dynamic(move || {
-                    let (sides, rows, painted) = (sides.get(), listed.get(), painted.get());
-                    let how = (mode(), gutter.get(), painted.as_ref().as_ref());
-                    let row = rows.get(place.get()).map(|at| build(&sides, *at, how, (open, sx)));
-                    row.unwrap_or_else(div).grow(1.0)
-                });
-                let shown = shown.clone();
-                // How far the lines go past what shows of them, in a row so wide.
-                let end = move |width: f32| {
-                    let halves = if shown() == DiffMode::SideBySide { 2.0 } else { 1.0 };
-                    let numbers = if halves == 2.0 { 1.0 } else { 2.0 };
-                    let (widest, gutter) = untrack(|| (widest.get(), gutter.get()));
-                    widest + 8.0 - (width / halves - numbers * gutter - 16.0)
-                };
-                let face = crate::rows::selectable(&rows_of, div().height(ROW), place);
-                built.container(crate::rows::sideways(face, sx, end))
-            },
-        );
+        let (rows_of, shown, wrap) = (sheet.clone(), mode.clone(), self.wrap);
+        let count = move || listed.with(|rows| rows.len());
+        let each_row = move |place: Signal<usize>| {
+            let mode = mode.clone();
+            let built = dynamic(move || {
+                let (sides, rows, painted) = (sides.get(), listed.get(), painted.get());
+                let how = (mode(), gutter.get(), painted.as_ref().as_ref());
+                let row = rows.get(place.get()).map(|at| build(&sides, *at, how, (open, sx, wrap)));
+                row.unwrap_or_else(div).grow(1.0)
+            });
+            if wrap {
+                // As high as its lines, which wrap: nothing to scroll sideways.
+                let face = crate::rows::selectable(&rows_of, div().min_height(ROW), place);
+                return built.container(face);
+            }
+            let shown = shown.clone();
+            // How far the lines go past what shows of them, in a row so wide.
+            let end = move |width: f32| {
+                let halves = if shown() == DiffMode::SideBySide { 2.0 } else { 1.0 };
+                let numbers = if halves == 2.0 { 1.0 } else { 2.0 };
+                let (widest, gutter) = untrack(|| (widest.get(), gutter.get()));
+                widest + 8.0 - (width / halves - numbers * gutter - 16.0)
+            };
+            let face = crate::rows::selectable(&rows_of, div().height(ROW), place);
+            built.container(crate::rows::sideways(face, sx, end))
+        };
+        let list = match wrap {
+            true => virtual_list(count, ROW, signal(0.0), each_row),
+            false => uniform_list(count, ROW, signal(0.0), each_row),
+        };
         let list = list.reveal(move || sheet.cursor.get());
         let frame = column().grow(1.0).bg(token::CANVAS).font_family(fonts::MONO).text_size(12.0);
         let frame = select::frame(&sheet, frame.line_height(1.5), listed, use_context::<Rc<dyn Clipboard>>());

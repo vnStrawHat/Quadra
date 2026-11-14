@@ -84,6 +84,18 @@ spec:
       terminationGracePeriodSeconds: 30
 ";
 
+/// A paragraph of a note, before and after: lines longer than half the page.
+const NOTE_OLD: &str = "# Rollout
+
+The new build goes to one region first, and to the others once its error rate has stayed under the line for an hour.
+Nobody deploys on Fridays.
+";
+const NOTE_NEW: &str = "# Rollout
+
+The new build goes to one region first, and to the others once its error rate and its latency have stayed under their lines for an hour.
+Nobody deploys on Fridays.
+";
+
 pub fn diff_page() -> Div {
     let side = signal(0);
     let mode = move || if side.get() == 0 { DiffMode::Inline } else { DiffMode::SideBySide };
@@ -108,6 +120,13 @@ pub fn diff_page() -> Div {
                 "Side by side, folded",
                 framed(column().height(300.0).child(diff(OLD, NEW).mode(DiffMode::SideBySide).context(3))),
                 "diff(old, new).mode(DiffMode::SideBySide).context(3)",
+            ),
+            demo(
+                "Long lines wrapped",
+                framed(
+                    column().height(200.0).child(diff(NOTE_OLD, NOTE_NEW).mode(DiffMode::SideBySide).wrap()),
+                ),
+                "diff(old, new).mode(DiffMode::SideBySide).wrap()",
             ),
         ],
     )

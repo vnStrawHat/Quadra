@@ -205,3 +205,24 @@ fn lines_take_the_colours_they_are_given() {
     assert_eq!(keyword.len(), 2, "{keyword:?}");
     assert!(keyword.iter().all(|(at, _)| *at >= x - 1.0 && *at < x + 15.0), "{keyword:?}");
 }
+
+#[test]
+fn long_lines_wrap_and_their_rows_are_as_high() {
+    let long = format!("short\n{}\nend\n", "word ".repeat(60));
+    let changed = format!("short\n{}more\nend\n", "word ".repeat(60));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let view = diff(long.clone(), changed.clone()).wrap();
+        quadra_kit::root().child(quadra_ui::column().width(400.0).height(400.0).child(view))
+    });
+    h.frame();
+    h.settle();
+    // 300 letters of 7.2 px in a column of 400 less the numbers: several lines high.
+    let rows = lines(&h);
+    let (first, removed, added) = (rows[0].0, rows[1].0, rows[2].0);
+    assert_eq!((first, removed), (0.0, 18.0));
+    assert!(added - removed > 18.0 * 3.0, "{rows:?}");
+    // Nothing scrolls sideways: the wheel turned so moves nothing.
+    assert!(rows.iter().all(|row| row.1 == 0.0));
+}

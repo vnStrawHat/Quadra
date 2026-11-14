@@ -439,7 +439,11 @@ As built so far:
     same line edited: enough of it is as it was, `changed_part`), as many such pairs as
     there can be in order; what is left sits beside each other in order. Past 64 lines a
     side they are paired by order alone.
-  - Not yet: wrapping; words that changed
+  - `.wrap()`: long lines wrap at the width of their column, a row is as high as its
+    lines (the rows of a `virtual_list`, each measured), the halves of a row side by side as
+    high as the higher, the numbers and the mark on the first line; nothing scrolls
+    sideways.
+  - Not yet: words that changed
     in several places of a line; the linear-space search for texts far apart.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node

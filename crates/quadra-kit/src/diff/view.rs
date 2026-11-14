@@ -28,7 +28,7 @@ fn line(
     mark: Mark,
     (said, colours): (&str, &[(std::ops::Range<usize>, Token)]),
     other: Option<&str>,
-    sx: Signal<f32>,
+    (sx, wrap): (Signal<f32>, bool),
 ) -> Div {
     let (sign, tint, name) = match mark {
         Mark::Same => (" ", None, said.to_string()),
@@ -63,22 +63,30 @@ fn line(
     let spans: Vec<_> = cuts.windows(2).map(piece).collect();
 
     let number = |n: &Option<usize>| {
-        let cell = row().width(gutter).shrink(0.0).justify(Justify::End).padding_right(8.0);
+        let cell = row().width(gutter).height(ROW).align_items(Align::Center).shrink(0.0);
+        let cell = cell.justify(Justify::End).padding_right(8.0);
         let cell = cell.text_color(token::TEXT_3);
         match n {
             Some(n) => cell.child(text((n + 1).to_string())),
             None => cell,
         }
     };
-    let line = row().height(ROW).align_items(Align::Center).role(Role::Cell).label(name);
-    let line = line.children(numbers.iter().map(number).collect::<Vec<_>>());
-    let sign = div().width(16.0).shrink(0.0).child(text(sign));
+    let line = match wrap {
+        true => row().min_height(ROW).align_items(Align::Start),
+        false => row().height(ROW).align_items(Align::Center),
+    };
+    let line = line.role(Role::Cell).label(name).children(numbers.iter().map(number).collect::<Vec<_>>());
+    let sign = row().width(16.0).height(ROW).align_items(Align::Center).shrink(0.0).child(text(sign));
     let line = match tint {
         Some((tint, ink)) => line.bg(tint).child(sign.text_color(ink)),
         None => line.child(sign),
     };
     if spans.is_empty() {
         return line;
+    }
+    if wrap {
+        // In the flow, as wide as the column less the numbers: long lines wrap.
+        return line.child(div().width(0.0).grow(1.0).child(rich_text(spans)));
     }
     // A long line is cut at the edge and scrolls sideways; the numbers stay.
     // As wide as the line at least (a byte is a cell or more of it): it never wraps.
@@ -87,10 +95,12 @@ fn line(
     line.child(div().width(0.0).grow(1.0).height(ROW).overflow_x(Overflow::Hidden).child(words))
 }
 
-/// The old text's half of a row beside the new one's, as wide as each other.
-fn halves(left: Div, right: Div) -> Div {
+/// The old text's half of a row beside the new one's, as wide as each other; as high as
+/// the higher when lines wrap.
+fn halves(left: Div, right: Div, wrap: bool) -> Div {
     let right = row().border_left(1.0).border_color(token::LINE).child(right.grow(1.0));
-    row().height(ROW).child(left.width(0.0).grow(1.0)).child(right.width(0.0).grow(1.0))
+    let pair = if wrap { row().min_height(ROW) } else { row().height(ROW) };
+    pair.child(left.width(0.0).grow(1.0)).child(right.width(0.0).grow(1.0))
 }
 
 /// The row of lines that do not show: a button that shows them.
@@ -107,7 +117,7 @@ pub(super) fn build(
     sides: &Sides,
     at: Row,
     (mode, gutter, painted): (DiffMode, f32, Option<&(LineColours, LineColours)>),
-    (open, sx): (Signal<Vec<usize>>, Signal<f32>),
+    (open, sx, wrap): (Signal<Vec<usize>>, Signal<f32>, bool),
 ) -> Div {
     fn of(colours: Option<&LineColours>, i: usize) -> &[(std::ops::Range<usize>, Token)] {
         colours.and_then(|c| c.get(i)).map_or(&[][..], Vec::as_slice)
@@ -117,27 +127,29 @@ pub(super) fn build(
     }
     let was = |i: usize| (sides.old.line(i), of(painted.map(|p| &p.0), i));
     let is = |j: usize| (sides.new.line(j), of(painted.map(|p| &p.1), j));
-    let one =
-        |n: usize, mark: Mark, said, other: Option<&str>| line(&[Some(n)], gutter, mark, said, other, sx);
-    let none = || row().height(ROW).bg(token::PANEL);
+    let one = |n: usize, mark: Mark, said, other: Option<&str>| {
+        line(&[Some(n)], gutter, mark, said, other, (sx, wrap))
+    };
+    let none = || if wrap { row().min_height(ROW) } else { row().height(ROW) }.bg(token::PANEL);
     match (at, mode) {
         (Row::Same { old, new }, DiffMode::Inline) => {
-            line(&[Some(old), Some(new)], gutter, Mark::Same, was(old), None, sx)
+            line(&[Some(old), Some(new)], gutter, Mark::Same, was(old), None, (sx, wrap))
         }
         (Row::Same { old, new }, DiffMode::SideBySide) => {
-            halves(one(old, Mark::Same, was(old), None), one(new, Mark::Same, is(new), None))
+            halves(one(old, Mark::Same, was(old), None), one(new, Mark::Same, is(new), None), wrap)
         }
         (Row::Removed { old, with }, _) => {
             let other = with.map(|j| words(is(j)));
-            line(&[Some(old), None], gutter, Mark::Removed, was(old), other, sx)
+            line(&[Some(old), None], gutter, Mark::Removed, was(old), other, (sx, wrap))
         }
         (Row::Added { new, with }, _) => {
             let other = with.map(|i| words(was(i)));
-            line(&[None, Some(new)], gutter, Mark::Added, is(new), other, sx)
+            line(&[None, Some(new)], gutter, Mark::Added, is(new), other, (sx, wrap))
         }
         (Row::Pair { old, new }, _) => halves(
             old.map_or_else(none, |i| one(i, Mark::Removed, was(i), new.map(|j| words(is(j))))),
             new.map_or_else(none, |j| one(j, Mark::Added, is(j), old.map(|i| words(was(i))))),
+            wrap,
         ),
         (Row::Fold { old, count }, _) => fold(old, count, open),
     }

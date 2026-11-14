@@ -144,6 +144,12 @@ fn a_role_gets_its_colour_from_the_theme_and_another_when_the_theme_changes() {
     p.w.tree.set_theme(theme(0x000000, 0xCC0000));
     let (stats, _) = p.w.frame();
     assert_eq!((p.background(p.plain), stats.nodes_painted), (Color::rgb(0x112233), 0));
+    // A level above the window casts the shadows of the theme: deeper ones when it is dark.
+    p.w.tree.patch_style(p.plain, Patch::Elevation(1));
+    assert_eq!(p.w.tree.paint_style(p.plain).shadows, 1);
+    p.w.tree.set_theme(Rc::new((*theme(0x000000, 0xCC0000)).clone().with_deep_shadows(true)));
+    p.w.frame();
+    assert_eq!(p.w.tree.paint_style(p.plain).shadows, 3);
     // A role the theme has no colour for is transparent.
     p.w.tree.patch_style(p.plain, Patch::BorderColor(Token(9).into()));
     assert_eq!(p.w.tree.paint_style(p.plain).border_color, Color::TRANSPARENT);

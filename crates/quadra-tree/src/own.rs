@@ -11,11 +11,13 @@ use crate::node::Node;
 use crate::widget::PaintCx;
 
 /// The shadows of the levels above the window (specs/behaviour/15, "Elevation"): how far
-/// down each one is, how blurred, and how black.
-const SHADOWS: [&[(f32, f32, f32)]; 3] = [
+/// down each one is, how blurred, and how black; under a light theme, then a dark one.
+const SHADOWS: [&[(f32, f32, f32)]; 5] = [
     &[],
     &[(2.0, 3.0, 0.12), (1.0, 0.0, 0.06)],
     &[(2.0, 3.0, 0.12), (3.0, 6.0, 0.08), (6.0, 12.0, 0.04), (1.0, 0.0, 0.12)],
+    &[(6.0, 16.0, 0.34), (1.0, 3.0, 0.26)],
+    &[(18.0, 44.0, 0.44), (4.0, 10.0, 0.30)],
 ];
 
 /// Paints one node's own instances: the background and border from its style, then its
@@ -41,7 +43,7 @@ pub(crate) fn paint_own(
     let (background, border_color, radii, outline) =
         (node.paint.background, node.paint.border_color, node.paint.radii, node.paint.outline);
     // What is above the window casts its shadows first: they are under its own box.
-    for &(down, blur, alpha) in SHADOWS[(node.paint.elevation as usize).min(2)] {
+    for &(down, blur, alpha) in SHADOWS[(node.paint.shadows as usize).min(4)] {
         let bounds = rect.translate(0.0, down);
         cx.shadow(Shadow { bounds, radii, blur, color: Color::BLACK.alpha(alpha) });
     }

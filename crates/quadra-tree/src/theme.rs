@@ -46,16 +46,32 @@ impl From<Token> for Paint {
     }
 }
 
-/// The colours of the roles. A role the theme does not have is transparent.
+/// The colours of the roles. A role the theme does not have is transparent. A dark theme
+/// casts deeper shadows: a light one does not show on a dark plane.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Theme {
     colors: Vec<Color>,
+    deep_shadows: bool,
 }
 
 impl Theme {
     /// A theme from the colour of each role, in the order of their numbers.
     pub fn new(colors: Vec<Color>) -> Theme {
-        Theme { colors }
+        Theme { colors, deep_shadows: false }
+    }
+
+    /// The same colours, casting the deeper shadows of dark themes or the light ones.
+    pub fn with_deep_shadows(self, deep_shadows: bool) -> Theme {
+        Theme { deep_shadows, ..self }
+    }
+
+    /// The shadows a node of a level above the window casts under this theme: the index of
+    /// their set in the painter's table.
+    pub(crate) fn shadows(&self, level: u8) -> u8 {
+        match (level.min(2), self.deep_shadows) {
+            (0, _) => 0,
+            (level, deep) => level + if deep { 2 } else { 0 },
+        }
     }
 
     pub fn color(&self, token: Token) -> Color {

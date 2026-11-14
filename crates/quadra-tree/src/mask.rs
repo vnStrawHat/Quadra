@@ -34,9 +34,10 @@ impl Tree {
     /// has none of that size: no larger than an atlas slice, so a larger box has it at a
     /// lower resolution.
     pub(crate) fn refresh_mask(&mut self, id: NodeId) {
-        let node = &self.nodes[id.index as usize];
-        let size = self.layout.rect(node.layout).size();
+        // A node removed since it asked to be composed has nothing to cut.
+        let Some(node) = self.get(id) else { return };
         let Some(clip) = node.layer.as_ref().and_then(|state| state.clip.as_ref()) else { return };
+        let size = self.layout.rect(node.layout).size();
         let (w, h) =
             ((size.width * self.scale).round().max(1.0), (size.height * self.scale).round().max(1.0));
         let k = (SLICE as f32 / w.max(h)).min(1.0);

@@ -7,7 +7,7 @@ use quadra_text::{FaceId, FontKey, ShapedGlyph};
 use windows::Win32::Foundation::ERROR_INSUFFICIENT_BUFFER;
 use windows::Win32::Graphics::DirectWrite::{
     DWRITE_GLYPH_OFFSET, DWRITE_SCRIPT_ANALYSIS, DWRITE_SHAPING_GLYPH_PROPERTIES,
-    DWRITE_SHAPING_TEXT_PROPERTIES, IDWriteNumberSubstitution,
+    DWRITE_SHAPING_TEXT_PROPERTIES, DWRITE_TYPOGRAPHIC_FEATURES, IDWriteNumberSubstitution,
 };
 use windows::core::{HRESULT, PCWSTR};
 
@@ -158,12 +158,25 @@ impl DirectWrite {
         face: FaceId,
         size: f32,
     ) -> Option<usize> {
-        let (len, face) = (units.len(), &self.faces[face.0 as usize].face);
+        let (len, family) = (units.len(), &self.keys[face.0 as usize].family);
+        let face = &self.faces[face.0 as usize].face;
         if len == 0 {
             return None;
         }
         let text = PCWSTR(units.as_ptr());
         let no_numbers = None::<&IDWriteNumberSubstitution>;
+        // The family's features, over the whole run: one range of them.
+        let features = self.features.iter().find(|(name, _)| name.eq_ignore_ascii_case(family));
+        let typographic = features.map(|(_, list)| DWRITE_TYPOGRAPHIC_FEATURES {
+            features: list.as_ptr().cast_mut(),
+            featureCount: list.len() as u32,
+        });
+        let range: *const DWRITE_TYPOGRAPHIC_FEATURES = typographic.as_ref().map_or(std::ptr::null(), |t| t);
+        let range_len = len as u32;
+        let (ranges, lengths, count_of_ranges) = match typographic {
+            Some(_) => (Some(&range as *const _), Some(&range_len as *const u32), 1),
+            None => (None, None, 0),
+        };
         let too_small = HRESULT::from_win32(ERROR_INSUFFICIENT_BUFFER.0);
         s.clusters.resize(len, 0);
         s.text_props.resize(len, Default::default());
@@ -183,9 +196,9 @@ impl DirectWrite {
                     analysis,
                     &self.locale,
                     no_numbers,
-                    None,
-                    None,
-                    0,
+                    ranges,
+                    lengths,
+                    count_of_ranges,
                     max as u32,
                     s.clusters.as_mut_ptr(),
                     s.text_props.as_mut_ptr(),
@@ -220,9 +233,9 @@ impl DirectWrite {
                 false,
                 analysis,
                 &self.locale,
-                None,
-                None,
-                0,
+                ranges,
+                lengths,
+                count_of_ranges,
                 s.advances.as_mut_ptr(),
                 s.offsets.as_mut_ptr(),
             )

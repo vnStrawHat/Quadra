@@ -7,7 +7,7 @@ use std::rc::Rc;
 use quadra_prim::Rect;
 
 use crate::numeric::Numeric;
-use crate::types::{FaceId, FontKey, GlyphBitmap, ShapedGlyph, TextBackend, TextStyle};
+use crate::types::{FaceId, Feature, FontKey, GlyphBitmap, ShapedGlyph, TextBackend, TextStyle};
 
 /// A shaped token: a word, or a run of one separator.
 #[derive(Debug, Default, PartialEq)]
@@ -88,6 +88,17 @@ impl TextSystem {
 
     pub fn backend(&mut self) -> &mut dyn TextBackend {
         &mut *self.backend
+    }
+
+    /// The OpenType features a family is shaped with (`Feature::on(b"tnum")`). Words shaped
+    /// before are shaped again when asked for; a paragraph that holds its words keeps them
+    /// until its text or style changes, so features are set as fonts are loaded.
+    pub fn set_features(&mut self, family: &str, features: &[Feature]) {
+        self.backend.set_features(family, features);
+        self.words.current.clear();
+        self.words.previous.clear();
+        self.words.count = 0;
+        self.numeric = Numeric::default();
     }
 
     /// The face of a style. An unknown family falls back to the default one at the same

@@ -70,7 +70,14 @@ The rules of behaviour/04 carry over. What differs from the V backend:
   when a setting changes (`WM_SETTINGCHANGE`; `TextBackend::system_changed`): when glyphs
   come out otherwise, the app forgets every tile and each window paints again, as after a
   lost device. Shaping and lines are untouched.
-- Not yet: OpenType features per family, bidirectional analysis.
+- **OpenType features per family** (`Feature::on(b"tnum")`, `Feature::off(b"calt")`;
+  `App::font_features(family, &[..])`, `TextSystem::set_features`): every run of the family
+  is shaped with them besides the font's defaults, as one range of `GetGlyphs` and
+  `GetGlyphPlacements`; glyphs of a fallback face are not the family's. Setting them empties
+  the shaping cache; a paragraph keeps its words until its text or style changes, so
+  features are set as fonts are loaded. Per family, not per style: a style stays what it is
+  and a face is still one key of the cache.
+- Not yet: bidirectional analysis.
 
 ## Paragraphs
 

@@ -13,6 +13,24 @@ pub struct FontKey {
     pub italic: bool,
 }
 
+/// An OpenType feature a family is shaped with: its tag, and 1 for on, 0 for off, or which
+/// of its alternates.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct Feature {
+    pub tag: [u8; 4],
+    pub value: u32,
+}
+
+impl Feature {
+    pub const fn on(tag: &[u8; 4]) -> Feature {
+        Feature { tag: *tag, value: 1 }
+    }
+
+    pub const fn off(tag: &[u8; 4]) -> Feature {
+        Feature { tag: *tag, value: 0 }
+    }
+}
+
 /// Per em: multiply by the font size.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct FaceMetrics {
@@ -147,4 +165,9 @@ pub trait TextBackend {
     fn system_changed(&mut self) -> bool {
         false
     }
+
+    /// The OpenType features a family is shaped with from now on, besides the font's own
+    /// defaults. Glyphs of a fallback face are not the family's. A backend that cannot apply
+    /// them ignores them.
+    fn set_features(&mut self, _family: &str, _features: &[Feature]) {}
 }

@@ -8,12 +8,13 @@ mod shape;
 
 use std::ffi::c_void;
 
-use quadra_text::{FaceId, FaceMetrics, FontKey, GlyphBitmap, ShapedGlyph, TextBackend};
+use quadra_text::{FaceId, FaceMetrics, Feature, FontKey, GlyphBitmap, ShapedGlyph, TextBackend};
 use windows::Win32::Graphics::DirectWrite::{
-    DWRITE_FACTORY_TYPE_SHARED, DWRITE_FONT_METRICS, DWRITE_FONT_STRETCH_NORMAL, DWRITE_FONT_STYLE,
-    DWRITE_FONT_STYLE_ITALIC, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_WEIGHT, DWRITE_SCRIPT_ANALYSIS,
-    DWriteCreateFactory, IDWriteFactory2, IDWriteFactory5, IDWriteFontCollection, IDWriteFontFace,
-    IDWriteFontFace2, IDWriteFontFallback, IDWriteFontFamily, IDWriteTextAnalyzer,
+    DWRITE_FACTORY_TYPE_SHARED, DWRITE_FONT_FEATURE, DWRITE_FONT_FEATURE_TAG, DWRITE_FONT_METRICS,
+    DWRITE_FONT_STRETCH_NORMAL, DWRITE_FONT_STYLE, DWRITE_FONT_STYLE_ITALIC, DWRITE_FONT_STYLE_NORMAL,
+    DWRITE_FONT_WEIGHT, DWRITE_SCRIPT_ANALYSIS, DWriteCreateFactory, IDWriteFactory2, IDWriteFactory5,
+    IDWriteFontCollection, IDWriteFontFace, IDWriteFontFace2, IDWriteFontFallback, IDWriteFontFamily,
+    IDWriteTextAnalyzer,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGORIENTATION, SPI_GETFONTSMOOTHINGTYPE,
@@ -48,6 +49,8 @@ pub struct DirectWrite {
     /// display's stripes run blue, green, red.
     pub cleartype: bool,
     bgr: bool,
+    /// The features each family is shaped with, as the app set them.
+    features: Vec<(String, Vec<DWRITE_FONT_FEATURE>)>,
 }
 
 fn failed(e: windows::core::Error) -> String {
@@ -141,6 +144,7 @@ impl DirectWrite {
                 scratch: shape::Scratch::default(),
                 cleartype,
                 bgr,
+                features: Vec::new(),
             })
         }
     }
@@ -194,6 +198,15 @@ impl TextBackend for DirectWrite {
 
     fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap> {
         self.raster(face, glyph, size, phase)
+    }
+
+    fn set_features(&mut self, family: &str, features: &[Feature]) {
+        let tag = |t: [u8; 4]| DWRITE_FONT_FEATURE_TAG(u32::from_le_bytes(t));
+        let list = features.iter().map(|f| DWRITE_FONT_FEATURE { nameTag: tag(f.tag), parameter: f.value });
+        self.features.retain(|(name, _)| !name.eq_ignore_ascii_case(family));
+        if !features.is_empty() {
+            self.features.push((family.to_string(), list.collect()));
+        }
     }
 
     fn system_changed(&mut self) -> bool {

@@ -33,6 +33,7 @@ use quadra_ui::{Images, View, mount_with};
 
 pub use i18n::{Arg, I18n, Language, language, t, t_with};
 pub use locale::Locale;
+pub use quadra_text::Feature;
 pub use report::{AppError, FrameReport, Result};
 pub use router::{Router, router};
 pub use services::AppDirs;
@@ -135,6 +136,12 @@ impl<R: Renderer> App<R> {
     pub fn load_fonts(&mut self, files: &[&[u8]]) -> Result<Vec<String>> {
         let loaded = self.fonts.borrow_mut().text.backend().load_fonts(files);
         loaded.map_err(AppError::Text)
+    }
+
+    /// The OpenType features a family is shaped with in every window
+    /// (`&[Feature::on(b"tnum"), Feature::off(b"calt")]`), set before its text is shown.
+    pub fn font_features(&mut self, family: &str, features: &[Feature]) {
+        self.fonts.borrow_mut().text.set_features(family, features);
     }
 
     /// The theme the roles in styles get their colours from (specs/13), in every window. A

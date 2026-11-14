@@ -1,5 +1,5 @@
 //! The DirectWrite backend against the fonts every Windows has: matching, shaping with
-//! clusters, fallback, coverage per pixel and per subpixel, colour glyphs, fonts from memory,
+//! clusters, fallback, coverage per pixel and per subpixel, colour glyphs, fonts from memory, OpenType features,
 //! and text from a view to pixels.
 
 use std::rc::Rc;
@@ -162,4 +162,18 @@ fn numbers_in_segoe_ui_are_composed_and_equal_what_shaping_gives() {
         assert_eq!(composed.glyphs, shaped, "{number}");
     }
     assert_eq!(ts.take_stats().words_composed, 5);
+}
+
+#[test]
+fn a_family_is_shaped_with_the_features_it_is_given() {
+    use quadra_text::Feature;
+    let mut dw = DirectWrite::new().unwrap();
+    let face = segoe(&mut dw);
+    let plain: Vec<(u16, f32)> = dw.shape("1a", face, 16.0).iter().map(|g| (g.id, g.advance)).collect();
+    dw.set_features("segoe ui", &[Feature::on(b"pnum"), Feature::on(b"smcp")]);
+    let featured: Vec<(u16, f32)> = dw.shape("1a", face, 16.0).iter().map(|g| (g.id, g.advance)).collect();
+    assert!(featured[0].1 < plain[0].1, "a proportional one is narrower: {featured:?}");
+    assert_ne!(featured[1].0, plain[1].0, "a small capital is another glyph");
+    dw.set_features("Segoe UI", &[]);
+    assert_eq!(dw.shape("1a", face, 16.0).iter().map(|g| (g.id, g.advance)).collect::<Vec<_>>(), plain);
 }

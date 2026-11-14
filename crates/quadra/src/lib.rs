@@ -33,8 +33,8 @@ use std::rc::Rc;
 use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
 pub use quadra_app::{
-    AppDirs, AppError, Arg, FrameReport, I18n, Language, Locale, Result, Router, Settings, Stored, language,
-    log, router, t, t_with, time,
+    AppDirs, AppError, Arg, Feature, FrameReport, I18n, Language, Locale, Result, Router, Settings, Stored,
+    language, log, router, t, t_with, time,
 };
 pub use quadra_async::{
     Background, CancelToken, Full, Inbox, Panicked, Sender, Task, Timer, background, background_with,

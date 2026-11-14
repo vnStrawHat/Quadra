@@ -207,3 +207,15 @@ fn a_run_that_is_a_box_is_as_wide_as_it_says_in_the_word_around_it() {
     assert_eq!(lines(&p), ["ab ", "\u{FFFC}, ", "cd"]);
     assert_eq!(p.spans(3..6, 0.0).next().map(|part| (part.x, part.y, part.width)), Some((0.0, 14.0, 25.0)));
 }
+
+#[test]
+fn features_set_for_a_family_shape_its_words_again() {
+    let mut ts = system();
+    let face = ts.face_for(&style());
+    ts.word("word", face, 10.0);
+    ts.word("word", face, 10.0);
+    ts.set_features("Fake Sans", &[quadra_text::Feature::off(b"liga")]);
+    ts.word("word", face, 10.0);
+    let stats = ts.take_stats();
+    assert_eq!((stats.words_shaped, stats.word_hits), (2, 1));
+}

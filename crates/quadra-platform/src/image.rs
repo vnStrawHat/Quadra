@@ -26,6 +26,41 @@ pub struct Decoded {
     pub pixels: Vec<u8>,
 }
 
+impl Decoded {
+    /// The pixels as a camera's orientation tag (EXIF 274) says they are seen: 1 as they
+    /// are, 2 to 4 mirrored or half turned, 5 to 8 turned a quarter (6 clockwise, 8 the
+    /// other way; 5 and 7 mirrored too), which swaps the sides. Anything else is 1.
+    pub fn oriented(self, orientation: u16) -> Decoded {
+        if !(2..=8).contains(&orientation) {
+            return self;
+        }
+        let (w, h) = (self.width as usize, self.height as usize);
+        let (to_w, to_h) = if quarter(orientation) { (h, w) } else { (w, h) };
+        let mut pixels = vec![0u8; self.pixels.len()];
+        for y in 0..h {
+            for x in 0..w {
+                let (tx, ty) = match orientation {
+                    2 => (w - 1 - x, y),
+                    3 => (w - 1 - x, h - 1 - y),
+                    4 => (x, h - 1 - y),
+                    5 => (y, x),
+                    6 => (h - 1 - y, x),
+                    7 => (h - 1 - y, w - 1 - x),
+                    _ => (y, w - 1 - x),
+                };
+                let (from, to) = ((y * w + x) * 4, (ty * to_w + tx) * 4);
+                pixels[to..to + 4].copy_from_slice(&self.pixels[from..from + 4]);
+            }
+        }
+        Decoded { width: to_w as u32, height: to_h as u32, pixels }
+    }
+}
+
+/// Whether an orientation tag turns the image a quarter, so that its sides swap.
+pub fn quarter(orientation: u16) -> bool {
+    (5..=8).contains(&orientation)
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ImageError {
     /// The file could not be read.
@@ -139,5 +174,30 @@ mod tests {
         let half = FlatImages.decode(&file, 2, 1).unwrap();
         assert_eq!((half.width, half.height, half.pixels), (2, 1, vec![128, 0, 0, 128, 128, 0, 0, 128]));
         assert!(FlatImages.info(b"GIF89a").is_err());
+    }
+
+    #[test]
+    fn an_orientation_tag_turns_and_mirrors_the_pixels() {
+        // Two by one: a red pixel, then a blue one.
+        let (r, b) = ([255, 0, 0, 255], [0, 0, 255, 255]);
+        let wide = Decoded { width: 2, height: 1, pixels: [r, b].concat() };
+        let seen = |o: u16| {
+            let d = wide.clone().oriented(o);
+            (d.width, d.height, d.pixels)
+        };
+        assert_eq!(seen(1), (2, 1, [r, b].concat()));
+        assert_eq!(seen(2), (2, 1, [b, r].concat()));
+        assert_eq!(seen(3), (2, 1, [b, r].concat()));
+        assert_eq!(seen(4), (2, 1, [r, b].concat()));
+        // A quarter clockwise puts the left at the top; the other way, at the bottom.
+        assert_eq!(seen(6), (1, 2, [r, b].concat()));
+        assert_eq!(seen(8), (1, 2, [b, r].concat()));
+        assert_eq!(seen(5), (1, 2, [r, b].concat()));
+        assert_eq!(seen(7), (1, 2, [b, r].concat()));
+        assert_eq!(seen(0), seen(1));
+        // On two rows, a quarter clockwise moves the bottom-left corner to the top-left.
+        let (g, w) = ([0, 255, 0, 255], [255; 4]);
+        let square = Decoded { width: 2, height: 2, pixels: [r, b, g, w].concat() };
+        assert_eq!(square.oriented(6).pixels, [g, r, w, b].concat());
     }
 }

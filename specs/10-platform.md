@@ -109,7 +109,7 @@ boxes, file dialogs, single-instance handling and crash dumps. They are separate
 | Open a URL or file, reveal in the file manager | `quadra-shell`, trait `Opener` | Same |
 | Pseudo terminal | `quadra-term`, trait `Pty` with a ConPTY implementation | Only a terminal needs it |
 | Accessibility | `quadra-a11y`; the OS bridge in the native crate (12) | Driven by the tree, not by the window |
-| Image decoding | trait `ImageDecoder` (`info` from the header, `decode` at a size, premultiplied RGBA), called on the pool; `Platform::image_decoder` gives the system codecs in the native crate, and a decoder of flat test images (`FlatImages`) on the headless platform; `admit` holds a header to the limits (11) | No decoder of untrusted files to own or to depend on |
+| Image decoding | trait `ImageDecoder` (`info` from the header, `decode` at a size, premultiplied RGBA; both as the image is seen, so a photograph whose orientation tag turns it is measured and decoded turned, `Decoded::oriented`), called on the pool; `Platform::image_decoder` gives the system codecs in the native crate, and a decoder of flat test images (`FlatImages`) on the headless platform; `admit` holds a header to the limits (11) | No decoder of untrusted files to own or to depend on |
 
 Each trait has a headless implementation that records calls and returns what a test queued.
 

@@ -57,6 +57,20 @@ fn a_file_is_measured_decoded_and_scaled_by_the_systems_codecs() {
     );
 }
 
+#[test]
+fn a_photograph_is_turned_as_its_orientation_tag_says() {
+    // 16 by 8, red on the left, blue on the right, tagged to be turned a quarter clockwise:
+    // seen 8 by 16, red at the top.
+    let file = include_bytes!("data/turned.jpg");
+    assert_eq!(WicImages.info(file), Ok(ImageInfo { width: 8, height: 16 }));
+    let seen = WicImages.decode(file, 8, 16).unwrap();
+    assert_eq!((seen.width, seen.height), (8, 16));
+    let pixel = |x: usize, y: usize| &seen.pixels[(y * 8 + x) * 4..][..3];
+    let (top, bottom) = (pixel(4, 2), pixel(4, 13));
+    assert!(top[0] > 200 && top[2] < 60, "{top:?}");
+    assert!(bottom[2] > 200 && bottom[0] < 60, "{bottom:?}");
+}
+
 fn at(pixels: &Pixels, x: u32, y: u32) -> u32 {
     let i = ((y * pixels.size.width + x) * 4) as usize;
     (pixels.rgba[i] as u32) << 16 | (pixels.rgba[i + 1] as u32) << 8 | pixels.rgba[i + 2] as u32

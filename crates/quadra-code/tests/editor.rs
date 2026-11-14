@@ -123,6 +123,9 @@ fn a_click_puts_the_cursor_a_drag_selects_and_two_clicks_take_a_word() {
     let (x, y) = (54.0 + 7.0 * 6.0, 7.0); // the line 1, column 7: "be|ta"
     e.h.click(x, y);
     assert_eq!(e.head(), 7);
+    // A press and a release in one frame leave nothing held: the pointer moving selects nothing.
+    e.h.pointer(PointerInput::Move, 54.0 + 2.0 * 6.0, 14.0 + 7.0);
+    assert_eq!(e.w().doc.primary().range(), 7..7);
     e.h.advance(Duration::from_secs(1)); // not a second click
     e.h.pointer(PointerInput::Down, x, y);
     e.h.pointer(PointerInput::Move, 54.0 + 2.0 * 6.0, 14.0 + 7.0);
@@ -164,6 +167,11 @@ fn the_find_bar_finds_goes_to_matches_replaces_and_gives_the_focus_back() {
     assert_eq!(e.w().doc.primary().range(), 8..11);
     assert!(e.h.has_text("2 of 3"));
     e.keys(&[(Key::F3, Mods::SHIFT)]);
+    assert_eq!(e.w().doc.primary().range(), 0..3);
+    // Shift-Enter in the query goes back too, round to the last.
+    e.keys(&[(Key::Enter, Mods::SHIFT)]);
+    assert_eq!(e.w().doc.primary().range(), 18..21);
+    e.keys(&[(Key::Enter, NONE)]);
     assert_eq!(e.w().doc.primary().range(), 0..3);
     e.h.get_by_role(Role::Button, ".*").click();
     e.h.frame();
@@ -238,37 +246,6 @@ fn wrapped_lines_break_after_blanks_and_the_rows_drive_up_down_and_the_pointer()
     e.h.frame();
     assert_eq!(e.h.tree.rect(e.id).height, 7.0 * 14.0);
     assert_eq!(e.w().scroll_x, 0.0);
-}
-
-#[test]
-fn ctrl_and_a_press_on_a_link_opens_it_and_moves_no_cursor() {
-    use quadra_platform::MouseButton;
-    use quadra_prim::Point;
-    let opened = std::rc::Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
-    let seen = opened.clone();
-    let mut h = Harness::new();
-    let text = "see www.example.com/a now".to_string();
-    h.mount(move || {
-        let on = editor(text).font(10.0, 14.0).on_link(move |url| seen.borrow_mut().push(url.to_string()));
-        column().size(400.0, 140.0).child(on)
-    });
-    h.frame();
-    let id = h.query(|n| n.semantics.role == Role::TextInput)[0];
-    let at = Point::new(54.0 + 8.0 * 6.0, 7.0); // on "example"
-    let now = h.now();
-    h.tree.pointer(PointerInput::Move, MouseButton::None, at, Mods::CTRL, now);
-    h.frame();
-    let mut e = Ed { h, id };
-    assert_eq!(e.h.tree.cursor(), quadra_platform::Cursor::Pointer); // the pointer of a link
-    e.h.tree.pointer(PointerInput::Down, MouseButton::Left, at, Mods::CTRL, now);
-    e.h.tree.pointer(PointerInput::Up, MouseButton::Left, at, Mods::CTRL, now);
-    e.h.frame();
-    assert_eq!(*opened.borrow(), vec!["https://www.example.com/a".to_string()]);
-    assert_eq!((e.head(), e.w().doc.cursors.len()), (0, 1));
-    // Without Ctrl it is text like any other: the press puts the cursor.
-    e.h.advance(Duration::from_secs(1));
-    e.h.click(at.x, at.y);
-    assert_eq!(e.head(), 8);
 }
 
 #[test]

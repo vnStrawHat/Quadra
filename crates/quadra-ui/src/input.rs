@@ -82,7 +82,8 @@ impl TextInput {
         self
     }
 
-    /// Runs `f` with the value when Enter is pressed in the input.
+    /// Runs `f` with the value when Enter is pressed in the input; Shift-Enter is left to
+    /// what is around it.
     pub fn on_submit(mut self, f: impl FnMut(&str) + 'static) -> Self {
         self.submit = Some(Box::new(f));
         self

@@ -29,9 +29,10 @@ impl View for TextInput {
         }
         if let Some(submit) = self.submit {
             // After what was typed before the key: edits wait for the update pass, in order.
+            // Shift-Enter goes on to what is around the input (a find bar goes back with it).
             let (submit, writer) = (Rc::new(RefCell::new(submit)), cx.handle.clone());
             cx.tree.on_key(id, true, move |e| {
-                if e.key == Key::Enter {
+                if e.key == Key::Enter && !e.mods.contains(Mods::SHIFT) {
                     let submit = submit.clone();
                     writer.with(move |tree| {
                         let text = tree.widget_mut::<TextField>(id).map(|f| f.buffer.text().to_string());

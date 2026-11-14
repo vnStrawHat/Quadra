@@ -275,7 +275,7 @@ locale at the window root; a subtree can provide its own.
   caret, the selection and a click are placed on the dots as they would be on the
   characters; copy and cut do nothing; assistive technology is told the dots.
   `.on_submit(f)` runs `f` with the text when Enter is pressed, after whatever was typed
-  before it in the same turn.
+  before it in the same turn; Shift-Enter is left to what is around the input.
 - `text_area(value)` is the same control on several lines: the text is broken at the width
   the area is given and the area is as tall as its lines; Enter starts a line; Up and Down
   move the caret by the lines as they are shown, keeping its x through lines too short for

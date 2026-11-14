@@ -164,6 +164,7 @@ version = "0.1.0"
 dependencies = [
  "quadra-a11y",
  "quadra-async",
+ "quadra-base",
  "quadra-kit",
  "quadra-layout",
  "quadra-platform",

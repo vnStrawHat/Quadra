@@ -1,14 +1,19 @@
 //! The editor and the pointer: a press puts the cursor (Shift extends it, Ctrl adds one), a
 //! drag selects to where it goes, Alt and a drag a column; two clicks a word, three the line.
-//! A link under the pointer is underlined while Ctrl is held, and Ctrl and a press open it.
+//! A link under the pointer is underlined while Ctrl is held, and Ctrl and a press open it;
+//! once the pointer has rested on one, a hint under it says where it goes and how.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Instant;
 
+use quadra_async::{Timer, timeout};
+use quadra_base::hint::TOOLTIP_REST;
+use quadra_base::popup::hang_with;
 use quadra_platform::{Mods, MouseButton};
 use quadra_prim::Point;
-use quadra_tree::{Handle, NodeId, PointerEvent, PointerKind};
+use quadra_reactive::{Scope, Signal, effect, signal};
+use quadra_tree::{Anchor, Handle, NodeId, PointerEvent, PointerKind};
 use quadra_ui::MountCx;
 
 use super::{EditorWidget, edit};
@@ -29,18 +34,29 @@ type Pressed = Rc<Cell<Option<Press>>>;
 /// What opens a link: the app's.
 pub(super) type OnLink = Rc<dyn Fn(&str)>;
 
+/// The link under the pointer: where its hint shows, in the window, and its URL.
+type Over = Signal<Option<(Point, Rc<str>)>>;
+
 pub(super) fn pointer(cx: &mut MountCx, id: NodeId, epoch: Instant, on_link: Option<OnLink>) {
     let pressed: Pressed = Rc::new(Cell::new(None));
-    let handler = move |writer: Handle, pressed: Pressed| {
+    // Whether the button is down, as the events come; `pressed` is filled as they are
+    // handled, in the update pass.
+    let held = Rc::new(Cell::new(false));
+    let over = on_link.is_some().then(|| hint(cx, id));
+    let handler = move |writer: Handle, pressed: Pressed, held: Rc<Cell<bool>>| {
         let on_link = on_link.clone();
         move |e: &mut PointerEvent| {
             if e.button != MouseButton::Left && e.kind != PointerKind::Move {
                 return;
             }
             let (at, kind, clicks, mods) = (e.local, e.kind, e.clicks, e.mods);
-            if kind == PointerKind::Move && pressed.get().is_none() {
-                if on_link.is_some() {
-                    writer.with(move |tree| hover(tree, id, at, mods));
+            let window = Point::new(e.at.x, e.at.y + 16.0);
+            if let (Some(over), PointerKind::Down) = (over, kind) {
+                over.set(None);
+            }
+            if kind == PointerKind::Move && !held.get() {
+                if let Some(over) = over {
+                    writer.with(move |tree| hover(tree, id, at, mods, (window, over)));
                 }
                 return;
             }
@@ -51,7 +67,9 @@ pub(super) fn pointer(cx: &mut MountCx, id: NodeId, epoch: Instant, on_link: Opt
                 // On a link, the press is the link's: no cursor moves or is added.
                 let time = writer.now();
                 writer.with(move |tree| {
-                    hover(tree, id, at, mods);
+                    if let Some(over) = over {
+                        hover(tree, id, at, mods, (window, over));
+                    }
                     let w = tree.widget_mut::<EditorWidget>(id);
                     match w.and_then(|w| w.link.clone().filter(|_| w.link_hot)) {
                         Some((_, url)) => on_link(&url),
@@ -66,8 +84,17 @@ pub(super) fn pointer(cx: &mut MountCx, id: NodeId, epoch: Instant, on_link: Opt
                 return;
             }
             match kind {
-                PointerKind::Down => e.capture_pointer(),
-                PointerKind::Up => return pressed.set(None),
+                PointerKind::Down => {
+                    held.set(true);
+                    e.capture_pointer();
+                }
+                // After the press, which waits for the update pass too: a press and a release
+                // in one frame leave nothing held.
+                PointerKind::Up => {
+                    held.set(false);
+                    let pressed = pressed.clone();
+                    return writer.with(move |_| pressed.set(None));
+                }
                 _ => {}
             }
             let (pressed, time) = (pressed.clone(), writer.now());
@@ -77,13 +104,33 @@ pub(super) fn pointer(cx: &mut MountCx, id: NodeId, epoch: Instant, on_link: Opt
         }
     };
     for kind in [PointerKind::Down, PointerKind::Move, PointerKind::Up, PointerKind::Click] {
-        cx.tree.on_pointer(id, kind, handler(cx.handle.clone(), pressed.clone()));
+        cx.tree.on_pointer(id, kind, handler(cx.handle.clone(), pressed.clone(), held.clone()));
     }
 }
 
+/// The hint over a link: its URL and how to open it, under the pointer once it has rested
+/// on one link; another link, or none, starts again. What `over` is set to shows.
+fn hint(cx: &mut MountCx, id: NodeId) -> Over {
+    let (over, shown): (Over, _) = (signal(None), signal(false));
+    let (rest, owner): (Rc<RefCell<Option<Timer>>>, _) = (Rc::default(), Scope::current());
+    effect(move || {
+        let on = over.with(Option::is_some);
+        shown.set(false);
+        if let Some(timer) = rest.borrow_mut().take() {
+            timer.cancel();
+        }
+        *rest.borrow_mut() = on.then(|| owner.run(|| timeout(TOOLTIP_REST, move || shown.set(true))));
+    });
+    let under = move || over.with(|link| link.as_ref().map_or(Point::ZERO, |(at, _)| *at));
+    let says = move || over.with(|link| link.as_ref().map(|(_, url)| format!("{url} (Ctrl-click to open)")));
+    let tip = move || quadra_kit::tip(&says().unwrap_or_default());
+    hang_with(cx, id, shown, move || Anchor::At(under()), tip);
+    over
+}
+
 /// Finds the link under the pointer, on its line alone, and underlines it while Ctrl is
-/// held, with the pointer of a link.
-fn hover(tree: &mut quadra_tree::Tree, id: NodeId, at: Point, mods: Mods) {
+/// held, with the pointer of a link; tells `over` of another link, with where its hint goes.
+fn hover(tree: &mut quadra_tree::Tree, id: NodeId, at: Point, mods: Mods, (window, over): (Point, Over)) {
     let Some(w) = tree.widget_mut::<EditorWidget>(id) else { return };
     let offset = w.offset_at(at);
     let line = w.doc.buffer.line_of(offset);
@@ -94,6 +141,9 @@ fn hover(tree: &mut quadra_tree::Tree, id: NodeId, at: Point, mods: Mods) {
         .map(|u| (start + u.range.start..start + u.range.end, u.url))
         .find(|(range, _)| range.contains(&offset));
     let hot = mods.contains(Mods::CTRL) && link.is_some();
+    if w.link != link {
+        over.set(link.as_ref().map(|(_, url)| (window, Rc::from(url.as_str()))));
+    }
     if w.link != link || w.link_hot != hot {
         (w.link, w.link_hot) = (link, hot);
         tree.mark_paint(id);

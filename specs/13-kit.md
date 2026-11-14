@@ -1126,14 +1126,17 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   - **Links** (`.on_link(|url| ..)`): the URLs of the line under the pointer are found as
     it moves (`quadra_text::find_urls`, that line alone); with Ctrl held one is underlined
     and the pointer is a hand, and Ctrl and a press give its URL to the app and move no
-    cursor. Without the hook links are text.
+    cursor. Once the pointer has rested on one (Ctrl held or not), a hint under the pointer
+    says its URL and "(Ctrl-click to open)"; a press or another place hides it. Without the
+    hook links are text.
   - **The marks of a diff** (`.base(text)`): each line is marked against the base as added,
     changed or after lines removed (`marks(old, new)`, from the kit's `diff_lines`), found
     again after each change (ponytail: the whole text, against the changed lines only if
     large files with a base make typing slow); a bar beside the numbers, a short one above
     a line where some were removed.
-- Not yet: Shift-Enter in the query (the input submits on Enter whatever is held); the
-  hint over a link; the line at the top and scrolling to a line, for a preview that follows;
+- In the find bar's query Enter goes to the next match and Shift-Enter to the one before
+  (an input submits on Enter alone, and leaves Shift-Enter to what is around it).
+- Not yet: the line at the top and scrolling to a line, for a preview that follows;
   a glyph wider or narrower than its cells centred in them; what is inside `<script>` and
   `<style>` is plain text; regular expressions in JavaScript are not told from division.
 

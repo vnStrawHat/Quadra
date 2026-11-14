@@ -170,7 +170,8 @@ pub(super) fn bar(
             close();
             e.stop();
         }
-        Key::F3 => {
+        // Enter in the query is the next match; with Shift, the one before.
+        Key::F3 | Key::Enter if e.key == Key::F3 || e.mods.contains(Mods::SHIFT) => {
             if e.mods.contains(Mods::SHIFT) {
                 (step.1)()
             } else {

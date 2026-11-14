@@ -2,23 +2,23 @@
 //! blocks in a column, each a child of its own that stays while its source does.
 
 mod code;
+mod doc;
 mod hint;
 mod picture;
 mod table;
 
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::rc::Rc;
 
 use quadra_kit::{fonts, icon, icons, size, token};
 use quadra_layout::{Align as Across, Justify, Length};
-use quadra_reactive::{memo, signal};
+use quadra_reactive::signal;
 use quadra_text::find_urls;
-use quadra_tree::{NodeId, Role};
+use quadra_tree::Role;
 use quadra_ui::{
-    Div, IntoProp, MountCx, Prop, Span as Run, View, column, div, each, inline, inline_image, rich_text, row,
-    scroll_x, span, text,
+    Div, Span as Run, View, column, div, inline, inline_image, rich_text, row, scroll_x, span, text,
 };
 
 use crate::block::{Kind, parse};
@@ -27,6 +27,7 @@ use crate::mermaid::diagram;
 use crate::outline::plain;
 use crate::tex::formula;
 use code::code_box;
+pub use doc::{Markdown, Place, markdown};
 use table::Table;
 
 /// The size of the text of a document, and of the code in it.
@@ -38,33 +39,6 @@ const DEEPEST: usize = 12;
 
 type OnLink = Rc<dyn Fn(&str)>;
 
-pub struct Markdown {
-    source: Prop<String>,
-    on_link: Option<OnLink>,
-    base: Option<PathBuf>,
-}
-
-/// A document, rendered. The source is a property: when it changes, the blocks whose source
-/// did not change keep their nodes.
-pub fn markdown<M>(source: impl IntoProp<String, M>) -> Markdown {
-    Markdown { source: source.into_prop(), on_link: None, base: None }
-}
-
-impl Markdown {
-    /// Runs `f` with the target of a link when it is clicked with Ctrl held.
-    pub fn on_link(mut self, f: impl Fn(&str) + 'static) -> Self {
-        self.on_link = Some(Rc::new(f));
-        self
-    }
-
-    /// The folder the document is in: where its images are looked for when their paths
-    /// do not start at a root.
-    pub fn base(mut self, folder: impl Into<PathBuf>) -> Self {
-        self.base = Some(folder.into());
-        self
-    }
-}
-
 /// A block as the column knows it: by what it says, and which of those that say the same
 /// it is. How far it is from the one before may change under it.
 #[derive(Clone, PartialEq)]
@@ -74,11 +48,13 @@ struct Entry {
     kind: Rc<Kind>,
 }
 
-/// The blocks of a source. Blocks are 16 px apart, the items of one list 4.
-fn entries(source: &str) -> Vec<Entry> {
+/// The blocks of a source, and the line each starts on by its key. Blocks are 16 px apart,
+/// the items of one list 4.
+fn entries(source: &str) -> (Vec<Entry>, HashMap<u64, usize>) {
     let blocks = parse(source);
     let alone = blocks.len() == 1;
     let (mut seen, mut out, mut listed_before) = (HashMap::new(), Vec::<Entry>::new(), false);
+    let mut lines = HashMap::new();
     // The front matter says things about the document: it shows when there is nothing else.
     for block in blocks.into_iter().filter(|block| alone || !matches!(block.kind, Kind::Front { .. })) {
         let listed = matches!(block.kind, Kind::Item { .. });
@@ -91,10 +67,12 @@ fn entries(source: &str) -> Vec<Entry> {
         block.kind.hash(&mut hasher);
         let nth = seen.entry(hasher.finish()).or_insert(0u64);
         *nth += 1;
-        out.push(Entry { key: hasher.finish().wrapping_add(*nth), gap, kind: Rc::new(block.kind) });
+        let key = hasher.finish().wrapping_add(*nth);
+        lines.insert(key, block.line);
+        out.push(Entry { key, gap, kind: Rc::new(block.kind) });
         listed_before = listed;
     }
-    out
+    (out, lines)
 }
 
 /// A text of a document: its links are links while Ctrl is held, and say where they go when
@@ -257,25 +235,5 @@ fn block(kind: &Kind, on_link: &Option<OnLink>, base: Option<&Path>) -> Div {
             let table = Table { align: align.clone(), rows: rows.clone(), on_link: on_link.clone() };
             column().child(scroll_x(signal(0.0), row().min_width(Length::Fill).child(table)))
         }
-    }
-}
-
-impl View for Markdown {
-    fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (on_link, base) = (self.on_link, self.base);
-        let read: Box<dyn Fn() -> String> = match self.source {
-            Prop::Value(source) => Box::new(move || source.clone()),
-            Prop::Reactive(read) => read,
-        };
-        // ponytail: every block is a child, and a change costs the count of blocks; a list
-        // of the blocks that show when documents of tens of thousands of lines are read.
-        let blocks = memo(move || entries(&read()));
-        let shown = move |entry: quadra_reactive::Signal<Entry>| {
-            let kind = entry.with_untracked(|entry| entry.kind.clone());
-            let block = block(&kind, &on_link, base.as_deref());
-            column().padding_top(move || entry.with(|entry| entry.gap)).child(block)
-        };
-        let page = column().width(Length::Fill).text_color(token::TEXT).text_size(BODY).line_height(1.5);
-        each(move || blocks.get(), |entry| entry.key, shown).container(page).mount(cx)
     }
 }

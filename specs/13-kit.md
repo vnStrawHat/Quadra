@@ -919,9 +919,16 @@ What it reads and how it looks is behaviour/21. As built:
   pointer leaves it.
 - A table wider than the page, its columns at their least (their longest words), scrolls
   sideways; one that fits is as wide as the page.
-- Not yet: one selection over the blocks; where each block is, for an outline and for scrolling two
-  panes together; a list of the blocks that show, for documents of tens of thousands of
-  lines.
+- Where each block is: `.places(signal)` writes, after a layout that moved the blocks, each
+  block's source line, top and height from the top of the document (`Place`): for an
+  outline, and for two panes that scroll together (the other pane takes the line of the
+  place at its top). `.reveal(|| line)` brings the block a line is in into view, as little
+  as shows it.
+- `.scrolls(scroll_y)`: the document scrolls itself, its blocks the rows of a `virtual_list`
+  (each as high as it is, counted at 48 px until it is mounted): only the blocks that show
+  are mounted, so ten thousand sections mount a few dozen; its places are those of the
+  blocks mounted.
+- Not yet: one selection over the blocks.
 
 ## Code (`quadra-code`)
 

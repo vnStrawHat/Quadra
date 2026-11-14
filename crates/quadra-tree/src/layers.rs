@@ -4,8 +4,8 @@
 //! instance: only its transform changes. A scroll container's content is such a node, cut to
 //! its parent's box, and scrolling is its offset.
 
-use quadra_prim::{Affine, Point, Rect};
-use quadra_render::{LayerConstants, LayerId};
+use quadra_prim::{Affine, Point, Rect, Size};
+use quadra_render::{Backdrop, LayerConstants, LayerId};
 
 use crate::node::{NodeId, Pose, flag};
 use crate::tree::Tree;
@@ -18,6 +18,8 @@ pub(crate) struct LayerState {
     pub opacity: f32,
     /// How far the layer is turned about its middle, in degrees.
     pub turn: f32,
+    /// The blur of what is behind the node's box, in logical pixels: 0 none.
+    pub backdrop: f32,
     /// What the node's style says of where its paint goes (specs/05): over the rest.
     pub pose: Pose,
     /// Cut to the parent's padding box: the content of a scroll container.
@@ -41,6 +43,7 @@ impl LayerState {
             offset: Point::ZERO,
             opacity: 1.0,
             turn: 0.0,
+            backdrop: 0.0,
             pose: Pose::default(),
             clip_to_parent: false,
             marked: false,
@@ -160,6 +163,20 @@ impl Tree {
         }
     }
 
+    /// Blurs what is behind a node's box under it, by `blur` logical pixels; 0 stops. The
+    /// node becomes a layer: its constants say where the backdrop is taken.
+    pub fn set_backdrop(&mut self, id: NodeId, blur: f32) {
+        if blur > 0.0 {
+            self.make_layer(id, false);
+        }
+        let Some(state) = self.get_mut(id).and_then(|n| n.layer.as_mut()) else { return };
+        if state.backdrop != blur {
+            state.backdrop = blur;
+            self.recompose.push(id);
+            self.mark(id, flag::PAINT);
+        }
+    }
+
     /// The compose pass: gives the renderer the constants of the layers whose place, offset or
     /// opacity changed. No widget code runs.
     pub(crate) fn compose_pass(&mut self) {
@@ -217,6 +234,10 @@ impl Tree {
             let grown = Affine::translate(middle.x * (1.0 - k), middle.y * (1.0 - k)).then(Affine::scale(k));
             transform = transform.then(Affine::rotate_about(turn, middle)).then(grown);
         }
-        LayerConstants { transform, scissor, opacity: state.opacity * pose.opacity }
+        let backdrop = (state.backdrop > 0.0).then(|| {
+            let size = self.layout.rect(node.layout).size();
+            Backdrop { size: Size::new(size.width * s, size.height * s), blur: state.backdrop * s }
+        });
+        LayerConstants { transform, scissor, opacity: state.opacity * pose.opacity, backdrop }
     }
 }

@@ -29,6 +29,8 @@ struct Constants {
     instance_offset: u32,
     layer_turned: u32,
     pad: u32,
+    /// Where the layer's backdrop was copied from on the surface, and its texture's size.
+    backdrop: [f32; 4],
 }
 
 pub(crate) struct Pipeline {
@@ -121,7 +123,7 @@ impl Pipeline {
         context: &ID3D11DeviceContext,
         world: &World,
         viewport: [f32; 2],
-        start: u32,
+        (start, backdrop): (u32, [f32; 4]),
     ) -> Result<(), RenderError> {
         let t = world.transform;
         let constants = Constants {
@@ -132,6 +134,7 @@ impl Pipeline {
             instance_offset: start,
             layer_turned: !t.is_translation() as u32,
             pad: 0,
+            backdrop,
         };
         let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
         // SAFETY: a write-discard map of a dynamic buffer gives at least its ByteWidth, which

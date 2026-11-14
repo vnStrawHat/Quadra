@@ -6,6 +6,7 @@
 
 mod a11y;
 mod atlas;
+mod backdrop;
 mod clipboard;
 mod delivery;
 mod dwrite;

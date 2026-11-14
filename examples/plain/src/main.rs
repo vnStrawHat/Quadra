@@ -23,6 +23,16 @@ fn paints() -> quadra::Div {
         .child(boxed().gradient(Gradient::conic(0.0, [sky, rose, sky])).radius(20.0))
         .child(boxed().border(1.0).border_color(ink).border_style(BorderStyle::Dashed))
         .child(boxed().border(2.0).border_color(ink).border_style(BorderStyle::Dotted).radius(8.0))
+        // Frosted glass over the two gradients.
+        .child(
+            quadra::div()
+                .absolute()
+                .left(28.0)
+                .top(8.0)
+                .size(64.0, 24.0)
+                .bg(Color::WHITE.alpha(0.3))
+                .backdrop_blur(6.0),
+        )
 }
 
 fn main() -> quadra::Result<()> {

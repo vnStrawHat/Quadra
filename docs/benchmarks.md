@@ -19,6 +19,11 @@ scene with `BENCH_PHASES=1`, microseconds a frame:
 | document | 118 | 207 | 111 | 2 |
 | list | 41 | 67 | 123 | 3 |
 
+A box that blurs what is behind it (specs/07): a pane of 600 by 400 over a gradient filling
+1 200 by 800, offscreen on the same GPU, 300 frames: 59 µs a frame without the blur, 84 with
+a blur of 16 and 87 with 32. The copy and the mips cost 25 µs; the blur is taken again every
+frame drawn.
+
 So the one shader is not what costs a frame: the GPU's part is about one percent of a frame
 at 60 Hz in the heaviest scene, and shaders by class of instance wait until a scene shows otherwise. The
 headless paint pass of `grid` is as before the gradients and borders (178 to 180 µs).

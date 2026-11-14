@@ -227,6 +227,7 @@ impl Tree {
             }
             if resized {
                 self.mark(id, flag::PAINT);
+                self.recompose.push(id); // a backdrop is as large as the box
             }
         } else {
             // Positions in a layer are absolute: a node that moved takes its subtree along.

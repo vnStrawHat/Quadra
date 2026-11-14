@@ -105,8 +105,9 @@ impl PaintCx<'_> {
             bottom: snap_stroke(b.bottom),
             left: snap_stroke(b.left),
         };
-        let quad =
-            Quad { bounds: self.device(q.bounds), border_widths, radii: q.radii.scale(self.scale), ..q };
+        let (bounds, radii, backdrop) =
+            (self.device(q.bounds), q.radii.scale(self.scale), q.backdrop * self.scale);
+        let quad = Quad { bounds, border_widths, radii, backdrop, ..q };
         let before = self.out.len();
         push_quad(self.out, &quad, &self.clip);
         if self.keep && self.out.len() == before {

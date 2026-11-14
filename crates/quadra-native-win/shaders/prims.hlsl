@@ -15,13 +15,14 @@ struct Instance {
     float4 params;   // kind specific; .w = clip corner radius
     uint kind;       // 0 quad, 1 shadow, 2 mono, 3 poly, 4 line (5 marks a child layer: never drawn)
     uint slice;      // slice of the atlas texture array
-    uint flags;      // quad: 1 = gradient, 2 = border, 4 = dashed, 8 = dotted; mono and poly: 1 = text glyph
+    uint flags;      // quad: 1 = gradient, 2 = border, 4 = dashed, 8 = dotted, 16 = backdrop; mono and poly: 1 = text glyph
     uint reserved;
 };
 
 StructuredBuffer<Instance> instances : register(t0);
 Texture2DArray<float> mono_atlas : register(t1);
 Texture2DArray<float4> poly_atlas : register(t2);
+Texture2D<float4> backdrop : register(t3); // what is behind a box that blurs it, with mips
 SamplerState atlas_sampler : register(s0);
 
 cbuffer Constants : register(b0) {
@@ -32,6 +33,7 @@ cbuffer Constants : register(b0) {
     uint instance_offset;   // the first instance of the run
     uint layer_turned;      // 1 when the transform is more than a translation
     uint constants_pad;
+    float4 backdrop_rect;   // where the backdrop was copied from on the surface; its texture's size
 };
 
 struct VsOut {
@@ -150,12 +152,17 @@ float border_mark(Instance p, float2 px) {
     return saturate(period * 0.25 + 0.5 - edge);
 }
 
-float4 shade_quad(Instance p, float2 px) {
+float4 shade_quad(Instance p, float2 px, float2 screen) {
     float2 half_size = p.bounds.zw * 0.5;
     float2 center = p.bounds.xy + half_size;
     float coverage = saturate(0.5 - sdf_rrect(px, center, half_size, p.radii));
     float4 c = premul(p.color, 1);
     [branch] if (p.flags & 1) c = gradient(p, px - center, half_size); // HLSL's ?: runs both sides
+    [branch] if (p.flags & 16) { // the fill over a blur of what is behind: the mip of its block
+        float level = clamp(ceil(log2(max(2 * p.params.z, 1))), 0, 6);
+        float2 at = (screen - backdrop_rect.xy) / max(backdrop_rect.zw, 1);
+        c += backdrop.SampleLevel(atlas_sampler, at, level) * (1 - c.a);
+    }
     if (p.flags & 2) {
         float4 b = p.border; // t r b l
         // Sides without a border push the inner edge outside the box, so their
@@ -243,7 +250,7 @@ PsOut ps_main(VsOut i) {
     float4 c;
     float3 w = -1;
     if (p.kind == 0) {
-        c = shade_quad(p, i.px);
+        c = shade_quad(p, i.px, i.pos.xy);
     } else if (p.kind == 1) {
         c = shade_shadow(p, i.px);
     } else if (p.kind == 2) {

@@ -55,6 +55,8 @@ pub const FLAG_GRADIENT: u32 = 1;
 pub const FLAG_BORDER: u32 = 2;
 pub const FLAG_DASHED: u32 = 4;
 pub const FLAG_DOTTED: u32 = 8;
+/// The fill is laid over a blur of what is behind (`params[2]`, the blur).
+pub const FLAG_BACKDROP: u32 = 16;
 /// Sprite flag: text coverage, corrected and blended per channel.
 pub const FLAG_GLYPH: u32 = 1;
 
@@ -135,6 +137,8 @@ pub struct Quad {
     pub background: Color,
     /// Fills the quad over its background.
     pub gradient: Option<Ramp>,
+    /// The blur of what is behind, under the fill: 0 none. Its layer takes the backdrop.
+    pub backdrop: f32,
     pub border_widths: Edges,
     pub border_color: Color,
     pub border_style: BorderStyle,
@@ -149,7 +153,7 @@ impl Quad {
 
     /// Whether there is anything of the quad to see: a size, and a fill or a border.
     pub fn is_visible(&self) -> bool {
-        let filled = !self.background.is_transparent() || self.gradient.is_some();
+        let filled = !self.background.is_transparent() || self.gradient.is_some() || self.backdrop > 0.0;
         !self.bounds.is_empty() && (filled || self.has_border())
     }
 
@@ -167,6 +171,9 @@ impl Quad {
                 GradientKind::Conic(from) => (from, 3.0),
             };
             (i.uv, i.slice, i.flags) = (uv, slice, FLAG_GRADIENT);
+        }
+        if self.backdrop > 0.0 {
+            (i.params[2], i.flags) = (self.backdrop, i.flags | FLAG_BACKDROP);
         }
         if self.has_border() {
             i.color2 = self.border_color.to_array();

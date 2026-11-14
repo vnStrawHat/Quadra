@@ -182,6 +182,12 @@ impl Div {
         self.on_mount(move |tree, id| tree.set_gradient(id, Some(gradient)))
     }
 
+    /// Blurs what is behind the box under it, by `px`: frosted glass. A translucent
+    /// background tints it. The box becomes a layer.
+    pub fn backdrop_blur(self, px: f32) -> Self {
+        self.on_mount(move |tree, id| tree.set_backdrop(id, px))
+    }
+
     /// The shape the pointer has over the box and what it holds.
     pub fn cursor(self, cursor: Cursor) -> Self {
         self.on_mount(move |tree, id| tree.set_cursor(id, Some(cursor)))

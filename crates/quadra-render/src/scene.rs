@@ -24,6 +24,9 @@ pub struct World {
     /// In surface device pixels.
     pub scissor: Rect,
     pub opacity: f32,
+    /// On the first step of a layer that blurs what is behind it: its box on the surface, and
+    /// the blur. The backend takes the backdrop then, before the layer's first run.
+    pub backdrop: Option<(Rect, f32)>,
 }
 
 /// One step of drawing a scene.
@@ -126,7 +129,7 @@ impl Scene {
     /// Fills `out` with the steps that draw the scene on a surface of the given bounds.
     pub fn steps(&self, surface: Rect, out: &mut Vec<Step>) {
         out.clear();
-        let world = World { transform: Affine::IDENTITY, scissor: surface, opacity: 1.0 };
+        let world = World { transform: Affine::IDENTITY, scissor: surface, opacity: 1.0, backdrop: None };
         for &root in &self.roots {
             self.visit(root, &world, out, 0);
         }
@@ -142,16 +145,17 @@ impl Scene {
         if scissor.is_empty() || depth > MAX_DEPTH {
             return;
         }
-        let world = World {
-            transform: parent.transform.then(c.transform),
-            scissor,
-            opacity: parent.opacity * c.opacity,
-        };
-        let mut bound = false;
-        let run = |out: &mut Vec<Step>, bound: &mut bool, start: u32, end: u32| {
+        let transform = parent.transform.then(c.transform);
+        let backdrop = c.backdrop.map(|b| {
+            (transform.bbox(Rect::new(0.0, 0.0, b.size.width, b.size.height)).intersect(scissor), b.blur)
+        });
+        let world = World { transform, scissor, opacity: parent.opacity * c.opacity, backdrop: None };
+        let (mut bound, mut first) = (false, true);
+        let mut run = |out: &mut Vec<Step>, bound: &mut bool, start: u32, end: u32| {
             if end > start {
                 if !*bound {
-                    out.push(Step::Layer { id, world });
+                    let backdrop = if std::mem::take(&mut first) { backdrop } else { None };
+                    out.push(Step::Layer { id, world: World { backdrop, ..world } });
                     *bound = true;
                 }
                 out.push(Step::Run { start, end });

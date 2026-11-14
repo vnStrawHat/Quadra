@@ -59,6 +59,22 @@ apply as to any fill, in the same instance. A quad that is not a gradient does n
 than before. A node's gradient is set by `Tree::set_gradient` (`.gradient(..)` on a box);
 it is not a state variant.
 
+**A box can blur what is behind it** (`.backdrop_blur(px)`, `Tree::set_backdrop`): frosted
+glass under a panel. Such a node is a layer root, so the renderer knows where it starts: its
+layer's constants say the blur and the size of its box, and before the first run of that
+layer each frame the backend copies what is drawn so far under the box, padded by twice the
+blur and aligned to the blur's blocks on the surface, into a texture with mips, and makes
+the mips. The box's own quad (flag 16, the blur in `params.z`) samples that texture at the
+pixel's place, at the mip level of the blur, and lays its own fill over it: a translucent
+background tints the glass. This keeps the one pipeline: the blur is the mip chain, made by
+the GPU in one call, and no pass of a shader of its own. It is drawn again each frame that
+is drawn: a pane of 600 by 400 with a blur of 16 over a window of 1200 by 800 costs the GPU
+25 µs a frame (docs/benchmarks.md), so keeping it while nothing behind changed waits for a
+measure that says otherwise. Under a gradient the blur shows through its clear parts
+too. Blocks of the blur stay put on the surface, so content that scrolls under the glass
+moves under a still pattern. (A blur of passes, smoother than mips, when the look asks for
+it.)
+
 **A border is solid, dashed or dotted** (`BorderStyle`, `.border_style(..)` on a box, a
 paint value as its colour is). A pixel of the border goes by the side it is nearest to, as
 much of that side's width as it is away; along the middle of the border a dash is three
@@ -87,7 +103,7 @@ its place.
 
 A node becomes a layer root when it is: a window root or overlay root; scroll content; a
 virtual list; a surface widget; a node with a transform or an opacity that is animating or not
-the identity; a node marked `.layer()`. A node stops being one when the reason ends. Promotion
+the identity; a node that blurs what is behind it; a node marked `.layer()`. A node stops being one when the reason ends. Promotion
 and demotion repaint that subtree once.
 
 **A scroll container's content is painted only near what shows.** The layer keeps a band, in

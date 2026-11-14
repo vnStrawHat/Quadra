@@ -10,6 +10,7 @@ use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D11::D3D11_VIEWPORT;
 
 use crate::atlas::AtlasTexture;
+use crate::backdrop::Backdrop;
 use crate::gpu::{Device, Gpu};
 use crate::layers::LayerBuffers;
 use crate::pacing::Pacing;
@@ -28,6 +29,8 @@ pub struct D3d11Renderer {
     /// The glyph and image atlases, as texture arrays.
     coverage: Option<AtlasTexture>,
     color: Option<AtlasTexture>,
+    /// What is behind a box that blurs it, kept for the next one.
+    backdrop: Option<Backdrop>,
     steps: Vec<Step>,
     stats: RenderStats,
     /// What frames cost the GPU.
@@ -51,6 +54,7 @@ impl D3d11Renderer {
             layers: LayerBuffers::default(),
             coverage: None,
             color: None,
+            backdrop: None,
             steps: Vec::new(),
             stats: RenderStats::default(),
             timing: Timing::default(),
@@ -161,11 +165,23 @@ impl Renderer for D3d11Renderer {
             [self.coverage.as_ref().map(|t| t.view.clone()), self.color.as_ref().map(|t| t.view.clone())];
         // SAFETY: the views are alive for the call; a slot without a texture reads as zero.
         unsafe { self.gpu.context.PSSetShaderResources(1, Some(&atlases)) };
-        let mut current = None;
+        let (mut current, mut behind) = (None, [0.0; 4]);
         let mut result = Ok(());
         for step in &steps {
             match *step {
                 Step::Layer { id, world } => {
+                    behind = match world.backdrop {
+                        None => [0.0; 4],
+                        Some(backdrop) => {
+                            match Backdrop::take(&mut self.backdrop, &self.gpu, &target, size, backdrop) {
+                                Ok(behind) => behind,
+                                Err(e) => {
+                                    result = Err(e);
+                                    break;
+                                }
+                            }
+                        }
+                    };
                     let instances = match self.layers.sync(&self.gpu, scene, id, &mut self.stats) {
                         Ok(view) => Some(view),
                         Err(e) => {
@@ -184,7 +200,9 @@ impl Renderer for D3d11Renderer {
                 }
                 Step::Run { start, end } => {
                     let Some(world) = &current else { continue };
-                    if let Err(e) = self.gpu.pipeline.set_run(&self.gpu.context, world, viewport, start) {
+                    if let Err(e) =
+                        self.gpu.pipeline.set_run(&self.gpu.context, world, viewport, (start, behind))
+                    {
                         result = Err(e);
                         break;
                     }
@@ -233,7 +251,7 @@ impl Renderer for D3d11Renderer {
             None => Device::new(software)?,
         });
         self.layers.clear();
-        (self.coverage, self.color, self.timing) = (None, None, Timing::default());
+        (self.coverage, self.color, self.timing, self.backdrop) = (None, None, Timing::default(), None);
         for made_for in made_for {
             let surface = made_for.map(|(target, size)| self.make_surface(target, size)).transpose()?;
             self.surfaces.push(surface);

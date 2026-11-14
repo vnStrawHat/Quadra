@@ -3,7 +3,7 @@
 
 use std::ops::Range;
 
-use quadra_prim::{Affine, Rect};
+use quadra_prim::{Affine, Rect, Size};
 
 use crate::instance::Instance;
 
@@ -33,11 +33,21 @@ pub struct LayerConstants {
     /// What the layer is cut to, or `None`.
     pub scissor: Option<Rect>,
     pub opacity: f32,
+    /// What is behind the layer's box is blurred under it (specs/07, "Instances").
+    pub backdrop: Option<Backdrop>,
+}
+
+/// A blur of what is behind a layer: its box, from the layer's origin, and the blur, in
+/// device pixels.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Backdrop {
+    pub size: Size,
+    pub blur: f32,
 }
 
 impl Default for LayerConstants {
     fn default() -> LayerConstants {
-        LayerConstants { transform: Affine::IDENTITY, scissor: None, opacity: 1.0 }
+        LayerConstants { transform: Affine::IDENTITY, scissor: None, opacity: 1.0, backdrop: None }
     }
 }
 

@@ -59,6 +59,7 @@ fn a_layer_is_moved_cut_and_faded_by_its_constants() {
         transform: Affine::translate(20.0, 20.0),
         scissor: Some(Rect::new(20.0, 20.0, 10.0, 30.0)), // only the left third shows
         opacity: 1.0,
+        backdrop: None,
     };
     let pixels = draw(&mut r, &mut scene);
     assert_eq!((at(&pixels, 4, 4), at(&pixels, 25, 25), at(&pixels, 25, 45)), (RED, BLUE, BLUE));

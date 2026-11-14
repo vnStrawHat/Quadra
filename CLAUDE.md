@@ -198,7 +198,7 @@ an input (`Semantics::selection`, a text run in the bridge; `SemanticAction::Sel
 **R5, app services, has started** (specs/15, 16): `App::dirs(AppDirs::for_app(..))` (nothing is written without it), `Settings`
 (`value(key, default)` is a signal; debounced, atomic), `quadra_app::log`, crash reports of panics, `quadra_app::time` (`Date`, `DateTime`,
 `local_now()` by `Platform::utc_offset`), the app's language (`I18n`, `App::i18n`, `t`, `t_with`; `language()` taken at build time for what
-runs again; `Locale` formats in Vietnamese and English), window state (`WindowOptions::remember(key)`), pages (`router(first)`, `.view(..)`; Alt-Left/Right) and closing (`.on_close(|| bool)`, `window().close_now()`). Next: `quadra-shell`, packaging, API docs.
+runs again; `Locale` formats in Vietnamese and English), window state (`WindowOptions::remember(key)`), pages (`router(first)`, `.view(..)`; Alt-Left/Right) and closing (`.on_close(|| bool)`, `window().close_now()`); `quadra-shell` has `Dialogs`, `Opener`, `FakeShell`, `install(app)` (`App::provide`). Next: the tray, one instance, crash reports, packaging, API docs.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its
 height does not depend on it; a new painted band visits every node of its layer.

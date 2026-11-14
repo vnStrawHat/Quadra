@@ -9,8 +9,9 @@ crate it has OS code and `unsafe` (01, R16), and an app that uses none of it lin
 
 Each service is a trait with a Windows implementation and a fake in the crate that records
 the calls and answers what a test queued (`FakeShell`). Views reach the app's through
-context (`provide`, `use_context::<Rc<dyn Dialogs>>()` and the like); `quadra_shell::install`
-provides the Windows ones. No test opens a real dialog, a real tray icon or a real
+context (`App::provide`; `dialogs()`, `opener()`, taken while a view is built);
+`quadra_shell::install(app)` provides the Windows ones, `FakeShell::provide` a fake in a
+test's scope. No test opens a real dialog, a real tray icon or a real
 notification: they are manual checks (00, R5).
 
 ## Dialogs
@@ -20,15 +21,19 @@ notification: they are manual checks (00, R5).
   `save_file(&FileDialog) -> Option<PathBuf>`, `pick_folder(&FileDialog) ->
   Option<PathBuf>`, `message(&Message) -> Answer` (`Message { title, text, kind: Info |
   Warning | Error | Question }`; `Answer::{Ok, Yes, No, Cancel}`).
-- They are modal over the window that asks and run on the UI thread, which they hold until
-  they are answered, as the OS dialogs do: the OS's own loop runs meanwhile, so the app's
-  windows still paint. The UI thread is a single-threaded COM apartment from the start of
-  the native platform, which these dialogs need.
+- They are modal over the app's active window and run on the UI thread, which they hold
+  until they are answered, as the OS dialogs do. The handler that asked is still running,
+  so what the platform delivers meanwhile waits for it: the app's windows keep their last
+  frame. ponytail: a window resized behind a dialog paints when it is answered; dialogs
+  that do not hold the handler when that matters. A dialog makes the UI thread a
+  single-threaded COM apartment if it is none yet, which these dialogs need.
 
 ## Opening
 
 `Opener::open(target)` opens a file in the app the user chose for it, or a link in the
-browser; `reveal(path)` shows a file in the file manager, selected.
+browser; `reveal(path)` shows a file in the file manager, selected. What opens a program
+opens it: a link from content that is not the user's goes through
+`quadra_text::url_openable` first.
 
 ## Tray and notifications
 

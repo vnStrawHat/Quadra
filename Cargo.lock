@@ -265,6 +265,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-shell"
+version = "0.1.0"
+dependencies = [
+ "quadra-app",
+ "quadra-platform",
+ "quadra-reactive",
+ "quadra-render",
+ "quadra-text",
+ "quadra-ui",
+ "windows",
+ "windows-core",
+]
+
+[[package]]
 name = "quadra-testing"
 version = "0.1.0"
 dependencies = [

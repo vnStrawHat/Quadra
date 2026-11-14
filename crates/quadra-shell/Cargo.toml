@@ -1,0 +1,33 @@
+[package]
+name = "quadra-shell"
+description = "Quadra's services of the OS beyond windows: dialogs, opening, the tray, one instance, crash reports"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# The other crate that may hold unsafe code (specs/01, R16): it does not inherit the
+# workspace lints, which forbid it.
+
+[dependencies]
+quadra-app = { path = "../quadra-app" }
+quadra-reactive = { path = "../quadra-reactive" }
+quadra-render = { path = "../quadra-render" }
+windows-core = "0.62"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dev-dependencies]
+quadra-platform = { path = "../quadra-platform" }
+quadra-text = { path = "../quadra-text" }
+quadra-ui = { path = "../quadra-ui" }
+
+# Explicitly not inheriting the workspace lints (see above).
+[lints]

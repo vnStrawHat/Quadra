@@ -71,6 +71,13 @@ impl<R: Renderer> App<R> {
         self
     }
 
+    /// Gives every view of the app `value` in its context: a service of the OS
+    /// (`quadra-shell`), the app's own state.
+    pub fn provide<T: Clone + 'static>(self, value: T) -> App<R> {
+        self.root.run(|| provide(value));
+        self
+    }
+
     /// The arguments the app was started with, after the program's name.
     pub fn args(&self) -> &[String] {
         &self.args

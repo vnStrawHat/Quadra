@@ -161,7 +161,8 @@ impl Tree {
                 break;
             }
             self.stats.bindings_run += due.len() as u32;
-            due.into_iter().for_each(|binding| binding.run());
+            // One batch: the effects their writes wake run once, after all of them.
+            batch(|| due.into_iter().for_each(|binding| binding.run()));
             self.stats.writes += ops.len() as u32;
             ops.into_iter().for_each(|op| self.apply(op));
         }

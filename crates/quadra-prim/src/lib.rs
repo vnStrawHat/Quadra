@@ -7,8 +7,10 @@ mod affine;
 mod color;
 mod ease;
 mod geom;
+mod hasher;
 
 pub use affine::Affine;
 pub use color::Color;
 pub use ease::Ease;
 pub use geom::{Corners, Edges, Point, Rect, Size};
+pub use hasher::{FastBuild, FastHasher};

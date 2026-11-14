@@ -7,6 +7,23 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-14 — the grid's update and layout (on a2ea8cd plus this commit)
+
+`tools/bench.sh grid`, headless, microseconds a frame (600 cells whose number and colour
+change every frame):
+
+| Pass | Before | Now | What changed |
+|---|---|---|---|
+| update | 239 | 226 | The bindings that are due run in one batch: the runtime flushes once, not once a binding |
+| layout | 263 | 204 | A text that changes keeps the faces and metrics of its style (they were looked up twice a shaping); the places of a shaping's glyphs are a buffer of the text system, not an allocation; the lookups by face use the fast hasher (moved to `quadra-prim`) |
+| paint | 180 | 180 | nothing: about 185 ns a text of five glyphs, a lookup and an instance a glyph |
+
+Where the update's time goes (measured by timers in the pass, then removed): 25 µs telling 600
+memos and their 1,200 bindings, 155 µs running them (the scene formats 600 floats), 55 µs
+applying the 1,200 writes. A text is measured three times a frame (its base, its height at its
+width, its place); the first shapes it (300 ns), the two others are 30 ns. Merging the
+runtime's borrows in `graph::update` was tried and was slower.
+
 ## 2026-11-14 — the code editor (on b0d43da plus this commit)
 
 The editor's scenes of the bench app (`bench/compare/src/editor.rs`), headless with real text

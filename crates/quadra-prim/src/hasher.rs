@@ -1,4 +1,4 @@
-//! A fast hasher for small keys the program makes itself (glyph keys). The standard hasher
+//! A fast hasher for small keys the program makes itself (glyph keys, faces). The standard hasher
 //! resists keys chosen by an attacker, which costs most of a glyph lookup; these keys need no
 //! such thing.
 

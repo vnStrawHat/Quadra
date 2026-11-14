@@ -7,7 +7,6 @@
 
 mod atlas;
 mod gradient;
-mod hasher;
 mod instance;
 mod layer;
 mod null;
@@ -18,7 +17,6 @@ mod stroke;
 
 pub use atlas::{Atlas, AtlasStats, Tile, TileRef};
 pub use gradient::{Gradient, GradientKind, RAMP};
-pub use hasher::{FastBuild, FastHasher};
 pub use instance::{
     BorderStyle, Clip, FLAG_BACKDROP, FLAG_BORDER, FLAG_DASHED, FLAG_DOTTED, FLAG_GLYPH, FLAG_GRADIENT,
     Instance, Kind, Line, LineMode, Quad, Ramp, Shadow, Sprite, push_quad,
@@ -26,6 +24,7 @@ pub use instance::{
 pub use layer::{Backdrop, Dirty, Layer, LayerConstants, LayerId, Mask, Rebuild};
 pub use null::NullRenderer;
 pub use packing::{AtlasCore, AtlasKind, TileRect, Upload};
+pub use quadra_prim::{FastBuild, FastHasher};
 pub use renderer::{DeviceSize, Pixels, RenderError, RenderStats, Renderer, SurfaceId, SurfaceTarget};
 pub use scene::{Scene, SceneId, Step, World};
 pub use stroke::stroke;

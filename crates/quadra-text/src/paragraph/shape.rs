@@ -14,7 +14,9 @@ fn token_end(bytes: &[u8], i: usize) -> usize {
 }
 
 impl Paragraph {
-    pub(super) fn shape(&mut self, ts: &mut TextSystem) {
+    /// The faces of the runs and the metrics of the lines: what the style and the runs say,
+    /// whatever the text. Then the text is shaped.
+    pub(super) fn restyle(&mut self, ts: &mut TextSystem) {
         (self.ascent, self.descent) = ts.line_metrics(&self.style);
         self.shaped.clear();
         for (end, says) in &self.runs {
@@ -22,12 +24,18 @@ impl Paragraph {
             self.shaped.push((*end, ts.face_for(&style), style.size, says.advance));
         }
         self.shaped.push((usize::MAX, ts.face_for(&self.style), self.style.size, None));
+        self.shape(ts);
+    }
+
+    pub(super) fn shape(&mut self, ts: &mut TextSystem) {
         self.glyphs.clear();
         self.tokens.clear();
         self.wrapped_at = None;
         let bytes = self.text.as_bytes();
         // Where each byte's first glyph starts: clusters need not come in order.
-        let mut first_x = vec![f32::NAN; bytes.len()];
+        let mut first_x = std::mem::take(&mut ts.firsts);
+        first_x.clear();
+        first_x.resize(bytes.len(), f32::NAN);
         let (mut i, mut x, mut run) = (0, 0.0, 0);
         while i < bytes.len() {
             let end = token_end(bytes, i);
@@ -81,6 +89,7 @@ impl Paragraph {
             at = next_grapheme(&self.text, at);
         }
         self.stops.push((bytes.len(), x));
+        ts.firsts = first_x;
         self.bidi = ts.bidi_levels(&self.text);
     }
 }

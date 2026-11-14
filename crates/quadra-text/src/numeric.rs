@@ -5,6 +5,8 @@
 
 use std::collections::HashMap;
 
+use quadra_prim::FastBuild;
+
 use crate::system::Word;
 use crate::types::{FaceId, ShapedGlyph, TextBackend};
 
@@ -22,9 +24,9 @@ fn index(byte: u8) -> Option<usize> {
 pub(crate) struct Numeric {
     /// Per face: the numbers asked for so far, and, once there were enough of them to be
     /// worth the check, whether its numbers may be composed.
-    faces: HashMap<FaceId, (u32, Option<bool>)>,
+    faces: HashMap<FaceId, (u32, Option<bool>), FastBuild>,
     /// Per face and size: the glyph of each character, shaped alone.
-    singles: HashMap<(FaceId, u32), [ShapedGlyph; 17]>,
+    singles: HashMap<(FaceId, u32), [ShapedGlyph; 17], FastBuild>,
 }
 
 fn single(backend: &mut dyn TextBackend, at: usize, face: FaceId, size: f32) -> Option<ShapedGlyph> {

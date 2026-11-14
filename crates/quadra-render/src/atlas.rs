@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
 
-use crate::hasher::FastBuild;
 use crate::packing::{AtlasCore, AtlasKind, TileRect};
+use quadra_prim::FastBuild;
 
 /// A rectangle of an atlas and what its owner knows about it (a glyph's offsets).
 #[derive(Debug)]

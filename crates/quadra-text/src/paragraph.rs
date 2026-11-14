@@ -124,7 +124,7 @@ impl Paragraph {
             ascent: 0.0,
             descent: 0.0,
         };
-        p.shape(ts);
+        p.restyle(ts);
         p
     }
 
@@ -153,7 +153,7 @@ impl Paragraph {
             return false;
         }
         self.style = style.clone();
-        self.shape(ts);
+        self.restyle(ts);
         true
     }
 

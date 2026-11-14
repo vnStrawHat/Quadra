@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use quadra_prim::Rect;
+use quadra_prim::{FastBuild, Rect};
 
 use crate::bidi::{has_rtl, reads_rtl};
 use crate::numeric::Numeric;
@@ -66,20 +66,24 @@ impl WordCache {
 pub struct TextSystem {
     backend: Box<dyn TextBackend>,
     default_family: Rc<str>,
-    faces: HashMap<FontKey, FaceId>,
+    faces: HashMap<FontKey, FaceId, FastBuild>,
     words: WordCache,
     numeric: Numeric,
     /// Where the ink of glyphs is, by face, glyph and size.
     inks: HashMap<(FaceId, u16, u32), Rect>,
     pub(crate) stats: TextStats,
+    /// What shaping a paragraph uses for a while and gives back: where each byte's glyphs
+    /// start.
+    pub(crate) firsts: Vec<f32>,
 }
 
 impl TextSystem {
     pub fn new(backend: Box<dyn TextBackend>) -> TextSystem {
         let default_family = Rc::from(backend.default_family());
         let words = WordCache { current: Words::new(), previous: Words::new(), count: 0, limit: 16_384 };
-        let (faces, numeric, stats) = (HashMap::new(), Numeric::default(), TextStats::default());
-        TextSystem { backend, default_family, faces, words, numeric, inks: HashMap::new(), stats }
+        let (faces, numeric, stats) = (HashMap::default(), Numeric::default(), TextStats::default());
+        let inks = HashMap::new();
+        TextSystem { backend, default_family, faces, words, numeric, inks, stats, firsts: Vec::new() }
     }
 
     /// How many shaped words the cache may hold (16,384 unless set).

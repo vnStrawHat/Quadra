@@ -407,14 +407,21 @@ As built so far:
     line shows. A fold of one line is not made. Other texts close the folds.
   - Rows are those of a `uniform_list`, in the mono face, 18 px each: a text of a hundred
     thousand lines costs what the rows that show cost, after the comparison. A long line is
-    cut at the edge of its half; a tab is four spaces.
-  - To a reader: a list named "Diff", and each line an item named by what it is and says
-    ("Removed: ..", "Added: ..", or the line); a fold is a button.
-  - Not yet: scrolling sideways and wrapping; a selection and copying; going to the next
-    change by a key; pairing the lines of a run by how alike they are; words that changed
+    cut at the edge of its half and the wheel turned sideways, or with Shift, moves what
+    every line says (the numbers stay); a tab is four spaces.
+  - Texts of 20 000 lines or more, both together, are compared on the pool (13 ms for
+    100 000 lines of which 700 changed): until the script comes back the last one shows,
+    and a newer text cancels it.
+  - Rows are selected as a table's are (`quadra_base::table::Sheet` of one column): a click,
+    Shift and Ctrl, the arrows; Ctrl-C copies them as a unified diff writes them (` `, `-`,
+    `+` before each line; a row side by side is its two lines). F7 and Shift-F7
+    (`NextChange`, `PreviousChange`) select the first row of the next run of changes, or
+    of the one before, and scroll to it.
+  - To a reader: a table named "Diff", a row for each row, and each line a cell named by
+    what it is and says ("Removed: ..", "Added: ..", or the line); a fold is a button.
+  - Not yet: wrapping; pairing the lines of a run by how alike they are; words that changed
     in several places of a line; the colours of code in the lines; the linear-space search
-    for texts far apart; the comparison off the thread of the window (13 ms for 100 000
-    lines of which 700 changed).
+    for texts far apart.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

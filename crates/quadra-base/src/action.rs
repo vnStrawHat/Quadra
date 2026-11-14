@@ -88,6 +88,20 @@ impl Action for Copy {
     const NAME: &'static str = "kit::copy";
 }
 
+/// To the next run of changes, and to the one before: F7 and Shift-F7 in a diff.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NextChange;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PreviousChange;
+
+impl Action for NextChange {
+    const NAME: &'static str = "kit::next_change";
+}
+
+impl Action for PreviousChange {
+    const NAME: &'static str = "kit::previous_change";
+}
+
 /// The key contexts of what holds a number: a slider, which every arrow steps, and a number
 /// input, where left and right are the caret's.
 pub const SLIDER: &str = "slider";
@@ -172,6 +186,8 @@ pub fn keymap() -> Keymap {
     keymap.bind_in(TABLE, "shift-up", ExtendPrevious).expect(well_formed);
     // A tree does nothing with it: what is around it copies what the selected row stands for.
     keymap.bind_in(TABLE, "ctrl-c", Copy).expect(well_formed);
+    keymap.bind_in(TABLE, "f7", NextChange).expect(well_formed);
+    keymap.bind_in(TABLE, "shift-f7", PreviousChange).expect(well_formed);
     keymap.bind_in(TREE, "ctrl-c", Copy).expect(well_formed);
     for context in [MENU, TREE] {
         keymap.bind_in(context, "space", Confirm).expect(well_formed);

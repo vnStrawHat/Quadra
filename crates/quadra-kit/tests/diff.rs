@@ -25,7 +25,7 @@ fn page(old: &str) -> (Harness, Signal<String>, Signal<DiffMode>) {
 /// The lines that show, from the top and then from the left: where each starts, and its name.
 fn lines(h: &Harness) -> Vec<(f32, f32, String)> {
     let tree = h.tree.semantic_tree();
-    let lines = tree.nodes.iter().filter(|n| n.semantics.role == Role::ListItem);
+    let lines = tree.nodes.iter().filter(|n| n.semantics.role == Role::Cell);
     let mut lines: Vec<_> = lines.map(|n| (n.bounds.y, n.bounds.x, n.semantics.name.clone())).collect();
     lines.sort_by(|a, b| a.partial_cmp(b).unwrap());
     lines
@@ -134,6 +134,7 @@ fn texts_of_a_hundred_thousand_lines_cost_what_the_rows_that_show_cost() {
     let mut h = Harness::new();
     h.tree.set_theme(Rc::new(dark().theme()));
     h.mount(move || quadra_kit::root().child(diff(old, new).mode(mode)));
+    h.settle(); // compared on the pool: so many lines would hold a frame
     h.frame();
     // Some thirty-four rows of a few nodes each, of the 100 001 there are.
     let mounted = h.tree.len();
@@ -143,4 +144,45 @@ fn texts_of_a_hundred_thousand_lines_cost_what_the_rows_that_show_cost() {
     let (stats, _) = h.frame();
     assert!(stats.nodes_laid_out < 3000 && h.tree.len() < mounted * 2, "{stats:?}");
     assert_eq!(names(&h)[..2], ["line 0", "line 0"]);
+}
+
+#[test]
+fn rows_are_selected_and_copied_and_f7_goes_to_the_next_change() {
+    let (mut h, _, mode) = page(OLD);
+    h.get_by_role(Role::Table, "Diff").focus();
+    let copied = |h: &mut Harness| {
+        h.key(Key::C, Mods::CTRL);
+        h.clipboard.read_text().unwrap_or_default()
+    };
+    // F7 selects the first row of a run of changes; Shift and an arrow, the next one too.
+    h.key(Key::F7, Mods::NONE);
+    h.key(Key::Down, Mods::SHIFT);
+    assert_eq!(copied(&mut h), "-    let x = 1;\n+    let x = 22;");
+    h.key(Key::F7, Mods::NONE);
+    assert_eq!(copied(&mut h), "+    done();");
+    h.key(Key::F7, Mods::SHIFT);
+    assert_eq!(copied(&mut h), "-    let x = 1;");
+    // Side by side, a row is both halves; a click selects it.
+    mode.set(DiffMode::SideBySide);
+    h.frame();
+    h.get_by_text("Removed:     let x = 1;").click();
+    assert_eq!(copied(&mut h), "-    let x = 1;\n+    let x = 22;");
+}
+
+#[test]
+fn the_wheel_with_shift_moves_what_the_lines_say_and_not_their_numbers() {
+    let long = |c: char| format!("{}{c}{}\n", "x".repeat(30), "x".repeat(200));
+    let (old, new) = (long('1'), long('2'));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || quadra_kit::root().child(diff(old, new)));
+    h.frame();
+    let ink = dark().color(token::ERROR).alpha(0.3);
+    let (before, numbers) = (filled(&h, ink), lines(&h));
+    let at = quadra_prim::Point::new(300.0, 9.0);
+    h.tree.wheel(quadra_prim::Point::new(0.0, -1.0), false, at, Mods::SHIFT);
+    h.frame();
+    let after = filled(&h, ink);
+    assert!(after.len() == 1 && after[0].0 < before[0].0, "{before:?} {after:?}");
+    assert_eq!(lines(&h), numbers); // the rows stay where they were
 }

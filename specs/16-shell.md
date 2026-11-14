@@ -7,8 +7,13 @@ crate it has OS code and `unsafe` (01, R16), and an app that uses none of it lin
 
 ## Traits and fakes
 
-Each service is a trait with a Windows implementation and a fake in the crate that records
-the calls and answers what a test queued (`FakeShell`). Views reach the app's through
+Each service is a trait with an implementation for each OS and a fake in the crate that
+records the calls and answers what a test queued (`FakeShell`). One crate holds every OS:
+the traits, their types and the fake are the same everywhere, and each OS has a module
+built only for it (`src/win/`, `#[cfg(windows)]`, with the `windows` crate a dependency of
+that target alone), which gives `install`, `single_instance` and `crash_reports` of the
+same signatures. Another OS is another module (`src/mac/`), not another crate; the
+platform and renderer are crates by OS (`quadra-native-win`) because they are far larger. Views reach the app's through
 context (`App::provide`; `dialogs()`, `opener()`, taken while a view is built);
 `quadra_shell::install(app)` provides the Windows ones, `FakeShell::provide` a fake in a
 test's scope. No test opens a real dialog, a real tray icon or a real

@@ -1,26 +1,26 @@
 //! What an app asks of the OS beyond windows (specs/16): dialogs, opening files and links,
 //! the tray and notifications, one instance, reports of crashes that are no panic. Each
-//! service is a trait with a Windows implementation and a fake that tests drive
-//! ([`FakeShell`]); views find the app's in their context.
+//! service is a trait with an implementation for each OS and a fake that tests drive
+//! ([`FakeShell`]); views find the app's in their context. What is here outside an OS's
+//! module is the same on every OS; an OS's module, `win` for now, is built only for it.
 
-mod crash;
 mod fake;
-mod instance;
-mod tray;
+#[cfg(windows)]
 mod win;
 
 use std::path::PathBuf;
 use std::rc::Rc;
 
+#[cfg(windows)]
 use quadra_app::App;
-use quadra_async::Sender;
+use quadra_async::{Inbox, Sender};
 use quadra_reactive::expect;
+#[cfg(windows)]
 use quadra_render::Renderer;
 
-pub use crash::crash_reports;
 pub use fake::FakeShell;
-pub use instance::{Instance, Launch, single_instance};
-pub use win::WinShell;
+#[cfg(windows)]
+pub use win::{WinShell, crash_reports, single_instance};
 
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,
 /// `("Images", "*.png;*.jpg")`), whether several may be chosen, and where it starts.
@@ -149,8 +149,24 @@ pub trait TrayIcon {
     fn set_tooltip(&mut self, tooltip: &str);
 }
 
+/// What a later start of the app asked: the folder it was started in, and its arguments.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Launch {
+    pub folder: PathBuf,
+    pub args: Vec<String>,
+}
+
+pub enum Instance {
+    /// This process is the app's first: later starts arrive here, on the UI thread
+    /// (`.on_data(..)` in a view).
+    First(Inbox<Launch>),
+    /// Another process is: it was given this one's arguments, and this one ends.
+    Second,
+}
+
 /// Gives the app's views the OS's dialogs, opener and tray ([`dialogs`], [`opener`],
 /// [`tray`]).
+#[cfg(windows)]
 pub fn install<R: Renderer>(app: App<R>) -> App<R> {
     let shell = Rc::new(WinShell);
     let app = app.provide::<Rc<dyn Dialogs>>(shell.clone()).provide::<Rc<dyn Opener>>(shell.clone());

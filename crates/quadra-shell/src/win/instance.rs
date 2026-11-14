@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 
-use quadra_async::{Inbox, Sender, inbox};
+use quadra_async::{Sender, inbox};
 use windows::Win32::Foundation::{ERROR_ALREADY_EXISTS, GetLastError, HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::DataExchange::COPYDATASTRUCT;
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -15,20 +15,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{HSTRING, w};
 
-/// What a later start of the app asked: the folder it was started in, and its arguments.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Launch {
-    pub folder: PathBuf,
-    pub args: Vec<String>,
-}
-
-pub enum Instance {
-    /// This process is the app's first: later starts arrive here, on the UI thread
-    /// (`.on_data(..)` in a view).
-    First(Inbox<Launch>),
-    /// Another process is: it was given this one's arguments, and this one ends.
-    Second,
-}
+use crate::{Instance, Launch};
 
 /// The mark of what this module sends, so a message of another kind is not read as one.
 const LAUNCH: usize = 0x5155_4144;

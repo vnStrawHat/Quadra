@@ -1,5 +1,6 @@
 //! One instance (specs/16): the first to ask is the first; a later start, here of the same
 //! process, hands it its folder and arguments, which arrive on the UI thread.
+#![cfg(windows)]
 
 use std::cell::RefCell;
 use std::rc::Rc;

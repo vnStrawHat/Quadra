@@ -1,5 +1,13 @@
-//! The Windows shell (specs/16): the common file dialogs, the message box, and opening by
-//! the shell. Never run by a test: they are manual checks.
+//! The Windows shell (specs/16): the common file dialogs, the message box, opening by the
+//! shell, the tray, one instance and crash reports. What shows something to the user is
+//! never run by a test: those are manual checks.
+
+mod crash;
+mod instance;
+mod tray;
+
+pub use crash::crash_reports;
+pub use instance::single_instance;
 
 use std::path::{Path, PathBuf};
 
@@ -19,10 +27,10 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{HSTRING, Interface, PCWSTR, w};
 
-use crate::tray::WinTray;
 use crate::{
     Answer, Dialogs, FileDialog, Message, MessageKind, Opener, Tray, TrayEvent, TrayIcon, TrayImage,
 };
+use tray::WinTray;
 
 /// The shell of Windows. The dialogs make the UI thread a single-threaded COM apartment
 /// when it is none yet, which they need.

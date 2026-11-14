@@ -68,8 +68,11 @@ of the app; the process then ends as it would have.
 
 ## Packaging
 
-`tools/package.sh <example>` builds the release binary of an example with a manifest of the
-application (per-monitor DPI awareness, the UTF-8 code page, version 6 of the common
-controls, which the dialogs use) embedded by the linker, and puts it with its assets in
-`target/package/<name>/`. The gallery is packaged so. ponytail: no installer, version
+`tools/package.sh <example>` builds the release binary of an example with
+`tools/app.manifest` (per-monitor DPI awareness, the UTF-8 code page, Windows 10 and later,
+version 6 of the common controls, which the dialogs use) embedded by the linker
+(`cargo rustc` with `/MANIFEST:EMBED /MANIFESTINPUT:`, so only the final crate is linked
+again), and puts it in `target/package/<name>/`: fonts and images are in the binary, so it
+is alone there. The script fails when the manifest is not in the binary. The gallery is
+packaged so. ponytail: no installer, version
 resource or icon of the executable yet; an MSIX package when an app ships.

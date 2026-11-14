@@ -53,6 +53,7 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
 | The bench app | `tools/bench.sh` builds `target/release/compare.exe`; with scene names it runs them headless with pass timings (docs/benchmarks.md has the runner's command) |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
+| A release package | `tools/package.sh gallery` puts `gallery.exe` with `tools/app.manifest` embedded in `target/package/gallery/` |
 | The gallery | `tools/cargo.sh run -p quadra-gallery` (`examples/gallery`: a page a component) |
 | The gallery's pages as pictures | `tools/shots.sh [dark\|light] [page ..]` draws them without a window into `.tmp/shots/<theme>` (and `<page>-open.png` for a page that opens something); with `QUADRA_REFERENCE=<folder>` it compares them (`tools/compare_shots.py`). The V pictures are in the V repository, `.tmp/shots/hl-dark` and `hl-light` |
 
@@ -198,7 +199,7 @@ an input (`Semantics::selection`, a text run in the bridge; `SemanticAction::Sel
 **R5, app services, has started** (specs/15, 16): `App::dirs(AppDirs::for_app(..))` (nothing is written without it), `Settings`
 (`value(key, default)` is a signal; debounced, atomic), `quadra_app::log`, crash reports of panics, `quadra_app::time` (`Date`, `DateTime`,
 `local_now()` by `Platform::utc_offset`), the app's language (`I18n`, `App::i18n`, `t`, `t_with`; `language()` taken at build time for what
-runs again; `Locale` formats in Vietnamese and English), window state (`WindowOptions::remember(key)`), pages (`router(first)`, `.view(..)`; Alt-Left/Right) and closing (`.on_close(|| bool)`, `window().close_now()`); `quadra-shell` has `Dialogs`, `Opener`, `Tray`, `FakeShell`, `install(app)` (`App::provide`), `single_instance`, `crash_reports`. Next: packaging, API docs.
+runs again; `Locale` formats in Vietnamese and English), window state (`WindowOptions::remember(key)`), pages (`router(first)`, `.view(..)`; Alt-Left/Right) and closing (`.on_close(|| bool)`, `window().close_now()`); `quadra-shell` has `Dialogs`, `Opener`, `Tray`, `FakeShell`, `install(app)` (`App::provide`), `single_instance`, `crash_reports` (OS code in `src/win/`, `cfg(windows)`); packaging (`tools/package.sh`). Next: packaging, API docs.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its
 height does not depend on it; a new painted band visits every node of its layer.

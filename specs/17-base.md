@@ -111,8 +111,8 @@ its name in the kit (`quadra_kit::checkbox` stays).
 | `time` | `TimeOfDay`, the parts of a time and their keys (`typed`), a day of a calendar that a click chooses. Dates are the app's (`quadra_app::time::Date`): the month's weeks stay with the kit's calendar | a part's face, a day's face | `date.rs`, `time.rs` |
 | `disclose` | what is open and closed: accordion sections | a head (reader: open), a body | `accordion.rs` |
 | `split` | two panes and the share of the first: the drag, the least, a double click | the panes, the seam | `split.rs` |
-| `table` | sort, column widths, the selection, the keys, the copy, live keys | a header cell, a cell, a row | `table.rs`, `table/*` |
-| `tree` | open things, flattening, the selection, the keys | a row (the thing, its depth, open) | `tree.rs` |
+| `table`, `live` | `Sheet`: the order of a sort, column widths, the selection, the keys, the copy; `live::watch`, the selection kept by key and the cells that changed noted (`FLASH`) | the frame, a title, its grip, a row, the cells, the tints | `table.rs`, `table/*` |
+| `tree` | `Branch` (a thing's id, what is in it, what its row shows); the open things, the rows that show, the selection, the keys | a row's face (the thing, its depth, open; whether selected, whether the tree has the focus), the frame | `tree.rs` |
 | `rules` | `Rule`, `validate` | none | `field.rs` |
 | `settings` | pages, groups, rows; a search that keeps rows | the column, a page, a group, a row | `settings.rs`, `settings/*` |
 | `work` | the pane tree, docking, tabs that move and tear off | a tab, a strip, a pane, a seam | `work/*` |

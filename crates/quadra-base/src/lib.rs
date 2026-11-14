@@ -9,6 +9,7 @@ pub mod dialog;
 pub mod disclose;
 pub mod hint;
 pub mod list;
+pub mod live;
 pub mod menu;
 pub mod notices;
 pub mod number;
@@ -18,6 +19,8 @@ pub mod press;
 pub mod rules;
 pub mod slider;
 pub mod split;
+pub mod table;
 pub mod time;
+pub mod tree;
 
 pub use action::keymap;

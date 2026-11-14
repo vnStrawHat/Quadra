@@ -7,6 +7,24 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-14 — the code editor (on b0d43da plus this commit)
+
+The editor's scenes of the bench app (`bench/compare/src/editor.rs`), headless with real text
+(`BENCH_FRAMES=600 tools/bench.sh editor editor-scroll`), on 100,000 lines of Rust (4.2 MB),
+microseconds a frame:
+
+| Scene | Update | Paint | Draw | Instances written |
+|---|---|---|---|---|
+| `editor`: a letter typed, then taken out, at the middle line | 10 | 367 | 10 | 2 586 |
+| `editor-scroll`: 8 px down a frame | 2 | 8 | 0 | 31 |
+
+A keystroke costs the lines the view shows, not the file: the budget is 2 ms (behaviour/18)
+and the frame takes 0.39. The paint is the band the editor's layer paints, about twice the
+view, painted again whole; painting only the changed line would take it lower, if a scene
+ever needs it. Scrolling moves the layer and paints a band only when the view leaves the
+last one. Opening is the buffer's (6 ms for ten megabytes, specs/13, "Code") and one frame:
+the highlighter reads only as far as the view.
+
 ## 2026-11-14 — what a frame costs the GPU (on db5e3f9 plus this commit)
 
 The first measure of the GPU's time (specs/07, "Drawing a frame": timestamps around the draw,

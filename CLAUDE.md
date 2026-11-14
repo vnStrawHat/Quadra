@@ -189,7 +189,11 @@ a page `math` with no reference; rich text takes what is no text (`inline(what)`
 `paint.rs` paints it; a line is `quadra_render::stroke`, a segment an instance, shaded by distance: use it for any line that is not a chart's; limits are checked while reading), with a page `diagram` with no reference;
 `quadra-code` has the buffer (`Buffer`: pieces of 4 KB with running counts of bytes and line breaks); and the document (`Doc` in `doc.rs`, `doc/motion.rs`, `commands.rs`, `lines.rs`, `select.rs`: cursors, `apply(edits, typing)`, undo, the commands; a test of random commands holds it); `quadra_text::display_width` counts cells; next the highlighter, finding and the editor's widget;
 images are in: `image(source)` in `quadra-ui/src/image.rs` (a path, `&'static [u8]` or bytes; decoded on the pool by `Platform::image_decoder`, WIC in `quadra-native-win/src/image.rs`, `FlatImages` in tests; the widget `Picture` paints pieces of 512 px from the colour atlas, `Fonts::image`; `Images` is the app's cache), and a paragraph of images in a document shows them (`markdown(..).base(folder)`); the gallery has a page `image`)
-(R4: `quadra-code`, `quadra-md`) and the terminal (on hold). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
+(R4: `quadra-code`, `quadra-md`) and the terminal (on hold). **R4 is done** (docs/progress.md, "The exit of R4"):
+`quadra-code` has the highlighter (`Highlighter`, through the trait `Highlight` so a parser of grammars can be another),
+finding (`Query`) and the editor (`editor(text).path(name)`: `EditorWidget` in a scroll view, `EditorCommand` in the
+context `editor`, `bind_keys`; the find bar; `quadra_gallery::keymap()` binds them for the gallery and its shots; the
+bench's scenes `editor` and `editor-scroll`). Next after R4: local time and the app's language (i18n); the components in the order of specs/13, each with its
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them. `quadra-async` is done: `spawn` (a `Task` is cancelled when dropped, `.detach()` leaves it to its scope),
 `background(|| ..).await` (the pool; `Result<T, Panicked>`), `inbox_with(limit, Full::Block)` with `sender().extend(..)` and `.on_data(..)`, `sleep`, `debounce`,

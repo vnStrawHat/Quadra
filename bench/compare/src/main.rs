@@ -6,7 +6,11 @@
 //!   list      800x600  a virtual list of 100,000 rows of three texts, scrolling 8 px a frame
 //!   grid      800x600  600 cells, each with its background and a number changing every frame
 //!   document  800x600  40 paragraphs (~20,000 chars) wrapped to a width changing every frame
+//!
+//! and the editor's (`editor.rs`): `editor` types a letter and takes it out every frame at
+//! the middle of 100,000 lines of code, `editor-scroll` scrolls them 8 px a frame.
 
+mod editor;
 mod recorder;
 
 use std::rc::Rc;
@@ -55,12 +59,12 @@ fn document_width(frame: u32) -> f32 {
     (600.0 + 150.0 * (frame as f64 / 30.0).sin()).round() as f32
 }
 
-fn full() -> Div {
+pub(crate) fn full() -> Div {
     div().width(Length::Fill).height(Length::Fill).bg(Color::WHITE)
 }
 
 /// Counts frames with the recorder and gives each frame of the run its number.
-fn animate(mut frame: impl FnMut(u32) + 'static) {
+pub(crate) fn animate(mut frame: impl FnMut(u32) + 'static) {
     let (mut recorder, mut n) = (Recorder::new(expect::<SharedPhases>()), 0);
     each_frame(move || {
         let more = recorder.tick();
@@ -129,6 +133,8 @@ fn main() -> quadra::Result<()> {
         "list" => (list, (800.0, 600.0)),
         "grid" => (grid, (800.0, 600.0)),
         "document" => (document, (800.0, 600.0)),
+        "editor" => (editor::typing, (800.0, 600.0)),
+        "editor-scroll" => (editor::scrolling, (800.0, 600.0)),
         _ => {
             eprintln!("no scene {scene}");
             std::process::exit(2);

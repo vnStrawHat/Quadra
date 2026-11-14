@@ -137,9 +137,11 @@ version = "0.1.0"
 dependencies = [
  "quadra",
  "quadra-app",
+ "quadra-code",
  "quadra-native-win",
  "quadra-platform",
  "quadra-render",
+ "quadra-tree",
 ]
 
 [[package]]

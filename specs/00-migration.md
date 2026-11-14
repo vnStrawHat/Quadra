@@ -108,7 +108,7 @@ Each phase ends with its gate green and `docs/progress.md` updated.
 | **R1** Vertical slice | `reactive`, `layout`, `tree`, `text` with the fake backend, `render` with the null backend, `testing`; then D3D11, DirectWrite, a Win32 window | Counter, a 10,000-row list, a 1,000-button grid and a long document run. Every structural budget of 14 passes. The comparison bench beats the V baseline or the gap is explained. **This is the go/no-go for decisions R1–R5** |
 | **R2** Interaction | Input, focus, keymap, IME, scrolling, overlays, virtual list, text input, accessibility | The interaction tests of the V suite, rewritten against the semantic tree, pass |
 | **R3** Kit | Core components and the gallery | The gallery matches the V screenshots within the snapshot tolerance |
-| **R4** Domain crates | `quadra-code`, `quadra-md`, `quadra-data`, `quadra-viz` | Their tests and fuzzers pass; their gallery pages match |
+| **R4** Domain crates (done 2026-11-14) | `quadra-code`, `quadra-md`, `quadra-data`, `quadra-viz` | Their tests and fuzzers pass; their gallery pages match |
 | **R5** Release | App services (settings, i18n, assets, logging), shell services, API documentation, packaging of the gallery, the manual checks on a real desktop | Quadra is complete; the apps can start |
 | **R6** Base components (done 2026-11-14) | Components without a look (17), open tokens, and the paints design systems use; see "R6" below | `quadra-kit` is built on the base alone and the gallery looks as before; a second kit of another look is made from the base without touching it |
 

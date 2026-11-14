@@ -1007,6 +1007,9 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     typing after a pause is an undo of its own.
   - After a command the caret is scrolled into view, and the widget is laid out again only
     when the count of lines changed.
+  - Measured (docs/benchmarks.md, the bench's `editor` and `editor-scroll`): a letter typed
+    at the middle of 100,000 lines takes a frame of 0.39 ms (the budget is 2), scrolling 10
+    µs a frame.
   - What it says to a reader: a text input of many lines, its text and its selection.
   - **The find bar** stands at the top right of the editor while it is open (Ctrl-F; Ctrl-H
     with the row that replaces; a selection of one line is the query). It has the query,

@@ -24,7 +24,12 @@ fn mounted<V: View>(build: impl FnOnce() -> V) -> Harness {
 fn wait(h: &mut Harness, ms: u64) {
     h.advance(Duration::from_millis(ms));
     h.frame();
-    while h.frame_if_needed().is_some() {}
+    // A few frames: what moves asks for one each frame while the clock stands still.
+    for _ in 0..8 {
+        if h.frame_if_needed().is_none() {
+            break;
+        }
+    }
 }
 
 #[test]
@@ -89,6 +94,20 @@ fn a_drawer_lies_along_an_edge_of_the_window_over_all_of_its_length() {
     wait(&mut h, 0);
     assert_eq!(panel(&h), Rect::new(440.0, 0.0, 360.0, 600.0));
     assert!(h.semantics().contains("Dialog \"Pod\"") && h.has_text("Running"), "{}", h.semantics());
+    // It slides in from the right: past its edge as it opens, at its place 200 ms later.
+    let moved = |h: &Harness| {
+        let words = h.query(|n| n.semantics.name == "Running")[0];
+        let mut at = Some(words);
+        let mut x = 0.0;
+        while let Some(node) = at {
+            x += h.tree.pose(node).translate.x;
+            at = h.tree.parent(node);
+        }
+        x
+    };
+    assert!(moved(&h) > 0.0, "{}", moved(&h));
+    wait(&mut h, 250);
+    assert_eq!(moved(&h), 0.0);
     h.get_by_role(Role::Button, "Close").click();
     wait(&mut h, 0);
     assert_eq!((right.get_untracked(), h.tree.overlays().count()), (false, 0));

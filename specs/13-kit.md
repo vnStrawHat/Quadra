@@ -606,9 +606,11 @@ the popup closes the focus goes back to what had it.
   best match is first and highlighted. The letters that matched are in the accent
   (`marked`: a row of texts). The arrows go round the matches with the focus still in the
   query, Enter or a click runs one after the palette has closed and given the focus back.
-- Not yet: a drawer that slides in; a picker of other things than commands; the menu key for a context menu; a toast that waits
-  while the pointer is on it; a tooltip told to assistive technology as the description of
-  its view.
+- A drawer slides in from its edge over 200 ms (a timeline on its page: past the edge, then
+  its place; composed only). A toast, or a card that lasts, waits while the pointer is on it
+  and lasts as long again when it leaves (`Queue::hold`). A tooltip's words are the
+  description of its view for a reader, whether it shows or not.
+- Not yet: a picker of other things than commands; the menu key for a context menu.
 
 ## Crates
 

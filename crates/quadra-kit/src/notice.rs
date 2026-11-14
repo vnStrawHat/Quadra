@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use quadra_base::notices::{Queue, TOAST};
 use quadra_layout::{Align, Justify};
-use quadra_tree::Role;
+use quadra_tree::{PointerKind, Role};
 use quadra_ui::{Div, Place, View, column, div, each, overlay, row, show, text};
 
 use crate::button::{Size, Variant, button, icon_button};
@@ -136,7 +136,7 @@ impl Notices {
             .child(words)
             .child(close);
         let card = surface(2).bg(token::PANEL).width(448.0).padding(12.0).gap(8.0);
-        let card = card.role(Role::Group).label(notice.title).child(top);
+        let card = me.held(card, id).role(Role::Group).label(notice.title).child(top);
         if notice.actions.is_empty() {
             return card;
         }
@@ -157,7 +157,15 @@ impl Notices {
         let Some(notice) = self.find(id) else { return div() };
         let line = row().align_items(Align::Center).gap(8.0).padding_x(10.0).padding_y(6.0);
         let line = line.child(mark(notice.tone, true)).child(text(notice.title.clone()));
-        surface(2).bg(token::PANEL).role(Role::Group).label(notice.title).child(line).radius(size::RADIUS_XL)
+        let line = surface(2).bg(token::PANEL).role(Role::Group).label(notice.title).child(line);
+        self.held(line.radius(size::RADIUS_XL), id)
+    }
+
+    /// What lasts a while waits while the pointer is on it.
+    fn held(&self, face: Div, id: u64) -> Div {
+        let (on, off) = (self.queue, self.queue);
+        let face = face.on_pointer(PointerKind::Enter, move |_| on.hold(id, true));
+        face.on_pointer(PointerKind::Leave, move |_| off.hold(id, false))
     }
 
     /// What shows the notifications: mount it once, anywhere in the window. It takes no room.

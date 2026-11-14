@@ -8,9 +8,10 @@ use std::rc::Rc;
 use quadra_base::dialog as base;
 use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
+use quadra_prim::{Ease, Point};
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_ui::{Div, MountCx, Place, View, column, div, row, text};
+use quadra_ui::{Div, MountCx, Place, View, column, div, row, text, timeline};
 
 use crate::button::{Variant, button};
 use crate::icon::icon;
@@ -95,6 +96,14 @@ where
                 _ => page.width(size - EDGE),
             };
             let middle = div().grow(1.0).padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2);
+            // It slides in from its edge: put past it, then moved to its place over 200 ms.
+            let away = match edge {
+                Edge::Left => Point::new(-size, 0.0),
+                Edge::Right => Point::new(size, 0.0),
+                Edge::Bottom => Point::new(0.0, size),
+            };
+            let slide = timeline().to(0, Ease::Linear, |s| s.translate(away));
+            let page = page.animate(slide.to(200, Ease::Out, |s| s.translate(Point::ZERO)));
             page.child(head(&title, open)).child(middle.child(body()))
         };
         popup(open, edge, None, content).mount(cx)

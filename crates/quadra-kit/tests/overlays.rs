@@ -52,6 +52,15 @@ impl Page {
 fn a_tooltip_shows_after_the_pointer_has_rested_and_goes_when_it_leaves() {
     let mut p = page();
     let save = p.h.get_by_test_id("save").node();
+    // To a reader its words are the description of what it is about, shown or not.
+    let said =
+        p.h.tree
+            .semantic_tree()
+            .nodes
+            .iter()
+            .find(|n| n.semantics.test_id.as_deref() == Some("save"))
+            .map(|n| n.semantics.description.clone());
+    assert_eq!(said, Some(Some("Save the file".to_string())));
     let at = p.h.tree.window_rect(save).center();
     p.h.pointer(PointerInput::Move, at.x, at.y);
     p.wait(400);

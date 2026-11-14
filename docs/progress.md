@@ -76,11 +76,10 @@ charts are R4's; their exit is that they match.
 What the kit does not do yet, and no page of the V gallery shows (13 has each beside its
 component): a theme for a subtree, and tokens for radii, spacing, fonts and durations;
 today's date and the names of days and months in the app's language (local time and i18n,
-R5); a table with pinned and hidden columns and a cursor on cells; a
-tree whose children are asked for when it opens, and several selected; a tab's own menu,
-renaming, and a limit on its width; a drawer that slides in; the menu key for a context
-menu; a toast that waits while the pointer is on it; a tooltip as the description of its
-view for a reader; of rich text, links for the keyboard and a reader, and a selection.
+R5); a cursor on the cells of a table; a tree whose children are asked for when it opens,
+and several selected; the menu key for a context menu; of rich text, links for the keyboard
+and a reader, and a selection. Since 2026-11-14 a drawer slides in, a toast waits while the
+pointer is on it, and a tooltip is the description of its view for a reader.
 
 ### The exit of R2 (specs/00, Phases)
 

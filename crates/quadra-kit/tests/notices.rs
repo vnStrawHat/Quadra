@@ -94,3 +94,23 @@ fn a_toast_and_a_card_that_lasts_go_by_themselves() {
     settle(&mut h);
     assert_eq!(h.tree.overlays().count(), 0);
 }
+
+#[test]
+fn a_toast_waits_while_the_pointer_is_on_it_and_lasts_again_after() {
+    use quadra_tree::PointerInput;
+    let (mut h, all) = page();
+    all.toast(Tone::Info, "Saved");
+    settle(&mut h);
+    let at = card(&mut h, "Saved").center();
+    h.pointer(PointerInput::Move, at.x, at.y);
+    h.advance(Duration::from_secs(30));
+    settle(&mut h);
+    assert!(h.has_text("Saved"), "held while the pointer is on it");
+    h.pointer(PointerInput::Move, 5.0, 5.0);
+    h.advance(Duration::from_secs(9));
+    settle(&mut h);
+    assert!(h.has_text("Saved"), "as long again from when it left");
+    h.advance(Duration::from_secs(2));
+    settle(&mut h);
+    assert!(!h.has_text("Saved"));
+}

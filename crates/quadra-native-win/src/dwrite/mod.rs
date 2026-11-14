@@ -195,4 +195,11 @@ impl TextBackend for DirectWrite {
     fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap> {
         self.raster(face, glyph, size, phase)
     }
+
+    fn system_changed(&mut self) -> bool {
+        let now = font_smoothing();
+        let changed = now != (self.cleartype, self.bgr);
+        (self.cleartype, self.bgr) = now;
+        changed
+    }
 }

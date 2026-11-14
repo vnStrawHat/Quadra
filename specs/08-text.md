@@ -66,8 +66,11 @@ The rules of behaviour/04 carry over. What differs from the V backend:
 - The text source and sink DirectWrite calls back are one object that owns a copy of the
   word: no pointer into borrowed text crosses a COM boundary.
 - Fonts from memory are a collection searched before the installed ones.
-- Not yet: OpenType features per family, bidirectional analysis, a change of the font
-  smoothing setting while running.
+- How Windows smooths fonts (per subpixel or not, and the order of the stripes) is read again
+  when a setting changes (`WM_SETTINGCHANGE`; `TextBackend::system_changed`): when glyphs
+  come out otherwise, the app forgets every tile and each window paints again, as after a
+  lost device. Shaping and lines are untouched.
+- Not yet: OpenType features per family, bidirectional analysis.
 
 ## Paragraphs
 

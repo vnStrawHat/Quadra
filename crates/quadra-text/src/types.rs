@@ -141,4 +141,10 @@ pub trait TextBackend {
     /// Rasterizes a glyph at a size in device pixels, its pen `phase` quarters of a pixel
     /// to the right. A glyph with no ink is a bitmap of no size.
     fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap>;
+
+    /// The system's settings changed: reads again what rasterizing follows (how the OS
+    /// smooths fonts). True when glyphs come out otherwise now, and must be rasterized again.
+    fn system_changed(&mut self) -> bool {
+        false
+    }
 }

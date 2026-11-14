@@ -241,3 +241,57 @@ fn a_task_of_a_view_gets_what_the_pool_made_and_shows_it() {
     platform.step(&mut app);
     assert!(!app.tree(window).unwrap().needs_frame(), "what it set was drawn");
 }
+
+/// The fake backend, told by the test when the system smooths fonts another way.
+struct Smoothing(FakeBackend, Rc<std::cell::Cell<bool>>);
+
+impl quadra_text::TextBackend for Smoothing {
+    fn default_family(&self) -> String {
+        self.0.default_family()
+    }
+    fn families(&self) -> Vec<String> {
+        self.0.families()
+    }
+    fn load_fonts(&mut self, files: &[&[u8]]) -> Result<Vec<String>, String> {
+        self.0.load_fonts(files)
+    }
+    fn face(&mut self, key: &quadra_text::FontKey) -> Option<quadra_text::FaceId> {
+        self.0.face(key)
+    }
+    fn metrics(&self, face: quadra_text::FaceId) -> quadra_text::FaceMetrics {
+        self.0.metrics(face)
+    }
+    fn shape(&mut self, text: &str, face: quadra_text::FaceId, size: f32) -> Vec<quadra_text::ShapedGlyph> {
+        self.0.shape(text, face, size)
+    }
+    fn rasterize(
+        &mut self,
+        face: quadra_text::FaceId,
+        glyph: u16,
+        size: f32,
+        phase: u8,
+    ) -> Option<quadra_text::GlyphBitmap> {
+        self.0.rasterize(face, glyph, size, phase)
+    }
+    fn system_changed(&mut self) -> bool {
+        self.1.replace(false)
+    }
+}
+
+#[test]
+fn glyphs_are_rasterized_again_when_the_system_smooths_fonts_another_way() {
+    let platform = HeadlessPlatform::new();
+    let changed = Rc::new(std::cell::Cell::new(false));
+    let backend = Box::new(Smoothing(FakeBackend::new(), changed.clone()));
+    let mut app = App::with(Rc::new(platform.clone()), NullRenderer::new(), backend);
+    open(&mut app, signal("smooth".to_string()));
+    platform.step(&mut app);
+    let tiles = app.renderer.tiles_uploaded().0;
+    platform.set_appearance(platform.appearance()); // a setting, not the appearance, changed
+    platform.step(&mut app);
+    assert_eq!(app.renderer.tiles_uploaded().0, tiles, "nothing to do while glyphs stay as they were");
+    changed.set(true);
+    platform.set_appearance(platform.appearance());
+    platform.step(&mut app);
+    assert_eq!(app.renderer.tiles_uploaded().0, 2 * tiles); // every tile of the first frame again
+}

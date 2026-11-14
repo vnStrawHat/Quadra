@@ -71,6 +71,9 @@ impl<R: Renderer> PlatformHandler for App<R> {
                 if self.appearance.get_untracked() != appearance {
                     self.appearance.set(appearance);
                 }
+                if self.fonts.borrow_mut().text.backend().system_changed() {
+                    self.paint_again(); // the way fonts are smoothed changed
+                }
             }
             PlatformEvent::DragEnter { at, what } => {
                 let payload: Rc<dyn Any> = match what {
@@ -183,6 +186,11 @@ impl<R: Renderer> App<R> {
         if let Err(e) = self.renderer.recover() {
             return (self.on_error)(&e.into()); // the windows keep their last frame
         }
+        self.paint_again();
+    }
+
+    /// Every tile forgotten, and every window painted and uploaded again.
+    fn paint_again(&mut self) {
         self.fonts.borrow_mut().clear_tiles();
         for w in &mut self.windows {
             w.tree.repaint_all();

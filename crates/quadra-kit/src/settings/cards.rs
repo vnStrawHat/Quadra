@@ -120,7 +120,7 @@ pub(super) fn page(pages: Vec<SettingsPage>, model: &Model, header: Vec<AnyView>
                 whole = whole.child(head);
             }
             let card = column().gap(16.0).padding(16.0).radius(size::RADIUS_LG);
-            let card = card.border(1.0).border_color(token::LINE);
+            let card = card.border(1.0).border_color(token::LINE_STRONG);
             let rows = group.rows.into_iter().enumerate().map(|(r, row)| setting(row, model.rows[i][g][r]));
             one = one.child(whole.child(card.children(rows.collect::<Vec<_>>())));
         }

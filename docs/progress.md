@@ -61,6 +61,12 @@ reference as their pages were written; of the light ones the two that differ mor
 dark ones were (the toolbar, above, and the open palette, whose reference lists a fourth
 command), and the rest go by their numbers, which are those of the dark theme.
 
+These numbers held until 2026-11-14, when the design language took more contrast and colour
+(specs/behaviour/15: tone steps, an accent focus, tinted controls, marks of what is chosen,
+hues by kind, rounder corners, deeper dark shadows). The pictures now differ from the V ones
+by design, so `QUADRA_REFERENCE` is a check of layout, not of colour; the new look was
+judged by eye in both themes.
+
 The nine pages that are left are those of the domain crates and of the terminal, which is on
 hold: markdown, the editor, the live table, the log view, the value viewer and the three
 charts are R4's; their exit is that they match.

@@ -62,11 +62,13 @@ fn tool(active: Signal<&'static str>, it: Activity) -> AnyView {
     let tone = move || -> Paint { if on() { token::ACCENT_TEXT.into() } else { token::TEXT_2.into() } };
     let shown = move || if count() > 0 { Display::Flex } else { Display::None };
     let words = move || if more() > 99 { "99+".to_string() } else { more().to_string() };
-    // The count stands on the canvas, tinted by the colour of errors.
-    let chip = row().height(14.0).min_width(14.0).padding_x(1.0).radius(7.0).border(1.0);
-    let chip = chip.bg(token::ERROR.alpha(0.4)).border_color(token::LINE_STRONG).text_size(9.0);
-    let chip = chip.align_items(Align::Center).justify(Justify::Center).text_color(token::TEXT);
-    let badge = div().absolute().top(-2.0).right(-4.0).radius(7.0).bg(token::CANVAS).display(shown);
+    // The count stands on the panel in the accent, ringed by the panel so it parts from the
+    // icon.
+    let chip = row().height(14.0).min_width(14.0).padding_x(2.0).radius(7.0);
+    let chip = chip.bg(token::ACCENT).text_size(9.0).text_color(token::TEXT_ON_ACCENT);
+    let chip = chip.align_items(Align::Center).justify(Justify::Center);
+    let badge = div().absolute().top(-2.0).right(-4.0).radius(8.0).padding(1.0).bg(token::PANEL);
+    let badge = badge.display(shown);
     let badge = badge.child(chip.child(text(words).weight(500)));
     let glyph = row().size(28.0, 28.0).align_items(Align::Center).justify(Justify::Center);
     let glyph = glyph.radius(size::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER)).text_color(tone);
@@ -74,6 +76,7 @@ fn tool(active: Signal<&'static str>, it: Activity) -> AnyView {
     let face = face.cursor(Cursor::Pointer).role(Role::Tab).label(it.title.clone()).selected(on);
     let face = face.on_click(move |_| active.set(id));
     let face = face.child(glyph.child(icon(it.icon).size(16.0)).child(badge));
+    let face = face.child(crate::display::chosen_mark(Side::Left, on));
     AnyView::new(tooltip(it.title, face).side(Side::Right))
 }
 

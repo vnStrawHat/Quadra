@@ -1,10 +1,11 @@
 //! What takes the user somewhere: the sidebar, the toolbar, the breadcrumb, the menu bar, the
 //! status bar and the command palette.
 
+use quadra::Token;
 use quadra::{Div, column, div, dynamic, row, signal};
 use quadra_kit::{
-    MenuItem, NavItem, Size, Status, breadcrumb, button, icon_button, icons, kbd, menu_button, menubar,
-    sidebar, status_item, status_label, statusbar, toolbar, tooltip, vdivider,
+    MenuItem, NavItem, Size, Status, breadcrumb, button, icon, icon_button, icons, kbd, menu_button, menubar,
+    sidebar, status_item, status_label, statusbar, token, toolbar, tooltip, vdivider,
 };
 
 use crate::common::{demo, framed, hint, line, page};
@@ -93,6 +94,8 @@ pub fn statusbar_page() -> Div {
         .left(status_item(None, "default"))
         .right(status_item(None, "Ln 12, Col 4"))
         .right(status_item(None, "UTF-8"))
+        .right(problems(icons::CIRCLE_X, token::HUE_RED, "2"))
+        .right(problems(icons::TRIANGLE_ALERT, token::HUE_ORANGE, "5"))
         .right(status_item(Some(icons::BELL), "2"));
     page(
         "Status bar",
@@ -103,6 +106,12 @@ pub fn statusbar_page() -> Div {
             "statusbar().left(status_label(Status::Running, \"Connected\")).right(status_item(None, \"UTF-8\"))",
         )],
     )
+}
+
+/// A count of diagnostics: its icon in the hue of its kind, then the number.
+fn problems(body: &'static str, hue: Token, count: &str) -> Div {
+    let mark = icon(body).size(14.0).color(hue);
+    row().align_items(quadra::Align::Center).gap(4.0).child(mark).child(quadra::text(count.to_string()))
 }
 
 pub fn palette_page(gallery: Gallery) -> Div {

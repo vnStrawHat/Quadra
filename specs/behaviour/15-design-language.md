@@ -2,8 +2,9 @@
 
 Quadra's kit targets developer tools: editors, terminals, cluster managers. People keep these
 open for hours and drive them from the keyboard. The language is the one of a modern native
-code editor: flat, warm-neutral planes, hairline borders, a single blue accent, small
-square-ish controls, and no decoration that the content does not need. Every number below
+code editor: flat, warm-neutral planes, hairline borders, a single blue accent, a few hues
+that tell kinds apart, small rounded controls, and no decoration that the content does not
+need. Every number below
 is a pixel at 100 % scale; the OS text-size setting scales text only.
 
 ## Principles
@@ -12,18 +13,27 @@ is a pixel at 100 % scale; the OS text-size setting scales text only.
    border. The text area is the deepest plane, panels one step off it, the window chrome
    one step further. No cards in cards, no gradients.
 2. **Ghost controls.** Most buttons, list rows and tabs have no fill until hovered. Hover is
-   one neutral step, press two. Selection is neutral too; the accent is for text and icons.
-3. **The accent is text, not paint.** A toggled button, an active panel toggle, a checked
-   box and a matched character turn the accent *color*; nothing gets an accent fill except
-   tinted (primary) buttons, the switch track and progress fills, at low opacity.
-4. **Focus is a border.** Focus never adds a glow or an outer ring: the 1 px border turns
-   `border_focused`. Buttons without a border show focus as their hover fill.
+   one neutral step, press two; in dark themes both are the text's grey at 8 and 16 %, so
+   they read the same on every plane. Selection stays neutral, and what is chosen (the
+   active tab, the selected row, the current item of a bar) also carries a 2 px accent mark
+   on one edge.
+3. **The accent is text and small marks.** A toggled button, an active panel toggle and a
+   matched character turn the accent *color*. A checked box, a switch that is on, the marks
+   of what is chosen and progress fills are the accent; tinted buttons and the chosen
+   segment take its tint (16 %) with an accent border. No large accent fills.
+4. **Focus is a border, and the border is the accent.** Focus never adds a glow or an outer
+   ring: the 1 px border turns `border_focused`, the accent. Buttons without a border show
+   keyboard focus as a 1 px accent outline that takes no room.
 5. **Small type, generous leading.** 14 px UI text at a golden-ratio line height (1.618)
    and a sans with open shapes; code in a programming face at 15 px.
 6. **Shortcuts are plain text.** `Ctrl-Shift-P`, muted, after the label. No key caps.
 7. **Status at a glance, never by color alone.** Workload status keeps a shape per state.
 8. **Instant states, functional motion.** Hover and press change at once. Only overlays and
    toasts animate (150 ms, quintic ease-out); reduced motion turns that off.
+9. **Hue means kind.** Seven hues tell kinds apart: the state of a file under version
+   control (modified yellow, new green, deleted red), kinds of files and of objects, counts
+   of diagnostics. Never decoration, and never alone: a shape, a letter or a label goes
+   with each.
 
 ## Tokens
 
@@ -34,23 +44,24 @@ The palette keeps the kit's role names; each role is one token of the One themes
 | Field | Role | One Dark Pro | One Light |
 |---|---|---|---|
 | `canvas` | editor, terminal, toolbar, active tab, input fields | `#23272E` | `#FAFAFA` |
-| `panel` | side panels, surfaces | `#23272E` | `#EBEBEC` |
-| `chrome` | title bar, the window behind empty panes | `#23272E` | `#DCDCDD` |
-| `overlay_bg` | menus, tooltips, popovers, pickers, dialogs, toasts | `#1E2227` | `#EBEBEC` |
+| `panel` | side panels, surfaces | `#1E2227` | `#EBEBEC` |
+| `chrome` | title bar, the window behind empty panes | `#1A1D22` | `#DCDCDD` |
+| `overlay_bg` | menus, tooltips, popovers, pickers, dialogs, toasts: lifted off every plane | `#2A2F37` | `#FFFFFF` |
 | `raised` | filled controls (element background) | `#404754` | `#EBEBEC` |
-| `panel_hover`, `raised_hover` | ghost and filled hover | `#2C313A` | `#DFDFE0` |
-| `press` | pressed, selected rows, keyboard-highlighted rows | `#2C313A` | `#CACACA` |
-| `line` | dividers, overlay and input outlines (border variant) | `#3E4452` | `#DFDFE0` |
-| `line_strong` | tab and pane borders, outlined hover (border) | `#3E4452` | `#C9C9CA` |
-| `border_focused` | focus border | `#3E4452` | `#7D82E8` |
+| `panel_hover`, `raised_hover` | ghost and filled hover | `#ABB2BF14` | `#DFDFE0` |
+| `press` | pressed, selected rows, keyboard-highlighted rows | `#ABB2BF29` | `#CACACA` |
+| `line` | dividers, hairlines, the grid of tables | `#31363F` | `#DFDFE0` |
+| `line_strong` | outlines of controls, overlays and cards; tab and pane seams | `#3E4452` | `#C9C9CA` |
+| `border_focused` | focus border: the accent | `#74ADE8` | `#5C78E2` |
 | `scrim` | behind modal dialogs: none | transparent | transparent |
-| `status_bg` | the status bar (default `chrome`) | `#1E2227` | `chrome` |
+| `status_bg` | the status bar (default `chrome`) | `#1A1D22` | `chrome` |
 | `tab_bg` | tab bar and inactive tabs (default `panel`) | `#1E2227` | `panel` |
 | `scroll_thumb` | scroll thumbs (default `text` at 30 %) | `#4E566680` | `text` 30 % |
 | `input_bg` | text fields, steppers and dropdown triggers (default `canvas`) | `canvas` | `canvas` |
 
 Roles a theme may split off; unset, each follows the role in brackets: `selection`
-(selected UI text; `accent_tint` in fields, the editor selection in selectable text), `tab_fg` and `tab_active_fg` (tab labels; the
+(selected text, in fields and in selectable text: the accent at 30 % in both themes;
+`accent_tint`), `tab_fg` and `tab_active_fg` (tab labels; the
 active one is also any tab under the pointer; `text_2`, `text`), `table_head_bg`,
 `table_head_fg` (`panel`, `text_2`), `table_row_border` (`line_strong`), `list_even`
 (striped rows; none), `scroll_thumb_hover` (`scroll_thumb`), `text_on_status` (on
@@ -64,23 +75,26 @@ feedback fills; `text_on_accent`), `error_hover` (`error` 15 % toward `canvas`),
 | `text` | primary text and icons | `#DCE0E5` | `#242529` |
 | `text_2` | muted: inactive tabs, secondary labels, shortcuts | `#A9AFBC` | `#58585A` |
 | `text_3` | placeholder, hints, breadcrumb separators | `#878A98` | `#7E8086` |
-| `text_disabled` | disabled labels and icons | `#878A98` | `#7E8086` |
+| `text_disabled` | disabled labels and icons, a step past `text_3` | `#636B78` | `#A2A3A7` |
 | `accent_text` | selected or toggled labels, links, matches | `#74ADE8` | `#5C78E2` |
 
 Icons take a text color (`text`, `text_2` for decoration, `accent_text` when toggled).
 
 ### Accent and feedback
 
-- `accent` (`#74ADE8` / `#5C78E2`) is the editor cursor, the switch, the progress fill and
-  the dirty dot. `accent_tint` (`#1E2227` / `#E2E2FA`) is the tinted button fill.
-- Feedback colors with a tint each for banners and tinted buttons:
+- `accent` (`#74ADE8` / `#5C78E2`) is the editor cursor, a switch that is on, a checked
+  box, the marks of what is chosen, the progress fill and the dirty dot. `accent_tint`
+  (`#74ADE829` / `#5C78E229`, the accent at 16 %) fills tinted buttons and the chosen
+  segment.
+- Feedback colors with a tint each for banners and tinted buttons. Error text is readable
+  (4.5:1 and more) on the canvas of its theme:
 
   | Field | One Dark Pro | tint | One Light | tint |
   |---|---|---|---|---|
   | `ok` | `#A1C181` | `#A1C1811A` | `#669F59` | `#DFEADB` |
-  | `warn` | `#D19A66` | `#1E2227` | `#A48819` | `#FAF2E6` |
-  | `error` | `#C24038` | `#1E2227` | `#D36151` | `#FBDFD9` |
-  | `info` | `#74ADE8` | `#1E2227` | `#5C78E2` | `#E2E2FA` |
+  | `warn` | `#D19A66` | `#D19A6626` | `#A48819` | `#A4881926` |
+  | `error` | `#E06C75` | `#E06C7526` | `#CA3A2E` | `#CA3A2E26` |
+  | `info` | `#74ADE8` | `accent_tint` | `#5C78E2` | `accent_tint` |
 
 - **Workload status** (derived; the themes reuse the feedback and syntax hues):
 
@@ -92,6 +106,21 @@ Icons take a text color (`text`, `text_2` for decoration, `accent_text` when tog
   | `succeeded` | check | cyan (syntax type) |
   | `terminating` | dash | violet (syntax keyword) |
   | `unknown` | square | `text_3` |
+
+- **Hues** (principle 9): kinds, each with a shape, letter or label beside it. The light
+  ones are darker, readable as text on `#FAFAFA` (4.3:1 and more). A badge takes one as its
+  tone (`Tone::Hue(token::HUE_BLUE)`), an icon and a row of a tree as their colour
+  (`icon(..).color(..)`, `TreeNode::color`, which colours the row's icon too).
+
+  | Field | One Dark Pro | One Light | Used for |
+  |---|---|---|---|
+  | `hue_red` | `#E06C75` | `#CA3A2E` | deleted, errors |
+  | `hue_orange` | `#D19A66` | `#A0650A` | warnings |
+  | `hue_yellow` | `#E5C07B` | `#8F6B00` | modified |
+  | `hue_green` | `#98C379` | `#3B8539` | new, added |
+  | `hue_cyan` | `#56B6C2` | `#0B7499` | types, kinds of objects |
+  | `hue_blue` | `#61AFEF` | `#3566D6` | functions, information |
+  | `hue_purple` | `#C678DD` | `#A626A4` | keywords, modules |
 
 ### Code and terminal
 
@@ -135,8 +164,8 @@ diff tints) and the terminal's 16 ANSI colors.
   a type scale whose md is body text (16): components then take their text one step down
   (`ui_text(.md)` is `text_sm`), so controls stay 14 while plain text is 16.
 - **Icons:** Lucide outlines on a 16 grid, sizes 10, 12, 14 (default in chrome), 16.
-- **Radii:** `radius_sm` 2 (checkbox, key), `radius_md` 4 (buttons, list rows, chips,
-  tooltips' rows), `radius_lg` 6 (inputs, segmented groups, code blocks), `radius_xl` 8
+- **Radii:** `radius_sm` 4 (checkbox, key), `radius_md` 6 (buttons, list rows, chips,
+  tooltips' rows), `radius_lg` 6 (inputs, segmented groups, code blocks), `radius_xl` 10
   (every overlay: menus, tooltips, popovers, pickers, dialogs, toasts). Tabs, panels and
   tables are square.
 - **Chrome:**
@@ -149,17 +178,18 @@ diff tints) and the terminal's 16 ANSI colors.
   | panel header | 28 |
   | tree and sidebar rows | 26 |
   | status bar | 30 (22 buttons, 4 padding) |
-  | activity bar | 40 wide |
+  | activity bar | 40 wide; the active item a 2 px `accent` bar at its left |
   | splitter | 1 px `line_strong`, 6 px grab area |
 
 ### Elevation
 
-Overlays are `overlay_bg` with a 1 px `line` border and `radius_xl`.
+Overlays are `overlay_bg` with a 1 px `line_strong` border and `radius_xl`. On a dark plane
+a light shadow does not show, so dark themes cast deeper ones.
 
-| Level | Used by | Shadows (x, y, blur, black alpha) |
-|---|---|---|
-| 1 | menus, tooltips, popovers, combobox lists | 0 2 3 .12; 0 1 0 .06 |
-| 2 | pickers, dialogs, notifications, toasts | 0 2 3 .12; 0 3 6 .08; 0 6 12 .04; 0 1 0 .12 |
+| Level | Used by | Shadows (x, y, blur, black alpha), light | dark |
+|---|---|---|---|
+| 1 | menus, tooltips, popovers, combobox lists | 0 2 3 .12; 0 1 0 .06 | 0 6 16 .34; 0 1 3 .26 |
+| 2 | pickers, dialogs, notifications, toasts | 0 2 3 .12; 0 3 6 .08; 0 6 12 .04; 0 1 0 .12 | 0 18 44 .44; 0 4 10 .30 |
 
 Pickers and dialogs hang 80 px from the window top, centered, with no backdrop; a click
 outside dismisses them. Drawers, which the reference has no counterpart for, follow the
@@ -169,11 +199,11 @@ same rule: no backdrop, an outside click closes them.
 
 | State | Ghost items (buttons, rows, tabs) | Filled and outlined items |
 |---|---|---|
-| hover | `panel_hover` | `raised_hover`; outlined border becomes `line_strong` |
+| hover | `panel_hover` | `raised_hover` |
 | press | `press` | `press` |
-| selected | `press` fill, label stays `text` | label `accent_text` |
+| selected | `press` fill, label stays `text`, a 2 px `accent` mark on one edge | label `accent_text` |
 | toggled button | no fill, icon and label `accent_text` | same |
-| focus (keyboard) | hover fill | border `border_focused` |
+| focus (keyboard) | a 1 px `border_focused` outline | border `border_focused` |
 | disabled | `text_disabled`, no hover | same, fill kept |
 | drop target | `#83899480` / `#7E808780` fill | same |
 
@@ -181,19 +211,21 @@ same rule: no backdrop, an outside click closes them.
 
 - **Button.** Height by size, padding 4 (xs, sm) or 8 (md, lg), gap 4, radius 4, label
   14 (12 at xs), weight 400, icon 14 (16 at md and lg). Variants: `ghost` (no fill),
-  `secondary` (outlined: `line` border, transparent fill), `outline` (outlined ghost),
-  `primary` (tinted: `accent_tint` fill, `text` label), `danger` (tinted with `error`'s
-  tint), `link` (accent text). Icon buttons are square at size sm (22) with a 14 icon.
+  `secondary` (outlined: `line_strong` border, transparent fill), `outline` (outlined
+  ghost), `primary` (tinted: `accent_tint` fill, an `accent` border at 42 %, `text` label,
+  `accent_text` icon), `danger` (`error_tint` fill, an `error` border at 42 %, `error`
+  icon), `link` (accent text). Icon buttons are square at size sm (22) with a 14 icon.
   Toggled: the label and icon turn `accent_text`; labelled toggles (filter chips, scope
   tabs) also take the `press` fill, icon toggles do not. A dropdown trigger (`.caret()`)
   ends in a 16 chevron-down in its label color at 75 %, with gap 8, and takes the
   `input_bg` fill. `.compact()` narrows the padding (sm 6, md and lg 8) and keeps the button
   at least as wide as it is tall (a title-bar menu: sm, compact, ghost).
-- **Checkbox:** 16 box in a 20 hit area, radius 2, 1 px `line_strong`; the check is 14,
-  `accent_text`. **Switch:** 32×20 track with 2 px inner padding inside a 2 px
-  `line_strong` ring 1 px off it (38×26 in all), 12 knob in `text`; off: `raised` track
-  with a `line_strong` border, knob at 50 %; on: `accent` at 40 % with an `accent_text`
-  20 % border.
+- **Checkbox:** 16 box in a 20 hit area, `radius_sm`, 1 px `line_strong`; checked (and
+  mixed): an `accent` fill and border with a 12 check (a dash) in `text_on_accent`.
+  **Radio:** on, its ring turns `accent` around an `accent` dot. **Switch:** 32×20 track
+  with 2 px inner padding inside a 2 px `line_strong` ring 1 px off it (38×26 in all), 12
+  knob; off: `raised` track with a `line_strong` border, knob `text` at 50 %; on: a solid
+  `accent` track and border, the knob `text_on_accent`, the ring `accent` at 35 %.
 - **Controls** (`Theme.ctl`, the `controls` object of a theme file): shapes that differ
   between design languages, off by default (One). `plain_toggles`: the switch is a 36×20
   track (`line` off, `accent` on) with a 16 `text` thumb inset 2 and no ring, the checkbox
@@ -239,17 +271,17 @@ same rule: no backdrop, an outside click closes them.
   right edge on the button's. With `Controls.select_input` the trigger takes the
   `input_bg` fill, padding 10, gap 8 and a 16 chevron-down (`text_2`; compact: the value's
   color at 75 %).
-- **Segmented control:** an outlined group (1 px `line_strong` at 60 %, radius 6) of cells
-  split by 1 px dividers; sm cells 22 tall with 12 labels, md and lg 28 / 32 with 14; the
-  chosen cell `accent_tint` with an `accent_text` label.
-- **Text input:** `input_bg` fill (default `canvas`), 1 px `line`, radius 6, padding 8 × 6, 14 text in the
+- **Segmented control:** an outlined group (1 px `line_strong`, radius 6) of cells split by
+  1 px dividers; sm cells 22 tall with 12 labels, md and lg 28 / 32 with 14; the chosen
+  cell `accent_tint` with an `accent_text` label.
+- **Text input:** `input_bg` fill (default `canvas`), 1 px `line_strong`, radius 6, padding 8 × 6, 14 text in the
   editor foreground (`code.editor.foreground`: `#ACB2BE` / `#242529`), placeholder
   `text_3`; focused: `border_focused`; invalid: an `error` border, focused or not, and
   the form field shows the message under it in 12 px `error`. No hover style. `height`
   fixes a single-line input's height (the cards settings use 32).
 - **Number input:** a text input with a 12 up and down chevron pair on its right, 160
   wide. **Stepper** (`stepper: true`): one framed control 128 × 32: `input_bg`, 1 px
-  `line`, `radius_lg`; a 32 wide `−` button, the value centred, a 32 wide `+` button.
+  `line_strong`, `radius_lg`; a 32 wide `−` button, the value centred, a 32 wide `+` button.
   The buttons are ghost with a 16 icon in `text`, hover `line` at 40 %, press at 60 %,
   only their outer corners rounded. Arrow keys step too.
 - **Menu:** level 1 overlay, min width 200, 4 vertical padding. Rows are 23 tall, inset 4
@@ -262,19 +294,26 @@ same rule: no backdrop, an outside click closes them.
   right arrow, left arrow closes it; submenus overlap their row by 2 px. A long menu is capped
   at half the window or 450 px and scrolls. A labelled separator is rule, 12 px `text_2`
   label, rule; a `heading` row is a section header. A row may lead with an 8 px color square
-  (`swatch`). Closing a popup gives the focus back
+  (`swatch`). A destructive item (`.danger()`) has its label and icon in `error`. Closing a
+  popup gives the focus back
   to what had it when the popup opened (its trigger), so keys and actions reach the window.
 - **Tooltip:** level 1, padding 8 × 4, 14 text, max width 288, shortcut muted 16 to the
   right, an optional meta line under it in 12 `text_2`, shown after 500 ms.
-- **List row:** 23 tall (dense) or 32 (picker rows, 4 padding), padding 6, radius 4 when
-  inset; tree indent 20 with 1 px indent guides; selected `press`.
+- **List row:** 23 tall (dense) or 32 (picker rows, 4 padding), padding 6, `radius_md` when
+  inset; tree indent 20 with 1 px indent guides; selected `press` with a 2 px `accent` bar
+  along its left edge and its icon in `accent_text`. A mark takes no room: rows keep their
+  text where they were.
 - **Tabs:** 32 tall, 4 padding, label 14 in `text_2` on `panel` (inactive) and `text` on
   `canvas` (active), 1 px `line_strong` seams on the side away from the active tab, no
-  hover fill. The dirty mark is a 6 px `accent` dot, always shown; the close button (18,
-  14 icon, in `text`) shows on hover.
+  hover fill; the active tab has a 2 px `accent` line along its top. Panel tabs (`tabs`)
+  mark the chosen one with a 2 px `accent` line along its bottom. The dirty mark is a 6 px
+  `accent` dot, always shown; the close button (18, 14 icon, in `text`) shows on hover.
 - **Picker / command palette:** 544 wide (palette 608), at most 384 tall, level 2. Query
-  row 36 tall with 10 padding over a 1 px `line`; rows as list rows; matches `accent_text`;
-  shortcuts muted on the right; an optional footer with a top `line`.
+  row 36 tall with 10 padding over a 1 px `line`; rows as list rows, the chosen one with
+  the 2 px `accent` bar; matches `accent_text`; shortcuts muted on the right; an optional
+  footer with a top `line`.
+- **Table:** a 1 px `line` grid; the selected row is `accent` at 10 % with a 2 px `accent`
+  bar along its left edge.
 - **Dialog:** level 2, 440 wide, header padding 12 / 8 / 4, headline 16, body 14
   `text_2`, footer padding 8 with a top `line`, buttons right-aligned, gap 4.
 - **Notifications:** stacked at the bottom right above the status bar, 12 from the edges,
@@ -296,7 +335,8 @@ same rule: no backdrop, an outside click closes them.
   size, 12 from the left edge (a settings window: 34 tall).
 - **Status bar:** 30, `chrome`, padding 8, items gap 12, labels 12; panel toggles are 22
   icon buttons with 14 `text_2` icons whose active state is an accent icon (no fill);
-  groups split by a 1 × 14 `line_strong` divider.
+  groups split by a 1 × 14 `line_strong` divider. Counts of diagnostics show in their hues
+  beside their icons.
 - **Settings:** a page column 226 wide (padding 10, a right `line_strong` hairline): the
   search field, page rows 28 tall with a 12 chevron and a 14 label (hover `panel_hover`,
   the chosen page `raised_hover` with a 1 px `line` border, radius 4), a keybinding hint
@@ -384,5 +424,7 @@ borders, yellow focus. Apps may override sizes and faces with struct update synt
 
 ## Status
 
-Implemented as above. Under One Dark Pro the switch's on track is `accent` at 40 %; the
-reference build this was matched against draws a more saturated blue there.
+Implemented as above. Proposals for more contrast and colour (tone steps, an accent focus,
+tinted controls, marks of what is chosen, hues by kind, rounder corners and deeper dark
+shadows) were taken over the reference build, so the pictures of the gallery now differ
+from it by design.

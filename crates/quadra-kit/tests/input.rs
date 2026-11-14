@@ -38,8 +38,8 @@ fn the_frame_shows_the_focus_and_what_is_not_accepted() {
         let paint = h.tree.paint_style(frame);
         (paint.background, paint.border_color)
     };
-    assert_eq!(look(&h, search), (theme.color(token::INPUT_BG), theme.color(token::LINE)));
-    assert_eq!(look(&h, secret_frame), (theme.color(token::PANEL), theme.color(token::LINE))); // disabled
+    assert_eq!(look(&h, search), (theme.color(token::INPUT_BG), theme.color(token::LINE_STRONG)));
+    assert_eq!(look(&h, secret_frame), (theme.color(token::PANEL), theme.color(token::LINE_STRONG))); // disabled
 
     // The border follows the focus, and Tab passes the disabled field by.
     h.get_by_role(Role::TextInput, "Search").type_text("abc");

@@ -4,11 +4,11 @@
 use quadra_layout::{Align, Display, Justify, Length};
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo, signal};
-use quadra_tree::{NodeId, Role, State};
+use quadra_tree::{NodeId, Paint, Role, Side, State};
 use quadra_ui::{AnyView, Div, MountCx, View, column, div, row, scroll, text};
 
 use crate::action::{LIST, MoveFirst, MoveLast, MoveNext, MovePrevious};
-use crate::display::label;
+use crate::display::{chosen_mark, label};
 use crate::icon::icon;
 use crate::token;
 
@@ -116,7 +116,8 @@ impl View for Sidebar {
     }
 }
 
-/// The row of a place: 26 px, its icon and its label; filled when chosen.
+/// The row of a place: 26 px, its icon and its label; filled when chosen, with the accent's
+/// mark at its left and its icon in the accent.
 fn place(
     item: NavItem,
     chosen: Signal<&'static str>,
@@ -127,11 +128,13 @@ fn place(
     let line = row().align_items(Align::Center).gap(6.0).height(26.0).padding_left(10.0).padding_right(8.0);
     let line = line.justify(move || if folded() { Justify::Center } else { Justify::Start });
     let line = line.cursor(Cursor::Pointer).role(Role::TreeItem).label(item.label.clone());
-    let line = line.selected(move || chosen.get() == id).on_click(move |_| chosen.set(id));
+    let on = move || chosen.get() == id;
+    let line = line.selected(on).on_click(move |_| chosen.set(id));
     let line = line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
+    let tone = move || Paint::from(if on() { token::ACCENT_TEXT } else { token::TEXT_2 });
     let line = match item.icon {
-        Some(body) => line.child(icon(body).size(16.0).color(token::TEXT_2)),
+        Some(body) => line.child(div().text_color(tone).child(icon(body).size(16.0))),
         None => line,
     };
-    line.child(div().display(words).child(text(item.label)))
+    line.child(div().display(words).child(text(item.label))).child(chosen_mark(Side::Left, on))
 }

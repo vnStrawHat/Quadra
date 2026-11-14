@@ -13,7 +13,7 @@ impl Tone {
     /// The icon that goes with a tone.
     pub(crate) fn icon(self) -> &'static str {
         match self {
-            Tone::Neutral => icons::BELL,
+            Tone::Neutral | Tone::Hue(_) => icons::BELL,
             Tone::Primary | Tone::Info => icons::INFO,
             Tone::Success => icons::CIRCLE_CHECK,
             Tone::Warning => icons::TRIANGLE_ALERT,

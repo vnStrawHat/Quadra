@@ -84,19 +84,23 @@ fn buttons_have_the_sizes_and_the_colours_of_their_variants() {
     // 28 px high, 8 px beside a label of 14 px text; the smallest is 18 high around 12 px text.
     let (save, delete) = (p.node("save"), p.node("delete"));
     let (save, delete) = (p.h.tree.rect(save).size(), p.h.tree.rect(delete).size());
-    assert!((save.width - (16.0 + 4.0 * 8.4)).abs() < 0.01 && save.height == 28.0, "{save:?}");
-    assert!((delete.width - (8.0 + 6.0 * 7.2)).abs() < 0.01 && delete.height == 18.0, "{delete:?}");
+    // A tinted button has a border of its colour, a pixel each side.
+    assert!((save.width - (18.0 + 4.0 * 8.4)).abs() < 0.01 && save.height == 28.0, "{save:?}");
+    assert!((delete.width - (10.0 + 6.0 * 7.2)).abs() < 0.01 && delete.height == 18.0, "{delete:?}");
 
     let none = Color::TRANSPARENT;
+    let colours = p.theme.theme();
+    let (accent, error) =
+        (colours.resolve(token::ACCENT.alpha(0.42)), colours.resolve(token::ERROR.alpha(0.42)));
     // Disabled: its fill, and the colour of what is off.
-    assert_eq!(p.look("save"), (p.is(token::ACCENT_TINT), none, p.is(token::TEXT_DISABLED)));
-    assert_eq!(p.look("cancel"), (none, p.is(token::LINE), p.is(token::TEXT)));
+    assert_eq!(p.look("save"), (p.is(token::ACCENT_TINT), accent, p.is(token::TEXT_DISABLED)));
+    assert_eq!(p.look("cancel"), (none, p.is(token::LINE_STRONG), p.is(token::TEXT)));
     assert_eq!(p.look("wrap"), (none, none, p.is(token::TEXT)));
-    assert_eq!(p.look("delete"), (p.is(token::ERROR_TINT), none, p.is(token::TEXT)));
+    assert_eq!(p.look("delete"), (p.is(token::ERROR_TINT), error, p.is(token::TEXT)));
     assert_eq!(p.look("more"), (none, none, p.is(token::ACCENT_TEXT)));
 
-    // Under the pointer: a ghost gets the hover step, an outlined one a stronger border too,
-    // a disabled one nothing.
+    // Under the pointer: a ghost and an outlined one get the hover step, a disabled one
+    // nothing.
     p.over("wrap");
     assert_eq!(p.look("wrap").0, p.is(token::PANEL_HOVER));
     p.over("cancel");
@@ -105,7 +109,7 @@ fn buttons_have_the_sizes_and_the_colours_of_their_variants() {
     assert_eq!(p.look("save").0, p.is(token::ACCENT_TINT));
     p.dirty.set(true);
     p.h.frame();
-    assert_eq!(p.look("save"), (p.is(token::ACCENT_TINT_HOVER), none, p.is(token::TEXT)));
+    assert_eq!(p.look("save"), (p.is(token::ACCENT_TINT_HOVER), accent, p.is(token::TEXT)));
 }
 
 #[test]
@@ -122,6 +126,11 @@ fn a_click_and_the_keyboard_do_the_same_and_a_disabled_button_does_nothing() {
     p.h.frame();
     // A focus that came by the keyboard: the border of an outlined button says so.
     assert_eq!(p.look("cancel").1, p.is(token::BORDER_FOCUSED));
+    // One with no border: a line of a pixel along its edge.
+    p.h.key(Key::Tab, Mods::NONE);
+    p.h.frame();
+    let wrap = p.node("wrap");
+    assert_eq!(p.h.tree.paint_style(wrap).outline, p.is(token::BORDER_FOCUSED));
 
     p.dirty.set(true);
     p.h.frame();

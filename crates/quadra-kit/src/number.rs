@@ -104,8 +104,8 @@ impl View for NumberInput {
             let side = || ghost(row().width(32.0).height(30.0));
             let middle = row().grow(1.0).justify(Justify::Center).cursor(Cursor::Text).child(field);
             let frame = around.size(128.0, 32.0).radius(size::RADIUS_LG).border(1.0);
-            let frame = frame.bg(token::INPUT_BG).border_color(token::LINE);
-            let frame = frame.overflow_x(quadra_layout::Overflow::Hidden).selection_color(token::ACCENT_TINT);
+            let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG);
+            let frame = frame.overflow_x(quadra_layout::Overflow::Hidden).selection_color(token::SELECTION);
             let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
             let frame =
                 frame.invalid(wrong).when(quadra_tree::State::INVALID, |s| s.border_color(token::ERROR));

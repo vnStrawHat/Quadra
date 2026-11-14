@@ -1,16 +1,17 @@
 //! Tabs (specs/13, "Components"): the names of a few pages in a row, one of them chosen. The
-//! caller shows the page of the chosen one. Underlined by default; `.pill()` tints the chosen
-//! tab and draws no line.
+//! caller shows the page of the chosen one. Underlined by default, the chosen tab with the
+//! accent's line; `.pill()` tints the chosen tab and draws no line.
 
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_prim::Color;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, Role, State};
+use quadra_tree::{NodeId, Role, Side, State};
 use quadra_ui::{Div, MountCx, Refine, View, row, text};
 
 use crate::button::Size;
 use crate::choice::chooser;
+use crate::display::chosen_mark;
 use crate::{size, token};
 
 pub struct Tabs {
@@ -43,7 +44,8 @@ impl Tabs {
             if pill { s.bg(token::ACCENT_TINT) } else { s.bg(Color::TRANSPARENT) }
         };
         let tab = tab.selected(move || chosen.get() == i).when(State::SELECTED, on);
-        tab.on_click(move |_| chosen.set(i)).child(text(label))
+        let tab = tab.on_click(move |_| chosen.set(i)).child(text(label));
+        if pill { tab } else { tab.child(chosen_mark(Side::Below, move || chosen.get() == i)) }
     }
 }
 

@@ -116,8 +116,8 @@ impl Input {
         };
         let frame = row().align_items(Align::Center).gap(4.0).width(self.width).min_height(32.0);
         let frame = frame.padding_x(8.0).padding_y(6.0).radius(size::RADIUS_LG).border(1.0);
-        let frame = frame.bg(token::INPUT_BG).border_color(token::LINE).cursor(Cursor::Text);
-        let frame = frame.selection_color(token::ACCENT_TINT);
+        let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG).cursor(Cursor::Text);
+        let frame = frame.selection_color(token::SELECTION);
         // The border is where the focus shows; a value that is not accepted keeps the
         // colour of errors with the focus or without; a disabled field is a step back.
         let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));

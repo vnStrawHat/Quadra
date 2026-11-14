@@ -67,8 +67,11 @@ pub fn code_box(lang: &str, source: &str, on_link: &Option<OnLink>) -> Div {
     };
     let runs: Vec<_> = pieces(lang, &source.replace('\t', "    ")).into_iter().map(run).collect();
     let frame = column().padding(12.0).radius(size::RADIUS_LG).bg(token::CANVAS).border(1.0);
-    let frame =
-        frame.border_color(token::LINE).font_family(fonts::MONO).text_size(CODE).line_height(size::LINE);
+    let frame = frame
+        .border_color(token::LINE_STRONG)
+        .font_family(fonts::MONO)
+        .text_size(CODE)
+        .line_height(size::LINE);
     if runs.is_empty() { frame } else { frame.child(scroll_x(signal(0.0), div().child(rich(runs, on_link)))) }
 }
 

@@ -7,10 +7,11 @@ use std::rc::Rc;
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo, signal};
-use quadra_tree::{NodeId, Paint, Role, State};
+use quadra_tree::{NodeId, Paint, Role, Side, State};
 use quadra_ui::{Div, MountCx, View, column, div, dynamic, row, text, uniform_list};
 
 use crate::action::{Confirm, MoveFirst, MoveInto, MoveLast, MoveNext, MoveOut, MovePrevious, TREE};
+use crate::display::chosen_mark;
 use crate::icon::icon;
 use crate::{icons, token};
 
@@ -25,7 +26,8 @@ pub struct TreeNode {
     pub label: String,
     pub icon: Option<&'static str>,
     pub children: Vec<TreeNode>,
-    /// The colour of the label, when it is not that of the text around.
+    /// The colour of the label and the icon, when it is not that of the text around: a hue
+    /// for a kind (`token::HUE_YELLOW` for what was changed).
     pub color: Option<Paint>,
     /// What follows the label, and its colour.
     pub detail: Option<(String, Paint)>,
@@ -127,8 +129,9 @@ impl Tree {
 }
 
 /// What a row shows: guides for the levels it is in, a chevron if it holds something, its
-/// icon, its label and its detail.
-fn line(at: &Shown, (height, indent): (f32, f32)) -> Div {
+/// icon, its label and its detail; and while `on`, the accent's mark at its left and its icon
+/// in the accent, unless it has a colour of its own.
+fn line(at: &Shown, (height, indent): (f32, f32), on: impl Fn() -> bool + Clone + 'static) -> Div {
     let left = 8.0 + at.depth as f32 * indent;
     let mut line = row().align_items(Align::Center).gap(2.0).grow(1.0).height(height);
     line = line.padding_left(left).padding_right(8.0).cursor(Cursor::Pointer);
@@ -145,8 +148,11 @@ fn line(at: &Shown, (height, indent): (f32, f32)) -> Div {
         false => line.child(div().width(16.0)),
     };
     if let Some(body) = at.icon {
-        line = line.child(icon(body).size(16.0).color(token::TEXT_2));
+        let (own, lit) = (at.color, on.clone());
+        let tone = move || own.unwrap_or(if lit() { token::ACCENT_TEXT } else { token::TEXT_2 }.into());
+        line = line.child(div().text_color(tone).child(icon(body).size(16.0)));
     }
+    line = line.child(chosen_mark(Side::Left, on));
     let label = text(at.label.clone());
     let label = at.color.map_or_else(|| text(at.label.clone()), |color| label.color(color));
     let line = line.child(div().padding_left(4.0).child(label));
@@ -190,7 +196,7 @@ impl View for Tree {
                     let id = at.id.clone();
                     let on = move || chosen.with(|chosen| chosen.as_deref() == Some(id.as_str()));
                     let (is, ring, id) = (on.clone(), on.clone(), at.id.clone());
-                    let line = line(&at, sizes).selected(on);
+                    let line = line(&at, sizes, on.clone()).selected(on);
                     let line = line
                         .hover(|s| s.bg(token::RAISED_HOVER))
                         .when(State::SELECTED, |s| s.bg(token::PRESS));

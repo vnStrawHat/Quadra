@@ -1,9 +1,9 @@
 //! The small things that show and do nothing (specs/behaviour/09, "Data" and "Layout"):
 //! headings and labels, badges and tags, keys, an avatar, a card, dividers.
 
-use quadra_layout::{Align, Justify};
+use quadra_layout::{Align, Display, Justify};
 use quadra_prim::Color;
-use quadra_tree::{Role, Token};
+use quadra_tree::{Role, Side, Token};
 use quadra_ui::{Div, TextView, column, div, row, text};
 
 use crate::{fonts, size, token};
@@ -36,6 +36,8 @@ pub enum Tone {
     Warning,
     Danger,
     Info,
+    /// A kind among others: one of the hues (`token::HUE_GREEN`), with its words beside it.
+    Hue(Token),
 }
 
 impl Tone {
@@ -48,6 +50,7 @@ impl Tone {
             Tone::Warning => token::WARN,
             Tone::Danger => token::ERROR,
             Tone::Info => token::INFO,
+            Tone::Hue(hue) => hue,
         }
     }
 }
@@ -129,7 +132,7 @@ pub fn avatar(name: &str, side: f32) -> Div {
 /// [`card_head`] is its title.
 pub fn card() -> Div {
     let card = column().gap(8.0).padding(12.0).bg(token::PANEL).radius(size::RADIUS_MD);
-    card.border(1.0).border_color(token::LINE)
+    card.border(1.0).border_color(token::LINE_STRONG)
 }
 
 /// The head of a card: a title of 16 px over a muted line that says more, if there is one.
@@ -137,6 +140,20 @@ pub fn card_head(title: impl Into<String>, more: impl Into<String>) -> Div {
     let (title, more) = (text(title.into()).size(size::TEXT_LG.size), more.into());
     let head = column().gap(2.0).child(title);
     if more.is_empty() { head } else { head.child(label(more)) }
+}
+
+/// The mark of what is chosen (specs/behaviour/15, principle 2): a bar of 2 px in the accent
+/// along one edge of the box it is put in, over what is there and taking no room, shown
+/// while `on` says. Along the left it stops 4 px short of the ends.
+pub fn chosen_mark(side: Side, on: impl Fn() -> bool + 'static) -> Div {
+    let shown = move || if on() { Display::Flex } else { Display::None };
+    let bar = div().absolute().bg(token::ACCENT).display(shown);
+    match side {
+        Side::Left => bar.left(0.0).top(4.0).bottom(4.0).width(2.0).radius(1.0),
+        Side::Right => bar.right(0.0).top(4.0).bottom(4.0).width(2.0).radius(1.0),
+        Side::Above => bar.left(0.0).right(0.0).top(0.0).height(2.0),
+        Side::Below => bar.left(0.0).right(0.0).bottom(0.0).height(2.0),
+    }
 }
 
 /// A line of one pixel across a column, and one down a row.

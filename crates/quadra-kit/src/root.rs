@@ -26,6 +26,6 @@ pub fn root() -> Div {
     // Lines are 1.618 of the size of their text, in whole pixels: 23 px for the 14 of the UI.
     let page = page.text_size(size::TEXT_MD.size).line_height(size::LINE);
     // In fields: what stands where text goes, the selection, and the caret.
-    let page = page.placeholder_color(token::TEXT_3).selection_color(token::ACCENT.alpha(0.24));
+    let page = page.placeholder_color(token::TEXT_3).selection_color(token::SELECTION);
     page.caret_color(token::ACCENT)
 }

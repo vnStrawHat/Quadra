@@ -67,7 +67,7 @@ fn page_row(i: usize, page: &SettingsPage, model: &Model) -> Div {
     let line = line.radius(size::RADIUS_MD).border(1.0).border_color(token::LINE.alpha(0.0));
     let line = line.role(Role::TreeItem).label(page.title.clone()).selected(move || on.get() == i);
     let line = line.hover(|s| s.bg(token::PANEL_HOVER));
-    let line = line.when(State::SELECTED, |s| s.bg(token::RAISED_HOVER).border_color(token::LINE));
+    let line = line.when(State::SELECTED, |s| s.bg(token::RAISED_HOVER).border_color(token::LINE_STRONG));
     let line = opens(acts(line, move || model.go(i, None, TOP)), open);
     line.child(chevron).child(text(page.title.clone()))
 }

@@ -34,9 +34,9 @@ roles! {
     OVERLAY_BG = "overlay_bg";
     /// Behind a modal dialog.
     SCRIM = "scrim";
-    /// Dividers, and the outlines of overlays and inputs.
+    /// Dividers, hairlines, the grid of tables.
     LINE = "line";
-    /// The borders of tabs and panes, and an outline under the pointer.
+    /// The outlines of controls, overlays and cards; the seams of tabs and panes.
     LINE_STRONG = "line_strong";
     /// The border of what has the focus. Unset, it is the accent.
     BORDER_FOCUSED = "border_focused";
@@ -50,7 +50,7 @@ roles! {
     SCROLL_THUMB = "scroll_thumb";
     /// Text fields, steppers and dropdown triggers. Unset, it is the canvas.
     INPUT_BG = "input_bg";
-    /// Selected text. Unset, fields select in the accent's tint.
+    /// Selected text, in fields and in text that can be selected. Unset, the accent's tint.
     SELECTION = "selection";
     /// The labels of inactive tabs. Unset, the muted text.
     TAB_FG = "tab_fg";
@@ -108,6 +108,16 @@ roles! {
     SUCCEEDED = "succeeded";
     TERMINATING = "terminating";
     UNKNOWN = "unknown";
+    /// Hues that tell kinds apart (specs/behaviour/15, principle 9): the state of a file,
+    /// kinds of files and objects, counts of diagnostics. Never alone: a shape, letter or
+    /// label goes with each.
+    HUE_RED = "hue_red";
+    HUE_ORANGE = "hue_orange";
+    HUE_YELLOW = "hue_yellow";
+    HUE_GREEN = "hue_green";
+    HUE_CYAN = "hue_cyan";
+    HUE_BLUE = "hue_blue";
+    HUE_PURPLE = "hue_purple";
     /// The colours of code: a theme file's `syntax`, under these names without `syntax_`.
     SYNTAX_KEYWORD = "syntax_keyword";
     SYNTAX_CONTROL = "syntax_control";
@@ -165,6 +175,9 @@ pub const ANSI: [Token; 16] = [
     ANSI_0, ANSI_1, ANSI_2, ANSI_3, ANSI_4, ANSI_5, ANSI_6, ANSI_7, ANSI_8, ANSI_9, ANSI_10, ANSI_11,
     ANSI_12, ANSI_13, ANSI_14, ANSI_15,
 ];
+
+/// The hues by kind: red, orange, yellow, green, cyan, blue, purple.
+pub const HUES: [Token; 7] = [HUE_RED, HUE_ORANGE, HUE_YELLOW, HUE_GREEN, HUE_CYAN, HUE_BLUE, HUE_PURPLE];
 
 /// The colours of the series of a chart, in order.
 pub const SERIES: [Token; 8] =

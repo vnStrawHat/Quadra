@@ -38,13 +38,13 @@ pub const H_MD: f32 = 28.0;
 pub const H_LG: f32 = 32.0;
 
 /// Checkboxes and keys.
-pub const RADIUS_SM: f32 = 2.0;
+pub const RADIUS_SM: f32 = 4.0;
 /// Buttons, list rows, chips.
-pub const RADIUS_MD: f32 = 4.0;
+pub const RADIUS_MD: f32 = 6.0;
 /// Inputs, segmented groups, code blocks.
 pub const RADIUS_LG: f32 = 6.0;
 /// Every overlay: menus, tooltips, popovers, dialogs, toasts.
-pub const RADIUS_XL: f32 = 8.0;
+pub const RADIUS_XL: f32 = 10.0;
 
 /// Regular text, and what is emphasized or a heading.
 pub const WEIGHT_NORMAL: u16 = 400;

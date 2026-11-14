@@ -59,7 +59,7 @@ impl View for Select {
         // Filled, with a hairline border, 28 px high; the border is where the focus shows.
         let face = row().width(self.width).height(size::H_MD).padding_x(8.0).gap(8.0).shrink(0.0);
         let face = face.align_items(Align::Center).radius(size::RADIUS_MD).bg(token::RAISED);
-        let face = face.border(1.0).border_color(token::LINE).hover(|s| s.bg(token::RAISED_HOVER));
+        let face = face.border(1.0).border_color(token::LINE_STRONG).hover(|s| s.bg(token::RAISED_HOVER));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
         let face = face.role(Role::Button).expanded(open).focusable().key_context(CONTROL);
         let face = face.cursor(Cursor::Pointer).node_ref(&opener);

@@ -127,6 +127,8 @@ where
                 let line =
                     line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
                 let line = line.on_click(move |_| chosen(k));
+                let line =
+                    line.child(crate::display::chosen_mark(quadra_tree::Side::Left, move || on.get() == k));
                 let line = line.child(marked(&command.title, &hits)).child(div().grow(1.0));
                 let line = match &command.keys {
                     Some(keys) => line.child(text(key_label(keys)).color(token::TEXT_2)),
@@ -155,7 +157,7 @@ where
         let ask = ask.border_bottom(1.0).border_color(token::LINE).child(div().grow(1.0).child(field));
         let tall = move || Length::Px((found.get().len().max(1) as f32 * ROW + 8.0).min(MOST));
         let list = scroll(signal(0.0), rows).container(div().height(tall));
-        let panel = column().width(608.0 - EDGE).key_context(LIST).selection_color(token::ACCENT_TINT);
+        let panel = column().width(608.0 - EDGE).key_context(LIST).selection_color(token::SELECTION);
         let panel = panel.on_action::<MoveNext>(move |_| down(true));
         let panel = panel.on_action::<MovePrevious>(move |_| up(false));
         panel.on_action::<Confirm>(move |_| enter(on.get_untracked())).child(ask).child(list)

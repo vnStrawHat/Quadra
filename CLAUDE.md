@@ -163,7 +163,10 @@ docking), and `settings` (`settings.rs`: rules and cards). Boxes have a pose (`.
 (`.animate(timeline()..)`): `quadra-tree/src/motion.rs`, run by the tree at the start of a frame.
 Rich text is in (`rich_text([span(..)..])`; `Paragraph::rich` with `Shaping` runs, the widget `RichText`,
 `Widget::theme` for widgets that paint with roles). **Phase R3 is done** (docs/progress.md, "The exit of
-R3": both themes compared, a mean of 1 % of the pixels differ). **R4 has started**: `quadra-viz` is done (`sparkline`, `line_chart`, `bar_chart`; the widget `Plot` draws a line a device pixel
+R3": both themes compared, a mean of 1 % of the pixels differ; since 2026-11-14 the design language has more contrast and
+colour by the user's choice, so the pictures differ from the V ones by design: translucent hover steps, the accent as the focus border,
+tinted buttons with borders, filled checkboxes and switches, `chosen_mark(side, on)` for what is chosen, hues by kind (`token::HUE_*`,
+`Tone::Hue`), radii 4/6/6/10, and deeper shadows under a dark theme, `Theme::with_deep_shadows`). **R4 has started**: `quadra-viz` is done (`sparkline`, `line_chart`, `bar_chart`; the widget `Plot` draws a line a device pixel
 column at a time and the shader works out the cover of each pixel, so **a chart line must never show steps**: where the line is
 stays a fraction of a pixel, columns are whole device pixels; `QUADRA_SCALE=1.5 tools/shots.sh ..` draws the pages at 150 % to look;
 a pointer handler has the size of its node, `e.size`). The live table is the kit's table with `.keys(|row| ..)`

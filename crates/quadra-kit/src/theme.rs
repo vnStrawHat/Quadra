@@ -96,7 +96,7 @@ impl KitTheme {
 
     /// What a tree resolves the roles in its styles with.
     pub fn theme(&self) -> Theme {
-        Theme::new(self.colors.clone())
+        Theme::new(self.colors.clone()).with_deep_shadows(self.mode == Mode::Dark)
     }
 
     fn empty() -> KitTheme {
@@ -198,6 +198,7 @@ impl KitTheme {
             (TABLE_ROW_BORDER, LINE_STRONG),
             (TEXT_ON_STATUS, TEXT_ON_ACCENT),
             (CYAN, SYNTAX_TYPE),
+            (SELECTION, ACCENT_TINT),
         ];
         for (role, other) in follows.into_iter().chain(SERIES.map(|series| (series, ACCENT))) {
             if unset(&self, role) {

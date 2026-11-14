@@ -93,9 +93,10 @@ fn rows_open_and_close_what_they_hold_by_the_pointer() {
     let rows = p.click("kit");
     assert_eq!(rows[..4], ["v src", "  v kit*", "    button.rs", "    menu.rs"]);
     assert_eq!((p.chosen.get_untracked().as_deref(), p.open.get_untracked().len()), (Some("kit"), 2));
-    // A row two levels in has a guide for each level, before its chevron's place.
+    // A row two levels in has a guide for each level, before its chevron's place; then the
+    // label, and the mark it has while it is selected.
     let file = p.h.get_by_role(Role::TreeItem, "button.rs").node();
-    assert_eq!(p.h.tree.children(file).len(), 2 + 3);
+    assert_eq!(p.h.tree.children(file).len(), 2 + 4);
     assert_eq!(p.click("src")[1], "  v kit");
     assert_eq!(p.click("src"), ["> src*", "> docs", "README.md"]);
 

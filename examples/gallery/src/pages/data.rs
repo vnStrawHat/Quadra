@@ -38,16 +38,19 @@ pub fn table_page() -> Div {
 }
 
 pub fn tree_page() -> Div {
-    let chosen = signal(None);
+    let chosen = signal(Some("app.rs".to_string()));
+    let open = signal(["quadra", "core", "ui"].map(String::from).into_iter().collect());
     let roots = || {
         let folder = |name: &str| TreeNode::new(name, name).icon(icons::FOLDER);
         let file = |name: &str| TreeNode::new(name, name).icon(icons::FILE);
-        let core = folder("core").children([file("app.rs"), file("window.rs")]);
-        let quadra =
-            folder("quadra").children([core, folder("ui").children([file("div.rs")]), folder("kit")]);
+        // The state of a file under version control: its hue, and a letter that says it.
+        let changed = file("window.rs").color(token::HUE_YELLOW).detail("M", token::HUE_YELLOW);
+        let added = file("div.rs").color(token::HUE_GREEN).detail("A", token::HUE_GREEN);
+        let core = folder("core").children([file("app.rs"), changed]);
+        let quadra = folder("quadra").children([core, folder("ui").children([added]), folder("kit")]);
         vec![quadra, folder("docs").children([file("progress.md")])]
     };
-    let files = framed(tree(roots, chosen)).size(260.0, 220.0);
+    let files = framed(tree(roots, chosen).open(open)).size(260.0, 220.0);
     let said = hint(move || format!("Selected: {}", chosen.get().unwrap_or_default()));
     page(
         "Tree",

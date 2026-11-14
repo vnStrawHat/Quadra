@@ -1,7 +1,7 @@
 //! The button (specs/behaviour/15, "Components"): a label that does something when it is
 //! clicked, or when Enter or Space is pressed while it has the focus. A ghost has no fill
 //! until the pointer is over it; an outlined one has a hairline border; a tinted one a fill
-//! at low opacity; a link is accent text.
+//! at low opacity, a border of its colour and an icon in it; a link is accent text.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -92,21 +92,33 @@ pub fn button<M>(label: impl IntoProp<String, M>) -> Button {
 }
 
 /// The colours of a variant: its fill, its label, its fill under the pointer and while
-/// pressed, and its border. Transparent: there is none.
-fn colors(variant: Variant) -> [Paint; 5] {
+/// pressed, its border, and its icon. Transparent: there is none, or the icon is the label's.
+fn colors(variant: Variant) -> [Paint; 6] {
     use token::*;
     let none = Paint::default();
-    let (fill, label, hover, press, border) = match variant {
-        Variant::Primary => {
-            (ACCENT_TINT.into(), TEXT, ACCENT_TINT_HOVER.into(), ACCENT_TINT_HOVER.into(), none)
-        }
-        Variant::Danger => (ERROR_TINT.into(), TEXT, ERROR_TINT_HOVER.into(), ERROR_TINT_HOVER.into(), none),
-        Variant::Secondary => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), LINE.into()),
-        Variant::Outline => (none, TEXT, PANEL_HOVER.into(), PANEL_HOVER.into(), LINE.into()),
-        Variant::Ghost => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), none),
-        Variant::Link => (none, ACCENT_TEXT, none, none, none),
+    let (fill, label, hover, press, border, mark) = match variant {
+        Variant::Primary => (
+            ACCENT_TINT.into(),
+            TEXT,
+            ACCENT_TINT_HOVER.into(),
+            ACCENT_TINT_HOVER.into(),
+            ACCENT.alpha(0.42),
+            ACCENT_TEXT.into(),
+        ),
+        Variant::Danger => (
+            ERROR_TINT.into(),
+            TEXT,
+            ERROR_TINT_HOVER.into(),
+            ERROR_TINT_HOVER.into(),
+            ERROR.alpha(0.42),
+            ERROR.into(),
+        ),
+        Variant::Secondary => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), LINE_STRONG.into(), none),
+        Variant::Outline => (none, TEXT, PANEL_HOVER.into(), PANEL_HOVER.into(), LINE_STRONG.into(), none),
+        Variant::Ghost => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), none, none),
+        Variant::Link => (none, ACCENT_TEXT, none, none, none, none),
     };
-    [fill, label.into(), hover, press, border]
+    [fill, label.into(), hover, press, border, mark]
 }
 
 impl Button {
@@ -171,7 +183,11 @@ impl Button {
     }
 
     fn build(self) -> Div {
-        let [fill, label, hover, press, border] = colors(self.variant);
+        let [fill, label, hover, press, border, mark] = colors(self.variant);
+        let off = match self.disabled {
+            Prop::Value(off) => memo(move || off),
+            Prop::Reactive(read) => memo(read),
+        };
         let bordered = border != Paint::default();
         let small = matches!(self.size, Size::Xs | Size::Sm);
         let face = row().align_items(Align::Center).justify(Justify::Center).gap(4.0).shrink(0.0);
@@ -187,15 +203,15 @@ impl Button {
             Size::Xs => face.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height()),
             _ => face,
         };
-        // Outlined: the border darkens under the pointer, and turns the focus colour for a
-        // focus that came by the keyboard. Without a border the focus shows as the hover fill.
+        // A focus that came by the keyboard turns the border the focus colour; without a
+        // border it is a line of a pixel along the edge, which takes no room.
         let face = match bordered {
             true => face
                 .border(1.0)
                 .border_color(border)
-                .hover(|s| s.bg(hover).border_color(token::LINE_STRONG))
+                .hover(|s| s.bg(hover))
                 .focus_visible(|s| s.border_color(token::BORDER_FOCUSED)),
-            false => face.focus_visible(|s| s.bg(hover)).hover(|s| s.bg(hover)),
+            false => face.focus_visible(|s| s.outline(token::BORDER_FOCUSED)).hover(|s| s.bg(hover)),
         };
         let face = face.active(|s| s.bg(press));
         // On: the accent for the label, and the selected step for a button with no fill
@@ -209,8 +225,8 @@ impl Button {
             None => face,
         };
         // Disabled: as it is at rest, whatever the pointer does, in the colour of what is off.
-        let off = |s: quadra_ui::Refine| s.bg(fill).border_color(border).text_color(token::TEXT_DISABLED);
-        let face = face.disabled(self.disabled).when(State::DISABLED, off);
+        let quiet = |s: quadra_ui::Refine| s.bg(fill).border_color(border).text_color(token::TEXT_DISABLED);
+        let face = face.disabled(move || off.get()).when(State::DISABLED, quiet);
         // Busy looks as it did, with a spinner where an icon goes; its click does nothing.
         let busy = self.loading.map(|loading| match loading {
             Prop::Value(busy) => memo(move || busy),
@@ -249,9 +265,19 @@ impl Button {
             }
             None => face,
         };
-        // The icon is 14 px, 16 in the two larger sizes, in the colour of the label.
+        // The icon is 14 px, 16 in the two larger sizes, in the colour of the label, or of
+        // the tint while the button is not disabled.
         let face = match self.icon {
-            Some(body) => face.child(icon(body).size(if small { 14.0 } else { 16.0 })),
+            Some(body) => {
+                let glyph = icon(body).size(if small { 14.0 } else { 16.0 });
+                match mark == Paint::default() {
+                    true => face.child(glyph),
+                    false => {
+                        let color = move || if off.get() { token::TEXT_DISABLED.into() } else { mark };
+                        face.child(div().text_color(color).child(glyph))
+                    }
+                }
+            }
             None => face,
         };
         match self.label {

@@ -95,7 +95,7 @@ impl View for TimeInput {
             move |minute| value.update(|time| time.minute = minute),
         );
         let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).width(120.0).height(size::H_MD);
-        let face = face.padding_x(8.0).radius(size::RADIUS_MD).border(1.0).border_color(token::LINE);
+        let face = face.padding_x(8.0).radius(size::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
         let face = face.role(Role::Group).label(move || value.get().to_string());
         let face = face.child(icon(icons::CLOCK).size(14.0).color(token::TEXT_2));

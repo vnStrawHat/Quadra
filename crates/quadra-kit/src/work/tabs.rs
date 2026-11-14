@@ -164,6 +164,8 @@ fn face(strip: &Rc<TabStrip>, widths: &Widths, tab: Signal<Tab>) -> Measured {
     let face =
         face.role(Role::Tab).label(move || tab.with(|tab| tab.title.clone())).selected(move || on.get());
     let face = face.border_bottom(move || if on.get() { 0.0 } else { 1.0 });
+    // The active tab has the accent's line along its top.
+    let face = face.child(crate::display::chosen_mark(quadra_tree::Side::Above, move || on.get()));
     let seam = |there: bool| if there { 1.0 } else { 0.0 };
     let face = face.border_left(move || {
         let (i, at) = place.get();

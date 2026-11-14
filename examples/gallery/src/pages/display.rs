@@ -64,6 +64,13 @@ pub fn badge_page() -> Div {
         ("Down", Tone::Danger),
         ("Beta", Tone::Info),
     ];
+    // Kinds of objects, each in its hue and named.
+    let kinds = [
+        ("Pod", token::HUE_CYAN),
+        ("Service", token::HUE_BLUE),
+        ("Secret", token::HUE_PURPLE),
+        ("Volume", token::HUE_ORANGE),
+    ];
     let count = |name: &str, n: &str, tone| {
         row().align_items(Align::Center).gap(6.0).child(text(name.to_string())).child(badge(n, tone))
     };
@@ -81,6 +88,11 @@ pub fn badge_page() -> Div {
                 "badge(\"Healthy\", Tone::Success)",
             ),
             demo("Counts", counts, ""),
+            demo(
+                "Kinds",
+                line().children(kinds.map(|(name, hue)| badge(name, Tone::Hue(hue)))),
+                "badge(\"Service\", Tone::Hue(token::HUE_BLUE))",
+            ),
         ],
     )
 }

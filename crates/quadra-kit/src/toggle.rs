@@ -36,39 +36,48 @@ pub fn switch(on: Signal<bool>) -> Toggle {
 /// Whether a control is disabled, for each part of it that looks different then.
 type Off = Rc<dyn Fn() -> bool>;
 
-/// A box 16 px square with a hairline border; the check is the accent, or the colour of
-/// what is off.
+/// A box 16 px square with a hairline border; checked, it is filled with the accent, or the
+/// colour of what is off, and the check is dark on it.
 fn check_box(on: Signal<bool>, off: Off, mixed: Off) -> Div {
-    let mark = move || Paint::from(if off() { token::TEXT_DISABLED } else { token::ACCENT_TEXT });
-    let edge = div().size(16.0, 16.0).shrink(0.0).align_items(Align::Center).justify(Justify::Center);
-    let edge = edge.radius(size::RADIUS_SM).border(1.0).border_color(token::LINE_STRONG);
-    let edge = edge.text_color(mark).hover(|s| s.border_color(token::LINE_STRONG.alpha(0.7)));
+    let (dash, full) = (mixed.clone(), mixed.clone());
+    let fill = move || match on.get() || full() {
+        true => Paint::from(if off() { token::TEXT_DISABLED } else { token::ACCENT }),
+        false => Paint::default(),
+    };
+    let shown = fill.clone();
+    let edge = move || match shown() {
+        Paint::Color(_) => Paint::from(token::LINE_STRONG),
+        filled => filled,
+    };
+    let frame = div().size(16.0, 16.0).shrink(0.0).align_items(Align::Center).justify(Justify::Center);
+    let frame = frame.radius(size::RADIUS_SM).border(1.0).border_color(edge).bg(fill);
+    let frame = frame.text_color(token::TEXT_ON_ACCENT);
     // A check when it is checked; a dash while it is neither.
-    let dash = mixed.clone();
-    let mark = move || icon(if mixed() { icons::MINUS } else { icons::CHECK });
-    edge.child(show(move || on.get() || dash(), move || dynamic(mark.clone())))
+    let mark = move || icon(if mixed() { icons::MINUS } else { icons::CHECK }).size(12.0);
+    frame.child(show(move || on.get() || dash(), move || dynamic(mark.clone())))
 }
 
 /// A track of 32 by 20 px inside a ring one pixel off it, 38 by 26 in all, with a knob of
-/// 12 px in the text colour: at the end and the accent behind it when on.
+/// 12 px: when on, at the end, dark on a track of the accent.
 fn switch_track(on: Signal<bool>, off: Off) -> Div {
-    let fill = move || if on.get() { token::ACCENT.alpha(0.4) } else { Paint::from(token::RAISED) };
-    let edge = move || if on.get() { token::ACCENT_TEXT.alpha(0.2) } else { Paint::from(token::LINE_STRONG) };
-    // The knob is the text colour: whole when on, half when off, faint when disabled.
-    let knob = move || {
-        token::TEXT.alpha(if off() {
-            0.2
-        } else if on.get() {
-            1.0
-        } else {
-            0.5
-        })
+    let lit = off.clone();
+    let fill = move || match on.get() {
+        true => Paint::from(if lit() { token::TEXT_DISABLED } else { token::ACCENT }),
+        false => Paint::from(token::RAISED),
+    };
+    let shown = fill.clone();
+    let edge = move || if on.get() { shown() } else { Paint::from(token::LINE_STRONG) };
+    let ring = move || if on.get() { token::ACCENT.alpha(0.35) } else { Paint::from(token::LINE_STRONG) };
+    // The knob is dark on the accent; off, the text colour at half, faint when disabled.
+    let knob = move || match (on.get(), off()) {
+        (true, _) => Paint::from(token::TEXT_ON_ACCENT),
+        (false, off) => token::TEXT.alpha(if off { 0.2 } else { 0.5 }),
     };
     let track = row().size(32.0, 20.0).shrink(0.0).radius(10.0).padding_x(2.0).align_items(Align::Center);
     let track = track.bg(fill).border(1.0).border_color(edge);
     let track = track.justify(move || if on.get() { Justify::End } else { Justify::Start });
     let track = track.child(div().size(12.0, 12.0).radius(6.0).bg(knob));
-    div().padding(1.0).shrink(0.0).radius(13.0).border(2.0).border_color(token::LINE_STRONG).child(track)
+    div().padding(1.0).shrink(0.0).radius(13.0).border(2.0).border_color(ring).child(track)
 }
 
 impl Toggle {

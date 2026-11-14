@@ -54,7 +54,7 @@ fn head(title: String, open: Signal<bool>) -> Div {
 
 impl View for Accordion {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let mut all = column().border(1.0).border_color(token::LINE).radius(size::RADIUS_MD);
+        let mut all = column().border(1.0).border_color(token::LINE_STRONG).radius(size::RADIUS_MD);
         for (i, (title, open, body)) in self.items.into_iter().enumerate() {
             let head = head(title, open);
             // A line between a section and the one above it.

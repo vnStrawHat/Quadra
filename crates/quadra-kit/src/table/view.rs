@@ -69,20 +69,22 @@ fn header(state: &State) -> Div {
     head
 }
 
-/// A row: its cells, each as its column shows them; filled when selected, and outlined when
-/// the keys are on it and the table has the focus.
+/// A row: its cells, each as its column shows them; tinted with the accent's mark at its left
+/// when selected, and outlined when the keys are on it and the table has the focus.
 fn line(state: &State, place: Signal<usize>) -> Div {
     let (s, on, mark, pick) = (state.clone(), state.clone(), state.clone(), state.clone());
     let data = move || s.data(place.get());
     let chosen = move || on.chosen.with(|rows| rows.binary_search(&on.data(place.get())).is_ok());
+    let shown = chosen.clone();
     let ring = move || -> Paint {
         let here = mark.focused.get() && mark.cursor.get() == Some(place.get());
         if here { token::BORDER_FOCUSED.into() } else { Paint::default() }
     };
     let line = row().align_items(Align::Center).grow(1.0).height(state.row_height).role(Role::Row);
     let line = line.border_bottom(1.0).border_color(token::TABLE_ROW_BORDER).selected(chosen).outline(ring);
-    let line =
-        line.hover(|s| s.bg(token::RAISED_HOVER.alpha(0.6))).when(On::SELECTED, |s| s.bg(token::PRESS));
+    let line = line
+        .hover(|s| s.bg(token::RAISED_HOVER.alpha(0.6)))
+        .when(On::SELECTED, |s| s.bg(token::ACCENT.alpha(0.1)));
     let mut line = line.on_click(move |e| pick.pick(place.get_untracked(), e.mods));
     if let Some(live) = state.live {
         line = line.child(live.tints(state, place));
@@ -106,7 +108,8 @@ fn line(state: &State, place: Signal<usize>) -> Div {
             })),
         });
     }
-    line
+    // After the cells: what reads a row by its children finds them where they were.
+    line.child(crate::display::chosen_mark(quadra_tree::Side::Left, shown))
 }
 
 /// The table: its header over its rows, with the focus and the keys on the whole.

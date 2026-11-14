@@ -128,7 +128,7 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
 /// it.
 pub fn calendar(value: Signal<Date>) -> Div {
     let page = month(value, || {}).bg(token::OVERLAY_BG).radius(size::RADIUS_XL);
-    page.border(1.0).border_color(token::LINE).elevation(1).shrink(0.0)
+    page.border(1.0).border_color(token::LINE_STRONG).elevation(1).shrink(0.0)
 }
 
 pub struct DatePicker {
@@ -152,7 +152,7 @@ impl View for DatePicker {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (value, open, opener) = (self.value, signal(false), NodeRef::new());
         let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).width(180.0).height(size::H_MD);
-        let face = face.padding_x(8.0).radius(size::RADIUS_MD).border(1.0).border_color(token::LINE);
+        let face = face.padding_x(8.0).radius(size::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
         let face = face.cursor(Cursor::Pointer).role(Role::Button).label(move || value.get().to_string());

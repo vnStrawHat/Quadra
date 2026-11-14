@@ -17,7 +17,7 @@ use crate::{size, token};
 /// The plane of an overlay: its own fill, a hairline border, the largest radius, and the
 /// shadow of its level above the window (1: menus and tooltips; 2: dialogs).
 pub(crate) fn surface(level: u8) -> Div {
-    let plane = column().bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE);
+    let plane = column().bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE_STRONG);
     plane.radius(size::RADIUS_XL).elevation(level)
 }
 

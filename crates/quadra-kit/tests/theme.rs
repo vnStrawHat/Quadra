@@ -19,8 +19,8 @@ fn the_built_in_themes_give_every_role_its_colour() {
         (light.color(token::CANVAS), light.color(token::TEXT)),
         (Color::rgb(0xFAFAFA), Color::rgb(0x242529))
     );
-    // Every role has a colour, but for the three that mean "none" when they have none.
-    let none = [token::SCRIM, token::SELECTION, token::LIST_EVEN];
+    // Every role has a colour, but for the two that mean "none" when they have none.
+    let none = [token::SCRIM, token::LIST_EVEN];
     for theme in [&dark, &light] {
         for (number, name) in token::NAMES.iter().enumerate() {
             let role = Token(number as u16);
@@ -31,7 +31,9 @@ fn the_built_in_themes_give_every_role_its_colour() {
     assert_eq!(dark.color(token::TAB_FG), dark.color(token::TEXT_2));
     assert_eq!(dark.color(token::INPUT_BG), dark.color(token::CANVAS));
     assert_eq!(dark.color(token::CYAN), Color::rgb(0xE5C07B)); // the colour of types in code
-    assert_eq!(dark.color(token::ERROR_HOVER), Color::rgb(0xAA3C37)); // the error, 15 % towards the canvas
+    assert_eq!(dark.color(token::ERROR_HOVER), Color::rgb(0xC4626A)); // the error, 15 % towards the canvas
+    assert_eq!(light.color(token::HUE_GREEN), Color::rgb(0x3B8539)); // hues by kind, darker in light
+    assert_eq!(dark.color(token::SELECTION), Color::rgba(0x74ADE84D)); // the accent at 30 %
     assert_eq!(light.color(token::TABLE_ROW_BORDER), light.color(token::LINE_STRONG));
     // What a tree styles with: the same colours, by the roles' numbers.
     let colours = dark.theme();

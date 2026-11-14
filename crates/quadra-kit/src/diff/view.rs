@@ -7,7 +7,7 @@ use quadra_reactive::Signal;
 use quadra_tree::{Role, Token};
 use quadra_ui::{Div, div, rich_text, row, span, text};
 
-use super::lines::changed_part;
+use super::lines::changed_parts;
 use super::rows::{DiffMode, Row};
 use super::{LineColours, ROW, Sides};
 use crate::token;
@@ -36,13 +36,14 @@ fn line(
         Mark::Added => ("+", Some((token::DIFF_ADD, token::OK)), format!("Added: {said}")),
     };
     let part = other.and_then(|other| match mark {
-        Mark::Removed => changed_part(said, other).map(|(part, _)| part),
-        Mark::Added => changed_part(other, said).map(|(_, part)| part),
+        Mark::Removed => changed_parts(said, other).map(|(parts, _)| parts),
+        Mark::Added => changed_parts(other, said).map(|(_, parts)| parts),
         Mark::Same => None,
     });
-    let part = part.unwrap_or(0..0);
-    // Pieces where a colour or the part that changed starts or ends.
-    let mut cuts = vec![0, part.start, part.end, said.len()];
+    let parts = part.unwrap_or_default();
+    // Pieces where a colour or a part that changed starts or ends.
+    let mut cuts = vec![0, said.len()];
+    cuts.extend(parts.iter().flat_map(|part| [part.start, part.end]));
     cuts.extend(colours.iter().flat_map(|(range, _)| [range.start, range.end]));
     cuts.retain(|&cut| said.is_char_boundary(cut));
     cuts.sort_unstable();
@@ -55,7 +56,7 @@ fn line(
             Some((_, role)) => piece.color(*role),
             None => piece,
         };
-        match part.contains(&cut[0]) {
+        match parts.iter().any(|part| part.contains(&cut[0])) {
             true => piece.background(tint.map_or(token::CANVAS, |(_, ink)| ink).alpha(0.3)),
             false => piece,
         }

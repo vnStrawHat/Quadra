@@ -451,15 +451,18 @@ As built so far:
     next line; the part that changed keeps its tint under them. `quadra_code::line_colours(path)`
     is such an `f`, by the tokenizer of the path's language. Without it, lines are one colour.
   - In a run of changes a removed line is paired with the added line most like it (the
-    same line edited: enough of it is as it was, `changed_part`), as many such pairs as
+    same line edited: enough of it is as it was, `changed_parts`), as many such pairs as
     there can be in order; what is left sits beside each other in order. Past 64 lines a
     side they are paired by order alone.
   - `.wrap()`: long lines wrap at the width of their column, a row is as high as its
     lines (the rows of a `virtual_list`, each measured), the halves of a row side by side as
     high as the higher, the numbers and the mark on the first line; nothing scrolls
     sideways.
-  - Not yet: words that changed
-    in several places of a line; the linear-space search for texts far apart.
+  - What changed in a pair is found word by word (a word is a run of letters, digits and
+    `_`, a run of spaces, or one other character), in as many places of the line as there
+    are: runs of words removed and added, those with only spaces between them made one, each
+    cut to what is not common to its start and end (`wéb` to `wöb` tints the one letter).
+  - Not yet: the linear-space search for texts far apart.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

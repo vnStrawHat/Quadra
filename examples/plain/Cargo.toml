@@ -1,0 +1,22 @@
+[package]
+name = "quadra-plain"
+description = "A second kit: a look of its own over the components without a look (specs/17)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "plain"
+path = "src/main.rs"
+
+[dependencies]
+quadra = { path = "../../crates/quadra" }
+quadra-base = { path = "../../crates/quadra-base" }
+
+[dev-dependencies]
+quadra-testing = { path = "../../crates/quadra-testing" }

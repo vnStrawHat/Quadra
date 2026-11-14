@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use quadra_layout::{Length, Overflow};
 use quadra_prim::Point;
-use quadra_tree::{NodeId, Role};
+use quadra_tree::{NodeId, RangeValue, Role};
 use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, each_frame};
 
 use crate::icon::icon;
@@ -19,11 +19,13 @@ pub fn progress<M>(part: impl IntoProp<f32, M>) -> Div {
         Prop::Value(part) => Rc::new(move || part),
         Prop::Reactive(read) => Rc::from(read),
     };
-    let (width, percent) = (part.clone(), part);
+    let (width, percent, number) = (part.clone(), part.clone(), part);
     let fill = div().height(6.0).radius(3.0).bg(token::ACCENT);
     let fill = fill.width(move || Length::Pct(width().clamp(0.0, 1.0) * 100.0));
     let says = move || format!("{:.0}%", percent().clamp(0.0, 1.0) * 100.0);
-    track().role(Role::ProgressBar).value(says).child(fill)
+    let range =
+        move || RangeValue { value: number().clamp(0.0, 1.0) as f64, max: 1.0, ..RangeValue::default() };
+    track().role(Role::ProgressBar).value(says).range(range).child(fill)
 }
 
 fn track() -> Div {

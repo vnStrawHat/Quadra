@@ -64,6 +64,9 @@ fn a_slider_is_set_by_the_pointer_the_keys_and_a_reader() {
     h.get_by_role(Role::Slider, "Volume").act(SemanticAction::SetValue("42".into()));
     settle(&mut h);
     assert!(volume.get_untracked() == 40.0 && h.semantics().contains("= \"40\""));
+    // Its number in its range, for a reader that says it otherwise than as text.
+    let range = quadra_tree::RangeValue { value: 40.0, min: 0.0, max: 100.0, step: 5.0 };
+    assert_eq!(h.query(|n| n.semantics.range == Some(range)).len(), 1);
 }
 
 fn numbers(stepper: bool) -> (Harness, Signal<f64>) {

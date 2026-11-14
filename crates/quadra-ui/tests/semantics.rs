@@ -42,7 +42,7 @@ fn form() -> Form {
 fn the_tree_holds_what_means_something_named_by_what_it_holds() {
     let f = form();
     let tree = f.h.semantics();
-    let lines: Vec<&str> = tree.lines().take(6).collect();
+    let lines: Vec<&str> = tree.lines().take(7).collect();
     assert_eq!(
         lines,
         [
@@ -51,7 +51,8 @@ fn the_tree_holds_what_means_something_named_by_what_it_holds() {
             "  TextInput = \"\"",
             "  Checkbox \"Done\" [unchecked]",
             "  Button \"Save now\" [disabled] #save",
-            "  List \"Items\"",
+            "  ScrollView",
+            "    List \"Items\"",
         ]
     );
     // The boxes between them are not in it, and neither are the texts that name a control.
@@ -103,7 +104,7 @@ fn a_listener_hears_everything_once_and_then_what_changed() {
     assert!(f.h.tree.take_semantic_update().is_none()); // nobody listens: nothing is built
     f.h.tree.listen(true);
     let first = f.h.tree.take_semantic_update().unwrap();
-    assert_eq!(first.nodes.len(), 1 + 5 + 50); // the window, five controls, fifty items
+    assert_eq!(first.nodes.len(), 1 + 6 + 50); // the window, five controls and a scroll view, fifty items
     assert!(f.h.tree.take_semantic_update().is_none()); // nothing changed
 
     f.done.set(true);

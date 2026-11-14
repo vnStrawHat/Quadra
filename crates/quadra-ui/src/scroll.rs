@@ -4,7 +4,7 @@
 use quadra_layout::{Direction, Overflow};
 use quadra_prim::{Point, Rect};
 use quadra_reactive::{Signal, memo};
-use quadra_tree::{NodeId, PointerEvent, PointerKind};
+use quadra_tree::{NodeId, PointerEvent, PointerKind, Role};
 
 use crate::div::div;
 use crate::flow::Region;
@@ -48,6 +48,12 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
             ..cx.tree.layout_style(viewport).clone()
         };
         cx.tree.set_layout_style(viewport, scrolls);
+        // A reader is told it scrolls, unless the view says it is something else.
+        cx.tree.update_semantics(viewport, |says| {
+            if says.role == Role::None {
+                says.role = Role::ScrollView;
+            }
+        });
         let content = content.mount(cx);
         cx.tree.make_layer(content, true);
         cx.tree.cull_layer(content);

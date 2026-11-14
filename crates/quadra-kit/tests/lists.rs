@@ -93,6 +93,9 @@ fn a_row_of_a_list_is_selected_by_a_click_or_the_keys_and_kept_in_view() {
     // Ten rows of 23 px show, and a few more are kept ready: not a thousand.
     let rows = p.h.query(|n| n.semantics.role == Role::ListItem).len();
     assert!((10..=14).contains(&rows), "{rows}");
+    // A reader is told of all of them, and where each row that is there is among them.
+    assert_eq!(p.h.query(|n| n.semantics.set_size == Some(1000)).len(), 1);
+    assert_eq!(p.h.query(|n| n.semantics.name == "Row 3" && n.semantics.position == Some(3)).len(), 1);
     p.h.get_by_role(Role::ListItem, "Row 3").click();
     p.settle();
     assert_eq!(p.row.get_untracked(), Some(3));

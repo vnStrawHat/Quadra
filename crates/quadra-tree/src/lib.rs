@@ -53,7 +53,7 @@ pub use node::{NodeId, PaintStyle, Pose, Style};
 pub use overlay::{Along, Anchor, Side};
 pub use patch::Patch;
 pub use picture::{Fit, Image, Picture};
-pub use quadra_a11y::{Mirror, Role, SemanticAction, SemanticNode, Semantics, TreeUpdate};
+pub use quadra_a11y::{Mirror, RangeValue, Role, SemanticAction, SemanticNode, Semantics, TreeUpdate};
 pub use rich::{InlineBox, LinkBoxes, RichSpan, RichText};
 pub use shared::Handle;
 pub use style::State;

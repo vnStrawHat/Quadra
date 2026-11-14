@@ -1,7 +1,7 @@
 //! What a box is to a user (specs/12): its role, its name, its states. A state that a style
 //! can follow too (checked, selected, disabled, expanded) is set once here for both.
 
-use quadra_tree::{NodeId, Role, SemanticAction, Semantics, State, Tree};
+use quadra_tree::{NodeId, RangeValue, Role, SemanticAction, Semantics, State, Tree};
 
 use super::Div;
 use crate::prop::{IntoProp, Prop};
@@ -48,6 +48,27 @@ impl Div {
     pub fn value<M>(self, value: impl IntoProp<String, M>) -> Self {
         self.with_value(value.into_prop(), |tree, id, value| {
             tree.update_semantics(id, |says| says.value = Some(value))
+        })
+    }
+
+    /// The number a slider or a progress bar holds, in its range, besides its text.
+    pub fn range<M>(self, range: impl IntoProp<RangeValue, M>) -> Self {
+        self.with_value(range.into_prop(), |tree, id, range| {
+            tree.update_semantics(id, |says| says.range = Some(range))
+        })
+    }
+
+    /// Where an item is in its set, from 0: a reader says "4 of 10".
+    pub fn place_in_set<M>(self, at: impl IntoProp<usize, M>) -> Self {
+        self.with_value(at.into_prop(), |tree, id, at| {
+            tree.update_semantics(id, |says| says.position = Some(at))
+        })
+    }
+
+    /// How many items the set of the box holds, mounted or not.
+    pub fn set_size<M>(self, count: impl IntoProp<usize, M>) -> Self {
+        self.with_value(count.into_prop(), |tree, id, count| {
+            tree.update_semantics(id, |says| says.set_size = Some(count))
         })
     }
 

@@ -6,8 +6,8 @@ use std::cell::RefCell;
 use std::sync::mpsc::{Receiver, Sender, channel};
 
 use accesskit::{
-    Action, ActionData, ActionHandler, ActionRequest, ActivationHandler, Affine, Node, NodeId, Toggled,
-    TreeId, TreeInfo,
+    Action, ActionData, ActionHandler, ActionRequest, ActivationHandler, Affine, Node, NodeId, TextPosition,
+    TextSelection, Toggled, TreeId, TreeInfo,
 };
 use accesskit_windows::Adapter;
 use quadra_a11y::{Role, SemanticAction, SemanticNode, TreeUpdate};
@@ -52,6 +52,29 @@ fn role(role: Role) -> accesskit::Role {
     }
 }
 
+fn rect(b: quadra_prim::Rect) -> accesskit::Rect {
+    accesskit::Rect { x0: b.x as f64, y0: b.y as f64, x1: b.right() as f64, y1: b.bottom() as f64 }
+}
+
+/// The node of the text of an input: the id of the input with the top bit set, which no node
+/// of a tree has.
+fn run_id(id: u64) -> NodeId {
+    NodeId(id | 1 << 63)
+}
+
+/// The run of text of an input, which UI Automation reads its text, caret and selection from.
+// ponytail: one run for the whole value and no places of characters, so a range of the text
+// has no bounds; a run a line and the places when a reader needs them.
+fn text_run(from: &SemanticNode) -> Option<(NodeId, Node)> {
+    let says = &from.semantics;
+    let value = says.value.as_deref().filter(|_| says.role == Role::TextInput)?;
+    let mut run = Node::new(accesskit::Role::TextRun);
+    run.set_value(value);
+    run.set_character_lengths(value.chars().map(|c| c.len_utf8() as u8).collect::<Vec<_>>());
+    run.set_bounds(rect(from.bounds));
+    Some((run_id(from.id), run))
+}
+
 fn node(from: &SemanticNode) -> Node {
     let says = &from.semantics;
     let mut node = Node::new(role(says.role));
@@ -81,17 +104,35 @@ fn node(from: &SemanticNode) -> Node {
     if says.disabled {
         node.set_disabled();
     }
+    if let Some(range) = says.range {
+        node.set_numeric_value(range.value);
+        node.set_min_numeric_value(range.min);
+        node.set_max_numeric_value(range.max);
+        if range.step > 0.0 {
+            node.set_numeric_value_step(range.step);
+        }
+    }
+    if let Some(at) = says.position {
+        node.set_position_in_set(at);
+    }
+    if let Some(count) = says.set_size {
+        node.set_size_of_set(count);
+    }
     if let Some(id) = &says.test_id {
         node.set_author_id(id.as_str());
     }
-    let b = from.bounds;
-    node.set_bounds(accesskit::Rect {
-        x0: b.x as f64,
-        y0: b.y as f64,
-        x1: b.right() as f64,
-        y1: b.bottom() as f64,
-    });
-    node.set_children(from.children.iter().map(|&c| NodeId(c)).collect::<Vec<_>>());
+    node.set_bounds(rect(from.bounds));
+    let mut children: Vec<NodeId> = from.children.iter().map(|&c| NodeId(c)).collect();
+    if let (Role::TextInput, Some(value)) = (says.role, &says.value) {
+        // Its text is its run's; the caret and the selection are places in it.
+        let (run, count) = (run_id(from.id), value.chars().count());
+        children.push(run);
+        let (anchor, focus) = says.selection.unwrap_or((count, count));
+        let at = |index: usize| TextPosition { node: run, character_index: index.min(count) };
+        node.set_text_selection(TextSelection { anchor: at(anchor), focus: at(focus) });
+        node.add_action(Action::SetTextSelection);
+    }
+    node.set_children(children);
     if from.focusable {
         node.add_action(Action::Focus);
     }
@@ -102,6 +143,10 @@ fn node(from: &SemanticNode) -> Node {
     }
     if says.role == TextInput {
         node.add_action(Action::SetValue);
+    }
+    if says.role == Slider {
+        node.add_action(Action::Increment);
+        node.add_action(Action::Decrement);
     }
     node
 }
@@ -116,10 +161,11 @@ pub(crate) fn tree_update(update: &TreeUpdate, scale: f32) -> accesskit::TreeUpd
         if from.id == update.root {
             node.set_transform(Affine::scale(scale as f64));
         }
-        (NodeId(from.id), node)
+        // An input is sent with the run of its text, always: the two change together.
+        std::iter::once((NodeId(from.id), node)).chain(text_run(from))
     };
     accesskit::TreeUpdate {
-        nodes: update.nodes.iter().map(convert).collect(),
+        nodes: update.nodes.iter().flat_map(convert).collect(),
         tree: Some(TreeInfo::new(NodeId(update.root))),
         tree_id: TreeId::ROOT,
         focus: NodeId(update.focus.unwrap_or(update.root)),
@@ -138,9 +184,14 @@ pub(crate) fn request(request: ActionRequest) -> Option<(u64, SemanticAction)> {
         (Action::ScrollIntoView, _) => SemanticAction::ScrollIntoView,
         (Action::Increment, _) => SemanticAction::Increment,
         (Action::Decrement, _) => SemanticAction::Decrement,
+        (Action::SetTextSelection, Some(ActionData::SetTextSelection(chosen))) => {
+            let (anchor, focus) = (chosen.anchor.character_index, chosen.focus.character_index);
+            SemanticAction::Select { anchor, focus }
+        }
         _ => return None,
     };
-    Some((request.target_node.0, action))
+    // What is asked of the run of an input is asked of the input.
+    Some((request.target_node.0 & !(1 << 63), action))
 }
 
 /// Requests arrive on a thread of the adapter's choosing: they are queued, and the window

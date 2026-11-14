@@ -57,6 +57,15 @@ impl Role {
     }
 }
 
+/// A value in a range: of a slider, a progress bar. `step` 0: it takes any value.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct RangeValue {
+    pub value: f64,
+    pub min: f64,
+    pub max: f64,
+    pub step: f64,
+}
+
 /// What a node says of itself.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Semantics {
@@ -72,6 +81,16 @@ pub struct Semantics {
     /// For what opens: open, closed, or neither said.
     pub expanded: Option<bool>,
     pub disabled: bool,
+    /// The number of a slider or a progress bar, besides the text of `value`.
+    pub range: Option<RangeValue>,
+    /// Where an item is in its set, from 0: a tab, an option, a row of a list.
+    pub position: Option<usize>,
+    /// How many items the set of a container holds, those that are not mounted too: a list
+    /// of a million rows says so while it holds forty nodes.
+    pub set_size: Option<usize>,
+    /// Of a text input: the selection, in characters of `value` from its start, as where it
+    /// was begun (the anchor) and where the caret is. Equal: there is only the caret.
+    pub selection: Option<(usize, usize)>,
     /// A name that does not change with the language or the content: the automation id for
     /// assistive technology, a selector for tests.
     pub test_id: Option<String>,
@@ -90,6 +109,12 @@ pub enum SemanticAction {
     ScrollIntoView,
     Increment,
     Decrement,
+    /// Of a text input: select from `anchor` to `focus`, characters of its value from its
+    /// start; the caret is at `focus`.
+    Select {
+        anchor: usize,
+        focus: usize,
+    },
 }
 
 /// A node of the semantic tree as it is sent.

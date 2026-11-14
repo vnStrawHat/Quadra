@@ -112,17 +112,32 @@ impl View for TextInput {
                 })
             });
         });
-        // Assistive technology, or a test, sets the whole value: one step of undo.
+        // Assistive technology, or a test, sets the whole value, one step of undo, or the
+        // selection, in characters.
         let writer = cx.handle.clone();
         cx.tree.on_semantic(id, move |action| {
-            let SemanticAction::SetValue(text) = action else { return false };
-            let text = lines_of(text, multiline);
-            writer.with(move |tree| {
-                edit(tree, id, value, |field| {
-                    field.buffer.select_all();
-                    field.buffer.insert(&text) || field.buffer.delete(quadra_text::Motion::Right)
-                })
-            });
+            match action.clone() {
+                SemanticAction::SetValue(text) => {
+                    let text = lines_of(&text, multiline);
+                    writer.with(move |tree| {
+                        edit(tree, id, value, |field| {
+                            field.buffer.select_all();
+                            field.buffer.insert(&text) || field.buffer.delete(quadra_text::Motion::Right)
+                        })
+                    });
+                }
+                SemanticAction::Select { anchor, focus } => writer.with(move |tree| {
+                    edit(tree, id, value, |field| {
+                        let text = field.buffer.text();
+                        let byte = |at: usize| text.char_indices().nth(at).map_or(text.len(), |(i, _)| i);
+                        let (anchor, focus) = (byte(anchor), byte(focus));
+                        field.buffer.set_caret(anchor, false);
+                        field.buffer.set_caret(focus, true);
+                        false
+                    })
+                }),
+                _ => return false,
+            }
             true
         });
 

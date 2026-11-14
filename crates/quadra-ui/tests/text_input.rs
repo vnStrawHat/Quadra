@@ -151,3 +151,22 @@ fn enter_submits_what_the_input_holds_after_what_was_typed() {
     h.frame();
     assert_eq!((name.get_untracked().as_str(), sent.get_untracked()), ("An", vec!["An".to_string()]));
 }
+
+#[test]
+fn a_reader_is_told_the_caret_and_the_selection_and_sets_them() {
+    let mut f = form("Tiếng Việt");
+    let says = |f: &Form| {
+        let tree = f.h.tree.semantic_tree();
+        let input = tree.nodes.into_iter().find(|n| n.semantics.role == quadra_tree::Role::TextInput);
+        input.and_then(|n| n.semantics.selection)
+    };
+    // The caret at the end: ten characters, though more bytes.
+    assert_eq!(says(&f), Some((10, 10)));
+    // Asked for characters 2 to 5, backwards: the caret at 2, the bytes where they are.
+    let select = quadra_tree::SemanticAction::Select { anchor: 5, focus: 2 };
+    assert!(f.h.tree.act(f.field, &select));
+    f.h.frame();
+    assert_eq!(f.caret(), (2, 2..7)); // "ế" is three bytes
+    assert_eq!(says(&f), Some((5, 2)));
+    assert_eq!(f.name.get_untracked(), "Tiếng Việt"); // the text is as it was
+}

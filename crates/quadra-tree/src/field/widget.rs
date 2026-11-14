@@ -95,7 +95,13 @@ impl Widget for TextField {
         if says.role == Role::None {
             says.role = Role::TextInput;
         }
-        says.value = Some(self.shown().0.into_owned()); // of a password, the dots
+        // Of a password, the dots. The selection in characters: where it was begun, and the
+        // caret.
+        let (shown, caret, _, selected) = self.shown();
+        let anchor = if caret == selected.start { selected.end } else { selected.start };
+        let at = |index: usize| super::characters(&shown[..index.min(shown.len())]);
+        says.selection = Some((at(anchor), at(caret)));
+        says.value = Some(shown.into_owned());
         if says.name.is_empty() {
             says.name.clone_from(&self.placeholder); // what it asks for, when nothing names it
         }

@@ -104,6 +104,7 @@ fn edit(tree: &mut Tree, id: NodeId, value: Signal<String>, f: impl FnOnce(&mut 
         value.set(text);
     }
     tree.mark_paint(id);
+    tree.update_semantics(id, |_| {}); // the caret and the selection, for a reader
     if follows {
         // Whatever scrolls around the area keeps the caret in view, once it is laid out.
         tree.after_layout(move |tree| {

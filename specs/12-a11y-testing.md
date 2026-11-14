@@ -72,8 +72,18 @@ semantic children attach to the nearest semantic ancestor.
   focus, set value, toggle, expand and collapse, scroll into view, increment and decrement.
   They do not go through pointer events.
 - Virtual lists expose the total count and each realized row's position in the set, so a
-  reader announces "row 4,012 of 1,000,000" for a list that holds forty nodes.
-- Text inputs expose their value, selection and caret, and accept selection changes.
+  reader announces "row 4,012 of 1,000,000" for a list that holds forty nodes. An item says
+  where it is from 0 (`Semantics::position`, `.place_in_set(i)`), its container how many the
+  set holds (`set_size`, `.set_size(n)`), as UI Automation asks: the kit's lists, trees (a
+  row's place among the rows that show), tabs and options.
+- Sliders and progress bars give their number in its range besides their text
+  (`Semantics::range`, `.range(..)`); a slider is stepped by increment and decrement.
+- Text inputs expose their value, selection and caret (`Semantics::selection`, in characters
+  of the value: the anchor and the caret), and accept selection changes
+  (`SemanticAction::Select`). The bridge gives an input one text run (`TextRun`) holding its
+  value, which the selection points into. Not yet: the places of characters, so the bounds of
+  a range, and a run a line of a text area.
+- A scroll view (`scroll`) is a `ScrollView` unless the view gives it another role.
 
 Requirements carried from the design language (behaviour/15): visible focus for keyboard users,
 contrast of the themes, respect for the OS text scale and high-contrast setting.

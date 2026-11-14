@@ -8,7 +8,7 @@ use std::rc::Rc;
 use quadra_layout::Length;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, PointerKind, Role};
+use quadra_tree::{NodeId, PointerKind, Role, SemanticAction};
 use quadra_ui::{Div, MountCx, View, div};
 
 use crate::action::{Decrease, DecreaseMore, Increase, IncreaseMore, MoveFirst, MoveLast, SLIDER};
@@ -75,6 +75,7 @@ impl View for RangeSlider {
             let knob = Scale::knob().left(move || Length::Px(track * scale.part(end.get()) + 2.0));
             let knob = knob.bg(token::TEXT).role(Role::Slider).label(name.to_string());
             let knob = knob.value(move || scale.says(end.get())).focusable().key_context(SLIDER);
+            let knob = knob.range(move || scale.range(end.get()));
             let knob = knob.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
             let by = move |change: f32| set(of_low, end.get_untracked() + change);
             let knob = knob.on_action::<Increase>(move |_| by(scale.one()));
@@ -82,7 +83,19 @@ impl View for RangeSlider {
             let knob = knob.on_action::<IncreaseMore>(move |_| by(scale.tenth()));
             let knob = knob.on_action::<DecreaseMore>(move |_| by(-scale.tenth()));
             let knob = knob.on_action::<MoveFirst>(move |_| set(of_low, scale.min));
-            knob.on_action::<MoveLast>(move |_| set(of_low, scale.max))
+            let knob = knob.on_action::<MoveLast>(move |_| set(of_low, scale.max));
+            // A reader steps it as the arrows do.
+            knob.on_semantic(move |action| match action {
+                SemanticAction::Increment => {
+                    by(scale.one());
+                    true
+                }
+                SemanticAction::Decrement => {
+                    by(-scale.one());
+                    true
+                }
+                _ => false,
+            })
         };
         let from = move || track * scale.part(low.get());
         let fill = div().absolute().top(8.0).height(4.0).radius(2.0).bg(token::ACCENT);

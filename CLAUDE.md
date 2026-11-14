@@ -192,8 +192,9 @@ images are in: `image(source)` in `quadra-ui/src/image.rs` (a path, `&'static [u
 page in the gallery (`examples/gallery`) and its test through the semantic tree; tokens for radii and spacing, then the components in the order of specs/13,
 popovers and hover cards among them. `quadra-async` is done: `spawn` (a `Task` is cancelled when dropped, `.detach()` leaves it to its scope),
 `background(|| ..).await` (the pool; `Result<T, Panicked>`), `inbox_with(limit, Full::Block)` with `sender().extend(..)` and `.on_data(..)`, `sleep`, `debounce`,
-`throttle`; the app runs ready tasks after every entry point (`App::request_frames`), tests use `Harness::settle()`. For readers still to do: text ranges and the caret of an input, range
-values, positions in a set, a role for scroll views.
+`throttle`; the app runs ready tasks after every entry point (`App::request_frames`), tests use `Harness::settle()`. Readers are told the caret and selection of
+an input (`Semantics::selection`, a text run in the bridge; `SemanticAction::Select`), range values (`.range(..)`), positions in a set
+(`.place_in_set(i)` on items, `.set_size(n)` on their container) and scroll views (`Role::ScrollView` on `scroll`).
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its
 height does not depend on it; a new painted band visits every node of its layer.

@@ -190,13 +190,16 @@ impl View for Tree {
             signal(0.0),
             move |at| {
                 // A row is built again when the thing at its place is another one, or opens.
+                let row_at = at;
                 let here = memo(move || shown.get().get(at.get()).cloned());
                 dynamic(move || {
                     let Some(at) = here.get() else { return div() };
                     let id = at.id.clone();
                     let on = move || chosen.with(|chosen| chosen.as_deref() == Some(id.as_str()));
                     let (is, ring, id) = (on.clone(), on.clone(), at.id.clone());
-                    let line = line(&at, sizes, on.clone()).selected(on);
+                    // ponytail: a row's place among all the rows that show; its level and its
+                    // place among its siblings when a reader needs them.
+                    let line = line(&at, sizes, on.clone()).selected(on).place_in_set(move || row_at.get());
                     let line = line
                         .hover(|s| s.bg(token::RAISED_HOVER))
                         .when(State::SELECTED, |s| s.bg(token::PRESS));
@@ -229,6 +232,7 @@ impl View for Tree {
             }
         };
         let frame = column().grow(1.0).padding_y(4.0).role(Role::Tree).focusable().key_context(TREE);
+        let frame = frame.set_size(move || shown.get().len());
         let frame = frame.on_focus(move |has| focused.set(has));
         let frame = frame.on_action::<MoveNext>(move |_| go(&|at, all| Some((at + 1).min(all.len() - 1))));
         let frame = frame.on_action::<MovePrevious>(move |_| go(&|at, _| Some(at.saturating_sub(1))));

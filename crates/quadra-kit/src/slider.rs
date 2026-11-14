@@ -7,7 +7,7 @@ use std::rc::Rc;
 use quadra_layout::Length;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo};
-use quadra_tree::{NodeId, Paint, Role, SemanticAction};
+use quadra_tree::{NodeId, Paint, RangeValue, Role, SemanticAction};
 use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div};
 
 use crate::action::{Decrease, DecreaseMore, Increase, IncreaseMore, MoveFirst, MoveLast, SLIDER};
@@ -93,6 +93,12 @@ impl Scale {
         (self.max - self.min) / 10.0
     }
 
+    /// A value as a number in the range, for a reader.
+    pub fn range(self, value: f32) -> RangeValue {
+        let (value, min, max, step) = (value as f64, self.min as f64, self.max as f64, self.step as f64);
+        RangeValue { value, min, max, step }
+    }
+
     /// A value as a reader is told it.
     pub fn says(self, value: f32) -> String {
         format!("{:.*}", if self.step.fract() == 0.0 { 0 } else { 2 }, value)
@@ -140,6 +146,7 @@ impl View for Slider {
         let (press, drag) = (held.clone(), held.clone());
         let face: Div = div().size(self.width, 20.0).shrink(0.0).cursor(Cursor::Pointer);
         let face = face.role(Role::Slider).label(self.name).value(move || scale.says(value.get()));
+        let face = face.range(move || scale.range(value.get()));
         let face = face.focusable().key_context(SLIDER).disabled(move || off.get());
         let face = face.radius(4.0).focus_visible(|s| s.outline(token::BORDER_FOCUSED));
         let face = face.on_pointer(quadra_tree::PointerKind::Down, move |e| {

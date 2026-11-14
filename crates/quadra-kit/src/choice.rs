@@ -95,7 +95,7 @@ impl Choice {
                 parts.push(AnyView::new(div().width(1.0).bg(token::LINE_STRONG)));
             }
             let option = if self.segmented { self.cell(label) } else { Choice::radio(label, on) };
-            let option = option.role(Role::Radio).checked(on).cursor(Cursor::Pointer);
+            let option = option.role(Role::Radio).place_in_set(i).checked(on).cursor(Cursor::Pointer);
             parts.push(AnyView::new(option.on_click(move |_| chosen.set(i))));
         }
         let group = chooser(Role::Group, count, chosen);
@@ -117,7 +117,7 @@ impl Choice {
 /// arrows move the choice, round the ends.
 pub(crate) fn chooser(role: Role, count: usize, chosen: Signal<usize>) -> Div {
     let step = move |by: usize| chosen.update(|at| *at = (*at + by) % count.max(1));
-    let group = div().role(role).focusable().key_context(CHOICE);
+    let group = div().role(role).set_size(count).focusable().key_context(CHOICE);
     let group = group.on_action::<MoveNext>(move |_| step(1));
     let group = group.on_action::<MovePrevious>(move |_| step(count.saturating_sub(1)));
     group.focus_visible(|s| s.outline(token::BORDER_FOCUSED))

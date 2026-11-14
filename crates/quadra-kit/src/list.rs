@@ -67,7 +67,8 @@ where
         let line = move |index: Signal<usize>| {
             let chosen = chosen.clone();
             let line = row().align_items(Align::Center).grow(1.0).height(row_height).padding_x(6.0);
-            let line = line.role(Role::ListItem).selected(move || selected.get() == Some(index.get()));
+            let line = line.role(Role::ListItem).place_in_set(move || index.get());
+            let line = line.selected(move || selected.get() == Some(index.get()));
             let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
             let line = line.on_click(move |e| {
                 let at = index.get_untracked();
@@ -88,7 +89,8 @@ where
                 selected.update(|at| *at = Some(to(*at, last)));
             }
         };
-        let frame = column().grow(1.0).role(Role::List).focusable().key_context(LIST);
+        let frame = column().grow(1.0).role(Role::List).set_size(move || count.get()).focusable();
+        let frame = frame.key_context(LIST);
         let frame = frame.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
         let frame = frame.on_action::<MoveNext>(move |_| go(|at, last| at.map_or(0, |i| (i + 1).min(last))));
         let frame =

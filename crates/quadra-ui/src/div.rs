@@ -188,6 +188,13 @@ impl Div {
         self.on_mount(move |tree, id| tree.set_backdrop(id, px))
     }
 
+    /// Cuts the box and all it holds to a shape: an SVG drawing fitted to the box as an icon
+    /// is, its aspect kept. The box becomes a layer.
+    pub fn clip_shape(self, svg: &str) -> Self {
+        let svg = std::rc::Rc::new(quadra_vector::Svg::parse(svg));
+        self.on_mount(move |tree, id| tree.set_clip_shape(id, Some(svg)))
+    }
+
     /// The shape the pointer has over the box and what it holds.
     pub fn cursor(self, cursor: Cursor) -> Self {
         self.on_mount(move |tree, id| tree.set_cursor(id, Some(cursor)))

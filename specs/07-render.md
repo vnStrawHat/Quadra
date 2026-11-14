@@ -103,7 +103,20 @@ its place.
 
 A node becomes a layer root when it is: a window root or overlay root; scroll content; a
 virtual list; a surface widget; a node with a transform or an opacity that is animating or not
-the identity; a node that blurs what is behind it; a node marked `.layer()`. A node stops being one when the reason ends. Promotion
+the identity; a node that blurs what is behind it; a node cut to a shape; a node marked
+`.layer()`.
+
+**A layer can be cut to any shape** (`.clip_shape(svg)`, `Tree::set_clip_shape`): a star, a
+squircle, the letters of a word. The shape, a drawing as an icon is one (fitted to the box
+with its aspect kept, centred), is rasterized as coverage at the box's size in device pixels
+into the coverage atlas, a tile the node holds (no larger than a slice: a larger box has its
+mask at a lower resolution, sampled softer). The layer's constants name the tile, and the
+step that binds the layer gives the mask's place on the surface; every pixel the layer draws,
+and every pixel of the layers inside it that have no mask of their own, is multiplied by the
+mask there. So a mask follows the layer as it moves, and costs nothing to the instances: they
+are not touched, and a box that is not cut does no more work. A mask follows a translation
+(and a scale) of its layer; under a rotation it is the box around the turned one. A mask in
+a mask is the inner one alone. A node stops being one when the reason ends. Promotion
 and demotion repaint that subtree once.
 
 **A scroll container's content is painted only near what shows.** The layer keeps a band, in

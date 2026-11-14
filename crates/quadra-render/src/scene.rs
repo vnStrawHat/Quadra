@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use quadra_prim::{Affine, Rect};
 
-use crate::layer::{Layer, LayerId};
+use crate::layer::{Layer, LayerId, Mask};
 
 /// Identifies a scene to backends, which keep buffers per scene and layer.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -27,6 +27,9 @@ pub struct World {
     /// On the first step of a layer that blurs what is behind it: its box on the surface, and
     /// the blur. The backend takes the backdrop then, before the layer's first run.
     pub backdrop: Option<(Rect, f32)>,
+    /// The mask the layer is cut to, its own or the one of the nearest layer around it that
+    /// has one, with its box on the surface.
+    pub mask: Option<(Mask, Rect)>,
 }
 
 /// One step of drawing a scene.
@@ -129,7 +132,8 @@ impl Scene {
     /// Fills `out` with the steps that draw the scene on a surface of the given bounds.
     pub fn steps(&self, surface: Rect, out: &mut Vec<Step>) {
         out.clear();
-        let world = World { transform: Affine::IDENTITY, scissor: surface, opacity: 1.0, backdrop: None };
+        let world =
+            World { transform: Affine::IDENTITY, scissor: surface, opacity: 1.0, backdrop: None, mask: None };
         for &root in &self.roots {
             self.visit(root, &world, out, 0);
         }
@@ -149,7 +153,11 @@ impl Scene {
         let backdrop = c.backdrop.map(|b| {
             (transform.bbox(Rect::new(0.0, 0.0, b.size.width, b.size.height)).intersect(scissor), b.blur)
         });
-        let world = World { transform, scissor, opacity: parent.opacity * c.opacity, backdrop: None };
+        let mask = match c.mask {
+            Some(m) => Some((m, transform.bbox(Rect::new(0.0, 0.0, m.size.width, m.size.height)))),
+            None => parent.mask,
+        };
+        let world = World { transform, scissor, opacity: parent.opacity * c.opacity, backdrop: None, mask };
         let (mut bound, mut first) = (false, true);
         let mut run = |out: &mut Vec<Step>, bound: &mut bool, start: u32, end: u32| {
             if end > start {

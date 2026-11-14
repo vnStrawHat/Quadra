@@ -5,7 +5,7 @@
 //! its parent's box, and scrolling is its offset.
 
 use quadra_prim::{Affine, Point, Rect, Size};
-use quadra_render::{Backdrop, LayerConstants, LayerId};
+use quadra_render::{Backdrop, LayerConstants, LayerId, Mask};
 
 use crate::node::{NodeId, Pose, flag};
 use crate::tree::Tree;
@@ -20,6 +20,8 @@ pub(crate) struct LayerState {
     pub turn: f32,
     /// The blur of what is behind the node's box, in logical pixels: 0 none.
     pub backdrop: f32,
+    /// The shape it is cut to, if any.
+    pub clip: Option<Box<crate::mask::ClipShape>>,
     /// What the node's style says of where its paint goes (specs/05): over the rest.
     pub pose: Pose,
     /// Cut to the parent's padding box: the content of a scroll container.
@@ -44,6 +46,7 @@ impl LayerState {
             opacity: 1.0,
             turn: 0.0,
             backdrop: 0.0,
+            clip: None,
             pose: Pose::default(),
             clip_to_parent: false,
             marked: false,
@@ -182,6 +185,7 @@ impl Tree {
     pub(crate) fn compose_pass(&mut self) {
         let list = std::mem::take(&mut self.recompose);
         for &id in &list {
+            self.refresh_mask(id);
             let Some(layer) = self.get(id).and_then(|n| n.layer.as_ref()).map(|s| s.id) else { continue };
             let constants = self.layer_constants(id);
             let layer = self.scene.layer_mut(layer);
@@ -238,6 +242,10 @@ impl Tree {
             let size = self.layout.rect(node.layout).size();
             Backdrop { size: Size::new(size.width * s, size.height * s), blur: state.backdrop * s }
         });
-        LayerConstants { transform, scissor, opacity: state.opacity * pose.opacity, backdrop }
+        let mask = state.clip.as_ref().and_then(|clip| self.mask_of(clip)).map(|mask| {
+            let size = self.layout.rect(node.layout).size();
+            Mask { size: Size::new(size.width * s, size.height * s), ..mask }
+        });
+        LayerConstants { transform, scissor, opacity: state.opacity * pose.opacity, backdrop, mask }
     }
 }

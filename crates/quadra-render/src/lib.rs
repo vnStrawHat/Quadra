@@ -23,7 +23,7 @@ pub use instance::{
     BorderStyle, Clip, FLAG_BACKDROP, FLAG_BORDER, FLAG_DASHED, FLAG_DOTTED, FLAG_GLYPH, FLAG_GRADIENT,
     Instance, Kind, Line, LineMode, Quad, Ramp, Shadow, Sprite, push_quad,
 };
-pub use layer::{Backdrop, Dirty, Layer, LayerConstants, LayerId, Rebuild};
+pub use layer::{Backdrop, Dirty, Layer, LayerConstants, LayerId, Mask, Rebuild};
 pub use null::NullRenderer;
 pub use packing::{AtlasCore, AtlasKind, TileRect, Upload};
 pub use renderer::{DeviceSize, Pixels, RenderError, RenderStats, Renderer, SurfaceId, SurfaceTarget};

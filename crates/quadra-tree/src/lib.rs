@@ -18,6 +18,7 @@ mod inherit;
 mod input;
 mod keymap;
 mod layers;
+mod mask;
 mod motion;
 mod node;
 mod overlay;

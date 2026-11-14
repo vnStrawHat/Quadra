@@ -15,7 +15,7 @@ pub const RAMP_X: u32 = u32::MAX;
 pub const SUBPIXEL_STEPS: u8 = 4;
 
 /// The slices of the glyph atlases are this many pixels square.
-const SLICE: u32 = 1024;
+pub(crate) const SLICE: u32 = 1024;
 /// What the atlases try to stay within: sixteen slices of coverage, and sixteen of colour,
 /// which is where images are (a screen of 4K is eight of them).
 const COVERAGE_BUDGET: usize = 16 << 20;

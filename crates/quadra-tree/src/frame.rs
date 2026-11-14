@@ -198,6 +198,7 @@ impl Tree {
     /// (the glyph tiles), or depends on something every node read.
     pub fn repaint_all(&mut self) {
         (self.repaint, self.repaint_all) = (true, true);
+        self.remask_all();
     }
 
     /// Says that what a leaf measures changed.

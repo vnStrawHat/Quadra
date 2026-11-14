@@ -34,6 +34,11 @@ cbuffer Constants : register(b0) {
     uint layer_turned;      // 1 when the transform is more than a translation
     uint constants_pad;
     float4 backdrop_rect;   // where the backdrop was copied from on the surface; its texture's size
+    float4 mask_rect;       // the box of the mask the layer is cut to, on the surface
+    float4 mask_uv;         // its tile in the coverage atlas
+    uint mask_slice;
+    uint mask_on;
+    uint2 mask_pad;
 };
 
 struct VsOut {
@@ -272,6 +277,11 @@ PsOut ps_main(VsOut i) {
     }
     float2 clip_half = p.clip.zw * 0.5;
     float clip = saturate(0.5 - sdf_rrect(i.px, p.clip.xy + clip_half, clip_half, p.params.wwww)) * layer_opacity;
+    [branch] if (mask_on) { // cut to a shape: its coverage here, nothing outside its box
+        float2 at = (i.pos.xy - mask_rect.xy) / max(mask_rect.zw, 1);
+        float inside = all(at >= 0 && at <= 1);
+        clip *= inside * mono_atlas.SampleLevel(atlas_sampler, float3(lerp(mask_uv.xy, mask_uv.zw, saturate(at)), mask_slice), 0);
+    }
     PsOut o;
     o.color = c * clip;
     o.weight = float4(w.r < 0 ? o.color.aaa : w * clip, o.color.a);

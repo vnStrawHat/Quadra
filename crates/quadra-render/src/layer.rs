@@ -35,6 +35,17 @@ pub struct LayerConstants {
     pub opacity: f32,
     /// What is behind the layer's box is blurred under it (specs/07, "Instances").
     pub backdrop: Option<Backdrop>,
+    /// What the layer and the layers in it are cut to (specs/07, "Layers").
+    pub mask: Option<Mask>,
+}
+
+/// A shape a layer is cut to: a tile of the coverage atlas (`uv`, `slice`) stretched over a
+/// box from the layer's origin, in device pixels.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Mask {
+    pub uv: [f32; 4],
+    pub slice: u32,
+    pub size: Size,
 }
 
 /// A blur of what is behind a layer: its box, from the layer's origin, and the blur, in
@@ -47,7 +58,13 @@ pub struct Backdrop {
 
 impl Default for LayerConstants {
     fn default() -> LayerConstants {
-        LayerConstants { transform: Affine::IDENTITY, scissor: None, opacity: 1.0, backdrop: None }
+        LayerConstants {
+            transform: Affine::IDENTITY,
+            scissor: None,
+            opacity: 1.0,
+            backdrop: None,
+            mask: None,
+        }
     }
 }
 

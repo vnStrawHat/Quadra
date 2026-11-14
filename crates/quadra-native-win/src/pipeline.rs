@@ -31,6 +31,11 @@ struct Constants {
     pad: u32,
     /// Where the layer's backdrop was copied from on the surface, and its texture's size.
     backdrop: [f32; 4],
+    /// The mask the layer is cut to: its box on the surface, its tile, its slice, and 1 when
+    /// there is one.
+    mask_rect: [f32; 4],
+    mask_uv: [f32; 4],
+    mask: [u32; 4],
 }
 
 pub(crate) struct Pipeline {
@@ -135,6 +140,9 @@ impl Pipeline {
             layer_turned: !t.is_translation() as u32,
             pad: 0,
             backdrop,
+            mask_rect: world.mask.map_or([0.0; 4], |(_, r)| [r.x, r.y, r.width, r.height]),
+            mask_uv: world.mask.map_or([0.0; 4], |(m, _)| m.uv),
+            mask: world.mask.map_or([0; 4], |(m, _)| [m.slice, 1, 0, 0]),
         };
         let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
         // SAFETY: a write-discard map of a dynamic buffer gives at least its ByteWidth, which

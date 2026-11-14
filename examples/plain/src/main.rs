@@ -14,6 +14,9 @@ fn line() -> quadra::Div {
     row().gap(8.0).align_items(quadra::Align::Center)
 }
 
+/// A star of five points, for a box cut to a shape.
+const STAR: &str = r#"<svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 16.5,13.5 18.5,21 12,16.5 5.5,21 7.5,13.5 2,9 9,9"/></svg>"#;
+
 /// What the renderer draws besides flat boxes: gradients, and borders that are not solid.
 fn paints() -> quadra::Div {
     let (ink, sky, rose) = (Color::rgb(0x1A1A1A), Color::rgb(0x3B82F6), Color::rgb(0xF43F5E));
@@ -23,6 +26,7 @@ fn paints() -> quadra::Div {
         .child(boxed().gradient(Gradient::conic(0.0, [sky, rose, sky])).radius(20.0))
         .child(boxed().border(1.0).border_color(ink).border_style(BorderStyle::Dashed))
         .child(boxed().border(2.0).border_color(ink).border_style(BorderStyle::Dotted).radius(8.0))
+        .child(boxed().gradient(Gradient::radial([rose, sky])).clip_shape(STAR))
         // Frosted glass over the two gradients.
         .child(
             quadra::div()

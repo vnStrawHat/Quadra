@@ -5,10 +5,11 @@
 
 use std::rc::Rc;
 
+use quadra_base::dialog as base;
 use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, Role};
+use quadra_tree::NodeId;
 use quadra_ui::{Div, MountCx, Place, View, column, div, row, text};
 
 use crate::button::{Variant, button};
@@ -47,8 +48,7 @@ impl<F> Dialog<F> {
 fn head(title: &str, open: Signal<bool>) -> Div {
     let cross = row().size(22.0, 22.0).align_items(Align::Center).justify(Justify::Center);
     let cross = cross.radius(size::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
-    let cross = cross.cursor(Cursor::Pointer).role(Role::Button).label("Close");
-    let cross = cross.on_click(move |_| open.set(false));
+    let cross = base::close(cross.cursor(Cursor::Pointer), open);
     let cross = cross.child(icon(icons::X).size(14.0).color(token::TEXT_2));
     let headline = div().grow(1.0).child(text(title.to_string()).size(size::TEXT_LG.size));
     let head = row().align_items(Align::Center).gap(4.0).padding_x(12.0).padding_top(8.0);
@@ -89,7 +89,7 @@ where
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let Drawer { open, edge, title, size, body } = self;
         let content = move || {
-            let page = column().grow(1.0).role(Role::Dialog).label(title.clone());
+            let page = base::page(column().grow(1.0), title.clone());
             let page = match edge {
                 Edge::Bottom => page.height(size - EDGE),
                 _ => page.width(size - EDGE),
@@ -125,7 +125,7 @@ where
         let content = move || {
             let head = head(&title, open);
             let middle = div().padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2).child(body());
-            let page = column().width(440.0 - EDGE).role(Role::Dialog).label(title.clone());
+            let page = base::page(column().width(440.0 - EDGE), title.clone());
             let page = page.child(head).child(middle);
             if actions.is_empty() {
                 return page;
@@ -133,11 +133,7 @@ where
             let mut foot = row().gap(4.0).padding(8.0).justify(Justify::End);
             foot = foot.border_top(1.0).border_color(token::LINE);
             for (label, variant, act) in actions.iter() {
-                let act = act.clone();
-                let press = move || {
-                    act();
-                    open.set(false);
-                };
+                let press = base::answer(open, act.clone());
                 foot = foot.child(button(label.clone()).variant(*variant).on_click(press));
             }
             page.child(foot)

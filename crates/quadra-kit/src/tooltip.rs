@@ -2,20 +2,12 @@
 //! shown after half a second and gone when the pointer leaves or presses. It never takes
 //! the focus, and it adds no node around the view it is about: the layout does not know.
 
-use std::cell::Cell;
-use std::rc::Rc;
-use std::time::Duration;
-
-use quadra_async::{Timer, timeout};
-use quadra_reactive::{Scope, signal};
-use quadra_tree::{Along, Anchor, NodeId, PointerEvent, PointerKind, Role, Side};
+use quadra_base::hint;
+use quadra_tree::{Along, Anchor, NodeId, Role, Side};
 use quadra_ui::{MountCx, View, div, row, text};
 
 use crate::popup::{hang, surface};
 use crate::token;
-
-/// How long the pointer rests before the tooltip shows.
-const REST: Duration = Duration::from_millis(500);
 
 pub struct Tooltip<V> {
     tip: String,
@@ -56,26 +48,7 @@ impl<V> Tooltip<V> {
 impl<V: View + 'static> View for Tooltip<V> {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let of = self.of.mount(cx);
-        let (shown, owner) = (signal(false), Scope::current());
-        let waiting: Rc<Cell<Option<Timer>>> = Rc::default();
-        // The pointer came: the tooltip shows if it is still there in half a second.
-        let rest = waiting.clone();
-        cx.tree.on_pointer(of, PointerKind::Enter, move |_: &mut PointerEvent| {
-            let timer = owner.run(|| timeout(REST, move || shown.set(true)));
-            if let Some(before) = rest.replace(Some(timer)) {
-                before.cancel();
-            }
-        });
-        // It left, or pressed: no tooltip, and none on its way.
-        let away = move || {
-            if let Some(timer) = waiting.take() {
-                timer.cancel();
-            }
-            shown.set(false);
-        };
-        let leave = away.clone();
-        cx.tree.on_pointer(of, PointerKind::Leave, move |_| leave());
-        cx.tree.on_pointer(of, PointerKind::Down, move |_| away());
+        let shown = hint::tooltip(cx, of, hint::TOOLTIP_REST);
 
         // The bubble is an overlay opened by hand, above the view and centred on it.
         let words = (self.tip, self.keys, self.meta);

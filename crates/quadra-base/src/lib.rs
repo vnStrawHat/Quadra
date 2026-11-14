@@ -4,8 +4,14 @@
 
 pub mod action;
 pub mod choice;
+pub mod combo;
+pub mod dialog;
 pub mod disclose;
+pub mod hint;
 pub mod list;
+pub mod menu;
+pub mod notices;
+pub mod pick;
 pub mod popup;
 pub mod press;
 pub mod split;

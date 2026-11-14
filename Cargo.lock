@@ -120,11 +120,13 @@ dependencies = [
 name = "quadra-base"
 version = "0.1.0"
 dependencies = [
+ "quadra-async",
  "quadra-layout",
  "quadra-platform",
  "quadra-prim",
  "quadra-reactive",
  "quadra-testing",
+ "quadra-text",
  "quadra-tree",
  "quadra-ui",
 ]

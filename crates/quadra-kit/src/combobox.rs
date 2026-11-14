@@ -1,18 +1,18 @@
-//! The combobox (specs/behaviour/09, "Forms"): an input whose text filters a few options
-//! shown under it. The focus stays in the input: the arrows move a highlight over the
-//! options, and Enter or a click takes one.
+//! The combobox (specs/behaviour/09, "Forms"): the base's (`quadra_base::combo`) with the
+//! kit's input, 280 px, and its options on a popup's plane under it: rows of 23 px, at most
+//! 240 px of them.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
+use quadra_base::combo::combo;
+use quadra_base::pick::Parts;
 use quadra_layout::{Align, Length};
-use quadra_reactive::{Signal, effect, memo, signal};
-use quadra_tree::{Along, NodeId, Role, Side, State};
-use quadra_ui::{MountCx, NodeRef, Place, View, column, div, dynamic, overlay, row, scroll, show};
+use quadra_reactive::{Signal, signal};
+use quadra_tree::{Along, NodeId, Side, State};
+use quadra_ui::{MountCx, Place, View, column, div, row, scroll};
 
-use crate::action::{Cancel, LIST, MoveNext, MovePrevious, POPUP};
 use crate::input::input;
-use crate::palette::{best, fuzzy_hits, marked};
+use crate::palette::{fuzzy_hits, marked};
 use crate::popup::surface;
 use crate::{icons, token};
 
@@ -50,86 +50,36 @@ impl Combobox {
 
 impl View for Combobox {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (options, value, pick) = (self.options, self.value, self.pick);
-        let (open, on, around) = (signal(false), signal(0usize), NodeRef::new());
-        let known = options.clone();
-        let found = memo(move || best(&value.get(), known.iter().map(String::as_str)));
-        // Typing opens the list on the best match; taking an option is not typing.
-        let taken: Rc<RefCell<Option<String>>> = Rc::default();
-        let last = taken.clone();
-        effect(move || {
-            let text = value.get();
-            on.set(0);
-            open.set(!text.is_empty() && last.borrow().as_ref() != Some(&text));
-        });
-        let choose = {
-            let (options, handle, field) = (options.clone(), cx.handle.clone(), around.clone());
-            move |k: usize| {
-                let Some(&i) = found.get().get(k) else { return };
-                *taken.borrow_mut() = Some(options[i].clone());
-                value.set(options[i].clone());
-                open.set(false);
-                if let Some(pick) = &pick {
-                    pick(i);
-                }
-                // The focus is in the input again after a click on an option.
-                if let Some(around) = field.get() {
-                    handle.with(move |tree| {
-                        tree.focus_first(around);
-                    });
-                }
-            }
+        let (options, value, placeholder) = (self.options.clone(), self.value, self.placeholder);
+        let face = move |_: usize, i: usize| {
+            let hits = fuzzy_hits(&value.get_untracked(), &options[i]).unwrap_or_default();
+            let line = row().align_items(Align::Center).grow(1.0).height(ROW).padding_x(6.0).radius(4.0);
+            let line = line.label(options[i].clone());
+            let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
+            line.child(marked(&options[i], &hits))
         };
-        let refs: Rc<RefCell<Vec<NodeRef>>> = Rc::default();
-        let (lines, clicked, anchor) = (refs.clone(), choose.clone(), around.clone());
-        let list = move || {
-            let (lines, clicked, options) = (lines.clone(), clicked.clone(), options.clone());
-            let rows = dynamic(move || {
-                let (matches, query) = (found.get(), value.get_untracked());
-                *lines.borrow_mut() = matches.iter().map(|_| NodeRef::new()).collect();
-                let mut all = column().grow(1.0).padding_y(4.0).role(Role::List);
-                for (k, &i) in matches.iter().enumerate() {
-                    let (hits, clicked) =
-                        (fuzzy_hits(&query, &options[i]).unwrap_or_default(), clicked.clone());
-                    let line =
-                        row().align_items(Align::Center).grow(1.0).height(ROW).padding_x(6.0).radius(4.0);
-                    let line = line.role(Role::ListItem).label(options[i].clone());
-                    let line = line.selected(move || on.get() == k).node_ref(&lines.borrow()[k]);
-                    let line = line
-                        .hover(|s| s.bg(token::PANEL_HOVER))
-                        .when(State::SELECTED, |s| s.bg(token::PRESS));
-                    let line = line.on_click(move |_| clicked(k)).child(marked(&options[i], &hits));
-                    all = all.child(div().padding_x(4.0).child(line));
-                }
-                all
-            });
-            let tall = move || Length::Px((found.get().len() as f32 * ROW + 8.0).min(MOST));
-            let panel =
-                surface(1).width(280.0).child(scroll(signal(0.0), rows).container(div().height(tall)));
-            let place = Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);
-            overlay(place, panel).opener(&anchor).on_outside_press(move || open.set(false))
+        let parts = Parts {
+            list: Rc::new(|| column().grow(1.0).padding_y(4.0)),
+            line: Some(Rc::new(|| div().padding_x(4.0))),
+            row: Rc::new(face),
+            empty: None,
         };
-        // The arrows open the list and go round the matches; Enter takes the highlighted one.
-        let step = move |forward: bool| {
-            let count = found.get().len();
-            if count > 0 && open.get_untracked() {
-                on.update(|at| *at = if forward { (*at + 1) % count } else { (*at + count - 1) % count });
-                refs.borrow()[on.get_untracked()].scroll_into_view();
-            }
-            open.set(count > 0);
+        let field = move |submit: Rc<dyn Fn()>| {
+            let field = input(value).placeholder(&placeholder).icon(icons::SEARCH).width(280.0);
+            field.on_submit(move |_| submit())
         };
-        let (down, up, submit) = (step.clone(), step, choose);
-        let field = input(value).placeholder(&self.placeholder).icon(icons::SEARCH).width(280.0);
-        let field = field.on_submit(move |_| {
-            if open.get_untracked() {
-                submit(on.get_untracked());
-            }
-        });
-        let shown = show(move || open.get() && !found.get().is_empty(), list);
-        let keys = div().key_context(LIST).on_action::<MoveNext>(move |_| down(true));
-        let keys = keys.on_action::<MovePrevious>(move |_| up(false)).child(field);
-        let whole = column().shrink(0.0).node_ref(&around).key_context(POPUP);
-        let whole = whole.on_action::<Cancel>(move |_| open.set(false));
-        whole.child(keys).child(shown.container(div().display(quadra_layout::Display::None))).mount(cx)
+        let panel = |found: &quadra_base::pick::Found, rows| {
+            let matches = found.matches;
+            let tall = move || Length::Px((matches.get().len() as f32 * ROW + 8.0).min(MOST));
+            surface(1).width(280.0).child(scroll(signal(0.0), rows).container(div().height(tall)))
+        };
+        let place =
+            |anchor: &quadra_ui::NodeRef| Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);
+        let combo = combo(self.options, value, parts, field, panel, place);
+        match self.pick {
+            Some(pick) => combo.on_pick(move |i| pick(i)),
+            None => combo,
+        }
+        .mount(cx)
     }
 }

@@ -6,16 +6,16 @@ mod rows;
 use std::rc::Rc;
 
 use quadra_layout::Align;
-use quadra_platform::MouseButton;
 use quadra_prim::Point;
-use quadra_reactive::{Scope, Signal, signal};
-use quadra_tree::{NodeId, PointerKind};
+use quadra_reactive::{Signal, signal};
+use quadra_tree::NodeId;
 use quadra_ui::{AnyView, Div, MountCx, NodeRef, Place, View, div, row};
 
-pub(crate) use self::rows::{Ends, rows};
+pub(crate) use self::rows::rows;
 use crate::button::{Button, Size, Variant, button, icon_button};
 use crate::popup::{open_now, popover};
 use crate::token;
+pub(crate) use quadra_base::menu::Ends;
 
 /// A row of a menu, or the line between two groups of rows.
 #[derive(Clone, Default)]
@@ -96,10 +96,6 @@ impl MenuItem {
         self.quiet = true;
         self
     }
-
-    fn chosen(&self) -> bool {
-        !self.separator && !self.heading && !self.disabled
-    }
 }
 
 /// A menu below `opener` while `open` is true. `items` is asked each time the menu opens,
@@ -134,18 +130,11 @@ where
 {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         // ponytail: the pointer opens it; the menu key and Shift-F10 when keys do too.
-        let (of, owner, handle, items) =
-            (self.of.mount(cx), Scope::current(), cx.handle.clone(), Rc::new(self.items));
-        cx.tree.on_pointer(of, PointerKind::Click, move |e| {
-            if e.button != MouseButton::Right {
-                return;
-            }
+        let (of, items) = (self.of.mount(cx), Rc::new(self.items));
+        quadra_base::menu::on_context(cx, of, move |tree, owner, at| {
             // Under the pointer by the gap of a popup: the pointer is then over none of its rows.
-            let (place, items) = (Place::At(Point::new(e.at.x, e.at.y + 4.0)), items.clone());
-            handle.with(move |tree| {
-                open_now(tree, owner, place, move |close| rows(items(), Ends { done: close, leave: None }))
-            });
-            e.stop();
+            let (place, items) = (Place::At(Point::new(at.x, at.y + 4.0)), items.clone());
+            open_now(tree, owner, place, move |close| rows(items(), Ends { done: close, leave: None }))
         });
         of
     }

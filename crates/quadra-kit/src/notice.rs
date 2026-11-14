@@ -6,9 +6,8 @@
 use std::rc::Rc;
 use std::time::Duration;
 
-use quadra_async::timeout;
+use quadra_base::notices::{Queue, TOAST};
 use quadra_layout::{Align, Justify};
-use quadra_reactive::{Scope, Signal, signal};
 use quadra_tree::Role;
 use quadra_ui::{Div, Place, View, column, div, each, overlay, row, show, text};
 
@@ -18,15 +17,11 @@ use crate::icon::icon;
 use crate::popup::surface;
 use crate::{icons, size, token};
 
-/// How long a toast shows.
-const TOAST: Duration = Duration::from_secs(10);
-
 type Act = Rc<dyn Fn()>;
 
 /// A card of the stack of notifications.
 #[derive(Clone)]
 pub struct Notice {
-    id: u64,
     title: String,
     body: String,
     tone: Tone,
@@ -39,7 +34,7 @@ pub struct Notice {
 impl Notice {
     pub fn new(title: impl Into<String>) -> Notice {
         let (title, body, tone) = (title.into(), String::new(), Tone::Info);
-        Notice { id: 0, title, body, tone, actions: Vec::new(), lasts: None, toast: false }
+        Notice { title, body, tone, actions: Vec::new(), lasts: None, toast: false }
     }
 
     /// A line or two under the title.
@@ -84,16 +79,14 @@ fn mark(tone: Tone, toast: bool) -> impl View {
 /// What a window is told to show, and what it shows. Copies are the same one.
 #[derive(Clone, Copy)]
 pub struct Notices {
-    shown: Signal<Vec<Notice>>,
-    last: Signal<u64>,
-    owner: Scope,
+    queue: Queue<Notice>,
     /// How far above the bottom of the window the stacks stand: the height of a status bar.
     lift: f32,
 }
 
 /// The notifications of a window: make it where the window's view is built.
 pub fn notices() -> Notices {
-    Notices { shown: signal(Vec::new()), last: signal(0), owner: Scope::current(), lift: 0.0 }
+    Notices { queue: Queue::new(), lift: 0.0 }
 }
 
 impl Notices {
@@ -105,15 +98,9 @@ impl Notices {
 
     /// Shows a card, under those that show already, and returns what [`Notices::close`]
     /// takes.
-    pub fn notify(&self, mut notice: Notice) -> u64 {
-        let (id, me) = (self.last.get_untracked() + 1, *self);
-        self.last.set(id);
-        notice.id = id;
-        if let Some(time) = notice.lasts.filter(|_| self.owner.is_alive()) {
-            self.owner.run(|| timeout(time, move || me.close(id)));
-        }
-        self.shown.update(|all| all.push(notice));
-        id
+    pub fn notify(&self, notice: Notice) -> u64 {
+        let lasts = notice.lasts;
+        self.queue.push(notice, lasts)
     }
 
     /// Shows a line at the bottom centre for ten seconds.
@@ -122,18 +109,16 @@ impl Notices {
     }
 
     pub fn close(&self, id: u64) {
-        if self.shown.with_untracked(|all| all.iter().any(|notice| notice.id == id)) {
-            self.shown.update(|all| all.retain(|notice| notice.id != id));
-        }
+        self.queue.close(id)
     }
 
     fn find(&self, id: u64) -> Option<Notice> {
-        self.shown.with_untracked(|all| all.iter().find(|notice| notice.id == id).cloned())
+        self.queue.find(id)
     }
 
     /// The ids of the cards, or of the toasts, the oldest first.
     fn ids(&self, toasts: bool) -> Vec<u64> {
-        self.shown.with(|all| all.iter().filter(|notice| notice.toast == toasts).map(|n| n.id).collect())
+        self.queue.ids(|notice| notice.toast == toasts)
     }
 
     /// A card: 448 px on the panel's plane at the level of dialogs.

@@ -28,6 +28,8 @@ designed from its goals, and what survives from the V implementation survives on
 | [12-a11y-testing.md](12-a11y-testing.md) | Semantic tree, accessibility, harness, counters, snapshots, devtools |
 | [13-kit.md](13-kit.md) | Style values and tokens, themes, component conventions, domain crates |
 | [14-performance.md](14-performance.md) | Structural budgets, time and memory budgets, baselines, benches |
+| [15-app-services.md](15-app-services.md) | Settings, window state, local time, language, log and crashes, pages, start and end |
+| [16-shell.md](16-shell.md) | Dialogs, opening, tray and notifications, one instance, crash reports, packaging |
 
 Reading order: 00, 01, 02, 03, 04, 05, then the rest.
 
@@ -44,7 +46,7 @@ the old frame pipeline) they are superseded by the files above.
 | [05-layout](behaviour/05-layout.md) | The style values of flex and grid | 06 |
 | [08-elements-style](behaviour/08-elements-style.md) | Style values, image limits, scrolling and list behaviour | 05, 13 |
 | [09-components](behaviour/09-components.md) | Every component's behaviour and states | 13 |
-| [10-app-services](behaviour/10-app-services.md) | Settings, assets, i18n, lifecycle, logging, packaging | 11 for tasks |
+| [10-app-services](behaviour/10-app-services.md) | Settings, assets, i18n, lifecycle, logging, packaging | 11 for tasks, 15 and 16 for the rest |
 | [13-apps-roadmap](behaviour/13-apps-roadmap.md) | The After-v1 list | 00 for phases |
 | [15-design-language](behaviour/15-design-language.md) | The visual language and themes | nothing |
 | [16-devtool-kit](behaviour/16-devtool-kit.md) | Panels, tables, trees, status | 13 |

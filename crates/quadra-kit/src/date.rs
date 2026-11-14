@@ -2,8 +2,6 @@
 //! one in a popup. A date is a year, a month and a day; the names are English until the
 //! app's language says otherwise.
 
-use std::fmt;
-
 use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
@@ -32,44 +30,11 @@ const MONTHS: [&str; 12] = [
     "December",
 ];
 
-/// A day of the calendar.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Date {
-    pub year: i32,
-    /// From 1 to 12.
-    pub month: u8,
-    pub day: u8,
-}
+pub use quadra_app::time::Date;
 
-impl Date {
-    pub fn new(year: i32, month: u8, day: u8) -> Date {
-        Date { year, month, day }
-    }
-
-    /// How many days a month has.
-    pub fn days_in(year: i32, month: u8) -> u8 {
-        let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-        match month {
-            2 => 28 + leap as u8,
-            4 | 6 | 9 | 11 => 30,
-            _ => 31,
-        }
-    }
-
-    /// The day of the week, Monday being 0.
-    pub fn weekday(self) -> u8 {
-        const SHIFT: [i32; 12] = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
-        let year = self.year - (self.month < 3) as i32;
-        let sunday_first = year + year / 4 - year / 100 + year / 400 + SHIFT[self.month as usize - 1];
-        (sunday_first + self.day as i32 + 6).rem_euclid(7) as u8
-    }
-}
-
-impl fmt::Display for Date {
-    /// Day, month, year: 05/03/2026.
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:02}/{:02}/{}", self.day, self.month, self.year)
-    }
+/// A date as the calendar says it: day, month, year (05/03/2026).
+fn dmy(date: Date) -> String {
+    format!("{:02}/{:02}/{}", date.day, date.month, date.year)
 }
 
 /// The calendar of the month that `value` is in, and of the others by its arrows. A click on
@@ -104,7 +69,7 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
         for day in 1..=Date::days_in(year, month) {
             let (date, picked) = (Date::new(year, month, day), picked.clone());
             let on = cell().height(28.0).radius(size::RADIUS_MD).cursor(Cursor::Pointer);
-            let on = on.role(Role::Button).label(date.to_string()).selected(move || value.get() == date);
+            let on = on.role(Role::Button).label(dmy(date)).selected(move || value.get() == date);
             let on = on.hover(|s| s.bg(token::PANEL_HOVER));
             let on = on.when(State::SELECTED, |s| s.bg(token::ACCENT_TINT).text_color(token::ACCENT_TEXT));
             let on = on.on_click(move |_| {
@@ -155,7 +120,7 @@ impl View for DatePicker {
         let face = face.padding_x(8.0).radius(size::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
-        let face = face.cursor(Cursor::Pointer).role(Role::Button).label(move || value.get().to_string());
+        let face = face.cursor(Cursor::Pointer).role(Role::Button).label(move || dmy(value.get()));
         let face = match self.test_id {
             Some(id) => face.test_id(id),
             None => face,
@@ -164,7 +129,7 @@ impl View for DatePicker {
         let face = face.on_click(move |_| open.update(|open| *open = !*open));
         let face = face.on_action::<Confirm>(move |_| open.set(true));
         let face = face.child(icon(icons::CALENDAR).size(14.0).color(token::TEXT_2));
-        let face = face.child(text(move || value.get().to_string()));
+        let face = face.child(text(move || dmy(value.get())));
         // A day chosen closes the calendar.
         let days = popover(open, &opener, move || month(value, move || open.set(false)));
         div().shrink(0.0).child(face).child(days).mount(cx)

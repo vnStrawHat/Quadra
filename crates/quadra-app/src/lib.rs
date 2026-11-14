@@ -4,8 +4,13 @@
 //!
 //! Input dispatch, tasks and timers join with their crates (specs/09, specs/11).
 
+mod crash;
 mod events;
+pub mod log;
 mod report;
+mod services;
+mod settings;
+pub mod time;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -23,6 +28,8 @@ use quadra_tree::{Fonts, Keymap, Theme, Tree};
 use quadra_ui::{Images, View, mount_with};
 
 pub use report::{AppError, FrameReport, Result};
+pub use services::AppDirs;
+pub use settings::{Settings, Stored};
 
 type FrameHook = Box<dyn FnMut(&FrameReport)>;
 
@@ -58,6 +65,11 @@ pub struct App<R: Renderer> {
     theme: Signal<Rc<Theme>>,
     on_error: Box<dyn FnMut(&AppError)>,
     on_presented: Option<FrameHook>,
+    /// Where the app keeps its files, once it is told (specs/15).
+    pub(crate) dirs: Option<AppDirs>,
+    pub(crate) settings: Rc<Settings>,
+    pub(crate) args: Vec<String>,
+    pub(crate) quit_on_last: bool,
 }
 
 impl<R: Renderer> App<R> {
@@ -67,14 +79,16 @@ impl<R: Renderer> App<R> {
         // theme.
         let (root, timers, tasks) =
             (Scope::child(), Timers::new(platform.clone()), Executor::new(&*platform));
-        let theme = root.run(|| {
+        let (theme, settings) = root.run(|| {
             provide(timers.clone());
             provide(tasks.clone());
             provide(Images::new(platform.image_decoder()));
             provide(platform.clipboard());
             let theme = signal(Rc::<Theme>::default());
             provide(theme);
-            theme
+            let settings = Settings::memory();
+            provide(settings.clone());
+            (theme, settings)
         });
         App {
             platform,
@@ -87,8 +101,12 @@ impl<R: Renderer> App<R> {
             timers,
             tasks,
             theme,
-            on_error: Box::new(|e| eprintln!("quadra: {e}")),
+            on_error: Box::new(|e| log::error("app", e)),
             on_presented: None,
+            dirs: None,
+            settings,
+            args: std::env::args().skip(1).collect(),
+            quit_on_last: true,
         }
     }
 
@@ -177,7 +195,9 @@ impl<R: Renderer> App<R> {
     /// Runs the platform's loop until the last window closes.
     pub fn run(mut self) -> Result<()> {
         let platform = self.platform.clone();
-        Ok(platform.run(&mut self)?)
+        let ran = platform.run(&mut self);
+        self.settings.save_now(); // what waited to be written
+        Ok(ran?)
     }
 
     pub fn window_count(&self) -> usize {
@@ -204,7 +224,7 @@ impl<R: Renderer> App<R> {
         closed.scope.dispose();
         self.renderer.forget_scene(closed.tree.scene().id());
         self.renderer.drop_surface(closed.surface);
-        if self.windows.is_empty() {
+        if self.windows.is_empty() && self.quit_on_last {
             self.platform.quit();
         }
     }

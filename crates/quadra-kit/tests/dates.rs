@@ -32,7 +32,7 @@ fn a_month_has_its_days_and_a_day_its_place_in_the_week() {
     let days =
         [Date::new(2026, 11, 11), Date::new(2024, 2, 29), Date::new(2000, 1, 1), Date::new(2026, 11, 1)];
     assert_eq!(days.map(Date::weekday), [2, 3, 5, 6]);
-    assert_eq!(Date::new(2026, 3, 5).to_string(), "05/03/2026");
+    assert_eq!(Date::new(2026, 3, 5).to_string(), "2026-03-05"); // the form of files; a user is shown theirs
 }
 
 #[test]

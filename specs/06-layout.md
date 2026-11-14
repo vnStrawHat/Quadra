@@ -124,7 +124,9 @@ because every render built new nodes. Here nodes persist, and a change is a flag
   width of the row is no limit to them.
 - **A box that scrolls sideways** in a page that scrolls (`scroll_x(scroll_x, content)`: a
   block of code, a wide table) is a strip that leaves the plain wheel to the page: it takes
-  the wheel turned sideways, and the wheel with Shift. Not yet: a scrollbar for either.
+  the wheel turned sideways, and the wheel with Shift. Its scrollbar runs along its bottom,
+  as the bar of a scroll view runs down its right edge, and shows and is dragged the same
+  way; a strip has none.
 - `position: sticky` children are placed in the compose pass from the offset.
 
 ## Virtual lists

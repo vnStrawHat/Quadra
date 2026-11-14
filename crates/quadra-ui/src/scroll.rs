@@ -60,7 +60,11 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
         cx.tree.on_reveal(viewport, move |rect| {
             reveals(rect, scroll_y, top.get(), end.get(), outer.get_untracked().height)
         });
-        let thumb = scrollbar::attach(cx, viewport, Scrolled { scroll_y, top, end, view: outer });
+        let thumb = scrollbar::attach(
+            cx,
+            viewport,
+            Scrolled { scroll: scroll_y, top, end, view: outer, sideways: false },
+        );
         cx.tree.set_children(viewport, &[content, thumb]);
         let writer = cx.handle.clone();
         cx.handle.bind(move || {
@@ -74,15 +78,14 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
 /// Shows a row of things behind a viewport, scrolled sideways by `scroll_x` pixels (kept
 /// between zero and the end): a strip of tabs. The wheel scrolls it, turned either way, and
 /// it has no scrollbar. The content is as wide as the strip at least.
-// ponytail: no scrollbar and nothing brought into view; a sideways scroll view with both
-// when a wide table or a block of code needs one.
+// ponytail: nothing is brought into view sideways; when a strip's tab must be.
 pub fn scroll_strip<V: View + 'static>(scroll_x: Signal<f32>, content: V) -> Region {
     strip(scroll_x, content, true)
 }
 
 /// A box that scrolls sideways in a page that scrolls: a block of code, a wide table. It is
-/// a strip that leaves the plain wheel to the page, and takes the wheel turned sideways and
-/// the wheel with Shift.
+/// a strip that leaves the plain wheel to the page, takes the wheel turned sideways and the
+/// wheel with Shift, and has a scrollbar along its bottom.
 pub fn scroll_x<V: View + 'static>(scroll_x: Signal<f32>, content: V) -> Region {
     strip(scroll_x, content, false)
 }
@@ -112,7 +115,12 @@ fn strip<V: View + 'static>(scroll_x: Signal<f32>, content: V, plain_wheel: bool
                 e.stop();
             }
         });
-        cx.tree.set_children(viewport, &[content]);
+        let mut children = vec![content];
+        if !plain_wheel {
+            let bar = Scrolled { scroll: scroll_x, top: left, end, view: outer, sideways: true };
+            children.push(scrollbar::attach(cx, viewport, bar));
+        }
+        cx.tree.set_children(viewport, &children);
         let writer = cx.handle.clone();
         cx.handle.bind(move || {
             let x = left.get();

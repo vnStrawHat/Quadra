@@ -1,5 +1,6 @@
 //! The scrollbar of a scroll container (specs/06, "Scrolling"): where the thumb is and how
-//! long, when it shows, and the drag that scrolls by it.
+//! long, when it shows, and the drag that scrolls by it. A bar is down the right edge, or
+//! along the bottom of a box that scrolls sideways.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -24,11 +25,13 @@ const FADES: Duration = Duration::from_millis(400);
 
 /// How a container is scrolled: what its bar shows, and moves.
 pub(crate) struct Scrolled {
-    pub scroll_y: Signal<f32>,
+    /// How far the content is scrolled, down or, sideways, to the left.
+    pub scroll: Signal<f32>,
     /// Where the content really is, and the furthest it goes.
     pub top: Memo<f32>,
     pub end: Memo<f32>,
     pub view: Signal<Size>,
+    pub sideways: bool,
 }
 
 /// Shows the bar while something goes on, and for a while after: one timer, set again when
@@ -72,29 +75,42 @@ impl Idle {
 
 /// Makes the thumb of a scroll container: a node to put in the viewport after the content.
 pub(crate) fn attach(cx: &mut MountCx, viewport: NodeId, scrolled: Scrolled) -> NodeId {
-    let Scrolled { scroll_y, top, end, view } = scrolled;
-    let place = quadra_layout::Style {
-        position: Position::Absolute,
-        inset: Insets { top: Length::Px(0.0), right: Length::Px(0.0), ..Insets::default() },
-        width: Length::Px(GRIP),
-        ..Default::default()
+    let Scrolled { scroll, top, end, view, sideways } = scrolled;
+    let zero = Length::Px(0.0);
+    let place = match sideways {
+        true => quadra_layout::Style {
+            inset: Insets { left: zero, bottom: zero, ..Insets::default() },
+            height: Length::Px(GRIP),
+            ..Default::default()
+        },
+        false => quadra_layout::Style {
+            inset: Insets { top: zero, right: zero, ..Insets::default() },
+            width: Length::Px(GRIP),
+            ..Default::default()
+        },
     };
-    let thumb =
-        cx.tree.insert_widget(Style { layout: place, ..Style::default() }, Box::<ScrollThumb>::default());
+    let place = quadra_layout::Style { position: Position::Absolute, ..place };
+    let widget = Box::new(if sideways { ScrollThumb::sideways() } else { ScrollThumb::default() });
+    let thumb = cx.tree.insert_widget(Style { layout: place, ..Style::default() }, widget);
     cx.tree.make_layer(thumb, true);
 
     // As long as the viewport is of the content; content that fits has no thumb.
-    let track = move || (view.get().height - 2.0 * INSET).max(0.0);
+    let along = move || if sideways { view.get().width } else { view.get().height };
+    let track = move || (along() - 2.0 * INSET).max(0.0);
     let length = memo(move || {
-        let (height, end, track) = (view.get().height, end.get(), track());
-        if end > 0.0 { (track * height / (height + end)).max(SHORTEST).min(track) } else { 0.0 }
+        let (side, end, track) = (along(), end.get(), track());
+        if end > 0.0 { (track * side / (side + end)).max(SHORTEST).min(track) } else { 0.0 }
     });
     let writer = cx.handle.clone();
     cx.handle.bind(move || {
-        let height = Length::Px(length.get());
+        let long = Length::Px(length.get());
         writer.with(move |tree| {
             if tree.is_alive(thumb) {
-                let style = quadra_layout::Style { height, ..tree.layout_style(thumb).clone() };
+                let style = tree.layout_style(thumb).clone();
+                let style = match sideways {
+                    true => quadra_layout::Style { width: long, ..style },
+                    false => quadra_layout::Style { height: long, ..style },
+                };
                 tree.set_layout_style(thumb, style);
             }
         });
@@ -102,8 +118,9 @@ pub(crate) fn attach(cx: &mut MountCx, viewport: NodeId, scrolled: Scrolled) -> 
     let writer = cx.handle.clone();
     cx.handle.bind(move || {
         let (end, travel) = (end.get(), track() - length.get());
-        let y = INSET + if end > 0.0 { travel * top.get() / end } else { 0.0 };
-        writer.with(move |tree| tree.set_layer_offset(thumb, Point::new(0.0, y)));
+        let at = INSET + if end > 0.0 { travel * top.get() / end } else { 0.0 };
+        let at = if sideways { Point::new(at, 0.0) } else { Point::new(0.0, at) };
+        writer.with(move |tree| tree.set_layer_offset(thumb, at));
     });
 
     // It shows at once, and fades away on the frames of the window: no frame is asked for
@@ -158,9 +175,10 @@ pub(crate) fn attach(cx: &mut MountCx, viewport: NodeId, scrolled: Scrolled) -> 
     // ponytail: a thumb held still for a second fades all the same; it scrolls on.
     let held: Rc<Cell<Option<(f32, f32)>>> = Rc::default();
     let press = held.clone();
+    let pointer = move |at: Point| if sideways { at.x } else { at.y };
     cx.tree.on_pointer(thumb, PointerKind::Down, move |e| {
         if e.button == MouseButton::Left {
-            press.set(Some((e.at.y, top.get())));
+            press.set(Some((pointer(e.at), top.get())));
             e.capture_pointer();
             e.stop();
         }
@@ -171,7 +189,7 @@ pub(crate) fn attach(cx: &mut MountCx, viewport: NodeId, scrolled: Scrolled) -> 
             return;
         };
         if travel > 0.0 {
-            scroll_y.set((top + (e.at.y - from) * end / travel).clamp(0.0, end));
+            scroll.set((top + (pointer(e.at) - from) * end / travel).clamp(0.0, end));
         }
     });
     cx.tree.on_pointer(thumb, PointerKind::Up, move |_| held.set(None));

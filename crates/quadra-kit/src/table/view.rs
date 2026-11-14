@@ -7,7 +7,7 @@ use quadra_layout::{Align, Justify, Length, Overflow};
 use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Paint, PointerKind, Role, State as On};
-use quadra_ui::{Div, column, div, dynamic, row, text, uniform_list};
+use quadra_ui::{Div, column, div, dynamic, row, scroll_x, text, uniform_list};
 
 use super::{CellKind, State, age_text};
 use crate::action::{Copy, ExtendNext, ExtendPrevious, MoveFirst, MoveLast, MoveNext, MovePrevious, TABLE};
@@ -140,5 +140,9 @@ pub(crate) fn build(state: State, clipboard: Option<Rc<dyn Clipboard>>) -> Div {
             clipboard.write_text(&text);
         }
     });
-    all.child(header(&state)).child(body)
+    // Columns wider than the table scroll sideways, the header with the rows.
+    // ponytail: the rows' own scrollbar is at the right end of what scrolls sideways; a bar
+    // at the table's edge when tables that wide are common.
+    let sheet = column().grow(1.0).child(header(&state)).child(body);
+    all.child(scroll_x(signal(0.0), sheet).container(div().grow(1.0)))
 }

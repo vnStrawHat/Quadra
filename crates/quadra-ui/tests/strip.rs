@@ -1,5 +1,6 @@
 //! The strip (specs/06, "Scrolling"): a row that scrolls sideways under the wheel, as wide
-//! as its viewport at least; and the box that scrolls sideways in a page.
+//! as its viewport at least, with no scrollbar; and the box that scrolls sideways in a page,
+//! with a scrollbar along its bottom.
 
 use quadra_platform::Mods;
 use quadra_prim::Point;
@@ -19,6 +20,7 @@ fn a_strip_scrolls_sideways_under_the_wheel_and_passes_on_what_it_cannot_scroll(
     let viewport = h.tree.children(h.tree.children(h.tree.root().unwrap())[0])[0];
     let content = h.tree.children(viewport)[0];
     assert_eq!((h.tree.rect(viewport).width, h.tree.rect(content).width), (200.0, 500.0));
+    assert_eq!(h.tree.children(viewport).len(), 1); // no scrollbar
 
     // The plain wheel scrolls it: the content moves by its layer, nothing is laid out or painted.
     h.wheel(50.0, 10.0, -1.0);
@@ -62,4 +64,13 @@ fn a_box_that_scrolls_sideways_leaves_the_plain_wheel_to_the_page() {
     assert_eq!(wheel(&mut h, Point::new(0.0, -1.0), Mods::SHIFT), (40.0, 0.0));
     assert_eq!(wheel(&mut h, Point::new(-1.0, 0.0), Mods::NONE), (80.0, 0.0));
     assert_eq!(wheel(&mut h, Point::new(0.0, -1.0), Mods::NONE), (80.0, 40.0));
+
+    // Its bar is along its bottom, 14 px high, as long as the box is of the line (2 / 5 of the
+    // track, 4 px in from each end), and as far along as the line is scrolled.
+    let viewport = h.tree.children(h.tree.children(h.tree.root().unwrap())[0])[0];
+    let thumb = h.tree.children(viewport)[1];
+    let (track, long) = (200.0 - 8.0, (200.0 - 8.0) * 0.4);
+    let r = h.tree.window_rect(thumb);
+    assert!((r.width - long).abs() < 0.01 && r.height == 14.0 && r.bottom() == 30.0 - 40.0, "{r:?}");
+    assert!((r.x - (4.0 + (track - long) * 80.0 / 300.0)).abs() < 0.01, "{r:?}");
 }

@@ -130,7 +130,11 @@ fn list<V: View + 'static>(
         tree.on_reveal(viewport, move |rect| {
             reveals(rect, scroll_y, top.get(), end.get(), size.get_untracked().height)
         });
-        let thumb = scrollbar::attach(cx, viewport, Scrolled { scroll_y, top, end, view: size });
+        let thumb = scrollbar::attach(
+            cx,
+            viewport,
+            Scrolled { scroll: scroll_y, top, end, view: size, sideways: false },
+        );
         cx.tree.set_children(viewport, &[content, thumb]);
         if let Some(wanted) = asked.borrow_mut().take() {
             // Asked again when heights are found out, until the row shows whole and measured:

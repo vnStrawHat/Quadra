@@ -328,8 +328,8 @@ As built so far:
   have faded the frames stop and the boxes are gone. A change of the data reads the key
   and the cells of every row, so this is for tables of thousands of rows, not millions.
   Not yet: a source that says which rows it changed.
-- Of the table, not yet: scrolling
-  sideways and pinned columns, hidden columns, a cursor on cells, cells that flash when
+- A table whose columns are wider than it scrolls sideways (`scroll_x`), the header with
+  the rows. Not yet: pinned columns, hidden columns, a cursor on cells, cells that flash when
   they change.
 - **`tree(roots, chosen)`** shows things inside things (`TreeNode::new(id, label)
   .icon(..).children(..)`) as rows of 26 px: 20 px in for each level, with a faint guide for

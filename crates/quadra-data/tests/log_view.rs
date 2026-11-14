@@ -147,3 +147,36 @@ fn a_million_lines_cost_what_the_rows_that_show_cost() {
     log.set_filter("request 77777", false, false);
     assert_eq!(log.listed(), 11);
 }
+
+#[test]
+fn lines_are_selected_and_copied_and_a_long_one_scrolls_sideways() {
+    use quadra_platform::{Key, Mods};
+    let (mut h, log) = page(100);
+    // A click selects a line, Shift and an arrow the next too; Ctrl-C copies them with
+    // their times and without their escape sequences.
+    h.get_by_text("ERROR request 93 failed").click();
+    h.key(Key::Down, Mods::SHIFT);
+    h.key(Key::C, Mods::CTRL);
+    let copied = h.clipboard.read_text().unwrap_or_default();
+    assert_eq!(copied, "12:00:23.250 ERROR request 93 failed\n12:00:23.500 INFO request 94 ok");
+    // Other lines listed: none is selected.
+    h.get_by_role(Role::TextInput, "Filter").set_value("request 9");
+    settle(&mut h);
+    h.key(Key::C, Mods::CTRL);
+    assert_eq!(h.clipboard.read_text().unwrap_or_default(), copied); // nothing copied over it
+
+    // The wheel with Shift moves what a long line says; its time stays.
+    h.get_by_role(Role::TextInput, "Filter").set_value("");
+    log.push(1_793_966_500_000, &format!("INFO {}", "wide ".repeat(300)));
+    settle(&mut h);
+    let line = |h: &Harness| {
+        let found = h.query(|n| n.semantics.role == Role::Text && n.semantics.name.starts_with("INFO wide"));
+        h.tree.window_rect(found[0]).x
+    };
+    let time = |h: &Harness| h.tree.window_rect(h.query(|n| n.semantics.name == "12:01:40.000")[0]).x;
+    let (x, at) = (line(&h), time(&h));
+    let y = h.tree.window_rect(h.query(|n| n.semantics.name == "12:01:40.000")[0]).y + 9.0;
+    h.tree.wheel(quadra_prim::Point::new(0.0, -1.0), false, quadra_prim::Point::new(300.0, y), Mods::SHIFT);
+    settle(&mut h);
+    assert!(line(&h) < x && time(&h) == at, "{x} -> {}", line(&h));
+}

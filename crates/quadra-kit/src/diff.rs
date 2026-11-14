@@ -149,8 +149,8 @@ impl View for Diff {
                     let (widest, gutter) = untrack(|| (widest.get(), gutter.get()));
                     widest + 8.0 - (width / halves - numbers * gutter - 16.0)
                 };
-                let face = select::face(&rows_of, div().height(ROW), place);
-                built.container(select::sideways(face, sx, end))
+                let face = crate::rows::selectable(&rows_of, div().height(ROW), place);
+                built.container(crate::rows::sideways(face, sx, end))
             },
         );
         let list = list.reveal(move || sheet.cursor.get());

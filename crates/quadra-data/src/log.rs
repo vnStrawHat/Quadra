@@ -9,38 +9,9 @@ use regex_lite::{Regex, RegexBuilder};
 
 use crate::ansi::plain;
 
-/// Lines packed end to end: line `i` is the bytes from `ends[i - 1]` to `ends[i]`.
-#[derive(Default)]
-pub(crate) struct Store {
-    bytes: String,
-    ends: Vec<u32>,
-    /// When each was written, in milliseconds since 1970; 0: it does not say.
-    times: Vec<i64>,
-}
+mod store;
 
-impl Store {
-    pub fn len(&self) -> usize {
-        self.ends.len()
-    }
-
-    /// Adds a line. Past 4 GB of text nothing is added.
-    pub fn push(&mut self, at_ms: i64, text: &str) {
-        if let Ok(end) = u32::try_from(self.bytes.len() + text.len()) {
-            self.bytes.push_str(text);
-            self.ends.push(end);
-            self.times.push(at_ms);
-        }
-    }
-
-    pub fn line(&self, i: usize) -> &str {
-        let from = if i == 0 { 0 } else { self.ends[i - 1] };
-        &self.bytes[from as usize..self.ends[i] as usize]
-    }
-
-    pub fn time(&self, i: usize) -> i64 {
-        self.times[i]
-    }
-}
+pub(crate) use store::Store;
 
 /// What a filter looks for in what a line says.
 enum Matcher {
@@ -86,6 +57,8 @@ struct Inner {
     changed: Signal<u32>,
     /// The filter's pattern is not one.
     wrong: Signal<bool>,
+    /// The most lines it holds; 0: no limit.
+    limit: std::cell::Cell<usize>,
 }
 
 /// A log an app appends to and a [`crate::log_view`] shows. A clone is the same log.
@@ -108,7 +81,15 @@ impl Log {
             total: signal(0),
             changed: signal(0),
             wrong: signal(false),
+            limit: std::cell::Cell::new(0),
         }))
+    }
+
+    /// Holds at most `lines` lines: past that the oldest go, an eighth of the limit at a
+    /// time, so that dropping them costs little a line.
+    pub fn limit(self, lines: usize) -> Log {
+        self.0.limit.set(lines);
+        self
     }
 
     /// Adds lines, each with when it was written, in milliseconds since 1970 (0: no time).
@@ -121,11 +102,22 @@ impl Log {
                 listing.index.push(i);
             }
         }
+        let limit = self.0.limit.get();
+        let over = store.len().saturating_sub(limit);
+        let trimmed = limit > 0 && over > limit / 8;
+        if trimmed {
+            store.drop_first(over);
+            listing.index.retain(|&i| i as usize >= over);
+            listing.index.iter_mut().for_each(|i| *i -= over as u32);
+        }
         let (total, listed) =
             (store.len(), if listing.indexed() { listing.index.len() } else { store.len() });
         drop((store, listing));
         self.0.total.set(total);
         self.0.listed.set(listed);
+        if trimmed {
+            self.0.changed.update(|n| *n += 1); // the lines at each place are other ones
+        }
     }
 
     pub fn push(&self, at_ms: i64, text: &str) {
@@ -187,6 +179,11 @@ impl Log {
         Some((i, store.time(i), text.to_string(), listing.dim && !listing.matcher.matches(text)))
     }
 
+    /// The bytes of the longest line it has held.
+    pub(crate) fn widest(&self) -> usize {
+        self.0.store.borrow().widest
+    }
+
     /// What the view follows: when the listed lines are other ones, and a pattern that is
     /// not one.
     pub(crate) fn signals(&self) -> (Signal<u32>, Signal<bool>) {
@@ -246,5 +243,18 @@ mod tests {
         assert_eq!((log.listed(), log.line(500)), (114, None));
         log.clear();
         assert_eq!((log.len(), log.listed(), log.line(0)), (0, 0, None));
+    }
+
+    #[test]
+    fn past_its_limit_the_oldest_lines_go_an_eighth_at_a_time() {
+        let log = Log::new().limit(80);
+        log.append(entries(90));
+        assert_eq!(log.len(), 90); // ten over: not yet an eighth
+        log.set_filter("error", false, false);
+        log.push(90_000, "ERROR the last");
+        // Eleven over: they go, and the filter's lines are where they were.
+        assert_eq!((log.len(), log.line(0).map(|l| l.0)), (80, Some(2)));
+        assert_eq!(log.line(0).map(|l| l.1), Some(13_000));
+        assert_eq!(log.line(log.listed() - 1).map(|l| l.2), Some("ERROR the last".to_string()));
     }
 }

@@ -27,6 +27,7 @@ mod popup;
 mod progress;
 mod range;
 mod root;
+pub mod rows;
 mod select;
 mod settings;
 mod sidebar;

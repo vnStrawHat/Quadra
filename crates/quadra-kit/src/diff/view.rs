@@ -69,7 +69,9 @@ fn line(
         return line;
     }
     // A long line is cut at the edge and scrolls sideways; the numbers stay.
-    let words = div().absolute().top(0.0).left(move || -sx.get()).child(rich_text(spans));
+    // As wide as the line at least (a byte is a cell or more of it): it never wraps.
+    let wide = said.len() as f32 * 7.2 + 8.0;
+    let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).child(rich_text(spans));
     line.child(div().width(0.0).grow(1.0).height(ROW).overflow_x(Overflow::Hidden).child(words))
 }
 

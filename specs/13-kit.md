@@ -723,8 +723,14 @@ What these are and look like is behaviour/19. As built:
   against what a line says, without its escape sequences. A new filter reads every line
   once (a byte search for a text); lines that come are tested as they come. A pattern
   that is not one filters nothing, and the bar says so.
-- Not yet: a line selected or copied; scrolling sideways (a long line is cut at the edge);
-  a limit on the lines held.
+- Lines are selected as a table's rows are (a click, Shift and Ctrl, the arrows) and Ctrl-C
+  copies them, each its time and what it says without escape sequences; other lines
+  listed select none. A long line is cut at the edge, and the wheel turned sideways, or
+  with Shift, moves what every line says (the times stay), as far as the longest line yet.
+  What the diff and the log share is `quadra_kit::rows`: `one_column`, `selectable`,
+  `sideways`. To a reader the log is a table named "Log".
+- `Log::new().limit(n)` holds at most `n` lines: past that the oldest go, an eighth of the
+  limit at a time (the buffer is moved once for all of them).
 
 ## Markdown (`quadra-md`)
 

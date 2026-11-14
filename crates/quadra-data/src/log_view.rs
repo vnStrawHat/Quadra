@@ -4,14 +4,16 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
+use quadra_kit::rows::{one_column, selectable, sideways};
 use quadra_kit::{Size, Variant, button, fonts, input, token, tooltip};
-use quadra_layout::Align;
+use quadra_layout::{Align, Overflow};
+use quadra_platform::Clipboard;
 use quadra_prim::Color;
-use quadra_reactive::{Signal, effect, memo, signal};
-use quadra_tree::{NodeId, Paint, Role};
+use quadra_reactive::{Signal, effect, memo, signal, use_context};
+use quadra_tree::{NodeId, Paint};
 use quadra_ui::{Div, MountCx, View, column, div, dynamic, rich_text, row, span, text, uniform_list};
 
-use crate::ansi::{Ink, Pen, runs};
+use crate::ansi::{Ink, Pen, plain, runs};
 use crate::log::{Log, clock};
 
 /// The height of a row, and what a time takes before its line: twelve letters of the mono
@@ -49,8 +51,8 @@ fn paint(pen: Pen, fade: f32) -> Paint {
     }
 }
 
-/// The row of the line at a place of the listing.
-fn line(log: &Log, place: usize, timestamps: bool) -> Div {
+/// The row of the line at a place of the listing; what it says moved left by `sx`.
+fn line(log: &Log, place: usize, timestamps: bool, sx: Signal<f32>) -> Div {
     let Some((_, at_ms, raw, faint)) = log.line(place) else { return div() };
     let (fade, (said, pens)) = (if faint { 0.4 } else { 1.0 }, runs(&raw));
     let mut from = 0;
@@ -68,8 +70,23 @@ fn line(log: &Log, place: usize, timestamps: bool) -> Div {
             line.child(div().width(GUTTER - 8.0).shrink(0.0).child(time))
         }
     };
-    // It does not shrink: a long line is cut at the edge, not wrapped.
-    if spans.is_empty() { line } else { line.child(div().shrink(0.0).child(rich_text(spans))) }
+    if spans.is_empty() {
+        return line;
+    }
+    // A long line is cut at the edge and scrolls sideways; the times stay.
+    // As wide as the line at least (a byte is a cell or more of it): it never wraps.
+    let wide = said.len() as f32 * 7.2 + 8.0;
+    let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).child(rich_text(spans));
+    line.child(div().width(0.0).grow(1.0).height(ROW).overflow_x(Overflow::Hidden).child(words))
+}
+
+/// A line as copying gives it: its time, when they show, and what it says.
+fn as_text(log: &Log, place: usize, timestamps: bool) -> String {
+    let Some((_, at_ms, raw, _)) = log.line(place) else { return String::new() };
+    match (timestamps, at_ms) {
+        (true, at) if at != 0 => format!("{} {}", clock(at), plain(&raw)),
+        _ => plain(&raw).into_owned(),
+    }
 }
 
 /// A small button of the bar that is on or off, with what it does when the pointer rests.
@@ -114,7 +131,17 @@ impl View for LogView {
             before.set(at);
         });
 
-        let (rows, counted) = (log.clone(), log.clone());
+        // Rows selected and copied as a table's are; other lines at the places, none.
+        let (says, counted) = (log.clone(), log.clone());
+        let sheet = one_column(move || counted.listed(), move |place| as_text(&says, place, timestamps));
+        let chosen = sheet.chosen;
+        effect(move || {
+            changed.get();
+            chosen.set(Vec::new());
+        });
+        let (sx, widest) = (signal(0.0f32), log.clone());
+        let reach = move |width: f32| widest.widest() as f32 * 7.2 + 16.0 - (width - GUTTER);
+        let (rows, counted, picks) = (log.clone(), log.clone(), sheet.clone());
         let list = uniform_list(
             move || counted.listed(),
             ROW,
@@ -125,12 +152,13 @@ impl View for LogView {
                 // come change neither.
                 let built = dynamic(move || {
                     changed.get();
-                    line(&rows, place.get(), timestamps)
+                    line(&rows, place.get(), timestamps, sx)
                 });
-                built.container(div().height(ROW))
+                let face = selectable(&picks, div().height(ROW), place);
+                built.container(sideways(face, sx, reach.clone()))
             },
         );
-        let viewport = div().grow(1.0).role(Role::List).label("Log".to_string()).on_mount(move |tree, id| {
+        let viewport = div().grow(1.0).on_mount(move |tree, id| {
             seen.set(Some(tree.size_signal(id)));
             mounted.set(true);
         });
@@ -161,7 +189,8 @@ impl View for LogView {
         let bar =
             bar.child(div().grow(1.0)).child(div().text_size(12.0).text_color(token::TEXT_3).child(counts));
         let bar = bar.child(toggle("Follow", "Keep the newest line in view", move || follows.get(), follow));
-        let lines = column().grow(1.0).font_family(fonts::MONO).text_size(12.0).line_height(1.5).child(list);
-        column().grow(1.0).child(bar).child(lines).mount(cx)
+        let lines = column().grow(1.0).font_family(fonts::MONO).text_size(12.0).line_height(1.5);
+        let lines = sheet.frame(lines, use_context::<Rc<dyn Clipboard>>()).label("Log".to_string());
+        column().grow(1.0).child(bar).child(lines.child(list)).mount(cx)
     }
 }

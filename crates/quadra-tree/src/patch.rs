@@ -6,7 +6,7 @@ use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Positi
 use quadra_prim::{Corners, Edges, Point};
 
 use crate::node::Style;
-use crate::theme::{Paint, Theme};
+use crate::theme::{Amount, Paint, Theme};
 use quadra_render::BorderStyle;
 
 /// One value of a style: what a reactive property writes, and what a state variant is a list
@@ -22,18 +22,18 @@ pub enum Patch {
     Grow(f32),
     Shrink(f32),
     /// The space between children, on both axes.
-    Gap(f32),
+    Gap(Amount),
     /// The space between columns, and between rows.
-    GapX(f32),
-    GapY(f32),
+    GapX(Amount),
+    GapY(Amount),
     /// The same on every side.
-    Padding(f32),
-    PaddingX(f32),
-    PaddingY(f32),
-    PaddingTop(f32),
-    PaddingRight(f32),
-    PaddingBottom(f32),
-    PaddingLeft(f32),
+    Padding(Amount),
+    PaddingX(Amount),
+    PaddingY(Amount),
+    PaddingTop(Amount),
+    PaddingRight(Amount),
+    PaddingBottom(Amount),
+    PaddingLeft(Amount),
     Margin(f32),
     /// The width of the border on every side.
     Border(f32),
@@ -62,7 +62,7 @@ pub enum Patch {
     /// Solid, dashed or dotted.
     BorderStyle(BorderStyle),
     /// The same radius on every corner.
-    Radius(f32),
+    Radius(Amount),
     /// A radius for each corner.
     Radii(Corners),
     /// A line of one pixel along the edge, taking no room.
@@ -97,7 +97,10 @@ impl Patch {
             Patch::Background(v) => p.background = theme.resolve(v),
             Patch::BorderColor(v) => p.border_color = theme.resolve(v),
             Patch::BorderStyle(v) => p.border_style = v,
-            Patch::Radius(v) => p.radii = Corners::all(v),
+            Patch::Radius(v) => {
+                let v = theme.amount(v);
+                p.radii = Corners::all(v)
+            }
             Patch::Radii(v) => p.radii = v,
             Patch::Outline(v) => p.outline = theme.resolve(v),
             Patch::Elevation(v) => p.shadows = v,
@@ -122,16 +125,46 @@ impl Patch {
                 Patch::MaxHeight(v) => l.max_height = v,
                 Patch::Grow(v) => l.grow = v,
                 Patch::Shrink(v) => l.shrink = v,
-                Patch::Gap(v) => (l.gap_row, l.gap_col) = (v, v),
-                Patch::GapX(v) => l.gap_col = v,
-                Patch::GapY(v) => l.gap_row = v,
-                Patch::Padding(v) => l.padding = Edges::all(v),
-                Patch::PaddingX(v) => (l.padding.left, l.padding.right) = (v, v),
-                Patch::PaddingY(v) => (l.padding.top, l.padding.bottom) = (v, v),
-                Patch::PaddingTop(v) => l.padding.top = v,
-                Patch::PaddingRight(v) => l.padding.right = v,
-                Patch::PaddingBottom(v) => l.padding.bottom = v,
-                Patch::PaddingLeft(v) => l.padding.left = v,
+                Patch::Gap(v) => {
+                    let v = theme.amount(v);
+                    (l.gap_row, l.gap_col) = (v, v)
+                }
+                Patch::GapX(v) => {
+                    let v = theme.amount(v);
+                    l.gap_col = v
+                }
+                Patch::GapY(v) => {
+                    let v = theme.amount(v);
+                    l.gap_row = v
+                }
+                Patch::Padding(v) => {
+                    let v = theme.amount(v);
+                    l.padding = Edges::all(v)
+                }
+                Patch::PaddingX(v) => {
+                    let v = theme.amount(v);
+                    (l.padding.left, l.padding.right) = (v, v)
+                }
+                Patch::PaddingY(v) => {
+                    let v = theme.amount(v);
+                    (l.padding.top, l.padding.bottom) = (v, v)
+                }
+                Patch::PaddingTop(v) => {
+                    let v = theme.amount(v);
+                    l.padding.top = v
+                }
+                Patch::PaddingRight(v) => {
+                    let v = theme.amount(v);
+                    l.padding.right = v
+                }
+                Patch::PaddingBottom(v) => {
+                    let v = theme.amount(v);
+                    l.padding.bottom = v
+                }
+                Patch::PaddingLeft(v) => {
+                    let v = theme.amount(v);
+                    l.padding.left = v
+                }
                 Patch::Margin(v) => l.margin = Edges::all(v),
                 Patch::Border(v) => l.border = Edges::all(v),
                 Patch::BorderTop(v) => l.border.top = v,
@@ -170,17 +203,30 @@ impl Patch {
         }
     }
 
-    /// Whether the value is a role of the theme: it stands for another colour under
-    /// another theme.
+    /// Whether the value is a role or a measure of the theme: it stands for another colour
+    /// or number under another theme.
     pub fn themed(self) -> bool {
         use Patch::*;
-        let (Background(paint) | BorderColor(paint) | TextColor(paint) | Outline(paint)) = self else {
-            let (PlaceholderColor(paint) | SelectionColor(paint) | CaretColor(paint)) = self else {
-                return false;
-            };
-            return matches!(paint, Paint::Token(..));
-        };
-        matches!(paint, Paint::Token(..))
+        match self {
+            Background(paint) | BorderColor(paint) | TextColor(paint) | Outline(paint) => {
+                matches!(paint, Paint::Token(..))
+            }
+            PlaceholderColor(paint) | SelectionColor(paint) | CaretColor(paint) => {
+                matches!(paint, Paint::Token(..))
+            }
+            Gap(amount)
+            | GapX(amount)
+            | GapY(amount)
+            | Padding(amount)
+            | PaddingX(amount)
+            | PaddingY(amount)
+            | PaddingTop(amount)
+            | PaddingRight(amount)
+            | PaddingBottom(amount)
+            | PaddingLeft(amount)
+            | Radius(amount) => matches!(amount, Amount::Measure(_)),
+            _ => false,
+        }
     }
 }
 

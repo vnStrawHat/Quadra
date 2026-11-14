@@ -8,7 +8,7 @@ use quadra_tree::{NodeId, Role, State};
 use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, show, text, text_input};
 
 use crate::icon::icon;
-use crate::{icons, size, token};
+use crate::{icons, token};
 
 pub struct Input {
     value: Signal<String>,
@@ -115,7 +115,7 @@ impl Input {
             None => field,
         };
         let frame = row().align_items(Align::Center).gap(4.0).width(self.width).min_height(32.0);
-        let frame = frame.padding_x(8.0).padding_y(6.0).radius(size::RADIUS_LG).border(1.0);
+        let frame = frame.padding_x(8.0).padding_y(6.0).radius(token::RADIUS_LG).border(1.0);
         let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG).cursor(Cursor::Text);
         let frame = frame.selection_color(token::SELECTION);
         // The border is where the focus shows; a value that is not accepted keeps the

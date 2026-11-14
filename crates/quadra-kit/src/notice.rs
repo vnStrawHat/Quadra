@@ -15,7 +15,7 @@ use crate::button::{Size, Variant, button, icon_button};
 use crate::display::Tone;
 use crate::icon::icon;
 use crate::popup::surface;
-use crate::{icons, size, token};
+use crate::{icons, token};
 
 type Act = Rc<dyn Fn()>;
 
@@ -158,7 +158,7 @@ impl Notices {
         let line = row().align_items(Align::Center).gap(8.0).padding_x(10.0).padding_y(6.0);
         let line = line.child(mark(notice.tone, true)).child(text(notice.title.clone()));
         let line = surface(2).bg(token::PANEL).role(Role::Group).label(notice.title).child(line);
-        self.held(line.radius(size::RADIUS_XL), id)
+        self.held(line.radius(token::RADIUS_XL), id)
     }
 
     /// What lasts a while waits while the pointer is on it.

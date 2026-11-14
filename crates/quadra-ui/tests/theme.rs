@@ -107,3 +107,31 @@ fn a_box_gives_what_is_under_it_a_theme_of_its_own() {
     h.frame();
     assert_eq!(bg(&h, inside), Color::rgb(0xEEEEEE));
 }
+
+#[test]
+fn spaces_and_radii_can_be_measures_of_the_theme() {
+    const SPACE: quadra_tree::Measure = quadra_tree::Measure(0);
+    const ROUND: quadra_tree::Measure = quadra_tree::Measure(1);
+    let measured =
+        |space: f32, round: f32| Rc::new(Theme::new(vec![Color::rgb(0)]).with_measures(vec![space, round]));
+    let mut h = Harness::new();
+    h.tree.set_theme(measured(8.0, 4.0));
+    h.mount(|| {
+        let padded = div().padding(SPACE).child(div().size(10.0, 10.0));
+        let rounded = div().size(20.0, 20.0).radius(ROUND).bg(Color::rgb(0x808080));
+        // A number given after a measure of the same property takes its place.
+        let square = div().size(20.0, 20.0).radius(ROUND).radius(0.0).bg(SURFACE).bg(Color::rgb(0x112233));
+        column().child(padded).child(rounded).child(div().size(30.0, 30.0).padding(2.0)).child(square)
+    });
+    h.frame();
+    let nodes = h.tree.children(h.tree.root().unwrap()).to_vec();
+    assert_eq!((h.tree.rect(nodes[0]).height, h.tree.paint_style(nodes[1]).radii.top_left), (26.0, 4.0));
+    let square = h.tree.paint_style(nodes[3]);
+    assert_eq!((square.radii.top_left, square.background), (0.0, Color::rgb(0x112233)));
+    // Other numbers: the two boxes that hold measures are styled again; the padded one is
+    // laid out, the rounded one only painted. The third holds none and is not looked at.
+    h.tree.set_theme(measured(12.0, 6.0));
+    let (frame, _) = h.frame();
+    assert_eq!(frame.nodes_styled, 2);
+    assert_eq!((h.tree.rect(nodes[0]).height, h.tree.paint_style(nodes[1]).radii.top_left), (34.0, 6.0));
+}

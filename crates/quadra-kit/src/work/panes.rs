@@ -10,7 +10,7 @@ use quadra_prim::{Edges, Rect};
 use quadra_reactive::{Memo, Signal};
 use quadra_ui::{Div, View, div};
 
-use crate::{size, token};
+use crate::token;
 
 /// The width of the strip around the seam of a split, which takes the pointer; the line in
 /// its middle is one pixel.
@@ -36,7 +36,7 @@ fn veil(shown: Memo<Option<Rect>>) -> Div {
     let veil = div().absolute().left(move || rect().x).top(move || rect().y);
     let veil = veil.width(move || rect().width).height(move || rect().height);
     let veil = veil.bg(token::TEXT_3.alpha(0.5)).border(1.0).border_color(token::BORDER_FOCUSED);
-    veil.radius(size::RADIUS_SM)
+    veil.radius(token::RADIUS_SM)
         .display(move || if shown.get().is_some() { Display::Flex } else { Display::None })
 }
 

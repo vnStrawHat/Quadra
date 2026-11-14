@@ -71,7 +71,7 @@ pub fn tag(words: impl Into<String>) -> Div {
 
 fn chip(height: f32) -> Div {
     let chip = row().align_items(Align::Center).shrink(0.0).height(height).padding_x(4.0).border(1.0);
-    let chip = chip.radius(size::RADIUS_MD).font_family(fonts::MONO);
+    let chip = chip.radius(token::RADIUS_MD).font_family(fonts::MONO);
     chip.text_size(size::TEXT_XS.size).line_height(size::TEXT_XS.line_height())
 }
 
@@ -109,7 +109,7 @@ pub fn kbd(keys: &str) -> TextView {
 /// A hint: the keys in a small box tinted toward the accent, then what they do, in small
 /// mono italics in the colour of what is off.
 pub fn key_hint(keys: &str, does: impl Into<String>) -> Div {
-    let key = div().padding_x(2.0).radius(size::RADIUS_MD).border(1.0).border_color(token::TEXT.alpha(0.16));
+    let key = div().padding_x(2.0).radius(token::RADIUS_MD).border(1.0).border_color(token::TEXT.alpha(0.16));
     let key =
         key.bg(token::ACCENT_TEXT.alpha(0.1)).text_size(size::TEXT_XS.size).child(text(key_label(keys)));
     let hint = row().align_items(Align::Center).gap(4.0).font_family(fonts::MONO).italic(true);
@@ -131,7 +131,7 @@ pub fn avatar(name: &str, side: f32) -> Div {
 /// A card: a bordered box on the panel's plane, for what belongs together. Give it children;
 /// [`card_head`] is its title.
 pub fn card() -> Div {
-    let card = column().gap(8.0).padding(12.0).bg(token::PANEL).radius(size::RADIUS_MD);
+    let card = column().gap(8.0).padding(12.0).bg(token::PANEL).radius(token::RADIUS_MD);
     card.border(1.0).border_color(token::LINE_STRONG)
 }
 

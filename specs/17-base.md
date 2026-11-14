@@ -82,9 +82,19 @@ numbers (13, "Tokens").
   (how far down, how blurred, a colour) for each level, given by the theme
   (`Theme::with_shadows`). The table in the tree and `with_deep_shadows` go: the kit's dark
   and light themes give their sets. A level the theme has no set for casts none.
-- **Radii, spacing and type** stay constants of their kit (`quadra_kit::size`); another kit
-  has its own. A theme file does not vary them, so the tree has no tokens for lengths: they
-  come when a theme must vary one, with a layout of what a theme change touches.
+- **Measures are the theme's too.** A `Measure` is a number of the theme, as `Token` is a
+  colour: a radius, a space, or a time in milliseconds, as its name says
+  (`Theme::with_measures`; one the theme does not have is 0). A number of a style is an
+  `Amount`, pixels or a measure: the radius, the padding of every side and the gaps take
+  one. A style that holds a measure is kept as a role is, and resolved again when the theme
+  changes: what comes out other lays out (spaces) or paints (radii) only the nodes that
+  hold it. A transition's time may be a measure, read from the theme of the box when it is
+  mounted. The kit names its measures (`token::RADIUS_SM` to `RADIUS_XL`, `SPACE_XS` to
+  `SPACE_XL`: 4, 8, 12, 16, 24, `DURATION_FAST` 150 and `DURATION_SLOW` 400) and a theme file
+  may give them other numbers under their names in lower case (`"measures": {"radius_md": 8}`).
+  Its controls take their radii from them; the constants of `size` stay for arithmetic.
+- **Type** stays constants of the kit (`quadra_kit::size`, `fonts`): a family is a name the
+  text system knows, and no theme file varies one yet.
 - **What below the base still has a look**: the scroll thumb (6 px, 4 px in from the edge,
   the text colour at 30 %), the default colours of text and selection (the kit's root sets
   them for a window). The thumb's numbers become values a root sets when a kit needs other

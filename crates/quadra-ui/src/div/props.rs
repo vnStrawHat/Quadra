@@ -5,7 +5,7 @@ use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Positi
 use quadra_prim::{Corners, Point};
 use std::rc::Rc;
 
-use quadra_tree::{BorderStyle, Paint, Patch, Theme};
+use quadra_tree::{Amount, BorderStyle, Paint, Patch, Theme};
 
 use super::Div;
 use crate::prop::IntoProp;
@@ -48,20 +48,20 @@ props! {
     grow: f32 => Grow;
     shrink: f32 => Shrink;
     /// The space between children, on both axes.
-    gap: f32 => Gap;
+    gap: Amount => Gap;
     /// The space between columns, and between rows: of a grid, of lines that wrap.
-    gap_x: f32 => GapX;
-    gap_y: f32 => GapY;
+    gap_x: Amount => GapX;
+    gap_y: Amount => GapY;
     /// The same padding on every side.
-    padding: f32 => Padding;
+    padding: Amount => Padding;
     /// Left and right padding.
-    padding_x: f32 => PaddingX;
+    padding_x: Amount => PaddingX;
     /// Top and bottom padding.
-    padding_y: f32 => PaddingY;
-    padding_top: f32 => PaddingTop;
-    padding_right: f32 => PaddingRight;
-    padding_bottom: f32 => PaddingBottom;
-    padding_left: f32 => PaddingLeft;
+    padding_y: Amount => PaddingY;
+    padding_top: Amount => PaddingTop;
+    padding_right: Amount => PaddingRight;
+    padding_bottom: Amount => PaddingBottom;
+    padding_left: Amount => PaddingLeft;
     margin: f32 => Margin;
     /// The width of the border on every side.
     border: f32 => Border;
@@ -92,7 +92,7 @@ props! {
     /// Solid, dashed or dotted.
     border_style: BorderStyle => BorderStyle;
     /// The same radius on every corner.
-    radius: f32 => Radius;
+    radius: Amount => Radius;
     /// A radius for each corner: the ends of a row of cells in a rounded frame.
     radii: Corners => Radii;
     /// A line of one pixel along the box's edge, taking no room: a mark of the focus.

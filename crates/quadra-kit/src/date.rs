@@ -58,7 +58,7 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
         let mut cells: Vec<Div> = (0..before).map(|_| cell().height(28.0)).collect();
         for day in 1..=Date::days_in(year, month) {
             let (date, picked) = (Date::new(year, month, day), picked.clone());
-            let on = cell().height(28.0).radius(size::RADIUS_MD).cursor(Cursor::Pointer);
+            let on = cell().height(28.0).radius(token::RADIUS_MD).cursor(Cursor::Pointer);
             let on = on.hover(|s| s.bg(token::PANEL_HOVER));
             let on = on.when(State::SELECTED, |s| s.bg(token::ACCENT_TINT).text_color(token::ACCENT_TEXT));
             let on = time::day(on, words.date(date), date, value, picked);
@@ -78,7 +78,7 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
 /// A month calendar in the page: `value` holds the chosen day, and a click on a day writes
 /// it.
 pub fn calendar(value: Signal<Date>) -> Div {
-    let page = month(value, || {}).bg(token::OVERLAY_BG).radius(size::RADIUS_XL);
+    let page = month(value, || {}).bg(token::OVERLAY_BG).radius(token::RADIUS_XL);
     page.border(1.0).border_color(token::LINE_STRONG).elevation(1).shrink(0.0)
 }
 
@@ -104,7 +104,7 @@ impl View for DatePicker {
         let (value, open, opener) = (self.value, signal(false), NodeRef::new());
         let (lang, said) = (language(), language());
         let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).width(180.0).height(size::H_MD);
-        let face = face.padding_x(8.0).radius(size::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
+        let face = face.padding_x(8.0).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
         let face = face.cursor(Cursor::Pointer).label(move || lang.locale().date(value.get()));

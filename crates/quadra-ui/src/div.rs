@@ -55,11 +55,16 @@ impl Div {
     /// binding that writes that one value when it changes.
     pub(super) fn prop<T: 'static>(&mut self, prop: Prop<T>, patch: fn(T) -> Patch) {
         match prop {
-            // A role of the theme is kept as one; any other constant is the style's value.
-            Prop::Value(value) => match patch(value) {
-                role if role.themed() => self.roles.push(role),
-                value => value.apply(&mut self.style, &Theme::default()),
-            },
+            // A role of the theme is kept as one; any other constant is the style's value. The
+            // last value given for a property counts: an earlier role of it is let go.
+            Prop::Value(value) => {
+                let value = patch(value);
+                self.roles.retain(|role| std::mem::discriminant(role) != std::mem::discriminant(&value));
+                match value {
+                    role if role.themed() => self.roles.push(role),
+                    value => value.apply(&mut self.style, &Theme::default()),
+                }
+            }
             Prop::Reactive(read) => self.binders.push(Box::new(move |id, handle| {
                 let writer = handle.clone();
                 handle.bind(move || writer.patch_style(id, patch(read())));

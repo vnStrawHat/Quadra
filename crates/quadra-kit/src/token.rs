@@ -1,7 +1,7 @@
 //! The roles of the design language (specs/behaviour/15, "Tokens"): what a style names in
 //! place of a colour, and a theme file gives a colour to under the same name in lower case.
 
-use quadra_tree::Token;
+use quadra_tree::{Measure, Token};
 
 /// Declares the roles, numbered in the order they are written, and their names in a theme
 /// file in that order.
@@ -198,3 +198,35 @@ pub const HUES: [Token; 7] = [HUE_RED, HUE_ORANGE, HUE_YELLOW, HUE_GREEN, HUE_CY
 /// The colours of the series of a chart, in order.
 pub const SERIES: [Token; 8] =
     [SERIES_1, SERIES_2, SERIES_3, SERIES_4, SERIES_5, SERIES_6, SERIES_7, SERIES_8];
+
+/// The measures of the design language (behaviour/15): the radii of controls, the spaces
+/// between things, and times in milliseconds. A theme file's `measures` may give them other
+/// numbers under these names; the order is that of their numbers.
+pub const MEASURES: [(&str, f32); 11] = [
+    ("radius_sm", 4.0),
+    ("radius_md", 6.0),
+    ("radius_lg", 6.0),
+    ("radius_xl", 10.0),
+    ("space_xs", 4.0),
+    ("space_sm", 8.0),
+    ("space_md", 12.0),
+    ("space_lg", 16.0),
+    ("space_xl", 24.0),
+    ("duration_fast", 150.0),
+    ("duration_slow", 400.0),
+];
+
+/// Checkboxes and keys; buttons, list rows, chips; inputs, segmented groups, code blocks;
+/// every overlay.
+pub const RADIUS_SM: Measure = Measure(0);
+pub const RADIUS_MD: Measure = Measure(1);
+pub const RADIUS_LG: Measure = Measure(2);
+pub const RADIUS_XL: Measure = Measure(3);
+pub const SPACE_XS: Measure = Measure(4);
+pub const SPACE_SM: Measure = Measure(5);
+pub const SPACE_MD: Measure = Measure(6);
+pub const SPACE_LG: Measure = Measure(7);
+pub const SPACE_XL: Measure = Measure(8);
+/// What comes and goes (a toast), and what fades slowly (a scroll thumb).
+pub const DURATION_FAST: Measure = Measure(9);
+pub const DURATION_SLOW: Measure = Measure(10);

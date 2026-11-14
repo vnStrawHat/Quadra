@@ -4,7 +4,7 @@
 use std::time::Duration;
 
 use quadra_prim::Ease;
-use quadra_tree::{Step, Transition};
+use quadra_tree::{Amount, Step, Transition};
 
 use super::{Div, Refine};
 
@@ -55,13 +55,18 @@ impl Timeline {
 impl Div {
     /// The changes of the background, the border's colour and the pose take `ms` to show,
     /// fast then slow.
-    pub fn transition(self, ms: u64) -> Self {
+    pub fn transition(self, ms: impl Into<Amount>) -> Self {
         self.transition_with(ms, Ease::Out)
     }
 
-    /// The same, along a curve of the caller's.
-    pub fn transition_with(self, ms: u64, ease: Ease) -> Self {
-        self.on_mount(move |tree, id| tree.set_transition(id, Some(over(ms, ease))))
+    /// The same, along a curve of the caller's. A time that is a measure of the theme
+    /// (`token::DURATION_FAST`) is read from the box's theme when it is mounted.
+    pub fn transition_with(self, ms: impl Into<Amount>, ease: Ease) -> Self {
+        let ms = ms.into();
+        self.on_mount(move |tree, id| {
+            let ms = tree.theme_at(id).amount(ms).max(0.0) as u64;
+            tree.set_transition(id, Some(over(ms, ease)))
+        })
     }
 
     /// Plays a timeline from when the box is mounted.

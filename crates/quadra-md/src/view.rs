@@ -173,7 +173,7 @@ fn item(
     let mark = match (task, number) {
         (Some(done), _) => {
             // A box that is read, not clicked: outlined, with a check in the accent.
-            let tick = row().width(16.0).height(16.0).radius(size::RADIUS_SM).border(1.0);
+            let tick = row().width(16.0).height(16.0).radius(token::RADIUS_SM).border(1.0);
             let tick =
                 tick.border_color(token::LINE_STRONG).align_items(Across::Center).justify(Justify::Center);
             let tick = tick.role(Role::Checkbox).label(plain(source)).checked(done);

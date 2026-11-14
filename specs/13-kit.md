@@ -86,7 +86,7 @@ div().bg(token::ACCENT.alpha(0.12))
   under it later takes it too; the window's theme leaves it as it is. Where no box has
   one, nothing is looked up (the list of them is empty). A popup opened from inside is
   not under the box and has the window's theme.
-- Not yet: tokens for radii, spacing, fonts and durations.
+- Radii, spaces and times are measures of the theme (17, "Open tokens"); faces are not.
 - Component-level tokens (`button.primary.bg`) resolve to palette tokens in the theme file, so
   a theme can restyle one component without code.
 

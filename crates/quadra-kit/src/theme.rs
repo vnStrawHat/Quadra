@@ -38,9 +38,11 @@ pub struct KitTheme {
     pub name: String,
     pub mode: Mode,
     colors: Vec<Color>,
+    measures: Vec<f32>,
 }
 
-const KEYS: [&str; 8] = ["name", "mode", "palette", "syntax", "editor", "terminal", "series", "controls"];
+const KEYS: [&str; 9] =
+    ["name", "mode", "palette", "syntax", "editor", "terminal", "series", "controls", "measures"];
 
 /// Roles a theme may split off. One that a file does not list follows that file's own
 /// colours, not the colour the built-in theme derived for itself.
@@ -115,11 +117,13 @@ impl KitTheme {
         let deep = self.mode == Mode::Dark;
         Theme::new(self.colors.clone())
             .with_shadows(SHADOWS[deep as usize].iter().map(|set| casts(set)).collect())
+            .with_measures(self.measures.clone())
     }
 
     fn empty() -> KitTheme {
         let colors = vec![Color::TRANSPARENT; NAMES.len()];
-        KitTheme { name: String::new(), mode: Mode::Dark, colors }
+        let measures = token::MEASURES.iter().map(|(_, number)| *number).collect();
+        KitTheme { name: String::new(), mode: Mode::Dark, colors, measures }
     }
 
     /// A theme file over `self`: the colours it lists replace this theme's.
@@ -182,6 +186,15 @@ impl KitTheme {
                     }
                 }
             }
+        }
+        for (name, value) in section(&file, "measures")?.into_iter().flatten() {
+            let path = format!("measures.{name}");
+            let Some(at) = token::MEASURES.iter().position(|(own, _)| own == name) else {
+                return wrong(&path, "not a measure");
+            };
+            let number = value.as_f64().filter(|n| *n >= 0.0);
+            self.measures[at] =
+                number.map_or_else(|| wrong(&path, "a number of 0 or more"), |n| Ok(n as f32))?;
         }
         match file.get("series") {
             None => {}

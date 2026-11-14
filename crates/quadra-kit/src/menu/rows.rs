@@ -21,7 +21,7 @@ const MOST: f32 = 450.0;
 /// A row that is chosen: 23 px high, 4 px in from the menu's edge, 6 px beside what it holds
 /// and between its parts, the shortcut at the right and 16 px from the label at least.
 fn face(item: &MenuItem, marks: bool) -> Div {
-    let face = row().height(ROW).grow(1.0).padding_x(6.0).gap(6.0).radius(size::RADIUS_MD);
+    let face = row().height(ROW).grow(1.0).padding_x(6.0).gap(6.0).radius(token::RADIUS_MD);
     let face = face.align_items(Align::Center);
     let face = face.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
     let face = if item.danger { face.text_color(token::ERROR) } else { face };

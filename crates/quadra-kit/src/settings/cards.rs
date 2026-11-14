@@ -15,7 +15,7 @@ use crate::{icons, size, token};
 /// A row of the column, 28 px: filled when chosen, its label a step heavier.
 fn line(title: &str, on: impl Fn() -> bool + 'static) -> Div {
     let line = row().align_items(Align::Center).gap(8.0).height(28.0).padding_x(8.0).shrink(0.0);
-    let line = line.radius(size::RADIUS_MD).role(Role::TreeItem).label(title.to_string()).selected(on);
+    let line = line.radius(token::RADIUS_MD).role(Role::TreeItem).label(title.to_string()).selected(on);
     let line = line.hover(|s| s.bg(token::PRESS.alpha(0.8)));
     line.when(State::SELECTED, |s| s.bg(token::PRESS).font_weight(500))
 }
@@ -49,7 +49,7 @@ pub(super) fn nav(pages: &[SettingsPage], model: &Model, query: Option<Signal<St
         }
         let body = move || icon(if open.get() { icons::CHEVRON_DOWN } else { icons::CHEVRON_RIGHT });
         let chevron = row().align_items(Align::Center).justify(Justify::Center).size(20.0, 20.0);
-        let chevron = chevron.shrink(0.0).radius(size::RADIUS_MD).hover(|s| s.bg(token::PRESS));
+        let chevron = chevron.shrink(0.0).radius(token::RADIUS_MD).hover(|s| s.bg(token::PRESS));
         let chevron = chevron.display(move || shown(lists.get())).on_click(move |e| {
             open.update(|open| *open = !*open);
             e.stop(); // the chevron opens and closes; it does not choose the page
@@ -107,7 +107,7 @@ pub(super) fn group_card(group: SettingsGroup, kept: Memo<bool>, row: impl Fn(us
         }
         whole = whole.child(head.role(Role::Heading));
     }
-    let card = column().gap(16.0).padding(16.0).radius(size::RADIUS_LG);
+    let card = column().gap(16.0).padding(16.0).radius(token::RADIUS_LG);
     let card = card.border(1.0).border_color(token::LINE_STRONG);
     let rows = group.rows.into_iter().enumerate().map(|(r, line)| setting(line, row(r)));
     whole.child(card.children(rows.collect::<Vec<_>>()))

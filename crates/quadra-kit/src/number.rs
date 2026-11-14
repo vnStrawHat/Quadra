@@ -11,7 +11,7 @@ use quadra_ui::{Div, MountCx, View, column, div, row, text_input};
 
 use crate::icon::icon;
 use crate::input::input;
-use crate::{icons, size, token};
+use crate::{icons, token};
 
 pub struct NumberInput {
     value: Signal<f64>,
@@ -79,7 +79,7 @@ impl View for NumberInput {
             };
             let side = || ghost(row().width(32.0).height(30.0));
             let middle = row().grow(1.0).justify(Justify::Center).cursor(Cursor::Text).child(field);
-            let frame = around.size(128.0, 32.0).radius(size::RADIUS_LG).border(1.0);
+            let frame = around.size(128.0, 32.0).radius(token::RADIUS_LG).border(1.0);
             let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG);
             let frame = frame.overflow_x(quadra_layout::Overflow::Hidden).selection_color(token::SELECTION);
             let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
@@ -96,7 +96,7 @@ impl View for NumberInput {
         // Two halves of the field's height at its end, inside its frame: the frame is 32 px,
         // and its padding less above and below makes room for both.
         let small = || {
-            let around = div().size(18.0, 13.0).radius(size::RADIUS_SM).text_color(token::TEXT_2);
+            let around = div().size(18.0, 13.0).radius(token::RADIUS_SM).text_color(token::TEXT_2);
             around.direction(Direction::Row).hover(|s| s.bg(token::PANEL_HOVER))
         };
         let up = step(small(), number, true, icons::CHEVRON_UP, 10.0);

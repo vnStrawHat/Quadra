@@ -46,6 +46,37 @@ impl From<Token> for Paint {
     }
 }
 
+/// A measure of the theme: a radius, a space, or a time in milliseconds, as its name says.
+/// The names are whoever defines the theme's, as those of roles are.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct Measure(pub u16);
+
+/// A number of a style: pixels (or milliseconds), or a measure of the theme.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Amount {
+    Px(f32),
+    Measure(Measure),
+}
+
+impl From<f32> for Amount {
+    fn from(px: f32) -> Amount {
+        Amount::Px(px)
+    }
+}
+
+/// A whole number: a time in milliseconds, or pixels.
+impl From<u64> for Amount {
+    fn from(n: u64) -> Amount {
+        Amount::Px(n as f32)
+    }
+}
+
+impl From<Measure> for Amount {
+    fn from(measure: Measure) -> Amount {
+        Amount::Measure(measure)
+    }
+}
+
 /// One shadow a box above the window casts: how far down, how blurred, in what colour.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cast {
@@ -60,12 +91,31 @@ pub struct Cast {
 pub struct Theme {
     colors: Vec<Color>,
     shadows: Vec<Vec<Cast>>,
+    measures: Vec<f32>,
 }
 
 impl Theme {
     /// A theme from the colour of each role, in the order of their numbers.
     pub fn new(colors: Vec<Color>) -> Theme {
-        Theme { colors, shadows: Vec::new() }
+        Theme { colors, shadows: Vec::new(), measures: Vec::new() }
+    }
+
+    /// The same, with the number of each measure, in the order of their numbers.
+    pub fn with_measures(self, measures: Vec<f32>) -> Theme {
+        Theme { measures, ..self }
+    }
+
+    /// A measure's number; 0 for one the theme does not have.
+    pub fn measure(&self, measure: Measure) -> f32 {
+        self.measures.get(measure.0 as usize).copied().unwrap_or(0.0)
+    }
+
+    /// The number an amount stands for under this theme.
+    pub fn amount(&self, amount: Amount) -> f32 {
+        match amount {
+            Amount::Px(px) => px,
+            Amount::Measure(measure) => self.measure(measure),
+        }
     }
 
     /// The same colours, with the shadows of each level above the window: the first set is
@@ -115,8 +165,8 @@ pub(crate) fn theme_in<'t>(
 }
 
 impl Tree {
-    /// The theme a node's style is resolved with.
-    pub(crate) fn theme_at(&self, id: NodeId) -> &Rc<Theme> {
+    /// The theme a node's style is resolved with: its own, or the window's.
+    pub fn theme_at(&self, id: NodeId) -> &Rc<Theme> {
         theme_in(&self.nodes, &self.themes, &self.theme, id)
     }
 

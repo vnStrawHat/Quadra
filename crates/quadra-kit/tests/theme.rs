@@ -112,3 +112,25 @@ fn the_series_of_a_chart_are_roles_and_the_accent_where_a_file_lists_fewer() {
         [Color::rgb(0x112233), Color::rgb(0x445566), two.color(token::ACCENT)]
     );
 }
+
+#[test]
+fn a_theme_file_gives_measures_other_numbers() {
+    // The built-in numbers, and a file's in their place.
+    assert_eq!(
+        (dark().theme().measure(token::RADIUS_MD), dark().theme().measure(token::DURATION_FAST)),
+        (6.0, 150.0)
+    );
+    let round =
+        theme_from_json(r##"{"mode": "dark", "measures": {"radius_md": 8, "space_sm": 10}}"##).unwrap();
+    let theme = round.theme();
+    assert_eq!(
+        (theme.measure(token::RADIUS_MD), theme.measure(token::SPACE_SM), theme.measure(token::RADIUS_SM)),
+        (8.0, 10.0, 4.0)
+    );
+    let error = |text: &str| theme_from_json(text).unwrap_err().0;
+    assert_eq!(error(r#"{"mode": "dark", "measures": {"radius": 2}}"#), "measures.radius: not a measure");
+    assert_eq!(
+        error(r#"{"mode": "dark", "measures": {"radius_md": -1}}"#),
+        "measures.radius_md: a number of 0 or more"
+    );
+}

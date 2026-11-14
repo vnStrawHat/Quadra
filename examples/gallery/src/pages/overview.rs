@@ -153,7 +153,7 @@ pub fn colors_page(theme: &KitTheme) -> Div {
 pub fn icons_page() -> Div {
     let mut grid = div().grid_fill(112.0).gap(4.0);
     for (name, body) in icons::ALL {
-        let cell = column().align_items(Align::Center).gap(8.0).padding_y(12.0).radius(size::RADIUS_MD);
+        let cell = column().align_items(Align::Center).gap(8.0).padding_y(12.0).radius(token::RADIUS_MD);
         let cell = cell.hover(|s| s.bg(token::PANEL_HOVER)).child(icon(body).size(18.0).color(token::TEXT));
         grid = grid.child(cell.child(text(name).size(size::TEXT_XS.size).color(token::TEXT_3)));
     }

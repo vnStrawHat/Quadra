@@ -48,7 +48,7 @@ impl<F> Dialog<F> {
 /// The title of a dialog, and the quiet cross at its end that gives the dialog up.
 fn head(title: &str, open: Signal<bool>) -> Div {
     let cross = row().size(22.0, 22.0).align_items(Align::Center).justify(Justify::Center);
-    let cross = cross.radius(size::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
+    let cross = cross.radius(token::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
     let cross = base::close(cross.cursor(Cursor::Pointer), open);
     let cross = cross.child(icon(icons::X).size(14.0).color(token::TEXT_2));
     let headline = div().grow(1.0).child(text(title.to_string()).size(size::TEXT_LG.size));

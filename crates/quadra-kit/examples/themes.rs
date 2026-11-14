@@ -17,7 +17,7 @@ fn main() -> quadra::Result<()> {
             theme.set(Rc::new(next.theme()));
         };
         let swatch = |role, name: &'static str| {
-            let chip = div().size(28.0, 28.0).radius(size::RADIUS_MD).border(1.0).border_color(token::LINE);
+            let chip = div().size(28.0, 28.0).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE);
             row().gap(8.0).align_items(quadra::Align::Center).child(chip.bg(role)).child(text(name))
         };
         let roles = column().gap(6.0);

@@ -194,7 +194,7 @@ impl Button {
             None => face.size(self.size.height(), self.size.height()),
         };
         let label = if self.muted { token::TEXT_2.into() } else { label };
-        let face = face.radius(size::RADIUS_MD).bg(fill).text_color(label);
+        let face = face.radius(token::RADIUS_MD).bg(fill).text_color(label);
         let face = face.cursor(Cursor::Pointer);
         let face = match self.size {
             Size::Xs => face.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height()),

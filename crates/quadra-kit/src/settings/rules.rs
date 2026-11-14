@@ -36,7 +36,7 @@ pub(super) fn nav(
         let groups = page.groups.iter().enumerate().map(|(g, group)| {
             let (kept, model) = (model.groups[i][g], model.clone());
             let line = row().align_items(Align::Center).height(26.0).padding_left(28.0).padding_right(6.0);
-            let line = line.shrink(0.0).radius(size::RADIUS_MD).text_color(token::TEXT_2);
+            let line = line.shrink(0.0).radius(token::RADIUS_MD).text_color(token::TEXT_2);
             let line = line.role(Role::TreeItem).label(group.title.clone());
             let line = line.display(move || shown(kept.get())).hover(|s| s.bg(token::PANEL_HOVER));
             acts(line, move || model.go(i, Some(g), TOP)).child(text(group.title.clone()))
@@ -60,13 +60,13 @@ fn page_row(i: usize, page: &SettingsPage, model: &Model) -> Div {
     let (open, on, model) = (model.open[i], model.shown, model.clone());
     let body = move || icon(if open.get() { icons::CHEVRON_DOWN } else { icons::CHEVRON_RIGHT });
     let chevron = row().align_items(Align::Center).justify(Justify::Center).size(16.0, 16.0).shrink(0.0);
-    let chevron = chevron.radius(size::RADIUS_SM).hover(|s| s.bg(token::PRESS)).on_click(move |e| {
+    let chevron = chevron.radius(token::RADIUS_SM).hover(|s| s.bg(token::PRESS)).on_click(move |e| {
         open.update(|open| *open = !*open);
         e.stop(); // the chevron opens; it does not choose the page
     });
     let chevron = chevron.child(dynamic(move || body().size(12.0).color(token::TEXT_2)));
     let line = row().align_items(Align::Center).gap(6.0).height(28.0).padding_x(5.0).shrink(0.0);
-    let line = line.radius(size::RADIUS_MD).border(1.0).border_color(token::LINE.alpha(0.0));
+    let line = line.radius(token::RADIUS_MD).border(1.0).border_color(token::LINE.alpha(0.0));
     let line = line.role(Role::TreeItem).label(page.title.clone()).selected(move || on.get() == i);
     let line = line.hover(|s| s.bg(token::PANEL_HOVER));
     let line = line.when(State::SELECTED, |s| s.bg(token::RAISED_HOVER).border_color(token::LINE_STRONG));

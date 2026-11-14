@@ -108,7 +108,7 @@ impl Choice {
             group.disabled(self.disabled).when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
         let group = match (self.segmented, self.horizontal) {
             (true, _) => {
-                let outlined = group.radius(size::RADIUS_LG).border(1.0).shrink(0.0);
+                let outlined = group.radius(token::RADIUS_LG).border(1.0).shrink(0.0);
                 outlined.border_color(token::LINE_STRONG).overflow_y(Overflow::Hidden)
             }
             (false, true) => group.gap(16.0),

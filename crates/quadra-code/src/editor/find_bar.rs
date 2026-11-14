@@ -181,6 +181,6 @@ pub(super) fn bar(
         _ => {}
     };
     let plane = column().gap(4.0).padding(4.0).bg(token::OVERLAY_BG);
-    let plane = plane.border(1.0).border_color(token::LINE_STRONG).radius(size::RADIUS_MD).elevation(1);
+    let plane = plane.border(1.0).border_color(token::LINE_STRONG).radius(token::RADIUS_MD).elevation(1);
     plane.node_ref(&at).on_key_down(keys).child(first).child(show(move || f.replacing.get(), second))
 }

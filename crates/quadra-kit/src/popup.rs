@@ -11,13 +11,13 @@ use quadra_ui::{Div, NodeRef, Place, Region, View, column};
 pub use quadra_base::popup::Edge;
 pub(crate) use quadra_base::popup::{Shown, hang};
 
-use crate::{size, token};
+use crate::token;
 
 /// The plane of an overlay: its own fill, a hairline border, the largest radius, and the
 /// shadow of its level above the window (1: menus and tooltips; 2: dialogs).
 pub(crate) fn surface(level: u8) -> Div {
     let plane = column().bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE_STRONG);
-    plane.radius(size::RADIUS_XL).elevation(level)
+    plane.radius(token::RADIUS_XL).elevation(level)
 }
 
 /// What the border of the plane adds to the width of what it holds: a popup that is so wide

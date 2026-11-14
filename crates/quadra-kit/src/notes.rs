@@ -41,7 +41,7 @@ pub fn alert(tone: Tone, title: &str, more: &str) -> Div {
         words = words.child(text(more.to_string()).size(size::TEXT_SM.size).color(token::TEXT_2));
     }
     let mark = row().height(23.0).align_items(Align::Center).child(icon(tone.icon()).color(role));
-    let note = row().align_items(Align::Start).gap(8.0).padding(8.0).radius(size::RADIUS_MD);
+    let note = row().align_items(Align::Start).gap(8.0).padding(8.0).radius(token::RADIUS_MD);
     let note = note.bg(role.alpha(0.1)).border(1.0).border_color(role.alpha(0.2));
     let name = if title.is_empty() { more } else { title };
     note.role(Role::Group).label(name.to_string()).child(mark).child(words)
@@ -91,7 +91,7 @@ pub fn copyable(value: impl Into<String>) -> AnyView {
         icon(body).size(12.0).color(color)
     });
     let button = row().size(20.0, 20.0).align_items(Align::Center).justify(Justify::Center).shrink(0.0);
-    let button = button.radius(size::RADIUS_SM).cursor(Cursor::Pointer).hover(|s| s.bg(token::PANEL_HOVER));
+    let button = button.radius(token::RADIUS_SM).cursor(Cursor::Pointer).hover(|s| s.bg(token::PANEL_HOVER));
     let button = button
         .role(Role::Button)
         .label(move || if done.get() { "Copied" } else { "Copy" }.to_string())

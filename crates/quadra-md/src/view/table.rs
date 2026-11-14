@@ -46,7 +46,7 @@ impl View for Table {
         let columns = self.rows.iter().map(Vec::len).max().unwrap_or(0).clamp(1, WIDEST);
         let share = |want: f32| Track::minmax(TrackSize::Auto, TrackSize::Fr(want + PADDING));
         let tracks: Vec<Track> = self.wants(columns, cx).into_iter().map(share).collect();
-        let mut grid = div().grid(tracks).grow(1.0).border(1.0).radius(size::RADIUS_MD).role(Role::Table);
+        let mut grid = div().grid(tracks).grow(1.0).border(1.0).radius(token::RADIUS_MD).role(Role::Table);
         grid = grid.border_color(token::LINE_STRONG);
         for (r, cells) in self.rows.iter().enumerate() {
             for c in 0..columns {

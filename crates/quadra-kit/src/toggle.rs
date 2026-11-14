@@ -11,7 +11,7 @@ use quadra_tree::{NodeId, Paint, State};
 use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, dynamic, row, show, text};
 
 use crate::icon::icon;
-use crate::{icons, size, token};
+use crate::{icons, token};
 
 pub struct Toggle {
     on: Signal<bool>,
@@ -50,7 +50,7 @@ fn check_box(on: Signal<bool>, off: Off, mixed: Off) -> Div {
         filled => filled,
     };
     let frame = div().size(16.0, 16.0).shrink(0.0).align_items(Align::Center).justify(Justify::Center);
-    let frame = frame.radius(size::RADIUS_SM).border(1.0).border_color(edge).bg(fill);
+    let frame = frame.radius(token::RADIUS_SM).border(1.0).border_color(edge).bg(fill);
     let frame = frame.text_color(token::TEXT_ON_ACCENT);
     // A check when it is checked; a dash while it is neither.
     let mark = move || icon(if mixed() { icons::MINUS } else { icons::CHECK }).size(12.0);
@@ -116,7 +116,7 @@ impl Toggle {
         };
         let part = off.clone();
         let control = if self.is_switch { switch_track(on, part) } else { check_box(on, part, mixed) };
-        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).radius(size::RADIUS_SM);
+        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).radius(token::RADIUS_SM);
         let face = face.cursor(Cursor::Pointer);
         // The keyboard's focus is a line around the control and its label.
         let face = face.focus_visible(|s| s.outline(token::BORDER_FOCUSED));

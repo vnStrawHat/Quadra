@@ -7,7 +7,7 @@ use crate::common::{demo, line, page};
 
 /// A card whose changes of style take 160 ms.
 fn card(title: &str) -> Div {
-    let card = div().size(150.0, 90.0).padding(14.0).radius(size::RADIUS_LG).bg(token::RAISED);
+    let card = div().size(150.0, 90.0).padding(14.0).radius(token::RADIUS_LG).bg(token::RAISED);
     let card = card.border(1.0).border_color(token::LINE).cursor(Cursor::Pointer).transition(160);
     card.child(text(title.to_string()).weight(size::WEIGHT_STRONG))
 }

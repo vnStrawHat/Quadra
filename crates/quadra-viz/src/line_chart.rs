@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use quadra_kit::{fonts, size, token};
+use quadra_kit::{fonts, token};
 use quadra_layout::{Align, Display, Justify, Length};
 use quadra_reactive::{Memo, Signal, memo, signal, untrack};
 use quadra_tree::{NodeId, Paint, PointerEvent, PointerKind, Role};
@@ -152,7 +152,7 @@ impl Hover {
     /// of the plot, at its left in the right half.
     fn values(&self, lines: Vec<(String, Paint, Values)>, unit: Rc<str>) -> Div {
         let at = self.at;
-        let plane = column().padding_y(5.0).padding_right(12.0).radius(size::RADIUS_MD).elevation(1);
+        let plane = column().padding_y(5.0).padding_right(12.0).radius(token::RADIUS_MD).elevation(1);
         let plane =
             plane.bg(token::RAISED).border(1.0).border_color(token::LINE_STRONG).text_color(token::TEXT);
         let plane = match self.time.clone() {

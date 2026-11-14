@@ -10,8 +10,8 @@ use quadra_tree::{NodeId, Paint, Role, Side};
 use quadra_ui::{AnyView, Div, MountCx, View, column, div, row, text};
 
 use crate::icon::icon;
+use crate::token;
 use crate::tooltip::tooltip;
-use crate::{size, token};
 
 /// A tool of the app: what it is known by, its icon, and what it is called.
 #[derive(Clone)]
@@ -71,7 +71,7 @@ fn tool(active: Signal<&'static str>, it: Activity) -> AnyView {
     let badge = badge.display(shown);
     let badge = badge.child(chip.child(text(words).weight(500)));
     let glyph = row().size(28.0, 28.0).align_items(Align::Center).justify(Justify::Center);
-    let glyph = glyph.radius(size::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER)).text_color(tone);
+    let glyph = glyph.radius(token::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER)).text_color(tone);
     let face = row().height(40.0).align_items(Align::Center).justify(Justify::Center);
     let face = face.cursor(Cursor::Pointer).role(Role::Tab).label(it.title.clone()).selected(on);
     let face = face.on_click(move |_| active.set(id));

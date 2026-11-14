@@ -14,7 +14,7 @@ use quadra_ui::{AnyView, Div, MountCx, View, div, dynamic, each, row, scroll_str
 use crate::icon::icon;
 use crate::menu::{MenuItem, context_menu, menu_icon_button};
 use crate::popup::surface;
-use crate::{icons, size, token};
+use crate::{icons, token};
 
 /// How wide a tab's title may be: past that it ends with an ellipsis.
 const TITLE_MAX: f32 = 200.0;
@@ -108,7 +108,7 @@ fn field(tab: Signal<Tab>, editing: Signal<Option<String>>, rename: Rename, id: 
     let (submit, escape, leave) = (done.clone(), done.clone(), done);
     let input = text_input(value).size(13.0).on_submit(move |_| submit(true));
     let field = div().width(TITLE_MAX.min(160.0)).border(1.0).border_color(token::BORDER_FOCUSED);
-    let field = field.radius(size::RADIUS_SM).padding_x(2.0).child(input);
+    let field = field.radius(token::RADIUS_SM).padding_x(2.0).child(input);
     let field = field.on_key_down(move |e| {
         if e.key == Key::Escape {
             e.stop();
@@ -135,7 +135,7 @@ fn chip(tab: &Tab) -> Div {
         None => chip,
     };
     let chip = chip.child(text(tab.title.clone()).color(token::TEXT));
-    surface(1).bg(token::CANVAS).border_color(token::LINE_STRONG).radius(size::RADIUS_MD).child(chip)
+    surface(1).bg(token::CANVAS).border_color(token::LINE_STRONG).radius(token::RADIUS_MD).child(chip)
 }
 
 /// One tab: 32 px high on the plane of tabs, or on the canvas with no line under it while
@@ -175,7 +175,7 @@ fn face(strip: &Strip, tab: Signal<Tab>, more: More) -> impl View + use<> {
         Some(_) => {
             let cross =
                 row().size(18.0, 18.0).shrink(0.0).align_items(Align::Center).justify(Justify::Center);
-            let cross = cross.radius(size::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
+            let cross = cross.radius(token::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
             let cross = cross.role(Role::Button).label("Close").child(icon(icons::X));
             let cross = strip.closes(cross, &id);
             let room = row().size(14.0, 14.0).align_items(Align::Center).justify(Justify::Center);

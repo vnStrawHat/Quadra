@@ -13,7 +13,7 @@ use quadra_ui::{Div, MountCx, Refine, View, row, text};
 use crate::button::Size;
 use crate::choice::chooser;
 use crate::display::chosen_mark;
-use crate::{size, token};
+use crate::token;
 
 pub struct Tabs {
     labels: Vec<String>,
@@ -36,7 +36,7 @@ impl Tabs {
     fn tab(&self, i: usize, label: String) -> Div {
         let (chosen, pill) = (self.chosen, self.pill);
         let tab = row().align_items(Align::Center).shrink(0.0).height(Size::Md.height()).padding_x(8.0);
-        let tab = tab.radius(size::RADIUS_MD).cursor(Cursor::Pointer);
+        let tab = tab.radius(token::RADIUS_MD).cursor(Cursor::Pointer);
         let tab = tab.text_color(if pill { token::TEXT } else { token::TEXT_2 });
         let tab = tab.hover(|s| s.bg(token::PANEL_HOVER).text_color(token::TEXT));
         // The chosen one has the accent's label whatever the pointer does.

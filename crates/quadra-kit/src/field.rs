@@ -115,7 +115,7 @@ impl View for Textarea {
         let least = self.rows as f32 * size::TEXT_MD.line + 14.0;
         let frame = column().width(self.width).min_height(least).padding_x(8.0).padding_y(6.0);
         let frame =
-            frame.radius(size::RADIUS_LG).border(1.0).border_color(token::LINE_STRONG).bg(token::INPUT_BG);
+            frame.radius(token::RADIUS_LG).border(1.0).border_color(token::LINE_STRONG).bg(token::INPUT_BG);
         let frame = frame.cursor(Cursor::Text).selection_color(token::SELECTION).role(Role::Group);
         let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
         let frame = frame.when(State::INVALID, |s| s.border_color(token::ERROR));

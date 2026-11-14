@@ -64,7 +64,7 @@ pub use rich::{InlineBox, LinkBoxes, RichSpan, RichText};
 pub use shared::Handle;
 pub use style::State;
 pub use text::{Text, paint_glyph};
-pub use theme::{Cast, Paint, Theme, Token};
+pub use theme::{Amount, Cast, Measure, Paint, Theme, Token};
 pub use thumb::ScrollThumb;
 pub use tree::Tree;
 pub use widget::{MeasureCx, PaintCx, Widget};

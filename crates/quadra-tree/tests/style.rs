@@ -89,7 +89,7 @@ fn a_nodes_own_style_changes_under_its_variants() {
 #[test]
 fn a_variant_may_change_layout_and_a_state_may_be_a_property() {
     let mut p = page();
-    let wider = vec![Patch::Width(quadra_layout::Length::Px(140.0)), Patch::Radius(8.0)];
+    let wider = vec![Patch::Width(quadra_layout::Length::Px(140.0)), Patch::Radius(8.0.into())];
     p.w.tree.set_variant(p.button, State::SELECTED, wider);
     p.w.tree.set_state(p.button, State::SELECTED, true);
     let (stats, _) = p.w.frame();

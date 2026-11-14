@@ -214,3 +214,17 @@ fn a_new_device_draws_the_same_after_recover() {
     assert_eq!(at(&r.read_pixels(surface).unwrap(), 8, 8), RED);
     assert_eq!(r.stats().instances_uploaded, 1);
 }
+
+#[test]
+fn what_a_frame_cost_the_gpu_comes_back_without_waiting() {
+    let mut r = D3d11Renderer::new(true).unwrap();
+    let mut scene = Scene::new();
+    let root = scene.add_layer();
+    scene.set_roots(&[root]);
+    scene.layer_mut(root).set(&[quad(0.0, 0.0, 64.0, 64.0, RED)]);
+    draw(&mut r, &mut scene); // reading the pixels waits for the GPU to finish the frame
+    assert_eq!(r.stats().gpu, None); // asked for when the next frame starts
+    draw(&mut r, &mut scene);
+    let gpu = r.stats().gpu.expect("the first frame's time");
+    assert!(gpu > std::time::Duration::ZERO && gpu < std::time::Duration::from_secs(1), "{gpu:?}");
+}

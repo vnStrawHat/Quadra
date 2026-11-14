@@ -1,6 +1,7 @@
 //! The boundary to a GPU backend (specs/07, "The `Renderer` trait").
 
 use std::fmt;
+use std::time::Duration;
 
 use quadra_prim::Color;
 
@@ -69,6 +70,9 @@ pub struct RenderStats {
     /// Instances sent to the GPU: ranges overwritten in place, and whole rebuilt layers.
     pub instances_uploaded: u32,
     pub layers_uploaded: u32,
+    /// What the latest frame that came back cost the GPU, a few frames late: none until one
+    /// does, and none where it cannot be measured (specs/07, "Drawing a frame").
+    pub gpu: Option<Duration>,
 }
 
 pub trait Renderer {

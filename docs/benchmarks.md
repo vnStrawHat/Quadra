@@ -7,6 +7,22 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-14 — what a frame costs the GPU (on db5e3f9 plus this commit)
+
+The first measure of the GPU's time (specs/07, "Drawing a frame": timestamps around the draw,
+read back a few frames later), in a real window on the machine's RTX 3050, 600 frames of each
+scene with `BENCH_PHASES=1`, microseconds a frame:
+
+| Scene | GPU | Draw (CPU) | Present (CPU) | Draws |
+|---|---|---|---|---|
+| grid | 146 | 118 | 88 | 1 |
+| document | 118 | 207 | 111 | 2 |
+| list | 41 | 67 | 123 | 3 |
+
+So the one shader is not what costs a frame: the GPU's part is a tenth of a frame at 60 Hz in
+the heaviest scene, and shaders by class of instance wait until a scene shows otherwise. The
+headless paint pass of `grid` is as before the gradients and borders (178 to 180 µs).
+
 ## 2026-11-11 — with the accessibility bridge (on fffd71e plus this commit)
 
 The runner, the Rust build alone, medians of three rounds (`.tmp/cmp5.json`): nothing moved

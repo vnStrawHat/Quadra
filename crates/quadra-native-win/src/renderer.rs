@@ -15,6 +15,7 @@ use crate::layers::LayerBuffers;
 use crate::pacing::Pacing;
 use crate::platform::WinPlatform;
 use crate::surface::Surface;
+use crate::timing::Timing;
 use crate::upgrade::Upgrade;
 
 pub struct D3d11Renderer {
@@ -29,6 +30,8 @@ pub struct D3d11Renderer {
     color: Option<AtlasTexture>,
     steps: Vec<Step>,
     stats: RenderStats,
+    /// What frames cost the GPU.
+    timing: Timing,
     /// The hardware device on its way, while the first frames are drawn on the software one.
     pub(crate) upgrade: Option<Upgrade>,
 }
@@ -50,6 +53,7 @@ impl D3d11Renderer {
             color: None,
             steps: Vec::new(),
             stats: RenderStats::default(),
+            timing: Timing::default(),
             upgrade: None,
         }
     }
@@ -140,6 +144,7 @@ impl Renderer for D3d11Renderer {
         let bounds = Rect::new(0.0, 0.0, size.width as f32, size.height as f32);
         scene.steps(bounds, &mut steps);
         self.stats = RenderStats { frames: self.stats.frames + 1, ..RenderStats::default() };
+        self.timing.begin(&self.gpu.device, &self.gpu.context);
 
         let viewport = [size.width as f32, size.height as f32];
         let view =
@@ -191,6 +196,8 @@ impl Renderer for D3d11Renderer {
             }
         }
         self.steps = steps;
+        self.timing.end(&self.gpu.context);
+        self.stats.gpu = self.timing.last.map(|(_, time)| time);
         result
     }
 
@@ -226,7 +233,7 @@ impl Renderer for D3d11Renderer {
             None => Device::new(software)?,
         });
         self.layers.clear();
-        (self.coverage, self.color) = (None, None);
+        (self.coverage, self.color, self.timing) = (None, None, Timing::default());
         for made_for in made_for {
             let surface = made_for.map(|(target, size)| self.make_surface(target, size)).transpose()?;
             self.surfaces.push(surface);

@@ -22,6 +22,7 @@ mod platform;
 mod renderer;
 mod surface;
 mod swapchain;
+mod timing;
 mod upgrade;
 mod window;
 mod wndproc;

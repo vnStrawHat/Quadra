@@ -18,6 +18,8 @@ pub struct Phases {
     frames: u32,
     times: [Duration; 6],
     counts: [u64; 6],
+    /// What the frames that had a measure cost the GPU, and how many had one.
+    gpu: (Duration, u32),
 }
 
 pub type SharedPhases = Rc<RefCell<Phases>>;
@@ -33,6 +35,9 @@ impl Phases {
             self.times.iter_mut().zip([p.update, p.layout, p.paint, p.compose, r.draw, r.present])
         {
             *sum += part;
+        }
+        if let Some(gpu) = r.render.gpu {
+            self.gpu = (self.gpu.0 + gpu, self.gpu.1 + 1);
         }
         let counts = [
             r.stats.bindings_run,
@@ -51,8 +56,12 @@ impl Phases {
         let n = self.frames.max(1);
         let us = |i: usize| self.times[i].as_secs_f64() * 1e6 / n as f64;
         let per = |i: usize| self.counts[i] / n as u64;
+        let gpu = match self.gpu {
+            (_, 0) => String::new(),
+            (sum, n) => format!(" gpu {:.0}", sum.as_secs_f64() * 1e6 / n as f64),
+        };
         format!(
-            "phases us: update {:.0} layout {:.0} paint {:.0} compose {:.0} draw {:.0} present {:.0}; \
+            "phases us: update {:.0} layout {:.0} paint {:.0} compose {:.0} draw {:.0} present {:.0}{gpu}; \
              a frame: {} bindings, {} laid out, {} painted, {} instances written, {} uploaded, {} draws",
             us(0),
             us(1),

@@ -317,6 +317,11 @@ locale at the window root; a subtree can provide its own.
     line with no such box is the style's.
   - Its text can be selected by whoever selects across texts (`select`, `selected`, `index_at`):
     a document does.
-  - Not yet: links reached by Tab and by a reader.
+  - **Links for the keyboard and a reader**: a text with links is a box that holds it and a
+    node for each link, in the order of the text, without a size of its own. That node
+    takes the focus (Tab reaches the links in order, as it reaches any control), is a link
+    to a reader, named by its words, and gives its target to `.on_link` on Enter or a
+    reader's click (with `.ctrl_links()` too: a key pressed on purpose). While one has the
+    focus the text outlines that link, a pixel out of its words, in its colour.
 - A field lays its text out at layout; what reads the lines before the next layout (a key
   that moves the caret by lines, a click, in the same turn as an edit) lays it out first.

@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
-use quadra_prim::{Color, Point, Rect, Size};
+use quadra_prim::{Color, Corners, Edges, Point, Rect, Size};
 use quadra_render::Quad;
 use quadra_text::{Paragraph, Shaping, TextStyle};
 
@@ -70,6 +70,8 @@ pub struct RichText {
     /// What is selected, by whoever selects across texts (a document), and its fill.
     selected: Range<usize>,
     selection: Color,
+    /// The link the keyboard is on, by its number among the links: outlined.
+    focused: Option<usize>,
 }
 
 impl RichText {
@@ -92,7 +94,14 @@ impl RichText {
             boxes,
             selected,
             selection,
+            focused: None,
         }
+    }
+
+    /// Puts the keyboard's outline on a link, by its number among the links, or on none;
+    /// true when that is another.
+    pub fn focus_link(&mut self, link: Option<usize>) -> bool {
+        std::mem::replace(&mut self.focused, link) != link
     }
 
     /// Puts a box in the place of a span, by the span's number.
@@ -192,7 +201,7 @@ impl Widget for RichText {
         };
         let under = |part: &Rect| base(part).round() + 2.0;
         let through = |part: &Rect| (base(part) - ascent * 0.3).round();
-        let (mut start, mut links) = (0, self.links.borrow_mut());
+        let (mut start, mut links, mut nth) = (0, self.links.borrow_mut(), 0);
         links.clear();
         for (run, span) in spans.iter().enumerate() {
             if let Some(background) = colors.get(run).and_then(|of| of.1) {
@@ -215,7 +224,20 @@ impl Widget for RichText {
                     Rect::new(cx.rect.x + part.x, cx.rect.y + part.y + under(&part), part.width, 1.0);
                 cx.quad(Quad { bounds, background: color(run), ..Quad::default() });
                 links.push((part, link.clone()));
+                if self.focused == Some(nth) {
+                    // The outline of the keyboard's focus, a pixel out of the words.
+                    let bounds = Rect::new(
+                        cx.rect.x + part.x - 2.0,
+                        cx.rect.y + part.y,
+                        part.width + 4.0,
+                        part.height,
+                    );
+                    let (border_widths, border_color) = (Edges::all(1.0), color(run));
+                    let radii = Corners::all(2.0);
+                    cx.quad(Quad { bounds, border_widths, border_color, radii, ..Quad::default() });
+                }
             }
+            nth += span.link.is_some() as usize;
             start = span.end;
         }
         drop(links);

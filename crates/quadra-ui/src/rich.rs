@@ -4,11 +4,11 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use quadra_platform::{Cursor, Mods};
+use quadra_platform::{Cursor, Key, Mods};
 use quadra_prim::Point;
 use quadra_text::Shaping;
 use quadra_tree::{
-    InlineBox, LinkBoxes, NodeId, Paint, PointerEvent, PointerKind, RichSpan, RichText, Style,
+    InlineBox, LinkBoxes, NodeId, Paint, PointerEvent, PointerKind, RichSpan, RichText, Role, Style,
 };
 
 use crate::view::{MountCx, View};
@@ -174,22 +174,66 @@ fn link(cx: &mut MountCx, id: NodeId, boxes: LinkBoxes, on: (Option<OnLink>, Opt
     });
 }
 
+/// What the keyboard and a reader reach the links of a mounted text by: a node for each,
+/// in the order of the text, without a size of its own, which takes the focus (Tab), is a
+/// link named by its words, and gives its target to `on_link` on Enter or a reader's click.
+/// The text outlines the one that has the focus.
+fn reachable(
+    cx: &mut MountCx,
+    text: NodeId,
+    links: Vec<(String, Rc<str>)>,
+    on_link: Option<OnLink>,
+) -> Vec<NodeId> {
+    let mut nodes = Vec::new();
+    for (k, (words, target)) in links.into_iter().enumerate() {
+        let (handle, on) = (cx.handle.clone(), on_link.clone());
+        let go = move || {
+            if let Some(on) = &on {
+                on(&target);
+            }
+        };
+        let enter = go.clone();
+        let node = crate::div().absolute().focusable().role(Role::Link).label(words);
+        let node = node.on_click(move |_| go()).on_key_down(move |e| {
+            if e.key == Key::Enter {
+                e.stop();
+                enter();
+            }
+        });
+        let node = node.on_focus(move |has| {
+            handle.with(move |tree| {
+                let outlined = tree.widget_mut::<RichText>(text).map(|w| w.focus_link(has.then_some(k)));
+                if outlined == Some(true) {
+                    tree.mark_paint(text);
+                }
+            })
+        });
+        nodes.push(node.mount(cx));
+    }
+    nodes
+}
+
 impl View for RichTextView {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (mut text, mut spans, mut boxes) = (String::new(), Vec::new(), Vec::new());
+        let (mut text, mut spans, mut boxes, mut named) = (String::new(), Vec::new(), Vec::new(), Vec::new());
         for Span { text: words, shaping, color, background, strike, link, inline } in self.spans {
             text.push_str(&words);
             boxes.extend(inline.map(|inline| (spans.len(), inline)));
+            named.extend(link.clone().map(|target| (words, target)));
             spans.push(RichSpan { end: text.len(), shaping, color, background, strike, link });
         }
-        let links = spans.iter().any(|span| span.link.is_some());
         let rich = RichText::new(text, spans);
         let rich = boxes.into_iter().fold(rich, |rich, (span, inline)| rich.with_box(span, inline));
         let boxes = rich.links();
         let id = cx.tree.insert_widget(Style::default(), Box::new(rich));
-        if links {
-            link(cx, id, boxes, (self.on_link, self.on_hover), self.ctrl);
+        if named.is_empty() {
+            return id;
         }
-        id
+        let reached = reachable(cx, id, named, self.on_link.clone());
+        link(cx, id, boxes, (self.on_link, self.on_hover), self.ctrl);
+        // The text and the nodes of its links, in a box that is as the text is.
+        let around = cx.tree.insert(Style::default());
+        cx.tree.set_children(around, &[&[id][..], &reached].concat());
+        around
     }
 }

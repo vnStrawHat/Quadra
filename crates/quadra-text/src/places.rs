@@ -44,14 +44,13 @@ impl Paragraph {
     /// range that goes on past the end of a line takes `past` more there: the line break
     /// that is in it shows.
     pub fn spans(&self, range: Range<usize>, past: f32) -> impl Iterator<Item = Rect> + '_ {
-        let line_px = self.style().line_px();
         let on = move |line: &&crate::Line| line.start <= range.end && line.end >= range.start;
         let (start, end) = (range.start, range.end);
         self.lines().iter().filter(on).filter_map(move |line| {
             let (from, to) = (start.max(line.start), end.min(line.end));
             let more = if end > line.end { past } else { 0.0 };
             let (x, width) = (self.x_at(from) - line.origin, self.x_at(to) - self.x_at(from) + more);
-            (width > 0.0).then(|| Rect::new(x, line.y, width, line_px))
+            (width > 0.0).then(|| Rect::new(x, line.y, width, line.height))
         })
     }
 }

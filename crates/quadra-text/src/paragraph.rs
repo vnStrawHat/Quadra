@@ -57,8 +57,11 @@ pub struct Line {
     pub end: usize,
     /// Without trailing spaces.
     pub width: f32,
-    /// The top of the line box.
+    /// The top of the line box, its height, and its baseline from its top: the style's line,
+    /// or higher where a box on it reaches further.
     pub y: f32,
+    pub height: f32,
+    pub baseline: f32,
     glyphs: Range<usize>,
     /// Where the line starts along the endless line the text was shaped on.
     pub(crate) origin: f32,
@@ -223,8 +226,17 @@ impl Paragraph {
         let line_px = self.style.line_px();
         let bytes = self.text.as_bytes();
         self.lines.clear();
-        let mut widest: f32 = 0.0;
-        for (k, range) in ranges.iter().enumerate() {
+        // The text's baseline in a line, and where each box is with how far it reaches.
+        let base = (line_px - self.ascent - self.descent) / 2.0 + self.ascent;
+        let (mut boxes, mut from) = (Vec::new(), 0);
+        for (end, shaping) in &self.runs {
+            if shaping.advance.is_some() {
+                boxes.push((from, shaping.reach));
+            }
+            from = *end;
+        }
+        let (mut widest, mut y): (f32, f32) = (0.0, 0.0);
+        for range in &ranges {
             let origin = self.x_at(range.start);
             let visible =
                 bytes[range.clone()].iter().rposition(|b| !matches!(b, b' ' | b'\t')).map_or(0, |n| n + 1);
@@ -232,10 +244,15 @@ impl Paragraph {
             let from = self.glyphs.partition_point(|g| (g.cluster as usize) < range.start);
             let to = self.glyphs.partition_point(|g| (g.cluster as usize) < range.end);
             widest = widest.max(width);
-            let y = k as f32 * line_px;
-            self.lines.push(Line { start: range.start, end: range.end, width, y, glyphs: from..to, origin });
+            let (mut above, mut below) = (base, line_px - base);
+            for &(_, (up, down)) in boxes.iter().filter(|(at, _)| range.contains(at)) {
+                (above, below) = (above.max(up.ceil()), below.max(down.ceil()));
+            }
+            let (start, end, height) = (range.start, range.end, above + below);
+            self.lines.push(Line { start, end, width, y, height, baseline: above, glyphs: from..to, origin });
+            y += height;
         }
-        self.size = Size::new(widest, ranges.len() as f32 * line_px);
+        self.size = Size::new(widest, y);
         self.width_breaks = ranges.len() > hard;
         self.wrapped_at = Some(max_width);
         self.place_visually();
@@ -256,6 +273,12 @@ impl Paragraph {
     pub fn line_glyphs(&self, line: &Line) -> (&[PositionedGlyph], f32) {
         let glyphs = if self.bidi.is_some() { &self.visual } else { &self.glyphs };
         (&glyphs[line.glyphs.clone()], line.origin)
+    }
+
+    /// The line at a height from the paragraph's top: the first above it, the last below.
+    pub fn line_at_y(&self, y: f32) -> usize {
+        let after = self.lines.partition_point(|line| line.y + line.height <= y);
+        after.min(self.lines.len().saturating_sub(1))
     }
 
     /// The ascent and descent of the lines, in pixels.

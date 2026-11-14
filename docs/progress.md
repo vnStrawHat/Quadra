@@ -74,7 +74,7 @@ hold: markdown, the editor, the live table, the log view, the value viewer and t
 charts are R4's; their exit is that they match.
 
 What the kit does not do yet, and no page of the V gallery shows (13 has each beside its
-component): faces as tokens of a theme (a theme for a subtree is in since 2026-11-14: `.theme(..)` on a box; so are measures, specs/17 "Open tokens": `Measure` and `Amount` in the tree, radii, spaces and times a theme gives, `token::RADIUS_*`, `SPACE_*`, `DURATION_*` and a theme file's `measures`; the kit's controls take their radii from them, and the gallery's 92 pictures stayed the same to the byte);
+component): faces as tokens of a theme (a line is made higher by an inline box higher than its text since 2026-11-14, `Line::height`, `Line::baseline`; a theme for a subtree is in since 2026-11-14: `.theme(..)` on a box; so are measures, specs/17 "Open tokens": `Measure` and `Amount` in the tree, radii, spaces and times a theme gives, `token::RADIUS_*`, `SPACE_*`, `DURATION_*` and a theme file's `measures`; the kit's controls take their radii from them, and the gallery's 92 pictures stayed the same to the byte);
 today's date and the names of days and months in the app's language (local time and i18n,
 R5); a cursor on the cells of a table; a tree whose children are asked for when it opens,
 and several selected; of rich text, links for the keyboard

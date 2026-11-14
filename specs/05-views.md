@@ -311,8 +311,10 @@ locale at the window root; a subtree can provide its own.
     the colour of its span, and says what it is to a reader, which is said in its place in
     the name of the text. It is in the word around it (a comma after it stays with it), and
     is measured before the text is shaped: the first time, and when the style changes. A
-    formula is one (13, "Markdown").
-  - Not yet: links reached by Tab and by a reader, a selection, a line that is higher for
-    a box higher than it (the box goes over its neighbours).
+    formula is one (13, "Markdown"). A line with a box that reaches higher over the
+    baseline, or lower under it, than its text is made that much higher, on whole pixels;
+    each line has its height and its baseline (`Line::height`, `Line::baseline`), and a
+    line with no such box is the style's.
+  - Not yet: links reached by Tab and by a reader, a selection.
 - A field lays its text out at layout; what reads the lines before the next layout (a key
   that moves the caret by lines, a click, in the same turn as an edit) lays it out first.

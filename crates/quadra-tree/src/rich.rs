@@ -35,7 +35,7 @@ pub struct RichSpan {
 /// U+FFFC, and as wide as the box says.
 pub trait InlineBox {
     /// Its width, its height above the baseline and its depth below it, in a text of a
-    /// style. A line is as high as the text says: what is higher goes over its neighbours.
+    /// style. A line it is on is made as high as it reaches.
     fn measure(&mut self, cx: &mut MeasureCx, style: &TextStyle) -> (f32, f32, f32);
 
     /// Paints it with the left end of its baseline at `origin`, in the colour of its span.
@@ -106,7 +106,8 @@ impl Widget for RichText {
         if !self.boxes.is_empty() && (stale || self.paragraph.is_none()) {
             for (span, inline) in &mut self.boxes {
                 let shaping = &mut self.spans[*span].shaping;
-                shaping.advance = Some(inline.measure(cx, &shaping.over(&self.style)).0);
+                let (width, above, below) = inline.measure(cx, &shaping.over(&self.style));
+                (shaping.advance, shaping.reach) = (Some(width), (above, below));
             }
             self.paragraph = None;
         }
@@ -131,9 +132,14 @@ impl Widget for RichText {
         let color = |run: usize| colors.get(run).and_then(|of| of.0).unwrap_or(text);
         // A line under each link, two pixels under the baseline, on every line it is on; a
         // line through what is struck, a third of the ascent over it.
-        let (ascent, descent) = paragraph.metrics();
-        let base = (self.style.line_px() - ascent - descent) / 2.0 + ascent;
-        let (under, through) = (base.round() + 2.0, (base - ascent * 0.3).round());
+        // Each line has its baseline: one with a box higher than its text is higher.
+        let (ascent, _) = paragraph.metrics();
+        let base = |part: &Rect| {
+            let lines = paragraph.lines();
+            lines.iter().find(|line| line.y == part.y).map_or(0.0, |line| line.baseline)
+        };
+        let under = |part: &Rect| base(part).round() + 2.0;
+        let through = |part: &Rect| (base(part) - ascent * 0.3).round();
         let (mut start, mut links) = (0, self.links.borrow_mut());
         links.clear();
         for (run, span) in spans.iter().enumerate() {
@@ -144,7 +150,8 @@ impl Widget for RichText {
                 }
             }
             for part in paragraph.spans(start..span.end, 0.0).filter(|_| span.strike) {
-                let bounds = Rect::new(cx.rect.x + part.x, cx.rect.y + part.y + through, part.width, 1.0);
+                let bounds =
+                    Rect::new(cx.rect.x + part.x, cx.rect.y + part.y + through(&part), part.width, 1.0);
                 cx.quad(Quad { bounds, background: color(run), ..Quad::default() });
             }
             let parts = span
@@ -152,7 +159,8 @@ impl Widget for RichText {
                 .iter()
                 .flat_map(|link| paragraph.spans(start..span.end, 0.0).map(move |part| (part, link)));
             for (part, link) in parts {
-                let bounds = Rect::new(cx.rect.x + part.x, cx.rect.y + part.y + under, part.width, 1.0);
+                let bounds =
+                    Rect::new(cx.rect.x + part.x, cx.rect.y + part.y + under(&part), part.width, 1.0);
                 cx.quad(Quad { bounds, background: color(run), ..Quad::default() });
                 links.push((part, link.clone()));
             }
@@ -162,7 +170,7 @@ impl Widget for RichText {
         for k in 0..self.boxes.len() {
             let span = self.boxes[k].0;
             if let Some(part) = paragraph.spans(self.range(span), 0.0).next() {
-                let origin = Point::new(cx.rect.x + part.x, cx.rect.y + part.y + base);
+                let origin = Point::new(cx.rect.x + part.x, cx.rect.y + part.y + base(&part));
                 self.boxes[k].1.paint(cx, origin, color(span));
             }
         }

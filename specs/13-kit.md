@@ -915,7 +915,7 @@ What it reads and how it looks is behaviour/21. As built:
   pointer leaves it.
 - A table wider than the page, its columns at their least (their longest words), scrolls
   sideways; one that fits is as wide as the page.
-- Not yet: a line made higher by a formula higher than it; an image in a line of words;
+- Not yet: an image in a line of words;
   one selection over the blocks; where each block is, for an outline and for scrolling two
   panes together; a list of the blocks that show, for documents of tens of thousands of
   lines.

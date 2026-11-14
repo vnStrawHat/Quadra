@@ -178,3 +178,43 @@ fn what_is_no_text_is_in_the_line_on_its_baseline_and_said_in_its_place() {
     let stand = letters.map(|i| i.bounds[1] + i.bounds[3]).fold(0.0, f32::max);
     assert_eq!(stand, y + height, "the box stands where the letters do");
 }
+
+/// A box higher than the line it is on: 30 px over the baseline and 6 under it.
+struct Tall;
+
+impl InlineBox for Tall {
+    fn measure(&mut self, _: &mut MeasureCx, _: &TextStyle) -> (f32, f32, f32) {
+        (10.0, 30.0, 6.0)
+    }
+
+    fn paint(&mut self, cx: &mut PaintCx, origin: Point, color: Color) {
+        let bounds = Rect::new(origin.x, origin.y - 30.0, 10.0, 36.0);
+        cx.quad(Quad { bounds, background: color, ..Quad::default() });
+    }
+
+    fn says(&self) -> &str {
+        "tall"
+    }
+}
+
+#[test]
+fn a_box_higher_than_its_line_makes_that_line_higher() {
+    let mut h = Harness::new();
+    h.mount(|| {
+        let words = rich_text([span("ab "), inline(Tall).color(RED), span("\ncd")]);
+        column().width(80.0).text_size(10.0).line_height(1.4).child(words)
+    });
+    h.frame();
+    // Its line is 30 over the baseline and 6 under it; the next is the 14 px of the text.
+    let words = h.tree.children(h.tree.root().unwrap())[0];
+    assert_eq!(h.tree.rect(words).size(), Size::new(80.0, 50.0));
+    let layer = h.tree.scene().layer(h.tree.scene().roots()[0]);
+    let red: Vec<_> =
+        layer.instances().iter().filter(|i| i.color == RED.to_array()).map(|i| i.bounds).collect();
+    assert_eq!(red, [[18.0, 0.0, 10.0, 36.0]]);
+    // The letters of the first line stand on its lower baseline, those of the second under it.
+    let letters: Vec<_> =
+        layer.instances().iter().filter(|i| i.color != RED.to_array()).map(|i| i.bounds).collect();
+    let feet: Vec<f32> = letters.iter().map(|b| b[1] + b[3]).collect();
+    assert!(feet.contains(&30.0) && feet.contains(&46.0), "{feet:?}");
+}

@@ -122,6 +122,9 @@ pub struct Shaping {
     /// text is one character (U+FFFC stands for what is no text), and it is in the word
     /// around it.
     pub advance: Option<f32>,
+    /// How far the box reaches above the baseline and below it: a line it is on is made as
+    /// high as it needs.
+    pub reach: (f32, f32),
 }
 
 impl Shaping {

@@ -42,8 +42,7 @@ impl Text {
     /// The offset in the text nearest a point from the node's corner.
     pub fn index_at(&self, at: Point) -> usize {
         let Some(lines) = &self.paragraph else { return 0 };
-        let line = (at.y / self.style.line_px()).floor().max(0.0) as usize;
-        lines.index_near(line.min(lines.lines().len().saturating_sub(1)), at.x)
+        lines.index_near(lines.line_at_y(at.y), at.x)
     }
 
     /// Starts a selection at an offset, or with `extend` takes the one there is to it.
@@ -155,9 +154,8 @@ impl Widget for Text {
 /// it, at the node's corner.
 fn cut(cx: &mut PaintCx, paragraph: &Paragraph, dots: &Word, color: Color, tiles: &mut Vec<GlyphTile>) {
     let Some(line) = paragraph.lines().first() else { return };
-    let (ascent, descent) = paragraph.metrics();
-    let (line_px, scale, origin) = (paragraph.style().line_px(), cx.scale, cx.rect.origin());
-    let baseline = ((origin.y + (line_px - ascent - descent) / 2.0 + ascent) * scale).round();
+    let (scale, origin) = (cx.scale, cx.rect.origin());
+    let baseline = ((origin.y + line.baseline) * scale).round();
     let (glyphs, start) = paragraph.line_glyphs(line);
     let room = cx.rect.width - dots.width;
     let mut end = 0.0f32;
@@ -194,15 +192,14 @@ pub(crate) fn paint_runs(
     color: impl Fn(usize) -> Color,
     tiles: &mut Vec<GlyphTile>,
 ) {
-    let (ascent, descent) = paragraph.metrics();
-    let (line_px, scale) = (paragraph.style().line_px(), cx.scale);
+    let scale = cx.scale;
     for line in paragraph.lines() {
         let top = origin.y + line.y;
-        if cx.visible.is_some_and(|band| top > band.bottom() || top + line_px < band.y) {
+        if cx.visible.is_some_and(|band| top > band.bottom() || top + line.height < band.y) {
             continue; // outside what its layer paints
         }
         // Baselines sit on whole pixels; along the line a glyph keeps a quarter-pixel phase.
-        let baseline = ((top + (line_px - ascent - descent) / 2.0 + ascent) * scale).round();
+        let baseline = ((top + line.baseline) * scale).round();
         let (glyphs, start) = paragraph.line_glyphs(line);
         for g in glyphs {
             let x = (origin.x + g.x - start) * scale;

@@ -8,7 +8,7 @@ use quadra_prim::Color;
 use quadra_reactive::{signal, stats};
 use quadra_testing::Harness;
 use quadra_tree::{Paint, PointerInput, Theme, Token};
-use quadra_ui::{column, div, show};
+use quadra_ui::{column, div, rich_text, show, span};
 
 const SURFACE: Token = Token(0);
 const LINE: Token = Token(1);
@@ -59,13 +59,19 @@ fn boxes_take_roles_where_they_take_colours() {
 
 #[test]
 fn a_box_gives_what_is_under_it_a_theme_of_its_own() {
-    let (more, dark) = (signal(false), theme([0x101010, 0x202020, 0x00AA00]));
+    let (more, gone, dark) = (signal(false), signal(false), theme([0x101010, 0x202020, 0x00AA00]));
+
     let mut h = Harness::new();
     h.tree.set_theme(theme([0xFFFFFF, 0xD0D0D0, 0xCC0000]));
     h.mount(move || {
         let card = || div().size(40.0, 20.0).bg(SURFACE);
-        let panel = div().theme(dark.clone()).child(card()).child(show(move || more.get(), card));
-        column().child(card()).child(panel)
+        let words = rich_text([span("x").color(ACCENT)]);
+        let panel =
+            div().theme(dark.clone()).child(card()).child(words).child(show(move || more.get(), card));
+        column()
+            .child(card())
+            .child(panel)
+            .child(show(move || !gone.get(), move || div().theme(dark.clone())))
     });
     h.frame();
     let root = h.tree.root().unwrap();
@@ -73,6 +79,16 @@ fn a_box_gives_what_is_under_it_a_theme_of_its_own() {
     let bg = |h: &Harness, id| h.tree.paint_style(id).background;
     let inside = h.tree.children(panel)[0];
     assert_eq!((bg(&h, outside), bg(&h, inside)), (Color::rgb(0xFFFFFF), Color::rgb(0x101010)));
+    // A widget that paints with roles paints with the panel's: its glyph is the panel's accent.
+    let inked = |h: &Harness, color: Color| {
+        let layer = h.tree.scene().layer(h.tree.scene().roots()[0]);
+        layer.instances().iter().filter(|i| i.color == color.to_array()).count()
+    };
+    assert_eq!((inked(&h, Color::rgb(0x00AA00)), inked(&h, Color::rgb(0xCC0000))), (1, 0));
+    // A box with a theme that goes leaves nothing to look up.
+    gone.set(true);
+    h.frame();
+    assert_eq!(h.tree.themes_held(), 1);
 
     // What comes under it later has its theme too; the window's theme leaves it as it is.
     more.set(true);

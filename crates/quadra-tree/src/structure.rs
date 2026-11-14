@@ -69,6 +69,13 @@ impl Tree {
         self.repaint = true;
         let mut scopes = Vec::new();
         self.free_subtree(id, &mut scopes);
+        if !self.themes.is_empty() {
+            // A theme of a node that is gone: nothing looks it up any more.
+            let nodes = &self.nodes;
+            self.themes.retain(|(own, _)| {
+                nodes[own.index as usize].alive && nodes[own.index as usize].generation == own.generation
+            });
+        }
         // After the nodes are gone: a cleanup may use the tree's handle.
         scopes.into_iter().for_each(Scope::dispose);
     }

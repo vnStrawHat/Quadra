@@ -132,6 +132,11 @@ impl Tree {
         self.theme_moved(id);
     }
 
+    /// How many nodes give what is under them a theme of their own.
+    pub fn themes_held(&self) -> usize {
+        self.themes.len()
+    }
+
     /// What is under `id` has another theme now: what is styled with roles is resolved
     /// again, and widgets and shadows are painted again.
     pub(crate) fn theme_moved(&mut self, id: NodeId) {

@@ -34,9 +34,11 @@ tools/cargo.sh metadata --no-deps --format-version 1 | PYTHONUTF8=1 python tools
 tools/cargo.sh fmt --all --check || say 'check: run tools/cargo.sh fmt --all'
 tools/cargo.sh clippy --workspace --all-targets --quiet -- -D warnings || say 'check: clippy failed'
 tools/cargo.sh test --workspace --quiet || say 'check: tests failed'
-# The API documentation (specs/00, R5): every link resolves, no doc comment is malformed. A
-# limit of time, as a wait for cargo's lock once held the gate for good.
-RUSTDOCFLAGS='-D warnings' timeout 600 tools/cargo.sh doc --workspace --no-deps --quiet ||
+# The API documentation (specs/00, R5): every link resolves, no doc comment is malformed. By
+# the toolchain's own cargo, into target/docs: the fork hangs at the end of a `doc` that had
+# work to do (2026-11-14). The limit of time stays, should that cargo hang too.
+toolchain_cargo="$(rustc --print sysroot)/bin/cargo.exe" project_tmp="$(cygpath -w "$PWD/.tmp")"
+TMP="$project_tmp" TEMP="$project_tmp" RUSTDOCFLAGS='-D warnings' CARGO_TARGET_DIR=target/docs 	timeout 600 "$toolchain_cargo" doc --workspace --no-deps --quiet ||
 	say 'check: the API documentation has warnings, or did not finish in 10 minutes'
 
 if [ "${1:-}" = prod ]; then

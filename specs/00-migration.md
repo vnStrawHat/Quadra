@@ -88,6 +88,8 @@ Around that:
   Studio Build Tools, a system prerequisite like Git Bash; `tools/setup.sh` checks for them and
   says what to install.
 - **Toolchain pinned** in `rust-toolchain.toml`; stable only, no nightly features.
+- **The API documentation is built by the toolchain's own cargo** into `target/docs`, not by
+  the fork, which hangs at the end of a `cargo doc` that had work to do (seen 2026-11-14).
 - **Files at most 300 lines**, Conventional Commits, the clipboard
   rule: unchanged.
 

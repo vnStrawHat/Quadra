@@ -6,9 +6,9 @@ use std::rc::Rc;
 
 use windows::Win32::Graphics::DirectWrite::{
     DWRITE_FONT_STRETCH_NORMAL, DWRITE_FONT_WEIGHT, DWRITE_LINE_BREAKPOINT, DWRITE_READING_DIRECTION,
-    DWRITE_READING_DIRECTION_LEFT_TO_RIGHT, DWRITE_SCRIPT_ANALYSIS, IDWriteNumberSubstitution,
-    IDWriteTextAnalysisSink, IDWriteTextAnalysisSink_Impl, IDWriteTextAnalysisSource,
-    IDWriteTextAnalysisSource_Impl,
+    DWRITE_READING_DIRECTION_LEFT_TO_RIGHT, DWRITE_READING_DIRECTION_RIGHT_TO_LEFT, DWRITE_SCRIPT_ANALYSIS,
+    IDWriteNumberSubstitution, IDWriteTextAnalysisSink, IDWriteTextAnalysisSink_Impl,
+    IDWriteTextAnalysisSource, IDWriteTextAnalysisSource_Impl,
 };
 use windows::core::{HSTRING, Interface, OutRef, Ref, Result, implement};
 
@@ -36,6 +36,9 @@ struct Analysis {
     text: Vec<u16>,
     locale: HSTRING,
     runs: Rc<RefCell<Vec<ScriptRun>>>,
+    /// The text reads right to left; the bidirectional level of each unit, as resolved.
+    rtl: bool,
+    levels: Rc<RefCell<Vec<u8>>>,
 }
 
 impl Analysis_Impl {
@@ -71,7 +74,10 @@ impl IDWriteTextAnalysisSource_Impl for Analysis_Impl {
     }
 
     fn GetParagraphReadingDirection(&self) -> DWRITE_READING_DIRECTION {
-        DWRITE_READING_DIRECTION_LEFT_TO_RIGHT
+        match self.rtl {
+            true => DWRITE_READING_DIRECTION_RIGHT_TO_LEFT,
+            false => DWRITE_READING_DIRECTION_LEFT_TO_RIGHT,
+        }
     }
 
     fn GetLocaleName(&self, position: u32, len: *mut u32, locale: *mut *mut u16) -> Result<()> {
@@ -107,7 +113,10 @@ impl IDWriteTextAnalysisSink_Impl for Analysis_Impl {
         Ok(())
     }
 
-    fn SetBidiLevel(&self, _: u32, _: u32, _: u8, _: u8) -> Result<()> {
+    fn SetBidiLevel(&self, start: u32, len: u32, _explicit: u8, resolved: u8) -> Result<()> {
+        let mut levels = self.levels.borrow_mut();
+        let end = ((start + len) as usize).min(levels.len());
+        levels[(start as usize).min(end)..end].fill(resolved);
         Ok(())
     }
 
@@ -118,9 +127,30 @@ impl IDWriteTextAnalysisSink_Impl for Analysis_Impl {
 
 impl DirectWrite {
     fn source(&self, text: &[u16]) -> (IDWriteTextAnalysisSource, Rc<RefCell<Vec<ScriptRun>>>) {
+        let (source, runs, _) = self.source_reading(text, false);
+        (source, runs)
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn source_reading(
+        &self,
+        text: &[u16],
+        rtl: bool,
+    ) -> (IDWriteTextAnalysisSource, Rc<RefCell<Vec<ScriptRun>>>, Rc<RefCell<Vec<u8>>>) {
         let runs: Rc<RefCell<Vec<ScriptRun>>> = Rc::default();
-        let analysis = Analysis { text: text.to_vec(), locale: self.locale.clone(), runs: runs.clone() };
-        (analysis.into(), runs)
+        let levels = Rc::new(RefCell::new(vec![rtl as u8; text.len()]));
+        let (locale, text) = (self.locale.clone(), text.to_vec());
+        let analysis = Analysis { text, locale, runs: runs.clone(), rtl, levels: levels.clone() };
+        (analysis.into(), runs, levels)
+    }
+
+    /// The bidirectional level of each unit of a text read in a direction.
+    pub(super) fn levels(&self, text: &[u16], rtl: bool) -> Option<Vec<u8>> {
+        let (source, _, levels) = self.source_reading(text, rtl);
+        let sink = source.cast::<IDWriteTextAnalysisSink>().ok()?;
+        // SAFETY: the source and the sink are alive for the call and answer inside the text.
+        unsafe { self.analyzer.AnalyzeBidi(&source, 0, text.len() as u32, &sink) }.ok()?;
+        Some(levels.take())
     }
 
     /// The script runs of a text.

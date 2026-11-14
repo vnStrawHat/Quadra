@@ -77,7 +77,23 @@ The rules of behaviour/04 carry over. What differs from the V backend:
   the shaping cache; a paragraph keeps its words until its text or style changes, so
   features are set as fonts are loaded. Per family, not per style: a style stays what it is
   and a face is still one key of the cache.
-- Not yet: bidirectional analysis.
+- **Bidirectional text**, for display (`bidi.rs`; caret movement and editing in
+  right-to-left text stay After-v1, below):
+  - A text with a right-to-left character (`has_rtl`: Hebrew, Arabic and the scripts beside
+    them, and the marks that turn text right to left) gets the level of each byte from the
+    backend (`TextBackend::bidi_levels(text, rtl)`; DirectWrite's `AnalyzeBidi`). Its
+    direction is that of its first letter (`reads_rtl`, rule P2 with letters as the strong
+    characters). A text without one costs nothing more: no analysis, no reordering.
+  - A word is shaped in visual order by the backend: each run of it in its own direction
+    (`isRightToLeft`, which also mirrors brackets), the runs ordered as the levels of the
+    word alone say. Its glyphs stay where they are on the endless line; caret stops stay
+    logical, and a token starts at its pen.
+  - A line puts its words and spaces in visual order (`visual_order`: rule L2 on tokens, the
+    level of a word its lowest; spaces at the end of a line at the text's level, rule L1).
+    The glyphs of such a line are placed again in a copy (`line_glyphs` gives it), so a
+    text without right-to-left characters keeps one array.
+  - One direction for the whole text, not one per line between newlines; a word longer than
+    its line, broken inside, keeps its order; alignment is the view's.
 
 ## Paragraphs
 

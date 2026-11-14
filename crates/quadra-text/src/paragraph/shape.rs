@@ -38,6 +38,8 @@ impl Paragraph {
             };
             let from = self.glyphs.len();
             let (mut width, mut at) = (0.0, i);
+            // A token starts at its pen, whatever glyph is first in it (a right-to-left word).
+            first_x[i] = x;
             // A word that goes over the end of a run is shaped in pieces, a piece a run.
             while at < end && kind != Kind::Newline {
                 while self.shaped[run].0 <= at {
@@ -64,11 +66,7 @@ impl Paragraph {
                 }
                 (width, at) = (width + word.width, piece_end);
             }
-            // A token starts at the pen even when no glyph marks its first byte (a newline).
-            if first_x[i].is_nan() {
-                first_x[i] = x;
-            }
-            self.tokens.push(Token { start: i, end, width, glyphs: from..self.glyphs.len(), kind });
+            self.tokens.push(Token { start: i, end, x, width, glyphs: from..self.glyphs.len(), kind });
             x += width;
             i = end;
         }
@@ -83,5 +81,6 @@ impl Paragraph {
             at = next_grapheme(&self.text, at);
         }
         self.stops.push((bytes.len(), x));
+        self.bidi = ts.bidi_levels(&self.text);
     }
 }

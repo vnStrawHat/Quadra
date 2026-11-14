@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use quadra_prim::Rect;
 
+use crate::bidi::{has_rtl, reads_rtl};
 use crate::numeric::Numeric;
 use crate::types::{FaceId, Feature, FontKey, GlyphBitmap, ShapedGlyph, TextBackend, TextStyle};
 
@@ -99,6 +100,16 @@ impl TextSystem {
         self.words.previous.clear();
         self.words.count = 0;
         self.numeric = Numeric::default();
+    }
+
+    /// Whether a text reads right to left, and the bidirectional level of each byte; `None`
+    /// for a text with no right-to-left character (specs/08, "Bidirectional text").
+    pub fn bidi_levels(&mut self, text: &str) -> Option<(bool, Vec<u8>)> {
+        if !has_rtl(text) {
+            return None;
+        }
+        let rtl = reads_rtl(text);
+        self.backend.bidi_levels(text, rtl).map(|levels| (rtl, levels))
     }
 
     /// The face of a style. An unknown family falls back to the default one at the same

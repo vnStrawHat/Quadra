@@ -170,4 +170,11 @@ pub trait TextBackend {
     /// defaults. Glyphs of a fallback face are not the family's. A backend that cannot apply
     /// them ignores them.
     fn set_features(&mut self, _family: &str, _features: &[Feature]) {}
+
+    /// The bidirectional level of each byte of a text with a right-to-left character, the
+    /// text read right to left when `rtl`. `None`: the backend cannot tell, and the text is
+    /// shown left to right. `shape` gives a word's glyphs in visual order.
+    fn bidi_levels(&mut self, _text: &str, _rtl: bool) -> Option<Vec<u8>> {
+        None
+    }
 }

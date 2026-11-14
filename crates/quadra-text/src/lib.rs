@@ -4,6 +4,7 @@
 //! A text node owns a [`Paragraph`]: shaped once, broken into lines at a width without shaping
 //! again. Shaped words are shared through the [`TextSystem`]'s cache.
 
+mod bidi;
 mod edit;
 mod fake;
 mod grapheme;
@@ -18,6 +19,7 @@ mod url;
 mod width;
 mod width_table;
 
+pub use bidi::{has_rtl, is_rtl, reads_rtl, visual_order};
 pub use edit::{EditBuffer, Motion};
 pub use fake::FakeBackend;
 pub use grapheme::{boundaries, next_grapheme, prev_grapheme};

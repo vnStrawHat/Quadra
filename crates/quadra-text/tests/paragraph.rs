@@ -219,3 +219,33 @@ fn features_set_for_a_family_shape_its_words_again() {
     let stats = ts.take_stats();
     assert_eq!((stats.words_shaped, stats.word_hits), (2, 1));
 }
+
+/// What a line shows, left to right.
+fn shown(p: &Paragraph, line: usize) -> String {
+    let (glyphs, _) = p.line_glyphs(&p.lines()[line]);
+    let mut glyphs = glyphs.to_vec();
+    glyphs.sort_by(|a, b| a.x.total_cmp(&b.x));
+    glyphs.iter().map(|g| char::from_u32(g.id as u32).unwrap_or('?')).collect()
+}
+
+#[test]
+fn right_to_left_words_are_shown_in_their_order_among_the_others() {
+    let mut ts = system();
+    let mut p = Paragraph::new(&mut ts, "abc אב גד xy", style());
+    p.wrap(&mut ts, f32::INFINITY);
+    assert_eq!(shown(&p, 0), "abc דג בא xy");
+    // A text that starts with a right-to-left letter reads right to left: a word of the
+    // other direction keeps its own order, at the left end.
+    let mut p = Paragraph::new(&mut ts, "שלום abc", style());
+    p.wrap(&mut ts, f32::INFINITY);
+    assert_eq!(shown(&p, 0), "abc םולש");
+    // Each line on its own, its last space hanging at its end; caret stops as they were.
+    let mut p = Paragraph::new(&mut ts, "אב גד הו", style());
+    p.wrap(&mut ts, 30.0);
+    assert_eq!((shown(&p, 0), shown(&p, 1)), ("דג בא ".to_string(), "וה".to_string()));
+    assert_eq!(p.x_at(5), 18.0); // "גד" starts after "אב ", as it was shaped
+    // A text with no right-to-left letter is left as it was shaped.
+    let mut p = Paragraph::new(&mut ts, "plain text", style());
+    p.wrap(&mut ts, f32::INFINITY);
+    assert_eq!(shown(&p, 0), "plain text");
+}

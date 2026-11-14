@@ -12,6 +12,7 @@ use crate::system::TextSystem;
 use crate::types::{FaceId, Shaping, TextStyle};
 
 mod shape;
+mod visual;
 
 /// The slack absorbs float error in layout sums, which would otherwise break a word that was
 /// measured to fit.
@@ -41,6 +42,8 @@ enum Kind {
 struct Token {
     start: usize,
     end: usize,
+    /// Its pen along the endless line.
+    x: f32,
     width: f32,
     glyphs: Range<usize>,
     kind: Kind,
@@ -71,6 +74,10 @@ pub struct Paragraph {
     /// when it is a box; the last one never ends.
     shaped: Vec<(usize, FaceId, f32, Option<f32>)>,
     glyphs: Vec<PositionedGlyph>,
+    /// Whether the text reads right to left and the level of each byte, when it has a
+    /// right-to-left character; then `visual` is the glyphs with each line in visual order.
+    bidi: Option<(bool, Vec<u8>)>,
+    visual: Vec<PositionedGlyph>,
     /// Caret stops: every grapheme boundary and its x, the end of the text included.
     pub(crate) stops: Vec<(usize, f32)>,
     tokens: Vec<Token>,
@@ -103,6 +110,8 @@ impl Paragraph {
             runs,
             shaped: Vec::new(),
             glyphs: Vec::new(),
+            bidi: None,
+            visual: Vec::new(),
             stops: Vec::new(),
             tokens: Vec::new(),
             lines: Vec::new(),
@@ -229,6 +238,7 @@ impl Paragraph {
         self.size = Size::new(widest, ranges.len() as f32 * line_px);
         self.width_breaks = ranges.len() > hard;
         self.wrapped_at = Some(max_width);
+        self.place_visually();
         self.size
     }
 
@@ -244,7 +254,8 @@ impl Paragraph {
 
     /// The glyphs of a line, and the x to subtract from theirs to start the line at zero.
     pub fn line_glyphs(&self, line: &Line) -> (&[PositionedGlyph], f32) {
-        (&self.glyphs[line.glyphs.clone()], line.origin)
+        let glyphs = if self.bidi.is_some() { &self.visual } else { &self.glyphs };
+        (&glyphs[line.glyphs.clone()], line.origin)
     }
 
     /// The ascent and descent of the lines, in pixels.

@@ -1,5 +1,5 @@
 //! The DirectWrite backend against the fonts every Windows has: matching, shaping with
-//! clusters, fallback, coverage per pixel and per subpixel, colour glyphs, fonts from memory, OpenType features,
+//! clusters, fallback, coverage per pixel and per subpixel, colour glyphs, fonts from memory, OpenType features, bidirectional levels,
 //! and text from a view to pixels.
 
 use std::rc::Rc;
@@ -176,4 +176,22 @@ fn a_family_is_shaped_with_the_features_it_is_given() {
     assert_ne!(featured[1].0, plain[1].0, "a small capital is another glyph");
     dw.set_features("Segoe UI", &[]);
     assert_eq!(dw.shape("1a", face, 16.0).iter().map(|g| (g.id, g.advance)).collect::<Vec<_>>(), plain);
+}
+
+#[test]
+fn right_to_left_text_has_its_levels_and_a_word_comes_in_visual_order() {
+    let mut dw = DirectWrite::new().unwrap();
+    let face = segoe(&mut dw);
+    let levels = dw.bidi_levels("ab שלום 12", false).unwrap();
+    assert_eq!(levels.len(), "ab שלום 12".len());
+    assert_eq!((levels[0], levels[3], levels[levels.len() - 1]), (0, 1, 2), "{levels:?}");
+    assert_eq!(dw.bidi_levels("שלום", true).unwrap(), [1; 8]);
+    // "שלום": the last letter is the first from the left, and the pen goes right.
+    let word = dw.shape("שלום", face, 16.0);
+    let clusters: Vec<u32> = word.iter().map(|g| g.cluster).collect();
+    assert_eq!(clusters, [6, 4, 2, 0]);
+    assert!(word.windows(2).all(|w| w[0].x < w[1].x), "{word:?}");
+    // A number in it keeps its order, to the left of the letters before it.
+    let mixed: Vec<u32> = dw.shape("אב12", face, 16.0).iter().map(|g| g.cluster).collect();
+    assert_eq!(mixed, [4, 5, 2, 0]);
 }

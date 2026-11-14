@@ -38,14 +38,14 @@ fn printable_ascii(text: &str) -> Option<bool> {
 
 impl Scratch {
     /// Appends the glyphs of the run just shaped (`count` glyphs for `len` units from unit
-    /// `start` of the word) at `pen`, and returns the pen after them.
+    /// `start` of the word) at `pen`, in visual order when `rtl`, and returns the pen after them.
     fn place(
         &mut self,
         count: usize,
         len: usize,
         face: FaceId,
-        start: usize,
-        pen: f32,
+        (start, pen): (usize, f32),
+        rtl: bool,
         out: &mut Vec<ShapedGlyph>,
     ) -> f32 {
         self.first_unit.clear();
@@ -55,16 +55,23 @@ impl Scratch {
                 *first = unit as u32;
             }
         }
-        let (mut pen, mut current) = (pen, 0);
-        for g in 0..count {
-            if self.first_unit[g] != u32::MAX {
-                current = self.first_unit[g] as usize;
+        let mut current = 0;
+        for first in &mut self.first_unit[..count] {
+            if *first != u32::MAX {
+                current = *first;
             }
-            let unit = start + current;
+            *first = current;
+        }
+        // A right-to-left run comes in logical order, drawn from its right end: its last
+        // glyph is the first from the left, and an offset moves a glyph left.
+        let mut pen = pen;
+        for k in 0..count {
+            let g = if rtl { count - 1 - k } else { k };
+            let (unit, offset) = (start + self.first_unit[g] as usize, self.offsets[g].advanceOffset);
             out.push(ShapedGlyph {
                 face,
                 id: self.glyphs[g],
-                x: pen + self.offsets[g].advanceOffset,
+                x: if rtl { pen - offset } else { pen + offset },
                 y: self.offsets[g].ascenderOffset,
                 advance: self.advances[g],
                 cluster: self.unit_to_byte.get(unit).copied().unwrap_or(unit as u32),
@@ -73,6 +80,20 @@ impl Scratch {
         }
         pen
     }
+}
+
+/// The pieces of a run of `len` units from `start` that are each at one level: the run
+/// itself, at level 0, without levels.
+fn by_level(levels: &Option<Vec<u8>>, start: usize, len: usize) -> Vec<(usize, usize, u8)> {
+    let Some(levels) = levels else { return vec![(start, len, 0)] };
+    let mut out: Vec<(usize, usize, u8)> = Vec::new();
+    for (unit, &level) in levels.iter().enumerate().skip(start).take(len) {
+        match out.last_mut() {
+            Some(last) if last.2 == level => last.1 += 1,
+            _ => out.push((unit, 1, level)),
+        }
+    }
+    out
 }
 
 impl DirectWrite {
@@ -90,8 +111,8 @@ impl DirectWrite {
         if let Some(letters) = printable_ascii(text) {
             units.extend(text.bytes().map(u16::from));
             let analysis = self.ascii_analysis()[letters as usize];
-            if let Some(count) = self.shape_run(&mut s, &units, &analysis, face, size) {
-                s.place(count, units.len(), face, 0, 0.0, &mut out);
+            if let Some(count) = self.shape_run(&mut s, &units, &analysis, face, size, false) {
+                s.place(count, units.len(), face, (0, 0.0), false, &mut out);
             }
         } else {
             for (byte, ch) in text.char_indices() {
@@ -101,26 +122,43 @@ impl DirectWrite {
                 }
             }
             let key = self.keys[face.0 as usize].clone();
+            // A word with a right-to-left character: each piece of one level shaped in its
+            // direction, the pieces in the order of the word's levels alone.
+            let levels = if quadra_text::has_rtl(text) { self.levels(&units, false) } else { None };
+            let mut pieces: Vec<(u8, Vec<ShapedGlyph>, f32)> = Vec::new();
             let mut pen = 0.0;
             for run in self.analyze(&units) {
-                let range = run.start as usize..(run.start + run.len) as usize;
-                let fonts = if self.covers(face, &units[range]) {
-                    vec![FontRun { start: run.start, len: run.len, family: None }]
-                } else {
-                    self.map_fonts(&units, run.start, run.len, &key)
-                };
-                for font in fonts {
-                    let family =
-                        font.family.map(|family| FontKey { family: Rc::from(family), ..key.clone() });
-                    let with =
-                        family.and_then(|key| quadra_text::TextBackend::face(self, &key)).unwrap_or(face);
-                    let (start, len) = (font.start as usize, font.len as usize);
-                    if let Some(count) =
-                        self.shape_run(&mut s, &units[start..start + len], &run.analysis, with, size)
-                    {
-                        pen = s.place(count, len, with, start, pen, &mut out);
+                for (from, len, level) in by_level(&levels, run.start as usize, run.len as usize) {
+                    let fonts = if self.covers(face, &units[from..from + len]) {
+                        vec![FontRun { start: from as u32, len: len as u32, family: None }]
+                    } else {
+                        self.map_fonts(&units, from as u32, len as u32, &key)
+                    };
+                    for font in fonts {
+                        let family =
+                            font.family.map(|family| FontKey { family: Rc::from(family), ..key.clone() });
+                        let with =
+                            family.and_then(|key| quadra_text::TextBackend::face(self, &key)).unwrap_or(face);
+                        let (start, len, rtl) = (font.start as usize, font.len as usize, level % 2 == 1);
+                        let piece = &units[start..start + len];
+                        let Some(count) = self.shape_run(&mut s, piece, &run.analysis, with, size, rtl)
+                        else {
+                            continue;
+                        };
+                        if levels.is_none() {
+                            pen = s.place(count, len, with, (start, pen), false, &mut out);
+                        } else {
+                            let mut glyphs = Vec::with_capacity(count);
+                            let width = s.place(count, len, with, (start, 0.0), rtl, &mut glyphs);
+                            pieces.push((level, glyphs, width));
+                        }
                     }
                 }
+            }
+            let order = quadra_text::visual_order(&pieces.iter().map(|p| p.0).collect::<Vec<_>>());
+            for k in order {
+                out.extend(pieces[k].1.iter().map(|g| ShapedGlyph { x: g.x + pen, ..*g }));
+                pen += pieces[k].2;
             }
         }
         s.units = units;
@@ -157,6 +195,7 @@ impl DirectWrite {
         analysis: &DWRITE_SCRIPT_ANALYSIS,
         face: FaceId,
         size: f32,
+        rtl: bool,
     ) -> Option<usize> {
         let (len, family) = (units.len(), &self.keys[face.0 as usize].family);
         let face = &self.faces[face.0 as usize].face;
@@ -192,7 +231,7 @@ impl DirectWrite {
                     len as u32,
                     face,
                     false,
-                    false,
+                    rtl,
                     analysis,
                     &self.locale,
                     no_numbers,
@@ -230,7 +269,7 @@ impl DirectWrite {
                 face,
                 size,
                 false,
-                false,
+                rtl,
                 analysis,
                 &self.locale,
                 ranges,

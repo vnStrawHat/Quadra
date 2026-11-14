@@ -200,6 +200,17 @@ impl TextBackend for DirectWrite {
         self.raster(face, glyph, size, phase)
     }
 
+    fn bidi_levels(&mut self, text: &str, rtl: bool) -> Option<Vec<u8>> {
+        let units: Vec<u16> = text.encode_utf16().collect();
+        let levels = self.levels(&units, rtl)?;
+        let (mut out, mut unit) = (Vec::with_capacity(text.len()), 0);
+        for c in text.chars() {
+            out.extend(std::iter::repeat_n(levels[unit], c.len_utf8()));
+            unit += c.len_utf16();
+        }
+        Some(out)
+    }
+
     fn set_features(&mut self, family: &str, features: &[Feature]) {
         let tag = |t: [u8; 4]| DWRITE_FONT_FEATURE_TAG(u32::from_le_bytes(t));
         let list = features.iter().map(|f| DWRITE_FONT_FEATURE { nameTag: tag(f.tag), parameter: f.value });

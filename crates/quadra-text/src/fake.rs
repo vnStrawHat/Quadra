@@ -3,6 +3,7 @@
 
 use std::rc::Rc;
 
+use crate::bidi::{has_rtl, is_rtl};
 use crate::grapheme::next_grapheme;
 use crate::types::{FaceId, FaceMetrics, FontKey, GlyphBitmap, ShapedGlyph, TextBackend};
 
@@ -74,7 +75,47 @@ impl TextBackend for FakeBackend {
             x += advance;
             i = next_grapheme(text, i);
         }
+        if has_rtl(text) {
+            // A word with a right-to-left letter is all right to left, in visual order.
+            out.reverse();
+            for (k, g) in out.iter_mut().enumerate() {
+                g.x = k as f32 * advance;
+            }
+        }
         out
+    }
+
+    /// Right-to-left letters at level 1; others at the text's level, or 2 in right-to-left
+    /// text; digits after a right-to-left letter at 2; a space or a mark between two of one
+    /// direction at that direction's, otherwise at the text's.
+    fn bidi_levels(&mut self, text: &str, rtl: bool) -> Option<Vec<u8>> {
+        let base = rtl as u8;
+        let left = if rtl { 2 } else { 0 };
+        let (mut levels, mut last_strong) = (Vec::new(), if rtl { 1 } else { 0 });
+        for c in text.chars() {
+            let level = if c.is_alphabetic() {
+                let level = if is_rtl(c) { 1 } else { left };
+                last_strong = level;
+                level
+            } else if c.is_ascii_digit() {
+                if last_strong == 1 || rtl { 2 } else { 0 }
+            } else {
+                u8::MAX // a neutral: resolved below
+            };
+            levels.push((c.len_utf8(), level));
+        }
+        for k in 0..levels.len() {
+            if levels[k].1 == u8::MAX {
+                let before = levels[..k].iter().rev().map(|l| l.1).find(|&l| l != u8::MAX);
+                let after = levels[k..].iter().map(|l| l.1).find(|&l| l != u8::MAX);
+                let side = |l: u8| if l == 0 { 0 } else { 1 };
+                levels[k].1 = match (before, after) {
+                    (Some(b), Some(a)) if side(b) == side(a) => b.min(a),
+                    _ => base,
+                };
+            }
+        }
+        Some(levels.iter().flat_map(|&(len, level)| std::iter::repeat_n(level, len)).collect())
     }
 
     /// A solid box of half an em by 0.7 em standing on the baseline; nothing for a space.

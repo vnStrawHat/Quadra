@@ -435,7 +435,11 @@ As built so far:
     lines (`LineColours`, parts and roles), read in order so a comment goes on into the
     next line; the part that changed keeps its tint under them. `quadra_code::line_colours(path)`
     is such an `f`, by the tokenizer of the path's language. Without it, lines are one colour.
-  - Not yet: wrapping; pairing the lines of a run by how alike they are; words that changed
+  - In a run of changes a removed line is paired with the added line most like it (the
+    same line edited: enough of it is as it was, `changed_part`), as many such pairs as
+    there can be in order; what is left sits beside each other in order. Past 64 lines a
+    side they are paired by order alone.
+  - Not yet: wrapping; words that changed
     in several places of a line; the linear-space search for texts far apart.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node

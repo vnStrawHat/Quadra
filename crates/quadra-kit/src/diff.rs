@@ -136,7 +136,10 @@ impl View for Diff {
         let layout = mode.clone();
         let listed = memo(move || {
             let (sides, mode) = (sides.get(), layout());
-            Rc::new(open.with(|open| rows(&sides.script, mode, context, open)))
+            // The same line edited: enough of it is left as it was (`changed_part`).
+            let alike =
+                |i: usize, j: usize| lines::changed_part(sides.old.line(i), sides.new.line(j)).is_some();
+            Rc::new(open.with(|open| rows(&sides.script, mode, context, open, &alike)))
         });
         // Room for the number of the last line, and of two digits at least.
         let gutter = memo(move || {

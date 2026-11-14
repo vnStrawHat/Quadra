@@ -87,5 +87,10 @@ mod tests {
             let wanted = (0..=pieces.len()).rev().find(|&k| before(k).0 <= most).unwrap();
             assert_eq!(counts.within(most, |s| s.0), wanted, "{most}");
         }
+        // Pieces with no line break leave sums that are equal: the last of them is found.
+        for most in 0..counts.total().1 + 2 {
+            let wanted = (0..=pieces.len()).rev().find(|&k| before(k).1 <= most).unwrap();
+            assert_eq!(counts.within(most, |s| s.1), wanted, "{most}");
+        }
     }
 }

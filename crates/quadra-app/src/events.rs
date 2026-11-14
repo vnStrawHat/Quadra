@@ -57,9 +57,9 @@ impl<R: Renderer> PlatformHandler for App<R> {
                     w.tree.text(&text);
                 }
             }
-            PlatformEvent::Composition { text, caret } => {
+            PlatformEvent::Composition { text, caret, target } => {
                 if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.composition(&text, caret);
+                    w.tree.composition(&text, caret, target);
                 }
             }
             PlatformEvent::SemanticsWanted => {

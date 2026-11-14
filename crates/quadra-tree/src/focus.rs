@@ -2,6 +2,8 @@
 //! down the path to it and back up; Tab moves the focus in tree order inside the nearest
 //! focus scope.
 
+use std::ops::Range;
+
 use quadra_platform::{Key, Mods};
 use quadra_prim::Rect;
 use quadra_reactive::batch;
@@ -89,19 +91,20 @@ impl Tree {
         });
     }
 
-    /// Runs `f` with the text an input method is composing while the node has the focus, and
-    /// the caret in it; with an empty text when the composition is over.
-    pub fn on_composition(&mut self, id: NodeId, f: impl FnMut(&str, usize) + 'static) {
+    /// Runs `f` with the text an input method is composing while the node has the focus, the
+    /// caret in it and the clause being converted (empty: none); with an empty text when the
+    /// composition is over.
+    pub fn on_composition(&mut self, id: NodeId, f: impl FnMut(&str, usize, Range<usize>) + 'static) {
         self.add_handler(id, Handler::Composition(Box::new(f)));
     }
 
     /// Takes what an input method is composing in the window: for the focused node.
-    pub fn composition(&mut self, text: &str, caret: usize) {
+    pub fn composition(&mut self, text: &str, caret: usize, target: Range<usize>) {
         let Some(focus) = self.focus.filter(|&id| self.is_alive(id)) else { return };
         batch(|| {
             for handler in &mut self.nodes[focus.index as usize].handlers {
                 if let Handler::Composition(run) = handler {
-                    run(text, caret);
+                    run(text, caret, target.clone());
                 }
             }
         });

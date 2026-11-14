@@ -222,6 +222,15 @@ fn line(w: &mut EditorWidget, cx: &mut PaintCx, f: &Frame, n: usize) {
         let top = f.top + row as f32 * w.line_px;
         let bounds = Rect::new(f.left + x0 - from, top + w.line_px - 2.0, x1 - x0, 1.0);
         cx.quad(Quad { bounds, background: w.colors.text, ..Quad::default() });
+        // The clause being converted, twice as thick.
+        let clause = composed.start + w.clause.start.min(composed.len())
+            ..composed.start + w.clause.end.min(composed.len());
+        if !clause.is_empty() {
+            let x0 = w.columns(&shown[..clause.start]) as f32 * w.cell;
+            let x1 = w.columns(&shown[..clause.end]) as f32 * w.cell;
+            let bounds = Rect::new(f.left + x0 - from, top + w.line_px - 3.0, x1 - x0, 1.0);
+            cx.quad(Quad { bounds, background: w.colors.text, ..Quad::default() });
+        }
     }
 }
 

@@ -206,12 +206,12 @@ fn a_window_is_told_where_text_is_typed_and_when_it_is_not() {
     let caret = platform.text_input(window).expect("the input has the focus");
     assert!(caret.x > 0.0 && caret.height == 20.0, "{caret:?}"); // after "abc", as high as the field
 
-    platform.push(window, PlatformEvent::Composition { text: "xy".into(), caret: 2 });
+    platform.push(window, PlatformEvent::Composition { text: "xy".into(), caret: 2, target: 0..0 });
     platform.step(&mut app);
     platform.step(&mut app);
     assert!(platform.text_input(window).unwrap().x > caret.x); // the caret moved with what is composed
     platform.push(window, PlatformEvent::Text("xy".into()));
-    platform.push(window, PlatformEvent::Composition { text: String::new(), caret: 0 });
+    platform.push(window, PlatformEvent::Composition { text: String::new(), caret: 0, target: 0..0 });
     platform.step(&mut app);
     assert_eq!(name.get_untracked(), "abcxy");
 }

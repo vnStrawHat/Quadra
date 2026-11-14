@@ -255,7 +255,7 @@ impl WindowState {
                 done
             }
             WM_IME_ENDCOMPOSITION => {
-                self.emit(PlatformEvent::Composition { text: String::new(), caret: 0 });
+                self.emit(PlatformEvent::Composition { text: String::new(), caret: 0, target: 0..0 });
                 done
             }
             _ => None,

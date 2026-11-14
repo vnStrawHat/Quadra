@@ -54,3 +54,32 @@ fn vietnamese_is_composed_at_the_caret_and_committed_into_the_value() {
     h.frame();
     assert_eq!((shows(&mut h), name.get_untracked().as_str()), (None, "Xin  bạn"));
 }
+
+#[test]
+fn the_clause_being_converted_is_underlined_thicker() {
+    let name = signal(String::new());
+    let mut h = Harness::new();
+    h.mount(move || column().child(div().size(200.0, 20.0).child(text_input(name).size(10.0))));
+    h.frame();
+    h.click(5.0, 10.0);
+    h.frame();
+    let lines = |h: &Harness| {
+        let layer = h.tree.scene().layer(h.tree.scene().roots()[0]);
+        let mut lines: Vec<[f32; 4]> = layer
+            .instances()
+            .iter()
+            .filter(|i| i.bounds[3] == 1.0 && i.bounds[2] > 1.0)
+            .map(|i| i.bounds)
+            .collect();
+        lines.sort_by(|a, b| a[1].total_cmp(&b[1]));
+        lines
+    };
+    // A long composition of two clauses, the second being converted: a line under all of it,
+    // and one more over that line, under the second clause (6 px a character).
+    h.compose_clause("ab cd", 3..5);
+    h.frame();
+    assert_eq!(lines(&h), [[18.0, 18.0, 12.0, 1.0], [0.0, 19.0, 30.0, 1.0]]);
+    h.compose("ab cd");
+    h.frame();
+    assert_eq!(lines(&h), [[0.0, 19.0, 30.0, 1.0]]);
+}

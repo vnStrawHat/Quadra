@@ -80,6 +80,8 @@ pub struct TextField {
     /// The text an input method is composing, and the caret in it: shown at the caret, in
     /// place of the selection, underlined, and not part of the buffer until it is committed.
     pub preedit: Option<(String, usize)>,
+    /// The clause of it being converted, as bytes of it: underlined thicker. Empty: none.
+    pub clause: Range<usize>,
     /// Where the caret was painted, from the field's corner: where an input method opens.
     caret_at: Option<Rect>,
     paragraph: Option<Paragraph>,
@@ -105,6 +107,7 @@ impl TextField {
             caret_on: true,
             touched: false,
             preedit: None,
+            clause: 0..0,
             caret_at: None,
             paragraph: None,
             scroll_x: 0.0,

@@ -79,11 +79,12 @@ impl View for TextInput {
         });
         // An input method composes at the caret: shown in the field, not yet in the value.
         let writer = cx.handle.clone();
-        cx.tree.on_composition(id, move |composing, caret| {
+        cx.tree.on_composition(id, move |composing, caret, clause| {
             let composing = (!composing.is_empty()).then(|| (lines_of(composing, multiline), caret));
             writer.with(move |tree| {
                 edit(tree, id, value, |field| {
                     field.preedit = composing;
+                    field.clause = clause;
                     false
                 });
                 tree.mark_layout(id);

@@ -6,9 +6,10 @@ use std::ffi::c_void;
 use quadra_platform::PlatformEvent;
 use windows::Win32::Foundation::{HWND, POINT, RECT};
 use windows::Win32::UI::Input::Ime::{
-    CANDIDATEFORM, CFS_EXCLUDE, CFS_POINT, COMPOSITIONFORM, GCS_COMPSTR, GCS_CURSORPOS, GCS_RESULTSTR, HIMC,
-    IACE_DEFAULT, IME_COMPOSITION_STRING, ImmAssociateContextEx, ImmGetCompositionStringW, ImmGetContext,
-    ImmReleaseContext, ImmSetCandidateWindow, ImmSetCompositionWindow,
+    CANDIDATEFORM, CFS_EXCLUDE, CFS_POINT, COMPOSITIONFORM, GCS_COMPATTR, GCS_COMPSTR, GCS_CURSORPOS,
+    GCS_RESULTSTR, HIMC, IACE_DEFAULT, IME_COMPOSITION_STRING, ImmAssociateContextEx,
+    ImmGetCompositionStringW, ImmGetContext, ImmReleaseContext, ImmSetCandidateWindow,
+    ImmSetCompositionWindow,
 };
 
 /// The input context of a window, released when the call that took it is over.
@@ -23,20 +24,26 @@ impl Context {
 
     /// One string of the composition, as UTF-16.
     fn read(&self, kind: IME_COMPOSITION_STRING) -> Vec<u16> {
+        let bytes = self.bytes(kind);
+        bytes.chunks_exact(2).map(|pair| u16::from_le_bytes([pair[0], pair[1]])).collect()
+    }
+
+    /// One part of the composition, as its bytes.
+    fn bytes(&self, kind: IME_COMPOSITION_STRING) -> Vec<u8> {
         // SAFETY: the first call asks for the size in bytes; the buffer of the second holds
         // that many.
         unsafe {
-            let bytes = ImmGetCompositionStringW(self.1, kind, None, 0).max(0) as usize;
-            let mut units = vec![0u16; bytes / 2];
-            if bytes > 0 {
+            let size = ImmGetCompositionStringW(self.1, kind, None, 0).max(0) as usize;
+            let mut bytes = vec![0u8; size];
+            if size > 0 {
                 ImmGetCompositionStringW(
                     self.1,
                     kind,
-                    Some(units.as_mut_ptr().cast::<c_void>()),
-                    bytes as u32,
+                    Some(bytes.as_mut_ptr().cast::<c_void>()),
+                    size as u32,
                 );
             }
-            units
+            bytes
         }
     }
 
@@ -90,7 +97,16 @@ pub(crate) fn composition(hwnd: HWND, flags: u32, caret: RECT) -> Vec<PlatformEv
         // SAFETY: asking for the caret position needs no buffer: it is the return value.
         let at = unsafe { ImmGetCompositionStringW(context.1, GCS_CURSORPOS, None, 0) }.max(0) as usize;
         let caret = utf8_offset(&composing, at);
-        events.push(PlatformEvent::Composition { text: String::from_utf16_lossy(&composing), caret });
+        // The clause being converted: its characters say so, one byte of the attributes for
+        // each unit of the text (being converted, 1, or chosen and not yet converted, 3).
+        let marks = context.bytes(GCS_COMPATTR);
+        let on = |mark: &u8| matches!(*mark, 1 | 3);
+        let target = match (marks.iter().position(on), marks.iter().rposition(on)) {
+            (Some(first), Some(last)) => utf8_offset(&composing, first)..utf8_offset(&composing, last + 1),
+            _ => 0..0,
+        };
+        let text = String::from_utf16_lossy(&composing);
+        events.push(PlatformEvent::Composition { text, caret, target });
     }
     context.place(caret);
     events

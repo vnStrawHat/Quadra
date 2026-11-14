@@ -69,7 +69,7 @@ impl PointerEvent {
 }
 
 type ActionFn = Box<dyn FnMut(&dyn Any)>;
-type CompositionFn = Box<dyn FnMut(&str, usize)>;
+type CompositionFn = Box<dyn FnMut(&str, usize, std::ops::Range<usize>)>;
 /// What is told of a press outside an overlay: the nodes the press is on.
 type OutsideFn = Box<dyn FnMut(&[NodeId])>;
 

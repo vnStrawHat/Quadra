@@ -52,9 +52,21 @@ impl Widget for TextField {
         // A range that goes on past the end of a line shows a little of the line break.
         let boxes = |range: Range<usize>| paragraph.spans(range, self.style.size * 0.3);
         if !composed.is_empty() {
-            // What is being composed is underlined, as input methods show it.
-            for span in boxes(composed) {
+            // What is being composed is underlined, as input methods show it; the clause being
+            // converted twice as thick (in dots, all of it is one).
+            let clause = match self.masked {
+                false => {
+                    composed.start + self.clause.start.min(composed.len())
+                        ..composed.start + self.clause.end.min(composed.len())
+                }
+                true => 0..0,
+            };
+            for span in boxes(composed.clone()) {
                 let bounds = Rect::new(left + span.x, rect.y + span.y + tall - 1.0, span.width, 1.0);
+                cx.quad(Quad { bounds, background: color, ..Quad::default() });
+            }
+            for span in boxes(clause).filter(|_| !self.clause.is_empty()) {
+                let bounds = Rect::new(left + span.x, rect.y + span.y + tall - 2.0, span.width, 1.0);
                 cx.quad(Quad { bounds, background: color, ..Quad::default() });
             }
         } else {

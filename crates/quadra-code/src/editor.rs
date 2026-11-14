@@ -206,10 +206,12 @@ impl View for Surface {
             });
         });
         let writer = cx.handle.clone();
-        cx.tree.on_composition(id, move |composing, caret| {
+        cx.tree.on_composition(id, move |composing, caret, clause| {
             let composing = (!composing.is_empty()).then(|| (composing.to_string(), caret));
             let at = writer.now();
-            writer.with(move |tree| edit(tree, id, (epoch, at), |w, _| w.preedit = composing));
+            writer.with(move |tree| {
+                edit(tree, id, (epoch, at), |w, _| (w.preedit, w.clause) = (composing, clause))
+            });
         });
         // The clipboard of the window, if its context has one.
         let clipboard = use_context::<Rc<dyn Clipboard>>();

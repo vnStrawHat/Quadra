@@ -88,9 +88,11 @@ pub enum PlatformEvent {
     Text(String),
     /// The text an input method is composing, not committed yet, and the caret in it as a
     /// byte offset. Empty: the composition is over (what it committed came as `Text`).
+    /// `target` is the clause being converted, as bytes of the text: empty when none is.
     Composition {
         text: String,
         caret: usize,
+        target: std::ops::Range<usize>,
     },
     Focus(bool),
     /// The size or the scale of the window changed.

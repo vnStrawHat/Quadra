@@ -144,7 +144,10 @@ As built:
   text ends it. What is committed arrives as ordinary text.
 - The text input shows what is being composed at its caret, in place of the selection,
   underlined. It is not in the value, and not in the undo history, until it is committed.
-- Not yet: clause ranges (the parts of a long composition shown differently).
+- The clause being converted (the part of a long composition the candidates are for) comes
+  with the composition as a range of its bytes (`target`; on Win32 the characters whose
+  attribute is "target", from `GCS_COMPATTR`). An input and the editor underline it a
+  second time, a pixel over the line under all of it: twice as thick.
 
 ## Drag and drop
 

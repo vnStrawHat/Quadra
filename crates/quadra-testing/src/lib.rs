@@ -163,7 +163,12 @@ impl Harness {
     /// Shows text an input method is composing, with the caret at its end; an empty text
     /// ends the composition. What it commits is typed with [`Harness::type_text`].
     pub fn compose(&mut self, text: &str) {
-        self.tree.composition(text, text.len());
+        self.tree.composition(text, text.len(), 0..0);
+    }
+
+    /// The same, with a clause being converted: bytes of the text.
+    pub fn compose_clause(&mut self, text: &str, target: std::ops::Range<usize>) {
+        self.tree.composition(text, text.len(), target);
     }
 
     /// Moves the pointer to a point, presses the main button and releases it.

@@ -47,6 +47,8 @@ pub struct EditorWidget {
     pub(super) found: Option<Signal<Option<(usize, usize)>>>,
     /// What an input method is composing at the primary cursor, and its caret in it.
     pub preedit: Option<(String, usize)>,
+    /// The clause of it being converted, as bytes of it: underlined thicker. Empty: none.
+    pub clause: Range<usize>,
     pub focused: bool,
     pub caret_on: bool,
     /// How far the text is scrolled sideways.
@@ -87,6 +89,7 @@ impl EditorWidget {
             current: None,
             found: None,
             preedit: None,
+            clause: 0..0,
             focused: false,
             caret_on: true,
             scroll_x: 0.0,

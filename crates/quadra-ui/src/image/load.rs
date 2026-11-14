@@ -32,7 +32,7 @@ pub async fn image_pixels(
     (width, height): (u32, u32),
 ) -> Result<Rc<Image>, ImageError> {
     let key = source.key();
-    if let Some(image) = key.as_ref().and_then(|key| images.get(key, (width, height))) {
+    if let Some(image) = key.as_ref().and_then(|key| images.get(key, (width, height), true)) {
         return Ok(image);
     }
     let (file, _) = read(images, source).await?;

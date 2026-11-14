@@ -49,7 +49,8 @@ fn an_image_is_as_large_as_its_file_says_until_a_size_is_given() {
     let painted = pieces(&h);
     assert_eq!(painted.len(), 1);
     assert_eq!(painted[0].bounds, [0.0, 0.0, 200.0, 100.0]);
-    assert_eq!(h.images.held(), (1, 200 * 100 * 4));
+    // Its one piece is in the atlas: the pixels are let go of.
+    assert_eq!(h.images.held(), (1, 0));
     assert_eq!(h.get_by_role(Role::Image, "A red field").node(), first(&h));
 
     // A width: the height follows the file's shape, and the pixels are decoded that size.
@@ -57,7 +58,8 @@ fn an_image_is_as_large_as_its_file_says_until_a_size_is_given() {
     h.mount(|| column().align_items(Align::Start).child(image(file(200, 100)).width(50.0)));
     h.settle();
     assert_eq!(h.tree.rect(first(&h)).size(), Size::new(50.0, 25.0));
-    assert_eq!(h.images.held(), (1, 50 * 25 * 4));
+    let picture = h.tree.widget_mut::<Picture>(first(&h)).unwrap().image().unwrap().clone();
+    assert_eq!((picture.width, picture.height, h.images.held().0), (50, 25, 1));
 
     // No wider than there is room, in its own shape.
     let mut h = Harness::new();
@@ -75,7 +77,12 @@ fn an_image_is_as_large_as_its_file_says_until_a_size_is_given() {
             .child(image(file(30, 30)).width(60.0))
     });
     h.settle();
-    assert_eq!(h.images.held(), (2, 160 * 80 * 4 + 30 * 30 * 4));
+    let size = |h: &mut Harness, at: usize| {
+        let id = h.tree.children(h.tree.root().unwrap())[at];
+        let image = h.tree.widget_mut::<Picture>(id).unwrap().image().unwrap().clone();
+        (image.width, image.height)
+    };
+    assert_eq!((size(&mut h, 0), size(&mut h, 1), h.images.held().0), ((160, 80), (30, 30), 2));
     assert_eq!(pieces(&h)[1].bounds, [0.0, 80.0, 120.0, 120.0]);
 }
 
@@ -143,7 +150,7 @@ fn a_view_that_comes_back_shows_in_its_first_frame() {
     });
     h.settle();
     // Two views of one file at one size: one picture, and its tile twice.
-    assert_eq!((pieces(&h).len(), h.images.held()), (2, (1, 64 * 64 * 4)));
+    assert_eq!((pieces(&h).len(), h.images.held()), (2, (1, 0)));
     assert_eq!(pieces(&h)[0].uv, pieces(&h)[1].uv);
 
     there.set(false);
@@ -163,11 +170,14 @@ fn an_image_that_moves_shows_its_frames_in_turn() {
     let file: &'static [u8] = b"flat 4 4 ff0000ff 0000ffff";
     h.mount(move || column().align_items(Align::Start).child(image(file)));
     h.settle();
-    let red = |h: &mut Harness| {
+    // The frame shown, by its picture: the first is the red one.
+    let shown = |h: &mut Harness| {
         let id = first(h);
         let picture = h.tree.widget_mut::<Picture>(id).unwrap();
-        picture.image().unwrap().pixels.pixels[0] == 255
+        Rc::as_ptr(picture.image().unwrap())
     };
+    let first_frame = shown(&mut h);
+    let red = |h: &mut Harness| shown(h) == first_frame;
     assert!(red(&mut h));
     h.advance(Duration::from_millis(100));
     h.settle();
@@ -176,4 +186,23 @@ fn an_image_that_moves_shows_its_frames_in_turn() {
     h.settle();
     assert!(red(&mut h));
     assert_eq!(h.images.held().0, 0);
+}
+
+#[test]
+fn pixels_let_go_of_are_decoded_again_when_the_atlas_loses_them() {
+    let mut h = Harness::new();
+    h.mount(|| column().align_items(Align::Start).child(image(file(64, 64))));
+    h.settle();
+    let picture = |h: &mut Harness| h.tree.widget_mut::<Picture>(first(h)).unwrap().image().unwrap().clone();
+    let before = picture(&mut h);
+    assert!(!before.has_pixels() && pieces(&h).len() == 1);
+    // The device is lost: every tile is forgotten, and everything painted again.
+    h.fonts.borrow_mut().clear_tiles();
+    h.tree.repaint_all();
+    h.tree.scene_mut().invalidate_all();
+    h.frame();
+    h.settle();
+    let after = picture(&mut h);
+    assert!(!Rc::ptr_eq(&before, &after) && pieces(&h).len() == 1);
+    assert!(!after.has_pixels());
 }

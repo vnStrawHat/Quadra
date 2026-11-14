@@ -2,6 +2,7 @@
 //! "Atlases"; specs/11, "Images"). An image is cut into pieces no larger than a tile may be,
 //! so one of any size shows, and only the pieces that show are uploaded.
 
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -28,22 +29,54 @@ pub enum Fit {
     Fill,
 }
 
-/// Decoded pixels, and the number the atlas knows them by.
+/// Decoded pixels, and the number the atlas knows them by. Once every piece of them is in
+/// the atlas, a picture lets go of the pixels (`release`): what is painted then comes from
+/// the atlas, and a piece the atlas has lost asks for the pixels again.
 #[derive(Debug)]
 pub struct Image {
     id: u64,
-    pub pixels: Decoded,
+    pub width: u32,
+    pub height: u32,
+    /// Premultiplied RGBA, row by row; empty once let go of.
+    pixels: RefCell<Vec<u8>>,
 }
 
 impl Image {
     pub fn new(pixels: Decoded) -> Rc<Image> {
         static NEXT: AtomicU64 = AtomicU64::new(1);
-        Rc::new(Image { id: NEXT.fetch_add(1, Ordering::Relaxed), pixels })
+        let (width, height) = (pixels.width, pixels.height);
+        Rc::new(Image {
+            id: NEXT.fetch_add(1, Ordering::Relaxed),
+            width,
+            height,
+            pixels: RefCell::new(pixels.pixels),
+        })
     }
 
-    /// The bytes its pixels take.
+    /// The bytes its pixels take, while it has them.
     pub fn bytes(&self) -> usize {
-        self.pixels.pixels.len()
+        self.pixels.borrow().len()
+    }
+
+    /// Whether it still has its pixels.
+    pub fn has_pixels(&self) -> bool {
+        !self.pixels.borrow().is_empty()
+    }
+
+    /// The colour of a pixel, premultiplied RGBA, while it has its pixels.
+    pub fn pixel(&self, x: u32, y: u32) -> Option<[u8; 4]> {
+        let at = (y as usize * self.width as usize + x as usize) * 4;
+        self.pixels.borrow().get(at..at + 4).map(|p| [p[0], p[1], p[2], p[3]])
+    }
+
+    /// Lets go of the pixels: every piece of them is in the atlas.
+    pub fn release(&self) {
+        *self.pixels.borrow_mut() = Vec::new();
+    }
+
+    /// How many pieces of the atlas it takes.
+    fn pieces(&self) -> usize {
+        (self.width.div_ceil(PIECE) * self.height.div_ceil(PIECE)) as usize
     }
 }
 
@@ -133,17 +166,30 @@ impl Widget for Picture {
         let Some(image) = self.image.clone() else { return };
         let clip = cx.clip.then(outer, self.radius * cx.scale);
         let mut tiles = Vec::new();
-        paint_image(cx, &image, dest, &clip, &mut tiles);
+        if !paint_image(cx, &image, dest, &clip, &mut tiles) {
+            // A piece the atlas lost, and no pixels to make it again: they are asked for.
+            (self.shown)(0, 0);
+        } else if tiles.len() == image.pieces() && image.has_pixels() {
+            image.release();
+        }
         self.tiles = tiles; // the old ones are let go after the new are held
     }
 }
 
 /// Paints an image into `dest`, in device pixels, from the pieces of the colour atlas that
 /// show inside `clip`, and holds their tiles in `tiles`: what a picture paints, and a box of
-/// a line that is an image.
-pub fn paint_image(cx: &mut PaintCx, image: &Image, dest: Rect, clip: &Clip, tiles: &mut Vec<GlyphTile>) {
-    let pixels = &image.pixels;
+/// a line that is an image. False when a piece that shows is not in the atlas and the image
+/// has let go of its pixels: that piece is not painted.
+pub fn paint_image(
+    cx: &mut PaintCx,
+    image: &Image,
+    dest: Rect,
+    clip: &Clip,
+    tiles: &mut Vec<GlyphTile>,
+) -> bool {
+    let pixels = image;
     let (sx, sy) = (dest.width / pixels.width as f32, dest.height / pixels.height as f32);
+    let mut whole = true;
     let exact = sx == 1.0 && sy == 1.0;
     let s = cx.scale;
     let visible = cx.visible.map(|v| Rect::new(v.x * s, v.y * s, v.width * s, v.height * s));
@@ -158,11 +204,15 @@ pub fn paint_image(cx: &mut PaintCx, image: &Image, dest: Rect, clip: &Clip, til
                 continue;
             }
             let cut = || {
-                let row = pixels.width as usize * 4;
-                let rows = pixels.pixels.chunks_exact(row).skip(py as usize).take(h as usize);
-                rows.flat_map(|r| &r[px as usize * 4..(px + w) as usize * 4]).copied().collect()
+                let (row, pixels) = (pixels.width as usize * 4, pixels.pixels.borrow());
+                let rows = pixels.chunks_exact(row).skip(py as usize).take(h as usize);
+                rows.flat_map(|r| &r[px as usize * 4..(px + w) as usize * 4]).copied().collect::<Vec<u8>>()
             };
-            let Some(tile) = cx.fonts.image(image.id, px, py, w, h, cut) else { continue };
+            let held = image.has_pixels() || cx.fonts.has_image(image.id, px, py);
+            whole &= held;
+            let Some(tile) = held.then(|| cx.fonts.image(image.id, px, py, w, h, cut)).flatten() else {
+                continue;
+            };
             let mut uv = tile.uv;
             if !exact {
                 // Half a texel in: a piece that is scaled takes nothing from its neighbours
@@ -176,4 +226,5 @@ pub fn paint_image(cx: &mut PaintCx, image: &Image, dest: Rect, clip: &Clip, til
             tiles.push(tile);
         }
     }
+    whole
 }

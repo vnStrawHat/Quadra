@@ -108,6 +108,11 @@ impl Fonts {
 
     /// The tile of a piece of a decoded image: `pixels` gives the piece, premultiplied RGBA,
     /// the first time it is asked for. `None` when it is larger than an atlas slice.
+    /// Whether a piece of an image is in the atlas.
+    pub fn has_image(&mut self, image: u64, x: u32, y: u32) -> bool {
+        self.color_glyphs.get(&TileKey::Image { image, x, y }).is_some()
+    }
+
     pub fn image(
         &mut self,
         image: u64,

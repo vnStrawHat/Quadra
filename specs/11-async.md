@@ -139,9 +139,12 @@ of flat test images on the headless platform. `image(source)` is the view:
   ones before it left as their disposal says (`ImageDecoder::frames`), and shown in turn
   for each frame's time, over and over, by the view's task; its frames are not kept in
   the cache, and one whose frames would take more than an image may shows its first.
-- Not yet: letting
-  go of the decoded pixels once they are uploaded (they are kept beside their tiles, so a
-  lost device needs no decoding).
+- **Pixels let go of**: once every piece of a picture is in the atlas, the picture lets go
+  of its decoded pixels (`Image::release`): what is painted comes from the atlas, and the
+  cache counts no bytes for it. A piece the atlas has lost (a device lost, a full atlas)
+  and no pixels to make it again: the view asks for the pixels again, decoded anew from the
+  file at the size it shows (`image_pixels` gives pixels always: an image that let go of
+  them is decoded again for it). The price: a lost device decodes what shows again.
 
 ## Rules
 

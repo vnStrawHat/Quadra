@@ -132,19 +132,23 @@ impl ImageView {
     }
 }
 
-/// The size a picture is shown at, for the task that brings its pixels.
+/// The size a picture is shown at, for the task that brings its pixels; and whether it asks
+/// for them again (the atlas lost a piece of pixels it had let go of).
 #[derive(Default)]
 struct Shown {
     size: Cell<(u32, u32)>,
+    again: Cell<bool>,
     waker: RefCell<Option<Waker>>,
 }
 
 impl Shown {
-    async fn other_than(&self, have: (u32, u32)) -> (u32, u32) {
+    /// Another size than `have`, or the same asked for again (true).
+    async fn other_than(&self, have: (u32, u32)) -> ((u32, u32), bool) {
         poll_fn(|cx| {
-            let size = self.size.get();
-            if size != have && size.0 > 0 && size.1 > 0 {
-                return Poll::Ready(size);
+            let (size, again) = (self.size.get(), self.again.get());
+            if (size != have || again) && size.0 > 0 && size.1 > 0 {
+                self.again.set(false);
+                return Poll::Ready((size, again));
             }
             self.waker.replace(Some(cx.waker().clone()));
             Poll::Pending
@@ -153,7 +157,7 @@ impl Shown {
     }
 
     /// The next size it is shown at, or none when `tick` is over first.
-    async fn next(&self, have: (u32, u32), tick: Option<Sleep>) -> Option<(u32, u32)> {
+    async fn next(&self, have: (u32, u32), tick: Option<Sleep>) -> Option<((u32, u32), bool)> {
         let mut size = std::pin::pin!(self.other_than(have));
         let mut tick = tick.map(Box::pin);
         poll_fn(|cx| {
@@ -196,7 +200,10 @@ impl View for ImageView {
         let shown = Rc::new(Shown::default());
         let tell = shown.clone();
         let mut picture = Picture::new(self.fit, self.radius, move |width, height| {
-            if tell.size.replace((width, height)) != (width, height)
+            // No size: the same pixels again.
+            let again = (width, height) == (0, 0);
+            tell.again.set(tell.again.get() || again);
+            if (again || tell.size.replace((width, height)) != (width, height))
                 && let Some(waker) = tell.waker.take()
             {
                 waker.wake();
@@ -255,7 +262,7 @@ impl View for ImageView {
             loop {
                 // An image that moves shows its frames in turn, each for its time.
                 let tick = (frames.len() > 1).then(|| sleep(frames[at].1));
-                let Some(want) = shown.next(have, tick).await else {
+                let Some((want, again)) = shown.next(have, tick).await else {
                     at = (at + 1) % frames.len();
                     show(frames[at].0.clone());
                     continue;
@@ -264,7 +271,7 @@ impl View for ImageView {
                 (have, at) = (want, 0);
                 frames = key
                     .as_ref()
-                    .and_then(|key| images.get(key, want))
+                    .and_then(|key| images.get(key, want, again))
                     .map_or(Vec::new(), |i| vec![(i, Duration::ZERO)]);
                 if frames.is_empty() {
                     if file.is_none() {

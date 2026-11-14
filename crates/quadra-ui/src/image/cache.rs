@@ -76,10 +76,13 @@ impl Images {
         Some((info, latest.map(|(_, e)| e.image.clone())))
     }
 
-    pub(crate) fn get(&self, key: &SourceKey, size: (u32, u32)) -> Option<Rc<Image>> {
+    /// The picture of a file at a size; with `pixels`, only while it has them: one that let
+    /// go of them is painted from the atlas, and is no use to a view whose atlas lost it.
+    pub(crate) fn get(&self, key: &SourceKey, size: (u32, u32), pixels: bool) -> Option<Rc<Image>> {
         let used = self.tick();
         let mut pictures = self.pictures.borrow_mut();
-        let entry = pictures.get_mut(&(key.clone(), size.0, size.1))?;
+        let entry =
+            pictures.get_mut(&(key.clone(), size.0, size.1)).filter(|e| !pixels || e.image.has_pixels())?;
         entry.used = used;
         Some(entry.image.clone())
     }
@@ -87,7 +90,7 @@ impl Images {
     /// Keeps a picture, and gives the one to show: another view may have brought the same
     /// while this one was decoded, and then both show that one.
     pub(crate) fn put(&self, key: &SourceKey, size: (u32, u32), image: Rc<Image>) -> Rc<Image> {
-        if let Some(first) = self.get(key, size) {
+        if let Some(first) = self.get(key, size, true) {
             return first;
         }
         let used = self.tick();

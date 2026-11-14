@@ -7,17 +7,13 @@
 mod cards;
 mod rules;
 
-use std::cell::OnceCell;
-use std::rc::Rc;
-
-use quadra_layout::Display;
+use quadra_base::settings as base;
+use quadra_base::settings::Model;
 use quadra_platform::Cursor;
-use quadra_reactive::{Memo, Signal, memo, signal};
-use quadra_text::fold_diacritics;
-use quadra_tree::{Handle, NodeId, SemanticAction};
-use quadra_ui::{AnyView, Div, MountCx, NodeRef, View, row};
+use quadra_reactive::{Signal, memo, signal};
+use quadra_tree::NodeId;
+use quadra_ui::{AnyView, Div, MountCx, View, row};
 
-use crate::action::{CONTROL, Confirm};
 use crate::input::{Input, input};
 use crate::{icons, size, token};
 
@@ -26,6 +22,13 @@ struct Setting {
     title: String,
     about: String,
     control: AnyView,
+}
+
+impl Setting {
+    /// What a search looks in: its title and the line about it.
+    fn text(&self) -> String {
+        format!("{}\n{}", self.title, self.about)
+    }
 }
 
 /// Settings that belong together, under a title.
@@ -149,118 +152,11 @@ impl Settings {
     }
 }
 
-/// What the column and the page share: what a search keeps, and what the component keeps.
-#[derive(Clone)]
-struct Model {
-    current: Signal<usize>,
-    searching: Memo<bool>,
-    /// Whether a row is kept, by page, group and row; whether a group and a page keep one.
-    rows: Rc<Vec<Vec<Vec<Memo<bool>>>>>,
-    groups: Rc<Vec<Vec<Memo<bool>>>>,
-    pages: Rc<Vec<Memo<bool>>>,
-    /// The page at the right: the chosen one, or while a search leaves it nothing the first
-    /// page that keeps a row.
-    shown: Memo<usize>,
-    /// The pages whose groups show under them in the column.
-    open: Rc<Vec<Signal<bool>>>,
-    /// The group chosen in the column: its page and its place there.
-    picked: Signal<Option<(usize, usize)>>,
-    scroll: Signal<f32>,
-    /// What a chosen group is scrolled by: the header of each, and what the page scrolls.
-    heads: Rc<Vec<Vec<NodeRef>>>,
-    content: Rc<OnceCell<(Handle, NodeId)>>,
-}
-
-impl Model {
-    fn new(pages: &[SettingsPage], current: Signal<usize>, query: Signal<String>) -> Model {
-        let plain = |text: &str| fold_diacritics(text).to_lowercase();
-        let needle = memo(move || query.with(|query| plain(query)));
-        let hit = |row: &Setting| {
-            let hay = plain(&format!("{}\n{}", row.title, row.about));
-            memo(move || needle.with(|needle| needle.is_empty() || hay.contains(needle)))
-        };
-        let any = |all: Vec<Memo<bool>>| memo(move || all.iter().any(|kept| kept.get()));
-        let per_group = |page: &SettingsPage| -> Vec<Vec<Memo<bool>>> {
-            page.groups.iter().map(|group| group.rows.iter().map(hit).collect()).collect()
-        };
-        let rows: Vec<_> = pages.iter().map(per_group).collect();
-        let groups: Vec<Vec<_>> =
-            rows.iter().map(|page| page.iter().map(|rows| any(rows.clone())).collect()).collect();
-        let kept: Rc<Vec<_>> = Rc::new(groups.iter().map(|page| any(page.clone())).collect());
-        let searching = memo(move || !needle.with(String::is_empty));
-        let pages_kept = kept.clone();
-        let shown = memo(move || {
-            let (at, keeps) = (current.get(), |i: &usize| pages_kept.get(*i).is_some_and(|kept| kept.get()));
-            match !searching.get() || keeps(&at) {
-                true => at,
-                false => (0..pages_kept.len()).find(keeps).unwrap_or(at),
-            }
-        });
-        let heads = pages.iter().map(|page| page.groups.iter().map(|_| NodeRef::new()).collect());
-        Model {
-            current,
-            searching,
-            rows: Rc::new(rows),
-            groups: Rc::new(groups),
-            pages: kept,
-            shown,
-            open: Rc::new(pages.iter().map(|_| signal(false)).collect()),
-            picked: signal(None),
-            scroll: signal(0.0),
-            heads: Rc::new(heads.collect()),
-            content: Rc::default(),
-        }
-    }
-
-    /// What a click in the column does: the page is chosen, and its top shows; or a group of
-    /// it is, and its header comes `lift` under the top once the layout knows where it is.
-    fn go(&self, page: usize, group: Option<usize>, lift: f32) {
-        self.current.set(page);
-        self.picked.set(group.map(|group| (page, group)));
-        let (Some(group), Some((handle, content))) = (group, self.content.get().cloned()) else {
-            return self.scroll.set(0.0);
-        };
-        let (heads, scroll) = (self.heads.clone(), self.scroll);
-        handle.with(move |tree| {
-            tree.after_layout(move |tree| {
-                if let Some(head) = heads[page][group].get() {
-                    let down = tree.window_rect(head).y - tree.window_rect(content).y;
-                    scroll.set((down - lift).max(0.0));
-                }
-            });
-        });
-    }
-
-    /// The box the page scrolls says where it is, for [`Model::go`].
-    fn scrolled(&self, content: Div) -> Div {
-        let known = self.content.clone();
-        content.on_mount(move |tree, id| _ = known.set((tree.handle(), id)))
-    }
-}
-
-/// Displayed while `on` is true, and out of the layout otherwise.
-fn shown(on: bool) -> Display {
-    if on { Display::Flex } else { Display::None }
-}
-
-/// A row of the column does `f` on a click, and on Enter and Space with the focus.
+/// A row of the column does `f` on a click, and on Enter and Space with the focus, which
+/// shows as a line around it.
 fn acts(line: Div, f: impl Fn() + Clone + 'static) -> Div {
-    let line = line.cursor(Cursor::Pointer).focusable().key_context(CONTROL);
-    let line = line.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
-    let by_key = f.clone();
-    line.on_action::<Confirm>(move |_| by_key()).on_click(move |_| f())
-}
-
-/// A page's row says whether its groups show under it, and a reader can show and hide them.
-fn opens(line: Div, open: Signal<bool>) -> Div {
-    line.expanded(move || open.get()).on_semantic(move |action| {
-        match action {
-            SemanticAction::Expand => open.set(true),
-            SemanticAction::Collapse => open.set(false),
-            _ => return false,
-        }
-        true
-    })
+    let line = line.cursor(Cursor::Pointer).focus_visible(|s| s.outline(token::BORDER_FOCUSED));
+    base::acts(line, f)
 }
 
 /// The search field of the column, `width` wide.
@@ -270,8 +166,13 @@ fn search(query: Signal<String>, width: f32) -> Input {
 
 impl View for Settings {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let model =
-            Model::new(&self.pages, self.current, self.query.unwrap_or_else(|| signal(String::new())));
+        let texts: Vec<Vec<Vec<String>>> = (self.pages.iter())
+            .map(|page| {
+                page.groups.iter().map(|group| group.rows.iter().map(Setting::text).collect()).collect()
+            })
+            .collect();
+        let query = self.query.unwrap_or_else(|| signal(String::new()));
+        let model = Model::new(&texts, self.current, query);
         let whole = row().grow(1.0).min_height(0.0).bg(token::CANVAS).text_color(token::TEXT);
         let whole = whole.text_size(size::TEXT_MD.size);
         let whole =

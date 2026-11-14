@@ -6,7 +6,9 @@ use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_tree::{Role, State};
 use quadra_ui::{AnyView, Div, Region, column, div, dynamic, row, scroll, text};
 
-use super::{Model, Setting, SettingsPage, acts, opens, search, shown};
+use quadra_base::settings::{Model, opens, shown};
+
+use super::{Setting, SettingsPage, acts, search};
 use crate::display::{heading, key_hint};
 use crate::icon::icon;
 use crate::{fonts, icons, size, token};

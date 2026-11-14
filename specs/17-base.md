@@ -114,7 +114,7 @@ its name in the kit (`quadra_kit::checkbox` stays).
 | `table`, `live` | `Sheet`: the order of a sort, column widths, the selection, the keys, the copy; `live::watch`, the selection kept by key and the cells that changed noted (`FLASH`) | the frame, a title, its grip, a row, the cells, the tints | `table.rs`, `table/*` |
 | `tree` | `Branch` (a thing's id, what is in it, what its row shows); the open things, the rows that show, the selection, the keys | a row's face (the thing, its depth, open; whether selected, whether the tree has the focus), the frame | `tree.rs` |
 | `rules` | `Rule`, `validate` | none | `field.rs` |
-| `settings` | pages, groups, rows; a search that keeps rows | the column, a page, a group, a row | `settings.rs`, `settings/*` |
+| `settings` | `Model`: pages, groups, rows known by their text; a search that keeps rows whatever the accents, the page that shows, a group scrolled to; `acts`, `opens` for the column's rows | the column, a page, a group, a row | `settings.rs`, `settings/*` |
 | `work` | the pane tree, docking, tabs that move and tear off | a tab, a strip, a pane, a seam | `work/*` |
 
 What stays in the kit, as it is only a look: `display`, `notes`, `bars`, `titlebar`,

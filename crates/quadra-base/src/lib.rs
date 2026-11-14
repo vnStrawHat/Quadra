@@ -17,6 +17,7 @@ pub mod pick;
 pub mod popup;
 pub mod press;
 pub mod rules;
+pub mod settings;
 pub mod slider;
 pub mod split;
 pub mod table;

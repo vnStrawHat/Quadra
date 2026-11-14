@@ -1,4 +1,4 @@
-//! The base's data views with bare parts (specs/17, "Tests"): a tree and a table.
+//! The base's data views with bare parts (specs/17, "Tests"): a tree, a table and settings.
 
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -91,4 +91,18 @@ fn a_table_sorts_selects_by_the_pointer_and_the_keys_and_copies() {
     assert_eq!(chosen.get_untracked(), vec![0, 2]);
     h.key(Key::C, Mods::CTRL);
     assert_eq!(h.clipboard.read_text().as_deref(), Some("fig\t2\npear\t3"));
+}
+
+#[test]
+fn a_search_keeps_rows_whatever_the_accents_and_shows_a_page_that_keeps_one() {
+    use quadra_base::settings::Model;
+    let pages =
+        vec![vec![vec!["Font size".to_string()]], vec![vec!["Ngôn ngữ".to_string(), "Theme".to_string()]]];
+    let query = signal(String::new());
+    let model = Model::new(&pages, signal(0), query);
+    assert_eq!((model.searching.get(), model.shown.get()), (false, 0));
+    query.set("ngon".into());
+    assert!(model.searching.get());
+    assert_eq!((model.rows[1][0][0].get(), model.rows[1][0][1].get()), (true, false));
+    assert_eq!((model.pages[0].get(), model.shown.get()), (false, 1));
 }

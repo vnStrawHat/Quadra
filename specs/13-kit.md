@@ -341,8 +341,10 @@ As built so far:
   tints are boxes under what the cells say, one a changed cell that shows, each a layer:
   while one fades, a frame writes its opacity and nothing is laid out or painted; when all
   have faded the frames stop and the boxes are gone. A change of the data reads the key
-  and the cells of every row, so this is for tables of thousands of rows, not millions.
-  Not yet: a source that says which rows it changed.
+  and the cells of every row, so this is for tables of thousands of rows, not millions;
+  unless the source says which rows it changed (`.changes(rows)`, a signal it sets after
+  each change): then the cells of those rows are read, and of every row only when rows
+  come or go.
 - A table whose columns are wider than it scrolls sideways (`scroll_x`), the header with
   the rows.
 - `.pinned(n)`: the first `n` columns stay where they are; the others are in a box that
@@ -352,7 +354,13 @@ As built so far:
   when tables with pinned columns are used without a wheel that turns sideways.
 - `.hidden(columns)`: a signal of the columns, by their places, that do not show (their
   parts are not displayed) and are not copied.
-- Not yet: a cursor on cells, cells that flash when they change, a menu of the columns.
+- `.cells(column)`: a cursor on cells. The left and right arrows move the column of the
+  cell the keys are on (a signal), past hidden columns and stopping at the ends; a click on
+  a cell puts it there; the cell is outlined in place of the row while the table has the
+  focus, is selected to a reader, and Ctrl-C copies what it says.
+- The header has the menu of the columns with the other button: a row a column, checked
+  while it shows; choosing one hides or shows it (`hidden`), and the last one that shows
+  cannot be hidden. Cells that change are tinted by live data (above).
 - **`tree(roots, chosen)`** shows things inside things (`TreeNode::new(id, label)
   .icon(..).children(..)`) as rows of 26 px: 20 px in for each level, with a faint guide for
   each, then a chevron if the thing holds something, its icon and its label. `roots` is

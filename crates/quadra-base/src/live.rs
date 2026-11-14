@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use quadra_reactive::{Memo, Signal, effect, memo, on_cleanup, signal};
+use quadra_reactive::{Memo, Signal, effect, memo, on_cleanup, signal, untrack};
 use quadra_tree::Handle;
 
 use crate::table::Sheet;
@@ -43,16 +43,17 @@ struct Held {
     anchor: Option<Rc<str>>,
 }
 
-// ponytail: every change of the data reads the key and the cells of every row (10 000 rows
-// of 7 columns are a few milliseconds); a source that knows what it changed could say so.
-/// Makes `sheet` a table of live data, whose rows `key` says what they are known by.
-pub fn watch(sheet: &mut Sheet, key: Key, handle: Handle) {
+/// Makes `sheet` a table of live data, whose rows `key` says what they are known by. A change
+/// of the data reads the key of every row; it reads the cells of every row too (10 000 rows
+/// of 7 columns are a few milliseconds), unless the source says in `changes` which rows it
+/// changed: then the cells of those are read, and of all only when rows come or go.
+pub fn watch(sheet: &mut Sheet, key: Key, changes: Option<Signal<Vec<usize>>>, handle: Handle) {
     let state = &*sheet;
     let count = state.rows.clone();
     let keys = memo(move || Rc::new((0..count()).map(|row| Rc::from(key(row))).collect::<Vec<Rc<str>>>()));
     let live = Live { keys, flashes: signal(Rc::default()), tick: signal(handle.now()) };
     follow(state.clone(), keys);
-    flash(state.clone(), live, handle);
+    flash(state.clone(), live, changes, handle);
     sheet.live = Some(live);
 }
 
@@ -107,8 +108,9 @@ fn follow(state: Sheet, keys: Memo<Rc<Vec<Rc<str>>>>) {
 
 /// Notes the cells that say something else than they did under the same key, and lets the
 /// frames go by while their tints fade. An age is not noted: it changes all the time.
-fn flash(state: Sheet, live: Live, handle: Handle) {
+fn flash(state: Sheet, live: Live, changes: Option<Signal<Vec<usize>>>, handle: Handle) {
     let before: RefCell<Option<HashMap<Rc<str>, Vec<String>>>> = RefCell::new(None);
+    let last: RefCell<Option<Rc<Vec<Rc<str>>>>> = RefCell::new(None);
     let (fading, alive): (Rc<Cell<bool>>, Rc<Cell<bool>>) = (Rc::default(), Rc::new(Cell::new(true)));
     let ended = alive.clone();
     on_cleanup(move || ended.set(false));
@@ -120,10 +122,18 @@ fn flash(state: Sheet, live: Live, handle: Handle) {
             };
             state.columns.iter().enumerate().map(cell).collect::<Vec<String>>()
         };
-        let keys = live.keys.get();
+        let (keys, told) = (live.keys.get(), changes.map(|rows| rows.get()));
+        // Told which rows changed, the cells are read without being watched; and only those
+        // rows are, while the same rows are there.
+        let same = last.replace(Some(keys.clone())).is_some_and(|was| Rc::ptr_eq(&was, &keys));
+        let rows: Vec<usize> = match (told.as_ref(), same) {
+            (Some(rows), true) => rows.iter().copied().filter(|&row| row < keys.len()).collect(),
+            _ => (0..keys.len()).collect(),
+        };
+        let read = |row: usize| if told.is_some() { untrack(|| said(row)) } else { said(row) };
         let now: HashMap<Rc<str>, Vec<String>> =
-            keys.iter().enumerate().map(|(row, key)| (key.clone(), said(row))).collect();
-        let Some(was) = before.replace(None) else {
+            rows.iter().map(|&row| (keys[row].clone(), read(row))).collect();
+        let Some(mut was) = before.replace(None) else {
             before.replace(Some(now)); // the first rows: nothing has changed yet
             return;
         };
@@ -136,7 +146,14 @@ fn flash(state: Sheet, live: Live, handle: Handle) {
                 row.push((c, at));
             }
         }
-        before.replace(Some(now));
+        let partial = told.is_some() && same;
+        before.replace(Some(match partial {
+            true => {
+                was.extend(now);
+                was
+            }
+            false => now,
+        }));
         live.flashes.set(Rc::new(flashes));
         if live.flashes.with_untracked(|all| all.is_empty()) || fading.replace(true) {
             return;

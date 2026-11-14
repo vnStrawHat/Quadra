@@ -94,6 +94,8 @@ pub struct Table {
     row_height: f32,
     hidden: Option<Signal<Vec<usize>>>,
     pinned: usize,
+    column: Option<Signal<usize>>,
+    changes: Option<Signal<Vec<usize>>>,
 }
 
 /// A table of `rows` rows: `cell(row, column)` is what a cell says. Both are asked again
@@ -105,7 +107,8 @@ pub fn table(
 ) -> Table {
     let columns = columns.into_iter().collect();
     let (rows, cell) = (Rc::new(rows), Rc::new(cell));
-    Table { columns, rows, cell, chosen: None, key: None, row_height: 26.0, hidden: None, pinned: 0 }
+    let (chosen, key, hidden, column, changes) = (None, None, None, None, None);
+    Table { columns, rows, cell, chosen, key, row_height: 26.0, hidden, pinned: 0, column, changes }
 }
 
 impl Table {
@@ -127,6 +130,14 @@ impl Table {
         self
     }
 
+    /// A cursor on cells: the column of the cell the keys are on, a signal the caller may
+    /// read. The left and right arrows move it, a click on a cell puts it there, it is
+    /// outlined while the table has the focus, and Ctrl-C copies what that cell says.
+    pub fn cells(mut self, column: Signal<usize>) -> Self {
+        self.column = Some(column);
+        self
+    }
+
     /// The first `columns` columns stay where they are while the others scroll sideways
     /// under the wheel turned so, or with Shift.
     pub fn pinned(mut self, columns: usize) -> Self {
@@ -142,6 +153,13 @@ impl Table {
         self.key = Some(Rc::new(key));
         self
     }
+
+    /// With live data, the source says which rows (as the data numbers them) it changed,
+    /// setting `rows` after each change: the cells of those are read, not of every row.
+    pub fn changes(mut self, rows: Signal<Vec<usize>>) -> Self {
+        self.changes = Some(rows);
+        self
+    }
 }
 
 impl View for Table {
@@ -152,8 +170,9 @@ impl View for Table {
         if let Some(hidden) = self.hidden {
             sheet.hidden = hidden;
         }
+        sheet.column = self.column;
         if let Some(key) = self.key {
-            quadra_base::live::watch(&mut sheet, key, cx.handle.clone());
+            quadra_base::live::watch(&mut sheet, key, self.changes, cx.handle.clone());
         }
         let clipboard = use_context::<Rc<dyn Clipboard>>();
         let pinned = self.pinned.min(columns.len());

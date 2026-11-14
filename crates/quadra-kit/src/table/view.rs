@@ -7,10 +7,11 @@ use quadra_layout::{Align, Display, Justify, Length, Overflow};
 use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Paint, Role, State as On};
-use quadra_ui::{Div, column, div, dynamic, row, scroll_x, text, uniform_list};
+use quadra_ui::{Div, View, column, div, dynamic, row, scroll_x, text, uniform_list};
 
 use super::{CellKind, Column, age_text};
 use crate::icon::icon;
+use crate::menu::{MenuItem, context_menu};
 use crate::status::{Status, status_label};
 use crate::{fonts, icons, token};
 
@@ -49,6 +50,26 @@ fn header(state: &Sheet, columns: &[Column], (pinned, sx): (usize, Signal<f32>))
     split(head, titles, pinned, sx)
 }
 
+/// The menu of the columns, on the header with the other button: a row a column, checked
+/// while it shows; choosing one hides or shows it. The last that shows stays.
+fn columns_menu(head: Div, columns: Rc<Vec<Column>>, hidden: Signal<Vec<usize>>) -> impl View {
+    context_menu(head, move || {
+        let shut = hidden.get_untracked();
+        let last = columns.len() - shut.len() == 1;
+        let row = |(c, at): (usize, &Column)| {
+            let on = !shut.contains(&c);
+            let item = MenuItem::new(at.title.clone()).checked(on).disabled(on && last);
+            item.on_select(move || {
+                hidden.update(|all| match all.iter().position(|&h| h == c) {
+                    Some(k) => _ = all.remove(k),
+                    None => all.push(c),
+                })
+            })
+        };
+        columns.iter().enumerate().map(row).collect()
+    })
+}
+
 /// A column's part of a row, which shows while the column is not hidden.
 fn shown(state: &Sheet, c: usize, part: Div) -> Div {
     let hidden = state.hidden;
@@ -81,7 +102,7 @@ fn line(
     let data = move || s.data(place.get());
     let chosen = state.selected(place);
     let ring = move || -> Paint {
-        let here = mark.focused.get() && mark.cursor.get() == Some(place.get());
+        let here = mark.column.is_none() && mark.focused.get() && mark.cursor.get() == Some(place.get());
         if here { token::BORDER_FOCUSED.into() } else { Paint::default() }
     };
     let line = row().align_items(Align::Center).grow(1.0).height(height);
@@ -97,7 +118,12 @@ fn line(
     for (c, at) in columns.iter().enumerate() {
         let (widths, says, row_of) = (state.widths, state.cell.clone(), data.clone());
         let value = move || says(row_of(), c);
-        let cell = row().align_items(Align::Center).shrink(0.0).padding_x(8.0).role(Role::Cell);
+        let cell = row().align_items(Align::Center).shrink(0.0).padding_x(8.0);
+        let (focused, here) = (state.focused, state.here(place, c));
+        let ring = move || -> Paint {
+            if focused.get() && here() { token::BORDER_FOCUSED.into() } else { Paint::default() }
+        };
+        let cell = state.cell(cell.height(Length::Fill).outline(ring), place, c);
         let cell = cell.overflow_x(Overflow::Hidden).width(move || Length::Px(widths.with(|all| all[c])));
         // Numbers are in the mono face at the right of their cells, so columns line up.
         let cell = match at.counts() {
@@ -153,8 +179,10 @@ pub(crate) fn build(
     let all = state.frame(column().grow(1.0).overflow_x(Overflow::Hidden), clipboard);
     let head = header(&state, &columns, (pinned, sx));
     if pinned > 0 {
-        return all.child(crate::rows::sideways(head, sx, end)).child(body);
+        let head = columns_menu(crate::rows::sideways(head, sx, end), columns, hidden);
+        return all.child(head).child(body);
     }
+    let head = columns_menu(head, columns, hidden);
     // Columns wider than the table scroll sideways, the header with the rows.
     // ponytail: the rows' own scrollbar is at the right end of what scrolls sideways; a bar
     // at the table's edge when tables that wide are common.

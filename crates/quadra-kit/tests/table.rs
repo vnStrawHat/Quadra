@@ -20,6 +20,11 @@ struct Page {
 
 /// A thousand pods: the CPU of pod `i` is `(i * 37) % 100`, so sorting by it moves rows.
 fn page() -> Page {
+    page_with(None)
+}
+
+/// The same, with a cursor on cells in `cells`.
+fn page_with(cells: Option<Signal<usize>>) -> Page {
     let pod = |i: usize| {
         let status = ["Running", "Pending", "Failed"][i % 3];
         (format!("pod-{i:04}"), ((i * 37) % 100) as f64, status, 30 + 50 * i as i64)
@@ -43,7 +48,11 @@ fn page() -> Page {
                 (pod, _) => pod.3.to_string(),
             })
         };
-        quadra_kit::root().child(table(columns, move || pods.with(Vec::len), cell).selected(chosen))
+        let sheet = table(columns, move || pods.with(Vec::len), cell).selected(chosen);
+        quadra_kit::root().child(match cells {
+            Some(column) => sheet.cells(column),
+            None => sheet,
+        })
     });
     h.frame();
     Page { h, pods, chosen }
@@ -214,4 +223,49 @@ fn a_pinned_column_stays_while_the_others_scroll_and_hidden_ones_do_not_show() {
     h.get_by_text("r2c0").click();
     h.key(Key::C, Mods::CTRL);
     assert_eq!(h.clipboard.read_text().as_deref(), Some("r2c0\tr2c7"));
+}
+
+#[test]
+fn a_cursor_on_cells_is_moved_by_the_arrows_and_the_pointer_and_copies_its_cell() {
+    let column = signal(0);
+    let mut p = page_with(Some(column));
+    let y = |row: f32| 28.0 + 26.0 * row + 13.0;
+    // A click puts it on a cell; to a reader that cell is selected, and its row is.
+    p.click(250.0, y(2.0), Mods::NONE);
+    assert_eq!((column.get_untracked(), p.chosen.get_untracked()), (1, vec![2]));
+    assert!(p.h.semantics().contains("Cell \"74\" [selected]"), "{}", p.h.semantics());
+    // The arrows move it over the columns and stop at the ends.
+    p.key(Key::Right, Mods::NONE);
+    p.key(Key::Right, Mods::NONE);
+    p.key(Key::Right, Mods::NONE);
+    assert_eq!(column.get_untracked(), 3);
+    p.key(Key::Down, Mods::NONE);
+    p.key(Key::Left, Mods::NONE);
+    p.key(Key::C, Mods::CTRL);
+    assert_eq!((p.h.clipboard.read_text().unwrap(), column.get_untracked()), ("Running".to_string(), 2));
+    for _ in 0..4 {
+        p.key(Key::Left, Mods::NONE);
+    }
+    assert_eq!((column.get_untracked(), p.chosen.get_untracked()), (0, vec![3]));
+}
+
+#[test]
+fn the_menu_of_the_header_hides_and_shows_columns() {
+    let mut p = page();
+    for input in [PointerInput::Move, PointerInput::Down, PointerInput::Up] {
+        p.h.tree.pointer(input, MouseButton::Right, Point::new(50.0, 14.0), Mods::NONE, p.h.now());
+    }
+    p.settle();
+    let menu = p.h.semantics();
+    assert!(menu.contains("MenuItem \"CPU\" [checked]"), "{menu}");
+    p.h.get_by_role(Role::MenuItem, "CPU").click();
+    p.settle();
+    // It is gone from the header and the rows, and the menu checks it no more.
+    let tree = p.h.semantics();
+    assert!(!tree.contains("Cell \"CPU\"") && !tree.contains("Cell \"74\""), "{tree}");
+    for input in [PointerInput::Move, PointerInput::Down, PointerInput::Up] {
+        p.h.tree.pointer(input, MouseButton::Right, Point::new(50.0, 14.0), Mods::NONE, p.h.now());
+    }
+    p.settle();
+    assert!(p.h.semantics().contains("MenuItem \"CPU\" [unchecked]"), "{}", p.h.semantics());
 }

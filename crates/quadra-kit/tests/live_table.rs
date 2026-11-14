@@ -16,6 +16,11 @@ type Services = Signal<Vec<(String, i64, i64)>>;
 /// Six services in columns 200, 100 and 80 px wide; the latency of the one at `i` is
 /// `60 - 10 i`, so sorting by it turns the rows round.
 fn page() -> (Harness, Services, Signal<Vec<usize>>) {
+    page_with(None)
+}
+
+/// The same, the source saying in `changes` which rows it changed.
+fn page_with(changes: Option<Signal<Vec<usize>>>) -> (Harness, Services, Signal<Vec<usize>>) {
     let service = |i: i64| (format!("svc-{i}"), 60 - 10 * i, 0);
     let (services, chosen): (Services, _) = (signal((0..6).map(service).collect()), signal(Vec::new()));
     let mut h = Harness::new();
@@ -37,7 +42,10 @@ fn page() -> (Harness, Services, Signal<Vec<usize>>) {
         };
         let key = move |row: usize| services.with(|all| all[row].0.clone());
         let rows = table(columns, move || services.with(Vec::len), cell).selected(chosen).keys(key);
-        quadra_kit::root().child(rows)
+        quadra_kit::root().child(match changes {
+            Some(changes) => rows.changes(changes),
+            None => rows,
+        })
     });
     settle(&mut h);
     (h, services, chosen)
@@ -146,4 +154,24 @@ fn a_cell_that_says_something_else_is_tinted_and_the_tint_fades() {
     settle(&mut h);
     assert!((0..7).all(|place| tints(&h, place).is_empty()));
     assert!(!h.tree.animating() && h.frame_if_needed().is_none());
+}
+
+#[test]
+fn a_source_that_says_which_rows_it_changed_has_only_those_read() {
+    let changes = signal(Vec::new());
+    let (mut h, services, _) = page_with(Some(changes));
+    // Two latencies change and the source tells of one: the other is not read.
+    services.update(|all| (all[2].1, all[4].1) = (77, 78));
+    changes.set(vec![2]);
+    h.frame();
+    let marks: Vec<usize> = (0..6).map(|place| tints(&h, place).len()).collect();
+    assert_eq!(marks, [0, 0, 1, 0, 0, 0]);
+    // When rows come or go, every row is read.
+    services.update(|all| {
+        all[3].1 = 1;
+        all.push(("svc-9".to_string(), 5, 0));
+    });
+    h.frame();
+    let marks: Vec<usize> = (0..7).map(|place| tints(&h, place).len()).collect();
+    assert_eq!(marks, [0, 0, 1, 1, 1, 0, 0], "svc-4, not read when it changed, is read with the others");
 }

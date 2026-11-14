@@ -16,7 +16,7 @@ use quadra_tree::{PointerKind, Role};
 use quadra_ui::Div;
 
 use crate::action::{Copy, ExtendNext, ExtendPrevious, MoveFirst, MoveLast, MoveNext, MovePrevious, TABLE};
-use crate::action::{PageNext, PagePrevious};
+use crate::action::{MoveInto, MoveOut, PageNext, PagePrevious};
 pub use crate::live::{FLASH, Live};
 
 /// How many rows a page key moves by.
@@ -57,6 +57,9 @@ pub struct Sheet {
     pub focused: Signal<bool>,
     /// The columns that do not show, and are not copied.
     pub hidden: Signal<Vec<usize>>,
+    /// With a cursor on cells, the column of the cell the keys are on: the left and right
+    /// arrows move it, a click on a cell puts it there, and the key for copying copies it.
+    pub column: Option<Signal<usize>>,
     /// What a table of live data keeps.
     pub live: Option<Live>,
 }
@@ -86,7 +89,8 @@ pub fn sheet(columns: Vec<Column>, rows: Rows, cell: Cells, chosen: Option<Signa
     let widths = signal(columns.iter().map(|column| column.width).collect());
     let chosen = chosen.unwrap_or_else(|| signal(Vec::new()));
     let (cursor, anchor, focused, hidden) = (signal(None), signal(None), signal(false), signal(Vec::new()));
-    Sheet { columns, rows, cell, widths, sort, order, chosen, cursor, anchor, focused, hidden, live: None }
+    let (live, column) = (None, None);
+    Sheet { columns, rows, cell, widths, sort, order, chosen, cursor, anchor, focused, hidden, live, column }
 }
 
 impl Sheet {
@@ -133,8 +137,42 @@ impl Sheet {
         self.pick(place, if extend { Mods::SHIFT } else { Mods::NONE });
     }
 
-    /// The selected rows as text: in the order they show, a tab between cells.
+    /// Moves the column of the cell the keys are on by one, past the hidden ones.
+    pub fn step_column(&self, by: isize) {
+        let Some(column) = self.column else { return };
+        let hidden = self.hidden.get_untracked();
+        let mut at = column.get_untracked() as isize;
+        loop {
+            at += by;
+            if at < 0 || at as usize >= self.columns.len() {
+                return;
+            }
+            if !hidden.contains(&(at as usize)) {
+                return column.set(at as usize);
+            }
+        }
+    }
+
+    /// Whether the keys are on the cell of column `c` at a place: a reactive read.
+    pub fn here(&self, place: Signal<usize>, c: usize) -> impl Fn() -> bool + Clone + 'static {
+        let (cursor, column) = (self.cursor, self.column);
+        move || column.is_some_and(|column| column.get() == c) && cursor.get() == Some(place.get())
+    }
+
+    /// The cell of column `c` at a place on its face: a cell to a reader, selected while
+    /// the keys are on it; with a cursor on cells a click puts it there.
+    pub fn cell(&self, face: Div, place: Signal<usize>, c: usize) -> Div {
+        let face = face.role(Role::Cell);
+        let Some(column) = self.column else { return face };
+        face.selected(self.here(place, c)).on_click(move |_| column.set(c))
+    }
+
+    /// The selected rows as text: in the order they show, a tab between cells; with a
+    /// cursor on cells, what the cell the keys are on says.
     pub fn copy_text(&self) -> String {
+        if let (Some(column), Some(place)) = (self.column, self.cursor.get_untracked()) {
+            return (self.cell)(self.data(place), column.get_untracked());
+        }
         let (chosen, count) = (self.chosen.get_untracked(), (self.rows)());
         let shown = (0..count).map(|place| self.data(place)).filter(|row| chosen.binary_search(row).is_ok());
         let hidden = self.hidden.get_untracked();
@@ -204,6 +242,9 @@ impl Sheet {
             frame.on_action::<ExtendNext>(move |_| more()).on_action::<ExtendPrevious>(move |_| less());
         let frame = frame.on_action::<MoveFirst>(move |_| first()).on_action::<MoveLast>(move |_| last());
         let frame = frame.on_action::<PageNext>(move |_| down()).on_action::<PagePrevious>(move |_| up());
+        let (right, left) = (self.clone(), self.clone());
+        let frame = frame.on_action::<MoveInto>(move |_| right.step_column(1));
+        let frame = frame.on_action::<MoveOut>(move |_| left.step_column(-1));
         let copies = self.clone();
         frame.on_action::<Copy>(move |_| {
             let text = copies.copy_text();

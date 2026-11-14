@@ -191,6 +191,9 @@ pub fn keymap() -> Keymap {
     keymap.bind_in(TREE, "ctrl-c", Copy).expect(well_formed);
     for context in [MENU, TREE] {
         keymap.bind_in(context, "space", Confirm).expect(well_formed);
+    }
+    // In a table they move the cursor on cells, if it has one.
+    for context in [MENU, TREE, TABLE] {
         keymap.bind_in(context, "right", MoveInto).expect(well_formed);
         keymap.bind_in(context, "left", MoveOut).expect(well_formed);
     }

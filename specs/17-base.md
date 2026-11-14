@@ -54,7 +54,9 @@ quadra_base::toggle(checked).build(face)
 ## Numbers: the behaviour's and the look's
 
 - **The behaviour's**, with a default the caller may change: how long a pointer rests
-  before a tooltip (500 ms) or a hover card (400 ms) shows, how long a card stays after the
+  before a tooltip (500 ms) or a hover card (400 ms) shows (`popup::hang` shows an overlay
+  opened by hand against an anchor; `hang_with` against one read each time it shows, for
+  what follows a part of a view, a link of a text), how long a card stays after the
   pointer left (150 ms), how far a press moves before it is a drag (4 px) or tears a tab off
   (12 px), how many rows a page key moves.
 - **The look's**, always passed in: every size, gap, width and cap. A list is told the

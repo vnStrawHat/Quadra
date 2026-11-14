@@ -299,7 +299,9 @@ locale at the window root; a subtree can provide its own.
   the pointer is a hand over it, and a click on it gives its target to
   `.on_link(|target| ..)`. With `.ctrl_links()` on the text, for content its user did not
   write, a link is one only while Ctrl is held: the hand shows then, and the click counts
-  then. To a reader it is a text, named by all of it.
+  then. To a reader it is a text, named by all of it. `.on_link_hover(|link| ..)` is told
+  the link the pointer comes over, Ctrl held or not (the point of the window under its left
+  end and its target), and `None` when it leaves them: what a hint of where it goes follows.
   - **What is no text** is in the flow as a span too: `inline(what)`, where `what` is an
     `InlineBox` (`quadra-tree`): it says how wide, how high and how deep it is in the style
     of its span, paints itself with the left end of its baseline where the line puts it, in

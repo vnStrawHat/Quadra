@@ -236,6 +236,8 @@ dependencies = [
 name = "quadra-md"
 version = "0.1.0"
 dependencies = [
+ "quadra-async",
+ "quadra-base",
  "quadra-code",
  "quadra-kit",
  "quadra-layout",

@@ -90,5 +90,5 @@ pub use theme::{KitTheme, Mode, ThemeError, dark, light, theme_from_json};
 pub use time::{TimeInput, TimeOfDay, time_input};
 pub use titlebar::{Titlebar, titlebar};
 pub use toggle::{Toggle, checkbox, switch};
-pub use tooltip::{Tooltip, tooltip};
+pub use tooltip::{Tooltip, tip, tooltip};
 pub use tree::{Tree, TreeNode, tree};

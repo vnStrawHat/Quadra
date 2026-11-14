@@ -883,10 +883,15 @@ What it reads and how it looks is behaviour/21. As built:
   root are looked for. A file that is not there or is no image, and an image that is
   elsewhere (nothing is fetched), show a small mark, the words and the path. An image among
   the words of a line is its words in brackets.
+- A link says where it goes once the pointer has rested on it half a second, Ctrl held or
+  not: its target in the bubble of a tooltip under it (`quadra_kit::tip`), gone when the
+  pointer leaves it.
+- A table wider than the page, its columns at their least (their longest words), scrolls
+  sideways; one that fits is as wide as the page.
 - Not yet: a line made higher by a formula higher than it; an image in a line of words;
-  one selection over the blocks; the hint over a link; where each block is, for an outline
-  and for scrolling two panes together; a list of the blocks that show, for documents of
-  tens of thousands of lines; a table wider than the page.
+  one selection over the blocks; where each block is, for an outline and for scrolling two
+  panes together; a list of the blocks that show, for documents of tens of thousands of
+  lines.
 
 ## Code (`quadra-code`)
 

@@ -2,6 +2,7 @@
 //! blocks in a column, each a child of its own that stays while its source does.
 
 mod code;
+mod hint;
 mod picture;
 mod table;
 
@@ -16,8 +17,7 @@ use quadra_reactive::{memo, signal};
 use quadra_text::find_urls;
 use quadra_tree::{NodeId, Role};
 use quadra_ui::{
-    Div, IntoProp, MountCx, Prop, RichTextView, Span as Run, View, column, div, each, rich_text, row,
-    scroll_x, span, text,
+    Div, IntoProp, MountCx, Prop, Span as Run, View, column, div, each, rich_text, row, scroll_x, span, text,
 };
 
 use crate::block::{Kind, parse};
@@ -96,13 +96,14 @@ fn entries(source: &str) -> Vec<Entry> {
     out
 }
 
-/// A text of a document: its links are links while Ctrl is held.
-fn rich(spans: Vec<Run>, on_link: &Option<OnLink>) -> RichTextView {
+/// A text of a document: its links are links while Ctrl is held, and say where they go when
+/// the pointer rests on them.
+fn rich(spans: Vec<Run>, on_link: &Option<OnLink>) -> hint::Hinted {
     let words = rich_text(spans).ctrl_links();
-    match on_link.clone() {
+    hint::Hinted(match on_link.clone() {
         Some(open) => words.on_link(move |target| open(target)),
         None => words,
-    }
+    })
 }
 
 /// `text` in the style `styled` gives, cut where its URLs are: each is a link that keeps
@@ -234,7 +235,9 @@ fn block(kind: &Kind, on_link: &Option<OnLink>, base: Option<&Path>) -> Div {
         }
         Kind::Rule => column().child(div().height(1.0).bg(token::LINE_STRONG)),
         Kind::Table { align, rows } => {
-            column().child(Table { align: align.clone(), rows: rows.clone(), on_link: on_link.clone() })
+            // One wider than the page, its columns at their least, scrolls sideways.
+            let table = Table { align: align.clone(), rows: rows.clone(), on_link: on_link.clone() };
+            column().child(scroll_x(signal(0.0), row().min_width(Length::Fill).child(table)))
         }
     }
 }

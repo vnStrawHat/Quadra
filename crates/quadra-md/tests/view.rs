@@ -65,6 +65,18 @@ fn a_document_is_what_a_reader_is_told_and_its_links_wait_for_ctrl() {
         h.tree.pointer(input, MouseButton::Left, Point::new(x, y), Mods::CTRL, h.now());
     }
     assert_eq!(clicked.get_untracked(), "https://example.com/up");
+
+    // Resting on it a moment, without Ctrl, shows where it goes, under it; leaving hides it.
+    h.pointer(PointerInput::Move, x + 1.0, y);
+    h.advance(Duration::from_millis(600));
+    h.frame();
+    let hint = h.query(|n| n.semantics.role == Role::Tooltip);
+    assert!(hint.len() == 1 && h.has_text("https://example.com/up"));
+    let hint = hint[0];
+    assert!(h.tree.window_rect(hint).y >= link.y + 18.0, "{:?}", h.tree.window_rect(hint));
+    h.pointer(PointerInput::Move, x, y + 200.0);
+    h.frame();
+    assert!(h.query(|n| n.semantics.role == Role::Tooltip).is_empty());
 }
 
 #[test]
@@ -202,4 +214,20 @@ fn a_paragraph_of_images_shows_them_and_one_that_cannot_show_is_its_words() {
     assert_eq!(named(&h, Role::Image), ["A chart", "Gone"], "the one that failed is an empty box");
     // Among words an image is its words.
     assert!(h.has_text("Words and [a mark] in a line."));
+}
+
+#[test]
+fn a_table_wider_than_the_page_scrolls_sideways() {
+    // Twenty columns of a long word each: wider than the 800 px of the harness's window.
+    let head: Vec<String> = (0..20).map(|c| format!("Column{c}word")).collect();
+    let source = format!("| {} |\n|{}\n| {} |\n", head.join(" | "), "---|".repeat(20), head.join(" | "));
+    let (mut h, _, _) = page(&source);
+    let table = h.get_by_role(Role::Table, "").node();
+    let wide = h.tree.window_rect(table).width;
+    assert!(wide > 800.0, "{wide}");
+    let x = h.tree.window_rect(table).x;
+    let over = Point::new(400.0, h.tree.window_rect(table).center().y);
+    h.tree.wheel(Point::new(0.0, -2.0), false, over, Mods::SHIFT);
+    h.frame();
+    assert!(h.tree.window_rect(table).x < x);
 }

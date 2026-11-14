@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use quadra_layout::{Display, Length};
 use quadra_prim::Point;
-use quadra_reactive::{Scope, Signal, on_cleanup};
+use quadra_reactive::{Scope, Signal, on_cleanup, untrack};
 use quadra_tree::{Anchor, NodeId, Tree};
 use quadra_ui::{Div, MountCx, NodeRef, Place, Region, View, div, overlay, show};
 
@@ -165,10 +165,22 @@ pub fn hang<V: View + 'static>(
     anchor: Anchor,
     build: impl Fn() -> V + 'static,
 ) {
+    hang_with(cx, of, shown, move || anchor, build);
+}
+
+/// As [`hang`], against an anchor read each time it shows: what follows a part of a view (a
+/// link of a text).
+pub fn hang_with<V: View + 'static>(
+    cx: &mut MountCx,
+    of: NodeId,
+    shown: Signal<bool>,
+    anchor: impl Fn() -> Anchor + 'static,
+    build: impl Fn() -> V + 'static,
+) {
     let (owner, open, build) = (Scope::current(), Rc::new(Cell::new(None)), Rc::new(build));
-    let (writer, last) = (cx.handle.clone(), open.clone());
+    let (writer, last, anchor) = (cx.handle.clone(), open.clone(), Rc::new(anchor));
     cx.handle.bind(move || {
-        let (on, build, open) = (shown.get(), build.clone(), open.clone());
+        let (on, build, open, anchor) = (shown.get(), build.clone(), open.clone(), anchor.clone());
         writer.with(move |tree| {
             if let Some(old) = open.take() {
                 tree.close_overlay(old);
@@ -179,7 +191,7 @@ pub fn hang<V: View + 'static>(
             let scope = owner.run(Scope::child);
             let root = scope.run(|| build().mount(&mut MountCx::new(tree)));
             tree.set_scope(root, scope);
-            tree.open_overlay(root, anchor);
+            tree.open_overlay(root, untrack(&*anchor));
             open.set(Some(root));
         });
     });

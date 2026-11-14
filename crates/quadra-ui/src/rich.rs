@@ -5,6 +5,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use quadra_platform::{Cursor, Mods};
+use quadra_prim::Point;
 use quadra_text::Shaping;
 use quadra_tree::{
     InlineBox, LinkBoxes, NodeId, Paint, PointerEvent, PointerKind, RichSpan, RichText, Style,
@@ -89,16 +90,20 @@ impl Span {
 
 /// What is given the target of a link that is clicked.
 type OnLink = Rc<dyn Fn(&str)>;
+/// What is told the link the pointer is over: the point of the window under its left end,
+/// and its target; `None` when it leaves the links.
+type OnHover = Rc<dyn Fn(Option<(Point, Rc<str>)>)>;
 
 pub struct RichTextView {
     spans: Vec<Span>,
     on_link: Option<OnLink>,
+    on_hover: Option<OnHover>,
     ctrl: bool,
 }
 
 /// A paragraph of spans, wrapped as one text.
 pub fn rich_text(spans: impl IntoIterator<Item = Span>) -> RichTextView {
-    RichTextView { spans: spans.into_iter().collect(), on_link: None, ctrl: false }
+    RichTextView { spans: spans.into_iter().collect(), on_link: None, on_hover: None, ctrl: false }
 }
 
 impl RichTextView {
@@ -114,10 +119,38 @@ impl RichTextView {
         self.ctrl = true;
         self
     }
+
+    /// Runs `f` when the pointer comes over a link, Ctrl held or not, with the point of the
+    /// window under the link's left end and its target, and with `None` when it leaves them:
+    /// what a hint of where a link goes follows.
+    pub fn on_link_hover(mut self, f: impl Fn(Option<(Point, Rc<str>)>) + 'static) -> Self {
+        self.on_hover = Some(Rc::new(f));
+        self
+    }
 }
 
 /// What makes the links of a mounted rich text links: a hand over them, and their click.
-fn link(cx: &mut MountCx, id: NodeId, boxes: LinkBoxes, on_link: Option<OnLink>, ctrl: bool) {
+fn link(cx: &mut MountCx, id: NodeId, boxes: LinkBoxes, on: (Option<OnLink>, Option<OnHover>), ctrl: bool) {
+    let (on_link, on_hover) = on;
+    let (all, last) = (boxes.clone(), Rc::new(std::cell::RefCell::new(None::<Rc<str>>)));
+    let hover = move |e: &mut PointerEvent| {
+        let Some(tell) = &on_hover else { return };
+        let found = all
+            .borrow()
+            .iter()
+            .find(|(part, _)| e.kind == PointerKind::Move && part.contains(e.local))
+            .cloned();
+        let target = found.as_ref().map(|(_, target)| target.clone());
+        if *last.borrow() != target {
+            *last.borrow_mut() = target;
+            let corner = Point::new(e.at.x - e.local.x, e.at.y - e.local.y);
+            tell(
+                found.map(|(part, target)| (Point::new(corner.x + part.x, corner.y + part.bottom()), target)),
+            );
+        }
+    };
+    cx.tree.on_pointer(id, PointerKind::Move, hover.clone());
+    cx.tree.on_pointer(id, PointerKind::Leave, hover);
     let under = move |e: &PointerEvent| {
         let boxes = boxes.borrow();
         let held = !ctrl || e.mods.contains(Mods::CTRL);
@@ -155,7 +188,7 @@ impl View for RichTextView {
         let boxes = rich.links();
         let id = cx.tree.insert_widget(Style::default(), Box::new(rich));
         if links {
-            link(cx, id, boxes, self.on_link, self.ctrl);
+            link(cx, id, boxes, (self.on_link, self.on_hover), self.ctrl);
         }
         id
     }

@@ -4,10 +4,24 @@
 
 use quadra_base::hint;
 use quadra_tree::{Along, Anchor, NodeId, Role, Side};
-use quadra_ui::{MountCx, View, div, row, text};
+use quadra_ui::{Div, MountCx, View, div, row, text};
 
 use crate::popup::{hang, surface};
 use crate::token;
+
+fn tip_line(words: &str) -> Div {
+    row().gap(16.0).padding_x(8.0).padding_y(4.0).child(text(words.to_string()))
+}
+
+fn tip_bubble(line: Div) -> Div {
+    surface(1).role(Role::Tooltip).max_width(288.0).child(line)
+}
+
+/// The bubble of a tooltip with a few words: for a tooltip opened by hand, over a part of a
+/// view (`quadra_base::popup::hang_with`).
+pub fn tip(words: &str) -> Div {
+    tip_bubble(tip_line(words))
+}
 
 pub struct Tooltip<V> {
     tip: String,
@@ -54,12 +68,12 @@ impl<V: View + 'static> View for Tooltip<V> {
         let words = (self.tip, self.keys, self.meta);
         let anchor = Anchor::Beside { node: of, side: self.side, along: Along::Center, gap: 6.0 };
         hang(cx, of, shown, anchor, move || {
-            let line = row().gap(16.0).padding_x(8.0).padding_y(4.0).child(text(words.0.clone()));
+            let line = tip_line(&words.0);
             let line = match &words.1 {
                 Some(keys) => line.child(text(keys.clone()).color(token::TEXT_2)),
                 None => line,
             };
-            let bubble = surface(1).role(Role::Tooltip).max_width(288.0).child(line);
+            let bubble = tip_bubble(line);
             match &words.2 {
                 Some(meta) => {
                     let more = text(meta.clone()).size(12.0).color(token::TEXT_2);

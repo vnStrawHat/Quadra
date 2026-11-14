@@ -45,6 +45,21 @@ impl Action for FocusPrevious {
     const NAME: &'static str = "focus::previous";
 }
 
+/// To the page before, and back to the one after: Alt-Left and Alt-Right, handled by a
+/// router (specs/15, "Pages").
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct GoBack;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct GoForward;
+
+impl Action for GoBack {
+    const NAME: &'static str = "go::back";
+}
+
+impl Action for GoForward {
+    const NAME: &'static str = "go::forward";
+}
+
 /// The keymap a tree uses, and the keys of a sequence typed so far.
 pub(crate) struct Keys {
     pub map: Rc<Keymap>,

@@ -145,6 +145,13 @@ impl Div {
         self.on_mount(move |tree, id| tree.on_action::<A>(id, f))
     }
 
+    /// Runs `f` when the user asks the box's window to close: `f` says whether it may. One
+    /// that says no (a document not saved) asks the user, then closes the window with
+    /// `window().close_now()`, taken while the view is built (specs/15, "Closing").
+    pub fn on_close(self, f: impl FnMut() -> bool + 'static) -> Self {
+        self.on_mount(move |tree, id| tree.on_close(id, f))
+    }
+
     /// Names the box as a context of key bindings: those made for it apply while the focus is
     /// in the box.
     pub fn key_context(self, context: &'static str) -> Self {

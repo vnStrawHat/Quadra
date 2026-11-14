@@ -11,6 +11,7 @@ mod locale;
 pub mod log;
 mod remember;
 mod report;
+mod router;
 mod services;
 mod settings;
 pub mod time;
@@ -33,6 +34,7 @@ use quadra_ui::{Images, View, mount_with};
 pub use i18n::{Arg, I18n, Language, language, t, t_with};
 pub use locale::Locale;
 pub use report::{AppError, FrameReport, Result};
+pub use router::{Router, router};
 pub use services::AppDirs;
 pub use settings::{Settings, Stored};
 
@@ -269,20 +271,6 @@ impl<R: Renderer> App<R> {
             }
             Err(RenderError::DeviceLost) => self.recover(),
             Err(e) => (self.on_error)(&e.into()),
-        }
-    }
-
-    /// A new device after the old one was lost: the glyph tiles are gone with it, so every
-    /// window paints and uploads everything again (specs/07, "Resources and failure").
-    fn recover(&mut self) {
-        if let Err(e) = self.renderer.recover() {
-            return (self.on_error)(&e.into()); // the windows keep their last frame
-        }
-        self.fonts.borrow_mut().clear_tiles();
-        for w in &mut self.windows {
-            w.tree.repaint_all();
-            w.tree.scene_mut().invalidate_all();
-            w.window.request_frame();
         }
     }
 }

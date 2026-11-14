@@ -18,7 +18,7 @@ impl<R: Renderer> PlatformHandler for App<R> {
                     w.window.request_frame();
                 }
             }
-            PlatformEvent::CloseRequested => self.close(window),
+            PlatformEvent::CloseRequested => self.close_asked(window),
             PlatformEvent::Pointer { kind, button, at, mods } => {
                 let input = match kind {
                     PointerKind::Move => PointerInput::Move,
@@ -106,7 +106,9 @@ impl<R: Renderer> App<R> {
                 match request {
                     WindowRequest::Minimize => w.window.minimize(),
                     WindowRequest::ToggleMaximize => w.window.toggle_maximize(),
-                    WindowRequest::Close => closed.push(w.window.id()),
+                    WindowRequest::Close if w.tree.may_close() => closed.push(w.window.id()),
+                    WindowRequest::Close => {}
+                    WindowRequest::CloseNow => closed.push(w.window.id()),
                 }
             }
             if all || w.tree.needs_frame() {
@@ -128,6 +130,29 @@ impl<R: Renderer> App<R> {
         }
         for window in closed {
             self.close(window);
+        }
+    }
+
+    /// A new device after the old one was lost: the glyph tiles are gone with it, so every
+    /// window paints and uploads everything again (specs/07, "Resources and failure").
+    /// The user asks a window to close: it does if what is in it says it may.
+    fn close_asked(&mut self, window: WindowId) {
+        if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window)
+            && w.tree.may_close()
+        {
+            self.close(window);
+        }
+    }
+
+    pub(crate) fn recover(&mut self) {
+        if let Err(e) = self.renderer.recover() {
+            return (self.on_error)(&e.into()); // the windows keep their last frame
+        }
+        self.fonts.borrow_mut().clear_tiles();
+        for w in &mut self.windows {
+            w.tree.repaint_all();
+            w.tree.scene_mut().invalidate_all();
+            w.window.request_frame();
         }
     }
 }

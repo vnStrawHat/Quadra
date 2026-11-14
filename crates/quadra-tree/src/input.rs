@@ -121,6 +121,8 @@ pub(crate) enum Handler {
     Reveal(Box<dyn FnMut(Rect) -> f32>),
     /// Assistive technology, or a test, asks something of the node.
     Semantic(Box<dyn FnMut(&SemanticAction) -> bool>),
+    /// The user asks the window to close: whether it may (specs/15, "Closing").
+    Close(Box<dyn FnMut() -> bool>),
     /// An action of a type reached the node.
     Action {
         of: TypeId,

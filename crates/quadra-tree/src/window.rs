@@ -1,6 +1,7 @@
 //! What a tree knows of the window it is in, and asks of it (specs/10, "Windows with their
 //! own frame"): which of its nodes the window is dragged by, whether the window is
-//! maximized, and the minimize, maximize and close a view asks for.
+//! maximized, the minimize, maximize and close a view asks for, and whether the window may
+//! close (specs/15, "Closing").
 
 use quadra_platform::HitRegion;
 use quadra_prim::Point;
@@ -17,7 +18,10 @@ pub enum WindowRequest {
     Minimize,
     /// Maximize, or put back as it was.
     ToggleMaximize,
+    /// Close as the user asks to: when what is in the window says it may.
     Close,
+    /// Close, asking nothing: what a view does once the user said what to do.
+    CloseNow,
 }
 
 impl Handle {
@@ -32,6 +36,27 @@ impl Tree {
     /// What was asked of the window since this was last called.
     pub fn take_window_requests(&mut self) -> Vec<WindowRequest> {
         self.shared.asked.take()
+    }
+
+    /// Runs `f` when the user asks the window to close: it says whether the window may. One
+    /// that says no asks the user itself, and closes the window later with
+    /// [`WindowRequest::CloseNow`].
+    pub fn on_close(&mut self, id: NodeId, f: impl FnMut() -> bool + 'static) {
+        self.add_handler(id, Handler::Close(Box::new(f)));
+    }
+
+    /// Asks what is in the tree whether the window may close, until one says no.
+    pub fn may_close(&mut self) -> bool {
+        for node in self.nodes.iter_mut().filter(|node| node.alive) {
+            for handler in &mut node.handlers {
+                if let Handler::Close(may) = handler
+                    && !may()
+                {
+                    return false;
+                }
+            }
+        }
+        true
     }
 
     /// Whether the window is maximized, as a signal: made where it is first asked for, which

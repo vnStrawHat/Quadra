@@ -31,9 +31,16 @@ impl Window {
         self.handle.ask_window(WindowRequest::ToggleMaximize);
     }
 
-    /// Closes the window, as its close button does.
+    /// Closes the window, as its close button does: if what is in it says it may
+    /// (`on_close`).
     pub fn close(&self) {
         self.handle.ask_window(WindowRequest::Close);
+    }
+
+    /// Closes the window, asking nothing: after the user said to, in a dialog an `on_close`
+    /// opened.
+    pub fn close_now(&self) {
+        self.handle.ask_window(WindowRequest::CloseNow);
     }
 
     /// Whether the window is maximized: a read that what it is in runs again for.

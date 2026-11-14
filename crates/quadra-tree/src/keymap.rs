@@ -9,7 +9,7 @@ use quadra_platform::{Key, Mods};
 
 use quadra_text::Motion;
 
-use crate::action::{Action, AnyAction, FocusNext, FocusPrevious};
+use crate::action::{Action, AnyAction, FocusNext, FocusPrevious, GoBack, GoForward};
 use crate::field::TextCommand;
 
 /// The key context of a text field: where the editing keys are bound.
@@ -138,6 +138,8 @@ impl Default for Keymap {
         let tab = Keystroke { key: Key::Tab, mods: Mods::NONE };
         keymap.push(vec![tab], None, FocusNext);
         keymap.push(vec![Keystroke { mods: Mods::SHIFT, ..tab }], None, FocusPrevious);
+        keymap.push(vec![Keystroke { key: Key::Left, mods: Mods::ALT }], None, GoBack);
+        keymap.push(vec![Keystroke { key: Key::Right, mods: Mods::ALT }], None, GoForward);
         keymap.text_bindings();
         keymap
     }

@@ -87,20 +87,24 @@ tool and the benches never write outside the project; a test that does gives a f
 
 ## Pages
 
-`Router<R>` holds a stack of routes, `R` any `Clone + PartialEq` value of the app:
-`router(first)`, `current()` (a signal), `push`, `replace`, `back`, `forward`,
-`can_back`, `can_forward`. `router.view(|route| ..)` shows the current one and binds going
-back and forth: Alt-Left and Alt-Right (the actions `GoBack`, `GoForward`) and the back and
-forward buttons of a mouse.
+`Router<R>` holds a stack of routes, `R` any `Clone + PartialEq` value of the app; it is a
+handle (`Copy`) over signals: `router(first)`, `current()` (read as a signal is), `push`
+(forgets the pages ahead; the page shown is not pushed again), `replace`, `back`,
+`forward`, `can_back`, `can_forward`. `router.view(|route| ..)` shows the current one, made
+again only when the route changes (what the page reads does not remake it), and goes back
+and forth on Alt-Left and Alt-Right (the actions `GoBack`, `GoForward`, bound in every
+window's keymap) while the focus is in it or it is the window's view, and on the back and
+forward buttons of a mouse over it.
 
 ## Start and end
 
 - **The command line**: `App::args()` are the arguments it was started with, after the
   program's name (`App::with_args` in tests).
-- **Closing**: a view says it may not close yet with `on_close(|| bool)` in its window: when
-  the user asks a window to close, each such handler is asked, and the window closes only if
-  all say yes. A handler that says no asks the user (a dialog) and closes the window itself
-  later with `close_window()`. A window closed by the app is not asked.
+- **Closing**: a view says whether its window may close with `.on_close(|| bool)` on a box:
+  when the user asks a window to close (the OS's close button, or `window().close()`, the
+  app's own), such handlers are asked until one says no, and the window closes only if none
+  does. A handler that says no asks the user (a dialog) and closes the window itself later
+  with `window().close_now()`, taken while the view is built, which asks nothing.
 - **The last window**: the app quits when its last window closes, unless
   `quit_on_last_window(false)` (an app of the tray).
 - **One instance**: opt-in, in `quadra-shell` (16).

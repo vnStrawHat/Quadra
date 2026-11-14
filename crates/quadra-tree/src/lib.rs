@@ -38,7 +38,7 @@ mod verify;
 mod widget;
 mod window;
 
-pub use action::{Action, FocusNext, FocusPrevious};
+pub use action::{Action, FocusNext, FocusPrevious, GoBack, GoForward};
 pub use dispatch::PointerInput;
 pub use drawing::Drawing;
 pub use field::{TextCommand, TextField};

@@ -93,6 +93,8 @@ impl SettingsPage {
         self
     }
 
+    /// Adds a group to the page, shown by [`settings`] with its search and pages. A group shown
+    /// alone, outside of them, is [`settings_group`].
     pub fn group(mut self, group: SettingsGroup) -> Self {
         self.groups.push(group);
         self

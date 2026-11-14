@@ -2,13 +2,10 @@
 //! content. An app that is not a workbench does not need it.
 
 mod chrome;
-mod dock;
-mod pane;
 mod panes;
 mod tabs;
 
 pub use chrome::{Activity, ActivityBar, activity_bar, panel_header};
-pub use dock::{Dock, DockEvent, Group, TabDrag, Zone, dock, zone_at};
-pub use pane::{Axis, Pane};
-pub use panes::{Panes, panes};
-pub use tabs::{Tab, TabStrip, tab_strip};
+pub use panes::panes;
+pub use quadra_base::work::{Axis, Dock, DockEvent, Group, Pane, Panes, Tab, TabDrag, Zone, dock, zone_at};
+pub use tabs::{TabStrip, tab_strip};

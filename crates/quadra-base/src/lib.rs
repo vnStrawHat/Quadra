@@ -23,5 +23,6 @@ pub mod split;
 pub mod table;
 pub mod time;
 pub mod tree;
+pub mod work;
 
 pub use action::keymap;

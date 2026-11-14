@@ -115,7 +115,7 @@ its name in the kit (`quadra_kit::checkbox` stays).
 | `tree` | `Branch` (a thing's id, what is in it, what its row shows); the open things, the rows that show, the selection, the keys | a row's face (the thing, its depth, open; whether selected, whether the tree has the focus), the frame | `tree.rs` |
 | `rules` | `Rule`, `validate` | none | `field.rs` |
 | `settings` | `Model`: pages, groups, rows known by their text; a search that keeps rows whatever the accents, the page that shows, a group scrolled to; `acts`, `opens` for the column's rows | the column, a page, a group, a row | `settings.rs`, `settings/*` |
-| `work` | the pane tree, docking, tabs that move and tear off | a tab, a strip, a pane, a seam | `work/*` |
+| `work` | `Pane` (the tree and where its parts stand, the seam's width given), `Dock` (what a drop asks), the view of the tree (a seam dragged, `LEAST`, a double click; a pane that takes tabs), `Strip` (a tab chosen, moved after `SLIDE`, closed by its cross or the middle button, torn off after `TEAR` and taken where it is dropped) | a tab's face, its cross, the lane of the tabs, the chip that follows the pointer; `Parts` of the tree: the seam's width and face, the veil | `work/*` |
 
 What stays in the kit, as it is only a look: `display`, `notes`, `bars`, `titlebar`,
 `status`, `progress`, `icon`, `icons`, `fonts`, `theme`, `token`, `size`, `root`, and `diff`

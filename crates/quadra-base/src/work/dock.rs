@@ -6,17 +6,13 @@ use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use quadra_layout::{Align, Display};
-use quadra_prim::{Edges, Point, Rect};
+use quadra_prim::{Point, Rect};
 use quadra_reactive::{Scope, Signal, signal};
 use quadra_tree::NodeId;
-use quadra_ui::{Div, MountCx, div, row, text};
+use quadra_ui::MountCx;
 
 use super::pane::{Axis, Pane};
 use super::tabs::{Tab, Widths};
-use crate::icon::icon;
-use crate::popup::surface;
-use crate::{size, token};
 
 /// A tab that is dragged: the group it is dragged out of, and its id.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -50,7 +46,7 @@ pub fn zone_at(rect: Rect, at: Point) -> Zone {
 }
 
 /// The part of a box that a drop on a zone would take: all of it, or the half at that edge.
-pub(crate) fn zone_rect(rect: Rect, zone: Zone) -> Rect {
+pub fn zone_rect(rect: Rect, zone: Zone) -> Rect {
     let (w, h) = (rect.width / 2.0, rect.height / 2.0);
     match zone {
         Zone::Center => rect,
@@ -59,28 +55,6 @@ pub(crate) fn zone_rect(rect: Rect, zone: Zone) -> Rect {
         Zone::Top => Rect::new(rect.x, rect.y, rect.width, h),
         Zone::Bottom => Rect::new(rect.x, rect.y + h, rect.width, h),
     }
-}
-
-/// What marks where a drop would land, in a box of this size: a grey veil with a line in the
-/// colour of the focus around it, 4 px in.
-pub(crate) fn veil(shown: impl Fn() -> Option<Rect> + Copy + 'static) -> Div {
-    let rect = move || shown().unwrap_or_default().inset(Edges::all(4.0));
-    let veil = div().absolute().left(move || rect().x).top(move || rect().y);
-    let veil = veil.width(move || rect().width).height(move || rect().height);
-    let veil = veil.bg(token::TEXT_3.alpha(0.5)).border(1.0).border_color(token::BORDER_FOCUSED);
-    veil.radius(size::RADIUS_SM)
-        .display(move || if shown().is_some() { Display::Flex } else { Display::None })
-}
-
-/// What follows the pointer while a tab is dragged: its icon and its title on a chip.
-pub(crate) fn chip(tab: &Tab) -> Div {
-    let chip = row().align_items(Align::Center).gap(4.0).height(28.0).padding_x(8.0);
-    let chip = match tab.icon {
-        Some(body) => chip.child(icon(body).color(token::TEXT_2)),
-        None => chip,
-    };
-    let chip = chip.child(text(tab.title.clone()).color(token::TEXT));
-    surface(1).bg(token::CANVAS).border_color(token::LINE_STRONG).radius(size::RADIUS_MD).child(chip)
 }
 
 impl Pane {

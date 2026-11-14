@@ -5,10 +5,6 @@
 
 use quadra_prim::Rect;
 
-/// The width of the strip around the seam of a split, which takes the pointer; the line in
-/// its middle is one pixel.
-pub(crate) const GRIP: f32 = 6.0;
-
 /// How the two sides of a split lie.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Axis {
@@ -29,7 +25,7 @@ pub enum Pane {
 
 /// A part of a pane tree in the box of the tree: a leaf, or the seam of a split.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum Part {
+pub enum Part {
     Leaf {
         group: String,
         rect: Rect,
@@ -159,10 +155,10 @@ impl Pane {
 
     /// Where the leaves and the seams stand in `rect`, on whole pixels: the leaves in
     /// reading order, then the seams. A collapsed leaf keeps `header` of height and has a
-    /// line of one pixel beside it; any other seam is a strip of 6 px.
-    pub(crate) fn place(&self, rect: Rect, header: f32) -> Vec<Part> {
+    /// line of one pixel beside it; any other seam is a strip `grip` wide.
+    pub fn place(&self, rect: Rect, (header, grip): (f32, f32)) -> Vec<Part> {
         let (mut leaves, mut seams) = (Vec::new(), Vec::new());
-        self.place_in(rect, header, &mut Vec::new(), &mut leaves, &mut seams);
+        self.place_in(rect, (header, grip), &mut Vec::new(), &mut leaves, &mut seams);
         leaves.append(&mut seams);
         leaves
     }
@@ -170,7 +166,7 @@ impl Pane {
     fn place_in(
         &self,
         rect: Rect,
-        header: f32,
+        (header, grip): (f32, f32),
         path: &mut Vec<usize>,
         leaves: &mut Vec<Part>,
         seams: &mut Vec<Part>,
@@ -185,7 +181,7 @@ impl Pane {
         let (before, seam, fixed) = match Pane::folded(axis, first, second) {
             (true, _) => (header.min(length), 1.0, true),
             (_, true) => ((length - header - 1.0).max(0.0), 1.0, true),
-            _ => ((ratio * length).floor().min((length - GRIP).max(0.0)), GRIP, false),
+            _ => ((ratio * length).floor().min((length - grip).max(0.0)), grip, false),
         };
         let cut = |from: f32, len: f32| match row {
             true => Rect::new(rect.x + from, rect.y, len.max(0.0), rect.height),
@@ -196,7 +192,7 @@ impl Pane {
             [(0, first, cut(0.0, before)), (1, second, cut(before + seam, length - before - seam))]
         {
             path.push(side);
-            pane.place_in(part, header, path, leaves, seams);
+            pane.place_in(part, (header, grip), path, leaves, seams);
             path.pop();
         }
     }
@@ -255,7 +251,7 @@ mod tests {
     fn the_parts_stand_on_whole_pixels_and_a_folded_leaf_keeps_its_header() {
         let mut tree = workbench();
         let leaf = |group: &str, x, y, w, h| Part::Leaf { group: group.into(), rect: Rect::new(x, y, w, h) };
-        let parts = tree.place(Rect::new(0.0, 0.0, 806.0, 406.0), 28.0);
+        let parts = tree.place(Rect::new(0.0, 0.0, 806.0, 406.0), (28.0, 6.0));
         assert_eq!(
             parts[..3],
             [
@@ -276,7 +272,7 @@ mod tests {
 
         // Folded, the terminal is its header under a line, and the editor has the rest.
         tree.toggle("terminal");
-        let parts = tree.place(Rect::new(0.0, 0.0, 806.0, 406.0), 28.0);
+        let parts = tree.place(Rect::new(0.0, 0.0, 806.0, 406.0), (28.0, 6.0));
         assert_eq!(
             parts[1..3],
             [leaf("editor", 207.0, 0.0, 599.0, 377.0), leaf("terminal", 207.0, 378.0, 599.0, 28.0)]

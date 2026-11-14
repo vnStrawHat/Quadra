@@ -24,7 +24,29 @@ impl Timeline {
     /// A step: over `ms`, along `ease`, to what `refine` sets of the background, the
     /// border's colour and the pose, from where the step before left them.
     pub fn to(mut self, ms: u64, ease: Ease, refine: impl FnOnce(Refine) -> Refine) -> Self {
-        self.0.steps.push(Step { how: over(ms, ease), to: refine(Refine::default()).0 });
+        self.0.steps.push(Step::To(over(ms, ease), refine(Refine::default()).0));
+        self
+    }
+
+    /// A step that starts together with the step before, over its own time: the two are
+    /// one step, as long as the longer. Of two that set the same thing, this one shows.
+    pub fn with(mut self, ms: u64, ease: Ease, refine: impl FnOnce(Refine) -> Refine) -> Self {
+        let step = Step::To(over(ms, ease), refine(Refine::default()).0);
+        match self.0.steps.pop() {
+            Some(Step::Together(mut steps)) => {
+                steps.push(step);
+                self.0.steps.push(Step::Together(steps));
+            }
+            Some(before) => self.0.steps.push(Step::Together(vec![before, step])),
+            None => self.0.steps.push(step),
+        }
+        self
+    }
+
+    /// Another timeline played as a step, as many times as it says, each from where the
+    /// steps before it left (one that plays for ever plays once).
+    pub fn then(mut self, inner: Timeline) -> Self {
+        self.0.steps.push(Step::Line(Box::new(inner.0)));
         self
     }
 
@@ -72,5 +94,19 @@ impl Div {
     /// Plays a timeline from when the box is mounted.
     pub fn animate(self, line: Timeline) -> Self {
         self.on_mount(move |tree, id| tree.set_timeline(id, line.0))
+    }
+
+    /// Plays a timeline from when the box is mounted, and again from the start each time
+    /// what `start` reads changes: a count the app moves on, say.
+    pub fn animate_on<T: 'static>(mut self, start: impl Fn() -> T + 'static, line: Timeline) -> Self {
+        self.binders.push(Box::new(move |id, handle| {
+            let writer = handle.clone();
+            handle.bind(move || {
+                start();
+                let line = line.0.clone();
+                writer.with(move |tree| tree.set_timeline(id, line));
+            });
+        }));
+        self
     }
 }

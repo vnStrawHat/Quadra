@@ -120,8 +120,13 @@ div().animate(bounce)
   state, a signal) is what the next frame starts from. The transition of the box waits
   while a timeline plays.
 - When the last play ends its values stay, until the style changes.
-- Not yet: steps that run together over different times, timelines inside timelines, a
-  timeline started again by the app.
+- `.with(ms, ease, ..)` is a step that starts together with the step before, over its own
+  time: the two are one step, as long as the longer; of two that set the same thing, the
+  later shows. `.then(timeline)` plays another timeline as a step, as many times as it
+  says, each play from where the steps before it left (one that plays for ever plays once).
+- `.animate_on(|| read, timeline)` plays the timeline from when the box is mounted and again
+  from the start each time what `read` reads changes (a count the app moves on). A play
+  again starts from what the style says, not from where the last one left the box.
 
 ## Frame callbacks
 

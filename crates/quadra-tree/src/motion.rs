@@ -7,12 +7,15 @@
 
 use std::time::{Duration, Instant};
 
-use quadra_prim::{Color, Ease, Point};
+use quadra_prim::Ease;
 
 use crate::node::{NodeId, Pose, Style};
+
+mod eased;
 use crate::patch::{Part, Patch};
 use crate::theme::Theme;
 use crate::tree::Tree;
+use eased::Eased;
 
 /// How a change of what can ease is gone through: over how long, along which curve.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -21,12 +24,39 @@ pub struct Transition {
     pub ease: Ease,
 }
 
-/// A step of a timeline: over a time, to what it sets of what can ease. One that sets
-/// nothing is a pause.
+/// A step of a timeline.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Step {
-    pub how: Transition,
-    pub to: Vec<Patch>,
+pub enum Step {
+    /// Over a time, to what it sets of what can ease. One that sets nothing is a pause.
+    To(Transition, Vec<Patch>),
+    /// Steps that start together, each over its own time; the step lasts as long as the
+    /// longest. Of two that set the same thing, the later shows.
+    Together(Vec<Step>),
+    /// A timeline played as a step, its plays from where the steps before it left (one that
+    /// plays for ever plays once).
+    Line(Box<Timeline>),
+}
+
+impl Step {
+    fn length(&self) -> f32 {
+        match self {
+            Step::To(how, _) => how.over.as_secs_f32(),
+            Step::Together(steps) => steps.iter().map(Step::length).fold(0.0, f32::max),
+            Step::Line(line) => line.once() * line.plays.max(1) as f32,
+        }
+    }
+
+    /// What shows `left` into the step, from `now`; at its length or past it, where it ends.
+    fn at(&self, now: Eased, left: f32, theme: &Theme) -> Eased {
+        match self {
+            Step::To(how, to) => {
+                let (to, length) = (now.with(to, theme), how.over.as_secs_f32());
+                if left >= length { to } else { now.lerp(to, how.ease.at(left / length)) }
+            }
+            Step::Together(steps) => steps.iter().fold(now, |shown, step| step.at(shown, left, theme)),
+            Step::Line(line) => line.at(Duration::from_secs_f32(left.max(0.0)), now, theme).0,
+        }
+    }
 }
 
 /// Steps played one after another, from when the timeline is given to a node.
@@ -39,75 +69,40 @@ pub struct Timeline {
     pub alternate: bool,
 }
 
-/// What of a style can ease.
-#[derive(Clone, Copy, PartialEq)]
-struct Eased {
-    background: Color,
-    border: Color,
-    pose: Pose,
-}
-
-impl Eased {
-    fn of(style: &Style) -> Eased {
-        Eased { background: style.paint.background, border: style.paint.border_color, pose: style.pose }
-    }
-
-    fn into(self, style: &mut Style) {
-        (style.paint.background, style.paint.border_color, style.pose) =
-            (self.background, self.border, self.pose);
-    }
-
-    fn lerp(self, to: Eased, t: f32) -> Eased {
-        let mix = |a: f32, b: f32| a + (b - a) * t;
-        let (a, b) = (self.pose, to.pose);
-        let pose = Pose {
-            translate: Point::new(mix(a.translate.x, b.translate.x), mix(a.translate.y, b.translate.y)),
-            scale: mix(a.scale, b.scale),
-            rotate: mix(a.rotate, b.rotate),
-            opacity: mix(a.opacity, b.opacity),
-        };
-        Eased {
-            background: self.background.lerp(to.background, t),
-            border: self.border.lerp(to.border, t),
-            pose,
-        }
-    }
-
-    /// With what a step sets.
-    fn with(mut self, patches: &[Patch], theme: &Theme) -> Eased {
-        for patch in patches {
-            match *patch {
-                Patch::Background(v) => self.background = theme.resolve(v),
-                Patch::BorderColor(v) => self.border = theme.resolve(v),
-                Patch::Translate(v) => self.pose.translate = v,
-                Patch::Scale(v) => self.pose.scale = v,
-                Patch::Rotate(v) => self.pose.rotate = v,
-                Patch::Opacity(v) => self.pose.opacity = v,
-                _ => {} // nothing else eases
+impl Timeline {
+    /// Whether a step of it, or of what it holds, sets the pose.
+    fn poses(&self) -> bool {
+        fn sets(step: &Step) -> bool {
+            match step {
+                Step::To(_, to) => to.iter().any(|patch| patch.part() == Part::Pose),
+                Step::Together(steps) => steps.iter().any(sets),
+                Step::Line(line) => line.poses(),
             }
         }
-        self
+        self.steps.iter().any(sets)
     }
-}
 
-impl Timeline {
+    /// How long one play is, in seconds.
+    fn once(&self) -> f32 {
+        self.steps.iter().map(Step::length).sum()
+    }
+
     /// What shows `after` the start, for a style that says `rest`, and whether the last
     /// play is over. Every play starts from `rest`.
     fn at(&self, after: Duration, rest: Eased, theme: &Theme) -> (Eased, bool) {
-        let length = |step: &Step| step.how.over.as_secs_f32();
         // In 64 bits: a timeline that plays for days keeps its milliseconds.
-        let (once, after) = (self.steps.iter().map(length).sum::<f32>() as f64, after.as_secs_f64());
+        let (once, after) = (self.once() as f64, after.as_secs_f64());
         let over = once <= 0.0 || (self.plays != 0 && after >= once * self.plays as f64);
         let play = if over { self.plays.max(1) - 1 } else { (after / once) as u32 };
         let into = if over { once } else { after - once * play as f64 };
         let mut left = (if self.alternate && play % 2 == 1 { once - into } else { into }) as f32;
         let mut now = rest;
         for step in &self.steps {
-            let to = now.with(&step.to, theme);
-            if left < length(step) {
-                return (now.lerp(to, step.how.ease.at(left / length(step))), over);
+            let length = step.length();
+            if left < length {
+                return (step.at(now, left, theme), over);
             }
-            (now, left) = (to, left - length(step));
+            (now, left) = (step.at(now, length, theme), left - length);
         }
         (now, over)
     }
@@ -130,6 +125,9 @@ pub(crate) struct Motion {
     run: Option<Run>,
     /// The timeline that plays, since when, and what the node's style says meanwhile.
     line: Option<(Timeline, Instant, Eased)>,
+    /// What the node's style said when the last timeline ended: one played again starts
+    /// from it, not from where that one left the node.
+    rest: Option<Eased>,
 }
 
 impl Tree {
@@ -137,7 +135,7 @@ impl Tree {
         self.get(id)?;
         self.keep_own_style(id); // every change of the style goes through `resolve` from now
         let born = self.frames;
-        let fresh = || Box::new(Motion { how: None, born, run: None, line: None });
+        let fresh = || Box::new(Motion { how: None, born, run: None, line: None, rest: None });
         Some(&mut **self.nodes[id.index as usize].motion.get_or_insert_with(fresh))
     }
 
@@ -156,14 +154,18 @@ impl Tree {
         if self.get(id).is_none() {
             return;
         }
-        if line.steps.iter().flat_map(|step| &step.to).any(|patch| patch.part() == Part::Pose) {
+        if line.poses() {
             self.make_layer(id, false);
         }
-        let (rest, now) = (self.eased_now(id), self.handle().now());
-        if let Some(motion) = self.motion(id) {
-            (motion.line, motion.run) = (Some((line, now, rest)), None);
+        let (shown, now) = (self.eased_now(id), self.handle().now());
+        let Some(motion) = self.motion(id) else { return };
+        // Played again, it starts from what the style says, not from where the last play is.
+        let moving = motion.line.is_some() || motion.run.is_some();
+        let rest = motion.line.as_ref().map(|(_, _, rest)| *rest).or(motion.rest).unwrap_or(shown);
+        (motion.line, motion.run) = (Some((line, now, rest)), None);
+        if !moving {
+            self.moving.push(id);
         }
-        self.moving.push(id);
     }
 
     /// The pose a node shows.
@@ -200,6 +202,7 @@ impl Tree {
         }
         let (target, shown, now) = (Eased::of(style), self.eased_now(id), self.handle().now());
         let Some(motion) = self.nodes[id.index as usize].motion.as_mut() else { return };
+        motion.rest = motion.rest.map(|_| target);
         if let Some((line, since, rest)) = &mut motion.line {
             *rest = target;
             return line.at(now - *since, target, &theme).0.into(style);
@@ -237,7 +240,8 @@ impl Tree {
                 (None, None) => return false,
             };
             if done {
-                (motion.line, motion.run) = (None, None);
+                motion.rest = motion.line.take().map(|(_, _, rest)| rest).or(motion.rest);
+                motion.run = None;
             }
             let mut paint = self.node(id).paint;
             (paint.background, paint.border_color) = (value.background, value.border);

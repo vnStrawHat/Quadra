@@ -169,3 +169,48 @@ fn a_timeline_plays_its_steps_by_the_clock_and_paints_nothing() {
     near(look(&h), [-10.0, 90.0, 1.0, 1.0]);
     assert!(h.tree.animating());
 }
+
+#[test]
+fn steps_run_together_timelines_hold_timelines_and_the_app_plays_one_again() {
+    let mut h = Harness::new();
+    let count = signal(0u32);
+    h.mount(move || {
+        let fade = timeline().to(100, Ease::Linear, |s| s.translate(Point::new(0.0, -20.0))).with(
+            200,
+            Ease::Linear,
+            |s| s.opacity(0.0),
+        );
+        let grow = timeline().to(50, Ease::Linear, |s| s.scale(2.0)).repeat(2);
+        let nested = timeline().to(100, Ease::Linear, |s| s.translate(Point::new(10.0, 0.0))).then(grow);
+        let again = timeline().to(100, Ease::Linear, |s| s.translate(Point::new(0.0, -20.0)));
+        let dot = || div().size(20.0, 20.0).bg(RED);
+        column()
+            .child(dot().animate(fade))
+            .child(dot().animate(nested))
+            .child(dot().animate_on(move || count.get(), again))
+    });
+    let nodes = mounted(&mut h);
+    let pose = |h: &Harness, i: usize| h.tree.pose(nodes[i]);
+    let near = |is: f32, wanted: f32| assert!((is - wanted).abs() < 1e-3, "{is} is not {wanted}");
+    // Together: the move is done at 100 ms, the fade goes on to 200.
+    pass(&mut h, 50);
+    near(pose(&h, 0).translate.y, -10.0);
+    near(pose(&h, 0).opacity, 0.75);
+    pass(&mut h, 100);
+    near(pose(&h, 0).translate.y, -20.0);
+    near(pose(&h, 0).opacity, 0.25);
+    // Nested: after the move (100 ms), the inner timeline plays twice, each from where the
+    // move left: at 150 ms its second play starts.
+    near(pose(&h, 1).translate.x, 10.0);
+    near(pose(&h, 1).scale, 1.0);
+    pass(&mut h, 25);
+    near(pose(&h, 1).scale, 1.5);
+    pass(&mut h, 50);
+    near(pose(&h, 1).scale, 2.0);
+    // Played again by the app, from what the style says.
+    near(pose(&h, 2).translate.y, -20.0);
+    count.set(1);
+    h.frame();
+    pass(&mut h, 50);
+    near(pose(&h, 2).translate.y, -10.0);
+}

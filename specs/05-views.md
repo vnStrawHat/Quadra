@@ -290,6 +290,9 @@ locale at the window root; a subtree can provide its own.
   for it everything, and the key for copying puts the selection on the clipboard of the
   view's context. The text can have the focus; the selection goes when the focus does, and
   when the text changes. Its key context is "text-select", which binds those two keys only.
+- `text(..).ellipsis()` is one line, as wide as its box lets it be: when the box is
+  narrower than the text, what fits is painted and an ellipsis after it (shaped at measure;
+  cutting is paint alone).
 - `rich_text([span("was "), span("restarted").bold(), span("the guide").link(url)])` is one
   paragraph of spans, each saying what it has otherwise than the text around it:
   `.bold()`, `.weight(..)`, `.italic()`, `.size(px)`, `.family(name)`, `.color(..)` (a

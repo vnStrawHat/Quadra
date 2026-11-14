@@ -70,3 +70,29 @@ fn text_is_as_the_boxes_around_it_say_until_one_says_otherwise() {
     assert_eq!(stats.nodes_laid_out, 0);
     assert_eq!(stats.nodes_painted, 2); // "plain" and "Save": the note's two keep their red
 }
+
+#[test]
+fn a_text_with_an_ellipsis_shows_what_fits_and_dots_where_its_box_ends() {
+    let width = signal(30.0f32);
+    let mut h = Harness::new();
+    h.mount(move || {
+        let title = text("abcdefghij").ellipsis();
+        column()
+            .text_size(10.0)
+            .child(div().width(move || quadra_layout::Length::Px(width.get())).child(title))
+    });
+    h.frame();
+    // 6 px a letter on the fake backend, and as much for the dots: four letters and them.
+    let glyphs = |h: &Harness| {
+        let scene = h.tree.scene();
+        let all = scene.roots().iter().flat_map(|&root| scene.layer(root).instances());
+        all.filter(|i| i.kind == quadra_render::Kind::Mono as u32).count()
+    };
+    assert_eq!(glyphs(&h), 5);
+    // Room for all of it: no dots.
+    width.set(200.0);
+    h.frame();
+    assert_eq!(glyphs(&h), 10);
+    let node = h.get_by_text("abcdefghij").node();
+    assert_eq!(h.tree.window_rect(node).height, 14.0); // one line all the way
+}

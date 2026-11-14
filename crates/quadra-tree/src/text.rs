@@ -5,7 +5,7 @@ use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
 use quadra_prim::{Color, Corners, Point, Rect, Size};
 use quadra_render::{Kind, Quad, Sprite};
-use quadra_text::{EditBuffer, FaceId, GlyphFormat, Paragraph, TextStyle};
+use quadra_text::{EditBuffer, FaceId, GlyphFormat, Paragraph, TextStyle, Word};
 
 use crate::fonts::{GlyphTile, SUBPIXEL_STEPS};
 use crate::inherit::Inherited;
@@ -27,13 +27,16 @@ pub struct Text {
     /// The tiles of the glyphs last painted. Holding them keeps them in the atlas: the
     /// instances in the layer point at their rectangles.
     tiles: Vec<GlyphTile>,
+    /// One line, cut where its box ends with an ellipsis, shaped at measure.
+    pub ellipsis: Option<Option<std::rc::Rc<Word>>>,
 }
 
 impl Text {
     pub fn new(text: impl Into<String>) -> Text {
         let (text, style, color) = (text.into(), TextStyle::default(), Color::BLACK);
         let (selected, selection) = ((0, 0), Color::TRANSPARENT);
-        Text { text, style, color, selection, paragraph: None, stale: false, selected, tiles: Vec::new() }
+        let (tiles, ellipsis) = (Vec::new(), None);
+        Text { text, style, color, selection, paragraph: None, stale: false, selected, tiles, ellipsis }
     }
 
     /// The offset in the text nearest a point from the node's corner.
@@ -105,7 +108,13 @@ impl Widget for Text {
                 none.insert(Paragraph::new(cx.text, self.text.as_str(), self.style.clone()))
             }
         };
-        paragraph.wrap(cx.text, known.width.unwrap_or(avail.width))
+        let width = known.width.unwrap_or(avail.width);
+        let Some(dots) = &mut self.ellipsis else { return paragraph.wrap(cx.text, width) };
+        // One line, as wide as the box lets it be: what is past its end is cut.
+        let face = cx.text.face_for(&self.style);
+        *dots = Some(cx.text.word("\u{2026}", face, self.style.size));
+        let whole = paragraph.wrap(cx.text, f32::INFINITY);
+        Size::new(whole.width.min(width), whole.height)
     }
 
     fn paint(&mut self, cx: &mut PaintCx) {
@@ -116,7 +125,12 @@ impl Widget for Text {
             cx.quad(Quad { bounds, background: self.selection, ..Quad::default() });
         }
         self.tiles.clear();
-        paint_glyphs(cx, paragraph, cx.rect.origin(), self.color, &mut self.tiles);
+        match &self.ellipsis {
+            Some(Some(dots)) if paragraph.size().width > cx.rect.width + 0.5 => {
+                cut(cx, paragraph, dots, self.color, &mut self.tiles)
+            }
+            _ => paint_glyphs(cx, paragraph, cx.rect.origin(), self.color, &mut self.tiles),
+        }
     }
 
     fn inherit(&mut self, inherited: &Inherited) {
@@ -134,6 +148,28 @@ impl Widget for Text {
         if says.name.is_empty() {
             says.name.clone_from(&self.text);
         }
+    }
+}
+
+/// Paints the one line of a paragraph as far as there is room for it and an ellipsis after
+/// it, at the node's corner.
+fn cut(cx: &mut PaintCx, paragraph: &Paragraph, dots: &Word, color: Color, tiles: &mut Vec<GlyphTile>) {
+    let Some(line) = paragraph.lines().first() else { return };
+    let (ascent, descent) = paragraph.metrics();
+    let (line_px, scale, origin) = (paragraph.style().line_px(), cx.scale, cx.rect.origin());
+    let baseline = ((origin.y + (line_px - ascent - descent) / 2.0 + ascent) * scale).round();
+    let (glyphs, start) = paragraph.line_glyphs(line);
+    let room = cx.rect.width - dots.width;
+    let mut end = 0.0f32;
+    for g in glyphs.iter().filter(|g| g.x - start + g.advance <= room) {
+        let (_, size) = paragraph.run_at(g.cluster as usize);
+        let pen = Point::new((origin.x + g.x - start) * scale, baseline - (g.y * scale).round());
+        tiles.extend(paint_glyph(cx, (g.face, g.id), size * scale, pen, color));
+        end = end.max(g.x - start + g.advance);
+    }
+    for g in &dots.glyphs {
+        let pen = Point::new((origin.x + end + g.x) * scale, baseline - (g.y * scale).round());
+        tiles.extend(paint_glyph(cx, (g.face, g.id), paragraph.style().size * scale, pen, color));
     }
 }
 

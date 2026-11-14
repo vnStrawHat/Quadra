@@ -156,3 +156,66 @@ fn the_list_at_the_end_of_a_strip_names_every_tab() {
     wait(&mut h, 0);
     assert_eq!((active.get_untracked(), h.tree.overlays().count()), ("b".to_string(), 0));
 }
+
+#[test]
+fn a_tab_is_renamed_in_place_has_its_own_menu_and_a_long_title_is_cut() {
+    use quadra_kit::MenuItem;
+    use quadra_platform::Key;
+    let long = "A title far longer than any tab may be wide, which is cut";
+    let tabs = signal(vec![Tab::new("a", "Alpha"), Tab::new("b", long)]);
+    let (active, asked) = (signal("a".to_string()), signal(String::new()));
+    let mut h = mounted(move || {
+        let strip = tab_strip(tabs, active).on_rename(move |id, title| {
+            tabs.update(|all| {
+                all.iter_mut().filter(|tab| tab.id == id).for_each(|tab| tab.title = title.into())
+            })
+        });
+        let strip = strip.menu(move |id| {
+            let id = id.to_string();
+            vec![MenuItem::new("Close others").on_select(move || asked.set(id.clone()))]
+        });
+        quadra_kit::root().child(column().width(800.0).child(strip))
+    });
+    // A long title is cut at 200 px.
+    let words =
+        |h: &Harness, said: &str| h.query(|n| n.semantics.role == Role::Text && n.semantics.name == said)[0];
+    let title = words(&h, long);
+    assert_eq!(h.tree.window_rect(title).width, 200.0);
+
+    // A double click puts the title in a field; Enter renames.
+    let node = words(&h, "Alpha");
+    let at = h.tree.window_rect(node).center();
+    for _ in 0..2 {
+        h.pointer(PointerInput::Down, at.x, at.y);
+        h.pointer(PointerInput::Up, at.x, at.y);
+    }
+    wait(&mut h, 0);
+    let field = h.get_by_role(Role::TextInput, "").node();
+    assert_eq!(h.tree.focused(), Some(field));
+    h.key(Key::End, Mods::NONE);
+    h.type_text(" two");
+    h.key(Key::Enter, Mods::NONE);
+    wait(&mut h, 0);
+    assert!(h.has_text("Alpha two") && h.query(|n| n.semantics.role == Role::TextInput).is_empty());
+    // Escape gives it up.
+    let node = words(&h, "Alpha two");
+    let at = h.tree.window_rect(node).center();
+    for _ in 0..2 {
+        h.pointer(PointerInput::Down, at.x, at.y);
+        h.pointer(PointerInput::Up, at.x, at.y);
+    }
+    wait(&mut h, 0);
+    h.type_text("x");
+    h.key(Key::Escape, Mods::NONE);
+    wait(&mut h, 0);
+    assert!(h.has_text("Alpha two") && !h.has_text("Alpha twox"));
+
+    // The other button on a tab opens its own menu.
+    let node = words(&h, long);
+    let at = h.tree.window_rect(node).center();
+    h.tree.pointer(PointerInput::Down, MouseButton::Right, at, Mods::NONE, h.now());
+    h.tree.pointer(PointerInput::Up, MouseButton::Right, at, Mods::NONE, h.now());
+    wait(&mut h, 0);
+    h.get_by_role(Role::MenuItem, "Close others").click();
+    assert_eq!(asked.get_untracked(), "b");
+}

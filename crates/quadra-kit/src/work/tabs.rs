@@ -2,27 +2,39 @@
 //! of them showing; a cross closes a tab, and a list at the end of the strip names them all.
 //! What the tabs do is `quadra_base::work::Strip`.
 
+use std::rc::Rc;
+
 use quadra_base::work::{self, Dock, Strip, Tab};
 use quadra_layout::{Align, Display, Justify};
-use quadra_platform::Cursor;
+use quadra_platform::{Cursor, Key};
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{NodeId, Paint, Role};
-use quadra_ui::{AnyView, Div, MountCx, View, div, each, row, scroll_strip, text};
+use quadra_ui::{AnyView, Div, MountCx, View, div, dynamic, each, row, scroll_strip, text, text_input};
 
 use crate::icon::icon;
-use crate::menu::{MenuItem, menu_icon_button};
+use crate::menu::{MenuItem, context_menu, menu_icon_button};
 use crate::popup::surface;
 use crate::{icons, size, token};
+
+/// How wide a tab's title may be: past that it ends with an ellipsis.
+const TITLE_MAX: f32 = 200.0;
+
+type TabMenu = Rc<dyn Fn(&str) -> Vec<MenuItem>>;
+type Rename = Rc<dyn Fn(&str, &str)>;
+/// A tab's menu, and the id of the tab being renamed with what renames it.
+type More = (Option<TabMenu>, Option<(Signal<Option<String>>, Rename)>);
 
 pub struct TabStrip {
     strip: Strip,
     actions: Vec<AnyView>,
+    menu: Option<TabMenu>,
+    rename: Option<Rename>,
 }
 
 /// A strip of 32 px with a tab for each of `tabs`, the one whose id `active` holds joined to
 /// what is under the strip. A press writes `active`, a drag the order of `tabs`.
 pub fn tab_strip(tabs: Signal<Vec<Tab>>, active: Signal<String>) -> TabStrip {
-    TabStrip { strip: work::strip(tabs, active), actions: Vec::new() }
+    TabStrip { strip: work::strip(tabs, active), actions: Vec::new(), menu: None, rename: None }
 }
 
 impl TabStrip {
@@ -46,6 +58,73 @@ impl TabStrip {
         self.actions.push(AnyView::new(view));
         self
     }
+
+    /// A tab's own menu, opened by the other button on it: `f` is given the tab's id.
+    pub fn menu(mut self, f: impl Fn(&str) -> Vec<MenuItem> + 'static) -> Self {
+        self.menu = Some(Rc::new(f));
+        self
+    }
+
+    /// Tabs can be renamed: a double click on a title puts it in a field, where Enter or
+    /// leaving gives `f` the id and the new title, and Escape gives it up.
+    pub fn on_rename(mut self, f: impl Fn(&str, &str) + 'static) -> Self {
+        self.rename = Some(Rc::new(f));
+        self
+    }
+}
+
+/// The title of a tab, cut with an ellipsis past its width; a double click on it, when
+/// tabs are renamed, writes its id to `editing`.
+fn title(
+    tab: Signal<Tab>,
+    tone: impl Fn() -> Paint + 'static,
+    renames: Option<(Signal<Option<String>>, String)>,
+) -> Div {
+    let words = text(move || tab.with(|tab| tab.title.clone())).ellipsis();
+    let title = div().max_width(TITLE_MAX).text_color(tone).child(words);
+    match renames {
+        Some((editing, id)) => title.on_click(move |e| {
+            if e.clicks == 2 {
+                editing.set(Some(id.clone()));
+            }
+        }),
+        None => title,
+    }
+}
+
+/// The field a title is renamed in, with the focus: Enter or leaving it renames, Escape
+/// gives up; either way the title shows again.
+fn field(tab: Signal<Tab>, editing: Signal<Option<String>>, rename: Rename, id: String) -> Div {
+    let value = signal(tab.with_untracked(|tab| tab.title.clone()));
+    let mine = id.clone();
+    let done = Rc::new(move |keep: bool| {
+        if editing.with_untracked(|on| on.as_deref() == Some(mine.as_str())) {
+            editing.set(None);
+            if keep {
+                rename(&mine, value.get_untracked().trim());
+            }
+        }
+    });
+    let (submit, escape, leave) = (done.clone(), done.clone(), done);
+    let input = text_input(value).size(13.0).on_submit(move |_| submit(true));
+    let field = div().width(TITLE_MAX.min(160.0)).border(1.0).border_color(token::BORDER_FOCUSED);
+    let field = field.radius(size::RADIUS_SM).padding_x(2.0).child(input);
+    let field = field.on_key_down(move |e| {
+        if e.key == Key::Escape {
+            e.stop();
+            escape(false);
+        }
+    });
+    let field = field.on_focus(move |has| {
+        if !has {
+            leave(true);
+        }
+    });
+    field.on_mount(|tree, id| {
+        tree.after_layout(move |tree| {
+            tree.focus_first(id);
+        })
+    })
 }
 
 /// What follows the pointer while a tab is dragged: its icon and its title on a chip.
@@ -61,7 +140,7 @@ fn chip(tab: &Tab) -> Div {
 
 /// One tab: 32 px high on the plane of tabs, or on the canvas with no line under it while
 /// it is the active one; the seams are on the side away from the active tab.
-fn face(strip: &Strip, tab: Signal<Tab>) -> impl View + use<> {
+fn face(strip: &Strip, tab: Signal<Tab>, more: More) -> impl View + use<> {
     let (tabs, active, id) = (strip.tabs, strip.active, tab.with_untracked(|tab| tab.id.clone()));
     let (me, mine) = (id.clone(), id.clone());
     let on = memo(move || active.with(|active| *active == me));
@@ -79,8 +158,17 @@ fn face(strip: &Strip, tab: Signal<Tab>) -> impl View + use<> {
         None => content,
     };
     let tone = move || -> Paint { if on.get() { token::TAB_ACTIVE_FG } else { token::TAB_FG }.into() };
-    let title = div().text_color(tone).child(text(move || tab.with(|tab| tab.title.clone())));
-    let content = content.child(title);
+    let (menu, renames) = more;
+    let content = match renames {
+        Some((editing, rename)) => {
+            let me = id.clone();
+            content.child(dynamic(move || match editing.with(|on| on.as_deref() == Some(me.as_str())) {
+                true => field(tab, editing, rename.clone(), me.clone()),
+                false => title(tab, tone, Some((editing, me.clone()))),
+            }))
+        }
+        None => content.child(title(tab, tone, None)),
+    };
     let content = match &strip.close {
         // The cross has no colour of its own: it takes that of the tab's text, which is the
         // tab's own fill until the pointer is over the tab.
@@ -111,14 +199,24 @@ fn face(strip: &Strip, tab: Signal<Tab>) -> impl View + use<> {
         seam(at.is_some_and(|at| i >= at))
     });
 
-    strip.tab(face.child(content), tab)
+    let face = strip.tab(face.child(content), tab);
+    match menu {
+        Some(items) => AnyView::new(context_menu(face, move || items(&id))),
+        None => AnyView::new(face),
+    }
 }
 
 impl View for TabStrip {
     fn mount(mut self, cx: &mut MountCx) -> NodeId {
         let (strip, actions) = (self.strip, std::mem::take(&mut self.actions));
         let (tabs, active, look) = (strip.tabs, strip.active, strip.clone());
-        let faces = each(move || tabs.get(), |tab| tab.id.clone(), move |tab| face(&look, tab));
+        let (menu, editing) = (self.menu, signal(None::<String>));
+        let renames = self.rename.map(|rename| (editing, rename));
+        let faces = each(
+            move || tabs.get(),
+            |tab| tab.id.clone(),
+            move |tab| face(&look, tab, (menu.clone(), renames.clone())),
+        );
         let faces = faces.container(strip.lane(row().shrink(0.0)));
         // The line of the bar runs under the tabs that are not active, the room that is left
         // and what stands at the end.

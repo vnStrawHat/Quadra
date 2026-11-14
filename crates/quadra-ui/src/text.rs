@@ -19,11 +19,13 @@ pub struct TextView {
     values: TextValues,
     color: Option<Paint>,
     selectable: bool,
+    ellipsis: bool,
 }
 
 /// Text: a constant, or something reactive whose changes set the node's text.
 pub fn text<M>(content: impl IntoProp<String, M>) -> TextView {
-    TextView { content: content.into_prop(), values: TextValues::default(), color: None, selectable: false }
+    let values = TextValues::default();
+    TextView { content: content.into_prop(), values, color: None, selectable: false, ellipsis: false }
 }
 
 impl TextView {
@@ -55,6 +57,13 @@ impl TextView {
     /// copying puts what is selected on the clipboard. The selection goes with the focus.
     pub fn selectable(mut self) -> Self {
         self.selectable = true;
+        self
+    }
+
+    /// One line, cut with an ellipsis where its box ends: a box that is narrower than the
+    /// text (a tab's title under a width it may not pass) shows what fits and "…".
+    pub fn ellipsis(mut self) -> Self {
+        self.ellipsis = true;
         self
     }
 }
@@ -128,7 +137,9 @@ impl View for TextView {
             Prop::Reactive(read) => (String::new(), Some(read)),
         };
         let style = Style { text: self.values, ..Style::default() };
-        let id = cx.tree.insert_widget(style, Box::new(Text::new(initial)));
+        let mut widget = Text::new(initial);
+        widget.ellipsis = self.ellipsis.then_some(None);
+        let id = cx.tree.insert_widget(style, Box::new(widget));
         if let Some(color) = self.color {
             cx.tree.patch_style(id, Patch::TextColor(color));
         }

@@ -501,7 +501,10 @@ an app that is not a workbench does not name it.
   a tab is over the pane. A group left with no tab goes, and its pane with it
   (`Dock::apply` does what a `DockEvent` asks; an app with its own drop targets takes the
   dragged `TabDrag`).
-- Not yet: a tab's own menu and renaming, limits on a tab's width with an ellipsis.
+- A tab's title is 200 px at most, cut with an ellipsis past that. `.menu(|id| items)` gives
+  each tab its own menu, opened by the other button on it. `.on_rename(|id, title| ..)`
+  lets tabs be renamed: a double click on a title puts it in a field with the focus; Enter
+  or leaving the field gives the new title, Escape gives it up.
 
 ## Overlays in the kit
 

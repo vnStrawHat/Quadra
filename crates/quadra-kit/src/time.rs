@@ -1,35 +1,15 @@
 //! The time input (specs/behaviour/09, "Forms"): hours and minutes as two parts that take the
 //! focus each. The arrows step the part with the focus, round its ends; digits type it.
 
-use std::fmt;
-
+use quadra_base::time as base;
+pub use quadra_base::time::TimeOfDay;
 use quadra_layout::Align;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Role};
 use quadra_ui::{Div, MountCx, View, div, row, text};
 
-use crate::action::{Decrease, Increase, MoveFirst, MoveLast, SLIDER};
 use crate::icon::icon;
 use crate::{icons, size, token};
-
-/// A time of the day: the hour from 0 to 23, the minute from 0 to 59.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TimeOfDay {
-    pub hour: u8,
-    pub minute: u8,
-}
-
-impl TimeOfDay {
-    pub fn new(hour: u8, minute: u8) -> TimeOfDay {
-        TimeOfDay { hour, minute }
-    }
-}
-
-impl fmt::Display for TimeOfDay {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:02}:{:02}", self.hour, self.minute)
-    }
-}
 
 pub struct TimeInput {
     value: Signal<TimeOfDay>,
@@ -49,13 +29,6 @@ impl TimeInput {
     }
 }
 
-/// A part after a digit was typed: the digit joins the one before it while that still makes
-/// a value of the part (1 then 5 is 15), and stands alone otherwise.
-fn typed(old: u8, digit: u8, limit: u8) -> u8 {
-    let two = (old % 10) * 10 + digit;
-    if old < 10 && two < limit { two } else { digit }
-}
-
 /// One part of the time: `read` gives it, `write` takes it, and it is less than `limit`.
 fn part(
     name: &'static str,
@@ -63,20 +36,8 @@ fn part(
     read: impl Fn() -> u8 + Copy + 'static,
     write: impl Fn(u8) + Copy + 'static,
 ) -> Div {
-    let by = move |change: i32| write((read() as i32 + change).rem_euclid(limit as i32) as u8);
-    let part = div().padding_x(3.0).radius(size::RADIUS_SM).role(Role::Slider).label(name.to_string());
-    let part = part.value(move || format!("{:02}", read())).focusable().key_context(SLIDER);
-    let part = part.focus(|s| s.bg(token::PRESS));
-    let part = part.on_action::<Increase>(move |_| by(step as i32));
-    let part = part.on_action::<Decrease>(move |_| by(-(step as i32)));
-    let part =
-        part.on_action::<MoveFirst>(move |_| write(0)).on_action::<MoveLast>(move |_| write(limit - 1));
-    let part = part.on_text(move |typed_text| {
-        for digit in typed_text.chars().filter_map(|c| c.to_digit(10)) {
-            write(typed(read(), digit as u8, limit));
-        }
-    });
-    part.child(text(move || format!("{:02}", read())))
+    let face = div().padding_x(3.0).radius(size::RADIUS_SM).focus(|s| s.bg(token::PRESS));
+    base::part(face, name, (limit, step), read, write).child(text(move || format!("{:02}", read())))
 }
 
 impl View for TimeInput {

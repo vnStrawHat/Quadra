@@ -106,9 +106,9 @@ its name in the kit (`quadra_kit::checkbox` stays).
 | `hint` | a tooltip and a hover card: shown after a rest, gone on leaving or a press; a card stays while the pointer is on it | the bubble, the card | `tooltip.rs`, `hover_card.rs` |
 | `dialog` | the page (a dialog to a reader), the cross that gives it up, an answer that acts and closes; it stands in a `popup` | the page, the cross, the buttons | `dialog.rs` |
 | `notices` | `Queue`: what is shown, for how long (`TOAST`, 10 s), in what order; closing | a card, a toast, the stacks | `notice.rs` |
-| `slider` | a value in a range by steps: a press and a drag on the track, the keys; two knobs on one track | the track, the fill, the knob (readers: the share) | `slider.rs`, `range.rs` |
-| `number` | a number typed or stepped, in a range, with its decimals | the field, the steppers | `number.rs` |
-| `time` | `Date`, `TimeOfDay`, the month's weeks, the parts of a time and their keys | the field, a day, the arrows | `date.rs`, `time.rs` |
+| `slider` | `Scale` (ends, step, where the track is along the face); a value in a range by steps: a press and a drag on the face, the keys, a reader; `pair` and `end`, two knobs on one track | the face, the track, the fill, the knobs, placed by `Scale::part` | `slider.rs`, `range.rs` |
+| `number` | `Number`: a value and the text of its field, which follow each other (`parse`: a comma is a point), steps within its ends, the arrows | the field (of `words`), its box, the buttons that step | `number.rs` |
+| `time` | `TimeOfDay`, the parts of a time and their keys (`typed`), a day of a calendar that a click chooses. Dates are the app's (`quadra_app::time::Date`): the month's weeks stay with the kit's calendar | a part's face, a day's face | `date.rs`, `time.rs` |
 | `disclose` | what is open and closed: accordion sections | a head (reader: open), a body | `accordion.rs` |
 | `split` | two panes and the share of the first: the drag, the least, a double click | the panes, the seam | `split.rs` |
 | `table` | sort, column widths, the selection, the keys, the copy, live keys | a header cell, a cell, a row | `table.rs`, `table/*` |

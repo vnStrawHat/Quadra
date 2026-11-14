@@ -11,9 +11,13 @@ pub mod hint;
 pub mod list;
 pub mod menu;
 pub mod notices;
+pub mod number;
 pub mod pick;
 pub mod popup;
 pub mod press;
+pub mod rules;
+pub mod slider;
 pub mod split;
+pub mod time;
 
 pub use action::keymap;

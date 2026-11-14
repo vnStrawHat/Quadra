@@ -3,13 +3,13 @@
 //! first day of the week and how a date is written are those of the app's language.
 
 use quadra_app::i18n::language;
+use quadra_base::{disclose, time};
 use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
-use quadra_tree::{NodeId, Role, State};
+use quadra_tree::{NodeId, State};
 use quadra_ui::{Div, MountCx, NodeRef, View, column, div, dynamic, row, text};
 
-use crate::action::{CONTROL, Confirm};
 use crate::button::icon_button;
 use crate::icon::icon;
 use crate::popup::popover;
@@ -59,13 +59,9 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static) -> Div {
         for day in 1..=Date::days_in(year, month) {
             let (date, picked) = (Date::new(year, month, day), picked.clone());
             let on = cell().height(28.0).radius(size::RADIUS_MD).cursor(Cursor::Pointer);
-            let on = on.role(Role::Button).label(words.date(date)).selected(move || value.get() == date);
             let on = on.hover(|s| s.bg(token::PANEL_HOVER));
             let on = on.when(State::SELECTED, |s| s.bg(token::ACCENT_TINT).text_color(token::ACCENT_TEXT));
-            let on = on.on_click(move |_| {
-                value.set(date);
-                picked();
-            });
+            let on = time::day(on, words.date(date), date, value, picked);
             cells.push(on.child(text(day.to_string())));
         }
         let mut weeks = column().gap(2.0);
@@ -111,15 +107,13 @@ impl View for DatePicker {
         let face = face.padding_x(8.0).radius(size::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
-        let face =
-            face.cursor(Cursor::Pointer).role(Role::Button).label(move || lang.locale().date(value.get()));
+        let face = face.cursor(Cursor::Pointer).label(move || lang.locale().date(value.get()));
         let face = match self.test_id {
             Some(id) => face.test_id(id),
             None => face,
         };
-        let face = face.expanded(open).focusable().key_context(CONTROL).node_ref(&opener);
-        let face = face.on_click(move |_| open.update(|open| *open = !*open));
-        let face = face.on_action::<Confirm>(move |_| open.set(true));
+        // A button that opens the calendar: while it is open the focus is in it.
+        let face = disclose::head(face.node_ref(&opener), open);
         let face = face.child(icon(icons::CALENDAR).size(14.0).color(token::TEXT_2));
         let face = face.child(text(move || said.locale().date(value.get())));
         // A day chosen closes the calendar.

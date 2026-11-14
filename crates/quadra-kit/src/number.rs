@@ -2,13 +2,13 @@
 //! a pair of chevrons at its end, inside it, or as a stepper: one frame with a minus, the
 //! value and a plus. The up and down arrows step it.
 
+use quadra_base::number::{Number, number};
 use quadra_layout::{Align, Direction, Justify};
 use quadra_platform::Cursor;
-use quadra_reactive::{Signal, effect, signal};
-use quadra_tree::{NodeId, Role};
+use quadra_reactive::Signal;
+use quadra_tree::NodeId;
 use quadra_ui::{Div, MountCx, View, column, div, row, text_input};
 
-use crate::action::{Decrease, Increase, NUMBER};
 use crate::icon::icon;
 use crate::input::input;
 use crate::{icons, size, token};
@@ -57,41 +57,17 @@ impl NumberInput {
     }
 }
 
-/// What a text says as a number: a comma is a point too.
-fn parse(text: &str) -> Option<f64> {
-    text.trim().replace(',', ".").parse().ok().filter(|v: &f64| v.is_finite())
-}
-
-/// A button that steps: `around` is its box, `body` its icon at `px`.
-fn step(around: Div, name: &'static str, body: &'static str, px: f32, press: impl Fn() + 'static) -> Div {
+/// A button that steps the number up or down: `around` is its box, `body` its icon at `px`.
+fn step(around: Div, number: Number, up: bool, body: &'static str, px: f32) -> Div {
     let around = around.align_items(Align::Center).justify(Justify::Center).shrink(0.0);
-    let around = around.cursor(Cursor::Pointer).role(Role::Button).label(name.to_string());
-    around.on_click(move |_| press()).child(icon(body).size(px))
+    number.stepper(around.cursor(Cursor::Pointer), up).child(icon(body).size(px))
 }
 
 impl View for NumberInput {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (value, (min, max), by, digits) = (self.value, self.ends, self.step, self.decimals);
-        let show = move |v: f64| format!("{v:.digits$}");
-        // The text and the number follow each other: typing a number writes it, and a
-        // number written from elsewhere is what the text says, unless it says it already.
-        let words = signal(show(value.get_untracked()));
-        effect(move || {
-            let v = value.get();
-            if parse(&words.get_untracked()) != Some(v) {
-                words.set(show(v));
-            }
-        });
-        effect(move || {
-            if let Some(v) = parse(&words.get()).filter(|v| *v != value.get_untracked()) {
-                value.set(v);
-            }
-        });
-        let bump = move |way: f64| value.update(|v| *v = (*v + way * by).clamp(min, max));
-        let wrong = move || parse(&words.get()).is_none();
-        let around = row().align_items(Align::Center).shrink(0.0).key_context(NUMBER);
-        let around =
-            around.on_action::<Increase>(move |_| bump(1.0)).on_action::<Decrease>(move |_| bump(-1.0));
+        let number = number(self.value, self.ends, self.step, self.decimals);
+        let (words, wrong) = (number.words, move || number.wrong());
+        let around = number.keys(row().align_items(Align::Center).shrink(0.0));
         if self.stepper {
             let field = text_input(words).fit(); // centred between the minus and the plus
             let field = match self.test_id {
@@ -109,9 +85,8 @@ impl View for NumberInput {
             let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
             let frame =
                 frame.invalid(wrong).when(quadra_tree::State::INVALID, |s| s.border_color(token::ERROR));
-            let frame = frame.child(step(side(), "Decrement", icons::MINUS, 16.0, move || bump(-1.0)));
-            let frame = frame.child(middle);
-            return frame.child(step(side(), "Increment", icons::PLUS, 16.0, move || bump(1.0))).mount(cx);
+            let frame = frame.child(step(side(), number, false, icons::MINUS, 16.0)).child(middle);
+            return frame.child(step(side(), number, true, icons::PLUS, 16.0)).mount(cx);
         }
         let field = input(words).width(140.0).invalid(wrong);
         let field = match self.test_id {
@@ -124,8 +99,8 @@ impl View for NumberInput {
             let around = div().size(18.0, 13.0).radius(size::RADIUS_SM).text_color(token::TEXT_2);
             around.direction(Direction::Row).hover(|s| s.bg(token::PANEL_HOVER))
         };
-        let up = step(small(), "Increment", icons::CHEVRON_UP, 10.0, move || bump(1.0));
-        let down = step(small(), "Decrement", icons::CHEVRON_DOWN, 10.0, move || bump(-1.0));
+        let up = step(small(), number, true, icons::CHEVRON_UP, 10.0);
+        let down = step(small(), number, false, icons::CHEVRON_DOWN, 10.0);
         let field = field.build().padding_y(2.0).padding_right(2.0);
         let field = field.child(column().shrink(0.0).child(up).child(down));
         around.child(field).mount(cx)

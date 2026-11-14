@@ -975,15 +975,17 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   line more than it has line breaks. A file with CR LF is held with LF and written back
   as it was (`crlf`, `file_text`).
   - It is not the piece table of the V tree, whose line starts were one array that every
-    change shifted from its line to the end: here a change costs the count of pieces after
-    it, a hundredth of the count of lines, and a piece is plain text.
-  - Measured (release, ten megabytes in 260 000 lines): opened in 6 ms; a letter typed
-    or deleted in 5 to 10 µs; a line read in 0.6 µs. The budgets are 200 ms and 2 ms
-    (behaviour/18).
+    change shifted from its line to the end: the bytes and line breaks of the pieces are
+    summed in a tree of sums (a Fenwick tree), so a change inside a piece costs the log of
+    the count of pieces, and finding the piece of an offset or a line costs as much. A
+    piece that is cut in two or joins the next counts the tree again (linear, once in a
+    few kilobytes typed or deleted). A piece is plain text.
+  - Measured (release): ten megabytes in 210 000 lines open in 6 ms, two hundred in
+    4.3 million lines in 120 ms; a letter typed or deleted in 0.8 µs and 1.2 µs; a line
+    read in 0.7 µs and 0.9 µs. The budgets are 200 ms and 2 ms (behaviour/18).
   - A test changes a text at random beside a plain string and compares all of both: the
-    text, every line, where each starts and ends.
-  - Not yet: a tree of pieces for files of gigabytes (a change counts hundreds of
-    thousands of pieces there).
+    text, every line, where each starts and ends; another holds the tree of sums to
+    counting.
 
 - **The document** (`Doc`) is a buffer with its cursors, its undo and the commands of
   editing; it draws nothing and knows no key, so a test drives it as the editor does.

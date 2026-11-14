@@ -1,11 +1,15 @@
-//! The text of a document (specs/13, "Code"): pieces of a few kilobytes in a row, and
-//! before each the bytes and the line breaks of those before it. A change moves the bytes
-//! of one piece and adds to the counts of the pieces after it; what asks where a line or
-//! an offset is finds its piece by halving and looks through that piece alone. Offsets are
-//! bytes, and are between characters.
+//! The text of a document (specs/13, "Code"): pieces of a few kilobytes in a row, and a
+//! tree of the sums of their bytes and line breaks (`counts`). A change moves the bytes of
+//! one piece and adds to a log of the sums; what asks where a line or an offset is finds
+//! its piece down the tree and looks through that piece alone. Offsets are bytes, and are
+//! between characters.
+
+mod counts;
 
 use std::borrow::Cow;
 use std::ops::Range;
+
+use counts::Counts;
 
 /// A piece longer than this is cut into pieces of half of it at most.
 const FULL: usize = 4096;
@@ -22,6 +26,11 @@ impl Chunk {
     fn new(text: &str) -> Chunk {
         Chunk { text: text.to_string(), breaks: breaks(text) }
     }
+}
+
+/// The tree of the sums of the pieces.
+fn count(chunks: &[Chunk]) -> Counts {
+    Counts::new(chunks.iter().map(|chunk| (chunk.text.len(), chunk.breaks)))
 }
 
 fn breaks(text: &str) -> usize {
@@ -43,9 +52,8 @@ fn cut(mut text: &str, out: &mut Vec<Chunk>) {
 pub struct Buffer {
     /// One at least; none is empty when there is another.
     chunks: Vec<Chunk>,
-    /// Before each piece, the bytes and the line breaks of the pieces before it; and one
-    /// more, after the last: those of the text.
-    before: Vec<(usize, usize)>,
+    /// The bytes and the line breaks of the pieces.
+    counts: Counts,
     /// The file ended its lines with CR LF: the text here has LF alone, and
     /// [`Buffer::file_text`] writes them back.
     pub crlf: bool,
@@ -54,26 +62,14 @@ pub struct Buffer {
 impl Buffer {
     pub fn new(text: &str) -> Buffer {
         let crlf = text.contains("\r\n");
-        let mut buffer = Buffer { chunks: Vec::new(), before: vec![(0, 0)], crlf };
-        cut(
-            &if crlf { Cow::Owned(text.replace("\r\n", "\n")) } else { Cow::Borrowed(text) },
-            &mut buffer.chunks,
-        );
-        buffer.count_from(0);
-        buffer
-    }
-
-    /// Counts again what is before the pieces after `k`.
-    fn count_from(&mut self, k: usize) {
-        self.before.truncate(k + 1);
-        for chunk in &self.chunks[k..] {
-            let (bytes, lines) = self.before[self.before.len() - 1];
-            self.before.push((bytes + chunk.text.len(), lines + chunk.breaks));
-        }
+        let mut chunks = Vec::new();
+        cut(&if crlf { Cow::Owned(text.replace("\r\n", "\n")) } else { Cow::Borrowed(text) }, &mut chunks);
+        let counts = count(&chunks);
+        Buffer { chunks, counts, crlf }
     }
 
     pub fn len(&self) -> usize {
-        self.before[self.chunks.len()].0
+        self.counts.total().0
     }
 
     pub fn is_empty(&self) -> bool {
@@ -82,15 +78,15 @@ impl Buffer {
 
     /// A text has a line more than it has line breaks: an empty one has one line.
     pub fn line_count(&self) -> usize {
-        self.before[self.chunks.len()].1 + 1
+        self.counts.total().1 + 1
     }
 
     /// The piece an offset is in, and where in it: at the start of a piece rather than at
     /// the end of the one before, but for the end of the text.
     fn locate(&self, offset: usize) -> (usize, usize) {
         assert!(offset <= self.len(), "offset {offset} is past the end, {}", self.len());
-        let k = self.before.partition_point(|before| before.0 <= offset).clamp(1, self.chunks.len()) - 1;
-        (k, offset - self.before[k].0)
+        let k = self.counts.within(offset, |sum| sum.0).min(self.chunks.len() - 1);
+        (k, offset - self.counts.before(k).0)
     }
 
     pub fn line_start(&self, line: usize) -> usize {
@@ -99,10 +95,10 @@ impl Buffer {
             return 0;
         }
         // The piece the line break before the line is in, and which of its breaks it is.
-        let k = self.before.partition_point(|before| before.1 < line) - 1;
-        let nth = line - self.before[k].1 - 1;
-        let at = self.chunks[k].text.match_indices('\n').nth(nth).map_or(0, |(at, _)| at + 1);
-        self.before[k].0 + at
+        let k = self.counts.within(line - 1, |sum| sum.1);
+        let before = self.counts.before(k);
+        let at = self.chunks[k].text.match_indices('\n').nth(line - before.1 - 1).map_or(0, |(at, _)| at + 1);
+        before.0 + at
     }
 
     /// Where a line ends: before its line break, or at the end of the text.
@@ -113,7 +109,7 @@ impl Buffer {
     /// The line an offset is in.
     pub fn line_of(&self, offset: usize) -> usize {
         let (k, at) = self.locate(offset);
-        self.before[k].1 + breaks(&self.chunks[k].text[..at])
+        self.counts.before(k).1 + breaks(&self.chunks[k].text[..at])
     }
 
     /// The text between two offsets: lent when it is in one piece, as a line mostly is.
@@ -182,28 +178,40 @@ impl Buffer {
     }
 
     /// Puts `text` in place of the pieces `over`, cut again when it is too long for one.
+    /// One piece for one adds to the sums; pieces that come or go count them again.
     fn replace(&mut self, over: Range<usize>, text: &str) {
+        if over.len() == 1 && text.len() <= FULL && (!text.is_empty() || self.chunks.len() == 1) {
+            let chunk = &mut self.chunks[over.start];
+            let was = (chunk.text.len(), chunk.breaks);
+            *chunk = Chunk::new(text);
+            let change = (chunk.text.len() as isize - was.0 as isize, chunk.breaks as isize - was.1 as isize);
+            self.counts.add(over.start, change);
+            return;
+        }
         let mut pieces = Vec::new();
         if text.len() > FULL {
             cut(text, &mut pieces);
         } else if !text.is_empty() || self.chunks.len() == over.len() {
             pieces.push(Chunk::new(text));
         }
-        let first = over.start;
         self.chunks.splice(over, pieces);
-        self.count_from(first);
+        self.counts = count(&self.chunks);
     }
 
     pub fn insert(&mut self, at: usize, text: &str) {
         let (k, local) = self.locate(at);
         let chunk = &mut self.chunks[k];
         chunk.text.insert_str(local, text);
-        chunk.breaks += breaks(text);
+        let added = breaks(text);
+        chunk.breaks += added;
         if chunk.text.len() > FULL {
             let long = std::mem::take(&mut chunk.text);
-            self.replace(k..k + 1, &long);
+            let mut pieces = Vec::new();
+            cut(&long, &mut pieces);
+            self.chunks.splice(k..k + 1, pieces);
+            self.counts = count(&self.chunks);
         } else {
-            self.count_from(k);
+            self.counts.add(k, (text.len() as isize, added as isize));
         }
     }
 

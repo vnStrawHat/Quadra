@@ -93,18 +93,38 @@ pub fn paint(d: &Drawing, inks: &Inks, cx: &mut PaintCx, tiles: &mut Vec<GlyphTi
     }
 }
 
-/// A filled polygon, in device pixels, as a mask in the atlas: the points from the corner
-/// of the mask, to a sixteenth of a pixel, are what the atlas knows it by.
-// ponytail: a shape larger than a slice of the atlas has its outline and no fill; in bands
-// when a node is ever that large.
-fn mask(cx: &mut PaintCx, points: &[Point], color: Color) -> Option<GlyphTile> {
+/// How large a piece of a filled shape is at most, in device pixels: a shape larger than
+/// this is masks of pieces side by side, each in a slice of the atlas.
+const PIECE: f32 = 512.0;
+
+/// A filled polygon, in device pixels, as masks in the atlas: a piece of [`PIECE`] pixels at
+/// most each, the points from the corner of the piece, to a sixteenth of a pixel, what the
+/// atlas knows it by.
+fn mask(cx: &mut PaintCx, points: &[Point], color: Color) -> Vec<GlyphTile> {
     let low = |of: fn(&Point) -> f32| points.iter().map(of).fold(f32::MAX, f32::min).floor() - 1.0;
     let high = |of: fn(&Point) -> f32| points.iter().map(of).fold(f32::MIN, f32::max).ceil() + 1.0;
     let (left, top) = (low(|p| p.x), low(|p| p.y));
     let (wide, tall) = (high(|p| p.x) - left, high(|p| p.y) - top);
+    let mut tiles = Vec::new();
     if points.len() < 3 || color.a <= 0.0 || !(wide * tall).is_finite() {
-        return None;
+        return tiles;
     }
+    let mut y = top;
+    while y < top + tall {
+        let mut x = left;
+        while x < left + wide {
+            let piece = Rect::new(x, y, PIECE.min(left + wide - x), PIECE.min(top + tall - y));
+            tiles.extend(piece_of(cx, points, piece, color));
+            x += PIECE;
+        }
+        y += PIECE;
+    }
+    tiles
+}
+
+/// The piece of a filled polygon in `piece`, a rectangle of whole device pixels.
+fn piece_of(cx: &mut PaintCx, points: &[Point], piece: Rect, color: Color) -> Option<GlyphTile> {
+    let (left, top, wide, tall) = (piece.x, piece.y, piece.width, piece.height);
     let points = points.iter().map(|p| Point::new(p.x - left, p.y - top)).collect();
     let shape = Polyline { points, closed: true };
     let mut hasher = DefaultHasher::new();
@@ -146,7 +166,8 @@ fn paint_head(cx: &mut PaintCx, tip: Point, from: Point, head: Head, color: Colo
                 cx,
                 &[tip, at(length / scale, half / scale), at(length / scale, -half / scale)],
                 color,
-            );
+            )
+            .pop();
         }
         Head::Open => {
             line(at(9.0, 4.5), tip);

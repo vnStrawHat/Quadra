@@ -918,16 +918,16 @@ What it reads and how it looks is behaviour/21. As built:
     the theme. It is made once a font and painted by walking it, and another theme costs
     no layout. Boxes are quads; lines and outlines are strokes of the renderer (07), so a
     link of any length is smooth and takes no atlas; a filled shape and the head of an
-    arrow are masks in the glyph atlas, known by their points; text is glyphs with their
+    arrow are masks in the glyph atlas, known by their points, a shape larger than 512
+    device pixels a mask for each piece of that size; text is glyphs with their
     baselines on whole pixels. One painting makes 20 000 dashes at most: past them a
     dashed line is drawn whole.
   - To a reader a diagram is a picture, named by its kind and what its nodes or its
-    participants say.
+    participants say, and described by its links or its messages in order, a sentence each
+    ("Start to Choice.", "Choice to OK: Yes.", "User to App: Save.").
   - In a document a fence of `mermaid` is the diagram in the middle, its text that of the
     kit's controls, and scrolls sideways when it is wider than the page; one that is not
     drawn is its source in a box, with why under it.
-  - Not yet: a filled shape larger than a slice of the atlas (it has its outline and no
-    fill); links and messages, to a reader.
 - **Images** (behaviour/21): a paragraph that holds only images shows them, one under
   another, each as large as its file says and no wider than the page, named by its words
   for a reader. `markdown(source).base(folder)` says where paths that do not start at a

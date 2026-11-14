@@ -32,6 +32,25 @@ fn a_filled_square_has_its_exact_area_and_half_pixels_are_half_covered() {
 }
 
 #[test]
+fn a_shape_cut_by_the_sides_of_a_bitmap_is_covered_as_in_a_larger_one() {
+    let triangle = |dx: f32| {
+        let mut path = Path::new();
+        path.move_to(1.0 + dx, 1.0);
+        path.line_to(19.0 + dx, 4.0);
+        path.line_to(7.0 + dx, 19.0);
+        path.close();
+        path
+    };
+    let whole = filled(&triangle(0.0), 20, 20, 0.25);
+    // The middle columns of it, from a bitmap that starts at column 6 and ends at 14.
+    let cut = filled(&triangle(-6.0), 8, 20, 0.25);
+    for y in 0..20 {
+        let (a, b) = (&cut[y * 8..y * 8 + 8], &whole[y * 20 + 6..y * 20 + 14]);
+        assert!(a.iter().zip(b).all(|(a, b)| a.abs_diff(*b) <= 1), "row {y}: {a:?} {b:?}");
+    }
+}
+
+#[test]
 fn a_stroke_is_as_wide_as_it_is_told() {
     let mut line = Path::new();
     line.move_to(2.0, 5.0);

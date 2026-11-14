@@ -160,11 +160,19 @@ fn nothing_a_document_can_hold_makes_the_view_fail() {
     });
 }
 
+/// The description of the node a reader knows by `name`.
+fn told(h: &Harness, name: &str) -> Option<String> {
+    let says = h.tree.semantic_tree();
+    says.nodes.iter().find(|node| node.semantics.name == name)?.semantics.description.clone()
+}
+
 #[test]
 fn a_diagram_is_drawn_in_the_middle_and_one_that_is_not_shows_its_source() {
     let (mut h, source, _) = page("A flow:\n\n```mermaid\ngraph TD\nA[Start] --> B{Choice}\n```\n");
     // To a reader a diagram is a picture named by its kind and what its nodes say.
     let diagram = h.get_by_role(Role::Image, "Flowchart: Start, Choice").node();
+    // Its links are its description, a sentence each.
+    assert_eq!(told(&h, "Flowchart: Start, Choice").as_deref(), Some("Start to Choice."));
     let at = h.tree.window_rect(diagram);
     assert!(at.width > 80.0 && at.height > 150.0, "{at:?}");
     assert!((at.x + at.width / 2.0 - 400.0).abs() < 1.0, "{at:?}");
@@ -189,6 +197,7 @@ fn a_diagram_is_drawn_in_the_middle_and_one_that_is_not_shows_its_source() {
     source.set("```mermaid\nsequenceDiagram\nactor U as User\nU->>App: Save\n```\n".to_string());
     h.frame();
     let sequence = h.get_by_role(Role::Image, "Sequence diagram: User, App").node();
+    assert_eq!(told(&h, "Sequence diagram: User, App").as_deref(), Some("User to App: Save."));
     assert!(h.tree.window_rect(sequence).height > 150.0 && strokes(&h) > 20, "{}", strokes(&h));
 }
 

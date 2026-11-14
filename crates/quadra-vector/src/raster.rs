@@ -88,10 +88,24 @@ impl Coverage {
             let count = line.points.len();
             for i in 0..count {
                 let (a, b) = (line.points[i], line.points[(i + 1) % count]);
-                // What is off the bitmap sideways is brought to its edge: the area inside
-                // stays exact, and what was left of it lands in the first column.
-                let (a, b) = (Point::new(a.x.clamp(0.0, width), a.y), Point::new(b.x.clamp(0.0, width), b.y));
-                accumulate(&mut acc, stride, self.height, a, b);
+                // An edge is cut where it crosses a side of the bitmap, and what is off it
+                // sideways is brought to that side: the area inside stays exact, and what
+                // was left of it lands in the first column.
+                let mut cuts = [0.0f32, 1.0, 1.0, 1.0];
+                for (k, side) in [0.0, width].into_iter().enumerate() {
+                    let t = (side - a.x) / (b.x - a.x);
+                    if t > 0.0 && t < 1.0 {
+                        cuts[k + 1] = t;
+                    }
+                }
+                cuts[1..3].sort_by(f32::total_cmp);
+                let at = |t: f32| {
+                    let p = Point::new(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+                    Point::new(p.x.clamp(0.0, width), p.y)
+                };
+                for piece in cuts.windows(2).filter(|piece| piece[0] < piece[1]) {
+                    accumulate(&mut acc, stride, self.height, at(piece[0]), at(piece[1]));
+                }
             }
         }
         for y in 0..self.height {

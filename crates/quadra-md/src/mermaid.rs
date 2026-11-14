@@ -65,7 +65,6 @@ impl Chart {
 
     /// What the diagram is to who cannot see it: its kind, and what its nodes or its
     /// participants say.
-    // ponytail: links and messages are not said; "A to B" for each when a reader asks.
     fn says(&self) -> String {
         let (kind, labels): (_, Vec<&str>) = match self {
             Chart::Flow(flow) => ("Flowchart", flow.nodes.iter().map(|node| node.label.as_str()).collect()),
@@ -74,6 +73,30 @@ impl Chart {
             }
         };
         format!("{kind}: {}", labels.join(", ").replace('\n', " "))
+    }
+
+    /// Its links or its messages, in order, a sentence each: "Start to Choice", "Choice to
+    /// OK: Yes", "User to App: Save".
+    fn tells(&self) -> String {
+        let line = |from: &str, to: &str, text: &str| match text.is_empty() {
+            true => format!("{from} to {to}."),
+            false => format!("{from} to {to}: {text}."),
+        };
+        let lines: Vec<String> = match self {
+            Chart::Flow(flow) => {
+                let name = |node: usize| flow.nodes[node].label.as_str();
+                flow.edges.iter().map(|edge| line(name(edge.from), name(edge.to), &edge.label)).collect()
+            }
+            Chart::Seq(seq) => {
+                let name = |actor: usize| seq.actors[actor].label.as_str();
+                let said = |item: &seq::Item| match item {
+                    seq::Item::Message { from, to, text, .. } => Some(line(name(*from), name(*to), text)),
+                    _ => None,
+                };
+                seq.items.iter().filter_map(said).collect()
+            }
+        };
+        lines.join(" ").replace('\n', " ")
     }
 }
 
@@ -123,6 +146,9 @@ impl Widget for Diagram {
         }
         if says.name.is_empty() {
             says.name = self.chart.says();
+        }
+        if says.description.is_none() {
+            says.description = Some(self.chart.tells()).filter(|tells| !tells.is_empty());
         }
     }
 }

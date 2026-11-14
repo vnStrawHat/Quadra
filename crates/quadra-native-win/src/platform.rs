@@ -255,6 +255,10 @@ impl Platform for WinPlatform {
         Rc::new(WinClipboard(self.0.message_window.get().0 as isize))
     }
 
+    fn utc_offset(&self, unix_seconds: i64) -> i32 {
+        crate::zone::utc_offset(unix_seconds)
+    }
+
     fn image_decoder(&self) -> std::sync::Arc<dyn quadra_platform::ImageDecoder> {
         std::sync::Arc::new(crate::image::WicImages)
     }

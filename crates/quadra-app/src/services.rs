@@ -7,6 +7,7 @@ use std::rc::Rc;
 use quadra_reactive::provide;
 use quadra_render::Renderer;
 
+use crate::i18n::I18n;
 use crate::settings::Settings;
 use crate::{App, crash, log};
 
@@ -62,6 +63,12 @@ impl<R: Renderer> App<R> {
     /// The newest crash report written since the app last asked: one to offer to send.
     pub fn last_crash(&self) -> Option<PathBuf> {
         crash::last_crash(&self.dirs.as_ref()?.crashes())
+    }
+
+    /// The app's strings and language: views find them in their context (`t`, `locale`).
+    pub fn i18n(self, i18n: Rc<I18n>) -> App<R> {
+        self.root.run(|| provide(i18n));
+        self
     }
 
     /// The arguments the app was started with, after the program's name.

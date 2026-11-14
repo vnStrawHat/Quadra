@@ -195,6 +195,10 @@ popovers and hover cards among them. `quadra-async` is done: `spawn` (a `Task` i
 `throttle`; the app runs ready tasks after every entry point (`App::request_frames`), tests use `Harness::settle()`. Readers are told the caret and selection of
 an input (`Semantics::selection`, a text run in the bridge; `SemanticAction::Select`), range values (`.range(..)`), positions in a set
 (`.place_in_set(i)` on items, `.set_size(n)` on their container) and scroll views (`Role::ScrollView` on `scroll`).
+**R5, app services, has started** (specs/15, 16): `App::dirs(AppDirs::for_app(..))` (nothing is written without it), `Settings`
+(`value(key, default)` is a signal; debounced, atomic), `quadra_app::log`, crash reports of panics, `quadra_app::time` (`Date`, `DateTime`,
+`local_now()` by `Platform::utc_offset`), the app's language (`I18n`, `App::i18n`, `t`, `t_with`; `language()` taken at build time for what
+runs again; `Locale` formats in Vietnamese and English). Next: window state, the router, the close flow, `quadra-shell`, packaging, API docs.
 
 Room left that the numbers show (`tools/bench.sh grid`): 190 ns a binding in the grid; a flex item is measured once per height its column offers though its
 height does not depend on it; a new painted band visits every node of its layer.

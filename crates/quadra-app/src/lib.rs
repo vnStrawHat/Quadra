@@ -6,6 +6,8 @@
 
 mod crash;
 mod events;
+pub mod i18n;
+mod locale;
 pub mod log;
 mod report;
 mod services;
@@ -27,6 +29,8 @@ use quadra_text::TextBackend;
 use quadra_tree::{Fonts, Keymap, Theme, Tree};
 use quadra_ui::{Images, View, mount_with};
 
+pub use i18n::{Arg, I18n, Language, language, t, t_with};
+pub use locale::Locale;
 pub use report::{AppError, FrameReport, Result};
 pub use services::AppDirs;
 pub use settings::{Settings, Stored};
@@ -84,6 +88,7 @@ impl<R: Renderer> App<R> {
             provide(tasks.clone());
             provide(Images::new(platform.image_decoder()));
             provide(platform.clipboard());
+            provide(platform.clone()); // the user's time zone (`time::local_now`)
             let theme = signal(Rc::<Theme>::default());
             provide(theme);
             let settings = Settings::memory();

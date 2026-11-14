@@ -14,7 +14,9 @@ use quadra_prim::{Rect, Size};
 use crate::clipboard::{Clipboard, MemoryClipboard};
 use crate::event::PlatformEvent;
 use crate::platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
-use crate::window::{Cursor, PlatformWindow, WindowHandle, WindowId, WindowOptions};
+use crate::window::{Cursor, PlatformWindow, WindowId, WindowOptions};
+
+mod window;
 
 struct Timer {
     id: TimerId,
@@ -47,6 +49,7 @@ struct Inner {
     quit: Cell<bool>,
     clipboard: Rc<MemoryClipboard>,
     decoder: RefCell<Arc<dyn crate::image::ImageDecoder>>,
+    utc_offset: Cell<i32>,
 }
 
 #[derive(Clone)]
@@ -73,6 +76,7 @@ impl HeadlessPlatform {
             quit: Cell::new(false),
             clipboard: Rc::default(),
             decoder: RefCell::new(Arc::new(crate::image::FlatImages)),
+            utc_offset: Cell::new(0),
         }))
     }
 
@@ -127,6 +131,11 @@ impl HeadlessPlatform {
     /// The title a window was last given.
     pub fn title(&self, window: WindowId) -> Option<String> {
         self.window(window).map(|w| w.title.borrow().clone())
+    }
+
+    /// The offset of the time zone the platform says, in seconds: 0 unless a test sets it.
+    pub fn set_utc_offset(&self, seconds: i32) {
+        self.0.utc_offset.set(seconds);
     }
 
     /// Gives the platform another decoder than that of flat test images: the system's, for a
@@ -247,54 +256,8 @@ impl Platform for HeadlessPlatform {
     fn image_decoder(&self) -> Arc<dyn crate::image::ImageDecoder> {
         self.0.decoder.borrow().clone()
     }
-}
 
-impl PlatformWindow for HeadlessWindow {
-    fn id(&self) -> WindowId {
-        self.0.id
-    }
-
-    fn handle(&self) -> WindowHandle {
-        WindowHandle::Headless
-    }
-
-    fn size(&self) -> Size {
-        self.0.size.get()
-    }
-
-    fn scale(&self) -> f32 {
-        self.0.scale.get()
-    }
-
-    fn set_title(&self, title: &str) {
-        *self.0.title.borrow_mut() = title.to_string();
-    }
-
-    fn request_frame(&self) {
-        self.0.frame.set(true);
-    }
-
-    fn set_cursor(&self, cursor: Cursor) {
-        self.0.cursor.set(cursor);
-    }
-
-    fn set_text_input(&self, caret: Option<Rect>) {
-        self.0.text_input.set(caret);
-    }
-
-    fn update_semantics(&self, update: &TreeUpdate) {
-        self.0.semantics.borrow_mut().push(update.clone());
-    }
-
-    fn minimize(&self) {
-        self.0.minimized.set(true);
-    }
-
-    fn toggle_maximize(&self) {
-        self.0.maximized.set(!self.0.maximized.get());
-    }
-
-    fn is_maximized(&self) -> bool {
-        self.0.maximized.get()
+    fn utc_offset(&self, _unix_seconds: i64) -> i32 {
+        self.0.utc_offset.get()
     }
 }

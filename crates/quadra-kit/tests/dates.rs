@@ -3,6 +3,7 @@
 
 use std::rc::Rc;
 
+use quadra_app::{I18n, Locale};
 use quadra_kit::{Date, TimeOfDay, calendar, dark, date_picker, time_input};
 use quadra_platform::{Key, Mods};
 use quadra_reactive::signal;
@@ -10,11 +11,22 @@ use quadra_testing::Harness;
 use quadra_tree::Role;
 use quadra_ui::{View, column};
 
+/// In Vietnamese: days written day first, weeks from Monday.
 fn mount<V: View + 'static>(build: impl FnOnce() -> V + 'static) -> Harness {
+    mount_in(Some(Locale::vi()), build)
+}
+
+/// In a language, or with none: then in English.
+fn mount_in<V: View + 'static>(locale: Option<Locale>, build: impl FnOnce() -> V + 'static) -> Harness {
     let mut h = Harness::new();
     h.tree.set_theme(Rc::new(dark().theme()));
     h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
-    h.mount(move || quadra_kit::root().child(build()));
+    h.mount(move || {
+        if let Some(locale) = locale {
+            quadra_reactive::provide(I18n::new(locale));
+        }
+        quadra_kit::root().child(build())
+    });
     h.frame();
     h
 }
@@ -39,7 +51,7 @@ fn a_month_has_its_days_and_a_day_its_place_in_the_week() {
 fn a_calendar_shows_a_month_and_a_click_chooses_a_day() {
     let day = signal(Date::new(2026, 11, 11));
     let mut h = mount(move || column().child(calendar(day)));
-    assert!(h.has_text("November 2026") && h.has_text("Mo") && h.has_text("Su"));
+    assert!(h.has_text("Tháng 11 2026") && h.has_text("T2") && h.has_text("CN"));
     let tree = h.semantics();
     assert!(
         tree.contains("Button \"11/11/2026\" [selected]") && tree.contains("Button \"30/11/2026\""),
@@ -61,12 +73,21 @@ fn a_calendar_shows_a_month_and_a_click_chooses_a_day() {
     // The arrows show the months around, across the end of a year; the day stays chosen.
     h.get_by_role(Role::Button, "Previous month").click();
     settle(&mut h);
-    assert!(h.has_text("October 2026") && h.semantics().contains("Button \"31/10/2026\""));
+    assert!(h.has_text("Tháng 10 2026") && h.semantics().contains("Button \"31/10/2026\""));
     for _ in 0..3 {
         h.get_by_role(Role::Button, "Next month").click();
     }
     settle(&mut h);
-    assert!(h.has_text("January 2027") && day.get_untracked() == Date::new(2026, 11, 15));
+    assert!(h.has_text("Tháng 1 2027") && day.get_untracked() == Date::new(2026, 11, 15));
+
+    // In English the month is named so, dates are month first, and a week begins on Sunday:
+    // the first of November is the first of its row.
+    let mut h = mount_in(None, move || column().child(calendar(day)));
+    assert!(h.has_text("November 2026") && h.has_text("Su") && h.has_text("Mo"));
+    let (first, second) =
+        (h.get_by_role(Role::Button, "11/1/2026").node(), h.get_by_role(Role::Button, "11/2/2026").node());
+    let (first, second) = (h.tree.window_rect(first), h.tree.window_rect(second));
+    assert_eq!((second.x - first.x, second.y - first.y), (34.0, 0.0));
 }
 
 #[test]
@@ -77,7 +98,7 @@ fn a_date_picker_opens_a_calendar_and_a_day_closes_it() {
     h.get_by_role(Role::Button, "11/11/2026").focus();
     h.key(Key::Enter, Mods::NONE);
     settle(&mut h);
-    assert!(h.has_text("November 2026") && h.tree.overlays().count() == 1);
+    assert!(h.has_text("Tháng 11 2026") && h.tree.overlays().count() == 1);
     h.get_by_role(Role::Button, "20/11/2026").click();
     settle(&mut h);
     assert_eq!((day.get_untracked(), h.tree.overlays().count()), (Date::new(2026, 11, 20), 0));

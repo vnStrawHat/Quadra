@@ -24,6 +24,7 @@ mod swapchain;
 mod upgrade;
 mod window;
 mod wndproc;
+mod zone;
 
 pub use dwrite::DirectWrite;
 pub use image::WicImages;

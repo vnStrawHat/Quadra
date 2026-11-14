@@ -58,11 +58,13 @@ tool and the benches never write outside the project; a test that does gives a f
   changes, and nothing else is.
 - `t(key)` and `t_with(key, &[("n", 3.into())])` look a key up in the app's i18n: in the
   current locale, then the default one, then the key itself; a key missing from a locale
-  is logged once. Plurals are by language: Vietnamese has one form, English `one` for 1
+  is logged once. They read the context, so they are for while a view is built; what runs
+  again later (`text(move || ..)`) keeps `language()`, taken while it is built, and asks it
+  (`lang.t(key)`, `lang.locale()`). Plurals are by language: Vietnamese has one form, English `one` for 1
   and `other` for the rest; a language of no rule here takes the English one.
 - **Formats** by locale (`Locale`, a language tag; `vi` and `en` are known, any other is
   formatted as `en`): numbers (`1.234,5` and `1,234.5`), sizes of files (`1,5 MB` and
-  `1.5 MB`, by 1024), dates short and long (`14/11/2026`, `14 tháng 11, 2026`;
+  `1.5 MB`, by 1024), dates short and long (`14/11/2026`, `14 tháng 11 năm 2026`;
   `11/14/2026`, `November 14, 2026`), times (`15:05`; `3:05 PM`), times relative to now
   (`3 phút trước`, `3 minutes ago`, `in 3 minutes`), the names of the months and of the
   days of the week, and the first day of the week (Monday; Sunday).

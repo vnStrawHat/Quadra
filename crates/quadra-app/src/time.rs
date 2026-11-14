@@ -3,7 +3,11 @@
 //! UTC.
 
 use std::fmt;
+use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use quadra_platform::Platform;
+use quadra_reactive::use_context;
 
 /// A day of the calendar.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -114,6 +118,14 @@ impl fmt::Display for DateTime {
         let Time { hour, minute, second } = self.time;
         write!(f, "{} {hour:02}:{minute:02}:{second:02}", self.date)
     }
+}
+
+/// The date and time where the user is: the system's clock at the offset the app's platform
+/// says. In UTC where no app is around.
+pub fn local_now() -> DateTime {
+    let now = unix_now();
+    let offset = use_context::<Rc<dyn Platform>>().map_or(0, |platform| platform.utc_offset(now));
+    DateTime::from_unix(now, offset)
 }
 
 /// Seconds since 1970-01-01 00:00 UTC by the system's clock.

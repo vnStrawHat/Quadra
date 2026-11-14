@@ -12,25 +12,43 @@
 //!     quadra::app()?.window(WindowOptions::new("Counter").size(360.0, 260.0), view)?.run()
 //! }
 //! ```
+//!
+//! # Where things are
+//!
+//! - State: [`signal`], [`memo`], [`effect`], [`provide`] and [`use_context`] (`quadra-reactive`).
+//! - Views: [`div`], [`row`], [`column()`], [`text()`], [`text_input`], [`scroll`],
+//!   [`uniform_list`], [`overlay`] and the rest of `quadra-ui`; styles by state on a [`Div`],
+//!   colours by [`Token`] of a [`Theme`].
+//! - Keys and commands: [`Action`], [`Keymap`] (`App::keymap`).
+//! - Work off the UI thread and over time: [`spawn`], [`background`], [`inbox`], [`timeout`]
+//!   (`quadra-async`).
+//! - The app's services (specs/15): its folders and [`Settings`] (`App::dirs`), windows that are
+//!   remembered ([`WindowOptions::remember`]), [`log`](mod@log), [`time`](mod@time), its language ([`I18n`],
+//!   [`t`], [`Locale`]), pages ([`router`]) and closing (`Div::on_close`).
+//! - The components and their look are the crate `quadra-kit`; what the OS does beyond
+//!   windows (dialogs, the tray, one instance) is `quadra-shell`, which an app adds itself.
 
 use std::rc::Rc;
 
 use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
-pub use quadra_app::{AppError, FrameReport, Result};
+pub use quadra_app::{
+    AppDirs, AppError, Arg, FrameReport, I18n, Language, Locale, Result, Router, Settings, Stored, language,
+    log, router, t, t_with, time,
+};
 pub use quadra_async::{
     Background, CancelToken, Full, Inbox, Panicked, Sender, Task, Timer, background, background_with,
     debounce, inbox, inbox_with, interval, sleep, spawn, throttle, timeout,
 };
 pub use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position, Track};
-pub use quadra_platform::{Cursor, HitRegion, Key, Mods, MouseButton, WindowId, WindowOptions};
+pub use quadra_platform::{Cursor, HitRegion, Key, Mods, MouseButton, Placement, WindowId, WindowOptions};
 pub use quadra_prim::{Color, Corners, Ease, Edges, Point, Rect, Size};
 pub use quadra_reactive::{
     Memo, Scope, Signal, batch, effect, expect, memo, on_cleanup, provide, signal, untrack, use_context,
 };
 pub use quadra_tree::{
-    Action, Along, Fit, FocusNext, FocusPrevious, KeyEvent, Keymap, KeymapError, Keystroke, Paint,
-    PointerEvent, PointerKind, Role, SemanticAction, Side, State, Theme, Token,
+    Action, Along, Fit, FocusNext, FocusPrevious, GoBack, GoForward, KeyEvent, Keymap, KeymapError,
+    Keystroke, Paint, PointerEvent, PointerKind, Role, SemanticAction, Side, State, Theme, Token,
 };
 pub use quadra_ui::{
     AnyView, Div, ImageSource, ImageView, Images, IntoProp, MountCx, NodeRef, Place, Refine, Region, Span,

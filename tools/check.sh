@@ -34,6 +34,10 @@ tools/cargo.sh metadata --no-deps --format-version 1 | PYTHONUTF8=1 python tools
 tools/cargo.sh fmt --all --check || say 'check: run tools/cargo.sh fmt --all'
 tools/cargo.sh clippy --workspace --all-targets --quiet -- -D warnings || say 'check: clippy failed'
 tools/cargo.sh test --workspace --quiet || say 'check: tests failed'
+# The API documentation (specs/00, R5): every link resolves, no doc comment is malformed. A
+# limit of time, as a wait for cargo's lock once held the gate for good.
+RUSTDOCFLAGS='-D warnings' timeout 600 tools/cargo.sh doc --workspace --no-deps --quiet ||
+	say 'check: the API documentation has warnings, or did not finish in 10 minutes'
 
 if [ "${1:-}" = prod ]; then
 	tools/cargo.sh build --workspace --release --quiet || say 'check: release build failed'

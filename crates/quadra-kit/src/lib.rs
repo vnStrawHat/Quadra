@@ -1,8 +1,8 @@
 //! Quadra's kit (specs/13; the design language is specs/behaviour/15): the roles a theme
-//! gives colours to, the themes, and the components built on them.
+//! gives colours to, the themes, and the components built on them: a look over the
+//! components of `quadra-base` (specs/17).
 
 mod accordion;
-pub mod action;
 mod bars;
 mod button;
 mod choice;
@@ -46,7 +46,6 @@ mod tree;
 pub mod work;
 
 pub use accordion::{Accordion, accordion};
-pub use action::keymap;
 pub use bars::{
     Breadcrumb, Statusbar, breadcrumb, status_button, status_divider, status_item, statusbar, toolbar,
 };
@@ -75,6 +74,7 @@ pub use number::{NumberInput, number_input};
 pub use palette::{Command, command_palette, fuzzy, fuzzy_hits, marked};
 pub use popup::{Edge, popover};
 pub use progress::{Busy, Skeleton, Spinner, progress, progress_busy, skeleton, spinner};
+pub use quadra_base::{action, keymap};
 pub use range::{RangeSlider, range_slider};
 pub use root::{install, root};
 pub use select::{Select, select};

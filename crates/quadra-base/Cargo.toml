@@ -1,0 +1,22 @@
+[package]
+name = "quadra-base"
+description = "Quadra's components without a look: state, keys, focus, semantics and popups, for a kit to draw"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-layout = { path = "../quadra-layout" }
+quadra-prim = { path = "../quadra-prim" }
+quadra-reactive = { path = "../quadra-reactive" }
+quadra-tree = { path = "../quadra-tree" }
+quadra-ui = { path = "../quadra-ui" }
+
+[dev-dependencies]
+quadra-platform = { path = "../quadra-platform" }
+quadra-testing = { path = "../quadra-testing" }

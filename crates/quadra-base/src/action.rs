@@ -1,5 +1,5 @@
-//! What the keyboard asks of the kit's components (specs/13, "Components"): actions, bound in
-//! the kit's keymap, never raw keys.
+//! What the keyboard asks of components (specs/13, "Components"; specs/17): actions, bound in
+//! the keymap of the base, never raw keys. Their names keep the prefix `kit::`.
 
 use quadra_tree::{Action, Keymap};
 
@@ -147,7 +147,7 @@ impl Action for Cancel {
     const NAME: &'static str = "kit::cancel";
 }
 
-/// The key bindings of the kit over those every window has. An app adds its own to it.
+/// The key bindings of the base over those every window has. An app adds its own to it.
 pub fn keymap() -> Keymap {
     let mut keymap = Keymap::default();
     let well_formed = "the kit's bindings are well formed";

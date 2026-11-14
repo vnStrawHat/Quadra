@@ -27,10 +27,16 @@ for toml in crates/*/Cargo.toml bench/*/Cargo.toml; do
 		say "check: $toml must have [lints] workspace = true (specs/01, R16)"
 done
 
-# 5. Dependencies (specs/01, R15).
+# 5. No look in the base components (specs/17, "The crate"): no colour, role, paint, radius,
+#    border, shadow or cursor; sizes are passed in by the kit.
+look=$(grep -rnE '\b(Token|Paint|Color)\b|\.(bg|radius|radii|border|border_color|elevation|cursor|outline)\(' \
+	crates/quadra-base/src || true)
+[ -z "$look" ] || say "check: quadra-base names a look (specs/17): $look"
+
+# 6. Dependencies (specs/01, R15).
 tools/cargo.sh metadata --no-deps --format-version 1 | PYTHONUTF8=1 python tools/check_deps.py || fail=1
 
-# 6. Format, lints, tests.
+# 7. Format, lints, tests.
 tools/cargo.sh fmt --all --check || say 'check: run tools/cargo.sh fmt --all'
 tools/cargo.sh clippy --workspace --all-targets --quiet -- -D warnings || say 'check: clippy failed'
 tools/cargo.sh test --workspace --quiet || say 'check: tests failed'

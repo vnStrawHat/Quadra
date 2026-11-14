@@ -2,6 +2,7 @@
 //! caller shows the page of the chosen one. Underlined by default, the chosen tab with the
 //! accent's line; `.pill()` tints the chosen tab and draws no line.
 
+use quadra_base::choice;
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_prim::Color;
@@ -35,7 +36,7 @@ impl Tabs {
     fn tab(&self, i: usize, label: String) -> Div {
         let (chosen, pill) = (self.chosen, self.pill);
         let tab = row().align_items(Align::Center).shrink(0.0).height(Size::Md.height()).padding_x(8.0);
-        let tab = tab.radius(size::RADIUS_MD).cursor(Cursor::Pointer).role(Role::Tab).place_in_set(i);
+        let tab = tab.radius(size::RADIUS_MD).cursor(Cursor::Pointer);
         let tab = tab.text_color(if pill { token::TEXT } else { token::TEXT_2 });
         let tab = tab.hover(|s| s.bg(token::PANEL_HOVER).text_color(token::TEXT));
         // The chosen one has the accent's label whatever the pointer does.
@@ -43,8 +44,7 @@ impl Tabs {
             let s = s.text_color(token::ACCENT_TEXT);
             if pill { s.bg(token::ACCENT_TINT) } else { s.bg(Color::TRANSPARENT) }
         };
-        let tab = tab.selected(move || chosen.get() == i).when(State::SELECTED, on);
-        let tab = tab.on_click(move |_| chosen.set(i)).child(text(label));
+        let tab = choice::option(tab.when(State::SELECTED, on), Role::Tab, i, chosen).child(text(label));
         if pill { tab } else { tab.child(chosen_mark(Side::Below, move || chosen.get() == i)) }
     }
 }

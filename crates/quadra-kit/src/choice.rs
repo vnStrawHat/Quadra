@@ -1,6 +1,7 @@
 //! One choice of a few (specs/behaviour/15, "Components"): the radio group and the segmented
 //! control. Each takes the signal that holds which option is chosen, and writes it.
 
+use quadra_base::choice;
 use quadra_layout::{Align, Direction, Justify, Overflow};
 use quadra_platform::Cursor;
 use quadra_prim::Corners;
@@ -8,7 +9,6 @@ use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, Role, State};
 use quadra_ui::{AnyView, Div, IntoProp, MountCx, Prop, View, div, row, show, text};
 
-use crate::action::{CHOICE, MoveNext, MovePrevious};
 use crate::button::Size;
 use crate::{size, token};
 
@@ -101,8 +101,7 @@ impl Choice {
                 true => self.cell(label).radii(ends(i, count)),
                 false => Choice::radio(label, on),
             };
-            let option = option.role(Role::Radio).place_in_set(i).checked(on).cursor(Cursor::Pointer);
-            parts.push(AnyView::new(option.on_click(move |_| chosen.set(i))));
+            parts.push(AnyView::new(choice::option(option.cursor(Cursor::Pointer), Role::Radio, i, chosen)));
         }
         let group = chooser(Role::Group, count, chosen);
         let group =
@@ -126,14 +125,10 @@ fn ends(i: usize, count: usize) -> Corners {
     Corners { top_left: first, bottom_left: first, top_right: last, bottom_right: last }
 }
 
-/// The box around a few options of which one is chosen: it is what Tab reaches, and the
-/// arrows move the choice, round the ends.
+/// The box around a few options of which one is chosen (`quadra_base::choice`), with the
+/// focus as a line around it.
 pub(crate) fn chooser(role: Role, count: usize, chosen: Signal<usize>) -> Div {
-    let step = move |by: usize| chosen.update(|at| *at = (*at + by) % count.max(1));
-    let group = div().role(role).set_size(count).focusable().key_context(CHOICE);
-    let group = group.on_action::<MoveNext>(move |_| step(1));
-    let group = group.on_action::<MovePrevious>(move |_| step(count.saturating_sub(1)));
-    group.focus_visible(|s| s.outline(token::BORDER_FOCUSED))
+    choice::group(div(), role, count, chosen).focus_visible(|s| s.outline(token::BORDER_FOCUSED))
 }
 
 impl View for Choice {

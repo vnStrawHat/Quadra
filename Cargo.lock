@@ -117,6 +117,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-base"
+version = "0.1.0"
+dependencies = [
+ "quadra-layout",
+ "quadra-platform",
+ "quadra-prim",
+ "quadra-reactive",
+ "quadra-testing",
+ "quadra-tree",
+ "quadra-ui",
+]
+
+[[package]]
 name = "quadra-bench-compare"
 version = "0.1.0"
 dependencies = [
@@ -184,6 +197,7 @@ dependencies = [
  "quadra",
  "quadra-app",
  "quadra-async",
+ "quadra-base",
  "quadra-layout",
  "quadra-platform",
  "quadra-prim",

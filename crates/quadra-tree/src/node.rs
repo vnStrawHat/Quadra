@@ -43,9 +43,8 @@ pub struct PaintStyle {
     /// A line of one pixel along the node's edge, over what the node paints and taking no
     /// room: a mark of the focus.
     pub outline: Color,
-    /// The shadows the node casts, as the theme gave them for its level above the window
-    /// (`Patch::Elevation`): 0 none, 1 and 2 a menu's and a dialog's, 3 and 4 the same under
-    /// a dark theme.
+    /// The node's level above the window (`Patch::Elevation`): 0 none, then a menu's, a
+    /// dialog's. It casts the shadows the theme has for its level.
     pub shadows: u8,
 }
 

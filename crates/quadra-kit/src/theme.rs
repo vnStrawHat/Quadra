@@ -7,7 +7,7 @@ use std::fmt;
 use std::sync::OnceLock;
 
 use quadra_prim::Color;
-use quadra_tree::{Theme, Token};
+use quadra_tree::{Cast, Theme, Token};
 use serde_json::{Map, Value};
 
 use crate::token::{self, NAMES};
@@ -61,6 +61,22 @@ const DERIVED: [Token; 14] = [
     token::CYAN,
 ];
 
+/// The shadows of the levels above the window (specs/behaviour/15, "Elevation"): how far
+/// down each one is, how blurred, and how black; for a menu, then a dialog, under a light
+/// theme and under a dark one, where a light shadow would not show.
+type Set = &'static [(f32, f32, f32)];
+const SHADOWS: [[Set; 2]; 2] = [
+    [
+        &[(2.0, 3.0, 0.12), (1.0, 0.0, 0.06)],
+        &[(2.0, 3.0, 0.12), (3.0, 6.0, 0.08), (6.0, 12.0, 0.04), (1.0, 0.0, 0.12)],
+    ],
+    [&[(6.0, 16.0, 0.34), (1.0, 3.0, 0.26)], &[(18.0, 44.0, 0.44), (4.0, 10.0, 0.30)]],
+];
+
+fn casts(set: &[(f32, f32, f32)]) -> Vec<Cast> {
+    set.iter().map(|&(down, blur, alpha)| Cast { down, blur, color: Color::BLACK.alpha(alpha) }).collect()
+}
+
 fn wrong<T>(path: &str, what: &str) -> Result<T, ThemeError> {
     Err(ThemeError(format!("{path}: {what}")))
 }
@@ -96,7 +112,9 @@ impl KitTheme {
 
     /// What a tree resolves the roles in its styles with.
     pub fn theme(&self) -> Theme {
-        Theme::new(self.colors.clone()).with_deep_shadows(self.mode == Mode::Dark)
+        let deep = self.mode == Mode::Dark;
+        Theme::new(self.colors.clone())
+            .with_shadows(SHADOWS[deep as usize].iter().map(|set| casts(set)).collect())
     }
 
     fn empty() -> KitTheme {

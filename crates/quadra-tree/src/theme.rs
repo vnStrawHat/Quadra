@@ -46,32 +46,38 @@ impl From<Token> for Paint {
     }
 }
 
-/// The colours of the roles. A role the theme does not have is transparent. A dark theme
-/// casts deeper shadows: a light one does not show on a dark plane.
+/// One shadow a box above the window casts: how far down, how blurred, in what colour.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Cast {
+    pub down: f32,
+    pub blur: f32,
+    pub color: Color,
+}
+
+/// The colours of the roles, and the shadows of each level above the window. A role the
+/// theme does not have is transparent; a level it has no shadows for casts none.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Theme {
     colors: Vec<Color>,
-    deep_shadows: bool,
+    shadows: Vec<Vec<Cast>>,
 }
 
 impl Theme {
     /// A theme from the colour of each role, in the order of their numbers.
     pub fn new(colors: Vec<Color>) -> Theme {
-        Theme { colors, deep_shadows: false }
+        Theme { colors, shadows: Vec::new() }
     }
 
-    /// The same colours, casting the deeper shadows of dark themes or the light ones.
-    pub fn with_deep_shadows(self, deep_shadows: bool) -> Theme {
-        Theme { deep_shadows, ..self }
+    /// The same colours, with the shadows of each level above the window: the first set is
+    /// that of level 1.
+    pub fn with_shadows(self, shadows: Vec<Vec<Cast>>) -> Theme {
+        Theme { shadows, ..self }
     }
 
-    /// The shadows a node of a level above the window casts under this theme: the index of
-    /// their set in the painter's table.
-    pub(crate) fn shadows(&self, level: u8) -> u8 {
-        match (level.min(2), self.deep_shadows) {
-            (0, _) => 0,
-            (level, deep) => level + if deep { 2 } else { 0 },
-        }
+    /// The shadows a node of a level above the window casts under this theme.
+    pub(crate) fn casts(&self, level: u8) -> &[Cast] {
+        let set = (level as usize).checked_sub(1).and_then(|at| self.shadows.get(at));
+        set.map_or(&[], Vec::as_slice)
     }
 
     pub fn color(&self, token: Token) -> Color {
@@ -102,6 +108,7 @@ impl Tree {
         if *self.theme == *theme {
             return;
         }
+        let cast_again = self.theme.shadows != theme.shadows;
         (self.theme, self.snap) = (theme, true); // a new theme shows at once: nothing eases to it
         let themed =
             |i: &usize| self.nodes[*i].alive && self.nodes[*i].styled.as_ref().is_some_and(|s| s.themed());
@@ -114,7 +121,9 @@ impl Tree {
         for index in 0..self.nodes.len() {
             let node = &mut self.nodes[index];
             let widget = node.widget.as_mut().filter(|_| node.alive);
-            if widget.is_some_and(|widget| widget.theme(&self.theme)) {
+            // So is a node above the window whose shadows are others now.
+            let casts = cast_again && node.alive && node.paint.shadows > 0;
+            if casts || widget.is_some_and(|widget| widget.theme(&self.theme)) {
                 self.mark(
                     NodeId { index: index as u32, generation: self.nodes[index].generation },
                     flag::PAINT,

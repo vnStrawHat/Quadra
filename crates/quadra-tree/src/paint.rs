@@ -12,6 +12,7 @@ use crate::frame::FrameStats;
 use crate::inherit::TextAt;
 use crate::node::{NOT_PAINTED, Node, NodeId, flag};
 pub(crate) use crate::own::{outside, paint_own};
+use crate::theme::Theme;
 use crate::tree::Tree;
 
 /// Overwrite the layer from `at` with the scratch instances `from..to`.
@@ -38,6 +39,8 @@ struct Painter<'a> {
     scale: f32,
     /// What widgets are given their text values with.
     text_at: TextAt,
+    /// What the shadows of a level above the window are.
+    theme: &'a Theme,
     /// The part of the layer that is painted, if it paints only near what shows.
     band: Option<Rect>,
     /// The scale changed: everything is painted, in every layer.
@@ -75,7 +78,7 @@ impl Painter<'_> {
             // ponytail: a new band visits every node of the layer to find those in it; a
             // spatial index if pages of a hundred thousand nodes scroll.
             if !outside(self.band, rect) {
-                let how = (self.scale, self.band, self.text_at);
+                let how = (self.scale, self.band, self.text_at, self.theme);
                 paint_own(self.nodes, i, self.layout, rect, how, self.fonts, self.scratch);
                 self.stats.nodes_painted += 1;
             }
@@ -223,6 +226,7 @@ impl Tree {
             root,
             scale: self.scale,
             text_at,
+            theme: &self.theme,
             band,
             all,
             same: true,

@@ -79,6 +79,8 @@ div().bg(token::ACCENT.alpha(0.12))
   view (`Signal<Rc<Theme>>`): writing it is how a view changes the theme.
 - The colours of charts are roles too: `token::SERIES`, eight of them, from the theme file's
   `series` (one it does not list is the accent).
+- The shadows of a level above the window are the theme's (17, "Open tokens"): the kit's
+  dark theme casts deeper ones, as a light shadow does not show on a dark plane.
 - Not yet: a theme for a subtree; tokens for radii, spacing, fonts and durations.
 - Component-level tokens (`button.primary.bg`) resolve to palette tokens in the theme file, so
   a theme can restyle one component without code.

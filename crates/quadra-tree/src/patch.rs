@@ -96,7 +96,7 @@ impl Patch {
             Patch::Radius(v) => p.radii = Corners::all(v),
             Patch::Radii(v) => p.radii = v,
             Patch::Outline(v) => p.outline = theme.resolve(v),
-            Patch::Elevation(v) => p.shadows = theme.shadows(v),
+            Patch::Elevation(v) => p.shadows = v,
             Patch::TextColor(v) => t.color = Some(theme.resolve(v)),
             Patch::TextSize(v) => t.size = Some(v),
             Patch::FontWeight(v) => t.weight = Some(v),
@@ -167,9 +167,6 @@ impl Patch {
     /// another theme.
     pub fn themed(self) -> bool {
         use Patch::*;
-        if let Elevation(level) = self {
-            return level > 0; // its shadows are the theme's
-        }
         let (Background(paint) | BorderColor(paint) | TextColor(paint) | Outline(paint)) = self else {
             let (PlaceholderColor(paint) | SelectionColor(paint) | CaretColor(paint)) = self else {
                 return false;

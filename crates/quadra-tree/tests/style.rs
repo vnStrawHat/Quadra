@@ -9,7 +9,7 @@ use std::rc::Rc;
 use common::Window;
 use quadra_platform::{Mods, MouseButton};
 use quadra_prim::{Color, Point};
-use quadra_tree::{NodeId, Patch, PointerInput, State, Theme, Token};
+use quadra_tree::{Cast, NodeId, Patch, PointerInput, State, Theme, Token};
 
 const GRAY: u32 = 0x808080;
 const LIGHT: u32 = 0xA0A0A0;
@@ -144,12 +144,15 @@ fn a_role_gets_its_colour_from_the_theme_and_another_when_the_theme_changes() {
     p.w.tree.set_theme(theme(0x000000, 0xCC0000));
     let (stats, _) = p.w.frame();
     assert_eq!((p.background(p.plain), stats.nodes_painted), (Color::rgb(0x112233), 0));
-    // A level above the window casts the shadows of the theme: deeper ones when it is dark.
+    // A level above the window casts the shadows the theme has for it: a theme with others
+    // paints it again, and lays nothing out.
     p.w.tree.patch_style(p.plain, Patch::Elevation(1));
-    assert_eq!(p.w.tree.paint_style(p.plain).shadows, 1);
-    p.w.tree.set_theme(Rc::new((*theme(0x000000, 0xCC0000)).clone().with_deep_shadows(true)));
     p.w.frame();
-    assert_eq!(p.w.tree.paint_style(p.plain).shadows, 3);
+    assert_eq!(p.w.tree.paint_style(p.plain).shadows, 1);
+    let cast = vec![vec![Cast { down: 2.0, blur: 4.0, color: Color::BLACK.alpha(0.5) }]];
+    p.w.tree.set_theme(Rc::new((*theme(0x000000, 0xCC0000)).clone().with_shadows(cast)));
+    let (stats, _) = p.w.frame();
+    assert_eq!((stats.nodes_painted, stats.nodes_laid_out), (1, 0));
     // A role the theme has no colour for is transparent.
     p.w.tree.patch_style(p.plain, Patch::BorderColor(Token(9).into()));
     assert_eq!(p.w.tree.paint_style(p.plain).border_color, Color::TRANSPARENT);
@@ -176,6 +179,9 @@ fn a_box_with_no_fill_until_hovered_is_filled_in_place() {
 #[test]
 fn a_level_above_the_window_casts_its_shadows_under_the_box() {
     let mut p = page();
+    let cast = |n| vec![Cast { down: 2.0, blur: 4.0, color: Color::BLACK.alpha(0.2) }; n];
+    p.w.tree.set_theme(Rc::new((*theme(0x000000, 0xCC0000)).clone().with_shadows(vec![cast(2), cast(4)])));
+    p.w.frame();
     let mut uploaded = Vec::new();
     for level in [1, 2, 0] {
         p.w.tree.patch_style(p.plain, Patch::Elevation(level));

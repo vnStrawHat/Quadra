@@ -2,23 +2,14 @@
 //! emits, and the line along its edge that marks the focus.
 
 use quadra_layout::{Display, LayoutTree};
-use quadra_prim::{Color, Edges, Rect};
+use quadra_prim::{Edges, Rect};
 use quadra_render::{Clip, Instance, Quad, Shadow};
 
 use crate::fonts::Fonts;
 use crate::inherit::{TextAt, refresh};
 use crate::node::Node;
+use crate::theme::{Cast, Theme};
 use crate::widget::PaintCx;
-
-/// The shadows of the levels above the window (specs/behaviour/15, "Elevation"): how far
-/// down each one is, how blurred, and how black; under a light theme, then a dark one.
-const SHADOWS: [&[(f32, f32, f32)]; 5] = [
-    &[],
-    &[(2.0, 3.0, 0.12), (1.0, 0.0, 0.06)],
-    &[(2.0, 3.0, 0.12), (3.0, 6.0, 0.08), (6.0, 12.0, 0.04), (1.0, 0.0, 0.12)],
-    &[(6.0, 16.0, 0.34), (1.0, 3.0, 0.26)],
-    &[(18.0, 44.0, 0.44), (4.0, 10.0, 0.30)],
-];
 
 /// Paints one node's own instances: the background and border from its style, then its
 /// widget. A node that is not displayed paints nothing. The caller has checked that the node
@@ -28,7 +19,7 @@ pub(crate) fn paint_own(
     index: usize,
     layout: &LayoutTree,
     rect: Rect,
-    (scale, band, text_at): (f32, Option<Rect>, TextAt),
+    (scale, band, text_at, theme): (f32, Option<Rect>, TextAt, &Theme),
     fonts: &mut Fonts,
     out: &mut Vec<Instance>,
 ) {
@@ -43,9 +34,8 @@ pub(crate) fn paint_own(
     let (background, border_color, radii, outline) =
         (node.paint.background, node.paint.border_color, node.paint.radii, node.paint.outline);
     // What is above the window casts its shadows first: they are under its own box.
-    for &(down, blur, alpha) in SHADOWS[(node.paint.shadows as usize).min(4)] {
-        let bounds = rect.translate(0.0, down);
-        cx.shadow(Shadow { bounds, radii, blur, color: Color::BLACK.alpha(alpha) });
+    for &Cast { down, blur, color } in theme.casts(node.paint.shadows) {
+        cx.shadow(Shadow { bounds: rect.translate(0.0, down), radii, blur, color });
     }
     cx.quad(Quad {
         bounds: rect,

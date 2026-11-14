@@ -108,6 +108,37 @@ Each phase ends with its gate green and `docs/progress.md` updated.
 | **R3** Kit | Core components and the gallery | The gallery matches the V screenshots within the snapshot tolerance |
 | **R4** Domain crates | `quadra-code`, `quadra-md`, `quadra-data`, `quadra-viz` | Their tests and fuzzers pass; their gallery pages match |
 | **R5** Release | App services (settings, i18n, assets, logging), shell services, API documentation, packaging of the gallery, the manual checks on a real desktop | Quadra is complete; the apps can start |
+| **R6** Base components (planned, not started) | Components without a look, open tokens, and the paints design systems use; see "R6" below | `quadra-kit` is built on the base alone and the gallery looks as before; a second kit of another look is made from the base without touching it |
+
+### R6: base components (planned 2026-11-14, not started)
+
+The user's long-term plan: components without a look, so that a user builds a kit of their
+own to the design system they want (one like a vendor's, or a brand's own). Not started: it
+waits for the user to say so, after R5's manual checks.
+
+- **A crate of base components** (`quadra-base`): each component is what it does, and none
+  of how it looks: its state (open, selected, value), its keys (actions in the keymap), its
+  focus and focus scope, its semantics, how a popup of it closes (Escape, a press outside).
+  It gives its **parts** (a trigger, the content, an item, a thumb, a track) to the kit to
+  draw, each with the states a style follows (`State::SELECTED`, expanded, disabled). What
+  is hard in the kit today (popups, menus, the selection controls, the table, the tree, the
+  slider, the combobox, the calendar) moves there; it is not written again.
+- **`quadra-kit` becomes one look over the base**: the proof that a user can make a kit is
+  that ours is made so.
+- **Open tokens**: the roles, radii, spacings and type of a theme are the kit's own, named by
+  it; the base names none. `Theme` and `theme_from_json` lose what binds them to the kit's
+  names.
+- **Tests**: the base through the semantic tree, with no pixel; each look by its pictures
+  (`tools/shots.sh`).
+- **The renderer**, for what design systems draw, in this order: gradients of several stops
+  (linear, radial, conic, mixed in Oklab); dashed and dotted borders; a measure of the GPU's
+  time a frame (D3D11 timestamp queries) before what costs it; shaders by class of instance
+  when the measure says the one shader has grown too costly; a blur of what is behind a box
+  (passes of the backdrop, kept to what changed); clips by any shape (masks in the glyph
+  atlas). Later, only when asked for: perspective, images drawn as pixel art.
+- **Order**: the spec of the base and the open tokens first, then the base moved out of the
+  kit with the gallery unchanged, then the renderer's cheap parts (stops, dashes), then the
+  measure, then the rest.
 
 R1 comes before any kit work on purpose: the paradigm is proven with numbers on four small
 programs before the components are written against it.

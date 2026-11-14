@@ -197,6 +197,31 @@ impl Tree {
         self.dragging() && self.drag_end().is_some()
     }
 
+    /// Something another program drags came over the window at `at`: a drag of `payload`,
+    /// with no source in the tree and no preview (the OS shows its own).
+    pub fn os_drag_enter(&mut self, payload: Rc<dyn Any>, at: Point) {
+        self.drag_end();
+        let Some(source) = self.root else { return };
+        let (held, preview, over, off) = (Point::ZERO, None, None, 0.0);
+        self.drag = Some(Drag { source, pressed_at: at, held, payload: Some(payload), preview, over, off });
+        self.drag_move(at);
+    }
+
+    /// It moved over the window.
+    pub fn os_drag_over(&mut self, at: Point) {
+        self.drag_move(at);
+    }
+
+    /// It left the window: nothing is dropped.
+    pub fn os_drag_leave(&mut self) {
+        self.drag_cancel();
+    }
+
+    /// It was dropped at `at`: the target there, if any, takes it.
+    pub fn os_drop(&mut self, at: Point) {
+        self.drag_release(at);
+    }
+
     /// Ends the drag: its target is one no longer, and its preview is gone.
     fn drag_end(&mut self) -> Option<Drag> {
         let drag = self.drag.take()?;

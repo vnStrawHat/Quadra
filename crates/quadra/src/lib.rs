@@ -41,7 +41,10 @@ pub use quadra_async::{
     debounce, inbox, inbox_with, interval, sleep, spawn, throttle, timeout,
 };
 pub use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position, Track};
-pub use quadra_platform::{Cursor, HitRegion, Key, Mods, MouseButton, Placement, WindowId, WindowOptions};
+pub use quadra_platform::{
+    Appearance, Cursor, DroppedFiles, DroppedText, HitRegion, Key, Mods, MouseButton, Placement, WindowId,
+    WindowOptions,
+};
 pub use quadra_prim::{Color, Corners, Ease, Edges, Point, Rect, Size};
 pub use quadra_reactive::{
     Memo, Scope, Signal, batch, effect, expect, memo, on_cleanup, provide, signal, untrack, use_context,

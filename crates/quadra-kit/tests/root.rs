@@ -30,3 +30,24 @@ fn a_window_of_the_kit_has_the_canvas_and_the_text_of_the_theme() {
     assert_eq!(tree.inherited(small).style.size, 12.0); // its own size, the rest from the root
     assert_ne!(dark().color(token::CANVAS), light.color(token::CANVAS));
 }
+
+#[test]
+fn installed_for_the_system_the_theme_follows_its_appearance() {
+    use quadra_platform::Appearance;
+    let platform = HeadlessPlatform::new();
+    platform.set_appearance(Appearance { dark: true, ..Appearance::default() });
+    let app = App::with(Rc::new(platform.clone()), NullRenderer::new(), Box::new(FakeBackend::new()));
+    let mut app = quadra_kit::install_system(app).expect("the fonts load");
+    let window = app.open_window(WindowOptions::new("kit").size(400.0, 300.0), quadra_kit::root).unwrap();
+    platform.step(&mut app);
+    let canvas = |app: &App<NullRenderer>| {
+        let tree = app.tree(window).unwrap();
+        tree.paint_style(tree.root().unwrap()).background
+    };
+    assert_eq!(canvas(&app), dark().color(token::CANVAS));
+    // The user turns the system light: the window is told, and the theme follows.
+    platform.set_appearance(Appearance::default());
+    platform.step(&mut app);
+    platform.step(&mut app);
+    assert_eq!(canvas(&app), light().color(token::CANVAS));
+}

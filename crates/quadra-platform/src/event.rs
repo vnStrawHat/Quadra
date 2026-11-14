@@ -6,6 +6,7 @@ use quadra_a11y::SemanticAction;
 use quadra_prim::{Point, Size};
 
 use crate::keys::Key;
+use crate::system::{Appearance, Dropped};
 
 /// The modifier keys held down.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -106,5 +107,20 @@ pub enum PlatformEvent {
     Semantic {
         node: u64,
         action: SemanticAction,
+    },
+    /// The system's appearance changed: this is the new one.
+    Appearance(Appearance),
+    /// Something another program drags came over the window, or moved over it, or left it,
+    /// or was dropped on it (where the pointer was last).
+    DragEnter {
+        at: Point,
+        what: Dropped,
+    },
+    DragOver {
+        at: Point,
+    },
+    DragLeave,
+    Drop {
+        at: Point,
     },
 }

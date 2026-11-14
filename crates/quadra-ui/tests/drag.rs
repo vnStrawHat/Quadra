@@ -158,3 +158,41 @@ fn a_box_is_torn_off_and_its_target_follows_the_pointer() {
         (1, &[Some(Point::new(100.0, 100.0)), None][..])
     );
 }
+
+#[test]
+fn files_and_text_from_another_program_go_to_the_box_that_takes_them() {
+    use quadra_platform::{DroppedFiles, DroppedText};
+    use std::path::PathBuf;
+    use std::rc::Rc;
+    let (files, words, over) = (signal(Vec::<PathBuf>::new()), signal(String::new()), signal(None));
+    let mut h = Harness::new();
+    let target = NodeRef::new();
+    let at = target.clone();
+    h.mount(move || {
+        let takes_files = div().size(200.0, 100.0).node_ref(&at);
+        let takes_files = takes_files.on_drop(move |dropped: &DroppedFiles, _| files.set(dropped.0.clone()));
+        let takes_files = takes_files.on_drag_over::<DroppedFiles>(move |at| over.set(at));
+        let takes_text = div().size(200.0, 100.0).on_drop(move |t: &DroppedText, _| words.set(t.0.clone()));
+        row().child(takes_files).child(takes_text)
+    });
+    h.frame();
+    let paths = vec![PathBuf::from(r"C:\notes\a.md")];
+    h.tree.os_drag_enter(Rc::new(DroppedFiles(paths.clone())), Point::new(50.0, 50.0));
+    let node = target.get().unwrap();
+    assert!(h.tree.state(node).contains(State::DROP_TARGET));
+    assert_eq!(over.get_untracked(), Some(Point::new(50.0, 50.0)));
+    h.tree.os_drag_over(Point::new(300.0, 50.0)); // over the box of text: files are not its
+    assert!(!h.tree.state(node).contains(State::DROP_TARGET));
+    h.tree.os_drop(Point::new(300.0, 50.0));
+    assert!(files.get_untracked().is_empty());
+    h.tree.os_drag_enter(Rc::new(DroppedFiles(paths.clone())), Point::new(60.0, 40.0));
+    h.tree.os_drop(Point::new(60.0, 40.0));
+    assert_eq!((files.get_untracked(), over.get_untracked()), (paths, None));
+    // Text that leaves the window is dropped nowhere.
+    h.tree.os_drag_enter(Rc::new(DroppedText("hi".into())), Point::new(300.0, 50.0));
+    h.tree.os_drag_leave();
+    assert_eq!(words.get_untracked(), "");
+    h.tree.os_drag_enter(Rc::new(DroppedText("hi".into())), Point::new(300.0, 50.0));
+    h.tree.os_drop(Point::new(300.0, 50.0));
+    assert_eq!(words.get_untracked(), "hi");
+}

@@ -130,6 +130,11 @@ impl WindowState {
                 self.emit(PlatformEvent::CloseRequested);
                 done
             }
+            // The user changed the colours: the dark mode, the accent, high contrast.
+            WM_SETTINGCHANGE | WM_SYSCOLORCHANGE => {
+                self.emit(PlatformEvent::Appearance(crate::appearance::appearance()));
+                None
+            }
             WM_NCDESTROY => {
                 // Destroyed by someone else: the owner's drop finds nothing left to destroy.
                 self.hwnd.set(HWND::default());

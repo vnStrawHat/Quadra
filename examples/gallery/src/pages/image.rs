@@ -1,7 +1,10 @@
 //! Images: files decoded by the system's codecs, off the thread of the window, at the size
 //! they show at.
 
-use quadra::{Align, Div, Fit, column, div, image, row, text};
+use quadra::{
+    Align, AnyView, BorderStyle, Div, DroppedFiles, Fit, Justify, column, div, dynamic, image, row, signal,
+    text,
+};
 use quadra_kit::{size, token};
 use quadra_md::markdown;
 
@@ -27,6 +30,19 @@ fn fitted(fit: Fit, how: &'static str) -> Div {
     column().gap(6.0).align_items(Align::Center).child(frame).child(said)
 }
 
+/// A box that shows the first file another program drops on it, as a picture.
+fn dropped() -> Div {
+    let file = signal(None);
+    let shown = dynamic(move || match file.get() {
+        Some(path) => AnyView::new(image(path).width(280.0).height(140.0).fit(Fit::Contain)),
+        None => AnyView::new(text("Drop a picture here from the file manager").color(token::TEXT_3)),
+    });
+    let frame = div().width(320.0).height(160.0).align_items(Align::Center).justify(Justify::Center);
+    let frame = frame.border(1.0).border_color(token::LINE_STRONG).border_style(BorderStyle::Dashed);
+    let frame = frame.radius(size::RADIUS_LG).drop_target(|s| s.bg(token::ACCENT_TINT));
+    frame.on_drop(move |files: &DroppedFiles, _| file.set(files.0.first().cloned())).child(shown)
+}
+
 pub fn image_page() -> Div {
     let sizes = [96.0, 64.0, 40.0, 24.0, 16.0].map(|side| image(MARK).width(side).label("The mark"));
     let marks = row().gap(16.0).align_items(Align::End).padding(12.0).radius(size::RADIUS_LG);
@@ -49,6 +65,11 @@ pub fn image_page() -> Div {
                 "Decoded at the size it shows at",
                 marks.bg(token::PANEL).children(sizes),
                 "image(file).width(40.0)",
+            ),
+            demo(
+                "Dropped from another program",
+                dropped(),
+                ".on_drop(|files: &DroppedFiles, at| ..).drop_target(|s| s.bg(token::ACCENT_TINT))",
             ),
             demo(
                 "In a document",

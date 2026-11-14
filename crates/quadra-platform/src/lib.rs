@@ -10,6 +10,7 @@ mod headless;
 mod image;
 mod keys;
 mod platform;
+mod system;
 mod window;
 
 pub use clipboard::{Clipboard, MemoryClipboard};
@@ -21,6 +22,7 @@ pub use image::{
 };
 pub use keys::Key;
 pub use platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
+pub use system::{Appearance, Dropped, DroppedFiles, DroppedText};
 pub use window::{
     Cursor, HitRegion, Placement, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size,
 };

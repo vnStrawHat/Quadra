@@ -1,7 +1,13 @@
 //! The app as the platform's handler: events go to the windows' trees, frames to the passes
 //! and the renderer, timers to what set them.
 
-use quadra_platform::{HitRegion, PlatformEvent, PlatformHandler, PointerKind, TimerId, WindowId};
+use std::any::Any;
+use std::rc::Rc;
+
+use quadra_platform::{
+    Dropped, DroppedFiles, DroppedText, HitRegion, PlatformEvent, PlatformHandler, PointerKind, TimerId,
+    WindowId,
+};
 use quadra_prim::Point;
 use quadra_reactive::batch;
 use quadra_render::Renderer;
@@ -59,6 +65,35 @@ impl<R: Renderer> PlatformHandler for App<R> {
             PlatformEvent::SemanticsWanted => {
                 if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
                     w.tree.listen(true);
+                }
+            }
+            PlatformEvent::Appearance(appearance) => {
+                if self.appearance.get_untracked() != appearance {
+                    self.appearance.set(appearance);
+                }
+            }
+            PlatformEvent::DragEnter { at, what } => {
+                let payload: Rc<dyn Any> = match what {
+                    Dropped::Files(paths) => Rc::new(DroppedFiles(paths)),
+                    Dropped::Text(text) => Rc::new(DroppedText(text)),
+                };
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.os_drag_enter(payload, at);
+                }
+            }
+            PlatformEvent::DragOver { at } => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.os_drag_over(at);
+                }
+            }
+            PlatformEvent::DragLeave => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.os_drag_leave();
+                }
+            }
+            PlatformEvent::Drop { at } => {
+                if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    w.tree.os_drop(at);
                 }
             }
             PlatformEvent::Semantic { node, action } => {

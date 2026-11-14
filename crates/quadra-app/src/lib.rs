@@ -22,7 +22,7 @@ use std::time::Instant;
 
 use quadra_async::{Executor, Timers};
 use quadra_platform::{
-    Cursor, Platform, PlatformError, PlatformWindow, WindowHandle, WindowId, WindowOptions,
+    Appearance, Cursor, Platform, PlatformError, PlatformWindow, WindowHandle, WindowId, WindowOptions,
 };
 use quadra_prim::{Color, Rect};
 use quadra_reactive::{Scope, Signal, provide, signal};
@@ -72,6 +72,8 @@ pub struct App<R: Renderer> {
     /// The theme of every window: views find the signal in their context, and whoever
     /// writes it gives the app another theme.
     theme: Signal<Rc<Theme>>,
+    /// The system's appearance, in the context of views too.
+    pub(crate) appearance: Signal<Appearance>,
     on_error: Box<dyn FnMut(&AppError)>,
     on_presented: Option<FrameHook>,
     /// Where the app keeps its files, once it is told (specs/15).
@@ -88,7 +90,7 @@ impl<R: Renderer> App<R> {
         // theme.
         let (root, timers, tasks) =
             (Scope::child(), Timers::new(platform.clone()), Executor::new(&*platform));
-        let (theme, settings) = root.run(|| {
+        let (theme, settings, appearance) = root.run(|| {
             provide(timers.clone());
             provide(tasks.clone());
             provide(Images::new(platform.image_decoder()));
@@ -98,7 +100,9 @@ impl<R: Renderer> App<R> {
             provide(theme);
             let settings = Settings::memory();
             provide(settings.clone());
-            (theme, settings)
+            let appearance = signal(platform.appearance());
+            provide(appearance);
+            (theme, settings, appearance)
         });
         App {
             platform,
@@ -111,6 +115,7 @@ impl<R: Renderer> App<R> {
             timers,
             tasks,
             theme,
+            appearance,
             on_error: Box::new(|e| log::error("app", e)),
             on_presented: None,
             dirs: None,

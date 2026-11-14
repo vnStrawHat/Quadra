@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use crate::clipboard::Clipboard;
 use crate::event::PlatformEvent;
 use crate::image::ImageDecoder;
+use crate::system::Appearance;
 use quadra_prim::Point;
 
 use crate::window::{HitRegion, PlatformWindow, WindowId, WindowOptions};
@@ -62,6 +63,8 @@ pub trait Platform {
     /// The user's clock less UTC at a moment, seconds after 1970-01-01 UTC: the offset of
     /// their time zone then, summer time included. The headless platform's is set by its test.
     fn utc_offset(&self, unix_seconds: i64) -> i32;
+    /// How the user set the system to look. The headless platform's is set by its test.
+    fn appearance(&self) -> Appearance;
 }
 
 /// The app's side. It is never entered twice: what an OS call inside a handler sets off is

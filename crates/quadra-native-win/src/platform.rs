@@ -259,6 +259,10 @@ impl Platform for WinPlatform {
         crate::zone::utc_offset(unix_seconds)
     }
 
+    fn appearance(&self) -> quadra_platform::Appearance {
+        crate::appearance::appearance()
+    }
+
     fn image_decoder(&self) -> std::sync::Arc<dyn quadra_platform::ImageDecoder> {
         std::sync::Arc::new(crate::image::WicImages)
     }

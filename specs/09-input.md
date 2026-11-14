@@ -170,8 +170,11 @@ As built:
 - In views: `.draggable(|| value)`, `.draggable_with(|| value, || preview)`,
   `.draggable_off(px, || value, || preview)`, `.on_drop(|value: &T, at| ..)`,
   `.on_drag_over::<T>(|at| ..)` and `.drop_target(|s| ..)` for the style while over.
-- **From the OS**: files and text dropped on the window arrive as drop events with the same
-  targeting.
+- **From the OS**: files and text dragged from another program are a drag of a
+  `DroppedFiles` (the paths) or a `DroppedText` with the same targeting: `.on_drop(|files:
+  &DroppedFiles, at| ..)`, `.on_drag_over::<DroppedFiles>(..)`, `.drop_target(..)`. It
+  starts when the pointer comes in (`Tree::os_drag_enter`), follows it, ends when it leaves
+  or drops, and has no preview (the OS shows its own).
 
 ## Semantic actions
 

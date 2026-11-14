@@ -5,10 +5,12 @@
 //! operating system. Every block says what makes it sound.
 
 mod a11y;
+mod appearance;
 mod atlas;
 mod backdrop;
 mod clipboard;
 mod delivery;
+mod drop;
 mod dwrite;
 mod frame;
 mod gpu;

@@ -168,6 +168,7 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         let window = WinWindow(state); // from here on, an early return closes the window
         let state = &window.0;
         let _ = state.access.set(Access::new(hwnd));
+        crate::drop::register(hwnd, state);
         // Size the client area to the logical size asked for, at this display's scale.
         let dpi = GetDpiForWindow(hwnd).max(1);
         let scale = dpi as f32 / 96.0;
@@ -215,6 +216,7 @@ impl Drop for WinWindow {
             // nothing sent while it is destroyed reaches a state about to be freed.
             unsafe {
                 SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+                crate::drop::revoke(hwnd);
                 let _ = DestroyWindow(hwnd);
             }
             self.0.shared.pacing.set(hwnd.0 as isize, None);

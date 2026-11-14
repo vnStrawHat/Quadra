@@ -73,6 +73,21 @@ pub trait PlatformHandler {
   OS: the app decides), and `.is_maximized()`, a read that what it is in runs again for.
   The asks wait on the tree (`Tree::take_window_requests`) and the app does them after the
   handler that asked; the tree is told of the window's state with each resize.
+- **The system's appearance** (`Platform::appearance()`): whether apps are asked to be
+  dark, whether high contrast is on, and the accent colour the user chose, if there is
+  one. When it changes every window gets `PlatformEvent::Appearance` with the new one. The
+  app keeps it as a signal in the context of views (`Signal<Appearance>`), and
+  `App::theme_by(|appearance| theme)` makes the app's theme follow it (the kit's
+  `install_system(app)` takes its dark or light theme so). The headless platform's is set
+  by its test (`set_appearance`), which delivers the event.
+- **Drops from the OS**: files or text dragged from another program over a window arrive as
+  `DragEnter { at, what }` (`Dropped::Files(paths)` or `Dropped::Text(text)`; files when
+  there are both), `DragOver { at }`, `DragLeave` and `Drop { at }`. The tree treats them as
+  a drag inside the app whose payload is a `DroppedFiles` or a `DroppedText` (09, "Drag and
+  drop"): the deepest node under the pointer that takes that type is the target, has
+  `drop_target`, is told where the pointer is, and gets the value on the drop. The OS is
+  told a copy is taken wherever the window is (the target is the app's to find, after the
+  OS asked).
 - A window is owned by whoever holds its box. Dropping it closes the OS window; a close the
   user asks for arrives as an event, and the app decides.
 - Errors are returned, not printed (01, R18).
@@ -135,7 +150,14 @@ Unchanged from the V implementation, whose notes in behaviour/02 remain the refe
 - Assistive technology through UI Automation, by the adapter of `accesskit` (12): made with
   the window, it loads nothing and builds nothing until a reader asks.
 - OS bindings come from the `windows` crate with only the needed features. COM objects are
-  owned by its smart pointers; no vtable is indexed by hand.
+  owned by its smart pointers; no vtable is indexed by hand. One object is Quadra's own: the
+  window's drop target (`drop.rs`), an `IDropTarget` written as its vtable and a count,
+  since the framework has no procedural macros to make one. It is registered with the
+  window (`RegisterDragDrop`, OLE started on the UI thread) and revoked when it closes; it
+  reads `CF_HDROP` and `CF_UNICODETEXT` from what is dragged.
+- The appearance is read from the user's settings (`AppsUseLightTheme`, the accent colour
+  of the window manager, `SPI_GETHIGHCONTRAST`) and read again when the OS says they
+  changed (`WM_SETTINGCHANGE` for `ImmersiveColorSet`, `WM_SYSCOLORCHANGE`).
 
 ## The headless platform
 

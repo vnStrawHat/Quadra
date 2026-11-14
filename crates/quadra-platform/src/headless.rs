@@ -14,6 +14,7 @@ use quadra_prim::{Rect, Size};
 use crate::clipboard::{Clipboard, MemoryClipboard};
 use crate::event::PlatformEvent;
 use crate::platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
+use crate::system::Appearance;
 use crate::window::{Cursor, Placement, PlatformWindow, WindowId, WindowOptions};
 
 mod window;
@@ -52,6 +53,7 @@ struct Inner {
     clipboard: Rc<MemoryClipboard>,
     decoder: RefCell<Arc<dyn crate::image::ImageDecoder>>,
     utc_offset: Cell<i32>,
+    appearance: Cell<Appearance>,
 }
 
 #[derive(Clone)]
@@ -79,6 +81,7 @@ impl HeadlessPlatform {
             clipboard: Rc::default(),
             decoder: RefCell::new(Arc::new(crate::image::FlatImages)),
             utc_offset: Cell::new(0),
+            appearance: Cell::new(Appearance::default()),
         }))
     }
 
@@ -148,6 +151,14 @@ impl HeadlessPlatform {
     }
 
     /// The offset of the time zone the platform says, in seconds: 0 unless a test sets it.
+    /// Sets the system's appearance, and tells every window, as the OS does.
+    pub fn set_appearance(&self, appearance: Appearance) {
+        self.0.appearance.set(appearance);
+        for window in self.0.windows.borrow().iter().filter_map(Weak::upgrade) {
+            self.push(window.id, PlatformEvent::Appearance(appearance));
+        }
+    }
+
     pub fn set_utc_offset(&self, seconds: i32) {
         self.0.utc_offset.set(seconds);
     }
@@ -276,5 +287,9 @@ impl Platform for HeadlessPlatform {
 
     fn utc_offset(&self, _unix_seconds: i64) -> i32 {
         self.0.utc_offset.get()
+    }
+
+    fn appearance(&self) -> Appearance {
+        self.0.appearance.get()
     }
 }

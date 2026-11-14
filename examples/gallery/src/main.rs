@@ -4,10 +4,11 @@
 
 use quadra::WindowOptions;
 use quadra_gallery::Gallery;
-use quadra_kit::dark;
 
 fn main() -> quadra::Result<()> {
-    let app = quadra_kit::install(quadra::app()?, &dark())?;
+    // The theme the system asks for, and the other when the user changes it.
+    let app = quadra_kit::install_system(quadra::app()?)?;
+    let dark = app.appearance().dark;
     let options = WindowOptions::new("Quadra Gallery").size(1200.0, 800.0).custom_frame();
-    app.keymap(quadra_gallery::keymap()).window(options, || Gallery::new("start", true).view())?.run()
+    app.keymap(quadra_gallery::keymap()).window(options, || Gallery::new("start", dark).view())?.run()
 }

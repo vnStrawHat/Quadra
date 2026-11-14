@@ -4,8 +4,10 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use quadra_reactive::provide;
+use quadra_platform::Appearance;
+use quadra_reactive::{effect, provide};
 use quadra_render::Renderer;
+use quadra_tree::Theme;
 
 use crate::i18n::I18n;
 use crate::settings::Settings;
@@ -93,5 +95,20 @@ impl<R: Renderer> App<R> {
     pub fn quit_on_last_window(mut self, quits: bool) -> App<R> {
         self.quit_on_last = quits;
         self
+    }
+}
+
+impl<R: Renderer> App<R> {
+    /// Makes the app's theme follow the system's appearance: `theme` is asked for the one
+    /// of an appearance now, and again whenever the user changes it.
+    pub fn theme_by(self, theme: impl Fn(&Appearance) -> Theme + 'static) -> App<R> {
+        let (appearance, themes) = (self.appearance, self.theme);
+        self.root.run(|| effect(move || themes.set(Rc::new(theme(&appearance.get())))));
+        self
+    }
+
+    /// The system's appearance as it is now.
+    pub fn appearance(&self) -> Appearance {
+        self.appearance.get_untracked()
     }
 }

@@ -5,6 +5,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Duration;
 
 use quadra_layout::Align;
 use quadra_platform::{FlatImages, ImageError};
@@ -12,7 +13,7 @@ use quadra_prim::{Rect, Size};
 use quadra_reactive::signal;
 use quadra_render::{Instance, Kind};
 use quadra_testing::Harness;
-use quadra_tree::{Fit, NodeId, Role};
+use quadra_tree::{Fit, NodeId, Picture, Role};
 use quadra_ui::{ImageSource, column, image, row, scroll, show};
 
 /// The pieces of pictures that were painted.
@@ -153,4 +154,26 @@ fn a_view_that_comes_back_shows_in_its_first_frame() {
     h.frame();
     assert_eq!(pieces(&h).len(), 2);
     assert_eq!(pieces(&h)[0].bounds, [0.0, 0.0, 64.0, 64.0]);
+}
+
+#[test]
+fn an_image_that_moves_shows_its_frames_in_turn() {
+    // Red, then blue, each for 100 ms, over and over; nothing of it is kept in the cache.
+    let mut h = Harness::new();
+    let file: &'static [u8] = b"flat 4 4 ff0000ff 0000ffff";
+    h.mount(move || column().align_items(Align::Start).child(image(file)));
+    h.settle();
+    let red = |h: &mut Harness| {
+        let id = first(h);
+        let picture = h.tree.widget_mut::<Picture>(id).unwrap();
+        picture.image().unwrap().pixels.pixels[0] == 255
+    };
+    assert!(red(&mut h));
+    h.advance(Duration::from_millis(100));
+    h.settle();
+    assert!(!red(&mut h));
+    h.advance(Duration::from_millis(100));
+    h.settle();
+    assert!(red(&mut h));
+    assert_eq!(h.images.held().0, 0);
 }

@@ -9,8 +9,9 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::task::{Poll, Waker};
+use std::time::Duration;
 
-use quadra_async::{background, spawn};
+use quadra_async::{Sleep, background, sleep, spawn};
 use quadra_layout::Length;
 use quadra_platform::{ImageError, ImageInfo, MAX_IMAGE_FILE_BYTES, admit};
 use quadra_prim::Size;
@@ -148,6 +149,22 @@ impl Shown {
         })
         .await
     }
+
+    /// The next size it is shown at, or none when `tick` is over first.
+    async fn next(&self, have: (u32, u32), tick: Option<Sleep>) -> Option<(u32, u32)> {
+        let mut size = std::pin::pin!(self.other_than(have));
+        let mut tick = tick.map(Box::pin);
+        poll_fn(|cx| {
+            if let Poll::Ready(size) = size.as_mut().poll(cx) {
+                return Poll::Ready(Some(size));
+            }
+            match tick.as_mut().map(|tick| tick.as_mut().poll(cx)) {
+                Some(Poll::Ready(())) => Poll::Ready(None),
+                _ => Poll::Pending,
+            }
+        })
+        .await
+    }
 }
 
 /// Reads a file, checked against the limits by its length before and by its header after.
@@ -224,31 +241,46 @@ impl View for ImageView {
             if let (Some(f), Some(info)) = (on_load, info) {
                 f(Ok(Size::new(info.width as f32, info.height as f32)));
             }
-            let mut have = (0, 0);
-            loop {
-                // Each size it is shown at: pixels of that size, from the cache or the file.
-                let want = shown.other_than(have).await;
-                have = want;
-                let mut image = key.as_ref().and_then(|key| images.get(key, want));
-                if image.is_none() {
-                    if file.is_none() {
-                        file = read(&images, &source).await.ok().map(|(bytes, _)| bytes);
-                    }
-                    let Some(file) = file.clone() else { continue };
-                    let decoder = images.decoder.clone();
-                    let decoded = background(move || decoder.decode(&file, want.0, want.1)).await;
-                    image = decoded.ok().and_then(Result::ok).map(Image::new);
-                    if let (Some(key), Some(decoded)) = (&key, image.take()) {
-                        image = Some(images.put(key, want, decoded));
-                    }
-                }
-                let Some(image) = image else { continue };
+            let show = |image: Rc<Image>| {
                 handle.with(move |tree| {
                     if let Some(picture) = tree.widget_mut::<Picture>(id) {
                         picture.set_image(image);
                         tree.mark_paint(id);
                     }
-                });
+                })
+            };
+            let (mut have, mut frames, mut at) = ((0, 0), Vec::<(Rc<Image>, Duration)>::new(), 0);
+            loop {
+                // An image that moves shows its frames in turn, each for its time.
+                let tick = (frames.len() > 1).then(|| sleep(frames[at].1));
+                let Some(want) = shown.next(have, tick).await else {
+                    at = (at + 1) % frames.len();
+                    show(frames[at].0.clone());
+                    continue;
+                };
+                // Each size it is shown at: pixels of that size, from the cache or the file.
+                (have, at) = (want, 0);
+                frames = key
+                    .as_ref()
+                    .and_then(|key| images.get(key, want))
+                    .map_or(Vec::new(), |i| vec![(i, Duration::ZERO)]);
+                if frames.is_empty() {
+                    if file.is_none() {
+                        file = read(&images, &source).await.ok().map(|(bytes, _)| bytes);
+                    }
+                    let Some(file) = file.clone() else { continue };
+                    let decoder = images.decoder.clone();
+                    let decoded = background(move || decoder.frames(&file, want.0, want.1)).await;
+                    let decoded = decoded.ok().and_then(Result::ok).unwrap_or_default();
+                    frames = decoded.into_iter().map(|(pixels, time)| (Image::new(pixels), time)).collect();
+                    // What moves is not kept: its frames are many, and shown by one view.
+                    if let (Some(key), [(still, _)]) = (&key, frames.as_mut_slice()) {
+                        *still = images.put(key, want, still.clone());
+                    }
+                }
+                if let Some((first, _)) = frames.first() {
+                    show(first.clone());
+                }
             }
         })
         .detach();

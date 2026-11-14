@@ -134,7 +134,12 @@ of flat test images on the headless platform. `image(source)` is the view:
 - **Failure** (no file, no image, too large, a codec that fails) leaves the box empty and
   is told to `.on_load(..)`, which gets the image's size otherwise. `.label(..)` is what
   a reader is told; the node's role is `Image`.
-- Not yet: the orientation a camera wrote into a file, frames after the first, and letting
+- **Orientation and frames**: a photograph is measured and shown as its orientation tag
+  turns it. An image that moves (a GIF) is decoded whole, every frame drawn over what the
+  ones before it left as their disposal says (`ImageDecoder::frames`), and shown in turn
+  for each frame's time, over and over, by the view's task; its frames are not kept in
+  the cache, and one whose frames would take more than an image may shows its first.
+- Not yet: letting
   go of the decoded pixels once they are uploaded (they are kept beside their tiles, so a
   lost device needs no decoding).
 

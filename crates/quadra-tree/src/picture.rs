@@ -78,6 +78,11 @@ impl Picture {
         self.image = Some(image);
     }
 
+    /// The pixels it paints.
+    pub fn image(&self) -> Option<&Rc<Image>> {
+        self.image.as_ref()
+    }
+
     /// Where the image goes in the node's box, both in device pixels.
     fn place(&self, outer: Rect) -> Rect {
         let Some(natural) = self.natural.filter(|n| n.width > 0.0 && n.height > 0.0) else { return outer };

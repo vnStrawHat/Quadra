@@ -71,6 +71,27 @@ fn a_photograph_is_turned_as_its_orientation_tag_says() {
     assert!(bottom[2] > 200 && bottom[0] < 60, "{bottom:?}");
 }
 
+#[test]
+fn the_frames_of_a_gif_are_made_whole_with_their_times() {
+    // 8 by 8: red for 50 ms; a blue square of 4 drawn at (4, 4) over it for 200 ms; green
+    // with no time said, a tenth.
+    let file = include_bytes!("data/moving.gif");
+    assert_eq!(WicImages.info(file), Ok(ImageInfo { width: 8, height: 8 }));
+    let frames = WicImages.frames(file, 8, 8).unwrap();
+    let times: Vec<u128> = frames.iter().map(|(_, t)| t.as_millis()).collect();
+    assert_eq!(times, [50, 200, 100]);
+    let pixel = |f: usize, x: usize, y: usize| frames[f].0.pixels[(y * 8 + x) * 4..][..4].to_vec();
+    let (red, blue, green) = (vec![255, 0, 0, 255], vec![0, 0, 255, 255], vec![0, 255, 0, 255]);
+    assert_eq!(
+        (pixel(0, 6, 6), pixel(1, 1, 1), pixel(1, 6, 6), pixel(2, 6, 6)),
+        (red.clone(), red.clone(), blue, green)
+    );
+    // Scaled, and one frame where a still picture is asked for.
+    let half = WicImages.frames(file, 4, 4).unwrap();
+    assert_eq!((half.len(), half[1].0.pixels.len()), (3, 64));
+    assert_eq!(WicImages.decode(file, 8, 8).unwrap().pixels[..4], red[..]);
+}
+
 fn at(pixels: &Pixels, x: u32, y: u32) -> u32 {
     let i = ((y * pixels.size.width + x) * 4) as usize;
     (pixels.rgba[i] as u32) << 16 | (pixels.rgba[i + 1] as u32) << 8 | pixels.rgba[i + 2] as u32

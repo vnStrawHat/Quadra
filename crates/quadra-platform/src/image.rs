@@ -2,6 +2,7 @@
 //! trait, and the limits a file is held to from its header, before any pixel is decoded.
 
 use std::fmt;
+use std::time::Duration;
 
 /// The most pixels a side, the most pixels in all (64 MiB of RGBA), the largest file, and
 /// the most pixels a byte of file may claim (no format packs more: a header that lies makes
@@ -89,6 +90,12 @@ pub trait ImageDecoder: Send + Sync {
     fn info(&self, file: &[u8]) -> Result<ImageInfo, ImageError>;
     /// The pixels, scaled to `width` by `height`.
     fn decode(&self, file: &[u8], width: u32, height: u32) -> Result<Decoded, ImageError>;
+    /// The frames of an image that moves, each whole and with how long it shows, scaled to
+    /// `width` by `height`: one, for an image that does not move, or one whose frames would
+    /// take more than an image may (`MAX_IMAGE_PIXELS` for all of them).
+    fn frames(&self, file: &[u8], width: u32, height: u32) -> Result<Vec<(Decoded, Duration)>, ImageError> {
+        Ok(vec![(self.decode(file, width, height)?, Duration::ZERO)])
+    }
 }
 
 /// Holds a file to the limits, by what its header says and how long it is.
@@ -111,7 +118,8 @@ pub fn admit(info: ImageInfo, file_bytes: usize) -> Result<(), ImageError> {
 }
 
 /// The decoder of the headless platform: an image is one line of text, `flat W H RRGGBBAA`,
-/// and decodes to that colour at whatever size is asked for.
+/// and decodes to that colour at whatever size is asked for. More colours after the first
+/// are more frames, each shown for 100 ms.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct FlatImages;
 
@@ -124,14 +132,22 @@ impl FlatImages {
         file
     }
 
-    fn read(file: &[u8]) -> Option<(ImageInfo, u32)> {
+    fn read(file: &[u8]) -> Option<(ImageInfo, Vec<u32>)> {
         let text = std::str::from_utf8(file).ok()?;
         let mut words = text.split_ascii_whitespace();
         if words.next()? != "flat" {
             return None;
         }
         let (width, height) = (words.next()?.parse().ok()?, words.next()?.parse().ok()?);
-        Some((ImageInfo { width, height }, u32::from_str_radix(words.next()?, 16).ok()?))
+        let colours: Vec<u32> = words.map_while(|w| u32::from_str_radix(w, 16).ok()).collect();
+        (!colours.is_empty()).then_some((ImageInfo { width, height }, colours))
+    }
+
+    fn fill(rgba: u32, width: u32, height: u32) -> Decoded {
+        let [r, g, b, a] = rgba.to_be_bytes();
+        let pre = |c: u8| ((c as u32 * a as u32 + 127) / 255) as u8;
+        let pixel = [pre(r), pre(g), pre(b), a];
+        Decoded { width, height, pixels: pixel.repeat(width as usize * height as usize) }
     }
 }
 
@@ -141,11 +157,14 @@ impl ImageDecoder for FlatImages {
     }
 
     fn decode(&self, file: &[u8], width: u32, height: u32) -> Result<Decoded, ImageError> {
-        let (_, rgba) = Self::read(file).ok_or_else(|| ImageError::Corrupt("not a flat image".into()))?;
-        let [r, g, b, a] = rgba.to_be_bytes();
-        let pre = |c: u8| ((c as u32 * a as u32 + 127) / 255) as u8;
-        let pixel = [pre(r), pre(g), pre(b), a];
-        Ok(Decoded { width, height, pixels: pixel.repeat(width as usize * height as usize) })
+        let (_, colours) = Self::read(file).ok_or_else(|| ImageError::Corrupt("not a flat image".into()))?;
+        Ok(Self::fill(colours[0], width, height))
+    }
+
+    fn frames(&self, file: &[u8], width: u32, height: u32) -> Result<Vec<(Decoded, Duration)>, ImageError> {
+        let (_, colours) = Self::read(file).ok_or_else(|| ImageError::Corrupt("not a flat image".into()))?;
+        let each = if colours.len() > 1 { Duration::from_millis(100) } else { Duration::ZERO };
+        Ok(colours.into_iter().map(|c| (Self::fill(c, width, height), each)).collect())
     }
 }
 

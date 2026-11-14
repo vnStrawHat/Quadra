@@ -28,6 +28,21 @@ pub struct WindowOptions {
     /// The app draws the title bar: the content covers where the OS would draw its own, and
     /// the app says what each point of it is ([`crate::PlatformHandler::hit_test`]).
     pub custom_frame: bool,
+    /// The app keeps where the window was under this name (`window.<key>` in its settings).
+    pub remember: Option<String>,
+    /// Where the window opens, if that place is on a display; otherwise as the rest says.
+    pub placement: Option<Placement>,
+}
+
+/// Where a window is, as the OS keeps it: its frame when it is not maximized, in device
+/// pixels of the desktop, and whether it is maximized. What the app stores and gives back.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Placement {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+    pub maximized: bool,
 }
 
 impl WindowOptions {
@@ -40,6 +55,8 @@ impl WindowOptions {
             fit: 0.0,
             visible: true,
             custom_frame: false,
+            remember: None,
+            placement: None,
         }
     }
 
@@ -70,6 +87,13 @@ impl WindowOptions {
 
     pub fn custom_frame(mut self) -> WindowOptions {
         self.custom_frame = true;
+        self
+    }
+
+    /// The window opens where it was when it last closed, and as big (specs/15, "Window
+    /// state"); `key` tells the windows of an app apart.
+    pub fn remember(mut self, key: &str) -> WindowOptions {
+        self.remember = Some(key.to_string());
         self
     }
 }
@@ -142,4 +166,6 @@ pub trait PlatformWindow {
     /// Maximizes the window, or puts it back as it was.
     fn toggle_maximize(&self);
     fn is_maximized(&self) -> bool;
+    /// Where the window is now: what [`WindowOptions::placement`] opens it at again.
+    fn placement(&self) -> Placement;
 }

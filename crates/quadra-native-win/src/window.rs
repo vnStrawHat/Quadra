@@ -6,13 +6,11 @@ use std::rc::Rc;
 
 use quadra_a11y::TreeUpdate;
 use quadra_platform::{
-    Cursor, PlatformError, PlatformEvent, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size,
+    Cursor, Placement, PlatformError, PlatformEvent, PlatformWindow, WindowHandle, WindowId, WindowOptions,
+    fit_size,
 };
 use quadra_prim::{Rect, Size};
-use windows::Win32::Foundation::{HWND, POINT, RECT};
-use windows::Win32::Graphics::Gdi::{
-    GetMonitorInfoW, MONITOR_DEFAULTTOPRIMARY, MONITORINFO, MonitorFromPoint,
-};
+use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::HiDpi::{AdjustWindowRectExForDpi, GetDpiForWindow};
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -26,6 +24,7 @@ use windows::core::{HSTRING, PCWSTR, Param, w};
 use crate::a11y::Access;
 use crate::ime;
 use crate::input::system_cursor;
+use crate::place::primary_display;
 use crate::platform::{Delivery, Shared, failed};
 use crate::wndproc::window_proc;
 
@@ -135,15 +134,6 @@ pub(crate) unsafe fn create(
     }
 }
 
-/// The work area of the primary display, in device pixels.
-fn primary_display() -> RECT {
-    let mut info = MONITORINFO { cbSize: size_of::<MONITORINFO>() as u32, ..Default::default() };
-    // SAFETY: `info` is a valid structure with its size set.
-    let _ =
-        unsafe { GetMonitorInfoW(MonitorFromPoint(POINT::default(), MONITOR_DEFAULTTOPRIMARY), &mut info) };
-    info.rcWork
-}
-
 pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWindow, PlatformError> {
     let state = Rc::new(WindowState {
         id: WindowId(shared.next_id()),
@@ -203,10 +193,11 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         }
         SetWindowPos(hwnd, None, display.left + (dw - w) / 2, display.top + (dh - h) / 2, w, h, flags)
             .map_err(failed)?;
+        let placed = options.placement.is_some_and(|p| state.place(p, options.visible));
         let mut client = RECT::default();
         GetClientRect(hwnd, &mut client).map_err(failed)?;
         state.size.set((client.right, client.bottom));
-        if options.visible {
+        if options.visible && !placed {
             let _ = ShowWindow(hwnd, SW_SHOW);
         }
         shared.windows.borrow_mut().push(Rc::downgrade(state));
@@ -296,5 +287,9 @@ impl PlatformWindow for WinWindow {
 
     fn is_maximized(&self) -> bool {
         self.0.is_maximized()
+    }
+
+    fn placement(&self) -> Placement {
+        self.0.placement()
     }
 }

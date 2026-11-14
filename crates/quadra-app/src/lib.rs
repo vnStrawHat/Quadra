@@ -9,6 +9,7 @@ mod events;
 pub mod i18n;
 mod locale;
 pub mod log;
+mod remember;
 mod report;
 mod services;
 mod settings;
@@ -47,6 +48,8 @@ pub(crate) struct AppWindow {
     caret: Option<Rect>,
     cursor: Cursor,
     pub(crate) window: Box<dyn PlatformWindow>,
+    /// The name its place is kept under, if it is.
+    remember: Option<String>,
 }
 
 pub struct App<R: Renderer> {
@@ -169,6 +172,7 @@ impl<R: Renderer> App<R> {
         options: WindowOptions,
         view: impl FnOnce() -> V,
     ) -> Result<WindowId> {
+        let options = self.recall(options);
         let window = self.platform.open_window(&options)?;
         let target = match window.handle() {
             WindowHandle::Win32 { hwnd } => SurfaceTarget::Win32 { hwnd },
@@ -193,7 +197,8 @@ impl<R: Renderer> App<R> {
         scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();
-        self.windows.push(AppWindow { scope, tree, surface, caret: None, cursor: Cursor::Arrow, window });
+        let (caret, cursor, remember) = (None, Cursor::Arrow, options.remember);
+        self.windows.push(AppWindow { scope, tree, surface, caret, cursor, window, remember });
         Ok(id)
     }
 
@@ -226,6 +231,7 @@ impl<R: Renderer> App<R> {
     pub(crate) fn close(&mut self, window: WindowId) {
         let Some(at) = self.windows.iter().position(|w| w.window.id() == window) else { return };
         let closed = self.windows.remove(at);
+        self.remember(closed.remember.as_deref(), &*closed.window);
         closed.scope.dispose();
         self.renderer.forget_scene(closed.tree.scene().id());
         self.renderer.drop_surface(closed.surface);

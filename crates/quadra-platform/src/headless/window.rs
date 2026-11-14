@@ -4,7 +4,7 @@ use quadra_a11y::TreeUpdate;
 use quadra_prim::{Rect, Size};
 
 use super::HeadlessWindow;
-use crate::window::{Cursor, PlatformWindow, WindowHandle, WindowId};
+use crate::window::{Cursor, Placement, PlatformWindow, WindowHandle, WindowId};
 
 impl PlatformWindow for HeadlessWindow {
     fn id(&self) -> WindowId {
@@ -53,5 +53,11 @@ impl PlatformWindow for HeadlessWindow {
 
     fn is_maximized(&self) -> bool {
         self.0.maximized.get()
+    }
+
+    fn placement(&self) -> Placement {
+        let ((x, y), size, scale) = (self.0.at.get(), self.0.size.get(), self.0.scale.get());
+        let (width, height) = ((size.width * scale) as i32, (size.height * scale) as i32);
+        Placement { x, y, width, height, maximized: self.0.maximized.get() }
     }
 }

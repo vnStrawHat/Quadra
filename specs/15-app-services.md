@@ -35,8 +35,10 @@ tool and the benches never write outside the project; a test that does gives a f
   changes a map of an older one and the file is written in the new shape.
 - **Window state**: `WindowOptions::remember(key)` restores the window's size, place and
   whether it was maximized from the settings (`window.<key>`), and saves them when the
-  window closes. The platform opens a window at a place only when that place is on a
-  display; elsewhere it centres it.
+  window closes. A place is a `Placement` (the frame when not maximized, in device pixels
+  of the desktop, and whether it is maximized; `PlatformWindow::placement`,
+  `WindowOptions::placement`). The platform opens a window at a place only when that place
+  is on a display; elsewhere as its other options say (`centered`).
 - UI state (split ratios, column widths, a folded sidebar) is a setting the app reads and
   writes with `value`: a component takes the signal.
 

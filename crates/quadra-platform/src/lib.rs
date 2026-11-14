@@ -21,4 +21,6 @@ pub use image::{
 };
 pub use keys::Key;
 pub use platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
-pub use window::{Cursor, HitRegion, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size};
+pub use window::{
+    Cursor, HitRegion, Placement, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size,
+};

@@ -6,8 +6,8 @@ use std::time::Duration;
 
 use quadra_native_win::WinPlatform;
 use quadra_platform::{
-    Cursor, Key, MouseButton, Platform, PlatformEvent, PlatformHandler, PlatformWindow, PointerKind, TimerId,
-    WindowHandle, WindowId, WindowOptions,
+    Cursor, Key, MouseButton, Placement, Platform, PlatformEvent, PlatformHandler, PlatformWindow,
+    PointerKind, TimerId, WindowHandle, WindowId, WindowOptions,
 };
 use quadra_prim::{Point, Size};
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
@@ -119,6 +119,21 @@ fn a_window_has_the_content_size_asked_for_and_is_closed_by_dropping_it() {
     assert!(unsafe { IsWindow(Some(handle)) }.as_bool());
     drop(w);
     assert!(!unsafe { IsWindow(Some(handle)) }.as_bool());
+}
+
+#[test]
+fn a_window_opens_at_a_place_on_a_display_and_nowhere_else() {
+    let p = WinPlatform::new().unwrap();
+    let open = |placement| {
+        let options = WindowOptions { placement: Some(placement), ..WindowOptions::new("placed").hidden() };
+        p.open_window(&options).unwrap()
+    };
+    let place = Placement { x: 40, y: 50, width: 400, height: 300, maximized: false };
+    assert_eq!(open(place).placement(), place);
+    // Far from any display: where a window opens without a place.
+    let away = Placement { x: -60_000, y: -60_000, ..place };
+    let w = open(away).placement();
+    assert!(w.x > -30_000 && w.y > -30_000, "{w:?}");
 }
 
 #[test]

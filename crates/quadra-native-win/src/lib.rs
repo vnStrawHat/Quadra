@@ -17,6 +17,7 @@ mod input;
 mod layers;
 mod pacing;
 mod pipeline;
+mod place;
 mod platform;
 mod renderer;
 mod surface;

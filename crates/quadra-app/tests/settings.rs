@@ -7,9 +7,11 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use quadra_app::{App, AppDirs, Settings, log};
-use quadra_platform::HeadlessPlatform;
+use quadra_platform::{HeadlessPlatform, Placement, PlatformEvent, WindowOptions};
+use quadra_prim::Size;
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
+use quadra_ui::column;
 use serde_json::Value;
 
 /// A folder of the test's own under `.tmp/`, empty.
@@ -92,4 +94,32 @@ fn a_broken_file_is_moved_aside_and_an_old_one_is_brought_up_to_date() {
     newer.value("editor.font_size", 14u32).set(20);
     newer.save_now();
     assert_eq!(read(&file)["editor.font_size"], 18);
+}
+
+#[test]
+fn a_remembered_window_opens_where_it_was_when_it_closed() {
+    let (platform, dirs) = (HeadlessPlatform::new(), AppDirs::under(&folder("window")));
+    let options = || WindowOptions::new("main").size(400.0, 300.0).remember("main");
+    let mut first = app(&platform, dirs.clone());
+    let window = first.open_window(options(), column).unwrap();
+    platform.step(&mut first);
+    // The user moves it and makes it bigger, then closes it.
+    platform.move_window(window, 120, 80);
+    platform.resize(window, Size::new(640.0, 480.0), 1.0);
+    platform.push(window, PlatformEvent::CloseRequested);
+    platform.step(&mut first);
+    assert_eq!(first.window_count(), 0);
+    first.settings().save_now();
+    let kept = read(&dirs.config.join("settings.json"))["window.main"].clone();
+    assert_eq!(
+        kept,
+        serde_json::json!({ "x": 120, "y": 80, "width": 640, "height": 480, "maximized": false })
+    );
+
+    // The next run opens it there.
+    let platform = HeadlessPlatform::new();
+    let mut app = app(&platform, dirs);
+    let window = app.open_window(options(), column).unwrap();
+    let place = Placement { x: 120, y: 80, width: 640, height: 480, maximized: false };
+    assert_eq!(platform.placement(window), Some(place));
 }

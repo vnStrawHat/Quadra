@@ -14,7 +14,7 @@ use quadra_prim::{Rect, Size};
 use crate::clipboard::{Clipboard, MemoryClipboard};
 use crate::event::PlatformEvent;
 use crate::platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
-use crate::window::{Cursor, PlatformWindow, WindowId, WindowOptions};
+use crate::window::{Cursor, Placement, PlatformWindow, WindowId, WindowOptions};
 
 mod window;
 
@@ -35,6 +35,8 @@ struct WindowState {
     semantics: RefCell<Vec<TreeUpdate>>,
     minimized: Cell<bool>,
     maximized: Cell<bool>,
+    /// Where the window is on a desktop of no displays: any place is on one.
+    at: Cell<(i32, i32)>,
 }
 
 struct Inner {
@@ -128,6 +130,18 @@ impl HeadlessPlatform {
         self.window(window).is_some_and(|w| w.maximized.get())
     }
 
+    /// Where a window is: as it was opened, moved and resized.
+    pub fn placement(&self, window: WindowId) -> Option<Placement> {
+        self.window(window).map(|w| HeadlessWindow(w).placement())
+    }
+
+    /// The user moves a window.
+    pub fn move_window(&self, window: WindowId, x: i32, y: i32) {
+        if let Some(w) = self.window(window) {
+            w.at.set((x, y));
+        }
+    }
+
     /// The title a window was last given.
     pub fn title(&self, window: WindowId) -> Option<String> {
         self.window(window).map(|w| w.title.borrow().clone())
@@ -212,9 +226,11 @@ impl Platform for HeadlessPlatform {
     }
 
     fn open_window(&self, options: &WindowOptions) -> Result<Box<dyn PlatformWindow>, PlatformError> {
+        let placed = options.placement;
+        let size = placed.map_or(options.size, |p| Size::new(p.width as f32, p.height as f32));
         let state = Rc::new(WindowState {
             id: WindowId(self.next_id() as u32),
-            size: Cell::new(options.size),
+            size: Cell::new(size),
             scale: Cell::new(1.0),
             title: RefCell::new(options.title.clone()),
             frame: Cell::new(false),
@@ -222,7 +238,8 @@ impl Platform for HeadlessPlatform {
             cursor: Cell::default(),
             semantics: RefCell::default(),
             minimized: Cell::new(false),
-            maximized: Cell::new(false),
+            maximized: Cell::new(placed.is_some_and(|p| p.maximized)),
+            at: Cell::new(placed.map_or((0, 0), |p| (p.x, p.y))),
         });
         self.0.windows.borrow_mut().push(Rc::downgrade(&state));
         Ok(Box::new(HeadlessWindow(state)))

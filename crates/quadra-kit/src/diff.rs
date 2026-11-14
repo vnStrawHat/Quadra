@@ -15,7 +15,6 @@ use quadra_ui::{
     Div, IntoProp, MountCx, Prop, View, column, div, dynamic, rich_text, row, span, text, uniform_list,
 };
 
-use crate::action::{CONTROL, Confirm};
 use crate::{fonts, token};
 use lines::changed_part;
 pub use lines::{Step, diff_lines};
@@ -151,10 +150,8 @@ fn fold(old: usize, count: usize, open: Signal<Vec<usize>>) -> Div {
     let show = move || open.update(|open| open.push(old));
     let fold = row().height(ROW).align_items(Align::Center).justify(Justify::Center);
     let fold = fold.bg(token::PANEL).text_color(token::TEXT_3).hover(|s| s.bg(token::PANEL_HOVER));
-    let fold = fold.role(Role::Button).focusable().key_context(CONTROL).cursor(Cursor::Pointer);
-    let fold = fold.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
-    let fold = fold.on_click(move |_| show()).on_action::<Confirm>(move |_| show());
-    fold.child(text(format!("{count} unchanged lines")))
+    let fold = fold.cursor(Cursor::Pointer).focus_visible(|s| s.outline(token::BORDER_FOCUSED));
+    quadra_base::press::press(fold.child(text(format!("{count} unchanged lines")))).on_click(show).build()
 }
 
 /// What a row of the listing shows.

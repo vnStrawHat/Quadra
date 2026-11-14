@@ -9,10 +9,9 @@ use std::rc::Rc;
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
-use quadra_tree::{NodeId, Paint, Role};
+use quadra_tree::{NodeId, Paint};
 use quadra_ui::{MountCx, NodeRef, View, column, div, row, text};
 
-use crate::action::{CONTROL, Confirm};
 use crate::icon::icon;
 use crate::menu::{Ends, MenuItem, rows};
 use crate::popup::{EDGE, popover};
@@ -74,10 +73,11 @@ impl View for Select {
         let face = face.align_items(Align::Center).radius(size::RADIUS_MD).bg(token::RAISED);
         let face = face.border(1.0).border_color(token::LINE_STRONG).hover(|s| s.bg(token::RAISED_HOVER));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
-        let face = face.role(Role::Button).expanded(open).focusable().key_context(CONTROL);
+        let face = face.expanded(open);
         let face = face.cursor(Cursor::Pointer).node_ref(&opener);
-        let face = face.on_click(move |_| open.update(|open| *open = !*open));
-        let face = face.on_action::<Confirm>(move |_| open.set(true));
+        // Enter and Space toggle it too: while it is open the focus is in its menu.
+        let face =
+            quadra_base::press::press(face).on_click(move || open.update(|open| *open = !*open)).build();
         let face = match self.test_id {
             Some(id) => face.test_id(id),
             None => face,

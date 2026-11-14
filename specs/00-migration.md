@@ -110,9 +110,9 @@ Each phase ends with its gate green and `docs/progress.md` updated.
 | **R3** Kit | Core components and the gallery | The gallery matches the V screenshots within the snapshot tolerance |
 | **R4** Domain crates | `quadra-code`, `quadra-md`, `quadra-data`, `quadra-viz` | Their tests and fuzzers pass; their gallery pages match |
 | **R5** Release | App services (settings, i18n, assets, logging), shell services, API documentation, packaging of the gallery, the manual checks on a real desktop | Quadra is complete; the apps can start |
-| **R6** Base components (in progress) | Components without a look (17), open tokens, and the paints design systems use; see "R6" below | `quadra-kit` is built on the base alone and the gallery looks as before; a second kit of another look is made from the base without touching it |
+| **R6** Base components (done 2026-11-14) | Components without a look (17), open tokens, and the paints design systems use; see "R6" below | `quadra-kit` is built on the base alone and the gallery looks as before; a second kit of another look is made from the base without touching it |
 
-### R6: base components (planned 2026-11-14, started 2026-11-14)
+### R6: base components (planned 2026-11-14, started 2026-11-14, done 2026-11-14)
 
 The user's long-term plan: components without a look, so that a user builds a kit of their
 own to the design system they want (one like a vendor's, or a brand's own). Started by the
@@ -137,7 +137,9 @@ user on 2026-11-14; specs/17 is the design of the base and of the open tokens.
   time a frame (D3D11 timestamp queries) before what costs it; shaders by class of instance
   when the measure says the one shader has grown too costly; a blur of what is behind a box
   (passes of the backdrop, kept to what changed); clips by any shape (masks in the glyph
-  atlas). Later, only when asked for: perspective, images drawn as pixel art.
+  atlas). Later, only when asked for: perspective, images drawn as pixel art. Shaders by class
+  stay waiting on the measure, which says the one shader costs a frame about one percent of
+  its time (docs/benchmarks.md).
 - **Order**: the spec of the base and the open tokens first, then the base moved out of the
   kit with the gallery unchanged, then the renderer's cheap parts (stops, dashes), then the
   measure, then the rest.

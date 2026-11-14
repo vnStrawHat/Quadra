@@ -119,7 +119,11 @@ its name in the kit (`quadra_kit::checkbox` stays).
 
 What stays in the kit, as it is only a look: `display`, `notes`, `bars`, `titlebar`,
 `status`, `progress`, `icon`, `icons`, `fonts`, `theme`, `token`, `size`, `root`, and `diff`
-(its line script, `diff_lines`, is plain data and stays with its rows).
+(its line script, `diff_lines`, is plain data and stays with its rows; its folds are buttons
+of the base). A click that calls one function of the caller's stays a handler on the look's
+face, as there is nothing of a component in it: a link of a breadcrumb, a tool of the
+activity bar, the copy of a note, the chevron of a group of settings, the clear cross of an
+input, the buttons of a title bar.
 
 A row that is the base's does not wait for all of them: each moves in its own commit, and
 the kit uses it from then on.
@@ -130,8 +134,8 @@ the kit uses it from then on.
   the base moves out, but for its imports. The gallery's pictures in both themes
   (`tools/shots.sh`) differ by no pixel from those taken before the first move, kept in
   `.tmp/shots/r6-dark` and `r6-light` and compared with `QUADRA_REFERENCE`.
-- **The base** has a test of each component through the semantic tree (12), with parts that
-  are bare boxes: no look and no pixel.
+- **The base** has a test of each component through the semantic tree (20, in six files),
+  with parts that are bare boxes: no look and no pixel.
 - **The second kit** has its own tests, through the semantic tree too.
 
 ## The second kit

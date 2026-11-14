@@ -6,6 +6,26 @@ use crate::buffer::Buffer;
 use crate::doc::Doc;
 use crate::token::{Token, Tokenizer};
 
+/// What colours the lines of a document for the editor. The highlighter of line states is
+/// one; one that parses the whole text and keeps a tree of it (fed the changes since the
+/// last look) can be another, giving the tokens of a line from its tree.
+pub trait Highlight {
+    /// Takes what changed in the document since the last look.
+    fn sync(&mut self, doc: &mut Doc);
+    /// Puts the tokens of `line` in `out` (cleared first), in order, none over another.
+    fn tokens(&mut self, buffer: &Buffer, line: usize, out: &mut Vec<Token>);
+}
+
+impl Highlight for Highlighter {
+    fn sync(&mut self, doc: &mut Doc) {
+        Highlighter::sync(self, doc);
+    }
+
+    fn tokens(&mut self, buffer: &Buffer, line: usize, out: &mut Vec<Token>) {
+        Highlighter::tokens(self, buffer, line, out);
+    }
+}
+
 pub struct Highlighter {
     pub tokenizer: Tokenizer,
     /// The state each line ends in, for the lines before `valid`.

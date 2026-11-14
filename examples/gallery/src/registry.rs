@@ -4,8 +4,8 @@ use quadra::Div;
 use quadra_kit::{dark, icons, light};
 
 use crate::pages::{
-    actions, charts, choices, data, diagram, diff, display, fields, image, layout, live, markdown, math,
-    motion, navigation, overlays, overview, rich, workbench,
+    actions, charts, choices, data, diagram, diff, display, editor, fields, image, layout, live, markdown,
+    math, motion, navigation, overlays, overview, rich, workbench,
 };
 use crate::shell::Gallery;
 
@@ -69,6 +69,7 @@ pub const PAGES: &[PageInfo] = &[
     info("panel-header", "Panel header", "Workbench", icons::MINUS),
     info("panes", "Pane tree", "Workbench", icons::LAYOUT_GRID),
     info("dock", "Dock", "Workbench", icons::LAYERS),
+    info("editor", "Editor", "Workbench", icons::PENCIL),
     info("settings", "Settings", "Workbench", icons::SETTINGS),
     info("sidebar", "Sidebar", "Navigation", icons::PANEL_LEFT),
     info("toolbar", "Toolbar", "Navigation", icons::SLIDERS_HORIZONTAL),
@@ -149,6 +150,7 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "panel-header" => workbench::panel_header_page(),
         "panes" => workbench::panes_page(),
         "dock" => workbench::dock_page(),
+        "editor" => editor::editor_page(),
         "settings" => workbench::settings_page(),
         "sidebar" => navigation::sidebar_page(),
         "toolbar" => navigation::toolbar_page(),

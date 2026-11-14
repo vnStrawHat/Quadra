@@ -966,6 +966,11 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   asks for the lines it shows, so a letter typed deep in a file costs those lines; the
   lines below them stay stale until they show. A test edits at random and holds every
   line's tokens to those of reading the text from its start.
+  - The editor asks for colours through the trait `Highlight` (`sync(doc)`, `tokens(buffer,
+    line, out)`), which the highlighter is one of: one that parses the whole text into a
+    tree (a parser of grammars, kept up by the changes) can be another, mapping what it
+    finds to the kinds, given with `editor(..).highlighter(h)`. Such a parser is no
+    dependency now; it would be one of specs/01, R15, in a crate of its own.
 - **Finding** (`Query`: the text, `case`, `word`, `regex`) gives every place it matches
   (`matches(doc)`, or what is wrong with a pattern). A query that is no pattern is one all
   the same, each letter a class of its two cases, so a letter of Vietnamese matches its
@@ -988,10 +993,10 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   lines at the right of at least four digits, two cells before them and three after,
   brighter on the lines of the cursors. The face is the text values at its node (the kit's
   mono face at 15 px, lines of 25).
-  - The colours are roles of the theme, a theme file's `editor`: `token::EDITOR_FOREGROUND`,
-    `EDITOR_CURSOR`, `EDITOR_LINE`, `EDITOR_GUTTER`, `EDITOR_GUTTER_ACTIVE`,
-    `EDITOR_SELECTION`, `EDITOR_FIND`, `EDITOR_FIND_CURRENT`, `EDITOR_BRACKET`; the text
-    the kinds' `syntax`.
+  - The colours are roles of the theme, a theme file's `editor`: `token::EDITOR_CURSOR`,
+    `EDITOR_LINE`, `EDITOR_GUTTER`, `EDITOR_GUTTER_ACTIVE`, `EDITOR_SELECTION`,
+    `EDITOR_FIND`, `EDITOR_FIND_CURRENT`, `EDITOR_BRACKET`; the text the kinds' `syntax`,
+    and what no token covers a variable's (as the reference painted it).
   - **Keys** are bindings of the context `editor` to `EditorCommand`, an action
     (`bind_keys(&mut keymap)` adds them; an app adds them to its keymap): those of
     behaviour/18, "Keys". Tab indents there, being of the nearest context. Escape gives one

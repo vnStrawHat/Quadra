@@ -7,6 +7,7 @@ pub mod data;
 pub mod diagram;
 pub mod diff;
 pub mod display;
+pub mod editor;
 pub mod fields;
 pub mod image;
 pub mod layout;

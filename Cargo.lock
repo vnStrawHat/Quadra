@@ -195,6 +195,7 @@ name = "quadra-gallery"
 version = "0.1.0"
 dependencies = [
  "quadra",
+ "quadra-code",
  "quadra-data",
  "quadra-kit",
  "quadra-md",

@@ -12,8 +12,8 @@ use quadra_tree::{GlyphTile, Inherited, MeasureCx, PaintCx, Theme, Widget};
 
 use crate::doc::Doc;
 use crate::doc::motion::columns;
-use crate::highlight::Highlighter;
-use crate::token::{Token, Tokenizer};
+use crate::highlight::Highlight;
+use crate::token::Token;
 
 /// The colours of the editor, from roles of the theme.
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -32,7 +32,8 @@ pub(super) struct Colors {
 
 pub struct EditorWidget {
     pub doc: Doc,
-    pub highlight: Highlighter,
+    /// What colours its lines.
+    pub highlight: Box<dyn Highlight>,
     /// Where finding found the query, and the match that is chosen.
     pub matches: Vec<Range<usize>>,
     pub current: Option<usize>,
@@ -56,10 +57,10 @@ pub struct EditorWidget {
 }
 
 impl EditorWidget {
-    pub fn new(text: &str, tokenizer: Tokenizer) -> EditorWidget {
+    pub fn new(text: &str, highlight: Box<dyn Highlight>) -> EditorWidget {
         EditorWidget {
             doc: Doc::new(text),
-            highlight: Highlighter::new(tokenizer),
+            highlight,
             matches: Vec::new(),
             current: None,
             preedit: None,
@@ -164,7 +165,7 @@ impl Widget for EditorWidget {
     fn theme(&mut self, theme: &Theme) -> bool {
         let syntax = crate::syntax::KINDS.map(|kind| theme.color(crate::syntax::role(kind)));
         let colors = Colors {
-            text: theme.color(token::EDITOR_FOREGROUND),
+            text: theme.color(token::SYNTAX_VARIABLE),
             cursor: theme.color(token::EDITOR_CURSOR),
             line: theme.color(token::EDITOR_LINE),
             gutter: theme.color(token::EDITOR_GUTTER),

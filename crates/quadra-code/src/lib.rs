@@ -19,7 +19,7 @@ pub use buffer::Buffer;
 pub use doc::{Cursor, Doc, Edit, Move};
 pub use editor::{EDITOR_CONTEXT, Editor, EditorCommand, EditorWidget, bind_keys, editor};
 pub use find::{Query, next_match};
-pub use highlight::Highlighter;
+pub use highlight::{Highlight, Highlighter};
 pub use lang::LangSpec;
 pub use syntax::role;
 pub use token::{Token, TokenKind, Tokenizer, tokenizer_for};

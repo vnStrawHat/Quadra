@@ -20,6 +20,7 @@ use quadra_ui::{MountCx, View, scroll};
 pub use keys::{EDITOR_CONTEXT, EditorCommand, bind_keys};
 pub use widget::EditorWidget;
 
+use crate::highlight::{Highlight, Highlighter};
 use crate::token::tokenizer_for;
 
 const CARET_BLINK: Duration = Duration::from_millis(530);
@@ -27,6 +28,7 @@ const CARET_BLINK: Duration = Duration::from_millis(530);
 pub struct Editor {
     text: String,
     path: String,
+    highlight: Option<Box<dyn Highlight>>,
     /// The size of the text and the height of a line, in pixels.
     font: (f32, f32),
 }
@@ -34,13 +36,19 @@ pub struct Editor {
 /// A code editor over a text, in the kit's mono face at 15 px with lines of 25. Give it a
 /// height, or let it grow.
 pub fn editor(text: impl Into<String>) -> Editor {
-    Editor { text: text.into(), path: String::new(), font: (15.0, 25.0) }
+    Editor { text: text.into(), path: String::new(), highlight: None, font: (15.0, 25.0) }
 }
 
 impl Editor {
     /// The name of the file, which says how it is coloured (`main.rs`, `Dockerfile`).
     pub fn path(mut self, path: impl Into<String>) -> Self {
         self.path = path.into();
+        self
+    }
+
+    /// Colours the lines with another highlighter than the tokenizer the path names.
+    pub fn highlighter(mut self, highlight: impl Highlight + 'static) -> Self {
+        self.highlight = Some(Box::new(highlight));
         self
     }
 
@@ -95,7 +103,8 @@ struct Surface(Editor);
 
 impl View for Surface {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let widget = EditorWidget::new(&self.0.text, tokenizer_for(&self.0.path));
+        let tokens = || Box::new(Highlighter::new(tokenizer_for(&self.0.path))) as Box<dyn Highlight>;
+        let widget = EditorWidget::new(&self.0.text, self.0.highlight.unwrap_or_else(tokens));
         let (size, line) = self.0.font;
         let family = Some(quadra_kit::fonts::MONO.into());
         let text =

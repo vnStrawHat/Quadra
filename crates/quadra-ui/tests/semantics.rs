@@ -181,3 +181,33 @@ fn a_listener_that_applies_what_it_is_sent_holds_the_tree() {
     follow(&mut mirror, &mut h);
     assert!(!h.semantics().contains("Menu"));
 }
+
+#[test]
+fn a_field_is_named_and_described_by_other_nodes_and_a_tab_controls_its_panel() {
+    use quadra_tree::Relation;
+    use quadra_ui::NodeRef;
+    let (label, hint, panel) = (NodeRef::new(), NodeRef::new(), NodeRef::new());
+    let (l, d, p) = (label.clone(), hint.clone(), panel.clone());
+    let mut h = Harness::new();
+    h.mount(move || {
+        let field = div().role(Role::TextInput).labelled_by(&l).described_by(&d).focusable();
+        let tab = div().role(Role::Tab).controls(&p).child(text("General"));
+        column()
+            .child(div().node_ref(&l).child(text("Title")))
+            .child(field)
+            .child(div().node_ref(&d).child(text("Shown in the list")))
+            .child(tab)
+            .child(div().role(Role::TabPanel).node_ref(&p).child(text("Body")))
+    });
+    h.frame();
+    let tree = h.tree.semantic_tree();
+    let says = |role: Role| &tree.nodes.iter().find(|n| n.semantics.role == role).unwrap().semantics;
+    // Each points at the node of the semantic tree that holds the other: the texts themselves.
+    let id_of = |name: &str| tree.nodes.iter().find(|n| n.semantics.name == name).unwrap().id;
+    assert_eq!(
+        says(Role::TextInput).relations,
+        [(Relation::LabelledBy, id_of("Title")), (Relation::DescribedBy, id_of("Shown in the list"))]
+    );
+    let panel_id = tree.nodes.iter().find(|n| n.semantics.role == Role::TabPanel).unwrap().id;
+    assert_eq!(says(Role::Tab).relations, [(Relation::Controls, panel_id)]);
+}

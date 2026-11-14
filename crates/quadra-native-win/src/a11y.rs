@@ -10,7 +10,7 @@ use accesskit::{
     TextSelection, Toggled, TreeId, TreeInfo,
 };
 use accesskit_windows::Adapter;
-use quadra_a11y::{Role, SemanticAction, SemanticNode, TreeUpdate};
+use quadra_a11y::{Relation, Role, SemanticAction, SemanticNode, TreeUpdate};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{PostMessageW, WM_APP};
 
@@ -120,6 +120,13 @@ fn node(from: &SemanticNode) -> Node {
     }
     if let Some(id) = &says.test_id {
         node.set_author_id(id.as_str());
+    }
+    for &(relation, to) in &says.relations {
+        match relation {
+            Relation::LabelledBy => node.push_labelled_by(NodeId(to)),
+            Relation::DescribedBy => node.push_described_by(NodeId(to)),
+            Relation::Controls => node.push_controlled(NodeId(to)),
+        }
     }
     node.set_bounds(rect(from.bounds));
     let mut children: Vec<NodeId> = from.children.iter().map(|&c| NodeId(c)).collect();

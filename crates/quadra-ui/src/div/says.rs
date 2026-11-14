@@ -1,7 +1,7 @@
 //! What a box is to a user (specs/12): its role, its name, its states. A state that a style
 //! can follow too (checked, selected, disabled, expanded) is set once here for both.
 
-use quadra_tree::{NodeId, RangeValue, Role, SemanticAction, Semantics, State, Tree};
+use quadra_tree::{NodeId, RangeValue, Relation, Role, SemanticAction, Semantics, State, Tree};
 
 use super::Div;
 use crate::prop::{IntoProp, Prop};
@@ -35,6 +35,32 @@ impl Div {
     /// they hold when no name is given.
     pub fn label<M>(self, name: impl IntoProp<String, M>) -> Self {
         self.with_value(name.into_prop(), |tree, id, name| tree.update_semantics(id, |says| says.name = name))
+    }
+
+    /// Says the box is named by another: a label beside it. Set once both are mounted.
+    pub fn labelled_by(self, by: &crate::NodeRef) -> Self {
+        self.relate(Relation::LabelledBy, by)
+    }
+
+    /// Says the box is described by another: a hint or an error under it.
+    pub fn described_by(self, by: &crate::NodeRef) -> Self {
+        self.relate(Relation::DescribedBy, by)
+    }
+
+    /// Says the box changes what another shows: a tab its panel.
+    pub fn controls(self, what: &crate::NodeRef) -> Self {
+        self.relate(Relation::Controls, what)
+    }
+
+    fn relate(self, relation: Relation, to: &crate::NodeRef) -> Self {
+        let to = to.clone();
+        self.on_mount(move |tree, id| {
+            tree.after_layout(move |tree| {
+                if let Some(target) = to.get() {
+                    tree.relate(id, relation, target);
+                }
+            })
+        })
     }
 
     /// A name that does not change with the language or the content, for tests and tools.

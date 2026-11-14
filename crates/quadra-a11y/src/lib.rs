@@ -66,6 +66,17 @@ pub struct RangeValue {
     pub step: f64,
 }
 
+/// How a node stands to another of the tree.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Relation {
+    /// The other names it: a label beside a field.
+    LabelledBy,
+    /// The other says more of it: a hint under a field.
+    DescribedBy,
+    /// It changes what the other shows: a tab its panel, a combobox its list.
+    Controls,
+}
+
 /// What a node says of itself.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Semantics {
@@ -94,6 +105,8 @@ pub struct Semantics {
     /// A name that does not change with the language or the content: the automation id for
     /// assistive technology, a selector for tests.
     pub test_id: Option<String>,
+    /// How it stands to other nodes, by their ids.
+    pub relations: Vec<(Relation, u64)>,
 }
 
 /// What assistive technology, or a test, asks of a node. It does not go through pointer

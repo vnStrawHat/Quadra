@@ -25,7 +25,7 @@ pub(crate) struct Listening {
     stamps: Vec<u32>,
 }
 
-fn semantic_id(id: NodeId) -> u64 {
+pub(crate) fn semantic_id(id: NodeId) -> u64 {
     (id.generation as u64) << 32 | id.index as u64
 }
 
@@ -108,6 +108,7 @@ impl Tree {
         if named_by_content {
             says.name = content.trim_end().to_string();
         }
+        self.resolve_relations(&mut says.relations);
         let focused = self.focus == Some(id) && self.active;
         let (bounds, focusable) = (self.window_rect(id), node.focusable);
         held.push(semantic_id(id));
@@ -116,13 +117,13 @@ impl Tree {
 
     /// Whether a node, and so what is under it, is left out for not being displayed. The
     /// window never is: a listener always has that much.
-    fn hidden(&self, id: NodeId) -> bool {
+    pub(crate) fn hidden(&self, id: NodeId) -> bool {
         let node = &self.nodes[id.index as usize];
         self.root != Some(id) && self.layout.style(node.layout).display == Display::None
     }
 
     /// Whether a node is one of the semantic tree, and not skipped or part of a name.
-    fn means(&self, id: NodeId) -> bool {
+    pub(crate) fn means(&self, id: NodeId) -> bool {
         let says = self.meaning(id);
         says.role != Role::None && !(says.role == Role::Text && self.names_its_parent(id))
     }
@@ -136,7 +137,7 @@ impl Tree {
     /// The node of the semantic tree a node is, or is part of: itself, or the nearest around
     /// it. `None` for a node that is in no window. Something not displayed on the way means
     /// `None` too when `shown`; otherwise the nearest above it: where the focus is said to be.
-    fn semantic_around(&self, id: NodeId, shown: bool) -> Option<NodeId> {
+    pub(crate) fn semantic_around(&self, id: NodeId, shown: bool) -> Option<NodeId> {
         let (mut top, mut at) = (None, id);
         loop {
             if self.hidden(at) {

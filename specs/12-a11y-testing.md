@@ -84,6 +84,14 @@ semantic children attach to the nearest semantic ancestor.
   value, which the selection points into. Not yet: the places of characters, so the bounds of
   a range, and a run a line of a text area.
 - A scroll view (`scroll`) is a `ScrollView` unless the view gives it another role.
+- Relations (`Semantics::relations`, `Relation`): a node is named by another
+  (`.labelled_by(&label)`), described by one (`.described_by(&hint)`: the hint or the error
+  under a field), or changes what one shows (`.controls(&panel)`: a tab its panel, a combobox
+  its list). The view gives a `NodeRef`, set once both are mounted (`Tree::relate`); a
+  listener is told the semantic node the other is, the first one it holds, or the one it is
+  part of, and a relation to a node gone or not shown is left out. The bridge maps them to
+  the adapter's relations. ponytail: resolved when the relating node is described, so a
+  target that becomes another semantic node is told only at the relating node's next change.
 
 Requirements carried from the design language (behaviour/15): visible focus for keyboard users,
 contrast of the themes, respect for the OS text scale and high-contrast setting.

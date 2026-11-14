@@ -107,6 +107,23 @@ pub struct Semantics {
     pub test_id: Option<String>,
     /// How it stands to other nodes, by their ids.
     pub relations: Vec<(Relation, u64)>,
+    /// Of a text input that is laid out: its lines, where their characters are. Empty: not
+    /// known, and its value is one run of text with no places.
+    pub lines: Vec<TextLine>,
+}
+
+/// A line of the value of an input, for assistive technology: a range of its text has
+/// bounds from where its characters are.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TextLine {
+    /// Its first character, counted from the start of the value. The lines hold every
+    /// character of the value, a line break in the line it ends.
+    pub start: usize,
+    /// Its box, from the node's corner.
+    pub bounds: Rect,
+    /// Where each of its characters starts, from the left of its box, and how wide it is.
+    pub positions: Vec<f32>,
+    pub widths: Vec<f32>,
 }
 
 /// What assistive technology, or a test, asks of a node. It does not go through pointer

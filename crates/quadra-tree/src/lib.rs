@@ -57,7 +57,7 @@ pub use overlay::{Along, Anchor, Side};
 pub use patch::Patch;
 pub use picture::{Fit, Image, Picture, paint_image};
 pub use quadra_a11y::{
-    Mirror, RangeValue, Relation, Role, SemanticAction, SemanticNode, Semantics, TreeUpdate,
+    Mirror, RangeValue, Relation, Role, SemanticAction, SemanticNode, Semantics, TextLine, TreeUpdate,
 };
 pub use quadra_render::{BorderStyle, Gradient, GradientKind};
 pub use rich::{InlineBox, LinkBoxes, RichSpan, RichText};

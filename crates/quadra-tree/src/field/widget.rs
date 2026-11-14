@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use quadra_a11y::{Role, Semantics};
+use quadra_a11y::{Role, Semantics, TextLine};
 use quadra_layout::Known;
 use quadra_prim::{Color, Point, Rect, Size};
 use quadra_render::Quad;
@@ -114,6 +114,22 @@ impl Widget for TextField {
         let anchor = if caret == selected.start { selected.end } else { selected.start };
         let at = |index: usize| super::characters(&shown[..index.min(shown.len())]);
         says.selection = Some((at(anchor), at(caret)));
+        // Where the characters are, by the lines it was last laid out in.
+        if let Some(paragraph) = self.paragraph.as_ref().filter(|p| p.text() == shown.as_ref()) {
+            let lines = paragraph.lines();
+            let left = if self.multiline { 0.0 } else { -self.scroll_x };
+            for (k, line) in lines.iter().enumerate() {
+                let end = lines.get(k + 1).map_or(shown.len(), |next| next.start);
+                let (mut positions, mut widths) = (Vec::new(), Vec::new());
+                for (i, c) in shown[line.start..end].char_indices() {
+                    let b = line.start + i;
+                    positions.push(paragraph.place(b).1);
+                    widths.push((paragraph.x_at(b + c.len_utf8()) - paragraph.x_at(b)).max(0.0));
+                }
+                let bounds = Rect::new(left, line.y, line.width, line.height);
+                says.lines.push(TextLine { start: at(line.start), bounds, positions, widths });
+            }
+        }
         says.value = Some(shown.into_owned());
         if says.name.is_empty() {
             says.name.clone_from(&self.placeholder); // what it asks for, when nothing names it

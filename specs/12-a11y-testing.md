@@ -80,9 +80,13 @@ semantic children attach to the nearest semantic ancestor.
   (`Semantics::range`, `.range(..)`); a slider is stepped by increment and decrement.
 - Text inputs expose their value, selection and caret (`Semantics::selection`, in characters
   of the value: the anchor and the caret), and accept selection changes
-  (`SemanticAction::Select`). The bridge gives an input one text run (`TextRun`) holding its
-  value, which the selection points into. Not yet: the places of characters, so the bounds of
-  a range, and a run a line of a text area.
+  (`SemanticAction::Select`). A laid out input says its lines (`Semantics::lines`,
+  `TextLine`): where each starts in characters of the value (every character is in one, a
+  line break in the line it ends), its box from the node's corner, and where each of its
+  characters starts and how wide it is. The bridge gives an input a text run (`TextRun`) a
+  line, with those places, so a range of the text has bounds; the caret and the selection
+  point into the runs, and a place in a run that a reader asks for is a character of the
+  value. An input that says no lines (or more than 2 048) is one run with no places.
 - A scroll view (`scroll`) is a `ScrollView` unless the view gives it another role.
 - Relations (`Semantics::relations`, `Relation`): a node is named by another
   (`.labelled_by(&label)`), described by one (`.described_by(&hint)`: the hint or the error

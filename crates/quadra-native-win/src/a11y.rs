@@ -2,12 +2,14 @@
 //! told to UI Automation by the adapter of `accesskit`, and what a screen reader asks of a
 //! node, brought back as semantic actions.
 
+mod text;
+
 use std::cell::RefCell;
 use std::sync::mpsc::{Receiver, Sender, channel};
 
 use accesskit::{
-    Action, ActionData, ActionHandler, ActionRequest, ActivationHandler, Affine, Node, NodeId, TextPosition,
-    TextSelection, Toggled, TreeId, TreeInfo,
+    Action, ActionData, ActionHandler, ActionRequest, ActivationHandler, Affine, Node, NodeId, Toggled,
+    TreeId, TreeInfo,
 };
 use accesskit_windows::Adapter;
 use quadra_a11y::{Relation, Role, SemanticAction, SemanticNode, TreeUpdate};
@@ -54,25 +56,6 @@ fn role(role: Role) -> accesskit::Role {
 
 fn rect(b: quadra_prim::Rect) -> accesskit::Rect {
     accesskit::Rect { x0: b.x as f64, y0: b.y as f64, x1: b.right() as f64, y1: b.bottom() as f64 }
-}
-
-/// The node of the text of an input: the id of the input with the top bit set, which no node
-/// of a tree has.
-fn run_id(id: u64) -> NodeId {
-    NodeId(id | 1 << 63)
-}
-
-/// The run of text of an input, which UI Automation reads its text, caret and selection from.
-// ponytail: one run for the whole value and no places of characters, so a range of the text
-// has no bounds; a run a line and the places when a reader needs them.
-fn text_run(from: &SemanticNode) -> Option<(NodeId, Node)> {
-    let says = &from.semantics;
-    let value = says.value.as_deref().filter(|_| says.role == Role::TextInput)?;
-    let mut run = Node::new(accesskit::Role::TextRun);
-    run.set_value(value);
-    run.set_character_lengths(value.chars().map(|c| c.len_utf8() as u8).collect::<Vec<_>>());
-    run.set_bounds(rect(from.bounds));
-    Some((run_id(from.id), run))
 }
 
 fn node(from: &SemanticNode) -> Node {
@@ -130,13 +113,10 @@ fn node(from: &SemanticNode) -> Node {
     }
     node.set_bounds(rect(from.bounds));
     let mut children: Vec<NodeId> = from.children.iter().map(|&c| NodeId(c)).collect();
-    if let (Role::TextInput, Some(value)) = (says.role, &says.value) {
-        // Its text is its run's; the caret and the selection are places in it.
-        let (run, count) = (run_id(from.id), value.chars().count());
-        children.push(run);
-        let (anchor, focus) = says.selection.unwrap_or((count, count));
-        let at = |index: usize| TextPosition { node: run, character_index: index.min(count) };
-        node.set_text_selection(TextSelection { anchor: at(anchor), focus: at(focus) });
+    if let Some((runs, selection)) = text::children_and_selection(from) {
+        // Its text is its runs'; the caret and the selection are places in them.
+        children.extend(runs);
+        node.set_text_selection(selection);
         node.add_action(Action::SetTextSelection);
     }
     node.set_children(children);
@@ -162,14 +142,14 @@ fn node(from: &SemanticNode) -> Node {
 /// the root carries the scale to device pixels.
 // ponytail: a scale that changes without the window's logical size changing leaves the old
 // one until the root is next sent; send the root on a scale change if a display does that.
-pub(crate) fn tree_update(update: &TreeUpdate, scale: f32) -> accesskit::TreeUpdate {
+pub(crate) fn tree_update(update: &TreeUpdate, scale: f32, runs: &mut text::Runs) -> accesskit::TreeUpdate {
     let convert = |from: &SemanticNode| {
         let mut node = node(from);
         if from.id == update.root {
             node.set_transform(Affine::scale(scale as f64));
         }
-        // An input is sent with the run of its text, always: the two change together.
-        std::iter::once((NodeId(from.id), node)).chain(text_run(from))
+        // An input is sent with the runs of its text, always: they change together.
+        std::iter::once((NodeId(from.id), node)).chain(text::runs(from, runs))
     };
     accesskit::TreeUpdate {
         nodes: update.nodes.iter().flat_map(convert).collect(),
@@ -180,8 +160,8 @@ pub(crate) fn tree_update(update: &TreeUpdate, scale: f32) -> accesskit::TreeUpd
 }
 
 /// What assistive technology asks, as a semantic action on a node: `None` for what Quadra
-/// has no action for.
-pub(crate) fn request(request: ActionRequest) -> Option<(u64, SemanticAction)> {
+/// has no action for. What is asked of a run of an input is asked of the input.
+fn request(request: ActionRequest, runs: &text::Runs) -> Option<(u64, SemanticAction)> {
     let action = match (request.action, request.data) {
         (Action::Click, _) => SemanticAction::Click,
         (Action::Focus, _) => SemanticAction::Focus,
@@ -192,13 +172,12 @@ pub(crate) fn request(request: ActionRequest) -> Option<(u64, SemanticAction)> {
         (Action::Increment, _) => SemanticAction::Increment,
         (Action::Decrement, _) => SemanticAction::Decrement,
         (Action::SetTextSelection, Some(ActionData::SetTextSelection(chosen))) => {
-            let (anchor, focus) = (chosen.anchor.character_index, chosen.focus.character_index);
-            SemanticAction::Select { anchor, focus }
+            let place = |at: accesskit::TextPosition| text::of(runs, at.node, at.character_index).1;
+            SemanticAction::Select { anchor: place(chosen.anchor), focus: place(chosen.focus) }
         }
         _ => return None,
     };
-    // What is asked of the run of an input is asked of the input.
-    Some((request.target_node.0 & !(1 << 63), action))
+    Some((text::of(runs, request.target_node, 0).0, action))
 }
 
 /// Requests arrive on a thread of the adapter's choosing: they are queued, and the window
@@ -233,6 +212,8 @@ impl ActivationHandler for Asked {
 pub(crate) struct Access {
     adapter: RefCell<Adapter>,
     requests: Receiver<ActionRequest>,
+    /// The runs of the inputs told so far.
+    runs: RefCell<text::Runs>,
 }
 
 impl Access {
@@ -240,7 +221,7 @@ impl Access {
     pub fn new(hwnd: HWND) -> Access {
         let (to, requests) = channel();
         let adapter = Adapter::new(hwnd, false, Requests { hwnd: hwnd.0 as isize, to });
-        Access { adapter: RefCell::new(adapter), requests }
+        Access { adapter: RefCell::new(adapter), requests, runs: RefCell::default() }
     }
 
     /// Answers `WM_GETOBJECT`: the result, if the message was one for the adapter, and
@@ -259,7 +240,9 @@ impl Access {
     }
 
     pub fn update(&self, update: &TreeUpdate, scale: f32) {
-        let events = self.adapter.borrow_mut().update_if_active(|| tree_update(update, scale));
+        let mut runs = self.runs.borrow_mut();
+        let events = self.adapter.borrow_mut().update_if_active(|| tree_update(update, scale, &mut runs));
+        drop(runs);
         if let Some(events) = events {
             events.raise();
         }
@@ -267,6 +250,6 @@ impl Access {
 
     /// What was asked since the last time.
     pub fn requests(&self) -> impl Iterator<Item = (u64, SemanticAction)> + '_ {
-        self.requests.try_iter().filter_map(request)
+        self.requests.try_iter().filter_map(|asked| request(asked, &self.runs.borrow()))
     }
 }

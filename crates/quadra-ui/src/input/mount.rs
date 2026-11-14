@@ -21,6 +21,7 @@ impl View for TextInput {
         let mut field = TextField::new(&value.get_untracked());
         let (masked, multiline) = (self.masked, self.multiline);
         (field.masked, field.multiline, field.placeholder) = (masked, multiline, self.placeholder);
+        field.fit = self.fit;
         let style = Style { text: self.values, ..Style::default() };
         let id = cx.tree.insert_widget(style, Box::new(field));
         if let Some(color) = self.color {

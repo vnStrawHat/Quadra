@@ -5,7 +5,7 @@ use quadra_kit::{dark, icons, light};
 
 use crate::pages::{
     actions, charts, choices, data, diagram, diff, display, fields, image, layout, live, markdown, math,
-    motion, navigation, overlays, overview, workbench,
+    motion, navigation, overlays, overview, rich, workbench,
 };
 use crate::shell::Gallery;
 
@@ -125,7 +125,7 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "badge" => display::badge_page(),
         "tag" => display::tag_page(),
         "kbd" => display::kbd_page(),
-        "rich-text" => display::rich_text_page(),
+        "rich-text" => rich::rich_text_page(),
         "markdown" => markdown::markdown_page(),
         "math" => math::math_page(),
         "diagram" => diagram::diagram_page(),

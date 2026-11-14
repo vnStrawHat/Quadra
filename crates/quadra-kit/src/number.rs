@@ -1,6 +1,6 @@
 //! The number input (specs/behaviour/15, "Number input"): a field that holds a number, with
-//! a pair of chevrons beside it, or as a stepper: one frame with a minus, the value and a
-//! plus. The up and down arrows step it.
+//! a pair of chevrons at its end, inside it, or as a stepper: one frame with a minus, the
+//! value and a plus. The up and down arrows step it.
 
 use quadra_layout::{Align, Direction, Justify};
 use quadra_platform::Cursor;
@@ -93,7 +93,7 @@ impl View for NumberInput {
         let around =
             around.on_action::<Increase>(move |_| bump(1.0)).on_action::<Decrease>(move |_| bump(-1.0));
         if self.stepper {
-            let field = text_input(words);
+            let field = text_input(words).fit(); // centred between the minus and the plus
             let field = match self.test_id {
                 Some(id) => field.test_id(id),
                 None => field,
@@ -118,12 +118,16 @@ impl View for NumberInput {
             Some(id) => field.test_id(id),
             None => field,
         };
+        // Two halves of the field's height at its end, inside its frame: the frame is 32 px,
+        // and its padding less above and below makes room for both.
         let small = || {
-            let around = div().size(16.0, 16.0).radius(size::RADIUS_SM).text_color(token::TEXT_2);
+            let around = div().size(18.0, 13.0).radius(size::RADIUS_SM).text_color(token::TEXT_2);
             around.direction(Direction::Row).hover(|s| s.bg(token::PANEL_HOVER))
         };
-        let up = step(small(), "Increment", icons::CHEVRON_UP, 12.0, move || bump(1.0));
-        let down = step(small(), "Decrement", icons::CHEVRON_DOWN, 12.0, move || bump(-1.0));
-        around.gap(4.0).width(160.0).child(field).child(column().child(up).child(down)).mount(cx)
+        let up = step(small(), "Increment", icons::CHEVRON_UP, 10.0, move || bump(1.0));
+        let down = step(small(), "Decrement", icons::CHEVRON_DOWN, 10.0, move || bump(-1.0));
+        let field = field.build().padding_y(2.0).padding_right(2.0);
+        let field = field.child(column().shrink(0.0).child(up).child(down));
+        around.child(field).mount(cx)
     }
 }

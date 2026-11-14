@@ -130,6 +130,14 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### Since the exit of R5 (2026-11-14)
+
+The kit, by the user's review: the ends of a segmented control are rounded as its frame
+(`.radii(Corners)` on a box), the number input's chevrons are inside it, the stepper's value
+is centred (`text_input(..).fit()`) and the gallery shows the stepper, `copyable(text)` in a
+description list, `select(..).searchable(ask)`, and `settings_group(group)` on its own; tests
+in `crates/quadra-kit/tests/small.rs`, `forms.rs` and `settings.rs`.
+
 ### The exit of R5 (specs/00, Phases)
 
 - **Done and tested**: the app's folders, settings, window state, the log and crash reports,

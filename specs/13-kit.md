@@ -182,7 +182,8 @@ As built so far:
   write its index: a click on an option, or the arrows while the group has the focus
   (`MoveNext`, `MovePrevious` in the key context `action::CHOICE`), round the ends. The
   group is one stop of Tab. Radios are rings of 12 px with a dot; segmented cells belong to
-  one outlined control, the chosen one tinted with an accent label (`.size(..)`: 22 px with
+  one outlined control, the chosen one tinted with an accent label, the end cells rounded as
+  its inside (`.radii(Corners)` on a box: a box does not cut what it holds to its corners) (`.size(..)`: 22 px with
   12 px labels, or 28 and 32 with 14).
 - **`tabs(labels, chosen)`** is the names of a few pages in a row, with the index of the
   chosen one in a signal; the caller shows its page. A tab is 28 px tall with 8 px beside
@@ -211,6 +212,9 @@ As built so far:
   `empty_state(icon, title, hint, action)` is what an empty place shows, centred: a muted
   icon, why it is empty, a hint, something to do about it. `description_list(items)` is
   terms and their values in a grid of two columns, the terms muted and as wide as the widest.
+  A value given as `copyable(text)` has a button of an icon after it that writes the text to
+  the app's clipboard (the context's; the harness's in memory in tests) and is a check, named
+  "Copied", for 1.5 s.
 - **`accordion().item(title, open, || body)`**: sections under one another in one outline.
   A head is 28 px, a chevron then the title, and a button to a reader, expanded or not; a
   click, Enter or Space writes the signal that says whether its section is open. The body
@@ -283,8 +287,9 @@ As built so far:
   is the index of no option (`usize::MAX`: nothing chosen yet); `textarea(value)` is a
   builder (`.rows(..)`, `.width(..)`, `.placeholder(..)`).
 - **`number_input(value)`** is an input that holds a number (`.range(..)`, `.step(..)`,
-  `.decimals(..)`), 160 px with a pair of chevrons that step it, or with `.stepper()` one
-  frame of 128 by 32: a minus, the value in the middle, a plus. The up and down arrows step
+  `.decimals(..)`), 140 px with a pair of chevrons inside it at its end that step it, or
+  with `.stepper()` one frame of 128 by 32: a minus, the value in the middle (the field is
+  `text_input(..).fit()`: as wide as its text), a plus. The up and down arrows step
   it too (key context `action::NUMBER`). A number typed, with a point or a comma, is the
   value; what is no number changes nothing and shows as not accepted; a value written from
   elsewhere is what the field says.
@@ -359,7 +364,8 @@ As built so far:
   ones that do not show are not displayed: a control keeps its state while another page
   shows. Two layouts: rules (groups under small mono headers, a hairline under each row),
   and `.cards()` (page icons, a header with the page's title and what `.header(view)` adds
-  at its right, each group an outlined card). In the rules layout the header views are a
+  at its right, each group an outlined card). `settings_group(group)` is one group of the
+  cards layout on its own, in any page: its title, a heading, over the card of its rows. In the rules layout the header views are a
   row above the page's title.
   - `.search(query)` puts a search field above the column, writing `query`. While it holds
     text only the rows show whose title or line about them holds it, whatever the case and
@@ -507,7 +513,10 @@ the popup closes the focus goes back to what had it.
   errors.
 - `select(options, chosen)`: a filled button that shows the chosen option, and a menu of the
   options, as wide as the button at least, with a check in the second text colour before the
-  chosen one (no room is kept for it while none is chosen).
+  chosen one (no room is kept for it while none is chosen). `.searchable(ask)`, for many
+  options: the popup holds a field that narrows them as it is typed into (the palette's
+  fuzzy match, the best first), the arrows from the chosen one, Enter or a click takes one;
+  each opening starts with no query.
 - `menu_button(label, || items)` takes `.icon(body)`, `.variant(..)`, `.size(..)` and
   `.test_id(..)` for its face. `popover_button(label, || content)` is the same button (in
   the default variant) over a popover, with the content 12 px in from its edge.

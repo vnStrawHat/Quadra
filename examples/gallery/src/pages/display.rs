@@ -1,10 +1,11 @@
 //! What shows and does nothing: status, badges, tags, keys, avatars, what is under way,
-//! cards, alerts, empty places, lists of terms and rich text.
+//! cards, alerts, empty places and lists of terms.
 
-use quadra::{Align, AnyView, Div, column, div, rich_text, row, signal, span, text};
+use quadra::{Align, AnyView, Div, column, div, row, text};
 use quadra_kit::{
-    Status, Tone, alert, avatar, badge, button, card, card_head, description_list, empty_state, fonts, icons,
-    kbd, progress, progress_busy, size, skeleton, spinner, status_label, status_mark, tag, token,
+    Status, Tone, alert, avatar, badge, button, card, card_head, copyable, description_list, empty_state,
+    fonts, icons, kbd, progress, progress_busy, size, skeleton, spinner, status_label, status_mark, tag,
+    token,
 };
 
 use crate::common::{demo, framed, hint, line, mono, page, stack};
@@ -253,45 +254,21 @@ pub fn description_list_page() -> Div {
         ("Status", AnyView::new(badge("Running", Tone::Success))),
         ("Image", AnyView::new(image)),
     ];
+    let copied = [
+        ("Pod IP", copyable("10.42.0.17")),
+        ("UID", copyable("8f2c41d0-5e1b-4a7e-9a3c-2b6f0e1d7c95")),
+        ("Node", AnyView::new(text("worker-3"))),
+    ];
     page(
         "Description list",
         "Terms and their values in two aligned columns: details panels and property sheets.",
-        [demo(
-            "Pod",
-            description_list(items),
-            "description_list([(\"Name\", AnyView::new(text(\"api\"))), ..])",
-        )],
-    )
-}
-
-pub fn rich_text_page() -> Div {
-    let clicked = signal(String::new());
-    let (code, link) = (
-        |words: &str| span(words).family(fonts::MONO),
-        |words: &str, to: &str| span(words).link(to).color(token::ACCENT_TEXT),
-    );
-    let event = rich_text([
-        span("Pod "),
-        code("api-7d9f8c").color(token::ACCENT_TEXT),
-        span(" was "),
-        span("restarted").bold(),
-        span(" 3 times in the last hour. The probe on "),
-        code("/healthz"),
-        span(" timed out; see the "),
-        link("troubleshooting guide", "https://example.com/probes"),
-        span(" or the "),
-        link("events", "events"),
-        span("."),
-    ]);
-    let event = event.on_link(move |target| clicked.set(target.to_string()));
-    let said = hint(move || format!("Clicked: {}", clicked.get()));
-    page(
-        "Rich text",
-        "Mixed styles and links in one wrapped paragraph: words glued across spans never break apart.",
-        [demo(
-            "Event detail",
-            stack().child(div().width(420.0).child(event)).child(said),
-            "rich_text([span(\"was \"), span(\"restarted\").bold(), span(\"guide\").link(url)]).on_link(f)",
-        )],
+        [
+            demo(
+                "Pod",
+                description_list(items),
+                "description_list([(\"Name\", AnyView::new(text(\"api\"))), ..])",
+            ),
+            demo("Values to copy", description_list(copied), "(\"Pod IP\", copyable(\"10.42.0.17\"))"),
+        ],
     )
 }

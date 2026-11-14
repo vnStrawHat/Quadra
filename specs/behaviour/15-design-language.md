@@ -270,18 +270,27 @@ same rule: no backdrop, an outside click closes them.
   the chosen row. `.compact()` sizes it to its value and opens the menu below with its
   right edge on the button's. With `Controls.select_input` the trigger takes the
   `input_bg` fill, padding 10, gap 8 and a 16 chevron-down (`text_2`; compact: the value's
-  color at 75 %).
+  color at 75 %). **Searched** (`.searchable(ask)`): the popup is at least 220 wide; at its
+  top a field 32 tall (a 12 search icon in `text_3`, then the input with `ask` as its
+  placeholder) over a 1 px `line`; under it the options as the command palette's rows (23
+  tall, the letters that match in `accent_text`, hover `panel_hover`, keyboard highlight
+  `press`) with a 12 check in `text_2` at the end of the chosen one; at most 280 tall, then
+  it scrolls; "No match" in `text_2` when none is left.
 - **Segmented control:** an outlined group (1 px `line_strong`, radius 6) of cells split by
   1 px dividers; sm cells 22 tall with 12 labels, md and lg 28 / 32 with 14; the chosen
-  cell `accent_tint` with an `accent_text` label.
+  cell `accent_tint` with an `accent_text` label. The cells at the ends are rounded as the
+  group's inside (radius 5 on their outer corners), so a chosen end cell's fill stays inside
+  the rounded border.
 - **Text input:** `input_bg` fill (default `canvas`), 1 px `line_strong`, radius 6, padding 8 × 6, 14 text in the
   editor foreground (`code.editor.foreground`: `#ACB2BE` / `#242529`), placeholder
   `text_3`; focused: `border_focused`; invalid: an `error` border, focused or not, and
   the form field shows the message under it in 12 px `error`. No hover style. `height`
   fixes a single-line input's height (the cards settings use 32).
-- **Number input:** a text input with a 12 up and down chevron pair on its right, 160
-  wide. **Stepper** (`stepper: true`): one framed control 128 × 32: `input_bg`, 1 px
-  `line_strong`, `radius_lg`; a 32 wide `−` button, the value centred, a 32 wide `+` button.
+- **Number input:** a text input 140 wide with an up and a down chevron (10 icons in
+  18 × 13 ghost buttons, `text_2`, hover `panel_hover`) stacked at its right end, inside its
+  border; the input's padding is 2 above and below there so the pair fits its 32. **Stepper** (`stepper: true`): one framed control 128 × 32: `input_bg`, 1 px
+  `line_strong`, `radius_lg`; a 32 wide `−` button, the value centred (the field is as wide
+  as its text), a 32 wide `+` button.
   The buttons are ghost with a 16 icon in `text`, hover `line` at 40 %, press at 60 %,
   only their outer corners rounded. Arrow keys step too.
 - **Menu:** level 1 overlay, min width 200, 4 vertical padding. Rows are 23 tall, inset 4
@@ -348,7 +357,9 @@ same rule: no backdrop, an outside click closes them.
   A page row's chevron (16 hit area) expands the page's groups under it as 26 tall
   `text_2` rows indented 28; picking a group picks its page and scrolls the group's header
   to the top.
-- **Settings, cards** (`.cards()`): the layout of outlined setting cards.
+- **Settings, cards** (`.cards()`): the layout of outlined setting cards. A group of them
+  stands on its own in any page as `settings_group(group)`: its title (18, `text_2`) over
+  the outlined card of its rows, 16 apart.
   - Navigation: 250 wide, `panel`, then a 1 px `line` on the right. The search field, full
     width, 12 from the top and the sides. Below it, 12 in, page rows 8 apart: 28 tall,
     padding 8, gap 8, radius 4, 14 text: a 16 icon, the label, and when the page has more

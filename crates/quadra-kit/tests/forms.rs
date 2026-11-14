@@ -232,3 +232,40 @@ fn a_combobox_offers_the_options_its_text_matches() {
     );
     assert!(options(&mut h).is_empty());
 }
+
+#[test]
+fn a_select_that_is_searched_narrows_its_options() {
+    use quadra_kit::select;
+    let theme = signal(3usize);
+    let mut h = mount(move || {
+        let themes = ["Ayu Mirage", "Gruvbox Dark", "Gruvbox Light", "One Dark", "One Light"];
+        column().child(select(themes, theme).searchable("Search theme…").test_id("theme"))
+    });
+    let options = |h: &mut Harness| {
+        let says = h.tree.semantic_tree();
+        let rows = says.nodes.iter().filter(|n| n.semantics.role == Role::ListItem);
+        rows.map(|n| format!("{}{}", n.semantics.name, if n.semantics.selected { "*" } else { "" }))
+            .collect::<Vec<_>>()
+    };
+    // Open, every option shows and the arrows start from the chosen one; the focus is in the field.
+    h.get_by_test_id("theme").click();
+    settle(&mut h);
+    assert_eq!(options(&mut h).len(), 5);
+    assert_eq!(options(&mut h)[3], "One Dark*");
+    let field = h.get_by_role(Role::TextInput, "Search theme…").node();
+    assert_eq!(h.tree.focused(), Some(field));
+    // Typing narrows them, the best first; the arrows and Enter take one and close the list.
+    h.type_text("gru");
+    settle(&mut h);
+    assert_eq!(options(&mut h), ["Gruvbox Dark*", "Gruvbox Light"]);
+    h.key(Key::Down, Mods::NONE);
+    h.key(Key::Enter, Mods::NONE);
+    settle(&mut h);
+    assert_eq!((theme.get_untracked(), options(&mut h).len()), (2, 0));
+    // Opened again, the query is gone; a click takes an option.
+    h.get_by_test_id("theme").click();
+    settle(&mut h);
+    h.get_by_role(Role::ListItem, "Ayu Mirage").click();
+    settle(&mut h);
+    assert_eq!((theme.get_untracked(), options(&mut h).len()), (0, 0));
+}

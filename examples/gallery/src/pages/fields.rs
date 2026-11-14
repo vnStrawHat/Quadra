@@ -50,6 +50,8 @@ pub fn number_page() -> Div {
     let (replicas, cpu) = (signal(3.0f64), signal(0.5f64));
     let whole = line().child(number_input(replicas).range(0.0, 99.0)).child(hint("replicas, 0 to 99"));
     let part = number_input(cpu).range(0.0, 16.0).step(0.25).decimals(2);
+    let size = signal(15.0f64);
+    let stepper = number_input(size).range(8.0, 32.0).decimals(2).stepper();
     page(
         "Number input",
         "A number with bounds and a step. Arrow keys and the stepper change it.",
@@ -59,6 +61,11 @@ pub fn number_page() -> Div {
                 "Decimal",
                 line().child(part).child(hint("CPU cores, step 0.25")),
                 ".step(0.25).decimals(2)",
+            ),
+            demo(
+                "Stepper",
+                line().child(stepper).child(hint("font size, 8 to 32")),
+                "number_input(size).range(8.0, 32.0).stepper()",
             ),
         ],
     )
@@ -89,8 +96,22 @@ pub fn combobox_page() -> Div {
     )
 }
 
+/// Enough themes that a menu of them is long: what a select that is searched is for.
+const THEMES: [&str; 10] = [
+    "Ayu Mirage",
+    "Gruvbox Dark",
+    "Gruvbox Dark Hard",
+    "Gruvbox Dark Soft",
+    "Gruvbox Light",
+    "Gruvbox Light Hard",
+    "Gruvbox Light Soft",
+    "One Dark",
+    "One Dark Pro",
+    "One Light",
+];
+
 pub fn select_page() -> Div {
-    let (space, fruit) = (signal(usize::MAX), signal(1usize));
+    let (space, fruit, theme) = (signal(usize::MAX), signal(1usize), signal(9usize));
     let spaces = select(["default", "kube-system", "monitoring", "ingress-nginx"], space).test_id("sel-ns");
     page(
         "Select",
@@ -105,6 +126,13 @@ pub fn select_page() -> Div {
                 "With a value",
                 line().child(select(["Táo", "Cam", "Xoài", "Sầu riêng"], fruit).width(220.0)),
                 "",
+            ),
+            demo(
+                "Searched",
+                line().child(
+                    select(THEMES, theme).searchable("Search theme…").width(160.0).test_id("sel-theme"),
+                ),
+                "select(themes, chosen).searchable(\"Search theme…\")",
             ),
         ],
     )

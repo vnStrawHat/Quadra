@@ -4,8 +4,8 @@
 use quadra::{Div, column, div, dynamic, memo, row, signal};
 use quadra_kit::work::{Activity, Axis, Pane, Tab, activity_bar, dock, panel_header, panes, tab_strip};
 use quadra_kit::{
-    SettingsGroup, SettingsPage, Size, Variant, button, dialog, icon_button, icons, segmented, select,
-    settings, switch, token, tooltip,
+    SettingsGroup, SettingsPage, Size, Variant, button, dialog, icon_button, icons, number_input, segmented,
+    select, settings, settings_group, switch, token, tooltip,
 };
 
 use crate::common::{demo, framed, hint, line, mono, page, stack};
@@ -202,10 +202,39 @@ pub fn settings_page() -> Div {
     page(
         "Settings",
         about,
-        [demo(
-            "Window",
-            window.child(view).child(file),
-            "settings(current).page(SettingsPage::new(\"General\").group(..)).search(query)",
-        )],
+        [
+            demo(
+                "Window",
+                window.child(view).child(file),
+                "settings(current).page(SettingsPage::new(\"General\").group(..)).search(query)",
+            ),
+            demo("Groups in a page", groups(), "settings_group(SettingsGroup::new(\"Theme\").row(..))"),
+        ],
     )
+}
+
+/// Groups of settings on their own, in a page of the app's: titled outlined cards.
+fn groups() -> Div {
+    let (mode, theme, font, fps, vertical) =
+        (signal(1usize), signal(0usize), signal(16.0f64), signal(false), signal(false));
+    let theme_group = SettingsGroup::new("Theme")
+        .row(
+            "Mode",
+            "Switching this also swaps the colour theme to the last one used in that mode.",
+            select(["Light", "Dark", "System"], mode).width(120.0),
+        )
+        .row(
+            "Color theme",
+            "Built-in and loaded themes.",
+            select(["One Dark", "One Light"], theme).width(160.0),
+        );
+    let interface = SettingsGroup::new("Interface")
+        .row(
+            "UI font size",
+            "Size of all text of the interface, in px.",
+            number_input(font).range(10.0, 24.0).stepper(),
+        )
+        .row("Show FPS monitor", "Frame times and dropped frames in the corner.", switch(fps))
+        .row("Vertical tabs", "Tabs in a list at the left instead of a strip above.", switch(vertical));
+    column().gap(24.0).width(640.0).child(settings_group(theme_group)).child(settings_group(interface))
 }

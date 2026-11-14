@@ -25,7 +25,8 @@ impl Widget for TextField {
         self.sync(cx.text);
         let (text, line_px) =
             (self.paragraph.as_ref().map_or(Size::ZERO, |p| p.size()), self.style.line_px());
-        let width = if self.width.is_finite() { self.width } else { text.width };
+        let fits = self.fit && !self.multiline;
+        let width = if self.width.is_finite() && !fits { self.width } else { text.width + 2.0 }; // + the caret
         Size::new(width, if self.multiline { text.height.max(line_px) } else { line_px })
     }
 

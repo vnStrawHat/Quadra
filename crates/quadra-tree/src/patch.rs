@@ -60,6 +60,8 @@ pub enum Patch {
     BorderColor(Paint),
     /// The same radius on every corner.
     Radius(f32),
+    /// A radius for each corner.
+    Radii(Corners),
     /// A line of one pixel along the edge, taking no room.
     Outline(Paint),
     /// The shadow of a level above the window: 0 none, 1 a menu's, 2 a dialog's.
@@ -92,6 +94,7 @@ impl Patch {
             Patch::Background(v) => p.background = theme.resolve(v),
             Patch::BorderColor(v) => p.border_color = theme.resolve(v),
             Patch::Radius(v) => p.radii = Corners::all(v),
+            Patch::Radii(v) => p.radii = v,
             Patch::Outline(v) => p.outline = theme.resolve(v),
             Patch::Elevation(v) => p.shadows = theme.shadows(v),
             Patch::TextColor(v) => t.color = Some(theme.resolve(v)),
@@ -152,7 +155,7 @@ impl Patch {
     pub(crate) fn part(self) -> Part {
         use Patch::*;
         match self {
-            Background(_) | BorderColor(_) | Radius(_) | Outline(_) | Elevation(_) => Part::Paint,
+            Background(_) | BorderColor(_) | Radius(_) | Radii(_) | Outline(_) | Elevation(_) => Part::Paint,
             TextColor(_) | TextSize(_) | FontWeight(_) | Italic(_) | LineHeight(_) => Part::Text,
             PlaceholderColor(_) | SelectionColor(_) | CaretColor(_) => Part::Text,
             Translate(_) | Scale(_) | Rotate(_) | Opacity(_) => Part::Pose,

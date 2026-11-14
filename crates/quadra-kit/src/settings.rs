@@ -60,6 +60,14 @@ impl SettingsGroup {
     }
 }
 
+/// A group of settings on its own, in any page: its title over an outlined card of its rows,
+/// each a title and a line about it at the left and its control at the right (behaviour/15,
+/// "Settings, cards"). The groups of `settings(..).cards()` look so.
+pub fn settings_group(group: SettingsGroup) -> Div {
+    let always = memo(|| true);
+    cards::group_card(group, always, move |_| always)
+}
+
 /// A page of settings: its groups, under a title.
 pub struct SettingsPage {
     title: String,

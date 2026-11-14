@@ -56,6 +56,9 @@ pub struct TextField {
     /// The text is on as many lines as it takes at the field's width, and can hold line
     /// breaks. Otherwise it is one line that scrolls sideways.
     pub multiline: bool,
+    /// One line as wide as its text and its caret, not as the room it is given: what a box
+    /// around it centres.
+    pub fit: bool,
     /// The width the lines were last broken at.
     width: f32,
     /// Where the caret wants to be while it moves up and down: it keeps its x through lines
@@ -91,6 +94,7 @@ impl TextField {
             buffer: EditBuffer::new(text),
             masked: false,
             multiline: false,
+            fit: false,
             width: f32::INFINITY,
             goal_x: None,
             style: TextStyle::default(),

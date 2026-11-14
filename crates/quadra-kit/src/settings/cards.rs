@@ -6,7 +6,7 @@ use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_tree::{Role, State};
 use quadra_ui::{AnyView, Div, column, div, dynamic, row, scroll, text};
 
-use super::{Model, Setting, SettingsPage, acts, opens, search, shown};
+use super::{Model, Setting, SettingsGroup, SettingsPage, acts, opens, search, shown};
 use crate::icon::icon;
 use crate::{icons, size, token};
 
@@ -93,6 +93,24 @@ fn setting(row_: Setting, kept: Memo<bool>) -> Div {
     line.child(words).child(div().shrink(0.0).child(row_.control))
 }
 
+/// A group: its title and a line about it, muted, over an outlined card of its rows; shown
+/// while `kept` holds, each row while `row(r)` does (what a search keeps).
+pub(super) fn group_card(group: SettingsGroup, kept: Memo<bool>, row: impl Fn(usize) -> Memo<bool>) -> Div {
+    let mut whole = column().gap(16.0).display(move || shown(kept.get()));
+    if !group.title.is_empty() {
+        let title = text(group.title).size(size::TEXT_LG.size).color(token::TEXT_2).line_height(1.25);
+        let mut head = column().gap(4.0).child(title);
+        if !group.about.is_empty() {
+            head = head.child(text(group.about).color(token::TEXT_2));
+        }
+        whole = whole.child(head.role(Role::Heading));
+    }
+    let card = column().gap(16.0).padding(16.0).radius(size::RADIUS_LG);
+    let card = card.border(1.0).border_color(token::LINE_STRONG);
+    let rows = group.rows.into_iter().enumerate().map(|(r, line)| setting(line, row(r)));
+    whole.child(card.children(rows.collect::<Vec<_>>()))
+}
+
 /// The page: a header with its title, what the app put at its right and a line about the
 /// page; under it, in what scrolls, each group a title over an outlined card of its rows.
 pub(super) fn page(pages: Vec<SettingsPage>, model: &Model, header: Vec<AnyView>) -> Div {
@@ -108,21 +126,9 @@ pub(super) fn page(pages: Vec<SettingsPage>, model: &Model, header: Vec<AnyView>
         }
         let mut one = column().display(here);
         for (g, group) in page.groups.into_iter().enumerate() {
-            let kept = model.groups[i][g];
-            let mut whole = column().gap(16.0).padding(16.0).display(move || shown(kept.get()));
-            whole = whole.node_ref(&model.heads[i][g]);
-            if !group.title.is_empty() {
-                let title = text(group.title).size(size::TEXT_LG.size).color(token::TEXT_2).line_height(1.25);
-                let mut head = column().gap(4.0).child(title);
-                if !group.about.is_empty() {
-                    head = head.child(text(group.about).color(token::TEXT_2));
-                }
-                whole = whole.child(head);
-            }
-            let card = column().gap(16.0).padding(16.0).radius(size::RADIUS_LG);
-            let card = card.border(1.0).border_color(token::LINE_STRONG);
-            let rows = group.rows.into_iter().enumerate().map(|(r, row)| setting(row, model.rows[i][g][r]));
-            one = one.child(whole.child(card.children(rows.collect::<Vec<_>>())));
+            let (kept, rows) = (model.groups[i][g], &model.rows[i][g]);
+            let whole = group_card(group, kept, |r| rows[r]).padding(16.0);
+            one = one.child(whole.node_ref(&model.heads[i][g]));
         }
         all = all.child(one);
     }

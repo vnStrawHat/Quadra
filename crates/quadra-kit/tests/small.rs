@@ -112,3 +112,20 @@ fn a_question_has_two_answers_and_a_bar_has_menus() {
     h.frame();
     assert_eq!((asking.get_untracked(), answered.get_untracked()), (false, 1));
 }
+
+#[test]
+fn a_value_of_a_description_list_is_copied_by_its_button() {
+    let mut h = mount(|| {
+        let node = quadra_ui::AnyView::new(quadra_ui::text("n1"));
+        quadra_kit::description_list([("Pod IP", quadra_kit::copyable("10.42.0.17")), ("Node", node)])
+    });
+    h.get_by_role(Role::Button, "Copy").click();
+    h.frame();
+    // The harness's clipboard is in memory: the real one is never touched by a test.
+    assert_eq!(h.clipboard.read_text().as_deref(), Some("10.42.0.17"));
+    // It says so for a moment, then it is the button that copies again.
+    h.get_by_role(Role::Button, "Copied");
+    h.advance(Duration::from_millis(1600));
+    h.frame();
+    h.get_by_role(Role::Button, "Copy");
+}

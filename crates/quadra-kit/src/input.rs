@@ -102,7 +102,7 @@ impl Input {
         self
     }
 
-    fn build(self) -> Div {
+    pub(crate) fn build(self) -> Div {
         let field = text_input(self.value).placeholder(&self.placeholder);
         let field = if self.password { field.password() } else { field };
         let field = match self.submit {

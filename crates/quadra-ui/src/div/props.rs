@@ -2,7 +2,7 @@
 //! reactive, and a setter of what a state changes, taking a constant.
 
 use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position};
-use quadra_prim::Point;
+use quadra_prim::{Corners, Point};
 use quadra_tree::{Paint, Patch};
 
 use super::Div;
@@ -89,6 +89,8 @@ props! {
     border_color: Paint => BorderColor;
     /// The same radius on every corner.
     radius: f32 => Radius;
+    /// A radius for each corner: the ends of a row of cells in a rounded frame.
+    radii: Corners => Radii;
     /// A line of one pixel along the box's edge, taking no room: a mark of the focus.
     outline: Paint => Outline;
     /// The shadow of a level above the window: 1 for a menu, 2 for a dialog.

@@ -3,6 +3,7 @@
 
 use quadra_layout::{Align, Direction, Justify, Overflow};
 use quadra_platform::Cursor;
+use quadra_prim::Corners;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, Role, State};
 use quadra_ui::{AnyView, Div, IntoProp, MountCx, Prop, View, div, row, show, text};
@@ -94,7 +95,12 @@ impl Choice {
                 // A hairline between two cells, as tall as they are.
                 parts.push(AnyView::new(div().width(1.0).bg(token::LINE_STRONG)));
             }
-            let option = if self.segmented { self.cell(label) } else { Choice::radio(label, on) };
+            let option = match self.segmented {
+                // The frame does not cut what it holds: the cells at its ends are rounded as
+                // its inside is, so a chosen one's fill stays in it.
+                true => self.cell(label).radii(ends(i, count)),
+                false => Choice::radio(label, on),
+            };
             let option = option.role(Role::Radio).place_in_set(i).checked(on).cursor(Cursor::Pointer);
             parts.push(AnyView::new(option.on_click(move |_| chosen.set(i))));
         }
@@ -111,6 +117,13 @@ impl Choice {
         };
         group.children(parts)
     }
+}
+
+/// The corners of the cell at `i` of `count` in a frame of `RADIUS_LG` with a border of 1.
+fn ends(i: usize, count: usize) -> Corners {
+    let r = size::RADIUS_LG - 1.0;
+    let (first, last) = (if i == 0 { r } else { 0.0 }, if i + 1 == count { r } else { 0.0 });
+    Corners { top_left: first, bottom_left: first, top_right: last, bottom_right: last }
 }
 
 /// The box around a few options of which one is chosen: it is what Tab reaches, and the

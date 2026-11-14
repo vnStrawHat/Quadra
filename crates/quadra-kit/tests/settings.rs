@@ -165,3 +165,23 @@ fn the_cards_list_the_groups_of_a_page_under_its_row() {
     assert_eq!((item(&h, "General"), item(&h, "Font"), current.get_untracked()), (None, None, 0));
     assert!(h.has_text("Font Size") && !h.has_text("Autosave") && !h.has_text("Cursor Blink"));
 }
+
+#[test]
+fn a_group_of_settings_stands_on_its_own_in_a_page() {
+    let fps = signal(false);
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    h.mount(move || {
+        let group =
+            SettingsGroup::new("Interface").row("Show FPS monitor", "Frame times.", quadra_kit::switch(fps));
+        quadra_kit::root().child(quadra_kit::settings_group(group))
+    });
+    h.frame();
+    // Its title is a heading; a row is a group named by its title, and its control works.
+    assert!(h.semantics().contains("Heading"), "{}", h.semantics());
+    h.get_by_role(Role::Group, "Show FPS monitor");
+    h.get_by_role(Role::Switch, "").click();
+    h.frame();
+    assert!(fps.get_untracked());
+}

@@ -1,9 +1,16 @@
 //! What says something in the flow of a page (specs/behaviour/09, "Display"): an alert, what
 //! an empty place shows, and terms with their values.
 
+use std::cell::Cell;
+use std::rc::Rc;
+use std::time::Duration;
+
+use quadra_async::{Timer, timeout};
 use quadra_layout::{Align, Justify, Track};
+use quadra_platform::{Clipboard, Cursor};
+use quadra_reactive::{Scope, signal, use_context};
 use quadra_tree::Role;
-use quadra_ui::{AnyView, Div, View, column, div, row, text};
+use quadra_ui::{AnyView, Div, View, column, div, dynamic, row, text};
 
 use crate::display::Tone;
 use crate::icon::icon;
@@ -53,11 +60,42 @@ pub fn empty_state(body: &'static str, title: &str, hint: &str, action: impl Vie
 }
 
 /// Terms and their values in two columns: the terms muted and as wide as the widest, the
-/// values in the room that is left.
+/// values in the room that is left. A value that can be copied is [`copyable`].
 pub fn description_list<S: Into<String>>(items: impl IntoIterator<Item = (S, AnyView)>) -> Div {
     let mut grid = div().grid([Track::max_content(), Track::fr(1.0)]).gap_x(24.0).gap_y(8.0);
     for (term, value) in items {
         grid = grid.child(text(term.into()).color(token::TEXT_2)).child(value);
     }
     grid
+}
+
+/// A value of a description list with a button at its end that copies it: an icon that is a
+/// check, and a name that says "Copied", for a moment after a click. The clipboard is the app's (none in a view with none,
+/// and then the button does nothing).
+pub fn copyable(value: impl Into<String>) -> AnyView {
+    let value: String = value.into();
+    let (clipboard, owner) = (use_context::<Rc<dyn Clipboard>>(), Scope::current());
+    let (done, waiting) = (signal(false), Rc::new(Cell::new(None::<Timer>)));
+    let words = value.clone();
+    let copy = move || {
+        let Some(clipboard) = &clipboard else { return };
+        clipboard.write_text(&words);
+        done.set(true);
+        let timer = owner.run(|| timeout(Duration::from_millis(1500), move || done.set(false)));
+        if let Some(before) = waiting.replace(Some(timer)) {
+            before.cancel();
+        }
+    };
+    let mark = dynamic(move || {
+        let (body, color) = if done.get() { (icons::CHECK, token::OK) } else { (icons::COPY, token::TEXT_3) };
+        icon(body).size(12.0).color(color)
+    });
+    let button = row().size(20.0, 20.0).align_items(Align::Center).justify(Justify::Center).shrink(0.0);
+    let button = button.radius(size::RADIUS_SM).cursor(Cursor::Pointer).hover(|s| s.bg(token::PANEL_HOVER));
+    let button = button
+        .role(Role::Button)
+        .label(move || if done.get() { "Copied" } else { "Copy" }.to_string())
+        .on_click(move |_| copy());
+    let line = row().align_items(Align::Center).gap(4.0).min_width(0.0);
+    AnyView::new(line.child(text(value).selectable()).child(button.child(mark)))
 }

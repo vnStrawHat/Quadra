@@ -1,5 +1,8 @@
 //! The select (specs/behaviour/15, "Select"): a button that shows which of a few options is
-//! chosen, and a menu of them with a check on that one.
+//! chosen, and a menu of them with a check on that one; or, for many, a list under a field
+//! that narrows it (`search.rs`).
+
+mod search;
 
 use std::rc::Rc;
 
@@ -20,13 +23,15 @@ pub struct Select {
     chosen: Signal<usize>,
     width: f32,
     placeholder: String,
+    /// What the field of a select that is searched says while it is empty.
+    search: Option<String>,
     test_id: Option<&'static str>,
 }
 
 /// A dropdown of `options`: `chosen` holds the index of the one that is chosen.
 pub fn select<S: Into<String>>(options: impl IntoIterator<Item = S>, chosen: Signal<usize>) -> Select {
     let options = Rc::new(options.into_iter().map(Into::into).collect());
-    Select { options, chosen, width: 160.0, placeholder: String::new(), test_id: None }
+    Select { options, chosen, width: 160.0, placeholder: String::new(), search: None, test_id: None }
 }
 
 impl Select {
@@ -39,6 +44,14 @@ impl Select {
     /// (`usize::MAX` says nothing is chosen yet).
     pub fn placeholder(mut self, words: impl Into<String>) -> Self {
         self.placeholder = words.into();
+        self
+    }
+
+    /// A field at the top of the list that narrows it as it is typed into, the best match
+    /// first; `ask` is what it says while empty ("Search theme…"). For more options than a menu
+    /// holds well.
+    pub fn searchable(mut self, ask: impl Into<String>) -> Self {
+        self.search = Some(ask.into());
         self
     }
 
@@ -72,6 +85,13 @@ impl View for Select {
         let face = face.child(div().grow(1.0).text_color(tone).child(text(value)));
         let face = face.child(icon(icons::CHEVRONS_UP_DOWN).size(12.0).color(token::TEXT_2));
         let (options, width) = (self.options, self.width);
+        if let Some(ask) = self.search {
+            let wide = width.max(220.0) - EDGE;
+            let list = popover(open, &opener, move || {
+                search::searched(options.clone(), chosen, open, wide, ask.clone())
+            });
+            return column().child(face).child(list).mount(cx);
+        }
         // The chosen option has a quiet check before it; with none chosen, no room is kept.
         let items = move || {
             let on = chosen.get_untracked();

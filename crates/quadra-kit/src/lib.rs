@@ -69,7 +69,7 @@ pub use menu::{
     ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_button, menu_icon_button, menubar,
     popover_button,
 };
-pub use notes::{alert, description_list, empty_state};
+pub use notes::{alert, copyable, description_list, empty_state};
 pub use notice::{Notice, Notices, notices};
 pub use number::{NumberInput, number_input};
 pub use palette::{Command, command_palette, fuzzy, fuzzy_hits, marked};
@@ -78,7 +78,7 @@ pub use progress::{Busy, Skeleton, Spinner, progress, progress_busy, skeleton, s
 pub use range::{RangeSlider, range_slider};
 pub use root::{install, root};
 pub use select::{Select, select};
-pub use settings::{Settings, SettingsGroup, SettingsPage, settings};
+pub use settings::{Settings, SettingsGroup, SettingsPage, settings, settings_group};
 pub use sidebar::{NavItem, Sidebar, sidebar};
 pub use slider::{Slider, slider};
 pub use split::{Split, split};

@@ -18,6 +18,7 @@ pub struct TextInput {
     color: Option<Paint>,
     masked: bool,
     multiline: bool,
+    fit: bool,
     placeholder: String,
     test_id: Option<&'static str>,
     submit: Option<Submit>,
@@ -33,7 +34,8 @@ pub fn text_input(value: Signal<String>) -> TextInput {
     let (values, color) = (TextValues::default(), None);
     let placeholder = String::new();
     let (masked, multiline) = (false, false);
-    TextInput { value, values, color, masked, multiline, placeholder, test_id: None, submit: None }
+    let fit = false;
+    TextInput { value, values, color, masked, multiline, fit, placeholder, test_id: None, submit: None }
 }
 
 /// Text on as many lines as it takes at the width the area is given: Enter starts a line, and
@@ -71,6 +73,12 @@ impl TextInput {
     /// A password: a dot shows for each character, and copy and cut do nothing.
     pub fn password(mut self) -> Self {
         self.masked = true;
+        self
+    }
+
+    /// As wide as its text, not as the room it is given: a box around it can centre it.
+    pub fn fit(mut self) -> Self {
+        self.fit = true;
         self
     }
 

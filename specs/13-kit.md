@@ -415,9 +415,12 @@ As built so far:
   properties: when one changes the lines are compared again.
   - What differs is the shortest script of lines removed and added (`diff_lines`, a plain
     function over two lists of lines, which an app can use for its own counts): what the
-    texts start and end with alike is set aside, and the rest is searched by distance. Texts
-    more than 1 500 lines apart there are not searched: all of the one is removed, then all
-    of the other added. In a run of changes the lines removed come before those added.
+    texts start and end with alike is set aside, and the rest is searched by distance, in
+    linear space: from both ends at once until the searches meet in the middle of a shortest
+    script, then the part before and the part after alike (lines are numbers by then, equal
+    for equal lines). A part more than 8 192 lines apart is not searched: all of the one is
+    removed, then all of the other added. In a run of changes the lines removed come before
+    those added.
   - `.mode(..)` is a property, `DiffMode::Inline` unless told. **Inline** is one column:
     every line of the script on a row of its own, with its number in the old text and in the
     new, a `-` or a `+`, and the row tinted (`token::DIFF_REMOVE`, `token::DIFF_ADD`).
@@ -462,7 +465,6 @@ As built so far:
     `_`, a run of spaces, or one other character), in as many places of the line as there
     are: runs of words removed and added, those with only spaces between them made one, each
     cut to what is not common to its start and end (`wéb` to `wöb` tints the one letter).
-  - Not yet: the linear-space search for texts far apart.
 - **The keyboard's focus on a control without a border of its own** is a line of one pixel
   around it: `outline`, a paint value that takes no room (it is drawn over what the node
   paints, along its edge).

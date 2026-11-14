@@ -1,8 +1,8 @@
 //! What differs between two texts (specs/13, "Components"): the shortest script of lines
-//! removed and added that turns one into the other, and the part of a line that changed.
+//! removed and added that turns one into the other.
 //! Plain functions.
 
-use std::ops::Range;
+use std::collections::HashMap;
 
 /// A step of the script, with the numbers of its lines from 0.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -15,30 +15,26 @@ pub enum Step {
     Added(usize),
 }
 
-/// How many lines may differ between the parts of two texts that are not their common
-/// start and end before the script is given up for "all of one, then all of the other".
-// ponytail: the search keeps what it found at each distance, which is the square of this in
-// memory (9 MB); the linear-space search when texts further apart than this are compared.
-const FARTHEST: usize = 1500;
+/// How far the search goes from each end of a part of the texts before it gives the part up
+/// for "all of one, then all of the other": parts more than twice this many lines apart.
+const FARTHEST: usize = 4096;
 
-/// The script from `old` to `new`: the fewest lines removed and added (the search of Myers).
-/// In a run of changes the lines removed come before those added.
-pub fn diff_lines(old: &[&str], new: &[&str]) -> Vec<Step> {
-    // What they start and end with alike is not searched.
-    let start = old.iter().zip(new).take_while(|(a, b)| a == b).count();
-    let (a, b) = (&old[start..], &new[start..]);
-    let end = a.iter().rev().zip(b.iter().rev()).take_while(|(a, b)| a == b).count();
-    let (a, b) = (&a[..a.len() - end], &b[..b.len() - end]);
-
-    let mut script: Vec<Step> = (0..start).map(|i| Step::Same(i, i)).collect();
-    let middle = search(a, b)
-        .unwrap_or_else(|| (0..a.len()).map(Step::Removed).chain((0..b.len()).map(Step::Added)).collect());
-    script.extend(middle.into_iter().map(|step| match step {
-        Step::Same(i, j) => Step::Same(i + start, j + start),
-        Step::Removed(i) => Step::Removed(i + start),
-        Step::Added(j) => Step::Added(j + start),
-    }));
-    script.extend((0..end).map(|i| Step::Same(start + a.len() + i, start + b.len() + i)));
+/// The script from `old` to `new`: the fewest lines removed and added (the search of Myers,
+/// in linear space: the middle of a shortest script is found from both ends, and the parts
+/// before and after it are searched alike). In a run of changes the lines removed come
+/// before those added.
+pub fn diff_lines<'a>(old: &[&'a str], new: &[&'a str]) -> Vec<Step> {
+    // Lines as numbers, equal for equal lines: compared at the cost of a number.
+    let mut ids: HashMap<&'a str, u32> = HashMap::new();
+    let (mut a, mut b) = (Vec::with_capacity(old.len()), Vec::with_capacity(new.len()));
+    for (lines, out) in [(old, &mut a), (new, &mut b)] {
+        for &line in lines {
+            let next = ids.len() as u32;
+            out.push(*ids.entry(line).or_insert(next));
+        }
+    }
+    let mut script = Vec::with_capacity(a.len().max(b.len()));
+    part(&a, &b, (0, 0), &mut script);
     // In each run of changes, the lines removed before those added, each kind in its order.
     let same = |step: &Step| matches!(step, Step::Same(..));
     for run in script.chunk_by_mut(|a, b| same(a) == same(b)) {
@@ -47,136 +43,83 @@ pub fn diff_lines(old: &[&str], new: &[&str]) -> Vec<Step> {
     script
 }
 
-/// The shortest script between two lists of lines, or none when they are further apart than
-/// [`FARTHEST`]. `reach[k]` is how far along `a` the best path on the diagonal `k` has got.
-fn search(a: &[&str], b: &[&str]) -> Option<Vec<Step>> {
+/// The script of a part of the texts, `(i, j)` where it starts in each: what it starts and
+/// ends with alike is not searched, and what is between is split where a shortest script
+/// is half done.
+fn part(a: &[u32], b: &[u32], (i, j): (usize, usize), out: &mut Vec<Step>) {
+    let start = a.iter().zip(b).take_while(|(x, y)| x == y).count();
+    out.extend((0..start).map(|k| Step::Same(i + k, j + k)));
+    let (a, b, i, j) = (&a[start..], &b[start..], i + start, j + start);
+    let end = a.iter().rev().zip(b.iter().rev()).take_while(|(x, y)| x == y).count();
+    let (a, b) = (&a[..a.len() - end], &b[..b.len() - end]);
+    let half = if a.is_empty() || b.is_empty() { None } else { middle(a, b) };
+    match half {
+        Some((x, y)) => {
+            part(&a[..x], &b[..y], (i, j), out);
+            part(&a[x..], &b[y..], (i + x, j + y), out);
+        }
+        None => {
+            out.extend((0..a.len()).map(|k| Step::Removed(i + k)));
+            out.extend((0..b.len()).map(|k| Step::Added(j + k)));
+        }
+    }
+    out.extend((0..end).map(|k| Step::Same(i + a.len() + k, j + b.len() + k)));
+}
+
+/// Where a shortest script between two parts that differ at both ends is half done, found
+/// by searching from the start and from the end at once until the two meet; none when they
+/// are further apart than [`FARTHEST`] from each end. `reach[0][k]` is how far along `a`
+/// the best path from the start on the diagonal `k` has got, `reach[1][k]` the same from
+/// the end (in the coordinates of the texts turned round), -1 where none has been.
+fn middle(a: &[u32], b: &[u32]) -> Option<(usize, usize)> {
     let (n, m) = (a.len() as isize, b.len() as isize);
-    let farthest = ((n + m) as usize).min(FARTHEST) as isize;
-    let at = |k: isize| (k + farthest + 1) as usize;
-    let mut reach = vec![0isize; 2 * farthest as usize + 3];
-    // What `reach` was before each distance was tried: the way back.
-    let mut before: Vec<Vec<u32>> = Vec::new();
-    let mut found = None;
-    'search: for d in 0..=farthest {
-        before.push(reach[at(-d - 1)..=at(d + 1)].iter().map(|x| *x as u32).collect());
-        for k in (-d..=d).step_by(2) {
-            let down = k == -d || (k != d && reach[at(k - 1)] < reach[at(k + 1)]);
-            let mut x = if down { reach[at(k + 1)] } else { reach[at(k - 1)] + 1 };
-            while x < n && x - k < m && a[x as usize] == b[(x - k) as usize] {
-                x += 1;
-            }
-            reach[at(k)] = x;
-            if x >= n && x - k >= m {
-                found = Some(d);
-                break 'search;
-            }
-        }
-    }
-    // Back from the end: at each distance, the diagonal it came from, the lines alike along
-    // this one, and the one line that was removed or added to get on it.
-    let (mut x, mut y, mut script) = (n, m, Vec::new());
-    for d in (0..=found?).rev() {
-        let was = |k: isize| before[d as usize][(k + d + 1) as usize] as isize;
-        let k = x - y;
-        let from = if k == -d || (k != d && was(k - 1) < was(k + 1)) { k + 1 } else { k - 1 };
-        let (from_x, from_y) = (was(from), was(from) - from);
-        while x > from_x && y > from_y {
-            (x, y) = (x - 1, y - 1);
-            script.push(Step::Same(x as usize, y as usize));
-        }
-        if d > 0 {
-            let step =
-                if x == from_x { Step::Added(from_y as usize) } else { Step::Removed(from_x as usize) };
-            (x, y) = (from_x, from_y);
-            script.push(step);
-        }
-    }
-    script.reverse();
-    Some(script)
-}
-
-/// Parts of a line, as byte ranges.
-pub type Parts = Vec<Range<usize>>;
-
-/// The words of a line, as byte ranges: a run of letters, digits and `_`, a run of spaces,
-/// or one other character.
-fn words(line: &str) -> Vec<Range<usize>> {
-    let class = |c: char| {
-        if c.is_alphanumeric() || c == '_' {
-            1
-        } else if c.is_whitespace() {
-            2
-        } else {
-            0
-        }
-    };
-    let mut out: Vec<Range<usize>> = Vec::new();
-    let mut last = None;
-    for (at, c) in line.char_indices() {
-        let kind = class(c);
-        match out.last_mut() {
-            Some(word) if kind != 0 && last == Some(kind) => word.end = at + c.len_utf8(),
-            _ => out.push(at..at + c.len_utf8()),
-        }
-        last = Some(kind);
-    }
-    out
-}
-
-/// The parts of each of two lines that changed, word by word, in as many places as there
-/// are: runs of words removed and added, those between which only spaces stay made one, and
-/// each cut to what is not common to its start and end. None when less than half of the
-/// shorter line is common, spaces not counted: they are two lines, not one that changed.
-pub fn changed_parts(old: &str, new: &str) -> Option<(Parts, Parts)> {
-    let (a, b) = (words(old), words(new));
-    let (wa, wb): (Vec<&str>, Vec<&str>) =
-        (a.iter().map(|w| &old[w.clone()]).collect(), b.iter().map(|w| &new[w.clone()]).collect());
-    let inked = |text: &str| text.chars().filter(|c| !c.is_whitespace()).count();
-    let (mut common, mut parts) = (0, Vec::<(Range<usize>, Range<usize>)>::new());
-    // Where the next run starts in each line, and whether only spaces stayed since the last.
-    let (mut from, mut spaces) = ((0, 0), false);
-    let script = diff_lines(&wa, &wb);
-    for run in script.chunk_by(|x, y| matches!(x, Step::Same(..)) == matches!(y, Step::Same(..))) {
-        if let Step::Same(i, j) = run[0] {
-            let said: Vec<&str> =
-                run.iter().map(|step| if let Step::Same(i, _) = step { wa[*i] } else { "" }).collect();
-            common += said.iter().map(|w| inked(w)).sum::<usize>();
-            spaces = said.iter().all(|w| inked(w) == 0);
-            from = (
-                a.get(i + run.len()).map_or(old.len(), |w| w.start),
-                b.get(j + run.len()).map_or(new.len(), |w| w.start),
-            );
-            continue;
-        }
-        let (mut x, mut y) = (from.0..from.0, from.1..from.1);
-        for step in run {
-            match *step {
-                Step::Removed(i) => x = x.start.min(a[i].start)..a[i].end.max(x.end),
-                Step::Added(j) => y = y.start.min(b[j].start)..b[j].end.max(y.end),
-                Step::Same(..) => {}
+    let most = ((n + m + 1) / 2).min(FARTHEST as isize);
+    let width = 2 * most + 2;
+    let mut reach = [vec![-1isize; width as usize], vec![-1isize; width as usize]];
+    (reach[0][most as usize + 1], reach[1][most as usize + 1]) = (0, 0);
+    let (delta, at) = (n - m, |k: isize| (most + k) as usize);
+    let odd = delta % 2 != 0;
+    // How many diagonals ran off the grid at the low and the high side, from each end.
+    let mut off = [[0isize; 2]; 2];
+    for d in 0..most {
+        for end in [0, 1] {
+            let mut k = -d + off[end][0];
+            while k <= d - off[end][1] {
+                let line = &reach[end];
+                let down = k == -d || (k != d && line[at(k) - 1] < line[at(k) + 1]);
+                let mut x = if down { line[at(k) + 1] } else { line[at(k) - 1] + 1 };
+                let mut y = x - k;
+                let same = |x: isize, y: isize| match end {
+                    0 => a[x as usize] == b[y as usize],
+                    _ => a[(n - x - 1) as usize] == b[(m - y - 1) as usize],
+                };
+                while x < n && y < m && same(x, y) {
+                    (x, y) = (x + 1, y + 1);
+                }
+                reach[end][at(k)] = x;
+                if x > n {
+                    off[end][1] += 2;
+                } else if y > m {
+                    off[end][0] += 2;
+                } else if odd == (end == 0) {
+                    // The other search on the same diagonal: met when they overlap.
+                    let mirror = delta - k;
+                    let place = most + mirror;
+                    let other = if (0..width).contains(&place) { reach[1 - end][place as usize] } else { -1 };
+                    if other != -1 {
+                        let (ahead, behind) = if end == 0 { (x, other) } else { (other, x) };
+                        if ahead >= n - behind {
+                            // Where the search from the start is, on its diagonal.
+                            let diagonal = if end == 0 { k } else { mirror };
+                            return Some((ahead as usize, (ahead - diagonal) as usize));
+                        }
+                    }
+                }
+                k += 2;
             }
         }
-        if let (true, Some(last)) = (spaces, parts.last_mut()) {
-            (last.0.end, last.1.end) = (x.end, y.end);
-        } else {
-            parts.push((x, y));
-        }
     }
-    // Each part cut to what is not common to its start and end.
-    let bytes = |alike: &mut dyn Iterator<Item = (char, char)>| -> (usize, usize) {
-        alike
-            .take_while(|(a, b)| a == b)
-            .fold((0, 0), |(n, k), (a, _)| (n + a.len_utf8(), k + !a.is_whitespace() as usize))
-    };
-    for (x, y) in &mut parts {
-        let (s, t) = (&old[x.clone()], &new[y.clone()]);
-        let (start, ink) = bytes(&mut s.chars().zip(t.chars()));
-        let (end, more) = bytes(&mut s[start..].chars().rev().zip(t[start..].chars().rev()));
-        common += ink + more;
-        (*x, *y) = (x.start + start..x.end - end, y.start + start..y.end - end);
-    }
-    let shorter = inked(old).min(inked(new));
-    (common * 2 >= shorter && shorter > 0 && old != new).then(|| parts.into_iter().unzip())
+    None
 }
 
 #[cfg(test)]
@@ -234,32 +177,57 @@ mod tests {
 
         // Texts with nothing alike, further apart than the search goes: all of one, then
         // all of the other, between what they start and end with.
-        let far: Vec<String> = (0..4000).map(|i| i.to_string()).collect();
+        let far: Vec<String> = (0..20_000).map(|i| i.to_string()).collect();
         let (first, last) = (vec!["first"], vec!["last"]);
-        let a = [first.clone(), lines(&far[..2000]), last.clone()].concat();
-        let b = [first, lines(&far[2000..]), last].concat();
+        let a = [first.clone(), lines(&far[..10_000]), last.clone()].concat();
+        let b = [first, lines(&far[10_000..]), last].concat();
         let script = diff_lines(&a, &b);
-        assert_eq!((script.len(), script[0], script[4001]), (4002, Step::Same(0, 0), Step::Same(2001, 2001)));
-        assert!((1..2001).all(|i| script[i] == Step::Removed(i) && script[i + 2000] == Step::Added(i)));
+        let ends = (script.len(), script[0], script[20_001]);
+        assert_eq!(ends, (20_002, Step::Same(0, 0), Step::Same(10_001, 10_001)));
+        assert!((1..10_001).all(|i| script[i] == Step::Removed(i) && script[i + 10_000] == Step::Added(i)));
     }
 
     #[test]
-    fn the_parts_of_a_line_that_changed_are_between_what_stays() {
-        let one = |old, new| changed_parts(old, new).map(|(x, y)| (x[0].clone(), y[0].clone()));
-        assert_eq!(one("let x = 1;", "let x = 22;"), Some((8..9, 8..10)));
-        assert_eq!(one("name: wéb", "name: wöb"), Some((7..9, 7..9)));
-        assert_eq!(one("abc", "abcdef"), Some((3..3, 3..6)));
-        assert_eq!(one("aaa", "aaaa"), Some((3..3, 3..4)));
-        // Words changed in two places are two parts; words apart by spaces alone are one.
-        let two = changed_parts("let width = old(a, 1);", "let height = old(a, 2);");
-        assert_eq!(two, Some((vec![4..9, 19..20], vec![4..10, 20..21])));
-        assert_eq!(
-            changed_parts("a = red big box;", "a = blue small box;"),
-            Some((vec![4..11; 1], vec![4..14; 1]))
-        );
-        // Nothing much alike but how far in they start, the same line, an empty one: no part.
-        assert_eq!(changed_parts("fn main() {", "use std::rc::Rc;"), None);
-        assert_eq!(changed_parts("        env:", "          - port: 9090"), None);
-        assert_eq!((changed_parts("same", "same"), changed_parts("", "x")), (None, None));
+    fn the_script_keeps_as_many_lines_as_the_longest_common_part() {
+        let mut seed = 7u64;
+        let mut next = move |below: u64| {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            (seed >> 33) % below
+        };
+        const WORDS: [&str; 4] = ["a", "b", "c", "d"];
+        for _ in 0..300 {
+            let mut text = || (0..next(30)).map(|_| WORDS[next(4) as usize]).collect::<Vec<_>>();
+            let (old, new) = (text(), text());
+            // The longest common part, by the table of every pair of starts.
+            let mut best = vec![vec![0usize; new.len() + 1]; old.len() + 1];
+            for i in (0..old.len()).rev() {
+                for j in (0..new.len()).rev() {
+                    best[i][j] = if old[i] == new[j] {
+                        best[i + 1][j + 1] + 1
+                    } else {
+                        best[i + 1][j].max(best[i][j + 1])
+                    };
+                }
+            }
+            let script = diff_lines(&old, &new);
+            let same = script.iter().filter(|step| matches!(step, Step::Same(..))).count();
+            assert_eq!(same, best[0][0], "{old:?} {new:?}");
+            assert_eq!(script.len(), old.len() + new.len() - same);
+        }
+    }
+
+    #[test]
+    fn texts_far_apart_are_searched_in_linear_space() {
+        // Every other line of 6000 changed: 6000 lines apart, and each line that stays found.
+        let old: Vec<String> = (0..6000).map(|i| format!("line {i}")).collect();
+        let new: Vec<String> =
+            (0..6000).map(|i| if i % 2 == 0 { format!("line {i}") } else { format!("new {i}") }).collect();
+        fn lines(text: &[String]) -> Vec<&str> {
+            text.iter().map(String::as_str).collect()
+        }
+        let script = diff_lines(&lines(&old), &lines(&new));
+        let same = script.iter().filter(|step| matches!(step, Step::Same(..))).count();
+        assert_eq!((same, script.len()), (3000, 9000));
+        assert_eq!(script[..4], [Step::Same(0, 0), Step::Removed(1), Step::Added(1), Step::Same(2, 2)]);
     }
 }

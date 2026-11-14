@@ -154,7 +154,7 @@ mod tests {
     fn lines_are_paired_by_how_alike_they_are() {
         // "a = 1" and "run(x);" went, "run(y);" came: it is the second edited.
         let (old, new) = (["a = 1", "run(x);"], ["run(y);"]);
-        let alike = |i: usize, j: usize| super::super::lines::changed_parts(old[i], new[j]).is_some();
+        let alike = |i: usize, j: usize| super::super::words::changed_parts(old[i], new[j]).is_some();
         let script = [Removed(0), Removed(1), Added(0)];
         assert_eq!(
             rows(&script, DiffMode::SideBySide, None, &[], &alike),

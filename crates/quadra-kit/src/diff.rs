@@ -6,6 +6,7 @@ mod lines;
 mod rows;
 mod select;
 mod view;
+mod words;
 
 use std::ops::Range;
 use std::rc::Rc;
@@ -146,7 +147,7 @@ impl View for Diff {
             let (sides, mode) = (sides.get(), layout());
             // The same line edited: enough of it is left as it was (`changed_parts`).
             let alike =
-                |i: usize, j: usize| lines::changed_parts(sides.old.line(i), sides.new.line(j)).is_some();
+                |i: usize, j: usize| words::changed_parts(sides.old.line(i), sides.new.line(j)).is_some();
             Rc::new(open.with(|open| rows(&sides.script, mode, context, open, &alike)))
         });
         // Room for the number of the last line, and of two digits at least.

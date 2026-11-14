@@ -7,8 +7,8 @@ use quadra_reactive::Signal;
 use quadra_tree::{Role, Token};
 use quadra_ui::{Div, div, rich_text, row, span, text};
 
-use super::lines::changed_parts;
 use super::rows::{DiffMode, Row};
+use super::words::changed_parts;
 use super::{LineColours, ROW, Sides};
 use crate::token;
 

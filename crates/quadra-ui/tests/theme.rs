@@ -8,7 +8,7 @@ use quadra_prim::Color;
 use quadra_reactive::{signal, stats};
 use quadra_testing::Harness;
 use quadra_tree::{Paint, PointerInput, Theme, Token};
-use quadra_ui::{column, div};
+use quadra_ui::{column, div, show};
 
 const SURFACE: Token = Token(0);
 const LINE: Token = Token(1);
@@ -55,4 +55,39 @@ fn boxes_take_roles_where_they_take_colours() {
     );
     assert_eq!(look(&h), (Color::rgb(0xCC0000).alpha(0.5), Color::rgb(0xD0D0D0), Color::rgb(0xCC0000)));
     assert_eq!(stats(), before);
+}
+
+#[test]
+fn a_box_gives_what_is_under_it_a_theme_of_its_own() {
+    let (more, dark) = (signal(false), theme([0x101010, 0x202020, 0x00AA00]));
+    let mut h = Harness::new();
+    h.tree.set_theme(theme([0xFFFFFF, 0xD0D0D0, 0xCC0000]));
+    h.mount(move || {
+        let card = || div().size(40.0, 20.0).bg(SURFACE);
+        let panel = div().theme(dark.clone()).child(card()).child(show(move || more.get(), card));
+        column().child(card()).child(panel)
+    });
+    h.frame();
+    let root = h.tree.root().unwrap();
+    let (outside, panel) = (h.tree.children(root)[0], h.tree.children(root)[1]);
+    let bg = |h: &Harness, id| h.tree.paint_style(id).background;
+    let inside = h.tree.children(panel)[0];
+    assert_eq!((bg(&h, outside), bg(&h, inside)), (Color::rgb(0xFFFFFF), Color::rgb(0x101010)));
+
+    // What comes under it later has its theme too; the window's theme leaves it as it is.
+    more.set(true);
+    h.frame();
+    let mut later = panel;
+    while let Some(&last) = h.tree.children(later).last() {
+        later = last;
+    }
+    assert_ne!(later, inside);
+    assert_eq!(bg(&h, later), Color::rgb(0x101010));
+    h.tree.set_theme(theme([0xEEEEEE, 0xD0D0D0, 0xCC0000]));
+    h.frame();
+    assert_eq!((bg(&h, outside), bg(&h, inside)), (Color::rgb(0xEEEEEE), Color::rgb(0x101010)));
+    // Given up, the window's again.
+    h.tree.set_theme_of(panel, None);
+    h.frame();
+    assert_eq!(bg(&h, inside), Color::rgb(0xEEEEEE));
 }

@@ -81,7 +81,12 @@ div().bg(token::ACCENT.alpha(0.12))
   `series` (one it does not list is the accent).
 - The shadows of a level above the window are the theme's (17, "Open tokens"): the kit's
   dark theme casts deeper ones, as a light shadow does not show on a dark plane.
-- Not yet: a theme for a subtree; tokens for radii, spacing, fonts and durations.
+- A box gives what is under it a theme of its own (`.theme(rc)`, `Tree::set_theme_of`):
+  styles under it resolve their roles with it, and widgets paint with it. What is put
+  under it later takes it too; the window's theme leaves it as it is. Where no box has
+  one, nothing is looked up (the list of them is empty). A popup opened from inside is
+  not under the box and has the window's theme.
+- Not yet: tokens for radii, spacing, fonts and durations.
 - Component-level tokens (`button.primary.bg`) resolve to palette tokens in the theme file, so
   a theme can restyle one component without code.
 

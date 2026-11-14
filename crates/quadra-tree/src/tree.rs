@@ -71,6 +71,8 @@ pub struct Tree {
     pub(crate) text_epoch: u32,
     /// What gives the roles in styles their colours.
     pub(crate) theme: Rc<crate::theme::Theme>,
+    /// The nodes that give what is under them a theme of their own.
+    pub(crate) themes: Vec<(NodeId, Rc<crate::theme::Theme>)>,
     /// The press that may become a drag, or the drag it became.
     pub(crate) drag: Option<crate::drag::Drag>,
     /// What waits to see the next layout.
@@ -125,6 +127,7 @@ impl Tree {
             maximized: None,
             text_epoch: 1,
             theme: Rc::default(),
+            themes: Vec::new(),
             drag: None,
             after_layout: Vec::new(),
             moving: Vec::new(),

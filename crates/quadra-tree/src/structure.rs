@@ -38,6 +38,9 @@ impl Tree {
                 state.marked = false; // its marker is not in this parent's list yet
             }
             self.mark(child, flag::PAINT | flag::SUBTREE);
+            if !self.themes.is_empty() {
+                self.theme_moved(child); // it may be under another theme now
+            }
         }
         self.nodes[parent.index as usize].children = children.to_vec();
         let layouts: Vec<_> = children.iter().map(|c| self.nodes[c.index as usize].layout).collect();

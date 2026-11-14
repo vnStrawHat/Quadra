@@ -194,7 +194,7 @@ impl Tree {
     /// the node is going to, a change starts from what shows; and while one is under way,
     /// what shows stays in the style in place of where it is going.
     pub(crate) fn ease(&mut self, id: NodeId, style: &mut Style) {
-        let (frames, snap, theme) = (self.frames, self.snap, self.theme.clone());
+        let (frames, snap, theme) = (self.frames, self.snap, self.theme_at(id).clone());
         if self.node(id).motion.is_none() {
             return;
         }
@@ -222,9 +222,9 @@ impl Tree {
         if self.moving.is_empty() {
             return;
         }
-        let (now, theme, mut moving) =
-            (self.handle().now(), self.theme.clone(), std::mem::take(&mut self.moving));
+        let (now, mut moving) = (self.handle().now(), std::mem::take(&mut self.moving));
         moving.retain(|&id| {
+            let theme = self.theme_at(id).clone();
             let Some(motion) = self.get_mut(id).and_then(|node| node.motion.as_mut()) else { return false };
             let (value, done) = match (&motion.line, motion.run) {
                 (Some((line, since, rest)), _) => line.at(now - *since, *rest, &theme),

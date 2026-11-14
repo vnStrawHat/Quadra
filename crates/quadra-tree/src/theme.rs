@@ -96,7 +96,63 @@ impl Theme {
     }
 }
 
+/// The theme of the node `id`: the one its nearest node with a theme of its own gives, or
+/// the window's.
+pub(crate) fn theme_in<'t>(
+    nodes: &[crate::node::Node],
+    themes: &'t [(NodeId, Rc<Theme>)],
+    window: &'t Rc<Theme>,
+    id: NodeId,
+) -> &'t Rc<Theme> {
+    let mut at = Some(id);
+    while let Some(node) = at.filter(|_| !themes.is_empty()) {
+        if let Some((_, theme)) = themes.iter().find(|(own, _)| *own == node) {
+            return theme;
+        }
+        at = nodes[node.index as usize].parent;
+    }
+    window
+}
+
 impl Tree {
+    /// The theme a node's style is resolved with.
+    pub(crate) fn theme_at(&self, id: NodeId) -> &Rc<Theme> {
+        theme_in(&self.nodes, &self.themes, &self.theme, id)
+    }
+
+    /// Gives `id` and what is under it a theme of their own (a dark panel in a light
+    /// window), or with `None` the window's again. A popup opened from inside has the
+    /// window's: it is not under the node.
+    pub fn set_theme_of(&mut self, id: NodeId, theme: Option<Rc<Theme>>) {
+        let nodes = &self.nodes;
+        let alive =
+            |n: &NodeId| nodes[n.index as usize].alive && nodes[n.index as usize].generation == n.generation;
+        self.themes.retain(|(own, _)| *own != id && alive(own));
+        self.themes.extend(theme.map(|theme| (id, theme)));
+        self.theme_moved(id);
+    }
+
+    /// What is under `id` has another theme now: what is styled with roles is resolved
+    /// again, and widgets and shadows are painted again.
+    pub(crate) fn theme_moved(&mut self, id: NodeId) {
+        let mut stack = vec![id];
+        while let Some(at) = stack.pop() {
+            let node = &self.nodes[at.index as usize];
+            stack.extend(node.children.iter().copied());
+            let (styled, paints) = (
+                node.styled.as_ref().is_some_and(|s| s.themed()),
+                node.widget.is_some() || node.paint.shadows > 0,
+            );
+            if styled {
+                self.restyle.push(at);
+            }
+            if paints {
+                self.mark(at, flag::PAINT);
+            }
+        }
+        self.shared.wake.set(true);
+    }
+
     /// The theme the tree's styles are resolved with.
     pub fn theme(&self) -> &Rc<Theme> {
         &self.theme

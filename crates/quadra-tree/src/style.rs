@@ -138,7 +138,7 @@ impl Tree {
         if patch.themed() {
             self.keep_own_style(id);
         }
-        let theme = self.theme.clone();
+        let theme = self.theme_at(id).clone();
         let node = &mut self.nodes[id.index as usize];
         if let Some(styled) = &mut node.styled {
             // The last value given for a property is the one that counts, role or not.
@@ -221,8 +221,9 @@ impl Tree {
         let Some(styled) = &node.styled else { return };
         let mut style = styled.base.clone();
         let states = styled.variants.iter().filter(|(state, _)| node.state.contains(*state));
+        let theme = self.theme_at(id);
         for patch in styled.roles.iter().chain(states.flat_map(|(_, patches)| patches)) {
-            patch.apply(&mut style, &self.theme);
+            patch.apply(&mut style, theme);
         }
         self.ease(id, &mut style);
         self.put_layout(id, style.layout);

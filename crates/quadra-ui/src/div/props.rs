@@ -3,7 +3,9 @@
 
 use quadra_layout::{Align, Direction, Display, Justify, Length, Overflow, Position};
 use quadra_prim::{Corners, Point};
-use quadra_tree::{BorderStyle, Paint, Patch};
+use std::rc::Rc;
+
+use quadra_tree::{BorderStyle, Paint, Patch, Theme};
 
 use super::Div;
 use crate::prop::IntoProp;
@@ -131,5 +133,13 @@ impl Refine {
     pub fn font_weight(mut self, weight: u16) -> Self {
         self.0.push(Patch::FontWeight(weight));
         self
+    }
+}
+
+impl Div {
+    /// Gives the box and what is under it a theme of their own: a dark panel in a light
+    /// window. A popup opened from inside has the window's.
+    pub fn theme(self, theme: Rc<Theme>) -> Self {
+        self.on_mount(move |tree, id| tree.set_theme_of(id, Some(theme)))
     }
 }

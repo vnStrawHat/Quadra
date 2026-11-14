@@ -74,7 +74,7 @@ hold: markdown, the editor, the live table, the log view, the value viewer and t
 charts are R4's; their exit is that they match.
 
 What the kit does not do yet, and no page of the V gallery shows (13 has each beside its
-component): a theme for a subtree, and tokens for radii, spacing, fonts and durations;
+component): tokens for radii, spacing, fonts and durations (a theme for a subtree is in since 2026-11-14: `.theme(..)` on a box);
 today's date and the names of days and months in the app's language (local time and i18n,
 R5); a cursor on the cells of a table; a tree whose children are asked for when it opens,
 and several selected; of rich text, links for the keyboard

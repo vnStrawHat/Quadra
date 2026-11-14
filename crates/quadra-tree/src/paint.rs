@@ -39,8 +39,11 @@ struct Painter<'a> {
     scale: f32,
     /// What widgets are given their text values with.
     text_at: TextAt,
-    /// What the shadows of a level above the window are.
+    /// What the shadows of a level above the window are, and the roles widgets paint with:
+    /// the theme of the node being painted.
     theme: &'a Theme,
+    /// The nodes that give what is under them a theme of their own.
+    themes: &'a [(NodeId, std::rc::Rc<Theme>)],
     /// The part of the layer that is painted, if it paints only near what shows.
     band: Option<Rect>,
     /// The scale changed: everything is painted, in every layer.
@@ -63,6 +66,15 @@ impl Painter<'_> {
     /// Walks the flagged paths. Nodes to repaint emit into the scratch buffer; `abs` is the
     /// node's start in the layer as it is now.
     fn collect(&mut self, id: NodeId, origin: Point, abs: u32, force: bool) {
+        let outer = self.theme;
+        if let Some((_, own)) = self.themes.iter().find(|(own, _)| *own == id) {
+            self.theme = own;
+        }
+        self.collect_in(id, origin, abs, force);
+        self.theme = outer;
+    }
+
+    fn collect_in(&mut self, id: NodeId, origin: Point, abs: u32, force: bool) {
         let i = id.index as usize;
         let flags = self.nodes[i].flags;
         if !force && flags == 0 {
@@ -78,6 +90,10 @@ impl Painter<'_> {
             // ponytail: a new band visits every node of the layer to find those in it; a
             // spatial index if pages of a hundred thousand nodes scroll.
             if !outside(self.band, rect) {
+                // Under themes of their own, a widget is told the one it paints under.
+                if let Some(widget) = self.nodes[i].widget.as_mut().filter(|_| !self.themes.is_empty()) {
+                    widget.theme(self.theme);
+                }
                 let how = (self.scale, self.band, self.text_at, self.theme);
                 paint_own(self.nodes, i, self.layout, rect, how, self.fonts, self.scratch);
                 self.stats.nodes_painted += 1;
@@ -214,6 +230,7 @@ impl Tree {
         self.patches.clear();
         let origin = self.layout.rect(self.nodes[i].layout).origin();
         let text_at = self.text_at();
+        let theme = crate::theme::theme_in(&self.nodes, &self.themes, &self.theme, root);
         let mut painter = Painter {
             nodes: &mut self.nodes,
             layout: &self.layout,
@@ -226,7 +243,8 @@ impl Tree {
             root,
             scale: self.scale,
             text_at,
-            theme: &self.theme,
+            theme,
+            themes: &self.themes,
             band,
             all,
             same: true,

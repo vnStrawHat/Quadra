@@ -80,3 +80,29 @@ fn dragging_the_thumb_scrolls_the_content_in_proportion() {
     h.frame();
     assert_eq!((y.get_untracked(), h.tree.window_rect(thumb).bottom().round()), (2400.0, 596.0));
 }
+
+#[test]
+fn a_thumb_held_still_stays_and_fades_a_second_after_it_is_let_go() {
+    let (mut h, _, _) = page(3000.0);
+    h.pointer(PointerInput::Move, 793.0, 50.0);
+    h.pointer(PointerInput::Down, 793.0, 50.0);
+    h.frame();
+    // Three seconds held still: nothing fades.
+    for _ in 0..30 {
+        h.advance(Duration::from_millis(100));
+        if let Some((stats, _)) = h.frame_if_needed() {
+            assert_eq!(stats.nodes_painted, 0);
+        }
+    }
+    h.pointer(PointerInput::Up, 793.0, 50.0);
+    h.frame();
+    h.advance(Duration::from_millis(900));
+    assert!(h.frame_if_needed().is_none()); // still within the second after the release
+    h.advance(Duration::from_millis(200));
+    let mut painted = 0;
+    while let Some((stats, _)) = h.frame_if_needed() {
+        painted += stats.nodes_painted;
+        h.advance(Duration::from_millis(100));
+    }
+    assert!(painted > 0); // and then it fades
+}

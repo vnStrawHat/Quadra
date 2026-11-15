@@ -106,7 +106,8 @@ because every render built new nodes. Here nodes persist, and a change is a flag
   at the container, at 30 %. It is a node of its own in the viewport, beside the content
   and above it, and a layer: scrolling moves it by its offset and paints nothing. It shows
   when the pointer moves over the container or the content is scrolled by any means, stays
-  one second after the last of those, then fades over 400 ms; content that fits has none.
+  one second after the last of those, then fades over 400 ms (a thumb held stays, however
+  still, until a second after it is let go); content that fits has none.
   The 14 px at the edge where the thumb is are its grip: a press there takes the pointer,
   and the content follows the pointer in proportion until the release.
 - **Scrolling into view** (`Tree::scroll_into_view`, `NodeRef::scroll_into_view`): every node

@@ -42,6 +42,8 @@ struct Idle {
     shown: Signal<bool>,
     until: Cell<Instant>,
     armed: Cell<bool>,
+    /// The thumb is held: the bar stays, however still the pointer is.
+    held: Cell<bool>,
 }
 
 impl Idle {
@@ -62,7 +64,9 @@ impl Idle {
             }
             timeout(after, move || {
                 let left = idle.until.get().saturating_duration_since(idle.handle.now());
-                if left.is_zero() {
+                if idle.held.get() {
+                    idle.arm(STAYS);
+                } else if left.is_zero() {
                     idle.armed.set(false);
                     idle.shown.set(false);
                 } else {
@@ -156,7 +160,7 @@ pub(crate) fn attach(cx: &mut MountCx, viewport: NodeId, scrolled: Scrolled) -> 
     });
     let (handle, owner) = (cx.handle.clone(), Scope::current());
     let until = Cell::new(handle.now());
-    let idle = Rc::new(Idle { handle, owner, shown, until, armed: Cell::new(false) });
+    let idle = Rc::new(Idle { handle, owner, shown, until, armed: Cell::new(false), held: Cell::new(false) });
     let over = idle.clone();
     cx.tree.on_pointer(viewport, PointerKind::Move, move |_| {
         if end.get() > 0.0 {
@@ -171,14 +175,15 @@ pub(crate) fn attach(cx: &mut MountCx, viewport: NodeId, scrolled: Scrolled) -> 
         }
     });
 
-    // A press on the grip takes the pointer: the content follows it in proportion.
-    // ponytail: a thumb held still for a second fades all the same; it scrolls on.
+    // A press on the grip takes the pointer: the content follows it in proportion, and the
+    // bar stays while it is held.
     let held: Rc<Cell<Option<(f32, f32)>>> = Rc::default();
-    let press = held.clone();
+    let (press, grip) = (held.clone(), idle.clone());
     let pointer = move |at: Point| if sideways { at.x } else { at.y };
     cx.tree.on_pointer(thumb, PointerKind::Down, move |e| {
         if e.button == MouseButton::Left {
             press.set(Some((pointer(e.at), top.get())));
+            grip.held.set(true);
             e.capture_pointer();
             e.stop();
         }
@@ -192,6 +197,10 @@ pub(crate) fn attach(cx: &mut MountCx, viewport: NodeId, scrolled: Scrolled) -> 
             scroll.set((top + (pointer(e.at) - from) * end / travel).clamp(0.0, end));
         }
     });
-    cx.tree.on_pointer(thumb, PointerKind::Up, move |_| held.set(None));
+    cx.tree.on_pointer(thumb, PointerKind::Up, move |_| {
+        held.set(None);
+        idle.held.set(false);
+        idle.stir(); // it stays its while after the release
+    });
     thumb
 }

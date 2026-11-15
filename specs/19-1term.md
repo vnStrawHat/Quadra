@@ -196,7 +196,8 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
 - **The rail**, under "New terminal": "SSH hosts", a filter (on the name and the target,
   whatever the case), then the hosts by group in the order first met, each a row of a dot
   (in `OK` while a space is connected to it), its name and its address. A click opens a tab
-  connected to it; its menu has Connect, Connect in a new space, Remove. "Add SSH host…"
+  connected to it; its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
+  filled, titled Edit SSH host; a new name takes the old one's place), Remove. "Add SSH host…"
   ends the list; the dialog takes the name (the host when empty), the group, the target,
   the auth and the key file. Quick connect has "Save as host".
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under

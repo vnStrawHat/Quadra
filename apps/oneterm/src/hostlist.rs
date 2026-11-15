@@ -2,7 +2,10 @@
 //! connecting on a click, and the dialog that adds one.
 
 use oneterm_ssh::Target;
-use quadra::{Align, AnyView, Length, Role, Signal, View, by_text, column, div, dynamic, row, signal, text};
+use quadra::{
+    Align, AnyView, Length, Role, Signal, View, by_text, column, div, dynamic, effect, row, signal, text,
+    untrack,
+};
 use quadra_design::{
     MenuItem, Notice, Tone, Variant, context_menu, fonts, icon, icons, input, select, token,
 };
@@ -122,9 +125,11 @@ fn short(target: &Target) -> String {
 fn host_menu(model: &Model, host: &Host) -> Vec<MenuItem> {
     let (tab, space, gone) = (model.clone(), model.clone(), model.clone());
     let (a, b, name) = (host.remote.clone(), host.remote.clone(), host.name.clone());
+    let (editing, edited) = (model.ui().editing, host.name.clone());
     vec![
         MenuItem::new("Connect").on_select(move || tab.connect_to(a.clone(), false)),
         MenuItem::new("Connect in a new space").on_select(move || space.connect_to(b.clone(), true)),
+        MenuItem::new("Edit…").on_select(move || editing.set(Some(edited.clone()))),
         MenuItem::separator(),
         MenuItem::new("Remove").on_select(move || gone.remove_host(&name)),
     ]
@@ -141,9 +146,9 @@ struct Form {
     forwards: Signal<String>,
 }
 
-/// The dialog that saves a host.
+/// The dialogs that save a host: a new one, or one saved before, filled in.
 pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
-    let open = model.ui().adding;
+    let (open, editing, changing) = (model.ui().adding, model.ui().editing, signal(false));
     let s = || signal(String::new());
     let form = Form {
         name: s(),
@@ -154,7 +159,22 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
         jump: signal(0),
         forwards: s(),
     };
-    let (saves, lists) = (model.clone(), model.clone());
+    let (saves, changes, lists, fills) = (model.clone(), model.clone(), model.clone(), model.clone());
+    // Asked to edit a host, the form says what it is; closed, it is no longer being edited.
+    effect(move || match editing.get() {
+        Some(name) => {
+            if let Some(host) = untrack(|| fills.hosts()).into_iter().find(|it| it.name == name) {
+                untrack(|| fill(&fills, form, &host));
+                changing.set(true);
+            }
+        }
+        None => changing.set(false),
+    });
+    effect(move || {
+        if !changing.get() {
+            editing.set(None);
+        }
+    });
     let body = move || {
         let field =
             |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id).width(416.0);
@@ -171,14 +191,36 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
             .child(select(lists.jump_choices(), form.jump).width(240.0).test_id("host-jump"))
             .child(field(form.forwards, "Local forwards: 8080:localhost:80 ...", "host-forwards"))
     };
-    quadra_design::dialog(open, "Add SSH host", body).action("Cancel", Variant::Secondary, || {}).action(
-        "Save",
-        Variant::Primary,
-        move || save(&saves, form),
-    )
+    let adds = quadra_design::dialog(open, "Add SSH host", body.clone())
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Save", Variant::Primary, move || save(&saves, form, None));
+    let edits = quadra_design::dialog(changing, "Edit SSH host", body)
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Save", Variant::Primary, move || save(&changes, form, editing.get_untracked()));
+    div().child(adds).child(edits)
 }
 
-fn save(model: &Model, form: Form) {
+/// The form as a saved host says.
+fn fill(model: &Model, form: Form, host: &Host) {
+    let (auth, key) = match &host.remote.auth {
+        oneterm_ssh::Auth::Agent => (1, String::new()),
+        oneterm_ssh::Auth::Key(path) => (2, path.display().to_string()),
+        oneterm_ssh::Auth::Password => (3, String::new()),
+        oneterm_ssh::Auth::Auto => (0, String::new()),
+    };
+    let forwards: Vec<String> = host.remote.forwards.iter().map(oneterm_ssh::Forward::label).collect();
+    let jump = model.jump_choices().iter().position(|it| *it == host.jump && !host.jump.is_empty());
+    form.name.set(host.name.clone());
+    form.group.set(host.group.clone());
+    form.target.set(host.address());
+    form.auth.set(auth);
+    form.key.set(key);
+    form.forwards.set(forwards.join(" "));
+    form.jump.set(jump.unwrap_or(0));
+}
+
+/// Saves the form as a host, in place of `was` (the one edited) when it had another name.
+fn save(model: &Model, form: Form, was: Option<String>) {
     let typed = form.target.get_untracked();
     let Some(target) = Target::parse(&typed) else {
         model.notify(Notice::new("Add SSH host").body(format!("Not a target: {typed}")).tone(Tone::Warning));
@@ -197,6 +239,9 @@ fn save(model: &Model, form: Form) {
         remote.forwards.push(forward);
     }
     let jump = model.jump_host(form.jump.get_untracked()).map_or(String::new(), |it| it.name);
+    if let Some(was) = was.filter(|it| *it != name) {
+        model.remove_host(&was);
+    }
     model.save_host(Host { name, group: form.group.get_untracked().trim().into(), remote, jump });
     for field in [form.name, form.group, form.target, form.key, form.forwards] {
         field.set(String::new());

@@ -21,6 +21,8 @@ pub struct Ui {
     pub settings: Signal<bool>,
     pub connecting: Signal<bool>,
     pub adding: Signal<bool>,
+    /// The saved host being edited, by name.
+    pub editing: Signal<Option<String>>,
     /// The SFTP dock.
     pub dock: Signal<bool>,
     /// SFTP in the workspace's place.
@@ -65,6 +67,7 @@ impl Model {
                 settings: signal(false),
                 connecting: signal(false),
                 adding: signal(false),
+                editing: signal(None),
                 dock: signal(false),
                 expanded: signal(false),
             },

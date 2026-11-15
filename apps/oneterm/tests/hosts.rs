@@ -132,6 +132,29 @@ fn the_new_menu_searches_hosts_and_connects_to_a_typed_target() {
 }
 
 #[test]
+fn a_host_is_edited_in_its_dialog_and_a_new_name_takes_its_place() {
+    let mut a = app();
+    a.add("db", "Staging", "trung@10.0.0.9");
+    let node = a.h.get_by_role(Role::Button, "db").node();
+    let at = a.h.tree.window_rect(node).center();
+    for input in [quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up] {
+        a.h.tree.pointer(input, quadra::MouseButton::Right, at, Mods::NONE, a.h.now());
+    }
+    a.h.settle();
+    a.h.get_by_role(Role::MenuItem, "Edit\u{2026}").click();
+    a.h.settle();
+    assert!(a.h.has_text("Edit SSH host"));
+    assert!(a.h.semantics().contains("= \"trung@10.0.0.9\" #host-target"), "{}", a.h.semantics());
+    a.h.get_by_test_id("host-name").set_value("db-main");
+    a.h.get_by_test_id("host-target").set_value("trung@10.0.0.10");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.settle();
+    assert_eq!(a.rows(), [["db-main", "Staging", "trung@10.0.0.10", "Auto", "", "", ""]]);
+    assert!(!a.h.has_text("Edit SSH host"), "the dialog closed");
+}
+
+#[test]
 fn the_filter_keeps_the_hosts_that_match() {
     let mut a = app();
     a.add("prod-api-01", "Production", "trung@10.20.1.14");

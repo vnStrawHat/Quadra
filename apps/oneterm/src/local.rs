@@ -1,0 +1,47 @@
+//! A space's local shell: a session over `quadra-shell`'s pseudo console.
+
+use std::path::PathBuf;
+use std::rc::Rc;
+use std::time::Instant;
+
+use quadra_shell::{Pty, PtyOptions};
+use quadra_term::vt::ResizePolicy;
+use quadra_term::{Link, Session};
+
+/// A session running the OS's shell in `cwd` (the app's own when `None`). The working
+/// directory shows from the start; Command Prompt is asked to say it with each prompt
+/// (OSC 9;9), as it says nothing of it otherwise.
+pub fn local_shell(cwd: Option<PathBuf>) -> Session {
+    // Windows' console resizes keeping the viewport's top.
+    let session = Session::new(ResizePolicy::KeepViewportTop);
+    let start = cwd.clone().or_else(|| std::env::current_dir().ok());
+    if let Some(start) = &start {
+        session.cwd().set(start.display().to_string());
+    }
+    let size = session.size();
+    let options = PtyOptions {
+        cwd: start,
+        env: vec![("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into())],
+        rows: size.rows,
+        cols: size.cols,
+        ..PtyOptions::default()
+    };
+    let (feeder, ended) = (session.feeder(), session.feeder());
+    let spawned =
+        Pty::spawn(options, move |bytes| feeder.feed(bytes, Instant::now()), move |code| ended.exited(code));
+    match spawned {
+        Ok(pty) => {
+            let pty = Rc::new(pty);
+            let (resizes, closes) = (pty.clone(), pty.clone());
+            let link = Link::new(move |bytes| pty.write(bytes))
+                .on_resize(move |size| resizes.resize(size.rows, size.cols))
+                .on_close(move || closes.close());
+            session.connect(link);
+        }
+        Err(e) => {
+            let said = format!("1Term: the shell did not start: {e}\r\n");
+            session.feeder().feed(said.as_bytes(), Instant::now());
+        }
+    }
+    session
+}

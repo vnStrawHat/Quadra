@@ -31,6 +31,7 @@ type Items = Rc<dyn Fn() -> Vec<MenuItem>>;
 pub struct Titlebar {
     title: Prop<String>,
     title_size: Option<f32>,
+    height: Option<f32>,
     icon: Option<&'static str>,
     menu: Option<Items>,
     controls: Vec<AnyView>,
@@ -38,7 +39,14 @@ pub struct Titlebar {
 
 /// A title bar that shows `title`: for a window opened with `WindowOptions::custom_frame`.
 pub fn titlebar<M>(title: impl IntoProp<String, M>) -> Titlebar {
-    Titlebar { title: title.into_prop(), title_size: None, icon: None, menu: None, controls: Vec::new() }
+    Titlebar {
+        title: title.into_prop(),
+        title_size: None,
+        height: None,
+        icon: None,
+        menu: None,
+        controls: Vec::new(),
+    }
 }
 
 impl Titlebar {
@@ -58,6 +66,12 @@ impl Titlebar {
     /// button. It works as anywhere else; the bar drags the window by the room left empty.
     pub fn control(mut self, view: impl View + 'static) -> Self {
         self.controls.push(AnyView::new(view));
+        self
+    }
+
+    /// A bar of this height rather than 32 px (34 with `title_size`): an app's own chrome.
+    pub fn height(mut self, px: f32) -> Self {
+        self.height = Some(px);
         self
     }
 
@@ -83,7 +97,7 @@ fn caption(name: &'static str, height: f32, danger: bool) -> Div {
 
 impl View for Titlebar {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let height = if self.title_size.is_some() { 34.0 } else { 32.0 };
+        let height = self.height.unwrap_or(if self.title_size.is_some() { 34.0 } else { 32.0 });
         let bar = row().align_items(Align::Center).shrink(0.0).height(by_text(height));
         let bar = bar.role(Role::Group).test_id("titlebar");
         let bar = bar.bg(token::CHROME).border_bottom(1.0).border_color(token::LINE_STRONG);

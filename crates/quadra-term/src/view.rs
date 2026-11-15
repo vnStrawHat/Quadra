@@ -21,18 +21,25 @@ const CARET_BLINK: Duration = Duration::from_millis(530);
 pub struct Terminal {
     session: Session,
     font: (f32, f32),
+    autofocus: bool,
 }
 
 /// The view of a session, in the kit's mono face at 13 px with lines of 20. It takes the
 /// room its parent gives it.
 pub fn terminal(session: &Session) -> Terminal {
-    Terminal { session: session.clone(), font: (13.0, 20.0) }
+    Terminal { session: session.clone(), font: (13.0, 20.0), autofocus: false }
 }
 
 impl Terminal {
     /// The size of the text and the height of a line, in pixels.
     pub fn font(mut self, size: f32, line: f32) -> Self {
         self.font = (size, line);
+        self
+    }
+
+    /// Takes the focus once it is mounted.
+    pub fn autofocus(mut self) -> Self {
+        self.autofocus = true;
         self
     }
 }
@@ -55,7 +62,7 @@ pub(crate) fn send(tree: &mut Tree, id: NodeId, session: &Session, bytes: &[u8])
 
 impl View for Terminal {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let Terminal { session, font: (size, line) } = self;
+        let Terminal { session, font: (size, line), autofocus } = self;
         let family = Some(quadra_design::fonts::MONO.into());
         let text =
             TextValues { family, size: Some(size), line_height: Some(line / size), ..TextValues::default() };
@@ -133,6 +140,9 @@ impl View for Terminal {
             writer.with(move |tree| send(tree, id, &s, &bytes));
         });
         focus(cx, id, &session);
+        if autofocus {
+            cx.handle.with(move |tree| tree.focus(id));
+        }
         crate::pointer::pointer(cx, id, &session);
         id
     }

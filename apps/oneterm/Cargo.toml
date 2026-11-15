@@ -1,0 +1,24 @@
+[package]
+name = "oneterm"
+description = "1Term: a terminal app of local shells, in tabs and spaces side by side (specs/19)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "1term"
+path = "src/main.rs"
+
+[dependencies]
+quadra = { path = "../../crates/quadra" }
+quadra-design = { path = "../../crates/quadra-design" }
+quadra-shell = { path = "../../crates/quadra-shell" }
+quadra-term = { path = "../../crates/quadra-term" }
+
+[dev-dependencies]
+quadra-testing = { path = "../../crates/quadra-testing" }

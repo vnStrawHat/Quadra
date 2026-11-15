@@ -17,7 +17,8 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
    `docs(specs): ...`, `refactor: ...`, `test: ...`, `chore: ...`, `perf: ...`; `!` or a
    `BREAKING CHANGE:` footer for breaking API changes). Scopes are crate names without the
    `quadra-` prefix (prim, reactive, layout, text, render, platform, tree, view, async, a11y,
-   app, native, shell, testing, headless, design, code, md, data, viz), or specs, tools.
+   app, native, shell, testing, headless, design, code, md, data, viz, term), the app `oneterm`,
+   or specs, tools.
 4. **Never test the real clipboard.**
 5. **Commit each finished part** once `tools/check.sh prod` exits 0, then go on with the
    next; **push only when the user asks**.

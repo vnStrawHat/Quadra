@@ -54,6 +54,8 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
 | The bench app | `tools/bench.sh` builds `target/release/compare.exe`; with scene names it runs them headless with pass timings (docs/benchmarks.md has the runner's command) |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
+| Terminal throughput | `tools/doomfire.sh [seconds]`: the fire demo (`bench/doomfire`) fed to the engine, through the console host alone, and in a real 1Term window (specs/14) |
+| 1Term's console host | `tools/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (specs/19); 1Term uses the system's without them |
 | A release package | `tools/package.sh gallery` puts `gallery.exe` with `tools/app.manifest` embedded in `target/package/gallery/` |
 | The gallery | `tools/cargo.sh run -p quadra-gallery` (`examples/gallery`: a page a component) |
 | The gallery's pages as pictures | `tools/shots.sh [dark\|light] [page ..]` draws them without a window into `.tmp/shots/<theme>` (and `<page>-open.png` for a page that opens something); with `QUADRA_REFERENCE=<folder>` it compares them (`tools/compare_shots.py`). The V pictures are in the V repository, `.tmp/shots/hl-dark` and `hl-light` |
@@ -234,4 +236,4 @@ Habits that cost time when forgotten:
 `apps/oneterm` (specs/19), drawn after the user's design canvas "1Term". P1 is local shells (milestones M1-M6); P2 is SSH and
 SFTP, whose engine the user decides when P2 starts. The V repository's specs 22-27 and `apps/oneterm` are the reference
 for behaviour the design leaves open. **P1 is done** (M1-M6, docs/progress.md): `tools/cargo.sh run -p oneterm`; a trial run takes
-`ONETERM_HOME=.tmp/1term` so it writes nothing outside the project. P2 waits for the user's choice of an SSH engine.
+`ONETERM_HOME=.tmp/1term` so it writes nothing outside the project. P2 (SSH over `russh` + `tokio` + `ring`, the user's choice) is done through M10 (`apps/oneterm-ssh`; jump hosts, local forwards, SFTP dock and its expanded view, saved hosts; tests only against servers of the test process on 127.0.0.1). Throughput: 592 fps of the fire demo at 147 by 40 with the bundled console host (docs/benchmarks.md).

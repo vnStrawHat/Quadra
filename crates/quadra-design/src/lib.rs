@@ -17,6 +17,7 @@ mod hover_card;
 mod icon;
 pub mod icons;
 mod input;
+mod keys;
 mod list;
 mod menu;
 mod notes;
@@ -64,6 +65,7 @@ pub use field::{Field, Rule, Textarea, field, textarea, validate};
 pub use hover_card::{HoverCard, hover_card};
 pub use icon::icon;
 pub use input::{Input, input};
+pub use keys::{KeyInput, key_input};
 pub use list::{List, list};
 pub use menu::{
     ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_button, menu_icon_button, menubar,

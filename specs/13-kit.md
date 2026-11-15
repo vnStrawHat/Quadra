@@ -313,6 +313,10 @@ As built so far:
   it too (key context `action::NUMBER`). A number typed, with a point or a comma, is the
   value; what is no number changes nothing and shows as not accepted; a value written from
   elsewhere is what the field says.
+- **`key_input(value)`** records a keystroke into `value` (`quadra_headless::keys`): the
+  keys as `key_label` writes them, "Press keys…" while it records, "Not bound" while
+  `value` is empty. `.label(..)` names it to a reader, `.width(..)` (160 px). Escape gives up;
+  Backspace or Delete alone unbinds; no binding of the app runs while it records.
 - **`field(label, control)`** puts a control under its label, 12 px, with `.required()` a
   mark after it; under the control is `.help(words)` or, while it is not empty, what
   `.error(..)` says, in the colour of errors after a mark. `validate(value, &rules)` gives

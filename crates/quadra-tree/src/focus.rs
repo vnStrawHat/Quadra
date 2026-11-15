@@ -68,6 +68,13 @@ impl Tree {
         self.add_handler(id, Handler::Key { down, capture: true, run: Box::new(f) });
     }
 
+    /// Runs `f` for a press, not of a modifier, while the node has the focus, before the
+    /// keymap: a press it stops runs no binding and reaches no other handler. What records
+    /// keys uses it.
+    pub fn on_key_first(&mut self, id: NodeId, f: impl FnMut(&mut KeyEvent) + 'static) {
+        self.add_handler(id, Handler::KeyFirst(Box::new(f)));
+    }
+
     /// Runs `f` with true when the focus comes to the node and with false when it leaves.
     pub fn on_focus(&mut self, id: NodeId, f: impl FnMut(bool) + 'static) {
         self.add_handler(id, Handler::Focus(Box::new(f)));
@@ -212,10 +219,23 @@ impl Tree {
             }
             // A modifier pressed on its way to a keystroke is not one itself.
             let modifier = matches!(key, Key::Shift | Key::Ctrl | Key::Alt | Key::Super);
-            if down && !modifier && self.key_binding(Keystroke { key, mods }, target) {
-                return;
-            }
             let mut event = KeyEvent { key, code, mods, down, repeat, target, node: target, stopped: false };
+            if down && !modifier {
+                for handler in &mut self.nodes[target.index as usize].handlers {
+                    if let Handler::KeyFirst(run) = handler
+                        && !event.stopped
+                    {
+                        run(&mut event);
+                    }
+                }
+                if event.stopped {
+                    self.keys.pending.clear();
+                    return;
+                }
+                if self.key_binding(Keystroke { key, mods }, target) {
+                    return;
+                }
+            }
             let path = self.path(target);
             'walk: for capture in [true, false] {
                 for i in 0..path.len() {

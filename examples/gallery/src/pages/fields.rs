@@ -4,7 +4,7 @@
 use quadra::{Div, column, div, row, signal};
 use quadra_design::{
     Date, Rule, TimeOfDay, Tone, Variant, button, calendar, checkbox, combobox, date_picker, field, icons,
-    input, number_input, select, textarea, time_input, validate,
+    input, key_input, number_input, select, textarea, time_input, validate,
 };
 
 use crate::common::{demo, hint, line, mono, page, stack};
@@ -67,6 +67,21 @@ pub fn number_page() -> Div {
                 line().child(stepper).child(hint("font size, 8 to 32")),
                 "number_input(size).range(8.0, 32.0).stepper()",
             ),
+        ],
+    )
+}
+
+pub fn key_input_page() -> Div {
+    let (tab, palette) = (signal("ctrl-t".to_string()), signal(String::new()));
+    let set =
+        line().child(key_input(tab).label("New tab")).child(hint(move || format!("value: {:?}", tab.get())));
+    let empty = line().child(key_input(palette).label("Command palette")).child(hint("empty: not bound"));
+    page(
+        "Key input",
+        "Records a keystroke. Focused, it waits for keys; Escape gives up, Backspace or Delete unbinds.          The app's bindings do not run while it records.",
+        [
+            demo("Bound", set, "key_input(keys).label(\"New tab\")"),
+            demo("Not bound", empty, "key_input(signal(String::new()))"),
         ],
     )
 }

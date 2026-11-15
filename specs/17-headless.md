@@ -120,6 +120,7 @@ its name in the kit (`quadra_design::checkbox` stays).
 | `notices` | `Queue`: what is shown, for how long (`TOAST`, 10 s), in what order; held while the pointer is on it (`hold`); closing | a card, a toast, the stacks | `notice.rs` |
 | `slider` | `Scale` (ends, step, where the track is along the face); a value in a range by steps: a press and a drag on the face, the keys, a reader; `pair` and `end`, two knobs on one track | the face, the track, the fill, the knobs, placed by `Scale::part` | `slider.rs`, `range.rs` |
 | `number` | `Number`: a value and the text of its field, which follow each other (`parse`: a comma is a point), steps within its ends, the arrows | the field (of `words`), its box, the buttons that step | `number.rs` |
+| `keys` | `key_input`: a field that records a keystroke. Focused, it records (again on a click or `Confirm`); the next press that is no modifier, with its modifiers, is the value as `Keystroke` prints it (`ctrl-shift-t`), and it stops recording. Escape gives up and keeps the value; Backspace or Delete alone unbinds (the value is empty); Tab and Shift+Tab still move the focus; repeats do nothing. It sees keys before the keymap (`Tree::on_key_first`) | the face (a button to a reader, its value the keys) | `keys.rs` |
 | `time` | `TimeOfDay`, the parts of a time and their keys (`typed`), a day of a calendar that a click chooses. Dates are the app's (`quadra_app::time::Date`): the month's weeks stay with the kit's calendar | a part's face, a day's face | `date.rs`, `time.rs` |
 | `disclose` | what is open and closed: accordion sections | a head (reader: open), a body | `accordion.rs` |
 | `split` | two panes and the share of the first: the drag, the least, a double click | the panes, the seam | `split.rs` |
@@ -157,7 +158,7 @@ what makes it that widget, so a look cannot give a radio group the role of a tab
 | `tooltip(cx, of, rest)`, `hover_card(cx, of, rest, grace)` | `hint` |
 | `combobox(..)` | `combo::combo` |
 
-`dialog`, `menu`, `list`, `tree`, `table`, `slider`, `number`, `split`, `popup` and
+`dialog`, `menu`, `list`, `tree`, `table`, `slider`, `number`, `key_input`, `split`, `popup` and
 `settings` are named as widgets already. A look uses the widget names; the behaviour's stay
 for what is none of them (a disclosure that opens a date picker).
 

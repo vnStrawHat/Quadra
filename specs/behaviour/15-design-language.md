@@ -286,6 +286,9 @@ same rule: no backdrop, an outside click closes them.
   `text_3`; focused: `border_focused`; invalid: an `error` border, focused or not, and
   the form field shows the message under it in 12 px `error`. No hover style. `height`
   fixes a single-line input's height (the cards settings use 32).
+- **Key input:** the frame of a text input, 160 wide and 32 high (by text), a pointer
+  cursor; the keys in `text`, centred; "Not bound" in `text_3`; "Press keys…" in `text_2`
+  while it records; focused: `border_focused`.
 - **Number input:** a text input 140 wide with an up and a down chevron (10 icons in
   18 × 13 ghost buttons, `text_2`, hover `panel_hover`) stacked at its right end, inside its
   border; the input's padding is 2 above and below there so the pair fits its 32. **Stepper** (`stepper: true`): one framed control 128 × 32: `input_bg`, 1 px

@@ -120,7 +120,13 @@ ignored.
 The app's keymap is a signal in the context of views (`quadra_app::app_keymap()`, set by
 `App::keymap`); every window follows it, so a page of settings puts another keymap while the
 app runs. A `Keystroke` prints as `Keystroke::parse` reads it (`ctrl-shift-t`, `ctrl-comma`),
-and `is_bindable` says it is not a modifier alone: what a field that records keys keeps.
+and `is_bindable` says it is not a modifier alone and has a name: what a field that records keys
+keeps.
+
+A node can see a press before the keymap (`Tree::on_key_first`): while it has the focus, a
+press that is no modifier goes to that handler first, and one the handler stops is all the
+key does: no binding runs and no other handler sees it. One it does not stop goes on as any
+key. A field that records keys stops what it records, so the app's bindings stay quiet.
 
 ### The keymap file
 

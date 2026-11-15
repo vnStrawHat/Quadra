@@ -29,9 +29,11 @@ impl fmt::Display for Keystroke {
 }
 
 impl Keystroke {
-    /// Whether the key is one a binding can end with: not a modifier alone.
+    /// Whether the key is one a binding can end with: not a modifier alone, and one with a
+    /// name, so it reads back as it prints.
     pub fn is_bindable(&self) -> bool {
-        !matches!(self.key, Key::Shift | Key::Ctrl | Key::Alt | Key::Super | Key::CapsLock | Key::Unknown)
+        let modifier = matches!(self.key, Key::Shift | Key::Ctrl | Key::Alt | Key::Super | Key::CapsLock);
+        !modifier && name_of(self.key).is_some()
     }
 }
 

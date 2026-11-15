@@ -8,6 +8,7 @@ pub mod combo;
 pub mod dialog;
 pub mod disclose;
 pub mod hint;
+pub mod keys;
 pub mod list;
 pub mod live;
 pub mod menu;

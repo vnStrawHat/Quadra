@@ -89,6 +89,9 @@ pub(crate) enum Handler {
         capture: bool,
         run: Box<dyn FnMut(&mut KeyEvent)>,
     },
+    /// A press while the node has the focus, before the keymap: one it stops is all the key
+    /// does.
+    KeyFirst(Box<dyn FnMut(&mut KeyEvent)>),
     /// Focus came to the node (true) or left it.
     Focus(Box<dyn FnMut(bool)>),
     /// Text was typed while the node had the focus.

@@ -6,6 +6,7 @@ mod accordion;
 mod bars;
 mod button;
 mod choice;
+mod color;
 mod combobox;
 mod date;
 mod dialog;
@@ -53,6 +54,7 @@ pub use bars::{
 };
 pub use button::{Button, Size, Variant, button, icon_button};
 pub use choice::{Choice, radio_group, segmented};
+pub use color::{ColorInput, color_input};
 pub use combobox::{Combobox, combobox};
 pub use date::{Date, DatePicker, calendar, date_picker};
 pub use dialog::{Dialog, Drawer, confirm, dialog, drawer};

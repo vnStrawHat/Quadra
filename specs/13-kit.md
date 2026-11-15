@@ -190,6 +190,12 @@ As built so far:
   focus shows; a value that is not accepted has the colour of errors with the focus or
   without (the state `INVALID`, applied after every other); a disabled field is a step back
   and takes neither the focus nor text. A reader hears the placeholder as its name.
+- **`color_input(value)`** is an input, 120 px, for a colour written `#rrggbb` (or `#rrggbbaa`,
+  `Color::parse_hex`) in `value`, a `String`: a swatch of 14 px before the text, filled with the
+  colour typed, or while the field is empty with `.fallback(paint)` (the colour that stands when
+  none is set: a role of the theme), else left empty in its hairline border. Text that is no
+  colour is not accepted (`INVALID`) and the swatch shows the fallback. `.placeholder(..)`
+  (its name to a reader), `.width(..)`.
 - **`checkbox(checked)` and `switch(on)`** take the signal that holds their value and write
   it: by a click on the control or its label, by `Confirm`, or when a reader toggles them.
   `.label(..)`, `.disabled(..)`, `.test_id(..)`. The checkbox is a box of 16 px with a

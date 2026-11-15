@@ -3,8 +3,8 @@
 
 use quadra::{Div, column, div, row, signal};
 use quadra_design::{
-    Date, Rule, TimeOfDay, Tone, Variant, button, calendar, checkbox, combobox, date_picker, field, icons,
-    input, key_input, number_input, select, textarea, time_input, validate,
+    Date, Rule, TimeOfDay, Tone, Variant, button, calendar, checkbox, color_input, combobox, date_picker,
+    field, icons, input, key_input, number_input, select, textarea, time_input, token, validate,
 };
 
 use crate::common::{demo, hint, line, mono, page, stack};
@@ -82,6 +82,26 @@ pub fn key_input_page() -> Div {
         [
             demo("Bound", set, "key_input(keys).label(\"New tab\")"),
             demo("Not bound", empty, "key_input(signal(String::new()))"),
+        ],
+    )
+}
+
+pub fn color_input_page() -> Div {
+    let (accent, empty, wrong) =
+        (signal("#2563eb".to_string()), signal(String::new()), signal("blue".to_string()));
+    let set = line().child(color_input(accent).placeholder("Accent")).child(hint(move || accent.get()));
+    let fallback = line()
+        .child(color_input(empty).placeholder("Red").fallback(token::ANSI[1]))
+        .child(hint("empty: the theme's red"));
+    let refused =
+        line().child(color_input(wrong).placeholder("Wrong")).child(hint("no colour: not accepted"));
+    page(
+        "Color input",
+        "A colour as #rrggbb, with a swatch of it. Empty, the swatch shows the colour that stands instead.",
+        [
+            demo("A colour", set, "color_input(accent)"),
+            demo("Empty", fallback, "color_input(red).fallback(token::ANSI[1])"),
+            demo("Not a colour", refused, "color_input(value)"),
         ],
     )
 }

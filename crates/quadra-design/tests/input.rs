@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use quadra_design::{dark, icons, input, token};
+use quadra_design::{color_input, dark, icons, input, token};
 use quadra_platform::{Key, Mods};
 use quadra_reactive::signal;
 use quadra_testing::Harness;
@@ -69,4 +69,32 @@ fn the_frame_shows_the_focus_and_what_is_not_accepted() {
     h.get_by_test_id("secret").type_text("pw");
     h.frame();
     assert!(secret.get_untracked() == "pw" && h.has_text("\u{2022}\u{2022}"));
+}
+
+#[test]
+fn a_colour_input_shows_its_colour_or_the_fallback_and_refuses_what_is_no_colour() {
+    let accent = signal(String::new());
+    let mut h = Harness::new();
+    let theme = dark();
+    h.tree.set_theme(Rc::new(theme.theme()));
+    h.mount(move || {
+        quadra_design::root().child(color_input(accent).placeholder("Accent").fallback(token::ACCENT))
+    });
+    h.frame();
+    let field = h.get_by_role(Role::TextInput, "Accent").node();
+    let frame = h.tree.parent(field).unwrap();
+    let swatch = h.tree.children(frame)[0];
+    let look = |h: &Harness| (h.tree.paint_style(swatch).background, h.tree.paint_style(frame).border_color);
+    assert_eq!(
+        look(&h),
+        (theme.color(token::ACCENT), theme.color(token::LINE_STRONG)),
+        "empty: the fallback"
+    );
+    h.get_by_role(Role::TextInput, "Accent").set_value("#ff0000");
+    h.frame();
+    assert_eq!(accent.get_untracked(), "#ff0000");
+    assert_eq!(look(&h).0, quadra_prim::Color::rgb(0xFF0000));
+    h.get_by_role(Role::TextInput, "Accent").set_value("red");
+    h.frame();
+    assert_eq!(look(&h), (theme.color(token::ACCENT), theme.color(token::ERROR)), "no colour: not accepted");
 }

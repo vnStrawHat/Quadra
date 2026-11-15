@@ -5,7 +5,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Role, State};
-use quadra_view::{Div, IntoProp, MountCx, Prop, View, row, show, text, text_input};
+use quadra_view::{AnyView, Div, IntoProp, MountCx, Prop, View, row, show, text, text_input};
 
 use crate::icon::icon;
 use crate::{icons, token};
@@ -18,6 +18,8 @@ pub struct Input {
     disabled: Prop<bool>,
     width: f32,
     lead: Option<&'static str>,
+    /// What stands before the text in place of an icon: a colour's swatch.
+    pub(crate) before: Option<AnyView>,
     clears: bool,
     readonly: bool,
     test_id: Option<&'static str>,
@@ -37,6 +39,7 @@ pub fn input(value: Signal<String>) -> Input {
         disabled: Prop::Value(false),
         width: 240.0,
         lead: None,
+        before: None,
         clears: false,
         readonly: false,
         test_id: None,
@@ -124,9 +127,10 @@ impl Input {
         let frame = frame.disabled(self.disabled);
         let frame = frame.when(State::DISABLED, |s| s.bg(token::PANEL).text_color(token::TEXT_DISABLED));
         let frame = frame.invalid(self.invalid).when(State::INVALID, |s| s.border_color(token::ERROR));
-        let frame = match self.lead {
-            Some(body) => frame.child(icon(body).color(token::TEXT_2)),
-            None => frame,
+        let frame = match (self.lead, self.before) {
+            (Some(body), _) => frame.child(icon(body).color(token::TEXT_2)),
+            (None, Some(before)) => frame.child(before),
+            (None, None) => frame,
         };
         let value = self.value;
         let frame = match self.readonly {

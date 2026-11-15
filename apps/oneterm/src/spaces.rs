@@ -6,8 +6,7 @@
 use std::time::Instant;
 
 use quadra::{
-    Align, AnyView, Display, MountCx, NodeId, Signal, View, by_text, column, div, dynamic, each, effect, row,
-    text,
+    Align, AnyView, MountCx, NodeId, Signal, View, by_text, column, div, dynamic, each, effect, row, text,
 };
 use quadra_design::{fonts, token};
 use quadra_term::{Link, terminal};
@@ -140,20 +139,15 @@ fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> quadra::Div {
         )
         .child(crate::marks::header_signal(&s, model.prefs(), title))
         .child(text(move || exited.get().map(|code| format!("exited {code}")).unwrap_or_default()));
-    let ring = div()
-        .absolute()
-        .left(0.0)
-        .top(0.0)
-        .right(0.0)
-        .bottom(0.0)
-        .border(1.0)
-        .border_color(token::ACCENT)
-        .display(move || if on() && tab.spaces.with(Vec::len) > 1 { Display::Flex } else { Display::None });
+    // The focused space's ring is its border, so nothing lies over the terminal for the pointer.
+    let ring = move || if on() && tab.spaces.with(Vec::len) > 1 { token::ACCENT } else { token::CANVAS };
     column()
         .grow(1.0)
         .min_width(0.0)
         .min_height(0.0)
         .bg(token::CANVAS)
+        .border(1.0)
+        .border_color(ring)
         .on_focus(move |gained| {
             if gained {
                 tab.focus.set(index());
@@ -168,5 +162,4 @@ fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> quadra::Div {
                 .padding_y(10.0)
                 .child(terminal(&s).font(font, (font * 1.54).round())),
         )
-        .child(ring)
 }

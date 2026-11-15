@@ -50,7 +50,7 @@ where
             .child(icon(icons::SEARCH).size(12.0).color(token::TEXT_3))
             .child(div().grow(1.0).child(field));
         let body = dynamic(move || AnyView::new(rows(listed(&query.get()), ends())));
-        column().width(WIDTH).selection_color(token::SELECTION).child(head).child(body.container(div()))
+        column().width(WIDTH).selection_color(token::SELECTION).child(head).child(body.container(column()))
     })
 }
 

@@ -4,7 +4,7 @@
 //!
 //!     tools/cargo.sh run -p quadra-bench-oneterm-shots -- [out dir] [scene ..]
 //!
-//! Scenes: main, horizontal, menu, connect, settings, lock, sftp.
+//! Scenes: main, horizontal, menu, connect, add, settings, lock, sftp.
 
 #[path = "../../shots/src/png.rs"]
 mod png;
@@ -27,7 +27,7 @@ use quadra_term::{Session, echo};
 
 type Shots = App<D3d11Renderer>;
 
-const SCENES: [&str; 7] = ["main", "horizontal", "menu", "connect", "settings", "lock", "sftp"];
+const SCENES: [&str; 8] = ["main", "horizontal", "menu", "connect", "add", "settings", "lock", "sftp"];
 
 fn pass(platform: &HeadlessPlatform, app: &mut Shots, ms: u64) {
     for _ in 0..ms.div_ceil(75) {
@@ -165,6 +165,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         match *scene {
             "menu" => click(&platform, &app, window, "New terminal"),
             "connect" => model.ui().connecting.set(true),
+            "add" => model.ui().adding.set(true),
             "settings" => model.ui().settings.set(true),
             "lock" => {
                 model.prefs().password.set("set".into());

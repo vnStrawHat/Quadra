@@ -7,15 +7,15 @@ use quadra::{
     untrack,
 };
 use quadra_design::{
-    MenuItem, Notice, Tone, Variant, context_menu, fonts, icon, icon_button, icons, input, select, token,
-    tooltip,
+    MenuItem, Notice, Tone, Variant, context_menu, field, fonts, icon, icon_button, icons, input, select,
+    token, tooltip,
 };
 
 use crate::hosts::{Host, auth_of};
 use crate::model::Model;
 use crate::shells::Remote;
 
-const AUTHS: [&str; 4] = ["Auto (agent, keys, password)", "Agent (ssh-agent)", "Key file", "Password"];
+const AUTHS: [&str; 4] = ["Auto", "Agent (ssh-agent)", "Key file", "Password"];
 
 /// The heading with its Add button, the filter, the groups (folded by a click on their
 /// heading) and their hosts.
@@ -182,21 +182,27 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
             editing.set(None);
         }
     });
+    // The dialog is 440 wide: its body fits in 416, padding included.
     let body = move || {
-        let field =
-            |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id).width(416.0);
-        let key = field(form.key, "Path of the key file", "host-key");
+        let text_field =
+            |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id).width(392.0);
+        let key = text_field(form.key, "Path of the key file", "host-key");
+        let how = quadra::row().gap(12.0).child(field("Auth", select(AUTHS, form.auth).width(190.0))).child(
+            field("Jump host", select(lists.jump_choices(), form.jump).width(190.0).test_id("host-jump")),
+        );
         column()
-            .gap(10.0)
+            .gap(12.0)
             .padding_x(12.0)
-            .width(440.0)
-            .child(field(form.name, "Name (the host when empty)", "host-name"))
-            .child(field(form.group, "Group", "host-group"))
-            .child(field(form.target, "user@host or host:port", "host-target"))
-            .child(select(AUTHS, form.auth).width(240.0))
+            .width(416.0)
+            .child(field("Name", text_field(form.name, "The host when empty", "host-name")))
+            .child(field("Group", text_field(form.group, "Group", "host-group")))
+            .child(field("Target", text_field(form.target, "user@host or host:port", "host-target")))
+            .child(how)
             .child(div().display(crate::locked::shown(move || form.auth.get() == 2)).child(key))
-            .child(select(lists.jump_choices(), form.jump).width(240.0).test_id("host-jump"))
-            .child(field(form.forwards, "Local forwards: 8080:localhost:80 ...", "host-forwards"))
+            .child(field(
+                "Local forwards",
+                text_field(form.forwards, "8080:localhost:80 ...", "host-forwards"),
+            ))
     };
     let adds = quadra_design::dialog(open, "Add SSH host", body.clone())
         .action("Cancel", Variant::Secondary, || {})

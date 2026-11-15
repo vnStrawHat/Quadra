@@ -1,8 +1,8 @@
-//! The window's title bar (specs/19, "Window"): 38 px with the app's mark, a chip of what
-//! shows (the active tab and its spaces, the settings' page, the expanded SFTP view), and the
-//! window's buttons: Search, SFTP, Notifications, Lock, Settings; in the settings, Done.
+//! The window's title bar (specs/19, "Window"): 38 px with the app's mark ("Locked" after it
+//! while locked) and the window's buttons: Search, SFTP, Notifications, Lock, Settings; in the
+//! settings, Done.
 
-use quadra::{Align, Display, NodeRef, Role, Side, View, div, row, signal, text};
+use quadra::{Align, Display, NodeRef, Side, View, div, row, signal, text};
 use quadra_design::{button, icon, icon_button, icons, searched_menu, titlebar, token, tooltip};
 
 use crate::locked::shown;
@@ -10,48 +10,7 @@ use crate::model::Model;
 
 pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
     let (model, seen, lock) = (model.clone(), model.clone(), model.lock());
-    let (expanded, settings, page) = (model.ui().expanded, model.ui().settings, model.ui().page);
-    // The chip: what shows first, then its detail.
-    let first = {
-        let model = model.clone();
-        move || match settings.get() {
-            true => "Settings".to_string(),
-            false => model.active_tab().map(|tab| tab.title()).unwrap_or_default(),
-        }
-    };
-    let detail = {
-        let model = model.clone();
-        move || {
-            if settings.get() {
-                return crate::page::PAGES.get(page.get()).copied().unwrap_or_default().to_string();
-            }
-            if expanded.get() {
-                return "SFTP expanded".into();
-            }
-            let n = model.active_tab().map_or(0, |tab| tab.spaces.with(Vec::len));
-            format!("{n} {}", if n == 1 { "space" } else { "spaces" })
-        }
-    };
-    let chip = row()
-        .align_items(Align::Center)
-        .gap(6.0)
-        .padding_x(10.0)
-        .padding_y(4.0)
-        .radius(6.0)
-        .bg(token::CANVAS)
-        .border(1.0)
-        .border_color(token::LINE)
-        .text_size(12.0)
-        .text_color(token::TEXT_2)
-        .role(Role::Group)
-        .label({
-            let (first, detail) = (first.clone(), detail.clone());
-            move || format!("{} \u{B7} {}", first(), detail())
-        })
-        .display(shown(move || !lock.locked.get()))
-        .child(div().text_color(token::TEXT).child(text(first)))
-        .child(text("\u{B7}"))
-        .child(text(detail));
+    let (expanded, settings) = (model.ui().expanded, model.ui().settings);
     let locked = div()
         .text_size(12.0)
         .text_color(token::TEXT_2)
@@ -60,10 +19,9 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
     let mark = row()
         .align_items(Align::Center)
         .gap(8.0)
-        .padding_left(14.0)
+        .padding_left(12.0)
         .child(icon(icons::TERMINAL).size(16.0).color(token::ACCENT))
         .child(div().font_weight(600).child(text("1Term")))
-        .child(chip)
         .child(locked);
     let (dock, open, hosts, vertical) =
         (seen.ui().dock, seen.ui().settings, seen.ui().hosts, seen.vertical());

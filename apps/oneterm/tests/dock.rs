@@ -133,7 +133,7 @@ fn the_expanded_view_moves_files_between_its_panes_and_compares() {
     std::fs::write(a.downloads.join("notes.md"), b"# notes").unwrap();
     a.h.get_by_role(Role::Button, "Expand SFTP").click();
     a.h.settle();
-    assert!(a.h.semantics().contains("SFTP expanded"), "the title bar says it");
+    assert!(!a.h.query(|n| n.semantics.name == "Collapse SFTP").is_empty(), "the title bar can collapse it");
     assert!(
         a.pane("Local") && a.pane("Remote"),
         "two panes

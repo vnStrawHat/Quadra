@@ -29,17 +29,6 @@ const PAGES_ABOUT: [(&str, &str, &str); 10] = [
     ("Advanced", icons::CODE, "The settings file."),
 ];
 
-/// The pages' names, in order: what the title bar says of the page shown.
-pub(crate) const PAGES: [&str; 10] = {
-    let mut names = [""; 10];
-    let mut at = 0;
-    while at < 10 {
-        names[at] = PAGES_ABOUT[at].0;
-        at += 1;
-    }
-    names
-};
-
 /// The app's keys as the Keybindings page lists them.
 const KEYS: [(&str, &str); 8] = [
     ("ctrl-t", "New tab"),

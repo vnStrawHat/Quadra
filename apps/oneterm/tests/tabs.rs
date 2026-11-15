@@ -56,7 +56,7 @@ fn keys_make_split_move_between_and_close_spaces_and_tabs() {
     let mut a = app();
     assert_eq!(a.tabs(), 1);
     a.key(Key::D, Mods::CTRL);
-    assert!(a.h.has_text("Terminal \u{B7} 2 spaces"));
+    assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
     a.typed("right");
     assert_eq!(a.screen(1), "right", "the new space has the focus");
     a.key(Key::Left, Mods::CTRL | Mods::ALT);
@@ -65,15 +65,15 @@ fn keys_make_split_move_between_and_close_spaces_and_tabs() {
 
     a.key(Key::T, Mods::CTRL);
     assert_eq!(a.tabs(), 2);
-    assert!(a.h.has_text("Terminal \u{B7} 1 space"));
+    assert!(a.h.has_text("1 local \u{B7} 1 space"));
     a.typed("third");
     assert_eq!(a.screen(2), "third");
 
     a.key(Key::W, Mods::CTRL); // the tab goes with its last space
     assert_eq!(a.tabs(), 1);
-    assert!(a.h.has_text("Terminal \u{B7} 2 spaces"));
+    assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
     a.key(Key::W, Mods::CTRL);
-    assert!(a.h.has_text("Terminal \u{B7} 1 space"));
+    assert!(a.h.has_text("1 local \u{B7} 1 space"));
 }
 
 #[test]
@@ -82,10 +82,10 @@ fn the_rail_chooses_a_tab_and_the_middle_button_closes_one() {
     a.key(Key::T, Mods::CTRL);
     a.made.borrow()[1].feeder().feed(b"\x1b]0;build\x07", std::time::Instant::now());
     a.h.settle();
-    assert!(a.h.has_text("build \u{B7} 1 space"));
+    assert!(a.h.has_text("1 local \u{B7} 1 space"));
     a.h.get_by_role(Role::Tab, "Terminal").click();
     a.h.settle();
-    assert!(a.h.has_text("Terminal \u{B7} 1 space"));
+    assert!(a.h.has_text("1 local \u{B7} 1 space"));
     a.typed("x");
     assert_eq!(a.screen(0), "x", "the tab chosen has the focus");
 
@@ -103,7 +103,7 @@ fn three_spaces_stack_beside_the_first_and_keep_their_shells() {
     let mut a = app();
     a.key(Key::D, Mods::CTRL);
     a.key(Key::D, Mods::CTRL);
-    assert!(a.h.has_text("Terminal \u{B7} 3 spaces"));
+    assert!(a.h.has_text("3 local \u{B7} 3 spaces"));
     a.typed("c");
     assert_eq!(a.screen(2), "c", "the newest space has the focus");
     a.key(Key::Left, Mods::CTRL | Mods::ALT);
@@ -116,7 +116,7 @@ fn three_spaces_stack_beside_the_first_and_keep_their_shells() {
 
     // Back to two columns and to a stack again: the shells live on.
     a.key(Key::W, Mods::CTRL);
-    assert!(a.h.has_text("Terminal \u{B7} 2 spaces"));
+    assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
     a.key(Key::D, Mods::CTRL);
     a.typed("d");
     assert_eq!(a.screen(3), "d");
@@ -125,9 +125,30 @@ fn three_spaces_stack_beside_the_first_and_keep_their_shells() {
     // A second tab comes and goes; the stack shows again.
     a.key(Key::T, Mods::CTRL);
     a.key(Key::W, Mods::CTRL);
-    assert!(a.h.has_text("Terminal \u{B7} 3 spaces"));
+    assert!(a.h.has_text("3 local \u{B7} 3 spaces"));
     a.typed("e");
     assert_eq!(a.screen(3), "de");
+}
+
+#[test]
+fn a_click_in_a_space_gives_it_the_keys() {
+    for spaces in [2, 3] {
+        let mut a = app();
+        for _ in 1..spaces {
+            a.key(Key::D, Mods::CTRL);
+        }
+        // Each space's terminal: the second column's top, then the first.
+        let at = |a: &App, n: usize| {
+            let ids = a.h.query(|n| n.semantics.role == Role::TextInput && n.semantics.name == "Terminal");
+            a.h.tree.window_rect(ids[n]).center()
+        };
+        for (n, word) in [(1, "two"), (0, "one")] {
+            let p = at(&a, n);
+            a.press(MouseButton::Left, p.x, p.y);
+            a.typed(word);
+            assert_eq!(a.screen(n), word, "space {n} of {spaces} takes the keys after a click");
+        }
+    }
 }
 
 #[test]
@@ -138,7 +159,7 @@ fn a_program_that_ended_says_so_and_a_key_closes_its_space() {
     a.h.settle();
     assert!(a.made.borrow()[1].screen_text().iter().any(|row| row == "[process exited 2]"));
     a.typed("q");
-    assert!(a.h.has_text("Terminal \u{B7} 1 space"));
+    assert!(a.h.has_text("1 local \u{B7} 1 space"));
 }
 
 impl App {
@@ -174,7 +195,7 @@ fn two_clicks_rename_a_tab_and_its_menu_closes_the_others() {
     a.press(MouseButton::Left, at.x, at.y);
     a.h.get_by_role(Role::TextInput, "").set_value("logs");
     a.key(Key::Enter, Mods::NONE);
-    assert!(a.h.has_text("logs \u{B7} 1 space"));
+    assert!(a.h.has_text("1 local \u{B7} 1 space"));
 
     a.key(Key::T, Mods::CTRL);
     a.key(Key::T, Mods::CTRL);
@@ -237,5 +258,5 @@ fn the_plus_menu_makes_a_tab_or_splits_the_space() {
     a.h.settle();
     a.h.get_by_role(Role::MenuItem, "Split current space").click();
     a.h.settle();
-    assert!(a.h.has_text("Terminal \u{B7} 2 spaces"));
+    assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
 }

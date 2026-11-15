@@ -40,10 +40,8 @@ Custom frame (`WindowOptions::custom_frame`), 1440×900 at most 85 % of the disp
 at least 720×480, its place remembered. Top to bottom: the title bar (38 px), the body, the
 status bar (26 px). Colours are the kit's roles; the accent is the theme's.
 
-- **Title bar**: the terminal glyph in the accent and "1Term"; a chip on the canvas colour with
-  a line round it: what shows (the active tab's title, or "Settings") and, in the secondary
-  colour, its detail (the space count "3 spaces", the settings' page, `SFTP expanded`); then,
-  right, icon buttons Search sessions and hosts (M4; the `+` menu under it), SFTP (P2),
+- **Title bar**: the terminal glyph in the accent and "1Term", 12 px from the left edge (the
+  user chose no chip of what shows); then, right, icon buttons Search sessions and hosts (M4; the `+` menu under it), SFTP (P2),
   Notifications with an unread badge (M3), Lock (M6), Settings (M5); the window buttons. In the
   settings only Done shows; locked, only "Locked".
 - **Body**: the rail (248 px, vertical tabs), the workspace, and from P2 the SFTP dock (300 px)
@@ -83,7 +81,7 @@ right. Each space has an 18 px header in mono 11 px on the panel colour: where i
 on the right (a progress percentage; the state on a 12 px disc and its word in the state's
 colour, then the latency; with no state a green dot and the latency, else the program's title).
 The terminal has 10 px of room above and below and 12 at its sides. The focused space has a
-1 px accent ring. Notification cards stand at the workspace's top right, clear of the dock. `Ctrl+D` splits
+1 px accent ring, its own border (nothing lies over the terminal for the pointer). Notification cards stand at the workspace's top right, clear of the dock. `Ctrl+D` splits
 the active space (a new local shell in its cwd), `Ctrl+W` closes it (the tab with its last
 space), `Ctrl+Alt+Left/Right` moves the focus. A space whose program ended shows
 `[process exited N]` and closes on a key.

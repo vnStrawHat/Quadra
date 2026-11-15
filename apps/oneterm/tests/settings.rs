@@ -58,7 +58,7 @@ fn the_page_opens_from_the_title_bar_and_writes_what_is_chosen() {
     let mut a = app();
     a.h.get_by_role(Role::Button, "Settings").click();
     a.h.settle();
-    assert!(a.says("Settings") && a.says("Appearance"));
+    assert!(a.says("Appearance"));
     a.h.get_by_role(Role::Radio, "Dark").click();
     a.h.settle();
     assert_eq!(a.settings.value("appearance.theme", String::new()).get(), "Dark");

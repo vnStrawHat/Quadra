@@ -29,14 +29,14 @@ fn app() -> (Harness, Session) {
 fn the_window_shows_a_terminal_that_has_the_focus_and_says_where_it_is() {
     let (mut h, s) = app();
     assert!(h.has_text("1Term"));
-    assert!(h.has_text("Terminal") && h.has_text("1 space"));
+    assert!(h.has_text("1 local \u{B7} 1 space"));
     h.type_text("ls");
     h.settle();
     assert_eq!(s.screen_text()[0], "ls", "typing reaches the shell at once");
 
     s.feeder().feed(b"\x1b]0;vim\x07\x1b]7;file://box/home/me/src\x07", Instant::now());
     h.settle();
-    assert!(h.has_text("vim") && h.has_text("1 space"));
+    assert!(h.get_by_role(quadra::Role::Tab, "vim").node() == h.get_by_role(quadra::Role::Tab, "vim").node());
     assert!(h.has_text("/home/me/src"));
     h.get_by_role(quadra::Role::Button, "Working directory").click();
     assert_eq!(h.clipboard.read_text().as_deref(), Some("/home/me/src"));

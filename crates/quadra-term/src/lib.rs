@@ -4,6 +4,7 @@
 
 mod actions;
 mod clip;
+mod contrast;
 mod feed;
 mod gutter;
 mod keys;
@@ -22,6 +23,7 @@ pub use oneterm_vt as vt;
 
 pub use actions::TermSettings;
 pub use actions::echo;
+pub use contrast::{contrast_ratio, with_contrast};
 pub use feed::{Feeder, Notice};
 pub use keys::{TERMINAL_CONTEXT, TermCommand, bind_keys};
 pub use line::CommandLine;

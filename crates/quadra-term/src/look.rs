@@ -1,10 +1,11 @@
-//! How a terminal looks (specs/18, "The view"): its face, size, lines, room around the grid
-//! and colours over the theme's; a signal the view follows without being mounted again.
+//! How a terminal looks (specs/18, "The view"): its face and its fallbacks, size, lines, cells,
+//! room around the grid, contrast and colours over the theme's; a signal the view follows
+//! without being mounted again.
 
 use std::rc::Rc;
 
 use oneterm_vt::Palette;
-use quadra_prim::Color;
+use quadra_prim::{Color, Edges};
 use quadra_tree::TextValues;
 
 use crate::widget::rgb;
@@ -13,13 +14,21 @@ use crate::widget::rgb;
 pub struct TermLook {
     /// A family of the system; empty, the kit's mono face.
     pub family: String,
+    /// Families tried, in order, for a character the face lacks, before the system's; the
+    /// text system's for the whole app once set (specs/08, "Fallback families").
+    pub fallbacks: Vec<String>,
     /// In pixels.
     pub size: f32,
     /// A line's height, times the size.
     pub line_height: f32,
     pub weight: u16,
-    /// Room around the grid, in logical pixels.
-    pub padding: f32,
+    /// A cell's width in pixels at `size` (it grows with the text size); `None`, the advance
+    /// of `0`.
+    pub cell_width: Option<f32>,
+    /// Room around the grid, a value a side, in logical pixels.
+    pub padding: Edges,
+    /// The least contrast of a glyph against its background, a WCAG ratio; 1 is off.
+    pub min_contrast: f32,
     /// The gutter at the left: when each row was written and its line number.
     pub gutter: bool,
     pub colors: TermColors,
@@ -29,10 +38,13 @@ impl Default for TermLook {
     fn default() -> TermLook {
         TermLook {
             family: String::new(),
+            fallbacks: Vec::new(),
             size: 13.0,
             line_height: 20.0 / 13.0,
             weight: 400,
-            padding: 8.0,
+            cell_width: None,
+            padding: Edges::all(8.0),
+            min_contrast: 1.0,
             gutter: false,
             colors: TermColors::default(),
         }

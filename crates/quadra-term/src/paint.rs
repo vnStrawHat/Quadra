@@ -1,31 +1,37 @@
 //! Painting the terminal (specs/18, "The view"): the snapshot is taken under the lock, then
 //! each row that shows is drawn from it alone: runs of background, the selection, the cursor,
-//! a glyph per cell at its column, underline and strike.
+//! a glyph per cell at its column, underline and strike. A glyph's colour keeps the look's
+//! minimum contrast against its cell's background.
 
-use oneterm_vt::{Attrs, CursorShape, Pos, SnapshotContent, SnapshotRow, Style};
+use oneterm_vt::{Attrs, Color as VtColor, CursorShape, Pos, SnapshotContent, SnapshotRow, Style};
 use quadra_prim::{Color, Edges, Point, Rect};
 use quadra_render::Quad;
 use quadra_tree::{PaintCx, paint_glyph};
 
 use crate::widget::{TerminalWidget, color};
 
-/// The colours a cell's style paints with: inverse swaps them, faint is the text at 60 %.
+/// The colours a cell's style paints with: inverse swaps them.
 fn colors(w: &TerminalWidget, style: &Style) -> (Color, Color) {
-    let (mut fg, mut bg) = (color(w.palette.resolve(style.fg)), color(w.palette.resolve(style.bg)));
-    if style.attrs.contains(Attrs::INVERSE) {
-        (fg, bg) = (bg, fg);
-    }
-    if style.attrs.contains(Attrs::DIM) {
-        fg = fg.alpha(0.6);
-    }
-    (fg, bg)
+    let (fg, bg) = (color(w.palette.resolve(style.fg)), color(w.palette.resolve(style.bg)));
+    if style.attrs.contains(Attrs::INVERSE) { (bg, fg) } else { (fg, bg) }
+}
+
+/// A glyph's colour: its style's, moved to the look's contrast unless the program named it
+/// exactly or the character is a drawing (specs/18, "The view"); faint is it at 60 %.
+fn glyph_color(w: &mut TerminalWidget, style: &Style, c: Option<char>) -> Color {
+    let named = if style.attrs.contains(Attrs::INVERSE) { style.bg } else { style.fg };
+    let exact = matches!(named, VtColor::Rgb(_) | VtColor::Palette(16..));
+    let drawing = c.is_some_and(|c| matches!(c as u32, 0x2500..=0x25FF | 0xE0B0..=0xE0D7));
+    let (fg, bg) = colors(w, style);
+    let fg = if exact || drawing { fg } else { w.contrast.fg(fg, bg) };
+    if style.attrs.contains(Attrs::DIM) { fg.alpha(0.6) } else { fg }
 }
 
 pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx) {
     w.scale = cx.scale;
     let background = color(w.palette.background);
     cx.quad(Quad { bounds: cx.rect, background, ..Quad::default() });
-    let (left, top) = (cx.rect.x + w.gutter_width() + w.pad, cx.rect.y + w.pad);
+    let (left, top) = (cx.rect.x + w.gutter_width() + w.pad.left, cx.rect.y + w.pad.top);
     w.tiles.clear();
     crate::gutter::paint(w, cx, top);
     let block = w.cursor_block();
@@ -118,7 +124,15 @@ fn text(
             continue;
         }
         let style = row.style_of(cell);
-        let (mut fg, _) = colors(w, style);
+        let blank = matches!(cell.content, SnapshotContent::Scalar(' '));
+        if blank && !style.attrs.intersects(Attrs::ALL_UNDERLINES | Attrs::STRIKEOUT) {
+            continue; // nothing to draw, so no colour to work out
+        }
+        let first = match cell.content {
+            SnapshotContent::Scalar(c) => Some(c),
+            SnapshotContent::Cluster { .. } => None,
+        };
+        let mut fg = glyph_color(w, style, first);
         if cursor == Some((row.id, col as u16)) {
             fg = color(w.palette.background); // on the block, the text is the background's
         }

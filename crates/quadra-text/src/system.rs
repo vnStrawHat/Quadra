@@ -71,6 +71,8 @@ pub struct TextSystem {
     numeric: Numeric,
     /// Where the ink of glyphs is, by face, glyph and size.
     inks: HashMap<(FaceId, u16, u32), Rect>,
+    /// The fallback families set last.
+    fallbacks: Vec<String>,
     pub(crate) stats: TextStats,
     /// What shaping a paragraph uses for a while and gives back: where each byte's glyphs
     /// start.
@@ -94,6 +96,7 @@ impl TextSystem {
             words,
             numeric,
             inks,
+            fallbacks: Vec::new(),
             stats,
             firsts: Vec::new(),
             ranges: Vec::new(),
@@ -119,10 +122,19 @@ impl TextSystem {
     }
 
     /// The families tried first for what a face lacks (specs/08, "Fallback families"); words
-    /// are shaped again as `set_features` says.
+    /// are shaped again as `set_features` says. The list it has already changes nothing.
     pub fn set_fallbacks(&mut self, families: &[String]) {
+        if self.fallbacks == families {
+            return;
+        }
+        self.fallbacks = families.to_vec();
         self.backend.set_fallbacks(families);
         self.forget_words();
+    }
+
+    /// The fallback families set last; none at first.
+    pub fn fallbacks(&self) -> &[String] {
+        &self.fallbacks
     }
 
     fn forget_words(&mut self) {

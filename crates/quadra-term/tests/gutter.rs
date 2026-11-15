@@ -7,7 +7,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use quadra_platform::{Mods, MouseButton};
-use quadra_prim::Point;
+use quadra_prim::{Edges, Point};
 use quadra_reactive::{Signal, signal};
 use quadra_term::vt::ResizePolicy;
 use quadra_term::{Link, Session, TermLook, TerminalWidget, terminal};
@@ -97,7 +97,7 @@ fn numbers_count_from_the_first_row_and_survive_a_column_change() {
     assert_eq!(t.row(0), Some((13, Some(t0))));
     assert_eq!(t.row(7), Some((20, Some(t1))));
     // More room around the grid: other columns, so every row has a new id, and a row less.
-    t.look.update(|it| it.padding = 20.0);
+    t.look.update(|it| it.padding = Edges::all(20.0));
     t.h.settle();
     assert_eq!(t.s.size().cols, 42, "(400 - 104 - 40) / 6");
     let shown = t.s.screen_text();
@@ -122,10 +122,10 @@ fn a_line_that_wraps_again_numbers_the_rows_after_it_again() {
     };
     assert_eq!(b(&mut t), 3);
     // 42 columns: the long line takes two rows (and a row less: `a` goes to the history).
-    t.look.update(|it| it.padding = 20.0);
+    t.look.update(|it| it.padding = Edges::all(20.0));
     t.h.settle();
     assert_eq!(b(&mut t), 4);
-    t.look.update(|it| it.padding = 8.0);
+    t.look.update(|it| it.padding = Edges::all(8.0));
     t.h.settle();
     assert_eq!(b(&mut t), 3);
 }

@@ -45,20 +45,39 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 
 - One widget, a surface (02): it paints the viewport rows from the snapshot. Cell size from the
   mono face of the kit at the code size: the advance of `0` by the line height, each snapped to
-  whole device pixels; padding 8 px around the grid.
-- Its size sets the grid: `cols = (width - padding) / cell`, `rows` likewise, at least 1 by 1.
+  whole device pixels; padding around the grid, a value a side (8 px each unless the look says).
+- The cell's width can be set (`TermLook::cell_width`, in pixels at the look's size; `None`, the
+  advance of `0`): it grows with the text size as the face does, and is snapped the same. A glyph
+  stays in the middle of its cells, so a wider cell spaces the text out.
+- Its size sets the grid: `cols = (width - left - right) / cell`, `rows = (height - top - bottom)
+  / line`, at least 1 by 1.
   A change resizes the engine and then the link with the same size, after layout, once a frame.
 - Per row: one quad per run of equal background; a glyph per cell at its column (a wide cell
   spans two), from the mono face (bold and italic faces for those attributes); underline and
   strike as quads; inverse swaps, faint is the foreground at 60 %, hidden draws no glyph.
   Colours: the engine's palette with the theme as its base (`set_theme_colors`): 0-15 from
   `token::ANSI`, default foreground, background and cursor from the theme's roles.
+- Minimum contrast (`TermLook::min_contrast`, a ratio of WCAG 2; 1, the default, is off): a
+  glyph's colour is moved toward white or black, the nearer that reaches the ratio against its
+  cell's background (the most it can when neither does), after inverse and before faint. It is
+  worked out where a cell's colours are resolved, once a pair of colours (a small memo the paint
+  keeps), never a pixel. Left as they are: colours a program named exactly (24-bit, and the
+  palette past 15), the text on a block cursor, and box drawing, block elements, geometric shapes
+  and the separators of patched fonts (U+2500 to U+25FF, U+E0B0 to U+E0D7), whose colour is
+  their drawing's.
 - The look (`TermLook`, a signal given with `Terminal::look`; `font(size, line)` is a look that
-  never changes): the family (empty, the kit's mono face), size, line height (times the size),
-  weight, the padding, and colours that stand over the theme's (`TermColors`: foreground,
-  background, cursor, selection, the sixteen ANSI). A new look sets the node's text values, the
-  padding and the palette, and sizes the grid again after layout: the view is not mounted again,
-  the session keeps its screen. Ligatures are not drawn: a glyph is a cell.
+  never changes): the family (empty, the kit's mono face), its fallback families, size, line
+  height (times the size), weight, the cell's width, the padding (`Edges`: top, right, bottom,
+  left), the minimum contrast, and colours that stand over the theme's (`TermColors`:
+  foreground, background, cursor, selection, the sixteen ANSI). A new look sets the node's text
+  values, the padding and the palette, and sizes the grid again after layout: the view is not
+  mounted again, the session keeps its screen. Ligatures are not drawn: a glyph is a cell.
+- Fallback families (`TermLook::fallbacks`, tried in order for a character the face lacks, before
+  the system's; specs/08): the text system has one list for the whole app, so a view sets it
+  when its look's list differs from the one it set last (at first none, so a view with no list
+  leaves `App::font_fallbacks` as it is), and the text system leaves its words alone when the
+  list is the one it has. Setting them empties the shaping cache; the view shapes its cells as it
+  paints, so its repaint shows the new faces. The last list set wins over `App::font_fallbacks`.
 - The gutter (`TermLook::gutter`, off by default): a column at the left of the grid with, per
   row that shows, the time the row was first written and its line number, `[HH:MM:SS] 12345`,
   in the mono face. Its width is whole cells, `11 + digits` of them, and 8 px (4 each side);
@@ -167,6 +186,9 @@ done, idle. OSC 133 A (a new prompt) drops working, blocked and idle. `?` is ans
   OSC 0, 7, 9, 9;4, BEL and the end of the program.
 - `tests/line.rs`: the command line from fed OSC 133 marks and from a prompt's sign, the
   alternate screen, the caret, keys taken first.
+- `tests/look.rs`: a new look sizes the grid again in the same view; the padding a side, the
+  cell's width and the fallback families reach what is drawn; minimum contrast moves a glyph's
+  colour until the ratio holds and leaves a 24-bit one alone.
 - `tests/input.rs`: keys in normal and application cursor mode, Ctrl and Alt; paste bracketed;
   a drag selects and copy gives its text (the harness's clipboard); the wheel scrolls history,
   and goes to a program that reports the mouse.

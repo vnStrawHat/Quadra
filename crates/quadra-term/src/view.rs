@@ -137,7 +137,15 @@ impl View for Terminal {
             let s = s.clone();
             writer.with(move |tree| {
                 tree.set_text_values(id, look.text());
+                let fonts = tree.fonts();
                 if let Some(w) = tree.widget_mut::<TerminalWidget>(id) {
+                    w.cell_width = look.cell_width.map(|px| (px, look.size));
+                    w.fit_cell();
+                    w.contrast.set(look.min_contrast);
+                    if w.fallbacks != look.fallbacks {
+                        fonts.borrow_mut().text.set_fallbacks(&look.fallbacks);
+                        w.fallbacks = look.fallbacks;
+                    }
                     (w.pad, w.colors, w.gutter) = (look.padding, look.colors, look.gutter);
                     w.paint_colors();
                 }

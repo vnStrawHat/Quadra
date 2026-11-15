@@ -7,10 +7,11 @@ use oneterm_vt::{CursorStyle, ModeSnapshot, Palette, Rgb, SnapshotState};
 use quadra_a11y::{Role, Semantics};
 use quadra_design::token;
 use quadra_layout::Known;
-use quadra_prim::{Color, Rect, Size};
+use quadra_prim::{Color, Edges, Rect, Size};
 use quadra_text::TextStyle;
 use quadra_tree::{GlyphTile, Inherited, MeasureCx, NodeId, PaintCx, Theme, Tree, Widget};
 
+use crate::contrast::Contrast;
 use crate::feed::Engine;
 use crate::look::TermColors;
 use crate::session::Session;
@@ -24,11 +25,17 @@ pub struct TerminalWidget {
     pub(crate) style: TextStyle,
     /// A cell's width and height, whole device pixels at `scale`.
     pub(crate) cell: f32,
+    /// The advance of `0`, and the look's width of a cell at the look's size, when it has one.
+    advance: f32,
+    pub(crate) cell_width: Option<(f32, f32)>,
     pub(crate) line: f32,
     pub(crate) scale: f32,
     pub(crate) selection: Color,
     /// Room around the grid, in logical pixels.
-    pub(crate) pad: f32,
+    pub(crate) pad: Edges,
+    /// The look's minimum contrast, with the colours it gave; the fallbacks it set last.
+    pub(crate) contrast: Contrast,
+    pub(crate) fallbacks: Vec<String>,
     /// The look's colours, over the theme's palette and selection.
     pub(crate) colors: TermColors,
     base: (Palette, Color),
@@ -63,10 +70,14 @@ impl TerminalWidget {
             modes: ModeSnapshot::default(),
             style: TextStyle::default(),
             cell: 8.0,
+            advance: 8.0,
+            cell_width: None,
             line: 16.0,
             scale: 1.0,
             selection: Color::TRANSPARENT,
-            pad: 8.0,
+            pad: Edges::all(8.0),
+            contrast: Contrast::default(),
+            fallbacks: Vec::new(),
             colors: TermColors::default(),
             base: (Palette::new(), Color::TRANSPARENT),
             focused: false,
@@ -82,8 +93,19 @@ impl TerminalWidget {
 
     /// The grid that fits a box of `size`: rows and columns, at least one of each.
     pub(crate) fn grid_for(&self, size: Size) -> (u16, u16) {
-        let fit = |room: f32, step: f32| ((room - 2.0 * self.pad) / step).floor().clamp(1.0, 32767.0) as u16;
-        (fit(size.height, self.line), fit(size.width - self.gutter_width(), self.cell))
+        let fit = |room: f32, step: f32| (room / step).floor().clamp(1.0, 32767.0) as u16;
+        let (pad, gutter) = (self.pad, self.gutter_width());
+        (
+            fit(size.height - pad.top - pad.bottom, self.line),
+            fit(size.width - gutter - pad.left - pad.right, self.cell),
+        )
+    }
+
+    /// The cell's width: the look's, grown with the text size as the face is, or the advance
+    /// of `0`; whole device pixels.
+    pub(crate) fn fit_cell(&mut self) {
+        let width = self.cell_width.map_or(self.advance, |(px, at)| px * self.style.size / at.max(1.0));
+        self.cell = (width * self.scale).round().max(1.0) / self.scale;
     }
 
     /// Takes the engine's snapshot (the first phase of drawing, under the lock): a paint
@@ -144,9 +166,9 @@ impl Widget for TerminalWidget {
     /// The box it is given; cells from the advance of `0` and the line, snapped.
     fn measure(&mut self, cx: &mut MeasureCx, known: Known, avail: Size) -> Size {
         let face = cx.text.face_for(&self.style);
-        let snap = |v: f32| (v * self.scale).round().max(1.0) / self.scale;
-        self.cell = snap(cx.text.word("0", face, self.style.size).width);
-        self.line = snap(self.style.line_px());
+        self.advance = cx.text.word("0", face, self.style.size).width;
+        self.fit_cell();
+        self.line = (self.style.line_px() * self.scale).round().max(1.0) / self.scale;
         let fill =
             |known: Option<f32>, avail: f32| known.unwrap_or(if avail.is_finite() { avail } else { 0.0 });
         Size::new(fill(known.width, avail.width), fill(known.height, avail.height))
@@ -179,8 +201,8 @@ impl Widget for TerminalWidget {
     fn caret(&self) -> Option<Rect> {
         let cursor = self.state.cursor();
         let row = cursor.row.filter(|_| self.focused)?;
-        let x = self.gutter_width() + self.pad + f32::from(cursor.col) * self.cell;
-        let y = self.pad + f32::from(row) * self.line;
+        let x = self.gutter_width() + self.pad.left + f32::from(cursor.col) * self.cell;
+        let y = self.pad.top + f32::from(row) * self.line;
         Some(Rect::new(x, y, self.cell, self.line))
     }
 

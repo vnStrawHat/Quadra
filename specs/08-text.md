@@ -83,7 +83,8 @@ The rules of behaviour/04 carry over. What differs from the V backend:
   in one face). A family not installed is passed over. DirectWrite: a fallback of its builder
   maps the whole of Unicode to the families, then takes the system's mappings. Like features,
   setting them empties the shaping cache, and a paragraph that holds its words keeps them
-  until its text or style changes.
+  until its text or style changes; setting the list it has (`TextSystem::fallbacks`) does
+  nothing, so views that name the same list do not empty it again.
 - **Bidirectional text**, for display (`bidi.rs`; caret movement and editing in
   right-to-left text stay After-v1, below):
   - A text with a right-to-left character (`has_rtl`: Hebrew, Arabic and the scripts beside

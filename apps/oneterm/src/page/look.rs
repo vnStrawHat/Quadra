@@ -10,6 +10,11 @@ pub(super) fn appearance(p: Prefs) -> Vec<SettingsGroup> {
     let theme = SettingsGroup::new("Theme")
         .row("Theme", "System follows the OS's dark or light mode.", segmented(prefs::THEMES, p.theme))
         .row(
+            "Colour theme",
+            "One of 1Term's themes over the mode; the kit's follows it.",
+            select(prefs::COLOUR_THEMES.clone(), p.colour_theme).width(240.0),
+        )
+        .row(
             "Text size",
             "All of 1Term's text, the terminals' with it, in percent.",
             number_input(p.ui_text).range(75.0, 200.0).step(5.0),

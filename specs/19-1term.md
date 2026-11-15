@@ -91,6 +91,38 @@ space), `Ctrl+Alt+Left/Right` moves the focus. A space whose program ended shows
 setting has it, the default): Copy (with a selection), Paste, Select all, Clear scrollback, then
 Split space and Close space; a program that reports the mouse takes the press instead.
 
+## Completion
+
+A space completes the command being typed (specs/20, the engine; the app makes one `Engine` in
+its model when first asked, so the history is the session's, shared by the tabs). The family of a space is
+`force_family`, else `Family::detect` of the local shell's program (the OS's: `cmd`), and Unix
+for an SSH space. The overlay follows the terminal's `command_line` (specs/18) and asks
+`Engine::suggest(text, text.len(), family)`: nothing while completion is off, on the alternate
+screen (`disable_in_alt_screen`), away from a prompt (`require_prompt_region`), without the
+caret, or after Escape until the line changes. It stands under the caret at the start of the
+token (above it when there is no room below), on the plane of the kit's popups (its fill,
+border, radius and level 1 shadow); rows of 23 px in the kit's mono face: the matched part in
+the accent's text colour, the rest, the option's hint and the kind (`command`, `subcommand`,
+`option`, `history`) in the second text colour; the chosen row filled as a menu's. At most
+`max_visible_items` rows show, the window following the chosen row, with `↑ N more` and
+`↓ N more` above and below.
+
+Keys while it is open, taken before the shell (`Terminal::on_key_first`): nothing is chosen at
+first, so Up, Down and Enter go to the shell; Tab (with `accept_tab`) chooses the first row, and
+then accepts; with `accept_tab` off Tab is the shell's and Down chooses the first row. Once a row is chosen, Up and Down (and Ctrl+P, Ctrl+N) move it, and Enter accepts.
+Escape closes it. Accepting writes `Suggestion::edit`: a DEL for each character to erase, then
+the text; a suggestion that does not extend what is typed (`prefix` false) only closes it.
+Enter that goes to the shell records the line first (`Engine::record`, which redacts), when
+the line is at a prompt (or `require_prompt_region` is off) and not on the alternate screen:
+a password typed for a program is no command.
+
+Settings (Terminal page, group Completion; `completion.*` in `settings.json`): enabled, accept
+with Tab, history kept (500, 0 to 5000), characters before suggesting (1, 0 to 10), rows shown
+(8, 1 to 20), the history, hand-written catalogs and generated catalogs as sources, fuzzy
+matching, the ancestors' options, off in full-screen programs, only at a prompt, Unix commands
+in Cmd and PowerShell (off), the shell family (Detected, Cmd, PowerShell, Unix), redact secrets;
+all on but where it says. A change applies at once (`Engine::set_config`).
+
 ## Signals
 
 | Signal | Tab | Space header | Status bar | Else |
@@ -148,9 +180,11 @@ Security & lock (Lock now while a password is set; and whether programs may read
 Logging (log new local shells, log new SSH spaces, both off; the folder, typed or chosen in the
 system's dialog, empty for `session-logs` in the app's data folder; the formats shown, fixed; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
-logging, and a log that cannot be opened is a card), Keybindings, Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
+logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset, and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
-folder as they change (specs/15). Appearance: the theme; the terminal's text (font family,
+folder as they change (specs/15). Appearance: the theme (System, Dark, Light), and a colour theme over
+it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/themes`, made by
+`.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
 empty for the kit's mono face; size; weight, Normal and Thin to Black; line height, 1.5) and colours over the theme's
 (foreground, background, cursor, selection as `#rrggbb`), the view's `TermLook` (specs/18):
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
@@ -323,5 +357,6 @@ license's notice. Without them every space still runs, on the system's host.
 
 The app's tests drive it through the semantic tree on the headless platform with `echo()`
 sessions: tabs and spaces made, split, closed, moved; the signals on the rail, headers and
-status bar from bytes fed to a session; the menu; settings written; lock and unlock. Real
+status bar from bytes fed to a session; the menu; completion (`tests/complete.rs`: prompts
+marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); settings written; lock and unlock. Real
 shells only in `quadra-shell`'s pseudo console test.

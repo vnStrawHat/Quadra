@@ -35,7 +35,9 @@ impl View for Card {
         let handle = cx.handle.clone();
         effect(move || {
             if lock.locked.get() {
-                handle.with(move |tree| _ = tree.focus_first(id));
+                // After the writes of this pass, one of which displays the card.
+                let later = handle.clone();
+                handle.with(move |_| later.with(move |tree| _ = tree.focus_first(id)));
             }
         });
         id

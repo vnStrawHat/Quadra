@@ -20,8 +20,10 @@ fn main() -> quadra::Result<()> {
     }
     // The theme the settings name, the system's by default.
     let chosen = app.settings().value("appearance.theme", "System".to_string());
+    let named = app.settings().value("appearance.colour_theme", String::new());
     let first = quadra_design::system_theme(&app.appearance());
-    let app = quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), seen));
+    let app =
+        quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), &named.get(), seen));
     // The system's dialogs and what opens files, for SFTP's Edit.
     let app = quadra_shell::install(app);
     let options =

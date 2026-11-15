@@ -29,8 +29,9 @@ fn main() -> quadra::Result<()> {
     });
     let mut app = quadra::app()?.dirs(AppDirs::under(std::path::Path::new(".tmp/1term-bench")));
     let chosen = app.settings().value("appearance.theme", "Dark".to_string());
+    let named = app.settings().value("appearance.colour_theme", String::new());
     let first = quadra_design::system_theme(&app.appearance());
-    app = quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), seen));
+    app = quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), &named.get(), seen));
     let args = vec!["--seconds".into(), seconds, "--out".into(), out.display().to_string()];
     let fire = Shell { name: "doomfire", program, args };
     let shells: NewSession =

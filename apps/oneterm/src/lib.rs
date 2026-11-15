@@ -3,6 +3,7 @@
 //! app ([`local_shell`]), `quadra_term::echo` in tests.
 
 mod chrome;
+mod complete;
 mod connect;
 mod dock;
 mod expanded;
@@ -27,6 +28,7 @@ mod spaces;
 mod statusbar;
 mod strip;
 mod tab;
+mod themes;
 
 use std::rc::Rc;
 
@@ -49,23 +51,10 @@ pub fn start(launch: Launch) -> Session {
     if launch.ssh.is_some() { remote_shell(launch) } else { local_shell(launch) }
 }
 
-/// The app's keys: the kit's, the terminal's, and the tabs' and spaces'.
+/// The app's keys as they are by default: the kit's, the terminal's, and the tabs' and
+/// spaces'. The settings change them while the app runs (the Keybindings page).
 pub fn keymap() -> Keymap {
-    let mut keys = quadra_design::keymap();
-    quadra_term::bind_keys(&mut keys);
-    let ours = [
-        ("ctrl-t", Command::NewTab),
-        ("ctrl-d", Command::Split),
-        ("ctrl-w", Command::CloseSpace),
-        ("ctrl-alt-right", Command::FocusNext(true)),
-        ("ctrl-alt-left", Command::FocusNext(false)),
-        ("ctrl-shift-l", Command::Lock),
-        ("ctrl-shift-k", Command::QuickConnect),
-    ];
-    for (stroke, command) in ours {
-        keys.bind(stroke, command).expect("the app's bindings are well formed");
-    }
-    keys
+    page::keys::keymap(|_| None)
 }
 
 /// What the window shows.
@@ -83,6 +72,7 @@ impl OneTerm {
 
     pub fn view(&self) -> impl View + use<> {
         let (model, window) = (self.model.clone(), use_context::<Window>());
+        page::keys::follow(); // the keys the settings say
         // The size of the UI's text, the terminals' with it, as the settings say.
         if let Some(size) = use_context::<quadra::Signal<quadra::TextSize>>() {
             let percent = model.prefs().ui_text;

@@ -34,6 +34,8 @@ pub const COLORS: [(&str, &str); 8] = [
 #[derive(Clone, Copy)]
 pub struct Prefs {
     pub theme: Signal<usize>,
+    /// A colour theme's name, an index of `COLOUR_THEMES`; 0 the kit's.
+    pub colour_theme: Signal<usize>,
     /// The UI's text, in percent of the kit's sizes.
     pub ui_text: Signal<f64>,
     pub font_size: Signal<f64>,
@@ -110,6 +112,7 @@ impl Prefs {
         let s = &*settings;
         Prefs {
             theme: choice(s, "appearance.theme", &THEMES),
+            colour_theme: choice(s, "appearance.colour_theme", &COLOUR_THEMES),
             ui_text: s.value("appearance.ui_text_percent", 100.0),
             font_size: s.value("terminal.font_size", 13.0),
             font_family: s.value("terminal.font_family", String::new()),
@@ -210,8 +213,13 @@ impl Prefs {
     }
 }
 
-/// The theme a choice of `THEMES` (as its words) gives under the system's appearance.
-pub fn theme(words: &str, appearance: &Appearance) -> Theme {
+/// The theme a choice of `THEMES` (as its words) gives under the system's appearance; a
+/// colour theme named (one of `crate::themes::THEMES`) wins over it.
+pub fn theme(words: &str, named: &str, appearance: &Appearance) -> Theme {
+    let file = crate::themes::THEMES.iter().find(|(name, _)| *name == named);
+    if let Some(theme) = file.and_then(|(_, text)| quadra_design::theme_from_json(text).ok()) {
+        return theme.theme();
+    }
     match THEMES.iter().position(|it| *it == words) {
         Some(1) => quadra_design::dark(),
         Some(2) => quadra_design::light(),
@@ -220,9 +228,16 @@ pub fn theme(words: &str, appearance: &Appearance) -> Theme {
     .theme()
 }
 
+/// The colour themes as a setting offers them: the kit's first.
+pub static COLOUR_THEMES: std::sync::LazyLock<Vec<&'static str>> = std::sync::LazyLock::new(|| {
+    std::iter::once(KIT_THEME).chain(crate::themes::THEMES.iter().map(|(name, _)| *name)).collect()
+});
+/// What stands for no colour theme: the kit's, as the mode says.
+pub const KIT_THEME: &str = "The kit's";
+
 /// A setting that is one of `options`, kept as its words and given as its index: the two
 /// follow each other. Words the app does not know are the first option.
-fn choice(settings: &Settings, key: &str, options: &'static [&'static str]) -> Signal<usize> {
+pub(crate) fn choice(settings: &Settings, key: &str, options: &'static [&'static str]) -> Signal<usize> {
     let words = settings.value(key, options[0].to_string());
     let at = move || options.iter().position(|o| words.with(|w| o == w)).unwrap_or(0);
     let index = signal(untrack(at));
@@ -239,4 +254,14 @@ fn choice(settings: &Settings, key: &str, options: &'static [&'static str]) -> S
         }
     });
     index
+}
+
+#[cfg(test)]
+#[test]
+fn every_colour_theme_reads() {
+    for (name, text) in crate::themes::THEMES {
+        let theme = quadra_design::theme_from_json(text).unwrap_or_else(|e| panic!("{name}: {e:?}"));
+        assert_ne!(theme.theme().color(quadra_design::token::CANVAS), quadra::Color::TRANSPARENT, "{name}");
+    }
+    assert_eq!(COLOUR_THEMES.len(), crate::themes::THEMES.len() + 1);
 }

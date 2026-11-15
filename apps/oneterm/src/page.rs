@@ -4,12 +4,14 @@
 
 use quadra::{Align, column, div, effect, row, signal, text};
 use quadra_design::{
-    SettingsGroup, SettingsPage, Variant, button, icon, icons, input, key_hint, number_input, segmented,
-    select, settings, switch, token,
+    SettingsGroup, SettingsPage, Variant, button, icon, icons, input, number_input, segmented, select,
+    settings, switch, token,
 };
 
 use crate::model::Model;
 
+mod complete;
+pub(crate) mod keys;
 mod look;
 use crate::prefs::{self, Prefs};
 
@@ -30,18 +32,6 @@ const PAGES_ABOUT: [(&str, &str, &str); 11] = [
     ("Keybindings", icons::COMMAND, "The app's keys."),
     ("Advanced", icons::CODE, "The settings file."),
     ("About", icons::INFO, "Which 1Term this is."),
-];
-
-/// The app's keys as the Keybindings page lists them.
-const KEYS: [(&str, &str); 8] = [
-    ("ctrl-t", "New tab"),
-    ("ctrl-d", "Split the space"),
-    ("ctrl-w", "Close the space"),
-    ("ctrl-alt-right", "Next space"),
-    ("ctrl-alt-left", "Previous space"),
-    ("ctrl-shift-c", "Copy"),
-    ("ctrl-shift-v", "Paste"),
-    ("ctrl-shift-l", "Lock"),
 ];
 
 /// Opens the settings in a window of their own, or brings it to the front: its own title bar
@@ -108,9 +98,7 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .row("Clock", "The local time.", switch(p.show_clock))
         .row("Frames a second", "What the window draws, counted each second.", switch(p.show_fps));
     let lock = crate::locked::security(model.lock(), p.lock_after);
-    let keys = KEYS
-        .iter()
-        .fold(SettingsGroup::new("Keys"), |group, (keys, does)| group.row(does, "", key_hint(keys, "")));
+    let keys = keys::group();
     let file = quadra::AppDirs::for_app("1Term")
         .map(|dirs| dirs.config.join("settings.json").display().to_string())
         .unwrap_or_default();
@@ -123,7 +111,7 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .child(text(format!("Settings are saved to {file} as you change them.")));
     vec![
         look::appearance(p),
-        look::terminal(p).into_iter().chain([logging(p)]).collect(),
+        look::terminal(p).into_iter().chain([complete::completion(model), logging(p)]).collect(),
         vec![tabs],
         vec![
             hosts(p, model),

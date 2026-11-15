@@ -31,6 +31,8 @@ pub struct Ui {
     pub dock: Signal<bool>,
     /// SFTP in the workspace's place.
     pub expanded: Signal<bool>,
+    /// Command completion: its settings and the app's one engine.
+    pub complete: crate::complete::Completion,
 }
 
 /// The window's tabs. A copy is the same one.
@@ -59,7 +61,7 @@ impl Model {
     pub fn new(new_session: NewSession, prefs: Prefs) -> Model {
         let inner = Inner {
             owner: Scope::current(),
-            new_session,
+            new_session: crate::complete::tagged(new_session),
             next: Cell::new(1),
             tabs: signal(Vec::new()),
             active: signal(0),
@@ -76,6 +78,7 @@ impl Model {
                 editing: signal(None),
                 dock: signal(false),
                 expanded: signal(false),
+                complete: crate::complete::Completion::new(),
             },
             lock: Lock::new(prefs),
         };
@@ -167,7 +170,6 @@ impl Model {
         self.insert_tab(usize::MAX, launch);
     }
 
-    /// A tab with a new local shell right after a tab, shown.
     /// A tab after it starting what its focused space started: the same host, else a shell.
     pub fn duplicate(&self, id: u64) {
         let tab = self.0.tabs.with_untracked(|tabs| tabs.iter().find(|tab| tab.id == id).copied());

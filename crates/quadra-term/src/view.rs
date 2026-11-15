@@ -8,7 +8,7 @@ use std::time::Duration;
 use oneterm_vt::input::{KeyEvent, KeyMods, KeySpec, NamedKey};
 use quadra_async::{Timers, interval};
 use quadra_platform::{Clipboard, Cursor};
-use quadra_reactive::{Scope, use_context};
+use quadra_reactive::{Scope, on_cleanup, use_context};
 use quadra_tree::{NodeId, Style, TextValues, Tree};
 use quadra_view::{MountCx, View};
 
@@ -70,6 +70,13 @@ impl View for Terminal {
         cx.tree.set_key_context(id, TERMINAL_CONTEXT);
         session.0.view.set(Some(id));
         *session.0.handle.borrow_mut() = Some(cx.handle.clone());
+        // Once the view is gone, output paints nothing; a view mounted since keeps its own.
+        let shown = Rc::downgrade(&session.0);
+        on_cleanup(move || {
+            if let Some(s) = shown.upgrade().filter(|s| s.view.get() == Some(id)) {
+                s.view.set(None);
+            }
+        });
 
         // The grid follows the box, once layout has sized it.
         let (box_size, writer, s) = (cx.tree.size_signal(id), cx.handle.clone(), session.clone());

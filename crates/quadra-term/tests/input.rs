@@ -82,6 +82,16 @@ fn keys_follow_the_cursor_mode_and_ctrl_and_alt_and_tab_stays() {
 }
 
 #[test]
+fn a_press_focuses_the_terminal() {
+    let mut t = term();
+    t.h.tree.blur();
+    let (x, y) = Term::cell(1, 1);
+    t.h.click(x, y);
+    t.h.type_text("a");
+    assert_eq!(t.taken(), b"a");
+}
+
+#[test]
 fn paste_is_bracketed_when_the_program_asks() {
     let mut t = term();
     t.h.clipboard.write_text("ls\n");

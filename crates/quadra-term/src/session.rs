@@ -116,8 +116,13 @@ impl Session {
     }
 
     /// Where the session writes keys and replies, and tells a resize and the end.
+    /// The link is told the grid's size at once: a transport started before layout sized
+    /// the grid hears it.
     pub fn connect(&self, link: Link) {
-        *self.0.link.borrow_mut() = link;
+        let size = self.size();
+        let mut held = self.0.link.borrow_mut();
+        *held = link;
+        (held.resize)(size);
     }
 
     /// Writes bytes to the program.

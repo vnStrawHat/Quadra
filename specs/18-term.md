@@ -28,15 +28,17 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 ## Delivery
 
 - A transport's reader thread calls `Feeder::feed(bytes, now)`: the lock is taken, the bytes
-  fed, the event batch read, the lock let go. Replies (`VtEvent::Reply`, colour answers) are
-  returned in order and the transport writes them before anything else it was given.
+  fed, the event batch read, the lock let go. Replies (`VtEvent::Reply`, colour answers, the
+  OSC 7501 query's) are returned in order and the transport writes them after what it already
+  queued, so a key half written is never cut.
 - What the UI must hear goes through one inbox (specs/11): `Output` (a repaint is due: posted
-  once while none is pending, so a burst costs one frame), `Title`, `Cwd`, `Bell`,
-  `Notification`, `Progress`, `Status` (OSC 7501, below), `Mark` (OSC 133), `Clipboard` (OSC 52
-  store), `Exited(code)`. The UI thread drains it, updates the session's signals and marks the
+  once while none is pending, so a burst costs one frame), `Title`, `Cwd` (OSC 7, and OSC 9;9,
+  which Windows shells send), `Bell`, `Notification`, `Progress`, `Status` (OSC 7501, below; OSC
+  133 A applies its prompt rule), and the end of the stream with the exit code. OSC 52 stores are
+  dropped until an app setting lets them through. The UI thread drains it, updates the session's signals and marks the
   view for paint.
-- The UI thread takes the lock only for `snapshot_update` and `palette()`; drawing reads the
-  snapshot alone (the engine's two-phase hand-off). Synchronized output (`?2026`) is the
+- The UI thread takes the lock for `snapshot_update` and `palette()` in the update (output,
+  a resize, a key, the pointer, the theme), never in paint; drawing reads the snapshot alone (the engine's two-phase hand-off). Synchronized output (`?2026`) is the
   engine's: a held frame is `Unchanged`.
 
 ## The view

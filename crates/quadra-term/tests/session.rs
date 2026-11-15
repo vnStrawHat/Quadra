@@ -82,10 +82,23 @@ fn replies_come_back_in_order_and_the_status_query_is_answered() {
 fn the_box_sizes_the_engine_and_then_the_link() {
     let mut t = term(false);
     assert_eq!(t.s.size(), Size { rows: 8, cols: 64 });
-    assert_eq!(t.resized.borrow().last(), Some(&Size { rows: 8, cols: 64 }));
+    // Told the size it was connected at, then the box's.
+    assert_eq!(*t.resized.borrow(), [Size { rows: 24, cols: 80 }, Size { rows: 8, cols: 64 }]);
     t.h.size = quadra_prim::Size::new(400.0, 600.0);
     t.h.settle();
-    assert_eq!(t.resized.borrow().len(), 1, "the column keeps its size");
+    assert_eq!(t.resized.borrow().len(), 2, "the column keeps its size");
+    // A transport connected after layout hears the grid it has.
+    let late = Rc::new(RefCell::new(Vec::new()));
+    let told = late.clone();
+    t.s.connect(Link::new(|_| {}).on_resize(move |size| told.borrow_mut().push(size)));
+    assert_eq!(*late.borrow(), [Size { rows: 8, cols: 64 }]);
+}
+
+#[test]
+fn a_feeder_goes_to_another_thread() {
+    fn sent<T: Send + 'static>(_: &T) {}
+    let t = term(false);
+    sent(&t.s.feeder());
 }
 
 #[test]
@@ -101,6 +114,9 @@ fn the_signals_follow_what_the_program_says() {
     t.feed(b"\x1b]9;4;1;40\x07\x1b]9;done here\x07");
     assert_eq!(t.s.progress().get_untracked(), Some(Progress::Set(40)));
     assert_eq!(notices.borrow()[0], Notice { title: String::new(), body: "done here".into() });
+    t.feed(b"\x1b]9;9;\"C:\\work\"\x07"); // a Windows shell's directory is no notice
+    assert_eq!(t.s.cwd().get_untracked(), "C:\\work");
+    assert_eq!(notices.borrow().len(), 1);
     t.feed(b"\x1b]9;4;0\x07\x1b]7501;state=blocked:id=deploy\x07");
     assert_eq!(t.s.progress().get_untracked(), None);
     assert_eq!(t.s.status().get_untracked(), ProgramState::Blocked);

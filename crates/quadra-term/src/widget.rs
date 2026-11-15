@@ -7,7 +7,7 @@ use oneterm_vt::{CursorStyle, ModeSnapshot, Palette, Rgb, SnapshotState};
 use quadra_a11y::{Role, Semantics};
 use quadra_design::token;
 use quadra_layout::Known;
-use quadra_prim::{Color, Size};
+use quadra_prim::{Color, Rect, Size};
 use quadra_text::TextStyle;
 use quadra_tree::{GlyphTile, Inherited, MeasureCx, NodeId, PaintCx, Theme, Tree, Widget};
 
@@ -131,6 +131,14 @@ impl Widget for TerminalWidget {
         self.refresh();
         self.selection = theme.color(token::EDITOR_SELECTION);
         true
+    }
+
+    /// The cursor's cell: an input method opens beside it.
+    fn caret(&self) -> Option<Rect> {
+        let cursor = self.state.cursor();
+        let row = cursor.row.filter(|_| self.focused)?;
+        let (x, y) = (PADDING + f32::from(cursor.col) * self.cell, PADDING + f32::from(row) * self.line);
+        Some(Rect::new(x, y, self.cell, self.line))
     }
 
     /// A reader is told the rows that show.

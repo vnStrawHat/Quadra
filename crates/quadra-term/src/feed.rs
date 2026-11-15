@@ -69,10 +69,17 @@ impl Feeder {
                     VtEvent::TitleReset => events.push(Event::Title(String::new())),
                     VtEvent::Bell => events.push(Event::Bell),
                     VtEvent::Cwd { path, .. } => events.push(Event::Cwd(batch.str(path).to_string())),
-                    VtEvent::Notification { title, body } => events.push(Event::Notice(Notice {
-                        title: batch.str(title).to_string(),
-                        body: batch.str(body).to_string(),
-                    })),
+                    VtEvent::Notification { title, body } => {
+                        let body = batch.str(body);
+                        // OSC 9;9 is a Windows shell's working directory, not a notice.
+                        events.push(match body.strip_prefix("9;") {
+                            Some(path) => Event::Cwd(path.trim_matches('"').to_string()),
+                            None => Event::Notice(Notice {
+                                title: batch.str(title).to_string(),
+                                body: body.to_string(),
+                            }),
+                        })
+                    }
                     VtEvent::Progress(p) => events.push(Event::Progress(p)),
                     VtEvent::ShellMark(ShellMark::PromptStart) if statuses.prompt() => {
                         events.push(Event::Status(statuses.summary()))

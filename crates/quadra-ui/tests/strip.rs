@@ -74,3 +74,22 @@ fn a_box_that_scrolls_sideways_leaves_the_plain_wheel_to_the_page() {
     assert!((r.width - long).abs() < 0.01 && r.height == 14.0 && r.bottom() == 30.0 - 40.0, "{r:?}");
     assert!((r.x - (4.0 + (track - long) * 80.0 / 300.0)).abs() < 0.01, "{r:?}");
 }
+
+#[test]
+fn a_tab_brought_into_view_is_scrolled_to_sideways() {
+    let x = signal(0.0f32);
+    let mut h = Harness::new();
+    let tabs = row().children((0..10).map(|_| div().size(50.0, 30.0).shrink(0.0)).collect::<Vec<_>>());
+    mount_root(&mut h.tree, scroll_strip(x, tabs).container(div().size(200.0, 30.0)));
+    h.frame();
+    let content = h.tree.children(h.tree.root().unwrap())[0];
+    let tab = |h: &Harness, i: usize| h.tree.children(content)[i];
+    // The eighth tab, at 350 to 400: as little as shows it, its end at the strip's.
+    h.tree.scroll_into_view(tab(&h, 7));
+    h.frame();
+    assert_eq!(x.get_untracked(), 200.0);
+    // The second, at 50 to 100: its start at the strip's.
+    h.tree.scroll_into_view(tab(&h, 1));
+    h.frame();
+    assert_eq!(x.get_untracked(), 50.0);
+}

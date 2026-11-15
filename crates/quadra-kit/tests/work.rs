@@ -219,3 +219,25 @@ fn a_tab_is_renamed_in_place_has_its_own_menu_and_a_long_title_is_cut() {
     h.get_by_role(Role::MenuItem, "Close others").click();
     assert_eq!(asked.get_untracked(), "b");
 }
+
+#[test]
+fn the_tab_that_becomes_active_is_scrolled_to_in_a_strip_too_short_for_all() {
+    let tabs = signal((0..12).map(|i| Tab::new(format!("t{i}"), format!("Tab {i}"))).collect::<Vec<_>>());
+    let active = signal("t0".to_string());
+    let mut h =
+        mounted(move || quadra_kit::root().child(column().width(300.0).child(tab_strip(tabs, active))));
+    let shows = |h: &mut Harness, name: &str| {
+        let tab = h.get_by_role(Role::Tab, name).node();
+        let r = h.tree.window_rect(tab);
+        r.x >= -0.01 && r.right() <= 300.01
+    };
+    assert!(!shows(&mut h, "Tab 11"));
+    // Chosen from the menu of tabs, or opened past the end: it shows.
+    active.set("t11".into());
+    wait(&mut h, 0);
+    assert!(shows(&mut h, "Tab 11"));
+    tabs.update(|all| all.push(Tab::new("new", "New")));
+    active.set("new".into());
+    wait(&mut h, 0);
+    assert!(shows(&mut h, "New"));
+}

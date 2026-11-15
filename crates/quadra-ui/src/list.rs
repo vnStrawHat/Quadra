@@ -127,8 +127,9 @@ fn list<V: View + 'static>(
         tree.on_pointer(viewport, PointerKind::Wheel, move |e| {
             wheel_scrolls(e, scroll_y, top.get(), end.get())
         });
-        tree.on_reveal(viewport, move |rect| {
-            reveals(rect, scroll_y, top.get(), end.get(), size.get_untracked().height)
+        tree.on_reveal(viewport, move |rect: quadra_prim::Rect| {
+            let height = size.get_untracked().height;
+            quadra_prim::Point::new(0.0, reveals(rect.y, rect.height, scroll_y, top.get(), end.get(), height))
         });
         let thumb = scrollbar::attach(
             cx,
@@ -152,7 +153,7 @@ fn list<V: View + 'static>(
                 if rect.y >= 0.0 && rect.bottom() <= height && measured {
                     pending.set(None);
                 } else if height > 0.0 {
-                    untrack(|| reveals(rect, scroll_y, y, end.get(), height));
+                    untrack(|| reveals(rect.y, rect.height, scroll_y, y, end.get(), height));
                 }
             });
         }

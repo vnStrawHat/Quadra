@@ -112,10 +112,13 @@ because every render built new nodes. Here nodes persist, and a change is a flag
 - **Scrolling into view** (`Tree::scroll_into_view`, `NodeRef::scroll_into_view`): every node
   around the asked one that scrolls what it holds is asked, the nearest first, to show the
   node's rect, given in its own box as it is scrolled now. It scrolls as little as shows the
-  rect (to its start when it is taller than the viewport) and says how far, which moves the
-  rect for the next one out: nested scrolling settles in one go. A scroll view and the
-  lists answer; a widget that scrolls its own content registers with `Tree::on_reveal`.
-  A focus that comes by the keyboard and the semantic action `ScrollIntoView` ask for it.
+  rect (to its start when it is taller than the viewport) and says how far, sideways and
+  down, which moves the rect for the next one out: nested scrolling settles in one go. A
+  scroll view, the lists and the strips (sideways) answer; a widget that scrolls its own
+  content registers with `Tree::on_reveal`. A focus that comes by the keyboard and the
+  semantic action `ScrollIntoView` ask for it; `NodeRef::scroll_into_view` asks after the
+  next layout, so a node just mounted is where it will be. The kit's tab strip scrolls to
+  the tab that becomes the active one (chosen from its menu, opened past the end).
 - **A strip** (`scroll_strip(scroll_x, content)`) is a row that scrolls sideways: tabs. The
   wheel scrolls it, turned either way (a page never loses its wheel to it: what the strip
   cannot scroll goes on outwards), and it has no scrollbar. Its content is as wide as the

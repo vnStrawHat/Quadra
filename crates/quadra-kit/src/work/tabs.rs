@@ -7,9 +7,11 @@ use std::rc::Rc;
 use quadra_base::work::{self, Dock, Strip, Tab};
 use quadra_layout::{Align, Display, Justify};
 use quadra_platform::{Cursor, Key};
-use quadra_reactive::{Signal, memo, signal};
+use quadra_reactive::{Signal, effect, memo, signal};
 use quadra_tree::{NodeId, Paint, Role};
-use quadra_ui::{AnyView, Div, MountCx, View, div, dynamic, each, row, scroll_strip, text, text_input};
+use quadra_ui::{
+    AnyView, Div, MountCx, NodeRef, View, div, dynamic, each, row, scroll_strip, text, text_input,
+};
 
 use crate::icon::icon;
 use crate::menu::{MenuItem, context_menu, menu_icon_button};
@@ -199,7 +201,18 @@ fn face(strip: &Strip, tab: Signal<Tab>, more: More) -> impl View + use<> {
         seam(at.is_some_and(|at| i >= at))
     });
 
-    let face = strip.tab(face.child(content), tab);
+    // The tab that becomes the active one is scrolled to in the strip: one chosen from the
+    // menu of tabs, one just opened past the end.
+    let shown = NodeRef::new();
+    let reveal = shown.clone();
+    let face = face.child(content).node_ref(&shown).on_mount(move |_, _| {
+        effect(move || {
+            if on.get() {
+                reveal.scroll_into_view();
+            }
+        });
+    });
+    let face = strip.tab(face, tab);
     match menu {
         Some(items) => AnyView::new(context_menu(face, move || items(&id))),
         None => AnyView::new(face),

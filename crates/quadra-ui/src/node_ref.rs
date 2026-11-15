@@ -24,11 +24,12 @@ impl NodeRef {
         self.0.borrow().as_ref().map(|(id, _)| *id)
     }
 
-    /// Scrolls what scrolls around the node so that it shows, in the window's next frame.
+    /// Scrolls what scrolls around the node so that it shows, in the window's next frame:
+    /// after its layout, so a node just mounted is where it will be.
     pub fn scroll_into_view(&self) {
         if let Some((id, handle)) = &*self.0.borrow() {
             let id = *id;
-            handle.with(move |tree| tree.scroll_into_view(id));
+            handle.with(move |tree| tree.after_layout(move |tree| tree.scroll_into_view(id)));
         }
     }
 

@@ -31,12 +31,13 @@ pub(crate) fn wheel_scrolls(e: &mut PointerEvent, scroll_y: Signal<f32>, top: f3
     }
 }
 
-/// What a scroll container does when asked to show a rect of its own box: it scrolls as
-/// little as shows it, to the start of what is taller than the viewport, and says how far.
-pub(crate) fn reveals(rect: Rect, scroll_y: Signal<f32>, top: f32, end: f32, height: f32) -> f32 {
-    let down = if rect.y < 0.0 { rect.y } else { (rect.bottom() - height).clamp(0.0, rect.y) };
-    let to = (top + down).clamp(0.0, end);
-    scroll_y.set(to);
+/// What a scroll container does on one axis when asked to show the part `at` to
+/// `at + long` of its own box: it scrolls as little as shows it, to the start of what is
+/// longer than the viewport (`view` long), and says how far.
+pub(crate) fn reveals(at: f32, long: f32, scroll: Signal<f32>, top: f32, end: f32, view: f32) -> f32 {
+    let by = if at < 0.0 { at } else { (at + long - view).clamp(0.0, at) };
+    let to = (top + by).clamp(0.0, end);
+    scroll.set(to);
     to - top
 }
 
@@ -63,8 +64,9 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
         cx.tree.on_pointer(viewport, PointerKind::Wheel, move |e| {
             wheel_scrolls(e, scroll_y, top.get(), end.get())
         });
-        cx.tree.on_reveal(viewport, move |rect| {
-            reveals(rect, scroll_y, top.get(), end.get(), outer.get_untracked().height)
+        cx.tree.on_reveal(viewport, move |rect: Rect| {
+            let height = outer.get_untracked().height;
+            Point::new(0.0, reveals(rect.y, rect.height, scroll_y, top.get(), end.get(), height))
         });
         let thumb = scrollbar::attach(
             cx,
@@ -83,8 +85,8 @@ pub fn scroll<V: View + 'static>(scroll_y: Signal<f32>, content: V) -> Region {
 
 /// Shows a row of things behind a viewport, scrolled sideways by `scroll_x` pixels (kept
 /// between zero and the end): a strip of tabs. The wheel scrolls it, turned either way, and
-/// it has no scrollbar. The content is as wide as the strip at least.
-// ponytail: nothing is brought into view sideways; when a strip's tab must be.
+/// it has no scrollbar. The content is as wide as the strip at least. What is brought into
+/// view in it (a tab that takes the focus) is scrolled to sideways.
 pub fn scroll_strip<V: View + 'static>(scroll_x: Signal<f32>, content: V) -> Region {
     strip(scroll_x, content, true)
 }
@@ -111,6 +113,10 @@ fn strip<V: View + 'static>(scroll_x: Signal<f32>, content: V, plain_wheel: bool
         let (outer, inner) = (cx.tree.size_signal(viewport), cx.tree.size_signal(content));
         let end = memo(move || (inner.get().width - outer.get().width).max(0.0));
         let left = memo(move || scroll_x.get().clamp(0.0, end.get()));
+        cx.tree.on_reveal(viewport, move |rect: Rect| {
+            let width = outer.get_untracked().width;
+            Point::new(reveals(rect.x, rect.width, scroll_x, left.get(), end.get(), width), 0.0)
+        });
         cx.tree.on_pointer(viewport, PointerKind::Wheel, move |e| {
             // The wheel turned sideways, or the plain wheel: one of the two says how far.
             let plain = plain_wheel || e.mods.contains(quadra_platform::Mods::SHIFT);

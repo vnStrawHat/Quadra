@@ -118,7 +118,7 @@ pub(crate) enum Handler {
     },
     /// The node scrolls what it holds: asked to show a rect of its own box, it says how far
     /// down it scrolled for it.
-    Reveal(Box<dyn FnMut(Rect) -> f32>),
+    Reveal(Box<dyn FnMut(Rect) -> Point>),
     /// Assistive technology, or a test, asks something of the node.
     Semantic(Box<dyn FnMut(&SemanticAction) -> bool>),
     /// The user asks the window to close: whether it may (specs/15, "Closing").

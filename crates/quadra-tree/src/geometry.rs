@@ -36,8 +36,8 @@ impl Tree {
 
     /// Makes a node that scrolls what it holds answer [`Tree::scroll_into_view`]: `f` is given
     /// a rect in the node's own box, as it is scrolled now, scrolls to show it, and returns
-    /// how far down it scrolled.
-    pub fn on_reveal(&mut self, id: NodeId, f: impl FnMut(Rect) -> f32 + 'static) {
+    /// how far it scrolled, sideways and down.
+    pub fn on_reveal(&mut self, id: NodeId, f: impl FnMut(Rect) -> Point + 'static) {
         self.add_handler(id, Handler::Reveal(Box::new(f)));
     }
 
@@ -63,7 +63,8 @@ impl Tree {
                 let within = rect.translate(-port.x, -port.y);
                 for handler in &mut self.nodes[around.index as usize].handlers {
                     if let Handler::Reveal(run) = handler {
-                        rect = rect.translate(0.0, -run(within)); // it is higher in the window now
+                        let by = run(within);
+                        rect = rect.translate(-by.x, -by.y); // it is further up and left now
                     }
                 }
             }

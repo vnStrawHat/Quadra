@@ -222,7 +222,21 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   the user's Downloads folder (`name (1).ext` when the name is taken); a row's menu has
   Download and Delete. Files dropped from the OS upload to the folder shown. Transfers show
   under the list, `name → remote 48%` or `name ← local`, with a cross that cancels; a failed
-  one says why. The expanded view waits.
+  one says why. Names that start with `.` show only while `.hidden` is on (both views).
+- **The expanded view**: the dock's Expand button (and the title bar's Collapse SFTP, back)
+  gives SFTP the workspace; the spaces stay mounted and running, not displayed, and the
+  title bar's chip adds `SFTP expanded`. Its header: `SFTP`, the host and `ssh session keeps
+  running`, Sync cwd with terminal (the remote pane goes to the focused space's directory
+  when it is a remote path), `.hidden`, Collapse. Two panes, Local at the left and Remote at
+  the right, each with its label, its path in mono, Up and Refresh, a header row (Name, Size
+  80 px, Modified 120 px) and its rows; a click selects a row, two open a folder. The Local
+  pane starts in the downloads folder (the setting or Downloads). Between them a column of
+  56 px: Upload selected, Download selected (into the Local pane's folder, a free name), and
+  Compare, which marks a remote file whose local namesake is newer `older` and one that is
+  newer `newer`. The transfers under both: `Transfers`, `n active · n done`, a row each with
+  `name → folder`, a bar of 200 px, its percentage and the cross. The kit draws all of it
+  (tokens, `progress`, `checkbox`, icon buttons); the canvas gives the layout only.
+  `Entry::modified` is the server's mtime (seconds; 0 when it has none).
 - **Sessions keep app data**: `Session::keep(Rc<dyn Any>)` and `kept::<T>()` (specs/18), how
   the app finds a remote space's `Ssh`.
 

@@ -5,6 +5,7 @@
 mod chrome;
 mod connect;
 mod dock;
+mod expanded;
 mod git;
 mod hostlist;
 mod hosts;
@@ -14,6 +15,7 @@ mod locked;
 mod marks;
 mod model;
 mod page;
+mod panes;
 mod prefs;
 mod rail;
 mod remote;

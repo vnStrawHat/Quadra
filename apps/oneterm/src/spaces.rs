@@ -21,7 +21,9 @@ pub(crate) fn workspace(model: &Model) -> impl View + use<> {
         (size, Some(tab)) => AnyView::new(columns(&shown, tab, size.clamp(6.0, 48.0) as f32)),
         (_, None) => AnyView::new(div()),
     });
-    tab.container(row().grow(1.0).bg(token::CANVAS))
+    // The expanded SFTP view takes the workspace's place; the spaces run on, not displayed.
+    let expanded = model.ui().expanded;
+    tab.container(row().grow(1.0).bg(token::CANVAS).display(crate::locked::shown(move || !expanded.get())))
 }
 
 fn columns(model: &Model, tab: Tab, font: f32) -> impl View + use<> {

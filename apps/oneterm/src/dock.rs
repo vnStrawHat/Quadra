@@ -12,14 +12,26 @@ use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, inp
 
 use crate::locked::shown;
 use crate::model::Model;
-use crate::sftp::{Dock, Transfer, size};
+use crate::panes::size;
+use crate::sftp::{Dock, Transfer};
 
 /// How many entries the list shows; a longer folder says how many more.
 const SHOWN: usize = 2000;
 
+/// The dock, or in the workspace's place the expanded view.
 pub(crate) fn dock(model: &Model) -> impl View + use<> {
-    let (open, naming) = (model.ui().dock, signal(false));
+    let (open, expanded) = (model.ui().dock, model.ui().expanded);
     let d = Dock::new(model, open);
+    let views = model.clone();
+    dynamic(move || match expanded.get() {
+        true => AnyView::new(crate::expanded::view(&views, d)),
+        false => AnyView::new(panel(&views, d)),
+    })
+    .container(row().display(shown(move || open.get())))
+}
+
+fn panel(model: &Model, d: Dock) -> impl View + use<> {
+    let (open, naming) = (model.ui().dock, signal(false));
     // The connection of the focused space, again whenever another space has the focus.
     let follows = model.clone();
     let focused = memo(move || follows.active_tab().and_then(|tab| tab.focused()).map(|it| it.id));
@@ -51,6 +63,10 @@ pub(crate) fn dock(model: &Model) -> impl View + use<> {
             quiet(icons::REFRESH_CW, "Refresh").on_click(move || d.refresh(&refreshes)),
         ))
         .child(tooltip("New folder", quiet(icons::PLUS, "New folder").on_click(move || naming.set(true))))
+        .child(tooltip(
+            "Expand",
+            quiet(icons::WINDOW_MAXIMIZE, "Expand SFTP").on_click(move || d.expanded.set(true)),
+        ))
         .child(tooltip("Close", quiet(icons::X, "Close SFTP").on_click(move || open.set(false))));
     let folder_name = signal(String::new());
     let new_folder = div().padding_x(10.0).padding_bottom(6.0).display(shown(move || naming.get())).child(
@@ -70,7 +86,6 @@ pub(crate) fn dock(model: &Model) -> impl View + use<> {
         .bg(token::PANEL)
         .border_left(1.0)
         .border_color(token::LINE)
-        .display(shown(move || open.get()))
         .label("SFTP")
         .on_drop(move |files: &DroppedFiles, _| d.upload(&drops, files.0.clone()))
         .drop_target(|s| s.bg(token::ACCENT_TINT))
@@ -112,13 +127,13 @@ fn entries(model: &Model, d: Dock) -> impl View + use<> {
         if !said.is_empty() {
             return AnyView::new(div().padding(10.0).text_color(token::TEXT_2).child(text(said)));
         }
-        let all = d.entries.get();
+        let all = crate::panes::visible(&d.entries.get(), d.hidden.get());
         let mut list = column().padding_x(4.0);
         let dir = d.dir.get_untracked();
         if dir != "/" && !dir.is_empty() {
             let (up, goes) = (dir.rsplit_once('/').map_or("/", |it| it.0).to_string(), model.clone());
             let up = if up.is_empty() { "/".to_string() } else { up };
-            let entry = Entry { name: "..".into(), dir: true, size: 0 };
+            let entry = Entry { name: "..".into(), dir: true, size: 0, modified: 0 };
             list = list.child(line(&entry).on_click(move |_| d.load(&goes, Some(up.clone()))));
         }
         for entry in all.iter().take(SHOWN) {

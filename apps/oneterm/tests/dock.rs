@@ -72,6 +72,10 @@ impl App {
         }
     }
 
+    fn pane(&self, name: &str) -> bool {
+        !self.h.query(|n| n.semantics.name == name && n.semantics.role != Role::Button).is_empty()
+    }
+
     fn entry(&self, name: &str) -> bool {
         !self.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == name).is_empty()
     }
@@ -118,6 +122,57 @@ fn dropped_files_upload_and_a_folder_is_made() {
     a.h.key(quadra::Key::Enter, quadra::Mods::NONE);
     let made = a.served.join("home/made");
     a.wait(|a| made.is_dir() && a.entry("made"), "the folder made");
+}
+
+#[test]
+fn the_expanded_view_moves_files_between_its_panes_and_compares() {
+    let mut a = app("dock-wide");
+    a.wait(|a| a.entry("config.yaml"), "the home folder");
+    std::fs::write(a.downloads.join("notes.md"), b"# notes").unwrap();
+    a.h.get_by_role(Role::Button, "Expand SFTP").click();
+    a.h.settle();
+    assert!(a.h.semantics().contains("SFTP expanded"), "the title bar says it");
+    assert!(
+        a.pane("Local") && a.pane("Remote"),
+        "two panes
+{}",
+        a.h.semantics()
+    );
+    a.h.get_by_role(Role::Button, "Refresh local").click();
+    a.wait(|a| a.entry("notes.md"), "the local folder");
+
+    a.h.get_by_role(Role::Button, "notes.md").click();
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Upload selected").click();
+    let up = a.served.join("home/notes.md");
+    let both = |a: &App| {
+        a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "notes.md").len() == 2
+    };
+    a.wait(|a| up.is_file() && both(a), "the upload listed on both sides");
+
+    a.h.get_by_role(Role::Button, "config.yaml").click();
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Download selected").click();
+    let got = a.downloads.join("config.yaml");
+    a.wait(|a| got.is_file() && a.h.has_text("0 active · 2 done"), "the download into the local pane");
+
+    // The remote copy is years older than the local one.
+    let old = std::time::UNIX_EPOCH + Duration::from_secs(1_600_000_000);
+    std::fs::File::options()
+        .write(true)
+        .open(a.served.join("home/config.yaml"))
+        .unwrap()
+        .set_modified(old)
+        .unwrap();
+    a.h.get_by_role(Role::Button, "Refresh remote").click();
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Compare").click();
+    a.wait(|a| a.h.has_text("older"), "the comparison");
+
+    a.h.get_by_role(Role::Button, "Collapse SFTP").click();
+    a.h.settle();
+    assert!(!a.pane("Local") && !a.h.semantics().contains("SFTP expanded"), "the dock again");
+    assert!(a.entry("config.yaml"), "the dock again");
 }
 
 fn drop_on_dock(a: &mut App, path: &Path) {

@@ -23,6 +23,8 @@ pub struct Ui {
     pub adding: Signal<bool>,
     /// The SFTP dock.
     pub dock: Signal<bool>,
+    /// SFTP in the workspace's place.
+    pub expanded: Signal<bool>,
 }
 
 /// The window's tabs. A copy is the same one.
@@ -64,6 +66,7 @@ impl Model {
                 connecting: signal(false),
                 adding: signal(false),
                 dock: signal(false),
+                expanded: signal(false),
             },
             lock: Lock::new(prefs),
         };

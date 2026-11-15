@@ -52,7 +52,10 @@ fn a_folder_lists_folders_first_and_files_go_both_ways() {
     // Again, over the one there.
     files.upload(&local, "/home/src/copy.yaml", |_, _| {}, &AtomicBool::new(false)).unwrap();
     let listed = files.list("/home/src").unwrap();
-    assert_eq!(listed, [Entry { name: "copy.yaml".into(), dir: false, size: 200_000 }]);
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
+    let modified = listed[0].modified;
+    assert!(now.abs_diff(modified) < 60, "the mtime is told: {modified}");
+    assert_eq!(listed, [Entry { name: "copy.yaml".into(), dir: false, size: 200_000, modified }]);
 
     files.mkdir("/home/new").unwrap();
     assert!(served.join("home/new").is_dir());

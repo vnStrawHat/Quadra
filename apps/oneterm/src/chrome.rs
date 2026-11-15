@@ -18,13 +18,18 @@ use crate::signals::{all_bells, percent};
 /// its spaces in the secondary colour.
 pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
     let (model, seen, lock) = (model.clone(), model.clone(), model.lock());
+    let expanded = model.ui().expanded;
     let said = move || {
         if lock.locked.get() {
             return "Locked".to_string();
         }
         let Some(tab) = model.active_tab() else { return String::new() };
         let n = tab.spaces.with(Vec::len);
-        format!("{} \u{B7} {n} {}", tab.title(), if n == 1 { "space" } else { "spaces" })
+        let mut said = format!("{} \u{B7} {n} {}", tab.title(), if n == 1 { "space" } else { "spaces" });
+        if expanded.get() {
+            said.push_str(" \u{B7} SFTP expanded");
+        }
+        said
     };
     let mark = row()
         .align_items(Align::Center)
@@ -43,9 +48,16 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
     let files =
         tooltip("SFTP", icon_button(icons::FOLDER, "SFTP").on_click(move || dock.update(|on| *on = !*on)));
     // Locked, what would open something is not displayed.
+    let collapse = div().display(shown(move || expanded.get())).child(
+        quadra_design::button("Collapse SFTP")
+            .icon(icons::WINDOW_RESTORE)
+            .on_click(move || expanded.set(false)),
+    );
     let buttons = row()
         .align_items(Align::Center)
+        .gap(4.0)
         .display(shown(move || !lock.locked.get()))
+        .child(collapse)
         .child(files)
         .child(div().display(shown(move || lock.can_lock())).child(locks))
         .child(notifications(&seen))

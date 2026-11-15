@@ -12,12 +12,15 @@ use oneterm_ssh::{Entry, Files, Ssh, join, safe_name};
 use quadra::{Scope, Signal, background, interval, signal, spawn, untrack};
 
 use crate::model::Model;
+use crate::panes::{Local, free_name};
 
 /// A file going one way or the other.
 pub(crate) struct Transfer {
     pub name: String,
     /// To the server.
     pub up: bool,
+    /// The folder it goes to.
+    pub to: String,
     pub done: Arc<AtomicU64>,
     pub whole: Arc<AtomicU64>,
     pub cancel: Arc<AtomicBool>,
@@ -38,6 +41,25 @@ impl Transfer {
             }
         }
     }
+
+    /// How much is done, from 0 to 1.
+    pub fn part(&self) -> f32 {
+        let (done, whole) = (self.done.load(Ordering::Relaxed), self.whole.load(Ordering::Relaxed));
+        match self.end.get() {
+            Some(Ok(())) => 1.0,
+            _ if whole == 0 => 0.0,
+            _ => done as f32 / whole as f32,
+        }
+    }
+
+    /// `48%`, `done` or `failed`.
+    pub fn state(&self) -> String {
+        match self.end.get() {
+            Some(Ok(())) => "done".into(),
+            Some(Err(_)) => "failed".into(),
+            None => format!("{:.0}%", self.part() * 100.0),
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -49,6 +71,13 @@ pub(crate) struct Dock {
     pub transfers: Signal<Vec<Rc<Transfer>>>,
     /// Moves while transfers run, so their percentages show.
     pub tick: Signal<u32>,
+    /// The remote entry chosen in the expanded view.
+    pub selected: Signal<Option<String>>,
+    /// Whether names that start with `.` show.
+    pub hidden: Signal<bool>,
+    /// The expanded view, whose Local pane downloads go to.
+    pub expanded: Signal<bool>,
+    pub local: Local,
     owner: Scope,
 }
 
@@ -68,6 +97,10 @@ impl Dock {
             said: signal(String::new()),
             transfers: signal(Vec::new()),
             tick: signal(0),
+            selected: signal(None),
+            hidden: signal(false),
+            expanded: model.ui().expanded,
+            local: Local::new(downloads(model)),
             owner: Scope::current(),
         };
         let (model, waits) = (model.clone(), std::cell::Cell::new(0u32));
@@ -119,6 +152,7 @@ impl Dock {
             },
             |dock, got| match got {
                 Ok((dir, entries)) => {
+                    dock.selected.set(None);
                     dock.dir.set(dir);
                     dock.entries.set(entries);
                     dock.said.set(String::new());
@@ -155,20 +189,28 @@ impl Dock {
         }
     }
 
-    /// Downloads a file to the user's Downloads folder, under a name not taken.
+    /// Downloads a file under a name not taken: to the Local pane's folder in the expanded
+    /// view, else to the downloads folder.
     pub fn download(&self, model: &Model, entry: &Entry) {
         if !safe_name(&entry.name) {
             self.said.set(format!("Not a name for a local file: {}", entry.name));
             return;
         }
         let remote = join(&self.dir.get_untracked(), &entry.name);
-        let local = free_name(&downloads(model), &entry.name);
-        let transfer = self.start(&entry.name, false);
+        let folder =
+            if self.expanded.get_untracked() { self.local.dir.get_untracked() } else { downloads(model) };
+        let local = free_name(&folder, &entry.name);
+        let transfer = self.start(&entry.name, false, folder.display().to_string());
         let (done, whole, cancel) = (transfer.done.clone(), transfer.whole.clone(), transfer.cancel.clone());
         self.with_files(
             model,
             move |files| files.download(&remote, &local, |d, w| store(&done, &whole, d, w), &cancel),
-            move |_, got| transfer.end.set(Some(got)),
+            move |dock, got| {
+                if got.is_ok() && dock.local.dir.get_untracked() == folder {
+                    dock.local.refresh();
+                }
+                transfer.end.set(Some(got));
+            },
         );
     }
 
@@ -177,7 +219,7 @@ impl Dock {
         for path in paths.into_iter().filter(|it| it.is_file()) {
             let name = path.file_name().map(|it| it.to_string_lossy().into_owned()).unwrap_or_default();
             let remote = join(&self.dir.get_untracked(), &name);
-            let transfer = self.start(&name, true);
+            let transfer = self.start(&name, true, self.dir.get_untracked());
             let (done, whole, cancel) =
                 (transfer.done.clone(), transfer.whole.clone(), transfer.cancel.clone());
             let again = model.clone();
@@ -194,10 +236,11 @@ impl Dock {
         }
     }
 
-    fn start(&self, name: &str, up: bool) -> Rc<Transfer> {
+    fn start(&self, name: &str, up: bool, to: String) -> Rc<Transfer> {
         let transfer = Rc::new(Transfer {
             name: name.to_string(),
             up,
+            to,
             done: Arc::default(),
             whole: Arc::default(),
             cancel: Arc::default(),
@@ -221,56 +264,4 @@ fn downloads(model: &Model) -> PathBuf {
     }
     let home = std::env::var_os("USERPROFILE").map(PathBuf::from).unwrap_or_default();
     home.join("Downloads")
-}
-
-/// `name`, or `name (1).ext` and on when that is taken.
-pub(crate) fn free_name(folder: &std::path::Path, name: &str) -> PathBuf {
-    let (stem, ext) = match name.rsplit_once('.') {
-        Some((stem, ext)) if !stem.is_empty() => (stem, format!(".{ext}")),
-        _ => (name, String::new()),
-    };
-    let mut path = folder.join(name);
-    let mut n = 1;
-    while path.exists() || path.with_file_name(format!("{}.part", file(&path))).exists() {
-        path = folder.join(format!("{stem} ({n}){ext}"));
-        n += 1;
-    }
-    path
-}
-
-fn file(path: &std::path::Path) -> String {
-    path.file_name().map(|it| it.to_string_lossy().into_owned()).unwrap_or_default()
-}
-
-/// A size as people read it: `812 B`, `2.4 KB`, `41 MB`.
-pub(crate) fn size(bytes: u64) -> String {
-    const UNITS: [&str; 4] = ["KB", "MB", "GB", "TB"];
-    if bytes < 1024 {
-        return format!("{bytes} B");
-    }
-    let (mut value, mut unit) = (bytes as f64 / 1024.0, 0);
-    while value >= 1024.0 && unit < UNITS.len() - 1 {
-        (value, unit) = (value / 1024.0, unit + 1);
-    }
-    if value < 10.0 { format!("{value:.1} {}", UNITS[unit]) } else { format!("{value:.0} {}", UNITS[unit]) }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn sizes_and_free_names() {
-        assert_eq!(
-            (size(812), size(2458), size(41 * 1024 * 1024)),
-            ("812 B".into(), "2.4 KB".into(), "41 MB".into())
-        );
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.tmp/free-name");
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        assert_eq!(free_name(&dir, "a.txt"), dir.join("a.txt"));
-        std::fs::write(dir.join("a.txt"), b"").unwrap();
-        assert_eq!(free_name(&dir, "a.txt"), dir.join("a (1).txt"));
-        assert_eq!(free_name(&dir, ".bashrc"), dir.join(".bashrc"));
-    }
 }

@@ -22,6 +22,8 @@ pub struct Entry {
     pub name: String,
     pub dir: bool,
     pub size: u64,
+    /// When it last changed, in seconds since 1970; 0 when the server does not say.
+    pub modified: u64,
 }
 
 /// SFTP on a connection; a copy is the same session.
@@ -57,7 +59,8 @@ impl Files {
             .take(MOST)
             .map(|it| {
                 let meta = it.metadata();
-                Entry { name: it.file_name(), dir: meta.is_dir(), size: meta.len() }
+                let modified = meta.mtime.unwrap_or(0).into();
+                Entry { name: it.file_name(), dir: meta.is_dir(), size: meta.len(), modified }
             })
             .collect();
         entries.sort_by(|a, b| {

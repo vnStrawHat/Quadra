@@ -40,6 +40,8 @@ fn failed(_: std::io::Error) -> StatusCode {
 fn attrs(meta: &std::fs::Metadata) -> FileAttributes {
     let mut attrs = FileAttributes::empty();
     attrs.size = Some(meta.len());
+    let since = meta.modified().ok().and_then(|it| it.duration_since(std::time::UNIX_EPOCH).ok());
+    attrs.mtime = since.map(|it| it.as_secs() as u32);
     attrs.permissions = Some(if meta.is_dir() { 0o040755 } else { 0o100644 });
     attrs
 }

@@ -5,10 +5,10 @@ use std::ffi::c_void;
 
 use windows::Win32::Foundation::E_INVALIDARG;
 use windows::Win32::Graphics::DirectWrite::{
-    IDWriteFactory5, IDWriteFontCollection, IDWriteFontFile, IDWriteFontSetBuilder1,
-    IDWriteInMemoryFontFileLoader,
+    DWRITE_UNICODE_RANGE, IDWriteFactory5, IDWriteFontCollection, IDWriteFontFallback, IDWriteFontFile,
+    IDWriteFontSetBuilder1, IDWriteInMemoryFontFileLoader,
 };
-use windows::core::{Error, Interface, Result};
+use windows::core::{Error, HSTRING, Interface, PCWSTR, Result};
 
 use super::{DirectWrite, family_name};
 
@@ -71,6 +71,26 @@ impl DirectWrite {
             let collection = self.collection_of(&builder)?;
             self.loaded = Some(Loaded { factory: self.factory.clone(), loader, builder, collection });
             Ok(names)
+        }
+    }
+}
+
+impl DirectWrite {
+    /// The system's fallback after the families named, tried in order for every character.
+    pub(super) fn fallback_with(&self, families: &[String]) -> Result<IDWriteFontFallback> {
+        // SAFETY: plain calls on live objects; the names outlive the call that reads them.
+        unsafe {
+            let system = self.factory2.GetSystemFontFallback()?;
+            if families.is_empty() {
+                return Ok(system);
+            }
+            let builder = self.factory2.CreateFontFallbackBuilder()?;
+            let names: Vec<HSTRING> = families.iter().map(HSTRING::from).collect();
+            let names: Vec<*const u16> = names.iter().map(|it| it.as_ptr()).collect();
+            let all = [DWRITE_UNICODE_RANGE { first: 0, last: 0x10FFFF }];
+            builder.AddMapping(&all, &names, &self.system, PCWSTR::null(), PCWSTR::null(), 1.0)?;
+            builder.AddMappings(&system)?;
+            builder.CreateFontFallback()
         }
     }
 }

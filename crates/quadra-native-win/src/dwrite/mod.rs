@@ -220,6 +220,12 @@ impl TextBackend for DirectWrite {
         }
     }
 
+    fn set_fallbacks(&mut self, families: &[String]) {
+        if let Ok(fallback) = self.fallback_with(families) {
+            self.fallback = fallback;
+        }
+    }
+
     fn system_changed(&mut self) -> bool {
         let now = font_smoothing();
         let changed = now != (self.cleartype, self.bgr);

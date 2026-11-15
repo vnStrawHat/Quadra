@@ -174,6 +174,10 @@ pub trait TextBackend {
     /// them ignores them.
     fn set_features(&mut self, _family: &str, _features: &[Feature]) {}
 
+    /// The families tried, in order, for what a face lacks, before the system's fallback;
+    /// empty, the system's alone. A family not installed is passed over.
+    fn set_fallbacks(&mut self, _families: &[String]) {}
+
     /// The bidirectional level of each byte of a text with a right-to-left character, the
     /// text read right to left when `rtl`. `None`: the backend cannot tell, and the text is
     /// shown left to right. `shape` gives a word's glyphs in visual order.

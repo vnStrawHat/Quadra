@@ -115,6 +115,17 @@ impl TextSystem {
     /// until its text or style changes, so features are set as fonts are loaded.
     pub fn set_features(&mut self, family: &str, features: &[Feature]) {
         self.backend.set_features(family, features);
+        self.forget_words();
+    }
+
+    /// The families tried first for what a face lacks (specs/08, "Fallback families"); words
+    /// are shaped again as `set_features` says.
+    pub fn set_fallbacks(&mut self, families: &[String]) {
+        self.backend.set_fallbacks(families);
+        self.forget_words();
+    }
+
+    fn forget_words(&mut self) {
         self.words.current.clear();
         self.words.previous.clear();
         self.words.count = 0;

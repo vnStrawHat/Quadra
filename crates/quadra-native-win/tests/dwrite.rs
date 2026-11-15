@@ -69,6 +69,20 @@ fn characters_the_face_lacks_come_from_fallback_faces() {
 }
 
 #[test]
+fn the_families_named_are_tried_before_the_system_fallback() {
+    let mut dw = DirectWrite::new().unwrap();
+    let face = segoe(&mut dw);
+    let first = |dw: &mut DirectWrite| dw.shape("\u{65E5}", face, 16.0)[0].face;
+    let system = first(&mut dw);
+    for family in ["Microsoft YaHei", "Yu Gothic"] {
+        dw.set_fallbacks(&["No Such Family 12345".to_string(), family.to_string()]);
+        assert_eq!(Some(first(&mut dw)), dw.face(&key(family)), "{family}");
+    }
+    dw.set_fallbacks(&[]);
+    assert_eq!(first(&mut dw), system);
+}
+
+#[test]
 fn a_glyph_is_coverage_per_pixel_or_per_subpixel() {
     let mut dw = DirectWrite::new().unwrap();
     let face = segoe(&mut dw);

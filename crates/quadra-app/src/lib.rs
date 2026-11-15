@@ -157,6 +157,12 @@ impl<R: Renderer> App<R> {
         self.fonts.borrow_mut().text.set_features(family, features);
     }
 
+    /// The families tried, in order, for what a face lacks, before the system's fallback
+    /// (specs/08, "Fallback families"), set before text is shown.
+    pub fn font_fallbacks(&mut self, families: &[String]) {
+        self.fonts.borrow_mut().text.set_fallbacks(families);
+    }
+
     /// The theme the roles in styles get their colours from (specs/13), in every window. A
     /// view changes it by writing the `Signal<Rc<Theme>>` of its context.
     pub fn theme(self, theme: Theme) -> App<R> {

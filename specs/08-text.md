@@ -77,6 +77,13 @@ The rules of behaviour/04 carry over. What differs from the V backend:
   the shaping cache; a paragraph keeps its words until its text or style changes, so
   features are set as fonts are loaded. Per family, not per style: a style stays what it is
   and a face is still one key of the cache.
+- **Fallback families** (`App::font_fallbacks(&[..])`, `TextSystem::set_fallbacks`): families
+  the app names are tried, in order, for every character a face lacks, before the system's
+  fallback (a terminal's prompt with the icons of a patched font, a script the user prefers
+  in one face). A family not installed is passed over. DirectWrite: a fallback of its builder
+  maps the whole of Unicode to the families, then takes the system's mappings. Like features,
+  setting them empties the shaping cache, and a paragraph that holds its words keeps them
+  until its text or style changes.
 - **Bidirectional text**, for display (`bidi.rs`; caret movement and editing in
   right-to-left text stay After-v1, below):
   - A text with a right-to-left character (`has_rtl`: Hebrew, Arabic and the scripts beside

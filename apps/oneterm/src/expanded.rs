@@ -61,7 +61,11 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         let (all, said) = (visible(&local.entries.get(), d.hidden.get()), local.said.get());
         let mut list = column().width(Length::Fill).padding(4.0);
         if !said.is_empty() {
-            return AnyView::new(list.child(div().padding(8.0).text_color(token::TEXT_2).child(text(said))));
+            return AnyView::new(
+                list.child(
+                    div().width(Length::Fill).padding(8.0).text_color(token::TEXT_2).child(text(said)),
+                ),
+            );
         }
         for entry in all {
             let (name, picks, opens) = (entry.name.clone(), entry.name.clone(), entry.clone());
@@ -74,25 +78,28 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         AnyView::new(list)
     });
     let remotes = model.clone();
-    let remote_rows = dynamic(move || {
-        let (all, said) = (visible(&d.entries.get(), d.hidden.get()), d.said.get());
-        let mut list = column().width(Length::Fill).padding(4.0);
-        if !said.is_empty() {
-            return AnyView::new(list.child(div().padding(8.0).text_color(token::TEXT_2).child(text(said))));
-        }
-        let locals = if compare.get() { local.entries.get() } else { Vec::new() };
-        for entry in all {
-            let (name, picks, opens, goes) =
-                (entry.name.clone(), entry.name.clone(), entry.clone(), remotes.clone());
-            let line = line(&entry, compared(&entry, &locals))
-                .selected(move || d.selected.get().as_deref() == Some(&name));
-            list = list.child(line.on_click(move |e| match (opens.dir, e.clicks) {
-                (true, 2) => d.load(&goes, Some(oneterm_ssh::join(&d.dir.get_untracked(), &opens.name))),
-                _ => d.selected.set(Some(picks.clone())),
-            }));
-        }
-        AnyView::new(list)
-    });
+    let remote_rows =
+        dynamic(move || {
+            let (all, said) = (visible(&d.entries.get(), d.hidden.get()), d.said.get());
+            let mut list = column().width(Length::Fill).padding(4.0);
+            if !said.is_empty() {
+                return AnyView::new(list.child(
+                    div().width(Length::Fill).padding(8.0).text_color(token::TEXT_2).child(text(said)),
+                ));
+            }
+            let locals = if compare.get() { local.entries.get() } else { Vec::new() };
+            for entry in all {
+                let (name, picks, opens, goes) =
+                    (entry.name.clone(), entry.name.clone(), entry.clone(), remotes.clone());
+                let line = line(&entry, compared(&entry, &locals))
+                    .selected(move || d.selected.get().as_deref() == Some(&name));
+                list = list.child(line.on_click(move |e| match (opens.dir, e.clicks) {
+                    (true, 2) => d.load(&goes, Some(oneterm_ssh::join(&d.dir.get_untracked(), &opens.name))),
+                    _ => d.selected.set(Some(picks.clone())),
+                }));
+            }
+            AnyView::new(list)
+        });
     let local_pane = pane(
         "Local",
         move || local.dir.get().display().to_string(),
@@ -232,6 +239,7 @@ fn pane(
         .child(div().grow(1.0).child(text("Name")))
         .child(div().width(SIZE).child(text("Size")))
         .child(div().width(MODIFIED).child(text("Modified")));
+    let rows = column().width(Length::Fill).child(rows);
     let list = quadra::scroll(signal(0.0), rows).container(column().grow(1.0).min_height(0.0));
     column()
         .grow(1.0)

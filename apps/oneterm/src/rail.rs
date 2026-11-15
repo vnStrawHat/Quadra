@@ -16,7 +16,7 @@ use crate::shells;
 pub(crate) struct Dragged(pub u64);
 
 pub(crate) fn rail(model: &Model) -> impl View + use<> {
-    let tabs = model.tabs();
+    let (tabs, expanded) = (model.tabs(), model.ui().expanded);
     let count = div().font_weight(500).child(text(move || tabs.with(Vec::len).to_string()));
     let heading = heading("TABS", 10.0).child(count);
     let shown = model.clone();
@@ -53,7 +53,14 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .child(searched_menu(open, &opener, quadra::Side::Right, ASK, move |typed: &str| {
             new_menu(&making, typed)
         }))
-        .child(crate::hostlist::hosts(model))
+        // While SFTP is expanded the rail holds the tabs alone.
+        .child(
+            div()
+                .grow(1.0)
+                .min_height(0.0)
+                .display(crate::locked::shown(move || !expanded.get()))
+                .child(crate::hostlist::hosts(model)),
+        )
 }
 
 /// A heading of the rail, `top` px under what is above it: small capitals in the muted

@@ -126,6 +126,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             let settings = Settings::memory();
             settings.value("ssh.hosts", Vec::<Vec<String>>::new()).set(hosts());
             settings.value("tabs.vertical", true).set(vertical);
+            // The local pane lists a folder of the project, not the user's Downloads.
+            let local = std::path::absolute(".tmp/shots/1term-local").unwrap_or_default();
+            let _ = std::fs::create_dir_all(local.join("deploy"));
+            let _ = std::fs::write(
+                local.join("config.yaml"),
+                "env: prod
+",
+            );
+            settings.value("sftp.downloads", String::new()).set(local.display().to_string());
             provide(settings);
             let term = OneTerm::new(sessions.clone());
             *tell.borrow_mut() = Some(term.model.clone());

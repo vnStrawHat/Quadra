@@ -85,6 +85,21 @@ user@host…"), Local shell (the default shell, `Ctrl+T`), the other local shell
 Prompt, Windows PowerShell, PowerShell 7, Git Bash, WSL), Split current space (`Ctrl+D`); from
 P2 Quick connect, Recent and the saved hosts by group, Add SSH host.
 
+## M4 in detail
+
+- **Shells found**: Command Prompt (`%SystemRoot%\System32\cmd.exe`), Windows PowerShell
+  (`%SystemRoot%\System32\WindowsPowerShell1.0\powershell.exe`), PowerShell 7
+  (`%ProgramFiles%\PowerShell\pwsh.exe`), Git Bash (`%ProgramFiles%\Gitinash.exe`
+  `--login -i`), WSL (`%SystemRoot%\System32\wsl.exe`), each where its file is. The default
+  shell is Command Prompt until settings (M5) name another. A split starts in the focused
+  space's directory.
+- **The `+` menu** in P1 has no search field: it searches hosts, which come with P2.
+- **Git**: the branch from the `.git` folder found up from the focused space's directory
+  (`HEAD`; a detached head shows its short hash), and the count of changed files from
+  `git status --porcelain` run on the pool with no window, again when the directory changes
+  and every 10 s; nothing when there is no repository or no `git`.
+- **CPU and memory**: of 1Term's process (`quadra_shell::process_usage`, 16), read every 2 s.
+
 ## Settings
 
 A page in the window (the kit's `settings`), "1Term Settings · <page>", a search, pages:

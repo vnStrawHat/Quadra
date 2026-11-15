@@ -59,7 +59,18 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
         let space = model.active_tab().and_then(|tab| tab.focused());
         space.map(|space| space.session.cwd().get()).unwrap_or_default()
     };
-    let (clipboard, said) = (use_context::<Rc<dyn Clipboard>>(), cwd.clone());
+    let (clipboard, said, repo_of) = (use_context::<Rc<dyn Clipboard>>(), cwd.clone(), cwd.clone());
+    let repo = crate::git::follow(repo_of);
+    let git = div()
+        .label("Git")
+        .display(move || if repo.with(Option::is_some) { Display::Flex } else { Display::None })
+        .child(text(move || match repo.get() {
+            Some(repo) => match repo.changes {
+                Some(n) if n > 0 => format!("{} \u{B7} {n} changed", repo.branch),
+                _ => repo.branch,
+            },
+            None => String::new(),
+        }));
     let place = row()
         .align_items(Align::Center)
         .gap(6.0)
@@ -85,8 +96,10 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
         .text_color(token::TEXT_2)
         .test_id("status")
         .child(place)
+        .child(git)
         .child(div().grow(1.0))
         .child(meter(&shows))
+        .child(div().label("Usage").child(text(usage())))
         .child(div().label("Bells").child(text(move || format!("bell {}", all_bells(tabs)))))
         .child(div().label("Notices").child(text(move || format!("{} new", unread.get()))))
         .child(div().label("Clock").child(text(move || clock.get())))
@@ -109,6 +122,30 @@ fn meter(model: &crate::model::Model) -> impl View + use<> {
         .display(move || if part.get().is_some() { Display::Flex } else { Display::None })
         .child(track)
         .child(text(move || part.get().map(|n| format!("{n}%")).unwrap_or_default()))
+}
+
+/// The processor and memory 1Term uses, read every 2 s: `CPU 3% · 182 MB`.
+fn usage() -> Signal<String> {
+    let said = quadra::signal(String::new());
+    let cores = std::thread::available_parallelism().map_or(1, |n| n.get()) as f64;
+    let last = std::cell::Cell::new(None::<(std::time::Instant, Duration)>);
+    let read = move || {
+        #[cfg(windows)]
+        if let Some(now) = quadra_shell::process_usage() {
+            let at = std::time::Instant::now();
+            let cpu = match last.replace(Some((at, now.cpu))) {
+                Some((then, was)) => {
+                    let wall = at.duration_since(then).as_secs_f64().max(1e-3);
+                    (now.cpu.saturating_sub(was).as_secs_f64() / wall / cores * 100.0).round()
+                }
+                None => 0.0,
+            };
+            said.set(format!("CPU {cpu}% \u{B7} {} MB", now.memory / (1024 * 1024)));
+        }
+    };
+    read();
+    let _ = interval(Duration::from_secs(2), read);
+    said
 }
 
 /// Keeps `clock` the local time as the app's locale says it: `We 28 Oct · 11:00`.

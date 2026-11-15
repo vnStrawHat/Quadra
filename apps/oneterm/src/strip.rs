@@ -3,10 +3,10 @@
 //! it), `+` after the last, and "Vertical" at the end to go back to the rail.
 
 use quadra::{Align, Display, MouseButton, PointerKind, Role, Signal, View, by_text, div, each, row};
-use quadra_design::{button, context_menu, icon, icon_button, icons, token};
+use quadra_design::{button, context_menu, icon, icons, menu_icon_button, token};
 
 use crate::model::{Model, Tab};
-use crate::rail::{Dragged, tab_menu, title};
+use crate::rail::{Dragged, new_menu, tab_menu, title};
 
 pub(crate) fn strip(model: &Model) -> impl View + use<> {
     let (tabs, vertical, making) = (model.tabs(), model.vertical(), model.clone());
@@ -29,7 +29,7 @@ pub(crate) fn strip(model: &Model) -> impl View + use<> {
         .child(
             div()
                 .padding_x(4.0)
-                .child(icon_button(icons::PLUS, "New terminal").on_click(move || making.new_tab())),
+                .child(menu_icon_button(icons::PLUS, "New terminal", move || new_menu(&making))),
         )
         .child(div().grow(1.0))
         .child(div().padding_x(6.0).child(button("Vertical").on_click(move || vertical.set(true))))

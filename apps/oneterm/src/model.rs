@@ -10,6 +10,7 @@ use quadra_design::{Notices, notices};
 use quadra_term::Session;
 
 use crate::NewSession;
+use crate::shells::Launch;
 
 /// A space: a session, and the scope its signals and tasks live in.
 #[derive(Clone)]
@@ -146,11 +147,11 @@ impl Model {
     }
 
     /// A space of its own scope under the model's, its session made in it.
-    fn space(&self) -> Space {
+    fn space(&self, launch: Launch) -> Space {
         let scope = self.0.owner.run(Scope::child);
         let id = self.id();
         let session = scope.run(|| {
-            let session = (self.0.new_session)();
+            let session = (self.0.new_session)(launch);
             self.watch(id, &session);
             session
         });
@@ -159,12 +160,17 @@ impl Model {
 
     /// A tab with a new local shell, after the others, shown.
     pub fn new_tab(&self) {
-        self.insert_tab(usize::MAX);
+        self.new_tab_with(Launch::default());
+    }
+
+    /// A tab running a launch, after the others, shown.
+    pub fn new_tab_with(&self, launch: Launch) {
+        self.insert_tab(usize::MAX, launch);
     }
 
     /// A tab with a new local shell right after a tab, shown.
     pub fn duplicate(&self, id: u64) {
-        self.insert_tab(self.index_of(id).map_or(usize::MAX, |at| at + 1));
+        self.insert_tab(self.index_of(id).map_or(usize::MAX, |at| at + 1), Launch::default());
     }
 
     fn index_of(&self, id: u64) -> Option<usize> {
@@ -190,8 +196,8 @@ impl Model {
         }
     }
 
-    fn insert_tab(&self, at: usize) {
-        let space = self.space();
+    fn insert_tab(&self, at: usize, launch: Launch) {
+        let space = self.space(launch);
         let tab = self.0.owner.run(|| Tab {
             id: self.id(),
             spaces: signal(vec![space]),
@@ -205,7 +211,9 @@ impl Model {
     /// A new space beside the focused one of the active tab, with the focus.
     pub fn split(&self) {
         let Some(tab) = self.active_tab() else { return };
-        let space = self.space();
+        let cwd =
+            tab.focused().map(|space| space.session.cwd().get_untracked()).filter(|cwd| !cwd.is_empty());
+        let space = self.space(Launch { shell: None, cwd: cwd.map(Into::into) });
         let at = tab.focus.get_untracked() + 1;
         tab.spaces.update(|spaces| spaces.insert(at.min(spaces.len()), space));
         tab.focus.set(at);

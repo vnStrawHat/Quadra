@@ -21,7 +21,7 @@ fn app() -> App {
     h.tree.set_keymap(Rc::new(keymap()));
     let made = Rc::new(RefCell::new(Vec::new()));
     let kept = made.clone();
-    let sessions: NewSession = Rc::new(move || {
+    let sessions: NewSession = Rc::new(move |_| {
         let s = echo();
         kept.borrow_mut().push(s.clone());
         s
@@ -184,4 +184,19 @@ fn the_tabs_go_into_a_strip_and_back_into_the_rail() {
     a.h.settle();
     assert_eq!(a.made.borrow().len(), 1, "the shell lives on");
     assert_eq!(a.screen(0), "still");
+}
+
+#[test]
+fn the_plus_menu_makes_a_tab_or_splits_the_space() {
+    let mut a = app();
+    a.h.get_by_role(Role::Button, "New terminal").click();
+    a.h.settle();
+    a.h.get_by_role(Role::MenuItem, "Local shell").click();
+    a.h.settle();
+    assert_eq!(a.tabs(), 2);
+    a.h.get_by_role(Role::Button, "New terminal").click();
+    a.h.settle();
+    a.h.get_by_role(Role::MenuItem, "Split current space").click();
+    a.h.settle();
+    assert!(a.h.has_text("Terminal \u{B7} 2 spaces"));
 }

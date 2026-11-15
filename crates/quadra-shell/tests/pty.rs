@@ -36,3 +36,9 @@ fn a_command_gives_its_output_and_its_exit() {
     let text = String::from_utf8_lossy(&out.lock().unwrap()).into_owned();
     assert!(text.contains("quadra-pty"), "the output: {text:?}");
 }
+
+#[test]
+fn the_process_says_what_it_used() {
+    let usage = quadra_shell::process_usage().expect("Windows reads it");
+    assert!(usage.memory > 1024 * 1024, "a working set of more than a megabyte: {usage:?}");
+}

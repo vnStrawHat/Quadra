@@ -1,6 +1,5 @@
 //! A space's local shell: a session over `quadra-shell`'s pseudo console.
 
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -8,23 +7,26 @@ use quadra_shell::{Pty, PtyOptions};
 use quadra_term::vt::ResizePolicy;
 use quadra_term::{Link, Session};
 
-/// A session running the OS's shell in `cwd` (the app's own when `None`). The working
-/// directory shows from the start; Command Prompt is asked to say it with each prompt
-/// (OSC 9;9), as it says nothing of it otherwise.
-pub fn local_shell(cwd: Option<PathBuf>) -> Session {
+use crate::shells::Launch;
+
+/// A session running a shell (the OS's when the launch names none) in a directory (the
+/// app's own when it names none). The working directory shows from the start; Command
+/// Prompt is asked to say it with each prompt (OSC 9;9), as it says nothing of it otherwise.
+pub fn local_shell(launch: Launch) -> Session {
     // Windows' console resizes keeping the viewport's top.
     let session = Session::new(ResizePolicy::KeepViewportTop);
-    let start = cwd.clone().or_else(|| std::env::current_dir().ok());
+    let start = launch.cwd.filter(|dir| dir.is_dir()).or_else(|| std::env::current_dir().ok());
     if let Some(start) = &start {
         session.cwd().set(start.display().to_string());
     }
     let size = session.size();
+    let program = launch.shell.map(|shell| (shell.program.display().to_string(), shell.args));
     let options = PtyOptions {
+        program,
         cwd: start,
         env: vec![("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into())],
         rows: size.rows,
         cols: size.cols,
-        ..PtyOptions::default()
     };
     let (feeder, ended) = (session.feeder(), session.feeder());
     let spawned =

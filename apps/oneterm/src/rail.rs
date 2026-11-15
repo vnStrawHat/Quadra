@@ -3,13 +3,14 @@
 //! two clicks rename it, the right button opens its menu, and rows drag to reorder.
 
 use quadra::{
-    Align, AnyView, Display, MouseButton, PointerKind, Role, Signal, View, by_text, column, div, dynamic,
-    each, row, signal, text,
+    Align, AnyView, Display, MouseButton, NodeRef, PointerKind, Role, Signal, View, by_text, column, div,
+    dynamic, each, row, signal, text,
 };
-use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, input, token};
+use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, input, menu, token};
 
 use crate::marks;
 use crate::model::{Model, Tab};
+use crate::shells::{self, Launch};
 
 /// What a tab's row carries while it is dragged.
 pub(crate) struct Dragged(pub u64);
@@ -30,7 +31,7 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
     let shown = model.clone();
     let rows =
         each(move || tabs.get(), |tab| tab.id, move |tab: Signal<Tab>| tab_row(&shown, tab.get_untracked()));
-    let making = model.clone();
+    let (open, opener, making) = (signal(false), NodeRef::new(), model.clone());
     let new = row()
         .align_items(Align::Center)
         .gap(10.0)
@@ -41,7 +42,7 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .hover(|s| s.bg(token::PANEL_HOVER).text_color(token::TEXT))
         .role(Role::Button)
         .label("New terminal")
-        .on_click(move |_| making.new_tab())
+        .on_click(move |_| open.update(|open| *open = !*open))
         .child(icon(icons::PLUS).size(14.0))
         .child(div().grow(1.0).child(text("New terminal")))
         .child(
@@ -57,7 +58,22 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .label("Tabs")
         .child(heading)
         .child(rows.container(column().gap(2.0).padding_x(8.0)))
-        .child(div().padding_x(8.0).padding_y(4.0).child(new))
+        .child(div().padding_x(8.0).padding_y(4.0).node_ref(&opener).child(new))
+        .child(menu(open, &opener, move || new_menu(&making)))
+}
+
+/// The `+` menu: the default shell, each shell found, a split of the space with the focus.
+pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
+    let (local, splits) = (model.clone(), model.clone());
+    let mut items = vec![MenuItem::new("Local shell").keys("Ctrl+T").on_select(move || local.new_tab())];
+    for shell in shells::found() {
+        let (makes, name) = (model.clone(), shell.name);
+        let launch = Launch { shell: Some(shell), cwd: None };
+        items.push(MenuItem::new(name).on_select(move || makes.new_tab_with(launch.clone())));
+    }
+    items.push(MenuItem::separator());
+    items.push(MenuItem::new("Split current space").keys("Ctrl+D").on_select(move || splits.split()));
+    items
 }
 
 /// The menu of a tab: Rename, Duplicate, Close, Close others.

@@ -20,9 +20,17 @@ use quadra_reactive::expect;
 use quadra_render::Renderer;
 
 pub use fake::FakeShell;
+
+/// What the app's process has used (specs/16, "Process usage"): processor time since it
+/// started, and its working set in bytes.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Usage {
+    pub cpu: std::time::Duration,
+    pub memory: u64,
+}
 pub use pty::{Pty, PtyOptions};
 #[cfg(windows)]
-pub use win::{WinShell, crash_reports, single_instance};
+pub use win::{WinShell, crash_reports, process_usage, single_instance};
 
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,
 /// `("Images", "*.png;*.jpg")`), whether several may be chosen, and where it starts.

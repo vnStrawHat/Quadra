@@ -3,10 +3,12 @@
 //! app ([`local_shell`]), `quadra_term::echo` in tests.
 
 mod chrome;
+mod git;
 mod local;
 mod marks;
 mod model;
 mod rail;
+mod shells;
 mod signals;
 mod spaces;
 mod strip;
@@ -18,10 +20,11 @@ use quadra_term::Session;
 
 pub use local::local_shell;
 pub use model::{Command, Model, Space, Tab};
+pub use shells::{Launch, Shell};
 pub use signals::{percent, state_word};
 
 /// Makes the session of a new space: it is called in the scope the space lives in.
-pub type NewSession = Rc<dyn Fn() -> Session>;
+pub type NewSession = Rc<dyn Fn(Launch) -> Session>;
 
 /// The app's keys: the kit's, the terminal's, and the tabs' and spaces'.
 pub fn keymap() -> Keymap {

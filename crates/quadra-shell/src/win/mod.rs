@@ -5,9 +5,11 @@
 mod crash;
 mod instance;
 mod tray;
+mod usage;
 
 pub use crash::crash_reports;
 pub use instance::single_instance;
+pub use usage::process_usage;
 
 use std::path::{Path, PathBuf};
 

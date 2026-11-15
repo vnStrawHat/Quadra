@@ -14,7 +14,7 @@ fn app() -> (Harness, Session) {
     h.tree.set_keymap(Rc::new(keymap()));
     let made = Rc::new(RefCell::new(None));
     let kept = made.clone();
-    let sessions: NewSession = Rc::new(move || {
+    let sessions: NewSession = Rc::new(move |_| {
         let s = echo();
         *kept.borrow_mut() = Some(s.clone());
         s

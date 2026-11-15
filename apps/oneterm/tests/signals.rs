@@ -22,7 +22,7 @@ fn app() -> App {
     h.tree.set_keymap(Rc::new(keymap()));
     let made = Rc::new(RefCell::new(Vec::new()));
     let kept = made.clone();
-    let sessions: NewSession = Rc::new(move || {
+    let sessions: NewSession = Rc::new(move |_| {
         let s = echo();
         kept.borrow_mut().push(s.clone());
         s

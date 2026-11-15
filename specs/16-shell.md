@@ -69,6 +69,14 @@ unhandled exceptions that writes `<date-time>.dmp`, a minidump of the process at
 exception, and `<date-time>.txt`, the last 100 lines of the log, beside the panic reports
 of the app; the process then ends as it would have.
 
+## Process usage
+
+`process_usage() -> Option<Usage>`: what the app's own process has used, `Usage { cpu,
+memory }`: the processor time of all its threads since it started and its working set in
+bytes (`GetProcessTimes`, `GetProcessMemoryInfo`); `None` where the OS has no reading. A
+status bar takes two readings and divides the time between them by the wall time and the
+count of processors.
+
 ## Packaging
 
 `tools/package.sh <example>` builds the release binary of an example with

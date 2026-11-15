@@ -226,7 +226,9 @@ that says how far the list is scrolled, and what builds a row from its index.
   width) is measured again.
 - Heights are kept a row with running sums in a binary indexed tree: where a row is, which
   row is at an offset, and a new height are each a logarithmic number of steps, four bytes
-  and a sum a row.
+  and a sum a row. A row added at the end is as many steps (its sum is its height and the
+  sums its entry covers besides), and fewer rows cut the sums: a list that grows a row at
+  a time does not count them all again.
 - A box is measured after the layout that follows its getting a row, never before: the size
   it had belongs to the row it held (`Tree::after_layout`, 04).
 - Scrolling within the realized range changes only the layer's offset (07). The list asks for

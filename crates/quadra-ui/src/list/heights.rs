@@ -45,23 +45,20 @@ impl Heights {
         if y > 0.0 { self.ending(y, false) + 1 } else { 0 }
     }
 
-    /// Makes the list `count` rows long. Rows that stay keep what was measured of them.
-    // ponytail: the sums are built again, a step a row; the tree could grow in place if a
-    // list of a million rows that grows row by row shows it.
+    /// Makes the list `count` rows long. Rows that stay keep what was measured of them, and
+    /// their sums: a sum covers rows that end at its own, so fewer rows cut the sums, and a
+    /// row more adds one, its height and those of the rows its sum covers besides (the log
+    /// of the count of rows).
     pub fn resize(&mut self, count: usize) {
         match self {
             Heights::Uniform { count: n, .. } => *n = count,
-            Heights::Measured { own, .. } if own.len() == count => {}
             Heights::Measured { estimate, own, sums } => {
                 own.resize(count, UNKNOWN);
-                sums.clear();
-                sums.push(0.0);
-                sums.extend(own.iter().map(|&h| if h < 0.0 { *estimate } else { h } as f64));
-                for k in 1..=count {
-                    let above = k + (k & k.wrapping_neg());
-                    if above <= count {
-                        sums[above] += sums[k];
-                    }
+                sums.truncate(count + 1);
+                for k in sums.len()..=count {
+                    let height = if own[k - 1] < 0.0 { *estimate } else { own[k - 1] } as f64;
+                    let covered = prefix(sums, k - 1) - prefix(sums, k - (k & k.wrapping_neg()));
+                    sums.push(height + covered);
                 }
             }
         }
@@ -85,14 +82,7 @@ impl Heights {
     pub fn before(&self, row: usize) -> f64 {
         match self {
             Heights::Uniform { height, count } => row.min(*count) as f64 * *height as f64,
-            Heights::Measured { sums, .. } => {
-                let (mut k, mut sum) = (row.min(sums.len() - 1), 0.0);
-                while k > 0 {
-                    sum += sums[k];
-                    k &= k - 1;
-                }
-                sum
-            }
+            Heights::Measured { sums, .. } => prefix(sums, row.min(sums.len() - 1)),
         }
     }
 
@@ -123,6 +113,16 @@ impl Heights {
     }
 }
 
+/// The heights of the first `k` rows, from the sums.
+fn prefix(sums: &[f64], mut k: usize) -> f64 {
+    let mut sum = 0.0;
+    while k > 0 {
+        sum += sums[k];
+        k &= k - 1;
+    }
+    sum
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -136,9 +136,10 @@ mod tests {
             seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
             (seed >> 33) as usize % n
         };
-        for round in 0..200 {
+        // Longer, shorter, longer again: what stays keeps its sums.
+        for round in 0..280 {
             if round % 40 == 0 {
-                let count = [0, 1, 37, 64, 100][round / 40];
+                let count = [0, 1, 64, 37, 100, 3, 80][round / 40];
                 heights.resize(count);
                 plain.resize(count, 20.0);
             }

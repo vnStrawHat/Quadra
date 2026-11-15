@@ -91,10 +91,18 @@ impl Div {
         })
     }
 
-    /// How many items the set of the box holds, mounted or not.
+    /// How many items the set of the box holds, mounted or not; or, of an item, the set it
+    /// is in.
     pub fn set_size<M>(self, count: impl IntoProp<usize, M>) -> Self {
         self.with_value(count.into_prop(), |tree, id, count| {
             tree.update_semantics(id, |says| says.set_size = Some(count))
+        })
+    }
+
+    /// How deep an item is, from 1: a reader says "level 2" of a row of a tree.
+    pub fn level<M>(self, depth: impl IntoProp<usize, M>) -> Self {
+        self.with_value(depth.into_prop(), |tree, id, depth| {
+            tree.update_semantics(id, |says| says.level = Some(depth))
         })
     }
 

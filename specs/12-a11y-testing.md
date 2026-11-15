@@ -75,8 +75,10 @@ semantic children attach to the nearest semantic ancestor.
 - Virtual lists expose the total count and each realized row's position in the set, so a
   reader announces "row 4,012 of 1,000,000" for a list that holds forty nodes. An item says
   where it is from 0 (`Semantics::position`, `.place_in_set(i)`), its container how many the
-  set holds (`set_size`, `.set_size(n)`), as UI Automation asks: the kit's lists, trees (a
-  row's place among the rows that show), tabs and options.
+  set holds (`set_size`, `.set_size(n)`), as UI Automation asks: the kit's lists, tabs and
+  options. A row of a tree says its level from 1 (`Semantics::level`, `.level(n)`) and its
+  place among its siblings, with how many they are (`set_size` on the item), so a reader
+  says "level 2, 1 of 2".
 - Sliders and progress bars give their number in its range besides their text
   (`Semantics::range`, `.range(..)`); a slider is stepped by increment and decrement.
 - Text inputs expose their value, selection and caret (`Semantics::selection`, in characters

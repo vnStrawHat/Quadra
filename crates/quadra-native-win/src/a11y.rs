@@ -101,6 +101,9 @@ fn node(from: &SemanticNode) -> Node {
     if let Some(count) = says.set_size {
         node.set_size_of_set(count);
     }
+    if let Some(level) = says.level {
+        node.set_level(level);
+    }
     if let Some(id) = &says.test_id {
         node.set_author_id(id.as_str());
     }

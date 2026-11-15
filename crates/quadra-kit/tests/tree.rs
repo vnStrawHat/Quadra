@@ -109,6 +109,26 @@ fn rows_open_and_close_what_they_hold_by_the_pointer() {
 }
 
 #[test]
+fn a_reader_is_told_how_deep_a_row_is_and_its_place_among_its_siblings() {
+    let mut p = page();
+    p.open.update(|open| open.extend(["src".to_string(), "kit".to_string()]));
+    p.settle();
+    let says = |p: &mut Page, name: &str| {
+        let tree = p.h.tree.semantic_tree();
+        let node = tree
+            .nodes
+            .iter()
+            .find(|node| node.semantics.role == Role::TreeItem && node.semantics.name == name)
+            .unwrap();
+        (node.semantics.level, node.semantics.position, node.semantics.set_size)
+    };
+    assert_eq!(says(&mut p, "src"), (Some(1), Some(0), Some(3)));
+    assert_eq!(says(&mut p, "main.rs"), (Some(2), Some(1), Some(2)));
+    assert_eq!(says(&mut p, "menu.rs"), (Some(3), Some(1), Some(2)));
+    assert_eq!(says(&mut p, "README.md"), (Some(1), Some(2), Some(3)));
+}
+
+#[test]
 fn the_arrows_move_open_and_close() {
     let mut p = page();
     let frame = p.h.query(|n| n.semantics.role == Role::Tree)[0];

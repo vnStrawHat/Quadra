@@ -10,7 +10,8 @@ A pointer position finds its target by walking down:
 2. In a layer, the point is mapped through the layer's inverse transform and tested against its
    scissor.
 3. In a node, children are tested in reverse paint order, then the node itself: inside its
-   rect, inside its rounded clip if it clips, and `pointer_events` not `none`.
+   rect and inside its rounded corners (a round button is not hit past its circle, and what
+   a rounded box cuts off is not hit there either), and `pointer_events` not `none`.
 
 The first node that accepts is the target. The cost is the depth of the tree times the children
 scanned at each level. A container with thousands of direct children that are not virtualized

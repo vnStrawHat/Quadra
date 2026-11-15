@@ -232,3 +232,18 @@ fn the_cursor_is_that_of_the_deepest_node_under_the_pointer_that_sets_one() {
     p.send(PointerInput::Move, 500.0, 500.0); // the root, which sets none
     assert_eq!(p.w.tree.cursor(), Cursor::Arrow);
 }
+
+#[test]
+fn a_round_box_is_not_hit_past_its_corners() {
+    let mut w = Window::new();
+    let mut style = common::block_style(40.0, 40.0, 0x808080);
+    style.paint.radii = quadra_prim::Corners::all(20.0);
+    let dot = w.tree.insert(style);
+    let root = w.column(&[dot]);
+    w.tree.set_root(root);
+    w.frame();
+    assert_eq!(w.tree.hit_test(Point::new(20.0, 20.0)), Some(dot));
+    assert_eq!(w.tree.hit_test(Point::new(20.0, 1.0)), Some(dot)); // the top of the circle
+    assert_eq!(w.tree.hit_test(Point::new(2.0, 2.0)), Some(root)); // a corner: the box around
+    assert_eq!(w.tree.hit_test(Point::new(38.0, 38.0)), Some(root));
+}

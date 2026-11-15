@@ -190,7 +190,9 @@ impl Tree {
         let offset = node.layer.as_ref().map_or(Point::ZERO, |layer| layer.offset);
         let local = Point::new(at.x - rect.x - offset.x, at.y - rect.y - offset.y);
         let inside = local.x >= 0.0 && local.y >= 0.0 && local.x < rect.width && local.y < rect.height;
-        // What a node cuts off cannot be hit. ponytail: the box, not its rounded corners.
+        // A rounded box is not hit past its corners, nor is what it cuts off.
+        let inside = inside && within_corners(local, rect.size(), node.paint.radii);
+        // What a node cuts off cannot be hit.
         let cuts = style.overflow_x != Overflow::Visible || style.overflow_y != Overflow::Visible;
         if cuts && !inside {
             return None;
@@ -228,4 +230,23 @@ impl Tree {
     pub fn is_pressed(&self, id: NodeId) -> bool {
         self.input.pressed.contains(&id)
     }
+}
+
+/// Whether a point inside a box of `size` is inside its rounded corners too.
+fn within_corners(at: Point, size: quadra_prim::Size, radii: quadra_prim::Corners) -> bool {
+    let corner = |radius: f32, cx: f32, cy: f32, x_out: bool, y_out: bool| {
+        // Outside a corner's square the corner does not matter; inside it, the distance to
+        // its centre does.
+        let (dx, dy) = (at.x - cx, at.y - cy);
+        let past = (if x_out { dx > 0.0 } else { dx < 0.0 }) && (if y_out { dy > 0.0 } else { dy < 0.0 });
+        radius <= 0.0 || !past || dx * dx + dy * dy <= radius * radius
+    };
+    let (w, h) = (size.width, size.height);
+    let r = |radius: f32| radius.min(w / 2.0).min(h / 2.0);
+    let (tl, tr, br, bl) =
+        (r(radii.top_left), r(radii.top_right), r(radii.bottom_right), r(radii.bottom_left));
+    corner(tl, tl, tl, false, false)
+        && corner(tr, w - tr, tr, true, false)
+        && corner(br, w - br, h - br, true, true)
+        && corner(bl, bl, h - bl, false, true)
 }

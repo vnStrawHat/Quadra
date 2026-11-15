@@ -199,6 +199,11 @@ fn an_unknown_host_is_asked_then_the_password_opens_a_shell() {
     assert!(!c.text().contains("secret"), "a password is not echoed");
     c.ssh.write(b"hi");
     c.wait_for("echo:hi");
+    let end = Instant::now() + Duration::from_secs(10);
+    while c.ssh.latency().is_none() {
+        assert!(Instant::now() < end, "no ping came back");
+        std::thread::sleep(Duration::from_millis(5));
+    }
     c.ssh.resize(30, 100);
     c.ssh.write(b"x");
     c.wait_for("echo:x");

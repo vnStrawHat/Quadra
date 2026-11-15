@@ -34,7 +34,7 @@ const KEYS: [(&str, &str); 8] = [
 ];
 
 pub(crate) fn page(model: &Model) -> quadra::Div {
-    let (p, open) = (model.prefs(), model.settings_open());
+    let (p, open) = (model.prefs(), model.ui().settings);
     let (current, query) = (signal(0usize), signal(String::new()));
     let head = row()
         .align_items(Align::Center)

@@ -48,8 +48,15 @@ pub(crate) fn tab_line(tab: Tab) -> String {
     if let Some(n) = tab.progress().filter(|_| tab.prefs.progress_tab.get()).and_then(percent) {
         return format!("{n}%");
     }
-    let n = tab.spaces.with(Vec::len);
-    format!("{n} local \u{B7} {n} {}", if n == 1 { "space" } else { "spaces" })
+    let (n, ssh) =
+        tab.spaces.with(|spaces| (spaces.len(), spaces.iter().filter(|it| it.remote.is_some()).count()));
+    let local = n - ssh;
+    let kinds = match (ssh, local) {
+        (0, _) => format!("{local} local"),
+        (_, 0) => format!("{ssh} ssh"),
+        _ => format!("{ssh} ssh \u{B7} {local} local"),
+    };
+    format!("{kinds} \u{B7} {n} {}", if n == 1 { "space" } else { "spaces" })
 }
 
 /// A line of 2 px along the bottom of a tab's row, as long as its progress.

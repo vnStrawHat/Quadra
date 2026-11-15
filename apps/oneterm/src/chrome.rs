@@ -33,7 +33,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .child(icon(icons::TERMINAL).size(16.0).color(token::ACCENT))
         .child(div().font_weight(600).child(text("1Term")))
         .child(div().text_color(token::TEXT_2).child(text(said)));
-    let open = seen.settings_open();
+    let open = seen.ui().settings;
     let gear = tooltip(
         "Settings",
         icon_button(icons::SETTINGS, "Settings").on_click(move || open.update(|on| *on = !*on)),
@@ -117,6 +117,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
         .text_color(token::TEXT_2)
         .test_id("status")
         .child(place)
+        .child(host(&shows))
         .child(git)
         .child(div().grow(1.0))
         .child(meter(&shows))
@@ -142,6 +143,21 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
                 .display(shown(move || prefs.show_clock.get()))
                 .child(text(move || clock.get())),
         )
+}
+
+/// The focused space's host and its latency, `prod-api-01 · 124 ms`, or `local`.
+fn host(model: &Model) -> impl View + use<> {
+    let model = model.clone();
+    let lock = model.lock();
+    let said = move || {
+        let space = model.active_tab().and_then(|tab| tab.focused());
+        match space.and_then(|space| space.remote.clone().map(|it| (it, space.session.link_note().get()))) {
+            Some((remote, note)) if note.is_empty() => model.host_name(&remote),
+            Some((remote, note)) => format!("{} \u{B7} {note}", model.host_name(&remote)),
+            None => "local".into(),
+        }
+    };
+    div().label("Host").display(shown(move || !lock.locked.get())).child(text(said))
 }
 
 /// The progress of the tab that shows: a meter of 56 px and its percentage.

@@ -5,6 +5,8 @@
 mod chrome;
 mod connect;
 mod git;
+mod hostlist;
+mod hosts;
 mod local;
 mod lock;
 mod locked;
@@ -25,6 +27,7 @@ use std::rc::Rc;
 use quadra::{AnyView, Keymap, Signal, View, Window, column, div, dynamic, row, signal, use_context};
 use quadra_term::Session;
 
+pub use hosts::Host;
 pub use local::local_shell;
 pub use model::{Command, Model, Space, Tab};
 pub use prefs::{Prefs, theme};
@@ -83,7 +86,7 @@ impl OneTerm {
             }
         });
         // Locked, only the lock's card is displayed.
-        let (open, lock) = (model.settings_open(), model.lock());
+        let (open, lock) = (model.ui().settings, model.lock());
         let shows = move |on: bool| move || !lock.locked.get() && open.get() == on;
         let body = column()
             .grow(1.0)
@@ -106,6 +109,7 @@ impl OneTerm {
             .child(chrome::status_bar(&self.model, self.clock))
             .child(cards)
             .child(connect::dialog(&self.model))
+            .child(hostlist::add_dialog(&self.model))
     }
 }
 
@@ -121,7 +125,7 @@ fn run(model: &Model, command: Command) -> bool {
         Command::CloseSpace => return model.close_focused(),
         Command::FocusNext(forward) => model.focus_next(forward),
         Command::Lock => model.lock().lock_now(),
-        Command::QuickConnect => model.connecting().set(true),
+        Command::QuickConnect => model.ui().connecting.set(true),
     }
     true
 }

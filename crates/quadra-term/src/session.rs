@@ -64,6 +64,7 @@ pub(crate) struct Shared {
     progress: Signal<Option<Progress>>,
     status: Signal<ProgramState>,
     exited: Signal<Option<i32>>,
+    link_note: Signal<String>,
     notices: RefCell<Vec<Rc<NoticeFn>>>,
 }
 
@@ -101,6 +102,7 @@ impl Session {
             progress: signal(None),
             status: signal(ProgramState::Idle),
             exited: signal(None),
+            link_note: signal(String::new()),
             notices: RefCell::new(Vec::new()),
         });
         let (took, ended) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
@@ -209,6 +211,12 @@ impl Session {
     /// OSC 7501: the strongest state the program reported.
     pub fn status(&self) -> Signal<ProgramState> {
         self.0.status
+    }
+
+    /// What the link says of itself in a few words (a remote one's latency); written by
+    /// whoever made the link, empty for a local program.
+    pub fn link_note(&self) -> Signal<String> {
+        self.0.link_note
     }
 
     /// The program's exit code, once it ended.

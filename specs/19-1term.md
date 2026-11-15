@@ -183,6 +183,27 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   password and key authentication, unknown, known and changed host keys, typing, resize, the
   exit status, a connection dropped.
 
+### M8 in detail
+
+- **Hosts** are the setting `ssh.hosts`, a list of `[name, group, target, auth, key file]`
+  (target as `Target::label` writes it; auth `Auto`, `Agent`, `Key`, `Password`), so the
+  file reads as the page does; `ssh.recent` holds the last 5 targets connected to, newest
+  first, with the time in seconds.
+- **The rail**, under "New terminal": "SSH hosts", a filter (on the name and the target,
+  whatever the case), then the hosts by group in the order first met, each a row of a dot
+  (in `OK` while a space is connected to it), its name and its address. A click opens a tab
+  connected to it; its menu has Connect, Connect in a new space, Remove. "Add SSH host…"
+  ends the list; the dialog takes the name (the host when empty), the group, the target,
+  the auth and the key file. Quick connect has "Save as host".
+- **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
+  Quick connect, and Add SSH host. It has no search field: the rail's filter and Quick
+  connect take what one types.
+- **Latency**: the engine pings the server (an SSH ping, a request that wants a reply) every
+  5 s once the shell is open and keeps the last time it took; the app reads it every 2 s into
+  the session's `link_note` (`124 ms`). The space's header shows it at its right, the status
+  bar shows the focused space's host (its name, else `user@host`) and it, or `local`.
+- **A tab's second line** counts its spaces by kind: `2 ssh · 1 local · 3 spaces`.
+
 ## Tests
 
 The app's tests drive it through the semantic tree on the headless platform with `echo()`

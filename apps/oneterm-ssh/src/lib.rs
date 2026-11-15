@@ -8,7 +8,9 @@ mod session;
 mod target;
 
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
@@ -61,6 +63,8 @@ impl Options {
 /// A connection running a shell. Dropping it closes it.
 pub struct Ssh {
     to: UnboundedSender<Cmd>,
+    /// The last ping's time in microseconds; 0 before the first.
+    latency: Arc<AtomicU32>,
 }
 
 impl Ssh {
@@ -73,8 +77,16 @@ impl Ssh {
         exited: impl FnOnce(i32) + Send + 'static,
     ) -> Ssh {
         let (to, from) = unbounded_channel();
-        runtime().spawn(session::run(options, from, Arc::new(output), Box::new(exited)));
-        Ssh { to }
+        let latency = Arc::new(AtomicU32::new(0));
+        let pings = latency.clone();
+        runtime().spawn(session::run(options, from, Arc::new(output), Box::new(exited), pings));
+        Ssh { to, latency }
+    }
+
+    /// How long the last ping took, once the shell is open (every 5 s).
+    pub fn latency(&self) -> Option<Duration> {
+        let micros = self.latency.load(Ordering::Relaxed);
+        (micros > 0).then(|| Duration::from_micros(micros.into()))
     }
 
     /// Bytes typed: an answer while the engine asks, else the shell's input.

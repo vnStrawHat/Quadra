@@ -34,6 +34,13 @@ pub fn remote_shell(launch: Launch) -> Session {
         move |code| ended.exited(code),
     );
     let ssh = std::rc::Rc::new(ssh);
+    // The latency the engine measured, read every 2 s.
+    let (pings, note) = (ssh.clone(), session.link_note());
+    let _ = quadra::interval(std::time::Duration::from_secs(2), move || {
+        if let Some(took) = pings.latency() {
+            note.set(format!("{} ms", took.as_millis().max(1)));
+        }
+    });
     let (resizes, closes) = (ssh.clone(), ssh.clone());
     let link = Link::new(move |bytes| ssh.write(bytes))
         .on_resize(move |size| resizes.resize(size.rows, size.cols))

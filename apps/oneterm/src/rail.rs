@@ -54,12 +54,11 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .bg(token::PANEL)
         .border_right(1.0)
         .border_color(token::LINE)
-        .role(Role::TabList)
-        .label("Tabs")
         .child(heading)
-        .child(rows.container(column().gap(2.0).padding_x(8.0)))
+        .child(rows.container(column().gap(2.0).padding_x(8.0).role(Role::TabList).label("Tabs")))
         .child(div().padding_x(8.0).padding_y(4.0).node_ref(&opener).child(new))
         .child(menu(open, &opener, move || new_menu(&making)))
+        .child(crate::hostlist::hosts(model))
 }
 
 /// The `+` menu: the default shell, each shell found, a split of the space with the focus.
@@ -72,10 +71,40 @@ pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
             MenuItem::new(name).on_select(move || makes.new_tab_with(makes.launch(Some(shell.clone())))),
         );
     }
-    let connects = model.connecting();
+    let connects = model.ui().connecting;
     items.push(MenuItem::new("Quick connect…").keys("Ctrl+Shift+K").on_select(move || connects.set(true)));
-    items.push(MenuItem::separator());
     items.push(MenuItem::new("Split current space").keys("Ctrl+D").on_select(move || splits.split()));
+    // The recent targets, then the hosts by group, then a new one.
+    let recent = model.recent();
+    if !recent.is_empty() {
+        items.push(MenuItem::separator());
+        items.push(MenuItem::heading("Recent"));
+    }
+    for (remote, at) in recent.into_iter().take(3) {
+        let (goes, name) = (model.clone(), model.host_name(&remote));
+        let when = crate::hosts::ago(at);
+        items.push(MenuItem::new(name).keys(when).on_select(move || goes.connect_to(remote.clone(), false)));
+    }
+    let hosts = model.hosts();
+    let mut group = None;
+    for host in hosts {
+        if group.as_ref() != Some(&host.group) {
+            items.push(MenuItem::separator());
+            if !host.group.is_empty() {
+                items.push(MenuItem::heading(host.group.clone()));
+            }
+            group = Some(host.group.clone());
+        }
+        let (goes, remote) = (model.clone(), host.remote.clone());
+        items.push(
+            MenuItem::new(host.name.clone())
+                .keys(host.address())
+                .on_select(move || goes.connect_to(remote.clone(), false)),
+        );
+    }
+    let adds = model.ui().adding;
+    items.push(MenuItem::separator());
+    items.push(MenuItem::new("Add SSH host…").on_select(move || adds.set(true)));
     items
 }
 

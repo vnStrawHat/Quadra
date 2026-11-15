@@ -3,7 +3,8 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::{Duration, Instant};
 
 use russh::ChannelMsg;
 use russh::client::{self, Handler};
@@ -16,15 +17,17 @@ use crate::Options;
 use crate::prompt::{Cmd, Out, Prompt};
 
 const CONNECT: Duration = Duration::from_secs(20);
+const PING: Duration = Duration::from_secs(5);
 
 pub(crate) async fn run(
     options: Options,
     input: UnboundedReceiver<Cmd>,
     out: Out,
     exited: Box<dyn FnOnce(i32) + Send>,
+    latency: Arc<AtomicU32>,
 ) {
     let prompt = Arc::new(Prompt::new(out, input, options.rows, options.cols));
-    let code = match shell(&options, prompt.clone()).await {
+    let code = match shell(&options, prompt.clone(), latency).await {
         Ok(code) => code,
         Err(why) => {
             prompt.say(&format!("\n[connection closed: {why}]\n"));
@@ -34,7 +37,7 @@ pub(crate) async fn run(
     exited(code);
 }
 
-async fn shell(options: &Options, prompt: Arc<Prompt>) -> Result<i32, String> {
+async fn shell(options: &Options, prompt: Arc<Prompt>, latency: Arc<AtomicU32>) -> Result<i32, String> {
     let target = &options.target;
     let address = (target.host.as_str(), target.port);
     let socket = match tokio::time::timeout(CONNECT, TcpStream::connect(address)).await {
@@ -66,6 +69,20 @@ async fn shell(options: &Options, prompt: Arc<Prompt>) -> Result<i32, String> {
     channel.set_env(false, "COLORTERM", "truecolor").await.map_err(fail)?;
     channel.request_shell(false).await.map_err(fail)?;
     let (mut read, write) = channel.split();
+    // A ping every 5 s: how long the server takes to answer.
+    let handle = Arc::new(handle);
+    let pings = handle.clone();
+    let pinger = tokio::spawn(async move {
+        loop {
+            let start = Instant::now();
+            if pings.send_ping().await.is_err() {
+                break;
+            }
+            let micros = start.elapsed().as_micros().clamp(1, u128::from(u32::MAX)) as u32;
+            latency.store(micros, Ordering::Relaxed);
+            tokio::time::sleep(PING).await;
+        }
+    });
     // What is typed goes to the shell on a task of its own.
     let typing = prompt.clone();
     let writer = tokio::spawn(async move {
@@ -92,6 +109,7 @@ async fn shell(options: &Options, prompt: Arc<Prompt>) -> Result<i32, String> {
         }
     }
     writer.abort();
+    pinger.abort();
     let _ = handle.disconnect(russh::Disconnect::ByApplication, "", "").await;
     code.ok_or_else(|| "the connection dropped".to_string())
 }

@@ -15,6 +15,15 @@ use crate::shells::{self, Launch, Shell};
 pub use crate::tab::{Command, Space, Tab};
 use quadra_term::vt::{CursorShape, CursorStyle};
 
+/// What is open over the window: the settings page (it takes the body), the quick connect
+/// dialog, the dialog that adds a host.
+#[derive(Clone, Copy)]
+pub struct Ui {
+    pub settings: Signal<bool>,
+    pub connecting: Signal<bool>,
+    pub adding: Signal<bool>,
+}
+
 /// The window's tabs. A copy is the same one.
 #[derive(Clone)]
 pub struct Model(Rc<Inner>);
@@ -32,8 +41,7 @@ struct Inner {
     /// The cards of notifications, and how many came since they were last looked at.
     notices: Notices,
     unread: Signal<u32>,
-    settings_open: Signal<bool>,
-    connecting: Signal<bool>,
+    ui: Ui,
     lock: Lock,
 }
 
@@ -50,8 +58,7 @@ impl Model {
             prefs,
             notices: notices().below(38.0 + 12.0),
             unread: signal(0),
-            settings_open: signal(false),
-            connecting: signal(false),
+            ui: Ui { settings: signal(false), connecting: signal(false), adding: signal(false) },
             lock: Lock::new(prefs),
         };
         let model = Model(Rc::new(inner));
@@ -116,18 +123,13 @@ impl Model {
         self.0.unread
     }
 
-    /// Whether the quick connect dialog is open.
-    pub fn connecting(&self) -> Signal<bool> {
-        self.0.connecting
+    /// What is open over the window.
+    pub fn ui(&self) -> Ui {
+        self.0.ui
     }
 
     pub fn lock(&self) -> Lock {
         self.0.lock
-    }
-
-    /// Whether the settings page takes the window's body.
-    pub fn settings_open(&self) -> Signal<bool> {
-        self.0.settings_open
     }
 
     pub fn active_tab(&self) -> Option<Tab> {

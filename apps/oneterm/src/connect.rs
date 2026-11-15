@@ -1,14 +1,12 @@
 //! Quick connect (specs/19, "M7 in detail"): a target as one types it to `ssh`, how to sign
 //! in, and whether it opens a tab or a space beside the focused one.
 
-use std::path::PathBuf;
-
-use oneterm_ssh::{Auth, Target};
+use oneterm_ssh::Target;
 use quadra::{Display, Signal, View, column, div, signal, text};
 use quadra_design::{Notice, Tone, Variant, checkbox, input, select, token};
 
 use crate::model::Model;
-use crate::shells::{Launch, Remote};
+use crate::shells::Remote;
 
 const AUTHS: [&str; 4] = ["Auto (agent, keys, password)", "Agent (ssh-agent)", "Key file", "Password"];
 
@@ -18,15 +16,17 @@ struct Form {
     auth: Signal<usize>,
     key: Signal<String>,
     here: Signal<bool>,
+    save: Signal<bool>,
 }
 
 pub(crate) fn dialog(model: &Model) -> impl View + use<> {
-    let open = model.connecting();
+    let open = model.ui().connecting;
     let form = Form {
         target: signal(String::new()),
         auth: signal(0),
         key: signal(String::new()),
         here: signal(false),
+        save: signal(false),
     };
     let (submits, goes) = (model.clone(), model.clone());
     let body = move || {
@@ -54,6 +54,7 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
                     .child(key),
             )
             .child(checkbox(form.here).label("In current tab (new space)"))
+            .child(checkbox(form.save).label("Save as host"))
     };
     quadra_design::dialog(open, "Quick connect", body).action("Cancel", Variant::Secondary, || {}).action(
         "Connect",
@@ -74,18 +75,13 @@ fn go(model: &Model, form: Form) -> bool {
         model.notify(Notice::new("Quick connect").body(format!("Not a target: {typed}")).tone(Tone::Warning));
         return false;
     };
-    let auth = match form.auth.get_untracked() {
-        1 => Auth::Agent,
-        2 => Auth::Key(PathBuf::from(form.key.get_untracked())),
-        3 => Auth::Password,
-        _ => Auth::Auto,
-    };
-    let launch = Launch { ssh: Some(Remote { target, auth }), ..model.launch(None) };
-    if form.here.get_untracked() {
-        model.split_with(launch)
-    } else {
-        model.new_tab_with(launch)
+    let remote =
+        Remote { target, auth: crate::hosts::auth_of(form.auth.get_untracked(), form.key.get_untracked()) };
+    if form.save.get_untracked() {
+        let name = remote.target.host.clone();
+        model.save_host(crate::hosts::Host { name, group: String::new(), remote: remote.clone() });
     }
+    model.connect_to(remote, form.here.get_untracked());
     form.target.set(String::new());
     true
 }

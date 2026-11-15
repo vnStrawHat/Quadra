@@ -38,6 +38,9 @@ pub struct Prefs {
     /// The master password's hash; empty: none, and no lock.
     pub password: Signal<String>,
     pub lock_after: Signal<f64>,
+    /// Saved hosts and recent targets, rows of words (`hosts.rs`).
+    pub hosts: Signal<Vec<Vec<String>>>,
+    pub recent: Signal<Vec<Vec<String>>>,
 }
 
 impl Prefs {
@@ -65,6 +68,8 @@ impl Prefs {
             show_clock: s.value("status_bar.clock", true),
             password: s.value("security.password", String::new()),
             lock_after: s.value("security.lock_after_minutes", 10.0),
+            hosts: s.value("ssh.hosts", Vec::new()),
+            recent: s.value("ssh.recent", Vec::new()),
         }
     }
 }

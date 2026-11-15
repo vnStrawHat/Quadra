@@ -73,7 +73,7 @@ fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> impl View + u
     let s = space.session.clone();
     let index = move || tab.spaces.with(|spaces| spaces.iter().position(|it| it.id == space.id).unwrap_or(0));
     let on = focused(tab, space.id);
-    let (title, cwd, exited) = (s.title(), s.cwd(), s.exited());
+    let (title, cwd, exited, note) = (s.title(), s.cwd(), s.exited(), s.link_note());
     // Once the program ended it says so, and the next key closes the space.
     let (said, closes, gone) = (s.clone(), model.clone(), space.id);
     effect(move || {
@@ -103,6 +103,7 @@ fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> impl View + u
             ),
         )
         .child(crate::marks::header_signal(s.status(), s.progress(), model.prefs()))
+        .child(div().padding_left(6.0).child(text(move || note.get())))
         .child(text(move || exited.get().map(|code| format!("exited {code}")).unwrap_or_default()));
     let ring = div()
         .absolute()

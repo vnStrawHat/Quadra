@@ -82,7 +82,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 
 `title`, `cwd`, `bells` (a count), `progress` (OSC 9;4: none, a part, indeterminate, error,
 paused), `status` (OSC 7501), `exited` (the code once the program ended), and each OSC 9
-notification as an event (`on_notification`).
+notification as an event (`on_notification`). `link_note` is what the link says of itself in
+a few words, written by whoever made the link (a remote one's latency, `124 ms`); empty for a
+local program.
 
 **OSC 7501** (program status, rev 0.3): routed to the session (`OscRoute::Forward`). The body is
 `key=value` pairs joined by `:`: `state` (`idle`, `working`, `done`, `blocked`, `error`, `clear`),

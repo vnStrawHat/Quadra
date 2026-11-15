@@ -128,7 +128,10 @@ impl Dock {
         then: impl FnOnce(Dock, Result<T, String>) + 'static,
     ) {
         let Some(ssh) = connection(model) else {
-            self.said.set(LOCAL.into());
+            // A remote space whose shell is not open yet is asked again; a local one says so.
+            let remote = untrack(|| model.active_tab().and_then(|tab| tab.focused()))
+                .is_some_and(|it| it.remote.is_some());
+            self.said.set(if remote { oneterm_ssh::NOT_YET.into() } else { LOCAL.into() });
             self.entries.set(Vec::new());
             return;
         };

@@ -113,7 +113,8 @@ impl OneTerm {
             .child(locked::Card(model.clone()));
         // The cards stand at the workspace's top right: clear of the dock while it shows.
         let (notices, dock) = (self.model.notices(), self.model.ui().dock);
-        let right = move || if dock.get() && !open.get() { 301.0 + 16.0 } else { 16.0 };
+        let expanded = self.model.ui().expanded;
+        let right = move || if dock.get() && !open.get() && !expanded.get() { 301.0 + 16.0 } else { 16.0 };
         // Under the title bar, and the strip of tabs when they are in one.
         let top = move || if vertical.get() { 38.0 + 16.0 } else { 38.0 + 36.0 + 16.0 };
         let cards = dynamic(move || AnyView::new(notices.right(right()).below(top()).host()))

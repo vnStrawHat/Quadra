@@ -50,9 +50,10 @@ fn columns(model: &Model, tab: Tab, font: f32) -> impl View + use<> {
                 list(<[Space]>::to_vec, true).container(row().grow(1.0).gap(1.0).bg(token::LINE)),
             );
         }
-        let first = list(|spaces| spaces[..1].to_vec(), true).container(row().grow(1.0).width(0.0));
-        let rest =
-            list(|spaces| spaces[1..].to_vec(), false).container(column().grow(1.0).width(0.0).gap(1.0));
+        let first = list(|spaces| spaces.iter().take(1).cloned().collect(), true)
+            .container(row().grow(1.0).width(0.0));
+        let rest = list(|spaces| spaces.iter().skip(1).cloned().collect(), false)
+            .container(column().grow(1.0).width(0.0).gap(1.0));
         AnyView::new(row().grow(1.0).gap(1.0).bg(token::LINE).child(first).child(rest))
     })
     .container(row().grow(1.0).min_width(0.0))
@@ -106,11 +107,19 @@ fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> quadra::Div {
             said.connect(Link::new(move |_| _ = closes.close_space(gone)));
         }
     });
-    // Where it is: the directory, after the user and host of a remote space.
+    // Where it is: the directory, after the user and host of a remote space; a shell that
+    // says no directory, its title.
     let (named, remote) = (model.clone(), space.remote.clone());
-    let place = move || match &remote {
-        Some(remote) => format!("{}@{}:{}", remote.target.user, named.host_name(remote), cwd.get()),
-        None => cwd.get(),
+    let place = move || {
+        let dir = cwd.get();
+        let dir = if dir.is_empty() { title.get() } else { dir };
+        match &remote {
+            Some(remote) if cwd.with(String::is_empty) => {
+                format!("{}@{} {dir}", remote.target.user, named.host_name(remote))
+            }
+            Some(remote) => format!("{}@{}:{dir}", remote.target.user, named.host_name(remote)),
+            None => dir,
+        }
     };
     let header = row()
         .align_items(Align::Center)

@@ -99,6 +99,38 @@ fn the_rail_chooses_a_tab_and_the_middle_button_closes_one() {
 }
 
 #[test]
+fn three_spaces_stack_beside_the_first_and_keep_their_shells() {
+    let mut a = app();
+    a.key(Key::D, Mods::CTRL);
+    a.key(Key::D, Mods::CTRL);
+    assert!(a.h.has_text("Terminal \u{B7} 3 spaces"));
+    a.typed("c");
+    assert_eq!(a.screen(2), "c", "the newest space has the focus");
+    a.key(Key::Left, Mods::CTRL | Mods::ALT);
+    a.key(Key::Left, Mods::CTRL | Mods::ALT);
+    a.typed("a");
+    assert_eq!(a.screen(0), "a", "the focus goes across the stack");
+    a.key(Key::Right, Mods::CTRL | Mods::ALT);
+    a.typed("b");
+    assert_eq!(a.screen(1), "b");
+
+    // Back to two columns and to a stack again: the shells live on.
+    a.key(Key::W, Mods::CTRL);
+    assert!(a.h.has_text("Terminal \u{B7} 2 spaces"));
+    a.key(Key::D, Mods::CTRL);
+    a.typed("d");
+    assert_eq!(a.screen(3), "d");
+    assert_eq!((a.screen(0), a.screen(2)), ("a".to_string(), "c".to_string()));
+
+    // A second tab comes and goes; the stack shows again.
+    a.key(Key::T, Mods::CTRL);
+    a.key(Key::W, Mods::CTRL);
+    assert!(a.h.has_text("Terminal \u{B7} 3 spaces"));
+    a.typed("e");
+    assert_eq!(a.screen(3), "de");
+}
+
+#[test]
 fn a_program_that_ended_says_so_and_a_key_closes_its_space() {
     let mut a = app();
     a.key(Key::D, Mods::CTRL);

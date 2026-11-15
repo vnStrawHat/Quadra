@@ -77,13 +77,13 @@ fn fill(model: &Model, made: &[Session]) {
     };
     let (g, b, y, d, x) = ("\x1b[32m", "\x1b[34m", "\x1b[33m", "\x1b[90m", "\x1b[0m");
     feed(
-        0,
+        1,
         &format!(
             "\x1b]0;neo-gateway deploy\x07\x1b]9;9;~/apps/neo-gateway\x07{g}trung@prod-api-01{x} {b}~/apps/neo-gateway{x} {d}main{x} $ git pull --rebase\nUpdating 3f1c2ab..8e77d10\nFast-forward\n src/auth/session.go   | 42 {g}++++++++{x}\x1b[31m---{x}\n 2 files changed, 31 insertions(+), 11 deletions(-)\n\n{g}trung@prod-api-01{x} $ make deploy ENV=prod\n{b}\u{25B8}{x} building image neo-gateway:8e77d10 ... {g}done{x}\n{b}\u{25B8}{x} running tests ........ {g}142 passed{x}\n{b}\u{25B8}{x} pushing to registry ap-southeast-1 ... {y}64%{x}\n\x1b]7501;state=blocked:id=deploy\x07"
         ),
     );
     feed(
-        1,
+        0,
         &format!(
             "\x1b]9;9;~/Projects/1term\x07\x1b[35m\u{276F}{x} pnpm dev\n{d}> 1term@0.4.2 dev{x}\n{g}\u{2713}{x} vite v6.0.3 ready in {y}412 ms{x}\n  {b}\u{279C}{x}  Local:   http://localhost:5173/\n\x1b[35m\u{276F}{x} "
         ),
@@ -98,6 +98,12 @@ fn fill(model: &Model, made: &[Session]) {
     feed(4, "\x1b]0;staging-db-01\x07\x07");
     feed(5, "\x1b]0;zsh \u{B7} cargo test\x07\x1b]7501;state=done:id=test\x07");
     feed(6, "\x1b]0;docs-cdn\x07");
+    // The latency an SSH link would note.
+    for (n, note) in [(1, "124 ms"), (2, "31 ms")] {
+        if let Some(s) = made.get(n) {
+            s.link_note().set(note.into());
+        }
+    }
     let _ = model;
 }
 
@@ -141,9 +147,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             term.view()
         })?;
         let model = built.borrow().clone().ok_or("no model")?;
-        // The first tab holds three spaces; four tabs more.
-        model.split();
-        model.split();
+        // The first tab holds three spaces, two of them remote (`echo()` sessions too: nothing
+        // connects); four tabs more.
+        let host = |name: &str| model.hosts().into_iter().find(|it| it.name == name).map(|it| it.remote);
+        for name in ["prod-api-01", "staging-db-01"] {
+            if let Some(remote) = host(name) {
+                model.connect_to(remote, true);
+            }
+        }
         for _ in 0..4 {
             model.new_tab();
         }

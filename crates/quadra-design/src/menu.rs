@@ -2,6 +2,7 @@
 //! a highlight, Enter does what the highlighted row does, and doing it closes the menu.
 
 mod rows;
+mod search;
 
 use std::rc::Rc;
 
@@ -12,6 +13,7 @@ use quadra_tree::NodeId;
 use quadra_view::{AnyView, Div, MountCx, NodeRef, Place, View, by_text, div, row};
 
 pub(crate) use self::rows::rows;
+pub use self::search::{searched_icon_button, searched_menu};
 use crate::button::{Button, Size, Variant, button, icon_button};
 use crate::popup::{open_now, popover};
 use crate::token;

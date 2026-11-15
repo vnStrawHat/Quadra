@@ -99,6 +99,39 @@ fn a_host_reached_through_another_carries_its_way_and_forwards() {
 }
 
 #[test]
+fn the_new_menu_searches_hosts_and_connects_to_a_typed_target() {
+    let mut a = app();
+    a.add("prod-api-01", "Production", "trung@10.20.1.14");
+    a.add("home-nas", "Personal", "admin@nas.local");
+    let open = |a: &mut App| {
+        a.h.get_by_role(Role::Button, "New terminal").click();
+        a.h.settle();
+        let field = a.h.get_by_role(Role::TextInput, "Search hosts, or type user@host…").node();
+        assert_eq!(a.h.tree.focused(), Some(field), "the focus is in the field");
+    };
+    open(&mut a);
+    assert!(
+        a.h.query(|n| n.semantics.role == Role::MenuItem && n.semantics.name == "Local shell").len() == 1
+    );
+    a.h.type_text("NAS");
+    a.h.settle();
+    let items = a.h.query(|n| n.semantics.role == Role::MenuItem);
+    let nas = a.h.query(|n| n.semantics.role == Role::MenuItem && n.semantics.name == "home-nas");
+    assert_eq!((items.len(), nas.len()), (2, 1), "{}", a.h.semantics());
+    assert_eq!(items[0], nas[0], "the host found comes before connecting to the word");
+    a.h.key(Key::Escape, Mods::NONE);
+    a.h.settle();
+
+    open(&mut a);
+    a.h.type_text("ops@10.9.8.7:2200");
+    a.h.settle();
+    a.h.key(Key::Enter, Mods::NONE);
+    a.h.settle();
+    let launch = a.made.borrow().last().cloned().unwrap();
+    assert_eq!(launch.ssh.map(|it| it.target.label()), Some("ops@10.9.8.7:2200".into()));
+}
+
+#[test]
 fn the_filter_keeps_the_hosts_that_match() {
     let mut a = app();
     a.add("prod-api-01", "Production", "trung@10.20.1.14");

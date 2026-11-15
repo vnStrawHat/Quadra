@@ -67,7 +67,7 @@ pub use input::{Input, input};
 pub use list::{List, list};
 pub use menu::{
     ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_button, menu_icon_button, menubar,
-    popover_button,
+    popover_button, searched_icon_button, searched_menu,
 };
 pub use notes::{alert, copyable, description_list, empty_state};
 pub use notice::{Notice, Notices, notices};

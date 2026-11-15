@@ -6,7 +6,7 @@ use quadra::{
     Align, AnyView, Display, MouseButton, NodeRef, PointerKind, Role, Signal, View, by_text, column, div,
     dynamic, each, row, signal, text,
 };
-use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, input, menu, token};
+use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, input, searched_menu, token};
 
 use crate::marks;
 use crate::model::{Model, Tab};
@@ -57,14 +57,33 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .child(heading)
         .child(rows.container(column().gap(2.0).padding_x(8.0).role(Role::TabList).label("Tabs")))
         .child(div().padding_x(8.0).padding_y(4.0).node_ref(&opener).child(new))
-        .child(menu(open, &opener, move || new_menu(&making)))
+        .child(searched_menu(open, &opener, ASK, move |typed: &str| new_menu(&making, typed)))
         .child(crate::hostlist::hosts(model))
 }
 
-/// The `+` menu: the default shell, each shell found, a split of the space with the focus.
-pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
+/// What the `+` menu's field says while empty.
+pub(crate) const ASK: &str = "Search hosts, or type user@host…";
+
+/// The `+` menu: the default shell, each shell found, a split of the space with the focus,
+/// the hosts; with `typed`, what holds it, after a row that connects to it when it is a target.
+pub(crate) fn new_menu(model: &Model, typed: &str) -> Vec<MenuItem> {
+    let words = typed.trim().to_lowercase();
+    let holds = |what: &str| words.is_empty() || what.to_lowercase().contains(&words);
+    let mut items = Vec::new();
+    let connect = oneterm_ssh::Target::parse(typed.trim()).filter(|_| !words.is_empty()).map(|target| {
+        let (goes, label) = (model.clone(), target.label());
+        let remote = crate::shells::Remote::new(target, oneterm_ssh::Auth::Auto);
+        MenuItem::new(format!("Connect to {label}")).on_select(move || goes.connect_to(remote.clone(), false))
+    });
+    if !words.is_empty() {
+        let user = typed.contains('@');
+        items.extend(connect.clone().filter(|_| user));
+        items.extend(found_hosts(model, &holds));
+        items.extend(connect.filter(|_| !user));
+        return items;
+    }
     let (local, splits) = (model.clone(), model.clone());
-    let mut items = vec![MenuItem::new("Local shell").keys("Ctrl+T").on_select(move || local.new_tab())];
+    items.push(MenuItem::new("Local shell").keys("Ctrl+T").on_select(move || local.new_tab()));
     for shell in shells::found() {
         let (makes, name) = (model.clone(), shell.name);
         items.push(
@@ -74,8 +93,21 @@ pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
     let connects = model.ui().connecting;
     items.push(MenuItem::new("Quick connect…").keys("Ctrl+Shift+K").on_select(move || connects.set(true)));
     items.push(MenuItem::new("Split current space").keys("Ctrl+D").on_select(move || splits.split()));
-    // The recent targets, then the hosts by group, then a new one.
-    let recent = model.recent();
+    items.extend(found_hosts(model, &holds));
+    let adds = model.ui().adding;
+    items.push(MenuItem::separator());
+    items.push(MenuItem::new("Add SSH host…").on_select(move || adds.set(true)));
+    items
+}
+
+/// The recent targets, then the hosts by group, those whose name or address `holds` takes.
+fn found_hosts(model: &Model, holds: &dyn Fn(&str) -> bool) -> Vec<MenuItem> {
+    let mut items = Vec::new();
+    let recent: Vec<_> = model
+        .recent()
+        .into_iter()
+        .filter(|(remote, _)| holds(&model.host_name(remote)) || holds(&remote.target.label()))
+        .collect();
     if !recent.is_empty() {
         items.push(MenuItem::separator());
         items.push(MenuItem::heading("Recent"));
@@ -85,7 +117,7 @@ pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
         let when = crate::hosts::ago(at);
         items.push(MenuItem::new(name).keys(when).on_select(move || goes.connect_to(remote.clone(), false)));
     }
-    let hosts = model.hosts();
+    let hosts = model.hosts().into_iter().filter(|it| holds(&it.name) || holds(&it.address()));
     let mut group = None;
     for host in hosts {
         if group.as_ref() != Some(&host.group) {
@@ -102,9 +134,6 @@ pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
                 .on_select(move || goes.connect_to(remote.clone(), false)),
         );
     }
-    let adds = model.ui().adding;
-    items.push(MenuItem::separator());
-    items.push(MenuItem::new("Add SSH host…").on_select(move || adds.set(true)));
     items
 }
 

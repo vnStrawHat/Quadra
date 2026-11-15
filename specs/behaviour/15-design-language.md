@@ -306,6 +306,9 @@ same rule: no backdrop, an outside click closes them.
   (`swatch`). A destructive item (`.danger()`) has its label and icon in `error`. Closing a
   popup gives the focus back
   to what had it when the popup opened (its trigger), so keys and actions reach the window.
+  A searched menu (`searched_menu`) has the select's search head over its rows (32 tall, a
+  12 px `search` in `text_3`, a rule under it), the focus in its field; the rows are asked
+  again with what the field says as it changes, and Enter does the first row that can be done.
 - **Tooltip:** level 1, padding 8 × 4, 14 text, max width 288, shortcut muted 16 to the
   right, an optional meta line under it in 12 `text_2`, shown after 500 ms.
 - **List row:** 23 tall (dense) or 32 (picker rows, 4 padding), padding 6, `radius_md` when

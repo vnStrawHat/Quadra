@@ -3,10 +3,10 @@
 //! it), `+` after the last, and "Vertical" at the end to go back to the rail.
 
 use quadra::{Align, Display, MouseButton, PointerKind, Role, Signal, View, by_text, div, each, row};
-use quadra_design::{button, context_menu, icon, icons, menu_icon_button, token};
+use quadra_design::{button, context_menu, icon, icons, searched_icon_button, token};
 
 use crate::model::{Model, Tab};
-use crate::rail::{Dragged, new_menu, tab_menu, title};
+use crate::rail::{ASK, Dragged, new_menu, tab_menu, title};
 
 pub(crate) fn strip(model: &Model) -> impl View + use<> {
     let (tabs, vertical, making) = (model.tabs(), model.vertical(), model.clone());
@@ -26,11 +26,12 @@ pub(crate) fn strip(model: &Model) -> impl View + use<> {
         .role(Role::TabList)
         .label("Tabs")
         .child(buttons.container(row().align_items(Align::Stretch).min_width(0.0)))
-        .child(
-            div()
-                .padding_x(4.0)
-                .child(menu_icon_button(icons::PLUS, "New terminal", move || new_menu(&making))),
-        )
+        .child(div().padding_x(4.0).child(searched_icon_button(
+            icons::PLUS,
+            "New terminal",
+            ASK,
+            move |typed: &str| new_menu(&making, typed),
+        )))
         .child(div().grow(1.0))
         .child(div().padding_x(6.0).child(button("Vertical").on_click(move || vertical.set(true))))
 }

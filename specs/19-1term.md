@@ -102,7 +102,11 @@ P2 Quick connect, Recent and the saved hosts by group, Add SSH host.
   `--login -i`), WSL (`%SystemRoot%\System32\wsl.exe`), each where its file is. The default
   shell is Command Prompt until settings (M5) name another. A split starts in the focused
   space's directory.
-- **The `+` menu** in P1 has no search field: it searches hosts, which come with P2.
+- **The `+` menu** in P1 has no search field: it searches hosts, which come with P2. With
+  them (`searched_menu`), what is typed keeps the shells, recent targets and hosts whose
+  names or addresses hold it (whatever the case), and a typed target (`Target::parse`) is a
+  row `Connect to user@host`: first when it names a user (`@`), else after the hosts found.
+  Enter takes the first row.
 - **Git**: the branch from the `.git` folder found up from the focused space's directory
   (`HEAD`; a detached head shows its short hash), and the count of changed files from
   `git status --porcelain` run on the pool with no window, again when the directory changes

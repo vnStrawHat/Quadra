@@ -41,10 +41,12 @@ unsafe extern "system" fn listen(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: L
     }
 }
 
+/// How long a later process looks for the first's window, which the first makes just after
+/// its mutex: the two may start together.
+const WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+
 /// Whether this process is the first of the app named `id` in the user's session; a later
 /// one hands the first `args` and the folder it was started in.
-// ponytail: a second that starts while the first has its mutex but not yet its window ends
-// without being heard; a retry for a moment if that is ever seen.
 pub fn single_instance(id: &str, args: &[String]) -> Instance {
     let (name, class) = (HSTRING::from(format!("Local\\quadra-{id}")), w!("QuadraInstance"));
     let title = HSTRING::from(id);
@@ -53,7 +55,13 @@ pub fn single_instance(id: &str, args: &[String]) -> Instance {
     unsafe {
         let mutex = CreateMutexW(None, true, &name);
         if mutex.is_ok() && GetLastError() == ERROR_ALREADY_EXISTS {
-            if let Ok(first) = FindWindowExW(Some(HWND_MESSAGE), None, class, &title) {
+            let started = std::time::Instant::now();
+            let mut found = FindWindowExW(Some(HWND_MESSAGE), None, class, &title);
+            while found.is_err() && started.elapsed() < WAIT {
+                std::thread::sleep(std::time::Duration::from_millis(20));
+                found = FindWindowExW(Some(HWND_MESSAGE), None, class, &title);
+            }
+            if let Ok(first) = found {
                 let folder = std::env::current_dir().unwrap_or_default();
                 let mut text = folder.display().to_string();
                 args.iter().for_each(|arg| text.extend(['\0'].into_iter().chain(arg.chars())));

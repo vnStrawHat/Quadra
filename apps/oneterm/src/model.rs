@@ -5,72 +5,14 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use quadra::{Action, Scope, Signal, signal};
+use quadra::{Scope, Signal, signal};
 use quadra_design::{Notices, notices};
-use quadra_term::Session;
 
 use crate::NewSession;
-use crate::shells::Launch;
-
-/// A space: a session, and the scope its signals and tasks live in.
-#[derive(Clone)]
-pub struct Space {
-    pub id: u64,
-    pub session: Session,
-    scope: Scope,
-}
-
-impl PartialEq for Space {
-    fn eq(&self, other: &Space) -> bool {
-        self.id == other.id
-    }
-}
-
-/// A tab: its spaces, the one with the focus, and the name the user gave it.
-#[derive(Clone, Copy)]
-pub struct Tab {
-    pub id: u64,
-    pub spaces: Signal<Vec<Space>>,
-    pub focus: Signal<usize>,
-    pub name: Signal<Option<String>>,
-}
-
-impl PartialEq for Tab {
-    fn eq(&self, other: &Tab) -> bool {
-        self.id == other.id
-    }
-}
-
-impl Tab {
-    /// The space with the focus.
-    pub fn focused(&self) -> Option<Space> {
-        let at = self.focus.get();
-        self.spaces.with(|spaces| spaces.get(at.min(spaces.len().saturating_sub(1))).cloned())
-    }
-
-    /// What the tab is called: the user's name, else its focused program's title.
-    pub fn title(&self) -> String {
-        if let Some(name) = self.name.get() {
-            return name;
-        }
-        let title = self.focused().map(|space| space.session.title().get()).unwrap_or_default();
-        if title.is_empty() { "Terminal".into() } else { title }
-    }
-}
-
-/// What the keys of the app ask for.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Command {
-    NewTab,
-    Split,
-    CloseSpace,
-    /// The space to the right, or to the left.
-    FocusNext(bool),
-}
-
-impl Action for Command {
-    const NAME: &'static str = "oneterm::Command";
-}
+use crate::prefs::Prefs;
+use crate::shells::{self, Launch, Shell};
+pub use crate::tab::{Command, Space, Tab};
+use quadra_term::vt::{CursorShape, CursorStyle};
 
 /// The window's tabs. A copy is the same one.
 #[derive(Clone)]
@@ -85,15 +27,16 @@ struct Inner {
     /// The tab whose name is being edited in place.
     renaming: Signal<Option<u64>>,
     /// Tabs in the rail, or in a strip under the title bar.
-    vertical: Signal<bool>,
+    prefs: Prefs,
     /// The cards of notifications, and how many came since they were last looked at.
     notices: Notices,
     unread: Signal<u32>,
+    settings_open: Signal<bool>,
 }
 
 impl Model {
     /// A model with one tab of one space, owned by the scope it is made in.
-    pub fn new(new_session: NewSession) -> Model {
+    pub fn new(new_session: NewSession, prefs: Prefs) -> Model {
         let inner = Inner {
             owner: Scope::current(),
             new_session,
@@ -101,9 +44,10 @@ impl Model {
             tabs: signal(Vec::new()),
             active: signal(0),
             renaming: signal(None),
-            vertical: signal(true),
+            prefs,
             notices: notices().below(38.0 + 12.0),
             unread: signal(0),
+            settings_open: signal(false),
         };
         let model = Model(Rc::new(inner));
         model.new_tab();
@@ -124,7 +68,33 @@ impl Model {
     }
 
     pub fn vertical(&self) -> Signal<bool> {
-        self.0.vertical
+        self.0.prefs.vertical
+    }
+
+    pub fn prefs(&self) -> Prefs {
+        self.0.prefs
+    }
+
+    /// What a new space starts as the settings say: a shell (the default one when none is
+    /// given), in the active space's directory or home, with the cursor and the history set.
+    pub fn launch(&self, shell: Option<Shell>) -> Launch {
+        let p = self.0.prefs;
+        let named = p.shell.get_untracked();
+        let shell = shell.or_else(|| shells::found().into_iter().find(|it| it.name == named));
+        let cwd = match p.start.get_untracked() {
+            0 => self.focused_cwd(),
+            _ => std::env::var_os("USERPROFILE").map(Into::into),
+        };
+        let shape =
+            [CursorShape::Block, CursorShape::Beam, CursorShape::Underline][p.cursor.get_untracked().min(2)];
+        let cursor = CursorStyle { shape, blinking: p.blink.get_untracked() };
+        Launch { shell, cwd, cursor, scrollback: p.scrollback.get_untracked().clamp(0.0, 1.0e6) as u32 }
+    }
+
+    /// The directory of the focused space of the tab that shows.
+    fn focused_cwd(&self) -> Option<std::path::PathBuf> {
+        let space = quadra::untrack(|| self.active_tab().and_then(|tab| tab.focused()))?;
+        Some(space.session.cwd().get_untracked()).filter(|cwd| !cwd.is_empty()).map(Into::into)
     }
 
     pub fn notices(&self) -> Notices {
@@ -133,6 +103,11 @@ impl Model {
 
     pub fn unread(&self) -> Signal<u32> {
         self.0.unread
+    }
+
+    /// Whether the settings page takes the window's body.
+    pub fn settings_open(&self) -> Signal<bool> {
+        self.0.settings_open
     }
 
     pub fn active_tab(&self) -> Option<Tab> {
@@ -153,6 +128,8 @@ impl Model {
         let session = scope.run(|| {
             let session = (self.0.new_session)(launch);
             self.watch(id, &session);
+            let (rows, kept) = (self.0.prefs.scrollback, session.clone());
+            quadra::effect(move || kept.set_scrollback(rows.get().clamp(0.0, 1.0e6) as u32));
             session
         });
         Space { id, session, scope }
@@ -160,7 +137,7 @@ impl Model {
 
     /// A tab with a new local shell, after the others, shown.
     pub fn new_tab(&self) {
-        self.new_tab_with(Launch::default());
+        self.new_tab_with(self.launch(None));
     }
 
     /// A tab running a launch, after the others, shown.
@@ -170,7 +147,7 @@ impl Model {
 
     /// A tab with a new local shell right after a tab, shown.
     pub fn duplicate(&self, id: u64) {
-        self.insert_tab(self.index_of(id).map_or(usize::MAX, |at| at + 1), Launch::default());
+        self.insert_tab(self.index_of(id).map_or(usize::MAX, |at| at + 1), self.launch(None));
     }
 
     fn index_of(&self, id: u64) -> Option<usize> {
@@ -203,6 +180,7 @@ impl Model {
             spaces: signal(vec![space]),
             focus: signal(0),
             name: signal(None),
+            prefs: self.0.prefs,
         });
         self.0.tabs.update(|tabs| tabs.insert(at.min(tabs.len()), tab));
         self.0.active.set(tab.id);
@@ -211,9 +189,7 @@ impl Model {
     /// A new space beside the focused one of the active tab, with the focus.
     pub fn split(&self) {
         let Some(tab) = self.active_tab() else { return };
-        let cwd =
-            tab.focused().map(|space| space.session.cwd().get_untracked()).filter(|cwd| !cwd.is_empty());
-        let space = self.space(Launch { shell: None, cwd: cwd.map(Into::into) });
+        let space = self.space(Launch { cwd: self.focused_cwd(), ..self.launch(None) });
         let at = tab.focus.get_untracked() + 1;
         tab.spaces.update(|spaces| spaces.insert(at.min(spaces.len()), space));
         tab.focus.set(at);

@@ -71,7 +71,12 @@ impl Session {
     /// A session of 80 by 24 cells until its view sizes it; `policy` is how the engine
     /// resizes (a pseudo console of Windows wants `KeepViewportTop`).
     pub fn new(policy: ResizePolicy) -> Session {
-        let mut config = Config::default();
+        Session::configured(policy, Config::default())
+    }
+
+    /// As [`Session::new`], with the engine's configuration: the cursor until a program sets
+    /// one, the history kept. OSC 7501 is routed to the session whatever it says.
+    pub fn configured(policy: ResizePolicy, mut config: Config) -> Session {
         config.osc_routes.route(7501, OscRoute::Forward);
         let term = Terminal::new(Size { rows: 24, cols: 80 }, config);
         let engine = Engine { term, batch: EventBatch::new(), statuses: Statuses::default() };
@@ -161,6 +166,11 @@ impl Session {
             engine.term.resize(size, self.0.policy);
         }
         self.with_link(|link| (link.resize)(size));
+    }
+
+    /// How many rows of history the engine keeps from now on.
+    pub fn set_scrollback(&self, rows: u32) {
+        self.engine().term.set_scrollback_limit(rows);
     }
 
     /// The grid's size.

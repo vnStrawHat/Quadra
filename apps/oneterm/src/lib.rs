@@ -7,19 +7,23 @@ mod git;
 mod local;
 mod marks;
 mod model;
+mod page;
+mod prefs;
 mod rail;
 mod shells;
 mod signals;
 mod spaces;
 mod strip;
+mod tab;
 
 use std::rc::Rc;
 
-use quadra::{AnyView, Keymap, Signal, View, Window, column, dynamic, row, signal, use_context};
+use quadra::{AnyView, Display, Keymap, Signal, View, Window, column, dynamic, row, signal, use_context};
 use quadra_term::Session;
 
 pub use local::local_shell;
 pub use model::{Command, Model, Space, Tab};
+pub use prefs::{Prefs, theme};
 pub use shells::{Launch, Shell};
 pub use signals::{percent, state_word};
 
@@ -53,7 +57,7 @@ pub struct OneTerm {
 impl OneTerm {
     /// The window's model, with one tab of one space: made where the window's view is built.
     pub fn new(new_session: NewSession) -> OneTerm {
-        OneTerm { model: Model::new(new_session), clock: signal(String::new()) }
+        OneTerm { model: Model::new(new_session, Prefs::load()), clock: signal(String::new()) }
     }
 
     pub fn view(&self) -> impl View + use<> {
@@ -66,7 +70,13 @@ impl OneTerm {
                 AnyView::new(column().grow(1.0).child(strip::strip(&shown)).child(spaces::workspace(&shown)))
             }
         });
-        let body = body.container(column().grow(1.0));
+        let open = model.settings_open();
+        let shows = move |on: bool| move || if open.get() == on { Display::Flex } else { Display::None };
+        let body = column()
+            .grow(1.0)
+            .min_height(0.0)
+            .child(body.container(column().grow(1.0).display(shows(false))))
+            .child(page::page(&model).display(shows(true)));
         quadra_design::root()
             .on_action::<Command>(move |&command| {
                 if !run(&model, command)

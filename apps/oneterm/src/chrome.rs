@@ -29,7 +29,17 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .child(icon(icons::TERMINAL).size(16.0).color(token::ACCENT))
         .child(div().font_weight(600).child(text("1Term")))
         .child(div().text_color(token::TEXT_2).child(text(shown)));
-    titlebar("").height(38.0).control(mark).control(div().grow(1.0)).control(notifications(&seen))
+    let open = seen.settings_open();
+    let gear = tooltip(
+        "Settings",
+        icon_button(icons::SETTINGS, "Settings").on_click(move || open.update(|on| *on = !*on)),
+    );
+    titlebar("")
+        .height(38.0)
+        .control(mark)
+        .control(div().grow(1.0))
+        .control(notifications(&seen))
+        .control(gear)
 }
 
 /// The button of notifications, with how many came unseen; a press marks them seen.
@@ -53,7 +63,8 @@ fn notifications(model: &crate::model::Model) -> impl View + use<> {
 /// The working directory at the left, the clock at the right.
 pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + use<> {
     tick(clock);
-    let (tabs, unread, shows) = (model.tabs(), model.unread(), model.clone());
+    let (tabs, unread, shows, prefs) = (model.tabs(), model.unread(), model.clone(), model.prefs());
+    let when = |on: Signal<bool>| move || if on.get() { Display::Flex } else { Display::None };
     let model = model.clone();
     let cwd = move || {
         let space = model.active_tab().and_then(|tab| tab.focused());
@@ -63,7 +74,9 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
     let repo = crate::git::follow(repo_of);
     let git = div()
         .label("Git")
-        .display(move || if repo.with(Option::is_some) { Display::Flex } else { Display::None })
+        .display(move || {
+            if prefs.show_git.get() && repo.with(Option::is_some) { Display::Flex } else { Display::None }
+        })
         .child(text(move || match repo.get() {
             Some(repo) => match repo.changes {
                 Some(n) if n > 0 => format!("{} \u{B7} {n} changed", repo.branch),
@@ -99,15 +112,15 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
         .child(git)
         .child(div().grow(1.0))
         .child(meter(&shows))
-        .child(div().label("Usage").child(text(usage())))
+        .child(div().label("Usage").display(when(prefs.show_usage)).child(text(usage())))
         .child(div().label("Bells").child(text(move || format!("bell {}", all_bells(tabs)))))
         .child(div().label("Notices").child(text(move || format!("{} new", unread.get()))))
-        .child(div().label("Clock").child(text(move || clock.get())))
+        .child(div().label("Clock").display(when(prefs.show_clock)).child(text(move || clock.get())))
 }
 
 /// The progress of the tab that shows: a meter of 56 px and its percentage.
 fn meter(model: &crate::model::Model) -> impl View + use<> {
-    let model = model.clone();
+    let (model, shows) = (model.clone(), model.prefs().progress_bar);
     let part = quadra::memo(move || model.active_tab().and_then(|tab| tab.progress()).and_then(percent));
     let fill = div()
         .height(4.0)
@@ -119,7 +132,7 @@ fn meter(model: &crate::model::Model) -> impl View + use<> {
         .align_items(Align::Center)
         .gap(6.0)
         .label("Progress")
-        .display(move || if part.get().is_some() { Display::Flex } else { Display::None })
+        .display(move || if shows.get() && part.get().is_some() { Display::Flex } else { Display::None })
         .child(track)
         .child(text(move || part.get().map(|n| format!("{n}%")).unwrap_or_default()))
 }

@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_shell::{Pty, PtyOptions};
-use quadra_term::vt::ResizePolicy;
+use quadra_term::vt::{Config, ResizePolicy};
 use quadra_term::{Link, Session};
 
 use crate::shells::Launch;
@@ -14,7 +14,9 @@ use crate::shells::Launch;
 /// Prompt is asked to say it with each prompt (OSC 9;9), as it says nothing of it otherwise.
 pub fn local_shell(launch: Launch) -> Session {
     // Windows' console resizes keeping the viewport's top.
-    let session = Session::new(ResizePolicy::KeepViewportTop);
+    let mut config = Config::default();
+    (config.default_cursor_style, config.scrollback_limit) = (launch.cursor, launch.scrollback);
+    let session = Session::configured(ResizePolicy::KeepViewportTop, config);
     let start = launch.cwd.filter(|dir| dir.is_dir()).or_else(|| std::env::current_dir().ok());
     if let Some(start) = &start {
         session.cwd().set(start.display().to_string());

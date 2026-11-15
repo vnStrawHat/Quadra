@@ -12,11 +12,14 @@ pub struct Shell {
 }
 
 /// What a new space starts: a shell (the default when none), in a directory (the app's when
-/// none).
+/// none), and how its terminal is set.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Launch {
     pub shell: Option<Shell>,
     pub cwd: Option<PathBuf>,
+    /// The cursor until a program sets one, and the rows of history kept.
+    pub cursor: quadra_term::vt::CursorStyle,
+    pub scrollback: u32,
 }
 
 /// The shells whose programs are where they are installed, in the menu's order.

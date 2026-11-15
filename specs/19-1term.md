@@ -107,7 +107,8 @@ Appearance, Terminal, Tabs & spaces, Notifications & signals, Status bar, Securi
 Keybindings, Advanced; from P2 SSH & hosts and SFTP. Saved to `settings.json` in the app's
 folder as they change (specs/15). Terminal: font family and size, ligatures, cursor shape and
 blink, scrollback lines, the default local shell, where new spaces start (active space's cwd,
-home, last used). Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
+home, last used). In M5: size, cursor, scrollback, shell, active cwd or home; the font family,
+ligatures, "last used" and a bell's sound or flash wait. A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
 blocked; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound / badge and flash /
 ignore; OSC 9: toast 6 s / until dismissed / silent.
 

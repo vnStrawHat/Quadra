@@ -15,8 +15,11 @@ use crate::model::{Model, Tab};
 const NOTICE: Duration = Duration::from_secs(6);
 
 impl Tab {
-    /// The strongest state of its spaces' programs.
+    /// The strongest state of its spaces' programs; idle when the settings ignore states.
     pub fn status(&self) -> ProgramState {
+        if self.prefs.status_shown.get() == 2 {
+            return ProgramState::Idle;
+        }
         self.spaces
             .with(|spaces| spaces.iter().map(|space| space.session.status().get()).max().unwrap_or_default())
     }
@@ -64,10 +67,11 @@ impl Model {
     /// Follows what a new space's program signals: a bell in the space that has the focus is
     /// seen at once, a notification and a program that waits or failed raise a card.
     pub(crate) fn watch(&self, id: u64, session: &Session) {
-        let (bells, status) = (session.bells(), session.status());
+        let (bells, status, prefs) = (session.bells(), session.status(), self.prefs());
         let looked_at = self.clone();
         effect(move || {
-            if bells.get() > 0 && looked_at.looks_at(id) {
+            // Bells the settings ignore are seen as they ring.
+            if bells.get() > 0 && (prefs.bell.get() == 1 || looked_at.looks_at(id)) {
                 bells.set(0);
             }
         });
@@ -75,7 +79,11 @@ impl Model {
         let was: std::cell::Cell<ProgramState> = Default::default();
         effect(move || {
             let state = status.get();
-            if was.replace(state) != state && matches!(state, ProgramState::Blocked | ProgramState::Error) {
+            let toasts = untrack(|| prefs.toast_blocked.get() && prefs.status_shown.get() < 2);
+            if was.replace(state) != state
+                && toasts
+                && matches!(state, ProgramState::Blocked | ProgramState::Error)
+            {
                 let tone = if state == ProgramState::Error { Tone::Danger } else { Tone::Warning };
                 let title = format!("{} {}", raises.tab_name(id), state_word(state).unwrap_or(""));
                 raises.notify(Notice::new(title).tone(tone));
@@ -83,9 +91,17 @@ impl Model {
         });
         let tells = self.clone();
         session.on_notification(move |n| {
+            let kept = match prefs.notices.get_untracked() {
+                0 => Some(NOTICE),
+                1 => None,
+                _ => return, // silent
+            };
             let words = if n.title.is_empty() { n.body.clone() } else { format!("{}: {}", n.title, n.body) };
             let card = Notice::new("OSC 9").body(format!("{} \u{B7} now\n{words}", tells.tab_name(id)));
-            tells.notify(card.lasts(NOTICE));
+            tells.notify(match kept {
+                Some(time) => card.lasts(time),
+                None => card,
+            });
         });
     }
 

@@ -10,7 +10,7 @@ use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, inp
 
 use crate::marks;
 use crate::model::{Model, Tab};
-use crate::shells::{self, Launch};
+use crate::shells;
 
 /// What a tab's row carries while it is dragged.
 pub(crate) struct Dragged(pub u64);
@@ -68,8 +68,9 @@ pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
     let mut items = vec![MenuItem::new("Local shell").keys("Ctrl+T").on_select(move || local.new_tab())];
     for shell in shells::found() {
         let (makes, name) = (model.clone(), shell.name);
-        let launch = Launch { shell: Some(shell), cwd: None };
-        items.push(MenuItem::new(name).on_select(move || makes.new_tab_with(launch.clone())));
+        items.push(
+            MenuItem::new(name).on_select(move || makes.new_tab_with(makes.launch(Some(shell.clone())))),
+        );
     }
     items.push(MenuItem::separator());
     items.push(MenuItem::new("Split current space").keys("Ctrl+D").on_select(move || splits.split()));

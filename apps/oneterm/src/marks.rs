@@ -45,7 +45,7 @@ pub(crate) fn tab_line(tab: Tab) -> String {
     if let Some(word) = state_word(tab.status()) {
         return word.to_string();
     }
-    if let Some(n) = tab.progress().and_then(percent) {
+    if let Some(n) = tab.progress().filter(|_| tab.prefs.progress_tab.get()).and_then(percent) {
         return format!("{n}%");
     }
     let n = tab.spaces.with(Vec::len);
@@ -54,7 +54,7 @@ pub(crate) fn tab_line(tab: Tab) -> String {
 
 /// A line of 2 px along the bottom of a tab's row, as long as its progress.
 pub(crate) fn progress_bar(tab: Tab) -> impl View {
-    let part = move || tab.progress().and_then(percent);
+    let part = move || tab.progress().filter(|_| tab.prefs.progress_tab.get()).and_then(percent);
     div()
         .absolute()
         .left(0.0)
@@ -73,7 +73,11 @@ pub(crate) fn progress_bar(tab: Tab) -> impl View {
 pub(crate) fn header_signal(
     status: quadra::Signal<ProgramState>,
     progress: quadra::Signal<Option<Progress>>,
+    prefs: crate::prefs::Prefs,
 ) -> impl View {
+    // The settings say whether the header shows states.
+    let status =
+        quadra::memo(move || if prefs.status_shown.get() == 0 { status.get() } else { ProgramState::Idle });
     let chip = div()
         .padding_x(6.0)
         .radius(3.0)

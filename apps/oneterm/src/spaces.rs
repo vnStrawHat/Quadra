@@ -15,19 +15,26 @@ use crate::model::{Model, Space, Tab};
 
 pub(crate) fn workspace(model: &Model) -> impl View + use<> {
     let shown = model.clone();
-    let tab = dynamic(move || match shown.active_tab() {
-        Some(tab) => AnyView::new(columns(&shown, tab)),
-        None => AnyView::new(div()),
+    let font = model.prefs().font_size;
+    // A new size of text mounts the terminals again.
+    let tab = dynamic(move || match (font.get(), shown.active_tab()) {
+        (size, Some(tab)) => AnyView::new(columns(&shown, tab, size.clamp(6.0, 48.0) as f32)),
+        (_, None) => AnyView::new(div()),
     });
     tab.container(row().grow(1.0).bg(token::CANVAS))
 }
 
-fn columns(model: &Model, tab: Tab) -> impl View + use<> {
+fn columns(model: &Model, tab: Tab, font: f32) -> impl View + use<> {
     let model = model.clone();
     let spaces = each(
         move || tab.spaces.get(),
         |space| space.id,
-        move |space: Signal<Space>| SpaceView { model: model.clone(), tab, space: space.get_untracked() },
+        move |space: Signal<Space>| SpaceView {
+            model: model.clone(),
+            tab,
+            space: space.get_untracked(),
+            font,
+        },
     );
     spaces.container(row().grow(1.0).gap(1.0).bg(token::LINE))
 }
@@ -41,15 +48,16 @@ struct SpaceView {
     model: Model,
     tab: Tab,
     space: Space,
+    font: f32,
 }
 
 impl View for SpaceView {
     /// The header, the terminal and the ring; the terminal takes the focus whenever the
     /// space is the tab's focused one.
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let SpaceView { model, tab, space } = self;
+        let SpaceView { model, tab, space, font } = self;
         let shows = focused(tab, space.id);
-        let id = space_view(&model, tab, space).mount(cx);
+        let id = space_view(&model, tab, space, font).mount(cx);
         let handle = cx.handle.clone();
         effect(move || {
             if shows() {
@@ -60,7 +68,7 @@ impl View for SpaceView {
     }
 }
 
-fn space_view(model: &Model, tab: Tab, space: Space) -> impl View + use<> {
+fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> impl View + use<> {
     let s = space.session.clone();
     let index = move || tab.spaces.with(|spaces| spaces.iter().position(|it| it.id == space.id).unwrap_or(0));
     let on = focused(tab, space.id);
@@ -93,7 +101,7 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> impl View + use<> {
                 .ellipsis(),
             ),
         )
-        .child(crate::marks::header_signal(s.status(), s.progress()))
+        .child(crate::marks::header_signal(s.status(), s.progress(), model.prefs()))
         .child(text(move || exited.get().map(|code| format!("exited {code}")).unwrap_or_default()));
     let ring = div()
         .absolute()
@@ -114,6 +122,6 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> impl View + use<> {
             }
         })
         .child(header)
-        .child(terminal(&s))
+        .child(terminal(&s).font(font, (font * 1.54).round()))
         .child(ring)
 }

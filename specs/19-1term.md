@@ -126,9 +126,12 @@ connected to it) and its address at the right (Recent: the host and how long ago
 
 ## Settings
 
-A page in the window (the kit's `settings`; the title bar names the page), a search, pages:
-Appearance, Terminal, Tabs & spaces, Notifications & signals, Status bar, Security & lock,
-Keybindings, Advanced; from P2 SSH & hosts and SFTP. Saved to `settings.json` in the app's
+A page in the window (the kit's `settings` in its layout of cards: pages with icons, each with
+what it is about, groups with titles; the title bar names the page), a search, pages:
+Appearance, Terminal, Tabs & spaces, SSH & hosts (the count of saved hosts with Add SSH host,
+the recent targets with Forget), SFTP (the downloads folder), Notifications & signals, Status bar,
+Security & lock, Keybindings, Advanced (the file, and a note that settings save as they change).
+Saved to `settings.json` in the app's
 folder as they change (specs/15). Terminal: font family and size, ligatures, cursor shape and
 blink, scrollback lines, the default local shell, where new spaces start (active space's cwd,
 home, last used). In M5: size, cursor, scrollback, shell, active cwd or home; the font family,

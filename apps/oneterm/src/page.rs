@@ -1,25 +1,44 @@
-//! The settings page (specs/19, "Settings"): it takes the window's body while it is open,
-//! `1Term Settings · <page>` above the page, a search in the column. Each control writes a
-//! setting, which saves it.
+//! The settings page (specs/19, "Settings"): it takes the window's body while it is open, in
+//! the kit's layout of cards: the pages with their icons and a search in the column, each
+//! page's title and what it is about, its groups. Each control writes a setting, which saves it.
 
-use quadra::{Signal, View, column, div, effect, signal, untrack};
+use quadra::{Align, Signal, View, column, div, effect, row, signal, text, untrack};
 use quadra_design::{
-    SettingsGroup, SettingsPage, icons, key_hint, number_input, segmented, select, settings, switch,
+    SettingsGroup, SettingsPage, Variant, button, icon, icons, input, key_hint, number_input, segmented,
+    select, settings, switch, token,
 };
 
 use crate::model::Model;
 use crate::prefs::{self, Prefs};
 
-pub(crate) const PAGES: [&str; 8] = [
-    "Appearance",
-    "Terminal",
-    "Tabs & spaces",
-    "Notifications & signals",
-    "Status bar",
-    "Security & lock",
-    "Keybindings",
-    "Advanced",
+/// Each page: its name, its icon and what it is about.
+const PAGES_ABOUT: [(&str, &str, &str); 10] = [
+    ("Appearance", icons::PALETTE, "The theme and the size of the terminal's text."),
+    (
+        "Terminal",
+        icons::SQUARE_TERMINAL,
+        "The cursor, the history and the shell. Changes apply to new spaces.",
+    ),
+    ("Tabs & spaces", icons::LAYERS, "Where the tabs stand."),
+    ("SSH & hosts", icons::APP_WINDOW, "The hosts saved in the rail and the targets connected to lately."),
+    ("SFTP", icons::FOLDER, "Where downloads go."),
+    ("Notifications & signals", icons::BELL, "What programs say with escape sequences, and how it shows."),
+    ("Status bar", icons::GAUGE, "What the status bar shows."),
+    ("Security & lock", icons::LOCK, "The master password and the lock when idle."),
+    ("Keybindings", icons::COMMAND, "The app's keys."),
+    ("Advanced", icons::CODE, "The settings file."),
 ];
+
+/// The pages' names, in order: what the title bar says of the page shown.
+pub(crate) const PAGES: [&str; 10] = {
+    let mut names = [""; 10];
+    let mut at = 0;
+    while at < 10 {
+        names[at] = PAGES_ABOUT[at].0;
+        at += 1;
+    }
+    names
+};
 
 /// The app's keys as the Keybindings page lists them.
 const KEYS: [(&str, &str); 8] = [
@@ -36,29 +55,27 @@ const KEYS: [(&str, &str); 8] = [
 pub(crate) fn page(model: &Model) -> quadra::Div {
     // The title bar says the page and has Done.
     let (p, current, query) = (model.prefs(), model.ui().page, signal(String::new()));
-    let mut view = settings(current).search(query);
-    for (at, group) in groups(p, model).into_iter().enumerate() {
-        let icon = [icons::PALETTE, icons::TERMINAL, icons::LAYERS, icons::BELL, icons::LIST, icons::LOCK]
-            .get(at)
-            .copied()
-            .unwrap_or(icons::SETTINGS);
-        view = view.page(SettingsPage::new(PAGES[at]).icon(icon).group(group));
+    let mut view = settings(current).search(query).cards();
+    for ((name, body, about), groups) in PAGES_ABOUT.into_iter().zip(groups(p, model)) {
+        let page = SettingsPage::new(name).icon(body).about(about);
+        view = view.page(groups.into_iter().fold(page, SettingsPage::group));
     }
     column().grow(1.0).min_height(0.0).child(view)
 }
 
-fn groups(p: Prefs, model: &Model) -> Vec<SettingsGroup> {
+fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
     let appearance = SettingsGroup::new("Colours and text")
         .row("Theme", "System follows the OS's dark or light mode.", segmented(prefs::THEMES, p.theme))
         .row("Font size", "The terminal's text, in pixels.", number_input(p.font_size).range(8.0, 32.0));
-    let terminal = SettingsGroup::new("Terminal")
+    let cursor = SettingsGroup::new("Cursor & history")
         .row("Cursor shape", "Until a program sets its own.", segmented(prefs::CURSORS, p.cursor))
         .row("Cursor blink", "Whether the cursor blinks.", switch(p.blink))
         .row(
             "Scrollback lines",
             "The history each space keeps.",
             number_input(p.scrollback).range(0.0, 100_000.0).step(1000.0),
-        )
+        );
+    let shell = SettingsGroup::new("Shell")
         .row("Default shell", "What Ctrl+T and New tab start.", shell_choice(p.shell))
         .row(
             "New spaces start in",
@@ -89,7 +106,50 @@ fn groups(p: Prefs, model: &Model) -> Vec<SettingsGroup> {
         .map(|dirs| dirs.config.join("settings.json").display().to_string())
         .unwrap_or_default();
     let advanced = SettingsGroup::new("Files").row("Settings file", &file, div());
-    vec![appearance, terminal, tabs, signals, status, lock, keys, advanced]
+    let note = row()
+        .align_items(Align::Center)
+        .gap(10.0)
+        .text_color(token::TEXT_2)
+        .child(icon(icons::INFO).size(14.0))
+        .child(text(format!("Settings are saved to {file} as you change them.")));
+    vec![
+        vec![appearance],
+        vec![cursor, shell],
+        vec![tabs],
+        vec![hosts(p, model)],
+        vec![SettingsGroup::new("Downloads").row(
+            "Downloads folder",
+            "Where a file downloaded from the dock goes; empty, the user's Downloads.",
+            input(p.downloads).placeholder("Downloads").width(240.0),
+        )],
+        vec![signals],
+        vec![status],
+        vec![lock],
+        vec![keys],
+        vec![advanced, SettingsGroup::new("").wide(note)],
+    ]
+}
+
+/// The saved hosts and the recent targets, with what adds one and what forgets them.
+fn hosts(p: Prefs, model: &Model) -> SettingsGroup {
+    let (hosts, recent, adds, closes) = (p.hosts, p.recent, model.ui().adding, model.ui().settings);
+    let count = move |n: usize, one: &str| format!("{n} {one}{}", if n == 1 { "" } else { "s" });
+    let saved = row()
+        .align_items(Align::Center)
+        .gap(12.0)
+        .child(text(move || count(hosts.with(Vec::len), "host")))
+        .child(button("Add SSH host\u{2026}").variant(Variant::Secondary).on_click(move || {
+            closes.set(false);
+            adds.set(true);
+        }));
+    let lately = row()
+        .align_items(Align::Center)
+        .gap(12.0)
+        .child(text(move || count(recent.with(Vec::len), "target")))
+        .child(button("Forget").variant(Variant::Secondary).on_click(move || recent.set(Vec::new())));
+    SettingsGroup::new("Hosts")
+        .row("Saved hosts", "Edited from the rail: a host's menu has Edit and Remove.", saved)
+        .row("Recent", "The last targets connected to, in the + menu.", lately)
 }
 
 /// The default shell as a choice of the shells found, written as its name; the first is

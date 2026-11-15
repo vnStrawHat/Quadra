@@ -108,7 +108,10 @@ pub(crate) fn group() -> SettingsGroup {
             .child(text(clash).color(token::WARN))
             .child(key_input(mine).label(format!("{} keys", b.name)))
             .child(
-                button("Reset").variant(Variant::Secondary).on_click(move || mine.set(default.to_string())),
+                button("Reset")
+                    .variant(Variant::Secondary)
+                    .label(format!("Reset {}", b.name))
+                    .on_click(move || mine.set(default.to_string())),
             );
         group.row(b.name, "", control)
     })

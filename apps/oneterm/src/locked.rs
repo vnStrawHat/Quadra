@@ -142,8 +142,8 @@ fn card(model: &Model) -> Div {
 pub(crate) fn security(lock: Lock, after: Signal<f64>) -> SettingsGroup {
     let (current, new, again, said) =
         (signal(String::new()), signal(String::new()), signal(String::new()), signal(String::new()));
-    let field = |value: Signal<String>, hint: &str, id: &'static str| {
-        input(value).password().placeholder(hint).test_id(id).width(240.0)
+    let field = |value: Signal<String>, hint: &str, name: &str, id: &'static str| {
+        input(value).password().placeholder(hint).label(name).test_id(id).width(240.0)
     };
     let set = move || {
         if new.get_untracked() != again.get_untracked() {
@@ -169,16 +169,16 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>) -> SettingsGroup {
         .row(
             "Current password",
             "Asked to change or remove one.",
-            field(current, "Current", "password-current"),
+            field(current, "Current", "Current password", "password-current"),
         )
-        .row("New password", "", field(new, "New", "password-new"))
-        .row("Repeat it", "", field(again, "Again", "password-again"))
+        .row("New password", "", field(new, "New", "New password", "password-new"))
+        .row("Repeat it", "", field(again, "Again", "Repeat it", "password-again"))
         .row("", "", buttons)
         .row("", "", div().text_color(token::TEXT_2).child(text(move || said.get())))
         .row(
             "Lock after",
             "Minutes without a key or the pointer, 1 to 480.",
-            number_input(after).range(1.0, 480.0),
+            number_input(after).range(1.0, 480.0).label("Lock after"),
         )
         .row(
             "Lock now",

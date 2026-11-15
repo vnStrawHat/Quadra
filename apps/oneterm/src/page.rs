@@ -81,7 +81,7 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .row(
             "Rail width",
             "The vertical tabs' width, from 140 to 400 px.",
-            number_input(p.rail_width).range(140.0, 400.0).step(10.0),
+            number_input(p.rail_width).range(140.0, 400.0).step(10.0).label("Rail width"),
         )
         .row("Fold the rail", "Only the tabs' icons, in 44 px.", switch(p.rail_folded))
         .row("Tab title", "What names a tab not renamed.", select(prefs::TITLES, p.tab_title).width(240.0));
@@ -120,19 +120,19 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                 .row(
                     "Every",
                     "Seconds between two, from 5 to 3600.",
-                    number_input(p.keepalive_secs).range(5.0, 3600.0).step(5.0),
+                    number_input(p.keepalive_secs).range(5.0, 3600.0).step(5.0).label("Every"),
                 )
                 .row(
                     "Unanswered",
                     "How many go unanswered before the connection is given up.",
-                    number_input(p.keepalive_max).range(1.0, 20.0),
+                    number_input(p.keepalive_max).range(1.0, 20.0).label("Unanswered"),
                 ),
         ],
         vec![
             SettingsGroup::new("Downloads").row(
                 "Downloads folder",
                 "Where a file downloaded from the dock goes; empty, the user's Downloads.",
-                input(p.downloads).placeholder("Downloads").width(240.0),
+                input(p.downloads).placeholder("Downloads").label("Downloads folder").width(240.0),
             ),
             SettingsGroup::new("Editing")
                 .row(
@@ -143,13 +143,17 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                 .row(
                     "Program",
                     "The editor's program, when it is one.",
-                    input(p.editor_program).placeholder("notepad.exe").width(240.0),
+                    input(p.editor_program).placeholder("notepad.exe").label("Program").width(240.0),
                 )
-                .row("Arguments", "Before the file, split at spaces.", input(p.editor_args).width(240.0))
+                .row(
+                    "Arguments",
+                    "Before the file, split at spaces.",
+                    input(p.editor_args).label("Arguments").width(240.0),
+                )
                 .row(
                     "Asked above",
                     "A file larger, in KB, is edited only when asked; 0, any.",
-                    number_input(p.edit_limit_kb).range(0.0, 1_048_576.0).step(256.0),
+                    number_input(p.edit_limit_kb).range(0.0, 1_048_576.0).step(256.0).label("Asked above"),
                 ),
         ],
         vec![signals],
@@ -202,7 +206,7 @@ fn folder_field(folder: quadra::Signal<String>) -> quadra::Div {
             folder.set(chosen.display().to_string());
         }
     });
-    row().gap(8.0).child(input(folder).placeholder("session-logs").width(240.0)).child(choose)
+    row().gap(8.0).child(input(folder).placeholder("session-logs").label("Folder").width(240.0)).child(choose)
 }
 
 /// The saved hosts and the recent targets, with what adds one and what forgets them.

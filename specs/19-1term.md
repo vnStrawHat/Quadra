@@ -187,17 +187,20 @@ it (37 of the user's terminal's palettes as files of the kit's theme format, `ap
 `.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
 empty for the kit's mono face; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
 Nerd Font"; size; weight, Normal and Thin to Black; line height, 1.5; the cell's width, 0 for the advance of `0`, up to
-48 px; the padding a side, top 0, right 5, bottom 0, left 10, each 0 to 64 px) and colours over the theme's
+48 px; the padding a side, top 0, right 5, bottom 0, left 10, each 0 to 64 px; ligatures, on; semantic
+highlighting, on: text in the default colour coloured by what it means, in the colour theme's ANSI colours;
+the reference's Auto and On do the same, so it is a switch) and colours over the theme's
 (foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_input`, its swatch the
 theme's colour while it is empty but for the gutter's; the minimum contrast, 4.5, from 1, off, to 21; the sixteen ANSI colours, a row a
 colour with its normal and bright fields), the view's `TermLook` (specs/18). Keys: `terminal.font_fallbacks`,
 `terminal.cell_width`, `terminal.padding.top` (`right`, `bottom`, `left`), `terminal.colors.min_contrast`,
-`terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`):
+`terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`), `terminal.ligatures`,
+`terminal.semantic_highlighting`:
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
 blink, scrollback lines, the default local shell, where new spaces start (active space's cwd,
 home, last used); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
-the view's `TermSettings` (specs/18). Not yet: ligatures (a glyph is a cell), "last used", a bell's
+the view's `TermSettings` (specs/18). Not yet: "last used", a bell's
 sound or flash. A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
 blocked; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound / badge and flash /
 ignore; OSC 9: toast 6 s / until dismissed / silent.

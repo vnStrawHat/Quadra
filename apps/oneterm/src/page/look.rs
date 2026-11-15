@@ -39,7 +39,13 @@ pub(super) fn appearance(p: Prefs) -> Vec<SettingsGroup> {
             "In pixels; 0, the width of the font's 0.",
             number_input(l.cell_width).range(0.0, 48.0).step(0.5).test_id("cell-width"),
         )
-        .row("Gutter", "When each line was written, and its number.", switch(l.show_gutter));
+        .row("Gutter", "When each line was written, and its number.", switch(l.show_gutter))
+        .row("Ligatures", "Draw the font's ligatures (=>, ->, !=) when it has them.", switch(l.ligatures))
+        .row(
+            "Semantic highlighting",
+            "Colour paths, commands, numbers, errors and URLs in text a program left plain.",
+            switch(l.semantic_highlighting),
+        );
     let text = prefs::PADDING.iter().zip(l.padding).fold(text, |group, (&(key, name, _), side)| {
         let id = &key["terminal.".len()..];
         group.row(name, "Room around the grid, in pixels.", number_input(side).range(0.0, 64.0).test_id(id))

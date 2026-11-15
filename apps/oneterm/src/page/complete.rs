@@ -17,14 +17,18 @@ pub(super) fn completion(model: &Model) -> SettingsGroup {
         .row(
             "History kept",
             "Lines run this session, kept for each kind of shell; 0 keeps none.",
-            number_input(c.max_history).range(0.0, 5000.0).step(50.0),
+            number_input(c.max_history).range(0.0, 5000.0).step(50.0).label("History kept"),
         )
         .row(
             "Characters before suggesting",
             "Of a command, before its names are suggested.",
-            number_input(c.min_prefix).range(0.0, 10.0),
+            number_input(c.min_prefix).range(0.0, 10.0).label("Characters before suggesting"),
         )
-        .row("Rows shown", "Before the list scrolls.", number_input(c.max_visible).range(1.0, 20.0))
+        .row(
+            "Rows shown",
+            "Before the list scrolls.",
+            number_input(c.max_visible).range(1.0, 20.0).label("Rows shown"),
+        )
         .row("From the history", "The commands run this session.", switch(c.memory))
         .row("From hand-written catalogs", "Commands and their options written for 1Term.", switch(c.manual))
         .row("From generated catalogs", "Commands read from the tools' own help.", switch(c.external))

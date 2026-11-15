@@ -72,6 +72,10 @@ pub struct LookPrefs {
     pub min_contrast: Signal<f64>,
     /// The gutter: when each row was written and its line number.
     pub show_gutter: Signal<bool>,
+    /// A word's cells shaped together, so the font's ligatures show.
+    pub ligatures: Signal<bool>,
+    /// Text in the default colour coloured by what it means.
+    pub semantic_highlighting: Signal<bool>,
 }
 
 impl LookPrefs {
@@ -91,6 +95,8 @@ impl LookPrefs {
             ansi: ANSI.map(|(key, _)| s.value(key, String::new())),
             min_contrast: s.value("terminal.colors.min_contrast", 4.5),
             show_gutter: s.value("terminal.show_gutter", false),
+            ligatures: s.value("terminal.ligatures", true),
+            semantic_highlighting: s.value("terminal.semantic_highlighting", true),
         }
     }
 
@@ -114,6 +120,8 @@ impl LookPrefs {
             padding: quadra::Edges { top, right, bottom, left },
             min_contrast: self.min_contrast.get().clamp(1.0, 21.0) as f32,
             gutter: self.show_gutter.get(),
+            ligatures: self.ligatures.get(),
+            highlighting: self.semantic_highlighting.get(),
             colors: TermColors {
                 foreground,
                 background,
@@ -124,6 +132,8 @@ impl LookPrefs {
                 gutter_bg,
                 clock_fg,
                 line_number_fg,
+                // The classes take the colour theme's ANSI colours.
+                highlights: Default::default(),
             },
         }
     }

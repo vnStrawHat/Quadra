@@ -191,3 +191,52 @@ fn painted(h: &mut Harness, color: [f32; 4]) -> bool {
         _ => false,
     })
 }
+
+/// The colours of the glyphs in the first terminal, a row after another from the left.
+fn terminal_inks(h: &mut Harness) -> Vec<[f32; 4]> {
+    h.frame();
+    let node = h.query(|n| n.semantics.role == Role::TextInput && n.semantics.name == "Terminal")[0];
+    let rect = h.tree.window_rect(node);
+    let scene = h.tree.scene();
+    let mut inks: Vec<([f32; 4], [f32; 4])> = h
+        .renderer
+        .steps()
+        .iter()
+        .filter_map(|step| match step {
+            Step::Layer { id, .. } => Some(scene.layer(*id).instances()),
+            _ => None,
+        })
+        .flatten()
+        .filter(|i| {
+            i.kind == Kind::Mono as u32 && rect.contains(quadra::Point::new(i.bounds[0], i.bounds[1]))
+        })
+        .map(|i| (i.bounds, i.color))
+        .collect();
+    inks.sort_by(|a, b| a.0[1].total_cmp(&b.0[1]).then(a.0[0].total_cmp(&b.0[0])));
+    inks.into_iter().map(|it| it.1).collect()
+}
+
+#[test]
+fn ligatures_and_semantic_highlighting_are_on_and_follow_the_page() {
+    let mut a = app();
+    // Errors take the ANSI red, here one set, as it is.
+    a.settings.value("terminal.colors.ansi.red", String::new()).set("#ff0000".into());
+    a.settings.value("terminal.colors.min_contrast", 4.5).set(1.0);
+    a.feed(0, b"error plain");
+    let red = quadra::Color::rgb(0xFF0000).to_array();
+    let inks = terminal_inks(&mut a.h);
+    assert_eq!((inks[0], inks[5] == red), (red, false), "`error` in red, `plain` in the foreground");
+    a.h.get_by_role(Role::Button, "Settings").click();
+    a.h.settle();
+    assert!(a.says("Ligatures") && a.says("Semantic highlighting"));
+    let switches = a.h.query(|n| n.semantics.role == Role::Switch);
+    assert_eq!(switches.len(), 3, "the gutter, ligatures, semantic highlighting");
+    a.h.tree.act(switches[1], &SemanticAction::Click);
+    a.h.tree.act(switches[2], &SemanticAction::Click);
+    a.h.get_by_role(Role::Button, "Done").click();
+    a.h.settle();
+    assert!(!a.settings.value("terminal.ligatures", true).get());
+    assert!(!a.settings.value("terminal.semantic_highlighting", true).get());
+    let inks = terminal_inks(&mut a.h);
+    assert_eq!(inks[0], inks[5], "off: both in the foreground");
+}

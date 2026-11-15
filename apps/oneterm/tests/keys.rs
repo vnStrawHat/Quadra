@@ -96,10 +96,10 @@ fn new_tab_is_rebound_unbound_and_reset() {
     a.key(Key::T, Mods::CTRL);
     assert_eq!(a.sessions(), 2);
 
-    // Reset: Ctrl+T again. The first row's Reset is New tab's.
-    let resets = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Reset");
+    // Reset: Ctrl+T again. Each row's Reset is named by its action.
+    let resets = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name.starts_with("Reset "));
     assert_eq!(resets.len(), 9, "a Reset a row");
-    a.h.tree.act(resets[0], &quadra::SemanticAction::Click);
+    a.h.get_by_role(Role::Button, "Reset New tab").click();
     a.settle();
     assert_eq!(a.setting("new_tab").get_untracked(), "ctrl-t");
     a.done();

@@ -177,6 +177,14 @@ impl Opener for WinShell {
         let select = HSTRING::from(format!("/select,\"{}\"", path.display()));
         shell_open(&HSTRING::from("explorer.exe"), Some(&select))
     }
+
+    fn open_with(&self, program: &Path, args: &[String], file: &Path) -> bool {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let mut command = std::process::Command::new(program);
+        command.args(args).arg(file).creation_flags(CREATE_NO_WINDOW);
+        command.spawn().is_ok()
+    }
 }
 
 impl Tray for WinShell {

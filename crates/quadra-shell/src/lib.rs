@@ -121,6 +121,8 @@ pub trait Opener {
     fn open(&self, target: &str) -> bool;
     /// The folder of a file in the file manager, the file selected.
     fn reveal(&self, path: &std::path::Path) -> bool;
+    /// A program the user named, with `args` and then the file. False when it could not start.
+    fn open_with(&self, program: &std::path::Path, args: &[String], file: &std::path::Path) -> bool;
 }
 
 /// What the icon in the tray tells the app.

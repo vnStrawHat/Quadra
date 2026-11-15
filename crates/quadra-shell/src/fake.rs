@@ -96,6 +96,13 @@ impl Opener for FakeShell {
         self.ask("reveal", &path.display().to_string());
         true
     }
+
+    fn open_with(&self, program: &Path, args: &[String], file: &Path) -> bool {
+        let line = std::iter::once(program.display().to_string()).chain(args.iter().cloned());
+        let line: Vec<String> = line.chain([file.display().to_string()]).collect();
+        self.ask("open with", &line.join(" "));
+        true
+    }
 }
 
 struct FakeIcon(Rc<RefCell<Vec<String>>>);

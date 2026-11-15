@@ -36,7 +36,9 @@ notification: they are manual checks (00, R5).
 ## Opening
 
 `Opener::open(target)` opens a file in the app the user chose for it, or a link in the
-browser; `reveal(path)` shows a file in the file manager, selected. What opens a program
+browser; `reveal(path)` shows a file in the file manager, selected; `open_with(program, args,
+file)` starts a program the user named with the arguments, then the file (no console window
+for it, no shell between: the arguments are not read again). What opens a program
 opens it: a link from content that is not the user's goes through
 `quadra_text::url_openable` first.
 

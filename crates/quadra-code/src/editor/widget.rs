@@ -4,7 +4,7 @@
 use std::ops::Range;
 
 use quadra_a11y::{Role, Semantics};
-use quadra_kit::token;
+use quadra_design::token;
 use quadra_layout::Known;
 use quadra_prim::{Color, Rect, Size};
 use quadra_reactive::Signal;

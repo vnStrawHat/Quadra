@@ -1,7 +1,7 @@
 //! The plot (specs/13, "Charts"): a line over a box, drawn a device pixel column at a time,
 //! and the sparkline, which is a plot by itself.
 
-use quadra_kit::token;
+use quadra_design::token;
 use quadra_layout::{Known, Length, Position};
 use quadra_prim::{Color, Rect, Size};
 use quadra_render::{Line, LineMode, Quad};

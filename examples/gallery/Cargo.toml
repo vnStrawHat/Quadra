@@ -19,5 +19,5 @@ quadra = { path = "../../crates/quadra" }
 quadra-code = { path = "../../crates/quadra-code" }
 quadra-data = { path = "../../crates/quadra-data" }
 quadra-md = { path = "../../crates/quadra-md" }
-quadra-kit = { path = "../../crates/quadra-kit" }
+quadra-design = { path = "../../crates/quadra-design" }
 quadra-viz = { path = "../../crates/quadra-viz" }

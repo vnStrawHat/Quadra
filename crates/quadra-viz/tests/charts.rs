@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use quadra_kit::dark;
+use quadra_design::dark;
 use quadra_reactive::signal;
 use quadra_render::{Instance, Kind};
 use quadra_testing::Harness;
@@ -167,5 +167,5 @@ fn upright_bars_stand_on_one_line_and_a_legend_names_the_series() {
     assert!(h.has_text("s0") && h.has_text("s8"));
     // The ninth colour is the first, fainter.
     let ninth = quadra_viz::series_color(8);
-    assert_eq!(ninth, quadra_kit::token::SERIES[0].alpha(0.6));
+    assert_eq!(ninth, quadra_design::token::SERIES[0].alpha(0.6));
 }

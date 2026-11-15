@@ -5,7 +5,7 @@ use quadra::{
     Align, AnyView, BorderStyle, Div, DroppedFiles, Fit, Justify, column, div, dynamic, image, row, signal,
     text,
 };
-use quadra_kit::{size, token};
+use quadra_design::{size, token};
 use quadra_md::markdown;
 
 use crate::common::{demo, page};

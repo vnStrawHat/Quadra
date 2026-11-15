@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use quadra_kit::{fonts, token};
+use quadra_design::{fonts, token};
 use quadra_layout::{Align, Justify, Length};
 use quadra_reactive::{Signal, memo};
 use quadra_tree::{NodeId, Paint};

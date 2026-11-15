@@ -1,7 +1,7 @@
 //! What lays a page out: tabs, the accordion, the split, a scroll area and the grid.
 
 use quadra::{Align, Color, Div, Justify, column, div, dynamic, row, scroll, signal, text};
-use quadra_kit::{accordion, split, tabs, token};
+use quadra_design::{accordion, split, tabs, token};
 
 use crate::common::{demo, framed, hint, mono, page};
 use crate::shell::Gallery;

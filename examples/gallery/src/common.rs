@@ -1,7 +1,7 @@
 //! What the pages are built from: the page itself, a framed demo, and a few rows of text.
 
 use quadra::{Align, Div, IntoProp, TextView, View, column, div, row, text};
-use quadra_kit::{fonts, heading, label, size, token};
+use quadra_design::{fonts, heading, label, size, token};
 
 use crate::registry::PAGES;
 

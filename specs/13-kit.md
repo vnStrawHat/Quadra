@@ -107,7 +107,7 @@ design language has its own); `KitTheme::with_accent(color)` gives a theme anoth
 gallery's pictures of high contrast: `tools/shots.sh contrast` (black windows, white text, a
 light purple highlight).
 
-As built: `quadra_kit::token` names the roles of the palette (`token::CANVAS`, `ACCENT`, ..),
+As built: `quadra_design::token` names the roles of the palette (`token::CANVAS`, `ACCENT`, ..),
 each a `Token` numbered in the order of the table, and `token::NAMES` their names in a file.
 `theme_from_json(text)` reads a theme file into a `KitTheme` (name, mode, a colour a role),
 starting from `dark()` or `light()` by the file's mode; the two built-in themes are files
@@ -116,12 +116,12 @@ leaves unset follow its own colours (the table of behaviour/15 says which follow
 `KitTheme::theme()` is what a tree styles with. The sections of code, the terminal and
 charts are checked to hold colours and are not kept yet: their roles come with their crates.
 
-An app uses the kit with `quadra_kit::install(app, &theme)`, which loads the bundled faces
+An app uses the kit with `quadra_design::install(app, &theme)`, which loads the bundled faces
 (`fonts::UI`, `fonts::MONO`; eight files, 1.6 MB of the binary) and gives the app the theme,
-and with `quadra_kit::root()` as the box at the root of each window: the canvas, and the UI
+and with `quadra_design::root()` as the box at the root of each window: the canvas, and the UI
 text (face, 14 on 23, the theme's text colour) for everything in the window. The numbers of
 the design language (type scale, control heights, radii, weights) are constants in
-`quadra_kit::size`. `install` shapes the UI face without its contextual alternates
+`quadra_design::size`. `install` shapes the UI face without its contextual alternates
 (`calt` off).
 
 ## Components
@@ -155,8 +155,8 @@ the kit: its pages are compared with the reference screenshots (00, phase R3).
 
 As built so far:
 
-- **Actions and keys.** `quadra_kit::action::Confirm` is what Enter and Space mean on a
-  control (the key context `action::CONTROL`); `quadra_kit::keymap()` is the kit's bindings
+- **Actions and keys.** `quadra_design::action::Confirm` is what Enter and Space mean on a
+  control (the key context `action::CONTROL`); `quadra_design::keymap()` is the kit's bindings
   over those of every window, and `install` gives them to the app.
 - **`button(label)`**: `.variant(Primary | Secondary | Outline | Ghost | Danger | Link)`,
   `.size(Xs | Sm | Md | Lg)`, `.disabled(..)`, `.toggled(..)`, `.full()`, `.test_id(..)`,
@@ -175,7 +175,7 @@ As built so far:
   `confirm(open, title, message, yes, on_yes)` is a dialog with Cancel and one answer.
   `menu_button(label, || items)` is a ghost button that opens a menu under itself, and
   `menubar([..])` a bar of 32 px of them.
-- **Icons.** `icon(icons::CHECK)` shows one of the kit's Lucide outlines (`quadra_kit::icons`,
+- **Icons.** `icon(icons::CHECK)` shows one of the kit's Lucide outlines (`quadra_design::icons`,
   87 of them; ISC, `LICENSE-lucide.txt`), 14 px unless `.size(..)` says, in the colour of the
   text around it unless `.color(..)` says. A body is read once (`quadra-vector`); its mask is
   rasterized once for each size in device pixels and kept as a tile of the coverage atlas
@@ -452,7 +452,7 @@ As built so far:
   - Texts of 20 000 lines or more, both together, are compared on the pool (13 ms for
     100 000 lines of which 700 changed): until the script comes back the last one shows,
     and a newer text cancels it.
-  - Rows are selected as a table's are (`quadra_base::table::Sheet` of one column): a click,
+  - Rows are selected as a table's are (`quadra_headless::table::Sheet` of one column): a click,
     Shift and Ctrl, the arrows; Ctrl-C copies them as a unified diff writes them (` `, `-`,
     `+` before each line; a row side by side is its two lines). F7 and Shift-F7
     (`NextChange`, `PreviousChange`) select the first row of the next run of changes, or
@@ -495,7 +495,7 @@ As built so far:
 
 ## The workbench
 
-What the window of a tool is made of around its content (behaviour/16) is `quadra_kit::work`:
+What the window of a tool is made of around its content (behaviour/16) is `quadra_design::work`:
 an app that is not a workbench does not name it.
 
 - `activity_bar(active, [Activity::new(id, icon, title).badge(|| count), ..]).footer([..])`
@@ -664,7 +664,7 @@ the popup closes the focus goes back to what had it.
 ## Crates
 
 ```
-quadra-kit     buttons, inputs, selection controls, lists, tabs, panels, overlays, feedback,
+quadra-design     buttons, inputs, selection controls, lists, tabs, panels, overlays, feedback,
                navigation, titlebar, layout helpers, themes, icons
 quadra-data    log view, value viewer with its JSON and YAML readers      (behaviour/19; the
                table, with its live data, and the tree are the kit's)
@@ -674,7 +674,7 @@ quadra-code    code editor: buffer, syntax tokens, surface widget          (beha
 quadra-md      Markdown: parser, renderer, math, diagrams                  (behaviour/21)
 ```
 
-- `quadra-kit` holds what almost every app uses. The others are separate so an app pays for
+- `quadra-design` holds what almost every app uses. The others are separate so an app pays for
   what it shows, in binary size and build time.
 - The V kit kept all of these in one module of 34,000 lines.
 
@@ -795,7 +795,7 @@ What these are and look like is behaviour/19. As built:
   copies them, each its time and what it says without escape sequences; other lines
   listed select none. A long line is cut at the edge, and the wheel turned sideways, or
   with Shift, moves what every line says (the times stay), as far as the longest line yet.
-  What the diff and the log share is `quadra_kit::rows`: `one_column`, `selectable`,
+  What the diff and the log share is `quadra_design::rows`: `one_column`, `selectable`,
   `sideways`. To a reader the log is a table named "Log".
 - `Log::new().limit(n)` holds at most `n` lines: past that the oldest go, an eighth of the
   limit at a time (the buffer is moved once for all of them).
@@ -949,7 +949,7 @@ What it reads and how it looks is behaviour/21. As built:
   its words in brackets, and so is one that is elsewhere or cannot be read. To a reader it
   is its words.
 - A link says where it goes once the pointer has rested on it half a second, Ctrl held or
-  not: its target in the bubble of a tooltip under it (`quadra_kit::tip`), gone when the
+  not: its target in the bubble of a tooltip under it (`quadra_design::tip`), gone when the
   pointer leaves it.
 - A table wider than the page, its columns at their least (their longest words), scrolls
   sideways; one that fits is as wide as the page.

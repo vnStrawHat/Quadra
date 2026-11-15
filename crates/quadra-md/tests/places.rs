@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use quadra_kit::dark;
+use quadra_design::dark;
 use quadra_md::{Place, markdown};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
@@ -25,7 +25,7 @@ fn harness() -> Harness {
 fn the_places_of_the_blocks_are_written_after_layout() {
     let (places, source) = (signal(Vec::<Place>::new()), signal(sections(3)));
     let mut h = harness();
-    h.mount(move || quadra_kit::root().child(markdown(source).places(places)));
+    h.mount(move || quadra_design::root().child(markdown(source).places(places)));
     h.settle();
     let lines: Vec<usize> = places.get_untracked().iter().map(|place| place.line).collect();
     assert_eq!(lines, [0, 2, 4, 6, 8, 10]);
@@ -47,7 +47,7 @@ fn a_line_is_brought_into_view_in_a_view_that_scrolls_it() {
     h.mount(move || {
         let doc = markdown(sections(60)).reveal(move || wanted.get());
         let page = scroll(scroll_y, doc).container(column().height(300.0));
-        quadra_kit::root().child(page)
+        quadra_design::root().child(page)
     });
     h.settle();
     wanted.set(Some(160)); // the heading of part 40
@@ -61,7 +61,7 @@ fn far(h: &mut Harness, scroll_y: Signal<f32>, wanted: Signal<Option<usize>>, pl
     let source = sections(10_000);
     h.mount(move || {
         let doc = markdown(source.clone()).scrolls(scroll_y).places(places).reveal(move || wanted.get());
-        quadra_kit::root().child(column().height(400.0).child(doc))
+        quadra_design::root().child(column().height(400.0).child(doc))
     });
     h.settle();
 }

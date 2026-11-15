@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use quadra_data::{Log, log_view};
-use quadra_kit::dark;
+use quadra_design::dark;
 use quadra_testing::Harness;
 use quadra_tree::Role;
 
@@ -22,9 +22,9 @@ fn page(lines: usize) -> (Harness, Log) {
     log.append(requests(0, lines));
     let mut h = Harness::new();
     h.tree.set_theme(Rc::new(dark().theme()));
-    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
     let shown = log.clone();
-    h.mount(move || quadra_kit::root().child(log_view(&shown)));
+    h.mount(move || quadra_design::root().child(log_view(&shown)));
     settle(&mut h);
     (h, log)
 }

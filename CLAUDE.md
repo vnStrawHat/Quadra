@@ -17,7 +17,7 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
    `docs(specs): ...`, `refactor: ...`, `test: ...`, `chore: ...`, `perf: ...`; `!` or a
    `BREAKING CHANGE:` footer for breaking API changes). Scopes are crate names without the
    `quadra-` prefix (prim, reactive, layout, text, render, platform, tree, ui, async, a11y,
-   app, native, shell, testing, kit, code, md, data, viz), or specs, tools.
+   app, native, shell, testing, headless, design, code, md, data, viz), or specs, tools.
 4. **Never test the real clipboard.**
 5. **Commit each finished part** once `tools/check.sh prod` exits 0, then go on with the
    next; **push only when the user asks**.
@@ -128,13 +128,13 @@ drop (`quadra-tree/src/drag.rs`, `quadra-ui/src/div/drag.rs`, the example `board
 `tween` on the window's clock (`Tree::set_clock`, `Handle::now`). **R3 has started** (specs/13;
 the design language is specs/behaviour/15): colours of box styles can be roles of the theme
 (`Paint`, `Token`, `Theme` in `quadra-tree/src/theme.rs`; `Tree::set_theme`; the app's theme
-is a `Signal<Rc<Theme>>` in the context of views), and the crate `quadra-kit` has the names
-of the roles (`quadra_kit::token`) and the themes (`dark()`, `light()`, `theme_from_json`;
-the files are in `crates/quadra-kit/themes/`). Text values hold down the tree
+is a `Signal<Rc<Theme>>` in the context of views), and the crate `quadra-design` has the names
+of the roles (`quadra_design::token`) and the themes (`dark()`, `light()`, `theme_from_json`;
+the files are in `crates/quadra-design/themes/`). Text values hold down the tree
 (`quadra-tree/src/inherit.rs`: `TextValues`, `Widget::inherit`, the tree's `text_epoch`; a
-text has no style of its own). The kit has its fonts (`quadra_kit::fonts`), its numbers
-(`size`), `install(app, &theme)` and `root()`; `crates/quadra-kit/examples/themes.rs` shows
-both themes in a real window. The button is in (`quadra-kit/src/button.rs`; `action.rs`
+text has no style of its own). The kit has its fonts (`quadra_design::fonts`), its numbers
+(`size`), `install(app, &theme)` and `root()`; `crates/quadra-design/examples/themes.rs` shows
+both themes in a real window. The button is in (`quadra-design/src/button.rs`; `action.rs`
 has `Confirm` and the kit's keymap), and a disabled node is
 not clicked, focused or tabbed to (specs/09). `quadra-vector` is ported (paths, the SVG
 of icons, coverage), and the kit has icons (`icon(icons::CHECK)`; the widget is `Drawing`
@@ -158,7 +158,7 @@ notifications and toasts (`notices()`, `Notice`), and the command palette (`pale
 `quadra-text` normalizes (`normalize_nfc` on insert, `fold_diacritics`; tables from `tools/gen_nfc.py`). The kit
 has `table` (sort, column widths, selection, copy; no sideways scrolling yet) and `tree`, `range_slider`, `combobox`, `calendar`, `date_picker`, `time_input`, and the smaller
 things (`loading`, `indeterminate`, `clearable`, `key_hint`, `confirm`, `menu_button`, `menubar`), the hover
-card, the drawer, and the workbench (`quadra_kit::work`: activity bar, panel header, tab strip, pane tree,
+card, the drawer, and the workbench (`quadra_design::work`: activity bar, panel header, tab strip, pane tree,
 docking), and `settings` (`settings.rs`: rules and cards). Boxes have a pose (`.translate`, `.scale`,
 `.rotate`, `.opacity`: constants of the node's layer), transitions (`.transition(ms)`) and timelines
 (`.animate(timeline()..)`): `quadra-tree/src/motion.rs`, run by the tree at the start of a frame.
@@ -171,11 +171,11 @@ tinted buttons with borders, filled checkboxes and switches, `chosen_mark(side, 
 column at a time and the shader works out the cover of each pixel, so **a chart line must never show steps**: where the line is
 stays a fraction of a pixel, columns are whole device pixels; `QUADRA_SCALE=1.5 tools/shots.sh ..` draws the pages at 150 % to look;
 a pointer handler has the size of its node, `e.size`). The live table is the kit's table with `.keys(|row| ..)`
-(`quadra-kit/src/table/live.rs`: what is chosen follows its keys, changed cells are tinted and fade). `quadra-data` has `Value`,
+(`quadra-design/src/table/live.rs`: what is chosen follows its keys, changed cells are tinted and fade). `quadra-data` has `Value`,
 `parse_json`, `parse_yaml` (its own readers) and `value_view` (the kit's tree with `TreeNode::color`, `.detail`; the colours of
 code are roles, `token::SYNTAX_*`), `Log` and `log_view` (a `uniform_list`; following is a scroll place past the end; SGR
 colours are `token::ANSI`; the filter by pattern is `regex-lite`, admitted in specs/01 R15). **`quadra-data` is done.** The
-kit has `diff(old, new)` (`quadra-kit/src/diff.rs`, `diff/lines.rs` the line script, `diff/rows.rs` the rows; `.mode(DiffMode::Inline |
+kit has `diff(old, new)` (`quadra-design/src/diff.rs`, `diff/lines.rs` the line script, `diff/rows.rs` the rows; `.mode(DiffMode::Inline |
 SideBySide)`, `.context(n)` folds; `span(..).background(..)` is the fill behind a span of rich text; `token::DIFF_ADD`, `DIFF_REMOVE`). The
 gallery has 71 of the 73 reference pages, each drawn offscreen and compared (`tools/shots.sh`), and `diff`, which has no reference; left: the editor
 (`quadra-md` has its parser, `parse`, `parse_inline`, `outline`, linear in the text, with the seeded test of `quadra_testing::fuzz`, and its view,
@@ -203,9 +203,9 @@ an input (`Semantics::selection`, a text run in the bridge; `SemanticAction::Sel
 **R5, app services, has started** (specs/15, 16): `App::dirs(AppDirs::for_app(..))` (nothing is written without it), `Settings`
 (`value(key, default)` is a signal; debounced, atomic), `quadra_app::log`, crash reports of panics, `quadra_app::time` (`Date`, `DateTime`,
 `local_now()` by `Platform::utc_offset`), the app's language (`I18n`, `App::i18n`, `t`, `t_with`; `language()` taken at build time for what
-runs again; `Locale` formats in Vietnamese and English), window state (`WindowOptions::remember(key)`), pages (`router(first)`, `.view(..)`; Alt-Left/Right) and closing (`.on_close(|| bool)`, `window().close_now()`); `quadra-shell` has `Dialogs`, `Opener`, `Tray`, `FakeShell`, `install(app)` (`App::provide`), `single_instance`, `crash_reports` (OS code in `src/win/`, `cfg(windows)`); packaging (`tools/package.sh`); the API docs are in the gate. **R5 is done but for its manual checks** (docs/progress.md, "The exit of R5"). **R6 is done** (docs/progress.md, "The exit of R6"; specs/17): `quadra-base` is the components without a look (the gate fails on a colour, role, radius or cursor in it); done: the theme's shadows, `action`, `popup`, `choice`, `press` (and `press::toggle`), `list` (and `list::places`), `disclose`, `split`, `menu`, `pick`, `combo`, `hint`, `dialog`, `notices`, `slider`, `number`, `time`, `rules`, `tree`, `table`, `live`, `settings`, `work`; the second kit is `examples/plain` (`quadra-plain`, only the base and boxes). Each move keeps the gallery's pictures the same to the byte: `.tmp/same.sh` draws both themes and compares them with `.tmp/shots/r6-dark` and `r6-light`, taken before the first move. The renderer has gradients (`Gradient::linear|radial|conic`, `.gradient(..)` on a box; stops mixed in Oklab into a ramp of the colour atlas; specs/07). Borders can be dashed or dotted (`BorderStyle`, `.border_style(..)`). What a frame costs the GPU is `RenderStats::gpu` (timestamps; the bench prints `gpu`). A box blurs what is behind it (`.backdrop_blur(px)`; a layer, its backdrop's mips sampled by its quad). A box is cut to a shape (`.clip_shape(svg)`; a mask in the coverage atlas, a layer constant inherited by the layers inside). The renderer's list of specs/00 (R6) is done; shaders by class only if the GPU measure asks. Since: tree rows tell a reader their level (`.level(n)`; the adapter's levels are from 0),
+runs again; `Locale` formats in Vietnamese and English), window state (`WindowOptions::remember(key)`), pages (`router(first)`, `.view(..)`; Alt-Left/Right) and closing (`.on_close(|| bool)`, `window().close_now()`); `quadra-shell` has `Dialogs`, `Opener`, `Tray`, `FakeShell`, `install(app)` (`App::provide`), `single_instance`, `crash_reports` (OS code in `src/win/`, `cfg(windows)`); packaging (`tools/package.sh`); the API docs are in the gate. **R5 is done but for its manual checks** (docs/progress.md, "The exit of R5"). **R6 is done** (docs/progress.md, "The exit of R6"; specs/17): `quadra-headless` is the components without a look (the gate fails on a colour, role, radius or cursor in it); done: the theme's shadows, `action`, `popup`, `choice`, `press` (and `press::toggle`), `list` (and `list::places`), `disclose`, `split`, `menu`, `pick`, `combo`, `hint`, `dialog`, `notices`, `slider`, `number`, `time`, `rules`, `tree`, `table`, `live`, `settings`, `work`; the second kit is `examples/plain` (`quadra-plain`, only the base and boxes). Each move keeps the gallery's pictures the same to the byte: `.tmp/same.sh` draws both themes and compares them with `.tmp/shots/r6-dark` and `r6-light`, taken before the first move. The renderer has gradients (`Gradient::linear|radial|conic`, `.gradient(..)` on a box; stops mixed in Oklab into a ramp of the colour atlas; specs/07). Borders can be dashed or dotted (`BorderStyle`, `.border_style(..)`). What a frame costs the GPU is `RenderStats::gpu` (timestamps; the bench prints `gpu`). A box blurs what is behind it (`.backdrop_blur(px)`; a layer, its backdrop's mips sampled by its quad). A box is cut to a shape (`.clip_shape(svg)`; a mask in the coverage atlas, a layer constant inherited by the layers inside). The renderer's list of specs/00 (R6) is done; shaders by class only if the GPU measure asks. Since: tree rows tell a reader their level (`.level(n)`; the adapter's levels are from 0),
 contexts of bindings are predicates (`editor && !find`), and `Keymap::load(text, &Actions)` reads a
-keymap file (`quadra_kit::actions()` names the kit's; the editor's commands have no names yet). The text size
+keymap file (`quadra_design::actions()` names the kit's; the editor's commands have no names yet). The text size
 (specs/12): `TextSize { zoom, text, system }` (`text_size()` in views), zoom by `Tree::set_zoom`, text alone by
 `Tree::set_text_scale`; a box of a line of text in the kit is `.height(by_text(px))`, so new components do the same;
 `QUADRA_TEXT=1.5 tools/shots.sh` draws the gallery with larger text. One manual check is open: glass over scrolling content in a real window. No phase follows R6 in specs/00: what comes next is the user's to say (the apps come after Quadra is complete).

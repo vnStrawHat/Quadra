@@ -1,7 +1,7 @@
 //! What opens above the window: menus, tooltips, popovers, dialogs, questions and notices.
 
 use quadra::{Align, AnyView, Div, Justify, Role, column, div, row, signal, text};
-use quadra_kit::{
+use quadra_design::{
     Edge, MenuItem, Notice, Size, Tone, Variant, badge, button, checkbox, confirm, context_menu,
     description_list, dialog, drawer, hover_card, icon_button, icons, menu_button, popover_button, size,
     token, tooltip,
@@ -56,7 +56,7 @@ fn editor_menu() -> Vec<MenuItem> {
         ("-", _) => MenuItem::separator(),
         (name, "x") => MenuItem::new(name).disabled(true),
         (name, "") => MenuItem::new(name),
-        (name, keys) => MenuItem::new(name).keys(quadra_kit::key_label(keys)),
+        (name, keys) => MenuItem::new(name).keys(quadra_design::key_label(keys)),
     };
     rows.into_iter().map(item).collect()
 }

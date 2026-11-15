@@ -2,8 +2,8 @@
 //! tree, docking and the settings.
 
 use quadra::{Div, column, div, dynamic, memo, row, signal};
-use quadra_kit::work::{Activity, Axis, Pane, Tab, activity_bar, dock, panel_header, panes, tab_strip};
-use quadra_kit::{
+use quadra_design::work::{Activity, Axis, Pane, Tab, activity_bar, dock, panel_header, panes, tab_strip};
+use quadra_design::{
     SettingsGroup, SettingsPage, Size, Variant, button, dialog, icon_button, icons, number_input, segmented,
     select, settings, settings_group, switch, token, tooltip,
 };

@@ -2,7 +2,7 @@
 
 use quadra::{Div, column, row, signal};
 use quadra_code::line_colours;
-use quadra_kit::{DiffMode, diff, segmented};
+use quadra_design::{DiffMode, diff, segmented};
 
 use crate::common::{demo, framed, page, stack};
 

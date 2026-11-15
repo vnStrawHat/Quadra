@@ -1,7 +1,7 @@
 //! The pages: one a component, grouped as the sidebar shows them.
 
 use quadra::Div;
-use quadra_kit::{dark, icons, light};
+use quadra_design::{dark, icons, light};
 
 use crate::pages::{
     actions, charts, choices, data, diagram, diff, display, editor, fields, image, layout, live, markdown,

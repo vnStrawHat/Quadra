@@ -14,8 +14,8 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use quadra_app::{App, AppError};
+use quadra_design::{dark, light};
 use quadra_gallery::{Gallery, PAGES};
-use quadra_kit::{dark, light};
 use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{
     HeadlessPlatform, Key, Mods, MouseButton, Platform, PlatformEvent, PointerKind, WindowId, WindowOptions,
@@ -152,10 +152,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     let kit = match theme.as_str() {
         "light" => light(),
-        "contrast" => quadra_kit::high_contrast(&night_sky),
+        "contrast" => quadra_design::high_contrast(&night_sky),
         _ => dark(),
     };
-    let app = quadra_kit::install(app, &kit)?;
+    let app = quadra_design::install(app, &kit)?;
     let mut app = app.keymap(quadra_gallery::keymap());
     // QUADRA_TEXT draws text that many times larger (specs/12, "Text size"): 1.5 or 2.
     if let Some(text) = std::env::var("QUADRA_TEXT").ok().and_then(|text| text.parse().ok()) {

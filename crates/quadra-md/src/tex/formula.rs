@@ -1,7 +1,7 @@
 //! A formula on the screen: the widget that lays the nodes out at the size of the text
 //! around it and paints them in its colour, and the view that mounts it.
 
-use quadra_kit::{fonts, token};
+use quadra_design::{fonts, token};
 use quadra_layout::Known;
 use quadra_prim::{Color, Point, Rect, Size};
 use quadra_render::{Quad, stroke};

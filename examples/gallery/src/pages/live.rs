@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use quadra::{Div, column, signal};
 use quadra_data::{Log, Value, log_view, parse_json, value_view};
-use quadra_kit::{CellKind, Column, button, table};
+use quadra_design::{CellKind, Column, button, table};
 
 use crate::common::{demo, framed, page, stack};
 

@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use quadra_kit::token;
+use quadra_design::token;
 use quadra_tree::Token as Role;
 
 use crate::token::{TokenKind, tokenizer_for};

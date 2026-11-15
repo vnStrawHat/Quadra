@@ -2,7 +2,9 @@
 //! the slider.
 
 use quadra::{Div, column, div, effect, signal};
-use quadra_kit::{Size, checkbox, icon, icons, radio_group, range_slider, segmented, slider, switch, token};
+use quadra_design::{
+    Size, checkbox, icon, icons, radio_group, range_slider, segmented, slider, switch, token,
+};
 
 use crate::common::{demo, line, mono, page, setting, stack};
 use crate::shell::Gallery;

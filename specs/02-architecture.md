@@ -40,8 +40,8 @@ quadra-native-win      Win32 platform, D3D11 renderer, DirectWrite backend, the 
 quadra-shell           tray, notifications, single instance, crash reports, file dialogs
 quadra-testing         harness, fake text, null renderer, snapshots
 quadra                 the facade apps depend on
-quadra-base            components without a look: state, keys, focus, semantics, popups (17)
-quadra-kit             components and themes: a look over quadra-base
+quadra-headless            components without a look: state, keys, focus, semantics, popups (17)
+quadra-design             components and themes: a look over quadra-headless
 quadra-term  quadra-code  quadra-md  quadra-data  quadra-viz        domain crates
 ```
 
@@ -52,7 +52,7 @@ Dependency rules:
 - Only `quadra-native-win` and `quadra-shell` contain OS code and `unsafe` (01, R16).
 - `quadra-testing` builds an app from the headless platform, the null renderer and the fake
   text backend. Everything above the traits runs under it unchanged.
-- A domain crate depends on `quadra-kit` and, as the kit does, on the crates under it (not
+- A domain crate depends on `quadra-design` and, as the kit does, on the crates under it (not
   on the facade, which brings the backends of an operating system), never the reverse. An
   app that shows no terminal does not compile one.
 

@@ -1,7 +1,7 @@
 //! Rich text: mixed styles and links in one wrapped paragraph.
 
 use quadra::{Div, div, rich_text, signal, span};
-use quadra_kit::{fonts, token};
+use quadra_design::{fonts, token};
 
 use crate::common::{demo, hint, page, stack};
 

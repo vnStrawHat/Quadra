@@ -4,7 +4,7 @@
 use std::rc::Rc;
 use std::time::Duration;
 
-use quadra_kit::dark;
+use quadra_design::dark;
 use quadra_md::markdown;
 use quadra_platform::{Mods, MouseButton};
 use quadra_prim::Point;
@@ -21,7 +21,7 @@ fn page(source: &str) -> (Harness, Signal<String>, Signal<String>) {
     h.tree.set_theme(Rc::new(dark().theme()));
     h.mount(move || {
         let doc = markdown(source).on_link(move |target| clicked.set(target.to_string()));
-        quadra_kit::root().child(doc)
+        quadra_design::root().child(doc)
     });
     h.frame();
     (h, source, clicked)
@@ -211,7 +211,7 @@ fn a_paragraph_of_images_shows_them_and_one_that_cannot_show_is_its_words() {
     let source = "Before.\n\n![A chart](chart.flat)\n\n![Gone](gone.png) ![Far](https://example.com/far.png)\n\nWords and ![a mark](chart.flat) in a line.\n";
     let mut h = Harness::new();
     h.tree.set_theme(Rc::new(dark().theme()));
-    h.mount(move || quadra_kit::root().child(markdown(source).base(folder)));
+    h.mount(move || quadra_design::root().child(markdown(source).base(folder)));
     h.settle();
 
     // Wider than the page: as wide as the page, in its own shape.

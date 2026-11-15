@@ -1,0 +1,223 @@
+//! What the keyboard asks of components (specs/13, "Components"; specs/17): actions, bound in
+//! the keymap of the headless crate, never raw keys. Their names keep the prefix `kit::`.
+
+use quadra_tree::{Action, Actions, Keymap};
+
+/// The key context of a control that is activated: a button, a checkbox, a tab.
+pub const CONTROL: &str = "control";
+
+/// Do what the control is for: Enter or Space on a button.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Confirm;
+
+impl Action for Confirm {
+    const NAME: &'static str = "kit::confirm";
+}
+
+/// The key context of a control that holds one choice of a few: a radio group, tabs.
+pub const CHOICE: &str = "choice";
+
+/// To the next of a few, and to the one before: the arrows in a radio group.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveNext;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MovePrevious;
+
+impl Action for MoveNext {
+    const NAME: &'static str = "kit::move_next";
+}
+
+impl Action for MovePrevious {
+    const NAME: &'static str = "kit::move_previous";
+}
+
+/// The key context of a list: the arrows move its selection and stop at the ends.
+pub const LIST: &str = "list";
+
+/// To the first of many, and to the last: Home and End in a list.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveFirst;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveLast;
+
+impl Action for MoveFirst {
+    const NAME: &'static str = "kit::move_first";
+}
+
+impl Action for MoveLast {
+    const NAME: &'static str = "kit::move_last";
+}
+
+/// The key context of a tree: the keys of a list, and the right and left arrows that open
+/// and close, as in a menu.
+pub const TREE: &str = "tree";
+
+/// The key context of a table: the keys of a list, a page at a time, a selection that grows
+/// with Shift, and a copy.
+pub const TABLE: &str = "table";
+
+/// A page down and a page up; a row more of the selection each way; the selection as text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PageNext;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PagePrevious;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ExtendNext;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ExtendPrevious;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Copy;
+
+impl Action for PageNext {
+    const NAME: &'static str = "kit::page_next";
+}
+
+impl Action for PagePrevious {
+    const NAME: &'static str = "kit::page_previous";
+}
+
+impl Action for ExtendNext {
+    const NAME: &'static str = "kit::extend_next";
+}
+
+impl Action for ExtendPrevious {
+    const NAME: &'static str = "kit::extend_previous";
+}
+
+impl Action for Copy {
+    const NAME: &'static str = "kit::copy";
+}
+
+/// To the next run of changes, and to the one before: F7 and Shift-F7 in a diff.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NextChange;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PreviousChange;
+
+impl Action for NextChange {
+    const NAME: &'static str = "kit::next_change";
+}
+
+impl Action for PreviousChange {
+    const NAME: &'static str = "kit::previous_change";
+}
+
+/// The key contexts of what holds a number: a slider, which every arrow steps, and a number
+/// input, where left and right are the caret's.
+pub const SLIDER: &str = "slider";
+pub const NUMBER: &str = "number";
+
+/// A step up and a step down, and a larger one each way: the arrows and the page keys.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Increase;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Decrease;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct IncreaseMore;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DecreaseMore;
+
+impl Action for Increase {
+    const NAME: &'static str = "kit::increase";
+}
+
+impl Action for Decrease {
+    const NAME: &'static str = "kit::decrease";
+}
+
+impl Action for IncreaseMore {
+    const NAME: &'static str = "kit::increase_more";
+}
+
+impl Action for DecreaseMore {
+    const NAME: &'static str = "kit::decrease_more";
+}
+
+/// The key context of a popup: a menu, a popover, a dialog.
+pub const POPUP: &str = "popup";
+/// The key context of the rows of a menu.
+pub const MENU: &str = "menu";
+
+/// Into the menu of the row the highlight is on, and out of a menu that a row opened: the
+/// right and the left arrow.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveInto;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MoveOut;
+
+impl Action for MoveInto {
+    const NAME: &'static str = "kit::move_into";
+}
+
+impl Action for MoveOut {
+    const NAME: &'static str = "kit::move_out";
+}
+
+/// Give up what is open: Escape in a popup.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Cancel;
+
+impl Action for Cancel {
+    const NAME: &'static str = "kit::cancel";
+}
+
+/// The actions of the headless crate, and the tree's, for a keymap file to name (`Keymap::load`).
+pub fn actions() -> Actions {
+    let mut all = Actions::new();
+    all.add(Confirm).add(MoveNext).add(MovePrevious).add(MoveFirst).add(MoveLast);
+    all.add(PageNext).add(PagePrevious).add(ExtendNext).add(ExtendPrevious).add(Copy);
+    all.add(NextChange).add(PreviousChange).add(Increase).add(Decrease).add(IncreaseMore);
+    all.add(DecreaseMore).add(MoveInto).add(MoveOut).add(Cancel);
+    all
+}
+
+/// The key bindings of the headless crate over those every window has. An app adds its own to it.
+pub fn keymap() -> Keymap {
+    let mut keymap = Keymap::default();
+    let well_formed = "the kit's bindings are well formed";
+    for keys in ["enter", "space"] {
+        keymap.bind_in(CONTROL, keys, Confirm).expect(well_formed);
+    }
+    for keys in ["right", "down"] {
+        keymap.bind_in(CHOICE, keys, MoveNext).expect(well_formed);
+    }
+    for keys in ["left", "up"] {
+        keymap.bind_in(CHOICE, keys, MovePrevious).expect(well_formed);
+    }
+    keymap.bind_in(POPUP, "escape", Cancel).expect(well_formed);
+    for context in [MENU, LIST, TABLE, TREE] {
+        keymap.bind_in(context, "down", MoveNext).expect(well_formed);
+        keymap.bind_in(context, "up", MovePrevious).expect(well_formed);
+        keymap.bind_in(context, "enter", Confirm).expect(well_formed);
+    }
+    keymap.bind_in(TABLE, "pagedown", PageNext).expect(well_formed);
+    keymap.bind_in(TABLE, "pageup", PagePrevious).expect(well_formed);
+    keymap.bind_in(TABLE, "shift-down", ExtendNext).expect(well_formed);
+    keymap.bind_in(TABLE, "shift-up", ExtendPrevious).expect(well_formed);
+    // A tree does nothing with it: what is around it copies what the selected row stands for.
+    keymap.bind_in(TABLE, "ctrl-c", Copy).expect(well_formed);
+    keymap.bind_in(TABLE, "f7", NextChange).expect(well_formed);
+    keymap.bind_in(TABLE, "shift-f7", PreviousChange).expect(well_formed);
+    keymap.bind_in(TREE, "ctrl-c", Copy).expect(well_formed);
+    for context in [MENU, TREE] {
+        keymap.bind_in(context, "space", Confirm).expect(well_formed);
+    }
+    // In a table they move the cursor on cells, if it has one.
+    for context in [MENU, TREE, TABLE] {
+        keymap.bind_in(context, "right", MoveInto).expect(well_formed);
+        keymap.bind_in(context, "left", MoveOut).expect(well_formed);
+    }
+    for context in [LIST, SLIDER, TABLE, TREE] {
+        keymap.bind_in(context, "home", MoveFirst).expect(well_formed);
+        keymap.bind_in(context, "end", MoveLast).expect(well_formed);
+    }
+    for context in [SLIDER, NUMBER] {
+        keymap.bind_in(context, "up", Increase).expect(well_formed);
+        keymap.bind_in(context, "down", Decrease).expect(well_formed);
+    }
+    keymap.bind_in(SLIDER, "right", Increase).expect(well_formed);
+    keymap.bind_in(SLIDER, "left", Decrease).expect(well_formed);
+    keymap.bind_in(SLIDER, "pageup", IncreaseMore).expect(well_formed);
+    keymap.bind_in(SLIDER, "pagedown", DecreaseMore).expect(well_formed);
+    keymap
+}

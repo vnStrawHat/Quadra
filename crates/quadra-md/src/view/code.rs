@@ -1,7 +1,7 @@
 //! A block of code in a document: coloured by the tokenizer its language names.
 
 use quadra_code::{TokenKind, role, tokenizer_for};
-use quadra_kit::{fonts, size, token};
+use quadra_design::{fonts, size, token};
 use quadra_reactive::signal;
 use quadra_text::find_urls;
 use quadra_ui::{Div, column, div, scroll_x, span};

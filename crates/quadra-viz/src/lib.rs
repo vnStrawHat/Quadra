@@ -17,7 +17,7 @@ pub use plot::{Plot, Sparkline, sparkline};
 /// The colour of the series at `index`: the theme has eight; the next eight are those at
 /// 60 %, the eight after at 35 %, and so round again.
 pub fn series_color(index: usize) -> Paint {
-    let colors = &quadra_kit::token::SERIES;
+    let colors = &quadra_design::token::SERIES;
     let round = [1.0, 0.6, 0.35][index / colors.len() % 3];
     colors[index % colors.len()].alpha(round)
 }

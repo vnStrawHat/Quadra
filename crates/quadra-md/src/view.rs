@@ -13,7 +13,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::Path;
 use std::rc::Rc;
 
-use quadra_kit::{fonts, icon, icons, size, token};
+use quadra_design::{fonts, icon, icons, size, token};
 use quadra_layout::{Align as Across, Justify, Length};
 use quadra_reactive::signal;
 use quadra_text::find_urls;

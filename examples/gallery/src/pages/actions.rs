@@ -1,7 +1,7 @@
 //! What starts an action: the button, the icon button and the toggle button.
 
 use quadra::{Align, Div, Justify, div, row, signal, text};
-use quadra_kit::{Size, Variant, button, icon_button, icons, label, token, tooltip};
+use quadra_design::{Size, Variant, button, icon_button, icons, label, token, tooltip};
 
 use crate::common::{demo, line, page};
 

@@ -2,7 +2,7 @@
 //! cards, alerts, empty places and lists of terms.
 
 use quadra::{Align, AnyView, Div, column, div, row, text};
-use quadra_kit::{
+use quadra_design::{
     Status, Tone, alert, avatar, badge, button, card, card_head, copyable, description_list, empty_state,
     fonts, icons, kbd, progress, progress_busy, size, skeleton, spinner, status_label, status_mark, tag,
     token,

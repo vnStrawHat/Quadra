@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use quadra_data::{Value, parse_json, value_view};
-use quadra_kit::dark;
+use quadra_design::dark;
 use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
@@ -19,8 +19,8 @@ fn page() -> (Harness, Signal<Rc<Value>>) {
     let value = signal(Rc::new(parse_json(SAMPLE).unwrap()));
     let mut h = Harness::new();
     h.tree.set_theme(Rc::new(dark().theme()));
-    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
-    h.mount(move || quadra_kit::root().child(value_view(value)));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+    h.mount(move || quadra_design::root().child(value_view(value)));
     h.frame();
     (h, value)
 }

@@ -123,7 +123,7 @@ Text, a binding a line, `keys = name arguments`; a line `[predicate]` names the 
 those after it (before one, they hold everywhere); `#` starts a comment. The app says which
 actions a file may name (`Actions`: `add(action)` for one that takes nothing, `add_with(build)`
 for one built from what follows its name; the focus and the pages are there, and
-`quadra_kit::actions()` adds the kit's). `Keymap::load(text,
+`quadra_design::actions()` adds the kit's). `Keymap::load(text,
 &actions)` adds the file after what the keymap has, so its bindings win; a wrong line (a
 keystroke, a predicate, an unknown name, arguments its action does not take) is reported
 with its number and none of the file is taken.

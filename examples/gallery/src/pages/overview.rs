@@ -1,7 +1,7 @@
 //! The first pages: what Quadra is, and what its design language is made of.
 
 use quadra::{Align, Div, Justify, Token, column, div, row, text};
-use quadra_kit::{KitTheme, fonts, icon, icons, kbd, size, token};
+use quadra_design::{KitTheme, fonts, icon, icons, kbd, size, token};
 
 use crate::common::{demo, hint, line, mono, page};
 

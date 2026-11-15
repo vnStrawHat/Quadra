@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use quadra_kit::{fonts, token};
+use quadra_design::{fonts, token};
 use quadra_layout::{Align, Display, Justify, Length};
 use quadra_reactive::{Memo, Signal, memo, signal, untrack};
 use quadra_tree::{NodeId, Paint, PointerEvent, PointerKind, Role};

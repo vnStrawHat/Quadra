@@ -186,7 +186,7 @@ impl View for Surface {
         widget.remark();
         let editor_link = editor.on_link.clone();
         let (size, line) = editor.font;
-        let family = Some(quadra_kit::fonts::MONO.into());
+        let family = Some(quadra_design::fonts::MONO.into());
         let text =
             TextValues { family, size: Some(size), line_height: Some(line / size), ..TextValues::default() };
         let id = cx.tree.insert_widget(Style { text, ..Style::default() }, Box::new(widget));

@@ -2,7 +2,7 @@
 //! and a form with its rules.
 
 use quadra::{Div, column, div, row, signal};
-use quadra_kit::{
+use quadra_design::{
     Date, Rule, TimeOfDay, Tone, Variant, button, calendar, checkbox, combobox, date_picker, field, icons,
     input, number_input, select, textarea, time_input, validate,
 };

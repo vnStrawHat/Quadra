@@ -1,7 +1,7 @@
 //! A table of a document: a grid with lines, the head on the tone of the chrome, every
 //! other row on the panel's.
 
-use quadra_kit::{fonts, size, token};
+use quadra_design::{fonts, size, token};
 use quadra_layout::{Justify, Track, TrackSize};
 use quadra_text::{Paragraph, TextStyle};
 use quadra_tree::{NodeId, Role};

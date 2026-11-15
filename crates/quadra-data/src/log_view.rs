@@ -4,8 +4,8 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use quadra_kit::rows::{one_column, selectable, sideways};
-use quadra_kit::{Size, Variant, button, fonts, input, token, tooltip};
+use quadra_design::rows::{one_column, selectable, sideways};
+use quadra_design::{Size, Variant, button, fonts, input, token, tooltip};
 use quadra_layout::{Align, Overflow};
 use quadra_platform::Clipboard;
 use quadra_prim::Color;

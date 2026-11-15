@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use quadra_kit::dark;
+use quadra_design::dark;
 use quadra_md::markdown;
 use quadra_platform::{Key, Mods, MouseButton};
 use quadra_prim::Point;
@@ -17,8 +17,8 @@ const DOC: &str = "# Title\n\nThe first paragraph.\n\nThe second one.\n";
 fn a_drag_selects_across_blocks_and_copying_gives_their_text() {
     let mut h = Harness::new();
     h.tree.set_theme(Rc::new(dark().theme()));
-    h.tree.set_keymap(Rc::new(quadra_kit::keymap()));
-    h.mount(|| quadra_kit::root().child(markdown(DOC)));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+    h.mount(|| quadra_design::root().child(markdown(DOC)));
     h.frame();
     let title = h.get_by_role(quadra_tree::Role::Heading, "Title").node();
     let second = h.get_by_text("The second one.").node();
@@ -31,7 +31,7 @@ fn a_drag_selects_across_blocks_and_copying_gives_their_text() {
     h.tree.pointer(PointerInput::Up, MouseButton::Left, to, Mods::NONE, h.now());
     h.frame();
     // Each of the three texts is filled where it is selected, in the colour of a selection.
-    let fill = dark().color(quadra_kit::token::SELECTION).to_array();
+    let fill = dark().color(quadra_design::token::SELECTION).to_array();
     let filled = |h: &Harness| {
         let layers = h.renderer.steps().iter().filter_map(|step| match step {
             quadra_render::Step::Layer { id, .. } => Some(h.tree.scene().layer(*id)),

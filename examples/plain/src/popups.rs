@@ -3,8 +3,8 @@
 use std::rc::Rc;
 
 use quadra::{Along, Div, NodeRef, Place, Side, Signal, State, column, div, row, signal, text};
-use quadra_base::menu::{self, Ends, Line, Row};
-use quadra_base::{dialog as base, popup, press};
+use quadra_headless::menu::{self, Ends, Line, Row};
+use quadra_headless::{dialog as base, popup, press};
 
 use crate::{HIGH, HOVER, INK, PAPER, button, framed, ring};
 

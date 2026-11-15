@@ -1,7 +1,7 @@
 //! What shows data: the table, the tree, and a thousand cells to move the pointer over.
 
 use quadra::{Align, Div, Justify, Signal, column, div, row, signal, text, virtual_list};
-use quadra_kit::{Column, TreeNode, fonts, icons, size, table, token, tree};
+use quadra_design::{Column, TreeNode, fonts, icons, size, table, token, tree};
 
 use crate::common::{demo, framed, hint, line, page, stack};
 
@@ -46,7 +46,7 @@ pub fn table_page() -> Div {
 
 /// Twelve months of figures beside the city they are of: the city stays while the months
 /// scroll sideways; the last three are hidden.
-fn wide() -> quadra_kit::Table {
+fn wide() -> quadra_design::Table {
     const MONTHS: [&str; 12] =
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     let columns = std::iter::once(Column::new("Thành phố").width(200.0))

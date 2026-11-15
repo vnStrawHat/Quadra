@@ -1,7 +1,7 @@
 //! Motion: the pose of a box, the changes that ease, and timelines.
 
 use quadra::{Align, Cursor, Div, Ease, Justify, Point, Refine, Timeline, div, row, text, timeline};
-use quadra_kit::{size, token};
+use quadra_design::{size, token};
 
 use crate::common::{demo, line, page};
 

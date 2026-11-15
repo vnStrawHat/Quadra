@@ -117,21 +117,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quadra-base"
-version = "0.1.0"
-dependencies = [
- "quadra-async",
- "quadra-layout",
- "quadra-platform",
- "quadra-prim",
- "quadra-reactive",
- "quadra-testing",
- "quadra-text",
- "quadra-tree",
- "quadra-ui",
-]
-
-[[package]]
 name = "quadra-bench-compare"
 version = "0.1.0"
 dependencies = [
@@ -150,8 +135,8 @@ version = "0.1.0"
 dependencies = [
  "quadra-app",
  "quadra-async",
+ "quadra-design",
  "quadra-gallery",
- "quadra-kit",
  "quadra-native-win",
  "quadra-platform",
  "quadra-prim",
@@ -164,8 +149,8 @@ version = "0.1.0"
 dependencies = [
  "quadra-a11y",
  "quadra-async",
- "quadra-base",
- "quadra-kit",
+ "quadra-design",
+ "quadra-headless",
  "quadra-layout",
  "quadra-platform",
  "quadra-prim",
@@ -182,7 +167,7 @@ dependencies = [
 name = "quadra-data"
 version = "0.1.0"
 dependencies = [
- "quadra-kit",
+ "quadra-design",
  "quadra-layout",
  "quadra-platform",
  "quadra-prim",
@@ -194,25 +179,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "quadra-gallery"
-version = "0.1.0"
-dependencies = [
- "quadra",
- "quadra-code",
- "quadra-data",
- "quadra-kit",
- "quadra-md",
- "quadra-viz",
-]
-
-[[package]]
-name = "quadra-kit"
+name = "quadra-design"
 version = "0.1.0"
 dependencies = [
  "quadra",
  "quadra-app",
  "quadra-async",
- "quadra-base",
+ "quadra-headless",
  "quadra-layout",
  "quadra-platform",
  "quadra-prim",
@@ -227,6 +200,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-gallery"
+version = "0.1.0"
+dependencies = [
+ "quadra",
+ "quadra-code",
+ "quadra-data",
+ "quadra-design",
+ "quadra-md",
+ "quadra-viz",
+]
+
+[[package]]
+name = "quadra-headless"
+version = "0.1.0"
+dependencies = [
+ "quadra-async",
+ "quadra-layout",
+ "quadra-platform",
+ "quadra-prim",
+ "quadra-reactive",
+ "quadra-testing",
+ "quadra-text",
+ "quadra-tree",
+ "quadra-ui",
+]
+
+[[package]]
 name = "quadra-layout"
 version = "0.1.0"
 dependencies = [
@@ -238,9 +238,9 @@ name = "quadra-md"
 version = "0.1.0"
 dependencies = [
  "quadra-async",
- "quadra-base",
  "quadra-code",
- "quadra-kit",
+ "quadra-design",
+ "quadra-headless",
  "quadra-layout",
  "quadra-platform",
  "quadra-prim",
@@ -277,7 +277,7 @@ name = "quadra-plain"
 version = "0.1.0"
 dependencies = [
  "quadra",
- "quadra-base",
+ "quadra-headless",
  "quadra-testing",
 ]
 
@@ -381,7 +381,7 @@ dependencies = [
 name = "quadra-viz"
 version = "0.1.0"
 dependencies = [
- "quadra-kit",
+ "quadra-design",
  "quadra-layout",
  "quadra-prim",
  "quadra-reactive",

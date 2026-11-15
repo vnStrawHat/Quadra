@@ -4,7 +4,7 @@
 
 use std::hash::{DefaultHasher, Hash, Hasher};
 
-use quadra_kit::token;
+use quadra_design::token;
 use quadra_prim::{Color, Corners, Edges, Point, Rect};
 use quadra_render::{Kind, Quad, Sprite, stroke};
 use quadra_tree::{GlyphTile, Paint, PaintCx, Theme, paint_glyph};

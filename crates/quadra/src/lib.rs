@@ -25,7 +25,7 @@
 //! - The app's services (specs/15): its folders and [`Settings`] (`App::dirs`), windows that are
 //!   remembered ([`WindowOptions::remember`]), [`log`](mod@log), [`time`](mod@time), its language ([`I18n`],
 //!   [`t`], [`Locale`]), pages ([`router`]) and closing (`Div::on_close`).
-//! - The components and their look are the crate `quadra-kit`; what the OS does beyond
+//! - The components and their look are the crate `quadra-design`; what the OS does beyond
 //!   windows (dialogs, the tray, one instance) is `quadra-shell`, which an app adds itself.
 
 use std::rc::Rc;

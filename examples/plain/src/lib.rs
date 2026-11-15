@@ -1,13 +1,13 @@
 //! A second kit (specs/17, "The second kit"): square and flat, with outlines, in ink on paper.
-//! What each control does is `quadra-base`'s; this crate is only the look, made of boxes and
-//! texts, with no code of `quadra-kit`.
+//! What each control does is `quadra-headless`'s; this crate is only the look, made of boxes and
+//! texts, with no code of `quadra-design`.
 
 mod popups;
 
 pub use popups::{Act, dialog, select};
 
 use quadra::{Align, Color, Cursor, Div, Paint, Refine, Role, Signal, div, memo, row, text};
-use quadra_base::{choice, list, press, slider};
+use quadra_headless::{choice, list, press, slider};
 
 /// The colours of the look: ink, paper, a grey under the pointer, a darker one while pressed.
 pub const INK: Color = Color::rgb(0x1A1A1A);

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use quadra_async::spawn;
-use quadra_kit::{icon, icons, size, token};
+use quadra_design::{icon, icons, size, token};
 use quadra_layout::Align as Across;
 use quadra_prim::Size;
 use quadra_reactive::{signal, use_context};

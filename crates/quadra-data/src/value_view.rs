@@ -4,8 +4,8 @@
 use std::collections::HashSet;
 use std::rc::Rc;
 
-use quadra_kit::action::Copy;
-use quadra_kit::{Size, TreeNode, button, fonts, token, tree};
+use quadra_design::action::Copy;
+use quadra_design::{Size, TreeNode, button, fonts, token, tree};
 use quadra_layout::Align;
 use quadra_platform::Clipboard;
 use quadra_reactive::{memo, signal, untrack, use_context};

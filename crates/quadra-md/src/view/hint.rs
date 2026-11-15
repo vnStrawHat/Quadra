@@ -5,8 +5,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use quadra_async::{Timer, timeout};
-use quadra_base::hint::TOOLTIP_REST;
-use quadra_base::popup::hang_with;
+use quadra_headless::hint::TOOLTIP_REST;
+use quadra_headless::popup::hang_with;
 use quadra_prim::Point;
 use quadra_reactive::{Scope, effect, signal};
 use quadra_tree::{Anchor, NodeId};
@@ -33,7 +33,7 @@ impl View for Hinted {
         };
         let target =
             move || over.with(|link| link.as_ref().map(|(_, to)| to.to_string()).unwrap_or_default());
-        hang_with(cx, id, shown, move || Anchor::At(under()), move || quadra_kit::tip(&target()));
+        hang_with(cx, id, shown, move || Anchor::At(under()), move || quadra_design::tip(&target()));
         id
     }
 }

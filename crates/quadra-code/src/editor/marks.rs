@@ -3,7 +3,7 @@
 
 use std::hash::{DefaultHasher, Hash, Hasher};
 
-use quadra_kit::{Step, diff_ids, diff_lines, token};
+use quadra_design::{Step, diff_ids, diff_lines, token};
 use quadra_prim::{Color, Rect};
 use quadra_render::Quad;
 use quadra_tree::{PaintCx, Theme};

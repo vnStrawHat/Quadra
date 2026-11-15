@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use quadra_kit::token;
+use quadra_design::token;
 use quadra_layout::Length;
 use quadra_reactive::{Signal, effect, memo};
 use quadra_tree::{NodeId, Tree};

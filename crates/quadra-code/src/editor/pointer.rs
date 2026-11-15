@@ -8,8 +8,8 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_async::{Timer, timeout};
-use quadra_base::hint::TOOLTIP_REST;
-use quadra_base::popup::hang_with;
+use quadra_headless::hint::TOOLTIP_REST;
+use quadra_headless::popup::hang_with;
 use quadra_platform::{Mods, MouseButton};
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, effect, signal};
@@ -123,7 +123,7 @@ fn hint(cx: &mut MountCx, id: NodeId) -> Over {
     });
     let under = move || over.with(|link| link.as_ref().map_or(Point::ZERO, |(at, _)| *at));
     let says = move || over.with(|link| link.as_ref().map(|(_, url)| format!("{url} (Ctrl-click to open)")));
-    let tip = move || quadra_kit::tip(&says().unwrap_or_default());
+    let tip = move || quadra_design::tip(&says().unwrap_or_default());
     hang_with(cx, id, shown, move || Anchor::At(under()), tip);
     over
 }

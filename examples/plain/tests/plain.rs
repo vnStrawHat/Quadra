@@ -9,7 +9,7 @@ use quadra_testing::Harness;
 
 fn mounted<V: View + 'static>(view: impl FnOnce() -> V) -> Harness {
     let mut h = Harness::new();
-    h.tree.set_keymap(Rc::new(quadra_base::keymap()));
+    h.tree.set_keymap(Rc::new(quadra_headless::keymap()));
     h.mount(view);
     h.frame();
     h

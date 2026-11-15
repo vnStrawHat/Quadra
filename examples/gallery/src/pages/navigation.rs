@@ -3,7 +3,7 @@
 
 use quadra::Token;
 use quadra::{Div, column, div, dynamic, row, signal};
-use quadra_kit::{
+use quadra_design::{
     MenuItem, NavItem, Size, Status, breadcrumb, button, icon, icon_button, icons, kbd, menu_button, menubar,
     sidebar, status_item, status_label, statusbar, token, toolbar, tooltip, vdivider,
 };

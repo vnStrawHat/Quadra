@@ -6,7 +6,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use quadra_kit::{Size, Variant, button, icon_button, icons, input, size, token};
+use quadra_design::{Size, Variant, button, icon_button, icons, input, size, token};
 use quadra_layout::Align;
 use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, memo, signal};

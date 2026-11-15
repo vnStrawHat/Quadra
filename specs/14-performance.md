@@ -105,7 +105,7 @@ Build time is a budget because it is paid on every change (01, R17):
 | Measure | Target |
 |---|---|
 | Rebuild and relink an app after a one-line edit in the app | < 10 s |
-| Rebuild after a one-line edit in `quadra-kit` | < 30 s |
+| Rebuild after a one-line edit in `quadra-design` | < 30 s |
 | Clean debug build of the workspace | measured in R0, then fixed as a budget |
 | `cargo test` of the framework crates | < 3 min |
 

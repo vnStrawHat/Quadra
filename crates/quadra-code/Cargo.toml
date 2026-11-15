@@ -13,8 +13,8 @@ workspace = true
 [dependencies]
 quadra-a11y = { path = "../quadra-a11y" }
 quadra-async = { path = "../quadra-async" }
-quadra-base = { path = "../quadra-base" }
-quadra-kit = { path = "../quadra-kit" }
+quadra-headless = { path = "../quadra-headless" }
+quadra-design = { path = "../quadra-design" }
 quadra-layout = { path = "../quadra-layout" }
 quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }

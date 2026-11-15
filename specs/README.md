@@ -30,7 +30,7 @@ designed from its goals, and what survives from the V implementation survives on
 | [14-performance.md](14-performance.md) | Structural budgets, time and memory budgets, baselines, benches |
 | [15-app-services.md](15-app-services.md) | Settings, window state, local time, language, log and crashes, pages, start and end |
 | [16-shell.md](16-shell.md) | Dialogs, opening, tray and notifications, one instance, crash reports, packaging |
-| [17-base.md](17-base.md) | Components without a look: parts, the behaviour's numbers, open tokens, what moves out of the kit |
+| [17-headless.md](17-headless.md) | Components without a look: parts, the behaviour's numbers, open tokens, what moves out of the kit |
 
 Reading order: 00, 01, 02, 03, 04, 05, then the rest.
 

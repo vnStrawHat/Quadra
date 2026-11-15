@@ -6,7 +6,7 @@ use std::rc::Rc;
 use quadra::{
     Action, Display, Signal, TextSize, Theme, View, column, div, dynamic, row, scroll, signal, use_context,
 };
-use quadra_kit::{
+use quadra_design::{
     Command, MenuItem, NavItem, Notices, Status, Tone, command_palette, dark, icon_button, icons, light,
     notices, sidebar, status_button, status_divider, status_item, status_label, statusbar, titlebar, tooltip,
 };
@@ -121,7 +121,7 @@ impl Gallery {
             .right(status_item(Some(icons::PALETTE), move || format!("{} \u{B7} compact", name())))
             .right(status_item(Some(icons::COMMAND), "Ctrl-K"));
         let palette = command_palette(asking, move || self.commands());
-        let all = quadra_kit::root().on_action::<OpenPalette>(move |_| asking.set(true));
+        let all = quadra_design::root().on_action::<OpenPalette>(move |_| asking.set(true));
         let size = use_context::<Signal<TextSize>>(); // none in a test without an app
         let all = all.on_action::<Zoom>(move |step| {
             let to = |zoom: f32| if step.0 == 0 { 1.0 } else { (zoom + 0.1 * step.0 as f32).clamp(0.5, 3.0) };

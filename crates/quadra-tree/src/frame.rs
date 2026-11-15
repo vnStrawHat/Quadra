@@ -106,8 +106,12 @@ impl Tree {
             self.relayout = true;
         }
         if scale != self.scale {
-            // Snapping and glyph sizes depend on the scale: everything is painted again.
+            // Snapping and glyph sizes depend on the scale: everything is painted again. A
+            // listener is told the root again, which carries the scale to device pixels.
             (self.repaint, self.repaint_all) = (true, true);
+            if let Some(root) = self.root {
+                self.semantics_changed(root);
+            }
         }
         (self.size, self.scale) = (size, scale);
         let (mut times, mut clock) = (PassTimes::default(), Instant::now());

@@ -139,9 +139,8 @@ fn node(from: &SemanticNode) -> Node {
 }
 
 /// A semantic update as the adapter takes it. Bounds are in logical pixels of the window:
-/// the root carries the scale to device pixels.
-// ponytail: a scale that changes without the window's logical size changing leaves the old
-// one until the root is next sent; send the root on a scale change if a display does that.
+/// the root carries the scale to device pixels (the tree sends it again when the scale
+/// changes).
 pub(crate) fn tree_update(update: &TreeUpdate, scale: f32, runs: &mut text::Runs) -> accesskit::TreeUpdate {
     let convert = |from: &SemanticNode| {
         let mut node = node(from);

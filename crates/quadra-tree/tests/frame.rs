@@ -185,3 +185,19 @@ fn one_change_among_ten_thousand_nodes_costs_one_node() {
     assert_eq!((stats.nodes_painted, drawn.instances_uploaded), (1, 1));
     assert!(stats.nodes_laid_out < 10, "{stats:?}");
 }
+
+#[test]
+fn a_listener_is_told_the_root_again_when_the_scale_changes() {
+    let mut w = Window::new();
+    page(&mut w);
+    w.tree.listen(true);
+    let size = Size::new(800.0, 600.0);
+    w.tree.frame(size, 1.0);
+    assert!(w.tree.take_semantic_update().is_some()); // the first: all of it
+    w.tree.frame(size, 1.0);
+    assert!(w.tree.take_semantic_update().is_none());
+    // Another display: the same logical size at another scale.
+    w.tree.frame(size, 1.5);
+    let update = w.tree.take_semantic_update().expect("the root again");
+    assert!(update.nodes.iter().any(|n| n.id == update.root));
+}

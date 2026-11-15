@@ -56,7 +56,8 @@ semantic children attach to the nearest semantic ancestor.
   UI Automation (01, R11), and turns each update into that crate's. The first answer is the
   adapter's empty tree: the question can come while the app is in the middle of something, so
   the tree follows as an update, at once when no frame is due. Bounds are sent in logical
-  pixels; the root carries the scale. A static text is read by its value, a name is a label,
+  pixels; the root carries the scale, and is sent again when the scale changes (a window
+  moved to a display of another scale keeps its logical size). A static text is read by its value, a name is a label,
   `test_id` is the automation id; what can be clicked is told by its role. Requests reach the
   adapter on a thread of its choosing: they are queued and the window posted a message, so
   the app sees them on the UI thread like any event.

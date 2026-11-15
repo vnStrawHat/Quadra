@@ -25,8 +25,9 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx) {
     w.scale = cx.scale;
     let background = color(w.palette.background);
     cx.quad(Quad { bounds: cx.rect, background, ..Quad::default() });
-    let (left, top) = (cx.rect.x + w.pad, cx.rect.y + w.pad);
+    let (left, top) = (cx.rect.x + w.gutter_width() + w.pad, cx.rect.y + w.pad);
     w.tiles.clear();
+    crate::gutter::paint(w, cx, top);
     let block = w.cursor_block();
     let rows = std::mem::take(&mut w.state);
     for (r, row) in rows.rows().iter().enumerate() {

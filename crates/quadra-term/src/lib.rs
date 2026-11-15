@@ -5,7 +5,9 @@
 mod actions;
 mod clip;
 mod feed;
+mod gutter;
 mod keys;
+mod log;
 mod look;
 mod paint;
 mod pointer;

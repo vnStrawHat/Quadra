@@ -20,6 +20,8 @@ pub struct TermLook {
     pub weight: u16,
     /// Room around the grid, in logical pixels.
     pub padding: f32,
+    /// The gutter at the left: when each row was written and its line number.
+    pub gutter: bool,
     pub colors: TermColors,
 }
 
@@ -31,6 +33,7 @@ impl Default for TermLook {
             line_height: 20.0 / 13.0,
             weight: 400,
             padding: 8.0,
+            gutter: false,
             colors: TermColors::default(),
         }
     }
@@ -45,6 +48,13 @@ pub struct TermColors {
     pub selection: Option<Color>,
     /// The sixteen ANSI colours.
     pub ansi: [Option<Color>; 16],
+    /// The gutter's text; else the foreground mixed half with the background.
+    pub gutter_fg: Option<Color>,
+    /// Else the terminal's background.
+    pub gutter_bg: Option<Color>,
+    /// The time and the line number; else `gutter_fg`.
+    pub clock_fg: Option<Color>,
+    pub line_number_fg: Option<Color>,
 }
 
 impl TermLook {

@@ -59,6 +59,25 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   background, cursor, selection, the sixteen ANSI). A new look sets the node's text values, the
   padding and the palette, and sizes the grid again after layout: the view is not mounted again,
   the session keeps its screen. Ligatures are not drawn: a glyph is a cell.
+- The gutter (`TermLook::gutter`, off by default): a column at the left of the grid with, per
+  row that shows, the time the row was first written and its line number, `[HH:MM:SS] 12345`,
+  in the mono face. Its width is whole cells, `11 + digits` of them, and 8 px (4 each side);
+  `digits` is at least 5 and only grows, when a line number needs more, so the grid is sized
+  again only then. The grid, the pointer's cells and the caret start after it. Colours
+  (`TermColors`): `gutter_fg` (else the foreground mixed half with the background), `gutter_bg`
+  (else the terminal's background), `clock_fg` and `line_number_fg` (else `gutter_fg`).
+- Times live with the engine, stamped by the feed with its `now` (so a view not shown keeps
+  them): seconds after the first stamp, a deque for the primary screen's rows from the id of
+  its first row. A row is stamped once, when the cursor reaches it or a row below it has
+  content, and never again (a prompt keeps the time it was drawn); rows that leave the history
+  drop their stamps; `ScreenCleared` drops the stamps of the screen's rows; a shrink drops those
+  past the newest row. A column change gives every row a new id: the stamps are kept, aligned
+  to the bottom (told from a burst of output by the lines the engine produced since). A row with
+  no stamp shows the newest, one above the first the oldest; `[--:--:--]` when nothing was
+  stamped. Line numbers count from the top of the history: the oldest row kept is 1, so they
+  move once the history is full, and a clear of the history starts them again. On the alternate
+  screen the gutter is empty. The clock is the local time: one anchor (an instant and the
+  system's clock at the platform's offset) taken at mount turns instants into times.
 - Cursor: a block when focused, an outline when not; bar and underline as the program asks
   (DECSCUSR); it blinks on the kit's caret timer, a paint only. Hidden when the program hides
   it or the viewport is scrolled back past it.
@@ -94,6 +113,15 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - OSC 52: a program's text for the clipboard (`c`) is written to it, always; a program that asks
   for it (`?`) is answered (`52;c;<base64>` and BEL) only when `TermSettings::clipboard_read`
   says so, off by default. The view gives the session its clipboard and settings as it mounts.
+
+## Logging
+
+- `Session::start_log(path, append, stamp)` logs the output from then on: the folder is made,
+  the file opened after what it holds or over it. The feeder's thread runs the engine's own
+  parser over the same bytes and keeps the printable text: a line ends at CR or LF, backspace
+  takes a character back, sequences are dropped; each finished line is written as
+  `[stamp()] text` and flushed. `stop_log` writes the line not ended and closes the file;
+  `logging()` says whether one is open (false again after a write failed).
 
 ## Signals an app reads
 

@@ -49,7 +49,7 @@ pub struct Session(pub(crate) Rc<Shared>);
 
 pub(crate) struct Shared {
     pub engine: Arc<Mutex<Engine>>,
-    feeder: Feeder,
+    pub feeder: Feeder,
     link: RefCell<Link>,
     /// How many links were connected: one connected while the last was called replaces it.
     linked: Cell<u64>,
@@ -84,13 +84,19 @@ impl Session {
     pub fn configured(policy: ResizePolicy, mut config: Config) -> Session {
         config.osc_routes.route(7501, OscRoute::Forward);
         let term = Terminal::new(Size { rows: 24, cols: 80 }, config);
-        let engine = Engine { term, batch: EventBatch::new(), statuses: Statuses::default() };
+        let engine = Engine {
+            term,
+            batch: EventBatch::new(),
+            statuses: Statuses::default(),
+            stamps: Default::default(),
+        };
         let engine = Arc::new(Mutex::new(engine));
         let events = inbox::<Event>();
         let feeder = Feeder {
             engine: engine.clone(),
             events: events.sender(),
             pending: Arc::new(AtomicBool::new(false)),
+            log: Arc::default(),
         };
         let shared = Rc::new(Shared {
             engine,

@@ -3,11 +3,11 @@
 
 use std::cell::Cell;
 use std::rc::Rc;
-use std::time::Duration;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use oneterm_vt::input::{KeyEvent, KeyMods, KeySpec, NamedKey};
 use quadra_async::{Timers, interval};
-use quadra_platform::{Clipboard, Cursor};
+use quadra_platform::{Clipboard, Cursor, Platform};
 use quadra_reactive::{Scope, Signal, on_cleanup, signal, use_context};
 use quadra_tree::{NodeId, Style, Tree};
 use quadra_view::{MountCx, View};
@@ -87,7 +87,9 @@ impl View for Terminal {
         style.layout.basis = quadra_layout::Length::Px(0.0);
         (style.layout.min_width, style.layout.min_height) =
             (quadra_layout::Length::Px(0.0), quadra_layout::Length::Px(0.0));
-        let id = cx.tree.insert_widget(style, Box::new(TerminalWidget::new(session.clone())));
+        let mut widget = TerminalWidget::new(session.clone());
+        widget.clock = clock();
+        let id = cx.tree.insert_widget(style, Box::new(widget));
         cx.tree.set_focusable(id, true);
         cx.tree.set_cursor(id, Some(Cursor::Text));
         cx.tree.set_key_context(id, TERMINAL_CONTEXT);
@@ -119,7 +121,7 @@ impl View for Terminal {
             writer.with(move |tree| {
                 tree.set_text_values(id, look.text());
                 if let Some(w) = tree.widget_mut::<TerminalWidget>(id) {
-                    (w.pad, w.colors) = (look.padding, look.colors);
+                    (w.pad, w.colors, w.gutter) = (look.padding, look.colors, look.gutter);
                     w.paint_colors();
                 }
                 tree.mark_paint(id);
@@ -175,7 +177,7 @@ impl View for Terminal {
 }
 
 /// The grid that fits the box, once layout has sized it.
-fn regrid(tree: &mut Tree, id: NodeId, s: &Session) {
+pub(crate) fn regrid(tree: &mut Tree, id: NodeId, s: &Session) {
     if !tree.is_alive(id) {
         return; // the view went before the layout came
     }
@@ -187,6 +189,17 @@ fn regrid(tree: &mut Tree, id: NodeId, s: &Session) {
     let (rows, cols) = w.grid_for(size);
     s.resize(rows, cols);
     crate::widget::repaint(tree, id);
+}
+
+/// The clock that turns instants into local times: now, and the system's clock at the
+/// platform's offset from UTC (none, UTC).
+fn clock() -> (Instant, i64) {
+    let unix = match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(since) => since.as_secs() as i64,
+        Err(before) => -(before.duration().as_secs() as i64),
+    };
+    let offset = use_context::<Rc<dyn Platform>>().map_or(0, |platform| platform.utc_offset(unix));
+    (Instant::now(), unix + i64::from(offset))
 }
 
 /// The focus: told to the program when it asked, and the cursor's blink while it is there.

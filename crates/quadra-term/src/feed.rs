@@ -16,6 +16,8 @@ pub(crate) struct Engine {
     pub term: Terminal,
     pub batch: EventBatch,
     pub statuses: Statuses,
+    /// When the rows were written, for the gutter.
+    pub stamps: crate::gutter::Stamps,
 }
 
 /// What the UI thread must hear from a feed.
@@ -45,6 +47,8 @@ pub struct Feeder {
     pub(crate) events: Sender<Event>,
     /// An `Output` is on its way to the UI thread: a burst of feeds posts one.
     pub(crate) pending: Arc<AtomicBool>,
+    /// The session's log, while one is open.
+    pub(crate) log: crate::log::Slot,
 }
 
 pub(crate) fn lock(engine: &Mutex<Engine>) -> MutexGuard<'_, Engine> {
@@ -55,14 +59,16 @@ impl Feeder {
     /// Feeds output to the engine; returns the replies the transport must write back, before
     /// anything else it was given, in order.
     pub fn feed(&self, bytes: &[u8], now: Instant) -> Vec<u8> {
-        let (mut replies, mut events, mut repaint) = (Vec::new(), Vec::new(), false);
+        crate::log::Log::write(&self.log, bytes);
+        let (mut replies, mut events, mut repaint, mut cleared) = (Vec::new(), Vec::new(), false, false);
         {
             let mut engine = lock(&self.engine);
-            let Engine { term, batch, statuses } = &mut *engine;
+            let Engine { term, batch, statuses, stamps } = &mut *engine;
             term.feed(bytes, batch, now);
             for event in batch.iter() {
                 match *event {
                     VtEvent::Repaint => repaint = true,
+                    VtEvent::ScreenCleared => cleared = true,
                     VtEvent::Reply(span) => replies.extend_from_slice(batch.bytes(span)),
                     VtEvent::ColorQuery { key, terminator } => {
                         replies.extend(term.color_reply(key, terminator).unwrap_or_default())
@@ -109,6 +115,7 @@ impl Feeder {
                     _ => {}
                 }
             }
+            stamps.update(term, cleared, Some(now));
         }
         if repaint && !self.pending.swap(true, Ordering::AcqRel) {
             events.push(Event::Output);

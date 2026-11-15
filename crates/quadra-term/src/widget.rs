@@ -11,6 +11,7 @@ use quadra_prim::{Color, Rect, Size};
 use quadra_text::TextStyle;
 use quadra_tree::{GlyphTile, Inherited, MeasureCx, NodeId, PaintCx, Theme, Tree, Widget};
 
+use crate::feed::Engine;
 use crate::look::TermColors;
 use crate::session::Session;
 
@@ -34,6 +35,13 @@ pub struct TerminalWidget {
     pub focused: bool,
     pub caret_on: bool,
     pub(crate) tiles: Vec<GlyphTile>,
+    /// The gutter: shown, its digits (they only grow), the line and time of each row that
+    /// shows, the clock that turns instants into local times, and the label being drawn.
+    pub(crate) gutter: bool,
+    pub(crate) digits: usize,
+    pub(crate) gutter_rows: Vec<Option<(u64, Option<Instant>)>>,
+    pub(crate) clock: (Instant, i64),
+    pub(crate) label: String,
 }
 
 pub(crate) fn color(rgb: Rgb) -> Color {
@@ -64,25 +72,43 @@ impl TerminalWidget {
             focused: false,
             caret_on: true,
             tiles: Vec::new(),
+            gutter: false,
+            digits: crate::gutter::DIGITS,
+            gutter_rows: Vec::new(),
+            clock: (Instant::now(), 0),
+            label: String::new(),
         }
     }
 
     /// The grid that fits a box of `size`: rows and columns, at least one of each.
     pub(crate) fn grid_for(&self, size: Size) -> (u16, u16) {
         let fit = |room: f32, step: f32| ((room - 2.0 * self.pad) / step).floor().clamp(1.0, 32767.0) as u16;
-        (fit(size.height, self.line), fit(size.width, self.cell))
+        (fit(size.height, self.line), fit(size.width - self.gutter_width(), self.cell))
     }
 
     /// Takes the engine's snapshot (the first phase of drawing, under the lock): a paint
-    /// reads it alone, so a paint from scratch draws what the last one did.
-    pub(crate) fn refresh(&mut self) {
+    /// reads it alone, so a paint from scratch draws what the last one did. True when the
+    /// gutter needs more digits, so the grid is sized again.
+    pub(crate) fn refresh(&mut self) -> bool {
         let mut engine = self.session.engine();
+        let Engine { term, stamps, .. } = &mut *engine;
         // ponytail: a `?2026` block held past its deadline waits for the next output or key
         // to be shown; a timer at `sync().deadline()` when a program leaves one open.
-        engine.term.snapshot_update(&mut self.state, Instant::now());
-        self.palette = engine.term.palette();
-        self.cursor_style = engine.term.cursor_style();
-        self.modes = engine.term.mode_snapshot();
+        term.snapshot_update(&mut self.state, Instant::now());
+        self.palette = term.palette();
+        self.cursor_style = term.cursor_style();
+        self.modes = term.mode_snapshot();
+        self.gutter_rows.clear();
+        if !self.gutter {
+            return false;
+        }
+        stamps.update(term, false, None);
+        let alt = term.grid().alt_active();
+        let rows = self.state.rows().iter().map(|row| (!alt).then(|| stamps.at(row.id)));
+        self.gutter_rows.extend(rows);
+        let most = self.gutter_rows.iter().flatten().map(|it| it.0).max().unwrap_or(0);
+        let digits = crate::gutter::digits_of(most);
+        (digits > self.digits).then(|| self.digits = digits).is_some()
     }
 
     /// The theme's colours with the look's over them, to the engine.
@@ -99,12 +125,14 @@ impl TerminalWidget {
     }
 }
 
-/// Takes the snapshot of a terminal's widget and has it painted again.
+/// Takes the snapshot of a terminal's widget and has it painted again; sizes the grid again
+/// when the gutter grew.
 pub(crate) fn repaint(tree: &mut Tree, id: NodeId) {
-    if let Some(w) = tree.widget_mut::<TerminalWidget>(id) {
-        w.refresh();
-    }
+    let grew = tree.widget_mut::<TerminalWidget>(id).and_then(|w| w.refresh().then(|| w.session.clone()));
     tree.mark_paint(id);
+    if let Some(session) = grew {
+        crate::view::regrid(tree, id, &session);
+    }
 }
 
 impl Widget for TerminalWidget {
@@ -150,7 +178,8 @@ impl Widget for TerminalWidget {
     fn caret(&self) -> Option<Rect> {
         let cursor = self.state.cursor();
         let row = cursor.row.filter(|_| self.focused)?;
-        let (x, y) = (self.pad + f32::from(cursor.col) * self.cell, self.pad + f32::from(row) * self.line);
+        let x = self.gutter_width() + self.pad + f32::from(cursor.col) * self.cell;
+        let y = self.pad + f32::from(row) * self.line;
         Some(Rect::new(x, y, self.cell, self.line))
     }
 

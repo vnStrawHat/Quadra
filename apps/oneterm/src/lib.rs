@@ -7,10 +7,11 @@ mod local;
 mod model;
 mod rail;
 mod spaces;
+mod strip;
 
 use std::rc::Rc;
 
-use quadra::{Keymap, Signal, View, Window, row, signal, use_context};
+use quadra::{AnyView, Keymap, Signal, View, Window, column, dynamic, row, signal, use_context};
 use quadra_term::Session;
 
 pub use local::local_shell;
@@ -51,7 +52,15 @@ impl OneTerm {
 
     pub fn view(&self) -> impl View + use<> {
         let (model, window) = (self.model.clone(), use_context::<Window>());
-        let body = row().grow(1.0).child(rail::rail(&model)).child(spaces::workspace(&model));
+        // The tabs in the rail at the left, or in a strip above the spaces.
+        let (vertical, shown) = (model.vertical(), model.clone());
+        let body = dynamic(move || match vertical.get() {
+            true => AnyView::new(row().grow(1.0).child(rail::rail(&shown)).child(spaces::workspace(&shown))),
+            false => {
+                AnyView::new(column().grow(1.0).child(strip::strip(&shown)).child(spaces::workspace(&shown)))
+            }
+        });
+        let body = body.container(column().grow(1.0));
         quadra_design::root()
             .on_action::<Command>(move |&command| {
                 if !run(&model, command)

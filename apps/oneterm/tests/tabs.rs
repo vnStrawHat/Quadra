@@ -108,3 +108,80 @@ fn a_program_that_ended_says_so_and_a_key_closes_its_space() {
     a.typed("q");
     assert!(a.h.has_text("Terminal \u{B7} 1 space"));
 }
+
+impl App {
+    fn press(&mut self, button: MouseButton, x: f32, y: f32) {
+        for input in [PointerInput::Down, PointerInput::Up] {
+            self.h.tree.pointer(input, button, Point::new(x, y), Mods::NONE, self.h.now());
+        }
+        self.h.settle();
+    }
+
+    fn tab_at(&mut self, name: &str) -> Point {
+        let node = self.h.get_by_role(Role::Tab, name).node();
+        self.h.tree.window_rect(node).center()
+    }
+
+    fn names(&self) -> Vec<String> {
+        let names = RefCell::new(Vec::new());
+        self.h.query(|n| {
+            if n.semantics.role == Role::Tab {
+                names.borrow_mut().push(n.semantics.name.clone());
+            }
+            false
+        });
+        names.into_inner()
+    }
+}
+
+#[test]
+fn two_clicks_rename_a_tab_and_its_menu_closes_the_others() {
+    let mut a = app();
+    let at = a.tab_at("Terminal");
+    a.press(MouseButton::Left, at.x, at.y);
+    a.press(MouseButton::Left, at.x, at.y);
+    a.h.get_by_role(Role::TextInput, "").set_value("logs");
+    a.key(Key::Enter, Mods::NONE);
+    assert!(a.h.has_text("logs \u{B7} 1 space"));
+
+    a.key(Key::T, Mods::CTRL);
+    a.key(Key::T, Mods::CTRL);
+    assert_eq!(a.tabs(), 3);
+    let at = a.tab_at("logs");
+    a.press(MouseButton::Right, at.x, at.y);
+    a.h.get_by_role(Role::MenuItem, "Close others").click();
+    a.h.settle();
+    assert_eq!(a.names(), ["logs"]);
+}
+
+#[test]
+fn a_tab_dragged_onto_another_takes_its_place() {
+    let mut a = app();
+    a.key(Key::T, Mods::CTRL);
+    a.made.borrow()[1].feeder().feed(b"\x1b]0;second\x07", std::time::Instant::now());
+    a.h.settle();
+    assert_eq!(a.names(), ["Terminal", "second"]);
+    let (from, to) = (a.tab_at("second"), a.tab_at("Terminal"));
+    a.h.tree.pointer(PointerInput::Down, MouseButton::Left, from, Mods::NONE, a.h.now());
+    for step in 1..=4 {
+        let y = from.y + (to.y - from.y) * step as f32 / 4.0;
+        a.h.tree.pointer(PointerInput::Move, MouseButton::Left, Point::new(from.x, y), Mods::NONE, a.h.now());
+    }
+    a.h.tree.pointer(PointerInput::Up, MouseButton::Left, to, Mods::NONE, a.h.now());
+    a.h.settle();
+    assert_eq!(a.names(), ["second", "Terminal"]);
+}
+
+#[test]
+fn the_tabs_go_into_a_strip_and_back_into_the_rail() {
+    let mut a = app();
+    a.h.get_by_role(Role::Button, "Horizontal tabs").click();
+    a.h.settle();
+    assert!(a.h.query(|n| n.semantics.name == "Horizontal tabs").is_empty());
+    assert_eq!(a.tabs(), 1);
+    a.typed("still");
+    a.h.get_by_role(Role::Button, "Vertical").click();
+    a.h.settle();
+    assert_eq!(a.made.borrow().len(), 1, "the shell lives on");
+    assert_eq!(a.screen(0), "still");
+}

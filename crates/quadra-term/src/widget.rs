@@ -145,6 +145,7 @@ impl Widget for TerminalWidget {
     fn semantics(&self, says: &mut Semantics) {
         if says.role == Role::None {
             says.role = Role::TextInput;
+            says.name = "Terminal".into();
         }
         says.value = Some(self.session.screen_text().join("\n").trim_end().to_string());
     }

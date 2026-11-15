@@ -1,23 +1,31 @@
 //! The rail (specs/19, "Rail"): 248 px of tabs on the panel colour, a heading with the
-//! count, a row a tab, and "New terminal". A click shows a tab, the middle button closes it.
+//! count, a row a tab, and "New terminal". A click shows a tab, the middle button closes it,
+//! two clicks rename it, the right button opens its menu, and rows drag to reorder.
 
 use quadra::{
-    Align, Display, MouseButton, PointerKind, Role, Signal, View, by_text, column, div, each, row, text,
+    Align, AnyView, Display, MouseButton, PointerKind, Role, Signal, View, by_text, column, div, dynamic,
+    each, row, signal, text,
 };
-use quadra_design::{fonts, icon, icons, token};
+use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, input, token};
 
 use crate::model::{Model, Tab};
 
+/// What a tab's row carries while it is dragged.
+pub(crate) struct Dragged(pub u64);
+
 pub(crate) fn rail(model: &Model) -> impl View + use<> {
-    let tabs = model.tabs();
+    let (tabs, vertical) = (model.tabs(), model.vertical());
     let heading = row()
         .align_items(Align::Center)
-        .padding_x(14.0)
+        .gap(6.0)
+        .padding_left(14.0)
+        .padding_right(6.0)
         .height(by_text(36.0))
         .text_size(11.0)
         .text_color(token::TEXT_3)
-        .child(div().grow(1.0).child(text("TABS")))
-        .child(div().font_family(fonts::MONO).child(text(move || tabs.with(Vec::len).to_string())));
+        .child(div().child(text("TABS")))
+        .child(div().grow(1.0).font_family(fonts::MONO).child(text(move || tabs.with(Vec::len).to_string())))
+        .child(icon_button(icons::LAYOUT_GRID, "Horizontal tabs").on_click(move || vertical.set(false)));
     let shown = model.clone();
     let rows =
         each(move || tabs.get(), |tab| tab.id, move |tab: Signal<Tab>| tab_row(&shown, tab.get_untracked()));
@@ -51,6 +59,44 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .child(div().padding_x(8.0).padding_y(4.0).child(new))
 }
 
+/// The menu of a tab: Rename, Duplicate, Close, Close others.
+pub(crate) fn tab_menu(model: &Model, id: u64) -> Vec<MenuItem> {
+    let (renames, copies, closes, keeps) = (model.renaming(), model.clone(), model.clone(), model.clone());
+    vec![
+        MenuItem::new("Rename").on_select(move || renames.set(Some(id))),
+        MenuItem::new("Duplicate").on_select(move || copies.duplicate(id)),
+        MenuItem::separator(),
+        MenuItem::new("Close").on_select(move || _ = closes.close_tab(id)),
+        MenuItem::new("Close others").on_select(move || keeps.close_others(id)),
+    ]
+}
+
+/// The title of a tab, or the field that renames it: Enter keeps the name (an empty one
+/// gives the program's title back), Escape leaves it as it was.
+pub(crate) fn title(model: &Model, tab: Tab) -> impl View + use<> {
+    let renaming = model.renaming();
+    dynamic(move || {
+        if renaming.get() != Some(tab.id) {
+            return AnyView::new(text(move || tab.title()).ellipsis());
+        }
+        let value = signal(tab.name.get_untracked().unwrap_or_else(|| tab.title()));
+        let field = input(value).on_submit(move |name: &str| {
+            let name = name.trim();
+            tab.name.set((!name.is_empty()).then(|| name.to_string()));
+            renaming.set(None);
+        });
+        let field = div()
+            .on_key_down(move |e| {
+                if e.key == quadra::Key::Escape {
+                    renaming.set(None);
+                }
+            })
+            .on_mount(|tree, id| _ = tree.focus_first(id))
+            .child(field);
+        AnyView::new(field)
+    })
+}
+
 /// A tab's row: the accent bar and fill while it shows, its icon, its title and a line on
 /// what it holds.
 fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
@@ -60,7 +106,7 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
         let n = tab.spaces.with(Vec::len);
         format!("{n} local \u{B7} {n} {}", if n == 1 { "space" } else { "spaces" })
     };
-    let (shows, closes) = (model.clone(), model.clone());
+    let (shows, closes, moves, menu) = (model.clone(), model.clone(), model.clone(), model.clone());
     let bar = div()
         .absolute()
         .left(0.0)
@@ -72,7 +118,7 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
     let words = column()
         .grow(1.0)
         .min_width(0.0)
-        .child(div().text_color(token::TEXT).child(text(move || tab.title()).ellipsis()))
+        .child(div().text_color(token::TEXT).child(title(model, tab)))
         .child(
             div()
                 .text_size(11.0)
@@ -80,7 +126,7 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
                 .text_color(token::TEXT_2)
                 .child(text(spaces).ellipsis()),
         );
-    row()
+    let face = row()
         .align_items(Align::Center)
         .gap(10.0)
         .padding_x(10.0)
@@ -88,16 +134,28 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
         .radius(6.0)
         .bg(move || if on() { token::RAISED } else { token::PANEL })
         .hover(|s| s.bg(token::PANEL_HOVER))
+        .drop_target(|s| s.bg(token::ACCENT_TINT))
         .role(Role::Tab)
         .label(move || tab.title())
         .selected(on)
-        .on_click(move |_| shows.active().set(tab.id))
+        .on_click(move |e| {
+            shows.active().set(tab.id);
+            if e.clicks == 2 {
+                shows.renaming().set(Some(tab.id));
+            }
+        })
         .on_pointer(PointerKind::Click, move |e| {
             if e.button == MouseButton::Middle {
                 closes.close_tab(tab.id);
             }
         })
+        .draggable(move || Dragged(tab.id))
+        .on_drop::<Dragged>(move |dragged, _| {
+            let to = moves.tabs().with_untracked(|tabs| tabs.iter().position(|it| it.id == tab.id));
+            moves.move_tab(dragged.0, to.unwrap_or(usize::MAX));
+        })
         .child(bar)
         .child(icon(icons::TERMINAL).size(14.0).color(token::TEXT_2))
-        .child(words)
+        .child(words);
+    context_menu(face, move || tab_menu(&menu, tab.id))
 }

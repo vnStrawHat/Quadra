@@ -80,6 +80,10 @@ struct Inner {
     next: Cell<u64>,
     tabs: Signal<Vec<Tab>>,
     active: Signal<u64>,
+    /// The tab whose name is being edited in place.
+    renaming: Signal<Option<u64>>,
+    /// Tabs in the rail, or in a strip under the title bar.
+    vertical: Signal<bool>,
 }
 
 impl Model {
@@ -91,6 +95,8 @@ impl Model {
             next: Cell::new(1),
             tabs: signal(Vec::new()),
             active: signal(0),
+            renaming: signal(None),
+            vertical: signal(true),
         };
         let model = Model(Rc::new(inner));
         model.new_tab();
@@ -104,6 +110,14 @@ impl Model {
     /// The id of the tab that shows.
     pub fn active(&self) -> Signal<u64> {
         self.0.active
+    }
+
+    pub fn renaming(&self) -> Signal<Option<u64>> {
+        self.0.renaming
+    }
+
+    pub fn vertical(&self) -> Signal<bool> {
+        self.0.vertical
     }
 
     pub fn active_tab(&self) -> Option<Tab> {
@@ -126,6 +140,38 @@ impl Model {
 
     /// A tab with a new local shell, after the others, shown.
     pub fn new_tab(&self) {
+        self.insert_tab(usize::MAX);
+    }
+
+    /// A tab with a new local shell right after a tab, shown.
+    pub fn duplicate(&self, id: u64) {
+        self.insert_tab(self.index_of(id).map_or(usize::MAX, |at| at + 1));
+    }
+
+    fn index_of(&self, id: u64) -> Option<usize> {
+        self.0.tabs.with_untracked(|tabs| tabs.iter().position(|tab| tab.id == id))
+    }
+
+    /// Moves a tab to `to` among the tabs (counted before it moves).
+    pub fn move_tab(&self, id: u64, to: usize) {
+        let Some(from) = self.index_of(id) else { return };
+        self.0.tabs.update(|tabs| {
+            let tab = tabs.remove(from);
+            tabs.insert(to.min(tabs.len()), tab);
+        });
+    }
+
+    /// Closes every tab but one, which shows.
+    pub fn close_others(&self, id: u64) {
+        let others: Vec<u64> =
+            self.0.tabs.get_untracked().iter().map(|tab| tab.id).filter(|&it| it != id).collect();
+        self.0.active.set(id);
+        for other in others {
+            self.close_tab(other);
+        }
+    }
+
+    fn insert_tab(&self, at: usize) {
         let space = self.space();
         let tab = self.0.owner.run(|| Tab {
             id: self.id(),
@@ -133,7 +179,7 @@ impl Model {
             focus: signal(0),
             name: signal(None),
         });
-        self.0.tabs.update(|tabs| tabs.push(tab));
+        self.0.tabs.update(|tabs| tabs.insert(at.min(tabs.len()), tab));
         self.0.active.set(tab.id);
     }
 

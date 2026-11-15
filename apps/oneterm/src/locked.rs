@@ -2,8 +2,8 @@
 //! window counts as being used, and the Security & lock page of the settings.
 
 use quadra::{
-    Align, Display, Div, Justify, MountCx, NodeId, PointerKind, Signal, View, column, div, effect, signal,
-    text,
+    Align, Display, Div, Justify, MountCx, NodeId, PointerKind, Signal, View, column, div, effect, row,
+    signal, text,
 };
 use quadra_design::{SettingsGroup, Variant, button, icon, icons, input, number_input, token};
 
@@ -48,37 +48,70 @@ fn card(model: &Model) -> Div {
         0 => "Locked \u{B7} sessions are still running".to_string(),
         n => format!("Locked after {n} min idle \u{B7} sessions are still running"),
     };
-    let counts = move || {
-        let running = tabs.with(|tabs| {
+    let running = move || {
+        let n = tabs.with(|tabs| {
             tabs.iter()
                 .map(|tab| {
                     tab.spaces.with(|s| s.iter().filter(|it| it.session.exited().get().is_none()).count())
                 })
                 .sum::<usize>()
         });
-        format!("{running} sessions connected \u{B7} {} notices", unread.get())
+        format!("{n} sessions connected")
     };
     let field = input(lock.typed)
         .password()
         .placeholder("Master password")
         .test_id("unlock")
-        .width(296.0)
+        .width(322.0)
         .on_submit(move |_| lock.unlock());
-    let card = column()
-        .width(360.0)
-        .padding(32.0)
+    let mark = row()
+        .size(48.0, 48.0)
+        .radius(12.0)
+        .align_items(Align::Center)
+        .justify(Justify::Center)
+        .bg(token::RAISED)
+        .border(1.0)
+        .border_color(token::LINE_STRONG)
+        .child(icon(icons::LOCK).size(22.0).color(token::ACCENT));
+    let head = column()
         .gap(12.0)
         .align_items(Align::Center)
-        .radius(10.0)
-        .bg(token::RAISED)
+        .child(mark)
+        .child(div().font_weight(600).text_size(17.0).child(text("1Term is locked")))
+        .child(div().text_size(12.0).text_color(token::TEXT_2).child(text(why)));
+    // What runs behind, and what came while locked.
+    let foot = row()
+        .justify(Justify::Between)
+        .text_size(11.0)
+        .text_color(token::TEXT_2)
+        .label(move || format!("{} \u{B7} {} notices", running(), unread.get()))
+        .role(quadra::Role::Group)
+        .child(
+            row()
+                .align_items(Align::Center)
+                .gap(6.0)
+                .child(div().size(6.0, 6.0).radius(3.0).bg(token::OK))
+                .child(text(running)),
+        )
+        .child(
+            row()
+                .align_items(Align::Center)
+                .gap(6.0)
+                .child(icon(icons::BELL).size(12.0))
+                .child(text(move || format!("{} new while locked", unread.get()))),
+        );
+    let card = column()
+        .width(380.0)
+        .padding(28.0)
+        .gap(16.0)
+        .radius(12.0)
+        .bg(token::PANEL)
         .border(1.0)
         .border_color(token::LINE_STRONG)
         .elevation(2)
         .focus_scope()
-        .child(icon(icons::LOCK).size(28.0).color(token::ACCENT))
-        .child(div().font_weight(600).text_size(18.0).child(text("1Term is locked")))
-        .child(div().text_color(token::TEXT_2).child(text(why)))
-        .child(field)
+        .child(head)
+        .child(quadra_design::field("Password", field))
         .child(
             div()
                 .text_color(token::ERROR)
@@ -88,10 +121,12 @@ fn card(model: &Model) -> Div {
         .child(
             button("Unlock")
                 .variant(Variant::Primary)
+                .full()
                 .disabled(move || lock.wait.get() > 0)
                 .on_click(move || lock.unlock()),
         )
-        .child(div().text_size(12.0).text_color(token::TEXT_3).child(text(counts)));
+        .child(div().height(1.0).bg(token::LINE))
+        .child(foot);
     column()
         .grow(1.0)
         .align_items(Align::Center)

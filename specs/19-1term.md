@@ -144,9 +144,10 @@ ignore; OSC 9: toast 6 s / until dismissed / silent.
 Only with a master password (Security & lock: set, change, remove; kept as a salted PBKDF2
 hash from the OS's crypto, never the password). Locks after the idle time (10 min default, 1-480)
 or at once with `Ctrl+Shift+L` and the title bar's button. Locked: the workspace blurred and
-dimmed behind, the title bar usable and saying "Locked", a card in the middle ("1Term is
-locked", "Locked after N min idle · sessions are still running", the password field, Unlock,
-how many sessions are connected and how many notices came), a status bar that shows only
+dimmed behind, the title bar usable and saying "Locked", a card in the middle (380 wide on the
+panel colour, radius 12: the lock in a box of 48 px, "1Term is locked", "Locked after N min idle ·
+sessions are still running", the field labelled Password, Unlock across the card, a rule, then
+`n sessions connected` with a green dot and `n new while locked`), a status bar that shows only
 "Locked · details hidden", the progress meter and the clock. Five wrong tries start a back-off
 (2, 4, 8, 16, 30 s). Sessions keep running.
 

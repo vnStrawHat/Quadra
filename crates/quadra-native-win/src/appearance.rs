@@ -1,7 +1,12 @@
 //! The system's appearance (specs/10, "Win32 behaviour"): read from the user's settings.
 
 use quadra_platform::Appearance;
+use quadra_platform::SystemColors;
 use quadra_prim::Color;
+use windows::Win32::Graphics::Gdi::{
+    COLOR_BTNFACE, COLOR_BTNTEXT, COLOR_GRAYTEXT, COLOR_HIGHLIGHT, COLOR_HIGHLIGHTTEXT, COLOR_HOTLIGHT,
+    COLOR_WINDOW, COLOR_WINDOWTEXT, GetSysColor, SYS_COLOR_INDEX,
+};
 use windows::Win32::System::Registry::{HKEY_CURRENT_USER, RRF_RT_REG_DWORD, RegGetValueW};
 use windows::Win32::UI::Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW};
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -45,5 +50,24 @@ pub(crate) fn appearance() -> Appearance {
         )
     };
     let high_contrast = read.is_ok() && contrast.dwFlags.contains(HCF_HIGHCONTRASTON);
-    Appearance { dark, high_contrast, accent }
+    Appearance { dark, high_contrast, accent, colors: Some(system_colors()) }
+}
+
+/// The colours of the system's controls; a colour of it is 0x00BBGGRR.
+fn system_colors() -> SystemColors {
+    let get = |index: SYS_COLOR_INDEX| {
+        // SAFETY: a plain call with one of the indices the system knows.
+        let bgr = unsafe { GetSysColor(index) };
+        Color::rgb(((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF))
+    };
+    SystemColors {
+        window: get(COLOR_WINDOW),
+        text: get(COLOR_WINDOWTEXT),
+        highlight: get(COLOR_HIGHLIGHT),
+        highlight_text: get(COLOR_HIGHLIGHTTEXT),
+        link: get(COLOR_HOTLIGHT),
+        disabled: get(COLOR_GRAYTEXT),
+        button: get(COLOR_BTNFACE),
+        button_text: get(COLOR_BTNTEXT),
+    }
 }

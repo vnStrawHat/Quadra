@@ -12,6 +12,10 @@ use serde_json::{Map, Value};
 
 use crate::token::{self, NAMES};
 
+mod system;
+
+pub use system::{high_contrast, system_theme};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
     Dark,

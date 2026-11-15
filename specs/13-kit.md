@@ -95,7 +95,17 @@ div().bg(token::ACCENT.alpha(0.12))
 Themes stay JSON files (behaviour/15) with the same structure: palette, type scale, spacing,
 radii, component styles. They are loaded and validated at start-up; an unknown key or a
 malformed value is reported with its path. The system appearance (dark, accent, high contrast,
-text scale) arrives from the platform (10) and can select or adjust the theme.
+text scale) arrives from the platform (10) and can select or adjust the theme. As built:
+`Appearance::colors` are the colours of the system's controls (`SystemColors`: the window
+and its text, the highlight and its text, links, disabled text, buttons; `GetSysColor` on
+Windows); `high_contrast(colors)` is a theme of them (planes the window's, text and lines
+its text, what is chosen, focused or the accent the highlight, translucent where it tints,
+the quiet text as plain as the rest; the terminal and the series of charts keep theirs),
+and `system_theme(appearance)` is it while high contrast is on, the dark or the light theme
+otherwise. `install_system` follows it. The system's accent is not taken by default (the
+design language has its own); `KitTheme::with_accent(color)` gives a theme another. The
+gallery's pictures of high contrast: `tools/shots.sh contrast` (black windows, white text, a
+light purple highlight).
 
 As built: `quadra_kit::token` names the roles of the palette (`token::CANVAS`, `ACCENT`, ..),
 each a `Token` numbered in the order of the table, and `token::NAMES` their names in a file.

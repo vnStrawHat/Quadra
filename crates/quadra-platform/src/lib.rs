@@ -22,7 +22,7 @@ pub use image::{
 };
 pub use keys::Key;
 pub use platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
-pub use system::{Appearance, Dropped, DroppedFiles, DroppedText};
+pub use system::{Appearance, Dropped, DroppedFiles, DroppedText, SystemColors};
 pub use window::{
     Cursor, HitRegion, Placement, PlatformWindow, WindowHandle, WindowId, WindowOptions, fit_size,
 };

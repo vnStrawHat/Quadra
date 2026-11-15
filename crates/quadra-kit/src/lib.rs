@@ -86,7 +86,7 @@ pub use split::{Split, split};
 pub use status::{Status, status_label, status_mark};
 pub use table::{CellKind, Column, Table, age_text, table};
 pub use tabs::{Tabs, tabs};
-pub use theme::{KitTheme, Mode, ThemeError, dark, light, theme_from_json};
+pub use theme::{KitTheme, Mode, ThemeError, dark, high_contrast, light, system_theme, theme_from_json};
 pub use time::{TimeInput, TimeOfDay, time_input};
 pub use titlebar::{Titlebar, titlebar};
 pub use toggle::{Toggle, checkbox, switch};

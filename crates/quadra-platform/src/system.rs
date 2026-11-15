@@ -13,6 +13,27 @@ pub struct Appearance {
     pub high_contrast: bool,
     /// The accent colour the user chose, if the system has one.
     pub accent: Option<Color>,
+    /// The colours of the system's own controls, if it says them: under high contrast,
+    /// those of the contrast the user chose.
+    pub colors: Option<SystemColors>,
+}
+
+/// The colours a system paints its own controls with.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct SystemColors {
+    /// The background of a window, and its text.
+    pub window: Color,
+    pub text: Color,
+    /// What is selected, and its text.
+    pub highlight: Color,
+    pub highlight_text: Color,
+    /// A link.
+    pub link: Color,
+    /// Text that cannot be used.
+    pub disabled: Color,
+    /// The face of a button, and its text.
+    pub button: Color,
+    pub button_text: Color,
 }
 
 /// What is dragged over a window from another program: files when there are any, otherwise

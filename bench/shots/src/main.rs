@@ -20,7 +20,7 @@ use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{
     HeadlessPlatform, Key, Mods, MouseButton, Platform, PlatformEvent, PointerKind, WindowId, WindowOptions,
 };
-use quadra_prim::{Point, Size};
+use quadra_prim::{Color, Point, Size};
 
 type Shots = App<D3d11Renderer>;
 
@@ -130,7 +130,8 @@ fn save(app: &mut Shots, window: WindowId, file: PathBuf) -> Result<(), Box<dyn 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = std::env::args().skip(1);
     let out = PathBuf::from(args.next().unwrap_or_else(|| ".tmp/shots".into()));
-    let is_dark = args.next().is_none_or(|theme| theme != "light");
+    let theme = args.next().unwrap_or_default();
+    let is_dark = theme != "light";
     let only: Vec<String> = args.collect();
     std::fs::create_dir_all(&out)?;
 
@@ -138,7 +139,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     platform.set_image_decoder(std::sync::Arc::new(quadra_native_win::WicImages));
     let text = DirectWrite::new().map_err(AppError::Text)?;
     let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
-    let app = quadra_kit::install(app, &if is_dark { dark() } else { light() })?;
+    // `contrast`: a high contrast of black windows and white text (the system's "Night sky").
+    let night_sky = quadra_platform::SystemColors {
+        window: Color::rgb(0x000000),
+        text: Color::rgb(0xFFFFFF),
+        highlight: Color::rgb(0xD6B4FD),
+        highlight_text: Color::rgb(0x2B2B2B),
+        link: Color::rgb(0x8080FF),
+        disabled: Color::rgb(0xA6A6A6),
+        button: Color::rgb(0x000000),
+        button_text: Color::rgb(0xFFFFFF),
+    };
+    let kit = match theme.as_str() {
+        "light" => light(),
+        "contrast" => quadra_kit::high_contrast(&night_sky),
+        _ => dark(),
+    };
+    let app = quadra_kit::install(app, &kit)?;
     let mut app = app.keymap(quadra_gallery::keymap());
     let shown: Rc<Cell<Option<Gallery>>> = Rc::default();
     let tell = shown.clone();

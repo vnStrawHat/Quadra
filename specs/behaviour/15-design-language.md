@@ -423,8 +423,8 @@ theme files bundled in the kit (`quadra/kit/themes/*.json`), and any theme loads
 - `Theme.to_json()` writes a theme with every color, a starting point for a new one.
 - Colors a theme leaves unset (alpha 0) get `finish()`'s defaults.
 
-`high_contrast()` follows the OS high-contrast setting: black planes, white text and
-borders, yellow focus. Apps may override sizes and faces with struct update syntax.
+`high_contrast(colors)` follows the OS high-contrast setting: the colours the user chose for
+it (planes, text and borders, the highlight for focus and what is chosen; specs/13). Apps may override sizes and faces with struct update syntax.
 
 ## Component notes for the developer-tool kit (specs/16)
 

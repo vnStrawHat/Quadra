@@ -51,3 +51,47 @@ fn installed_for_the_system_the_theme_follows_its_appearance() {
     platform.step(&mut app);
     assert_eq!(canvas(&app), light().color(token::CANVAS));
 }
+
+#[test]
+fn under_high_contrast_the_roles_take_the_systems_colours() {
+    use quadra_kit::{Mode, high_contrast, system_theme};
+    use quadra_platform::{Appearance, SystemColors};
+    use quadra_prim::Color;
+    // Night sky: black windows, white text, a light purple highlight.
+    let colors = SystemColors {
+        window: Color::rgb(0x000000),
+        text: Color::rgb(0xFFFFFF),
+        highlight: Color::rgb(0xD6B4FD),
+        highlight_text: Color::rgb(0x2B2B2B),
+        link: Color::rgb(0x8080FF),
+        disabled: Color::rgb(0xA6A6A6),
+        button: Color::rgb(0x000000),
+        button_text: Color::rgb(0xFFFFFF),
+    };
+    let theme = high_contrast(&colors);
+    assert_eq!(theme.mode, Mode::HighContrast);
+    for (role, color) in [
+        (token::CANVAS, colors.window),
+        (token::TEXT, colors.text),
+        (token::TEXT_3, colors.text),
+        (token::LINE, colors.text),
+        (token::ACCENT, colors.highlight),
+        (token::TEXT_ON_ACCENT, colors.highlight_text),
+        (token::BORDER_FOCUSED, colors.highlight),
+        (token::TEXT_DISABLED, colors.disabled),
+        (token::SYNTAX_KEYWORD, colors.text),
+    ] {
+        assert_eq!(theme.color(role), color);
+    }
+    // The system's theme is it while high contrast is on, and the dark one or the light one
+    // otherwise; the system's accent is taken only when asked for.
+    let on = Appearance { high_contrast: true, colors: Some(colors), ..Appearance::default() };
+    assert_eq!(system_theme(&on), theme);
+    let dark_on = Appearance { dark: true, accent: Some(Color::rgb(0x00FF00)), ..on };
+    assert_eq!(system_theme(&Appearance { high_contrast: false, ..dark_on }), dark());
+    let green = dark().with_accent(Color::rgb(0x00FF00));
+    assert_eq!(
+        (green.color(token::ACCENT), green.color(token::BORDER_FOCUSED)),
+        (Color::rgb(0x00FF00), Color::rgb(0x00FF00))
+    );
+}

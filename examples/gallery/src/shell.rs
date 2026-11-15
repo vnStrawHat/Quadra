@@ -53,10 +53,17 @@ impl Gallery {
 
     pub fn view(self) -> impl View {
         let Gallery { page, dark, notices, palette: asking } = self;
-        // The theme of the window follows `dark`.
+        // The theme of the window follows `dark` once it is turned: until then it is the one
+        // the app was given (the pictures of high contrast keep theirs).
         let theme = use_context::<Signal<Rc<Theme>>>().expect("an app gives its views the theme");
         let name = move || if dark.get() { "One Dark Pro" } else { "One Light" };
-        quadra::effect(move || theme.set(Rc::new(if dark.get() { dark_theme() } else { light_theme() })));
+        let first = std::cell::Cell::new(true);
+        quadra::effect(move || {
+            let theme_of = if dark.get() { dark_theme() } else { light_theme() };
+            if !first.replace(false) {
+                theme.set(Rc::new(theme_of));
+            }
+        });
         let hidden = signal(false);
 
         let toggle = dynamic(move || {

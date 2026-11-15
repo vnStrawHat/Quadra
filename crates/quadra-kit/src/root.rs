@@ -5,7 +5,7 @@ use quadra_app::{App, AppError, Feature};
 use quadra_render::Renderer;
 use quadra_ui::{Div, column};
 
-use crate::theme::{KitTheme, dark, light};
+use crate::theme::{KitTheme, system_theme};
 use crate::{fonts, size, token};
 
 /// Gives an app the kit's fonts, its key bindings and a theme. A view changes the theme later by writing the
@@ -19,14 +19,13 @@ pub fn install<R: Renderer>(mut app: App<R>, theme: &KitTheme) -> Result<App<R>,
     Ok(app.keymap(crate::keymap()))
 }
 
-/// As [`install`], with the dark theme or the light one as the system is set, and the other
-/// when the user changes it.
-// ponytail: the accent and high contrast of the system are not taken; a theme of them when
-// an app asks.
+/// As [`install`], with the theme the system asks for (`system_theme`: its high contrast
+/// when that is on, otherwise the dark theme or the light one), and another when the user
+/// changes it.
 pub fn install_system<R: Renderer>(app: App<R>) -> Result<App<R>, AppError> {
-    let theme = if app.appearance().dark { dark() } else { light() };
+    let theme = system_theme(&app.appearance());
     let app = install(app, &theme)?;
-    Ok(app.theme_by(|appearance| if appearance.dark { dark() } else { light() }.theme()))
+    Ok(app.theme_by(|appearance| system_theme(appearance).theme()))
 }
 
 /// The box at the root of a window: the canvas behind everything, and the text of the UI

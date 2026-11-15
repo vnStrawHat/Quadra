@@ -1,6 +1,9 @@
 //! The tray (specs/16, "Tray and notifications"): an icon in the notification area with a
 //! hidden window of its own, whose clicks and menu come back to the app through an inbox,
-//! and notifications from it. A manual check: no test adds a real icon.
+//! and notifications from it. When the taskbar starts again (Explorer restarted) the icon
+//! is added again. A manual check: no test adds a real icon.
+
+use std::cell::Cell;
 
 use quadra_async::Sender;
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
@@ -13,9 +16,9 @@ use windows::Win32::UI::Shell::{
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreateIconIndirect, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyIcon,
     DestroyMenu, DestroyWindow, GWLP_USERDATA, GetCursorPos, GetWindowLongPtrW, HICON, HMENU, ICONINFO,
-    IDI_APPLICATION, LoadIconW, MF_STRING, PostMessageW, RegisterClassExW, SetForegroundWindow,
-    SetWindowLongPtrW, TPM_RETURNCMD, TPM_RIGHTBUTTON, TrackPopupMenu, WINDOW_EX_STYLE, WM_APP,
-    WM_CONTEXTMENU, WM_LBUTTONDBLCLK, WM_NULL, WNDCLASSEXW, WS_POPUP,
+    IDI_APPLICATION, LoadIconW, MF_STRING, PostMessageW, RegisterClassExW, RegisterWindowMessageW,
+    SetForegroundWindow, SetWindowLongPtrW, TPM_RETURNCMD, TPM_RIGHTBUTTON, TrackPopupMenu, WINDOW_EX_STYLE,
+    WM_APP, WM_CONTEXTMENU, WM_LBUTTONDBLCLK, WM_NULL, WNDCLASSEXW, WS_POPUP,
 };
 use windows::core::{HSTRING, w};
 
@@ -28,6 +31,24 @@ const NIN_KEYSELECT: u32 = NIN_SELECT | 1;
 struct State {
     events: Sender<TrayEvent>,
     menu: HMENU,
+    /// The icon as the shell was last told it: what is added again.
+    data: Cell<NOTIFYICONDATAW>,
+    /// The message the taskbar sends every window when it starts.
+    taskbar_created: u32,
+}
+
+/// Puts the icon in the notification area, with the version of its messages.
+fn show(data: &NOTIFYICONDATAW) -> bool {
+    // SAFETY: the structure is complete, and its window and icon are ours.
+    unsafe {
+        if !Shell_NotifyIconW(NIM_ADD, data).as_bool() {
+            return false;
+        }
+        let mut version = *data;
+        version.Anonymous.uVersion = NOTIFYICON_VERSION_4;
+        let _ = Shell_NotifyIconW(NIM_SETVERSION, &version);
+        true
+    }
 }
 
 /// Copies `text` into a fixed field of the structure, cut to fit with its terminating zero.
@@ -41,10 +62,17 @@ unsafe extern "system" fn tray_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam
     // SAFETY: the window's data is the `State` its `WinTray` owns, cleared before it is freed.
     unsafe {
         let state = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *const State;
-        if msg != WM_TRAY || state.is_null() {
+        if state.is_null() {
             return DefWindowProcW(hwnd, msg, wparam, lparam);
         }
         let state = &*state;
+        if msg == state.taskbar_created && msg != 0 {
+            show(&state.data.get());
+            return LRESULT(0);
+        }
+        if msg != WM_TRAY {
+            return DefWindowProcW(hwnd, msg, wparam, lparam);
+        }
         match (lparam.0 & 0xFFFF) as u32 {
             NIN_SELECT | NIN_KEYSELECT => drop(state.events.push(TrayEvent::Click)),
             WM_LBUTTONDBLCLK => drop(state.events.push(TrayEvent::DoubleClick)),
@@ -84,7 +112,6 @@ fn icon_of(image: &TrayImage) -> Option<HICON> {
 
 /// An icon in the notification area. Dropping it takes it away.
 pub struct WinTray {
-    data: NOTIFYICONDATAW,
     state: *mut State,
     owned_icon: bool,
 }
@@ -129,8 +156,6 @@ impl WinTray {
             for (i, item) in menu.iter().enumerate() {
                 let _ = AppendMenuW(items, MF_STRING, i + 1, &HSTRING::from(*item));
             }
-            let state = Box::into_raw(Box::new(State { events, menu: items }));
-            SetWindowLongPtrW(hwnd, GWLP_USERDATA, state as isize);
             let made = image.and_then(icon_of);
             let icon = made.or_else(|| LoadIconW(None, IDI_APPLICATION).ok())?;
             let mut data = NOTIFYICONDATAW {
@@ -143,19 +168,23 @@ impl WinTray {
                 ..Default::default()
             };
             put(&mut data.szTip, tip);
-            let tray = WinTray { data, state, owned_icon: made.is_some() };
-            if !Shell_NotifyIconW(NIM_ADD, &tray.data).as_bool() {
-                return None; // dropped: the window and the state go with it
-            }
-            let mut version = tray.data;
-            version.Anonymous.uVersion = NOTIFYICON_VERSION_4;
-            let _ = Shell_NotifyIconW(NIM_SETVERSION, &version);
-            Some(tray)
+            let taskbar_created = RegisterWindowMessageW(w!("TaskbarCreated"));
+            let state = State { events, menu: items, data: Cell::new(data), taskbar_created };
+            let state = Box::into_raw(Box::new(state));
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, state as isize);
+            let tray = WinTray { state, owned_icon: made.is_some() };
+            // Dropped when the shell refuses it: the window and the state go with it.
+            show(&data).then_some(tray)
         }
     }
 
+    fn data(&self) -> NOTIFYICONDATAW {
+        // SAFETY: the state lives as long as the tray.
+        unsafe { (*self.state).data.get() }
+    }
+
     pub(crate) fn notify(&self, title: &str, text: &str) {
-        let mut data = self.data;
+        let mut data = self.data();
         data.uFlags = NIF_INFO;
         put(&mut data.szInfoTitle, title);
         put(&mut data.szInfo, text);
@@ -165,25 +194,30 @@ impl WinTray {
     }
 
     pub(crate) fn set_tooltip(&mut self, tip: &str) {
-        put(&mut self.data.szTip, tip);
-        self.data.uFlags = NIF_TIP | NIF_SHOWTIP;
-        // SAFETY: as in `notify`.
-        let _ = unsafe { Shell_NotifyIconW(NIM_MODIFY, &self.data) };
+        let mut data = self.data();
+        put(&mut data.szTip, tip);
+        // SAFETY: as in `notify`; the state lives as long as the tray.
+        unsafe {
+            let tip = NOTIFYICONDATAW { uFlags: NIF_TIP | NIF_SHOWTIP, ..data };
+            let _ = Shell_NotifyIconW(NIM_MODIFY, &tip);
+            (*self.state).data.set(data); // added again with its flags and the new tip
+        }
     }
 }
 
 impl Drop for WinTray {
     fn drop(&mut self) {
+        let data = self.data();
         // SAFETY: the icon, the window and the state are ours; the window's pointer to the
         // state is cleared before the state is freed.
         unsafe {
-            let _ = Shell_NotifyIconW(NIM_DELETE, &self.data);
-            SetWindowLongPtrW(self.data.hWnd, GWLP_USERDATA, 0);
-            let _ = DestroyWindow(self.data.hWnd);
+            let _ = Shell_NotifyIconW(NIM_DELETE, &data);
+            SetWindowLongPtrW(data.hWnd, GWLP_USERDATA, 0);
+            let _ = DestroyWindow(data.hWnd);
             let state = Box::from_raw(self.state);
             let _ = DestroyMenu(state.menu);
             if self.owned_icon {
-                let _ = DestroyIcon(self.data.hIcon);
+                let _ = DestroyIcon(data.hIcon);
             }
         }
     }

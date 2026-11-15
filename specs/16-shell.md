@@ -46,7 +46,9 @@ opens it: a link from content that is not the user's goes through
 app's picture, `TrayImage` in RGBA, or the system's) and gives a `TrayIcon`, which takes it
 away when dropped; its clicks and the items of its menu (`TrayEvent::Click`,
 `DoubleClick`, `Item(i)`) come back to the app through the `Sender` of an inbox (11): the
-icon has a hidden window of its own, and no `PlatformEvent` is added for it.
+icon has a hidden window of its own, and no `PlatformEvent` is added for it. When the
+taskbar starts again (Explorer restarted, the message `TaskbarCreated`) the icon is added
+again, with its tooltip as it is.
 `icon.notify(title, text)` shows a notification from the icon. An app of the tray says
 `quit_on_last_window(false)` (15). `tray()` finds the app's in a view's context; the fake
 records what it is asked and `FakeShell::click_tray` is the user.

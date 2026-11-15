@@ -141,8 +141,8 @@ pub trait Tray {
     ) -> Option<Box<dyn TrayIcon>>;
 }
 
-/// An icon in the tray. Dropping it takes it away.
-// ponytail: an icon is not added again when the taskbar restarts (TaskbarCreated).
+/// An icon in the tray. Dropping it takes it away; it is added again when the taskbar starts
+/// again.
 pub trait TrayIcon {
     /// A notification from the icon.
     fn notify(&self, title: &str, text: &str);

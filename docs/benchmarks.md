@@ -7,6 +7,26 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-15 — what a number costs to lay out (on 7c16cc6 plus this commit)
+
+`tools/bench.sh grid document`, headless, microseconds a frame, three runs each:
+
+| Scene | Pass | Before | Now | What changed |
+|---|---|---|---|---|
+| grid | layout | 208 | 133 | A number is composed into a buffer the text system keeps, not into a new word (a vector and a reference count a number); the lines of a wrap are found in a kept buffer |
+| document | layout | 44 | 42 | the same, for its wraps |
+
+Shaping and wrapping a number of five characters took 209 ns and takes 109 (measured alone,
+600 numbers a frame on DirectWrite). What else was looked at, and left: the update pass is
+the scene's own formatting of 600 floats (66 µs measured bare), the reactive runtime (some
+57 µs to run 1,200 bindings and their 600 memos, 15 to tell them) and applying 1,200 writes
+(56); keeping the queues' buffers between frames and a `const` thread local for the runtime
+gained nothing above the noise. A text is measured three times a frame, but the two after the
+first are answered from what the paragraph holds: a few microseconds in all, so the layout's
+knowing that a height does not depend on the width offered is not worth its bookkeeping. A
+measure of a box fixed on both axes that skips its children was tried and changed nothing: the
+grid's cells are only performed.
+
 ## 2026-11-14 — the grid's update and layout (on a2ea8cd plus this commit)
 
 `tools/bench.sh grid`, headless, microseconds a frame (600 cells whose number and colour

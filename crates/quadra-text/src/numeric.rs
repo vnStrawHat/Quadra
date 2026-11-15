@@ -7,7 +7,6 @@ use std::collections::HashMap;
 
 use quadra_prim::FastBuild;
 
-use crate::system::Word;
 use crate::types::{FaceId, ShapedGlyph, TextBackend};
 
 /// How many numbers a face shapes the usual way before it is checked for composing them.
@@ -57,15 +56,16 @@ fn composes(backend: &mut dyn TextBackend, face: FaceId) -> bool {
 }
 
 impl Numeric {
-    /// The word of a number, composed; `None` when the token is not one, or the face shapes
-    /// numbers as more than their characters.
-    pub fn word(
+    /// The glyphs of a number, composed, added to `out`, and its width; `None` (and nothing
+    /// added) when the token is not one, or the face shapes numbers as more than their
+    /// characters.
+    pub fn compose(
         &mut self,
         backend: &mut dyn TextBackend,
         token: &str,
-        face: FaceId,
-        size: f32,
-    ) -> Option<Word> {
+        (face, size): (FaceId, f32),
+        out: &mut Vec<ShapedGlyph>,
+    ) -> Option<f32> {
         if token.is_empty() || !token.bytes().all(|b| index(b).is_some()) {
             return None;
         }
@@ -85,12 +85,12 @@ impl Numeric {
                 self.singles.entry((face, size.to_bits())).or_insert(singles)
             }
         };
-        let mut word = Word { glyphs: Vec::with_capacity(token.len()), width: 0.0 };
+        let mut width = 0.0;
         for (at, byte) in token.bytes().enumerate() {
             let glyph = singles[index(byte)?];
-            word.glyphs.push(ShapedGlyph { x: word.width + glyph.x, cluster: at as u32, ..glyph });
-            word.width += glyph.advance;
+            out.push(ShapedGlyph { x: width + glyph.x, cluster: at as u32, ..glyph });
+            width += glyph.advance;
         }
-        Some(word)
+        Some(width)
     }
 }

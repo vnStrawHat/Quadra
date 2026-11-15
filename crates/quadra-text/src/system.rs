@@ -75,6 +75,10 @@ pub struct TextSystem {
     /// What shaping a paragraph uses for a while and gives back: where each byte's glyphs
     /// start.
     pub(crate) firsts: Vec<f32>,
+    /// The lines a wrap breaks a paragraph into, by their bytes: kept, as `firsts` is.
+    pub(crate) ranges: Vec<std::ops::Range<usize>>,
+    /// The glyphs of the number a paragraph is shaping.
+    pub(crate) composed: Vec<ShapedGlyph>,
 }
 
 impl TextSystem {
@@ -83,7 +87,18 @@ impl TextSystem {
         let words = WordCache { current: Words::new(), previous: Words::new(), count: 0, limit: 16_384 };
         let (faces, numeric, stats) = (HashMap::default(), Numeric::default(), TextStats::default());
         let inks = HashMap::new();
-        TextSystem { backend, default_family, faces, words, numeric, inks, stats, firsts: Vec::new() }
+        TextSystem {
+            backend,
+            default_family,
+            faces,
+            words,
+            numeric,
+            inks,
+            stats,
+            firsts: Vec::new(),
+            ranges: Vec::new(),
+            composed: Vec::new(),
+        }
     }
 
     /// How many shaped words the cache may hold (16,384 unless set).
@@ -137,12 +152,26 @@ impl TextSystem {
         (m.ascent * style.size, m.descent * style.size)
     }
 
+    /// The glyphs of a number composed from its characters', added to `out`, and its
+    /// width: what [`TextSystem::word`] gives for one, without making a word of it.
+    pub(crate) fn number(
+        &mut self,
+        token: &str,
+        face: FaceId,
+        size: f32,
+        out: &mut Vec<ShapedGlyph>,
+    ) -> Option<f32> {
+        let width = self.numeric.compose(&mut *self.backend, token, (face, size), out)?;
+        self.stats.words_composed += 1;
+        Some(width)
+    }
+
     /// The shaped token: a number composed from its characters' glyphs when the face allows
     /// it, otherwise from the cache or the backend.
     pub fn word(&mut self, token: &str, face: FaceId, size: f32) -> Rc<Word> {
-        if let Some(word) = self.numeric.word(&mut *self.backend, token, face, size) {
-            self.stats.words_composed += 1;
-            return Rc::new(word);
+        let mut glyphs = Vec::new();
+        if let Some(width) = self.number(token, face, size, &mut glyphs) {
+            return Rc::new(Word { glyphs, width });
         }
         let key = (face, size.to_bits());
         if let Some(word) = self.words.get(key, token) {

@@ -63,8 +63,18 @@ impl Paragraph {
                     (width, at) = (width + advance, piece_end);
                     continue;
                 }
-                let word = ts.word(&self.text[at..piece_end], face, size);
-                for g in &word.glyphs {
+                // A number is composed in a buffer kept for it: it is no word to keep.
+                let (token, mut composed) = (&self.text[at..piece_end], std::mem::take(&mut ts.composed));
+                composed.clear();
+                let word;
+                let (glyphs, word_width) = match ts.number(token, face, size, &mut composed) {
+                    Some(width) => (&composed[..], width),
+                    None => {
+                        word = ts.word(token, face, size);
+                        (&word.glyphs[..], word.width)
+                    }
+                };
+                for g in glyphs {
                     let (cluster, x) = (at + g.cluster as usize, x + width + g.x);
                     if first_x[cluster].is_nan() {
                         first_x[cluster] = x;
@@ -72,7 +82,8 @@ impl Paragraph {
                     let (face, id, y, advance) = (g.face, g.id, g.y, g.advance);
                     self.glyphs.push(PositionedGlyph { face, id, x, y, advance, cluster: cluster as u32 });
                 }
-                (width, at) = (width + word.width, piece_end);
+                (width, at) = (width + word_width, piece_end);
+                ts.composed = composed;
             }
             self.tokens.push(Token { start: i, end, x, width, glyphs: from..self.glyphs.len(), kind });
             x += width;

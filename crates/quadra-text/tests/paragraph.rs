@@ -161,6 +161,11 @@ fn a_number_is_composed_from_glyphs_shaped_once() {
     }
     let stats = ts.take_stats();
     assert_eq!((stats.words_composed, stats.words_shaped, stats.word_hits), (1000, 0, 0));
+    // In a paragraph each number is composed on its own; the space between is shaped.
+    let mut p = Paragraph::new(&mut ts, "1.5 22", style());
+    assert_eq!((p.wrap(&mut ts, f32::INFINITY).width, p.x_at(4), p.x_at(5)), (36.0, 24.0, 30.0));
+    let stats = ts.take_stats();
+    assert_eq!((stats.words_composed, stats.words_shaped), (2, 1));
     // Text that is not a number is shaped.
     ts.word("7", face, 20.0);
     ts.word("7th", face, 20.0);

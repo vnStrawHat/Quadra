@@ -189,7 +189,8 @@ impl Paragraph {
         }
         ts.stats.paragraphs_broken += 1;
         let limit = max_width + SLACK;
-        let mut ranges = Vec::new();
+        let mut ranges = std::mem::take(&mut ts.ranges);
+        ranges.clear();
         let (mut line_start, mut x, mut has_content, mut hard) = (0, 0.0, false, 1);
         for token in &self.tokens {
             match token.kind {
@@ -261,6 +262,7 @@ impl Paragraph {
         }
         self.size = Size::new(widest, y);
         self.width_breaks = ranges.len() > hard;
+        ts.ranges = ranges;
         self.wrapped_at = Some(max_width);
         self.place_visually();
         self.size

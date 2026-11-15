@@ -150,7 +150,9 @@ family, the size, the weight and the slant (`Shaping`).
   per size, when the face shapes numbers glyph by glyph: every pair of those characters must
   shape to its two glyphs at their own advances, checked once per face, and only once a face
   has been asked for some dozens of numbers: a window with a few never pays for the check.
-  Composed numbers do not enter the cache.
+  Composed numbers do not enter the cache, and a paragraph composes them into a buffer the
+  text system keeps, not into a word of their own: shaping a number allocates nothing. The
+  lines a wrap breaks a paragraph into are found in a kept buffer too.
 
 ## Glyph tiles
 

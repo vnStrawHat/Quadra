@@ -92,10 +92,11 @@ impl Painter<'_> {
         // ponytail: each child of a long column is still looked at (some 25 ns a row: 0.5 ms
         // a band for 20,000); a search among children placed in order if such pages scroll.
         let culled = self.culled || outside(self.band, rect);
+        let flipped = std::mem::replace(&mut self.nodes[i].culled, culled) != culled;
         if culled && flags == 0 && self.nodes[i].len == 0 {
             return;
         }
-        let force = force || flags & flag::SUBTREE != 0;
+        let force = force || flipped || flags & flag::SUBTREE != 0;
         if force || flags & flag::PAINT != 0 {
             let from = self.scratch.len() as u32;
             if !culled {

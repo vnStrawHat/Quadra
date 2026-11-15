@@ -104,6 +104,10 @@ pub(crate) struct Node {
     pub own: u32,
     /// Where this pass's instances are in the scratch buffer, or `NOT_PAINTED`.
     pub fresh: (u32, u32),
+    /// Its box was outside its layer's band when the paint pass last looked at it: what it
+    /// holds painted nothing. When that changes (a box grown into the band by layout alone)
+    /// what it holds is walked again.
+    pub culled: bool,
     /// Set when the node is a layer: it and what is under it have a display list of their own.
     pub layer: Option<Box<LayerState>>,
     /// The scope that ends with this node: its bindings, handlers and tasks.

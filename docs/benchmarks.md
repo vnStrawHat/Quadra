@@ -7,7 +7,7 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
-## 2026-11-15 — a new band of a long page (on b71f3c1 plus this commit)
+## 2026-11-15 — a new band of a long page (on 57c15af plus this commit)
 
 A page of plain rows (a box of 40 px and a text each) in a `scroll`, not a virtual list,
 scrolled 1,300 px a frame so every frame paints a new band; release build, the harness's

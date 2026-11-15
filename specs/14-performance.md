@@ -35,7 +35,9 @@ unrelated nodes. "Path" means the node and its ancestors up to the layout bounda
 | One terminal row changes | 0 | 0 | 0 | 1 surface | that row's instances | 0 |
 
 The scroll position is a signal, so scrolling runs the binding that turns it into a layer
-offset: that is the one binding of the scroll rows. The tests are
+offset: that is the one binding of the scroll rows. Past what is painted, the pass looks at
+the nodes near the old band and the new one and at each child of a long column once, not at
+every node of the page (`FrameStats::nodes_walked`, `tests/culling.rs`). The tests are
 `crates/quadra-view/tests/budgets.rs` and `tests/list.rs`; the rows about input, style
 variants, themes and the terminal are added as those are built.
 

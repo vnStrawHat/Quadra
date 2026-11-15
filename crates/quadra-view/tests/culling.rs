@@ -6,7 +6,7 @@
 use quadra_prim::Color;
 use quadra_reactive::signal;
 use quadra_testing::Harness;
-use quadra_view::{column, div, mount_root, scroll, show, text};
+use quadra_view::{column, div, mount_root, row, scroll, show, text};
 
 const ROWS: u32 = 500;
 
@@ -64,4 +64,30 @@ fn what_layout_moves_into_the_band_is_painted() {
     first.set(true);
     y.set(300.0);
     h.frame();
+}
+
+#[test]
+fn what_a_box_holds_is_painted_when_the_box_grows_into_the_band() {
+    // The window shows 2000 to 2600: the band is 1400 to 3200. A box at 1300, as high as the
+    // one beside it, holds one of 300 px that reaches into the band past it. The box beside
+    // grows: the holder grows with it into the band, and back, by layout alone.
+    let (y, high) = (signal(2000.0f32), signal(50.0f32));
+    let mut h = Harness::new();
+    let held = div().absolute().top(0.0).size(100.0, 300.0).bg(Color::rgb(0x336699));
+    let beside = div().width(10.0).height(move || high.get());
+    let line = row().child(beside).child(div().width(200.0).child(held));
+    let page = column().child(div().height(1300.0)).child(line).child(div().height(5000.0));
+    mount_root(&mut h.tree, scroll(y, page));
+    h.frame();
+    for to in [200.0, 50.0, 200.0] {
+        high.set(to);
+        h.frame(); // the harness compares with a paint from scratch
+        let painted = h.renderer.steps().iter().any(|step| match step {
+            quadra_render::Step::Layer { id, .. } => {
+                h.tree.scene().layer(*id).instances().iter().any(|i| i.bounds[3] == 300.0)
+            }
+            quadra_render::Step::Run { .. } => false,
+        });
+        assert_eq!(painted, to == 200.0, "held painted at {to}");
+    }
 }

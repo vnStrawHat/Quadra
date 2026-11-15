@@ -126,7 +126,8 @@ text skips its lines outside it. What reaches past its holder's box by more than
 is so not painted while the holder is outside the band. A new band skips the subtree of a
 node outside it that emitted nothing in the last one and has nothing to paint: of a long
 page only the nodes near the old and the new band are walked, and the rows of a long column
-are looked at once each. Scrolling inside the band is still one constant (and one more for
+are looked at once each. A node keeps whether its box was outside the band when last looked
+at: when layout alone changes that (a box grown into the band), what it holds is walked again. Scrolling inside the band is still one constant (and one more for
 the thumb of the scrollbar).
 A layer is also turned about its middle by a constant (`Tree::set_layer_turn`): a spinner. When the part that shows leaves the band, the layer
 gets a new band around it and is painted again: once per viewport scrolled, for three

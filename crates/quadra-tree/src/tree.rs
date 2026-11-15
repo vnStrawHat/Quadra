@@ -186,8 +186,7 @@ impl Tree {
             parent: None,
             children: Vec::new(),
             layout,
-            // New: painted with everything under it once it is in the tree.
-            flags: flag::PAINT | flag::SUBTREE,
+            flags: flag::PAINT | flag::SUBTREE, // new: painted whole once in the tree
             paint: style.paint,
             text: style.text.is_set().then(|| Box::new(style.text)),
             inherited_at: 0,
@@ -196,6 +195,7 @@ impl Tree {
             len: 0,
             own: 0,
             fresh: NOT_PAINTED,
+            culled: false,
             layer: None,
             scope: None,
             handlers: Vec::new(),

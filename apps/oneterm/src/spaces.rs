@@ -18,18 +18,16 @@ use crate::model::{Model, Space, Tab};
 
 pub(crate) fn workspace(model: &Model) -> impl View + use<> {
     let shown = model.clone();
-    let font = model.prefs().font_size;
-    // A new size of text mounts the terminals again.
-    let tab = dynamic(move || match (font.get(), shown.active_tab()) {
-        (size, Some(tab)) => AnyView::new(columns(&shown, tab, size.clamp(6.0, 48.0) as f32)),
-        (_, None) => AnyView::new(div()),
+    let tab = dynamic(move || match shown.active_tab() {
+        Some(tab) => AnyView::new(columns(&shown, tab)),
+        None => AnyView::new(div()),
     });
     // The expanded SFTP view takes the workspace's place; the spaces run on, not displayed.
     let expanded = model.ui().expanded;
     tab.container(row().grow(1.0).bg(token::CANVAS).display(crate::locked::shown(move || !expanded.get())))
 }
 
-fn columns(model: &Model, tab: Tab, font: f32) -> impl View + use<> {
+fn columns(model: &Model, tab: Tab) -> impl View + use<> {
     let (model, vertical) = (model.clone(), model.vertical());
     let stacked = quadra::memo(move || vertical.get() && tab.spaces.with(Vec::len) >= 3);
     dynamic(move || {
@@ -42,7 +40,6 @@ fn columns(model: &Model, tab: Tab, font: f32) -> impl View + use<> {
                     model: model.clone(),
                     tab,
                     space: space.get_untracked(),
-                    font,
                     across,
                 },
             )
@@ -70,7 +67,6 @@ struct SpaceView {
     model: Model,
     tab: Tab,
     space: Space,
-    font: f32,
     /// In a row (equal widths), or in a stack (equal heights).
     across: bool,
 }
@@ -79,9 +75,9 @@ impl View for SpaceView {
     /// The header, the terminal and the ring; the terminal takes the focus whenever the
     /// space is the tab's focused one.
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let SpaceView { model, tab, space, font, across } = self;
+        let SpaceView { model, tab, space, across } = self;
         let shows = focused(tab, space.id);
-        let view = space_view(&model, tab, space, font);
+        let view = space_view(&model, tab, space);
         let id = if across { view.width(0.0) } else { view.height(0.0) }.mount(cx);
         let (handle, locked) = (cx.handle.clone(), model.lock().locked);
         effect(move || {
@@ -94,7 +90,7 @@ impl View for SpaceView {
     }
 }
 
-fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> quadra::Div {
+fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
     let s = space.session.clone();
     let index = move || tab.spaces.with(|spaces| spaces.iter().position(|it| it.id == space.id).unwrap_or(0));
     let on = focused(tab, space.id);
@@ -161,7 +157,7 @@ fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> quadra::Div {
             model,
             &s,
             space.id,
-            terminal(&s).font(font, (font * 1.54).round()),
+            terminal(&s),
         )))
 }
 
@@ -169,10 +165,12 @@ fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> quadra::Div {
 /// terminal follows the settings of the pointer and the wheel.
 fn menu_of(model: &Model, s: &Session, id: u64, view: quadra_term::Terminal) -> impl View + use<> {
     let p = model.prefs();
-    let settings = signal(untrack(|| p.term()));
+    let (settings, look) = (signal(untrack(|| p.term())), signal(untrack(|| p.look())));
     effect(move || settings.set(p.term()));
+    // A new look is followed by the terminal as it is: its screen stays.
+    effect(move || look.set(p.look()));
     let (s, model, clipboard) = (s.clone(), model.clone(), use_context::<Rc<dyn Clipboard>>());
-    context_menu(view.settings(settings), move || {
+    context_menu(view.settings(settings).look(look), move || {
         if !p.context_menu.get_untracked() {
             return Vec::new();
         }

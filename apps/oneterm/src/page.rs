@@ -2,18 +2,20 @@
 //! the kit's layout of cards: the pages with their icons and a search in the column, each
 //! page's title and what it is about, its groups. Each control writes a setting, which saves it.
 
-use quadra::{Align, Signal, View, column, div, effect, row, signal, text, untrack};
+use quadra::{Align, column, div, effect, row, signal, text};
 use quadra_design::{
-    SettingsGroup, SettingsPage, Variant, button, icon, icons, input, key_hint, number_input, segmented,
-    select, settings, switch, token,
+    SettingsGroup, SettingsPage, Variant, button, icon, icons, input, key_hint, select, settings, switch,
+    token,
 };
 
 use crate::model::Model;
+
+mod look;
 use crate::prefs::{self, Prefs};
 
 /// Each page: its name, its icon and what it is about.
 const PAGES_ABOUT: [(&str, &str, &str); 10] = [
-    ("Appearance", icons::PALETTE, "The theme and the size of the terminal's text."),
+    ("Appearance", icons::PALETTE, "The theme, and the terminal's text and colours."),
     (
         "Terminal",
         icons::SQUARE_TERMINAL,
@@ -79,38 +81,6 @@ pub(crate) fn page(model: &Model) -> quadra::Div {
 }
 
 fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
-    let appearance = SettingsGroup::new("Colours and text")
-        .row("Theme", "System follows the OS's dark or light mode.", segmented(prefs::THEMES, p.theme))
-        .row("Font size", "The terminal's text, in pixels.", number_input(p.font_size).range(8.0, 32.0));
-    let cursor = SettingsGroup::new("Cursor & history")
-        .row("Cursor shape", "Until a program sets its own.", segmented(prefs::CURSORS, p.cursor))
-        .row("Cursor blink", "Whether the cursor blinks.", switch(p.blink))
-        .row(
-            "Scrollback lines",
-            "The history each space keeps.",
-            number_input(p.scrollback).range(0.0, 100_000.0).step(1000.0),
-        );
-    let mouse = SettingsGroup::new("Mouse & wheel")
-        .row("Context menu", "The other button opens a space's menu.", switch(p.context_menu))
-        .row("Copy on select", "A selection is copied when the button is released.", switch(p.copy_on_select))
-        .row("Middle-click paste", "The middle button pastes.", switch(p.middle_paste))
-        .row(
-            "Scroll speed",
-            "Times the rows of the wheel.",
-            number_input(p.scroll_speed).range(0.1, 10.0).step(0.5),
-        )
-        .row(
-            "Alternate scroll",
-            "On a full-screen program the wheel sends arrows.",
-            switch(p.alternate_scroll),
-        );
-    let shell = SettingsGroup::new("Shell")
-        .row("Default shell", "What Ctrl+T and New tab start.", shell_choice(p.shell))
-        .row(
-            "New spaces start in",
-            "Where a new tab's shell starts.",
-            select(prefs::STARTS, p.start).width(240.0),
-        );
     let tabs = SettingsGroup::new("Tabs & spaces").row(
         "Vertical tabs",
         "Tabs in a rail at the left; off, in a strip above the spaces.",
@@ -142,8 +112,8 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .child(icon(icons::INFO).size(14.0))
         .child(text(format!("Settings are saved to {file} as you change them.")));
     vec![
-        vec![appearance],
-        vec![cursor, mouse, shell],
+        look::appearance(p),
+        look::terminal(p),
         vec![tabs],
         vec![hosts(p, model)],
         vec![SettingsGroup::new("Downloads").row(
@@ -179,22 +149,4 @@ fn hosts(p: Prefs, model: &Model) -> SettingsGroup {
     SettingsGroup::new("Hosts")
         .row("Saved hosts", "Edited from the rail: a host's menu has Edit and Remove.", saved)
         .row("Recent", "The last targets connected to, in the + menu.", lately)
-}
-
-/// The default shell as a choice of the shells found, written as its name; the first is
-/// the OS's own.
-fn shell_choice(shell: Signal<String>) -> impl View {
-    let names: Vec<String> = std::iter::once("The OS's".to_string())
-        .chain(crate::shells::found().into_iter().map(|it| it.name.into()))
-        .collect();
-    let at = untrack(|| names.iter().position(|it| *it == shell.get()).unwrap_or(0));
-    let chosen = signal(at);
-    let words = names.clone();
-    effect(move || {
-        let name = if chosen.get() == 0 { String::new() } else { words[chosen.get()].clone() };
-        if untrack(|| shell.get()) != name {
-            shell.set(name);
-        }
-    });
-    select(names, chosen).width(240.0)
 }

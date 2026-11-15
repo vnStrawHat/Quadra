@@ -78,6 +78,19 @@ fn the_page_opens_from_the_title_bar_and_writes_what_is_chosen() {
 }
 
 #[test]
+fn a_new_look_keeps_the_screen_and_sizes_the_grid_again() {
+    let mut a = app();
+    a.feed(0, b"kept");
+    let s = a.made.borrow()[0].1.clone();
+    let rows = s.size().rows;
+    a.settings.value("terminal.font_size", 13.0).set(26.0);
+    a.settings.value("terminal.colors.foreground", String::new()).set("#efefef".into());
+    a.h.settle();
+    assert!(s.size().rows < rows, "fewer rows of larger text: {} then {}", rows, s.size().rows);
+    assert_eq!(s.screen_text()[0], "kept", "the same terminal");
+}
+
+#[test]
 fn new_spaces_take_the_cursor_and_the_history_set() {
     let mut a = app();
     a.settings.value("terminal.cursor", String::new()).set("Bar".into());

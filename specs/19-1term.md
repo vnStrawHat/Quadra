@@ -137,12 +137,15 @@ Appearance, Terminal, Tabs & spaces, SSH & hosts (the count of saved hosts with 
 the recent targets with Forget), SFTP (the downloads folder), Notifications & signals, Status bar,
 Security & lock, Keybindings, Advanced (the file, and a note that settings save as they change).
 Saved to `settings.json` in the app's
-folder as they change (specs/15). Terminal: font family and size, ligatures, cursor shape and
+folder as they change (specs/15). Appearance: the theme; the terminal's text (font family,
+empty for the kit's mono face; size; line height, 1.5) and colours over the theme's
+(foreground, background, cursor, selection as `#rrggbb`), the view's `TermLook` (specs/18):
+every terminal follows them as they are, its screen kept. Terminal: cursor shape and
 blink, scrollback lines, the default local shell, where new spaces start (active space's cwd,
 home, last used); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
-the view's `TermSettings` (specs/18). In M5: size, cursor, scrollback, shell, active cwd or home; the font family,
-ligatures, "last used" and a bell's sound or flash wait. A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
+the view's `TermSettings` (specs/18). Not yet: ligatures (a glyph is a cell), the ANSI colours one by one, "last used", a bell's
+sound or flash. A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
 blocked; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound / badge and flash /
 ignore; OSC 9: toast 6 s / until dismissed / silent.
 

@@ -53,6 +53,12 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   strike as quads; inverse swaps, faint is the foreground at 60 %, hidden draws no glyph.
   Colours: the engine's palette with the theme as its base (`set_theme_colors`): 0-15 from
   `token::ANSI`, default foreground, background and cursor from the theme's roles.
+- The look (`TermLook`, a signal given with `Terminal::look`; `font(size, line)` is a look that
+  never changes): the family (empty, the kit's mono face), size, line height (times the size),
+  weight, the padding, and colours that stand over the theme's (`TermColors`: foreground,
+  background, cursor, selection, the sixteen ANSI). A new look sets the node's text values, the
+  padding and the palette, and sizes the grid again after layout: the view is not mounted again,
+  the session keeps its screen. Ligatures are not drawn: a glyph is a cell.
 - Cursor: a block when focused, an outline when not; bar and underline as the program asks
   (DECSCUSR); it blinks on the kit's caret timer, a paint only. Hidden when the program hides
   it or the viewport is scrolled back past it.

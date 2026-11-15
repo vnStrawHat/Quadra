@@ -8,12 +8,13 @@ use std::time::Duration;
 use oneterm_vt::input::{KeyEvent, KeyMods, KeySpec, NamedKey};
 use quadra_async::{Timers, interval};
 use quadra_platform::{Clipboard, Cursor};
-use quadra_reactive::{Scope, Signal, on_cleanup, use_context};
-use quadra_tree::{NodeId, Style, TextValues, Tree};
+use quadra_reactive::{Scope, Signal, on_cleanup, signal, use_context};
+use quadra_tree::{NodeId, Style, Tree};
 use quadra_view::{MountCx, View};
 
 use crate::actions::TermSettings;
 use crate::keys::{TERMINAL_CONTEXT, TermCommand, key_event};
+use crate::look::TermLook;
 use crate::session::Session;
 use crate::widget::TerminalWidget;
 
@@ -22,6 +23,7 @@ const CARET_BLINK: Duration = Duration::from_millis(530);
 pub struct Terminal {
     session: Session,
     font: (f32, f32),
+    look: Option<Signal<TermLook>>,
     autofocus: bool,
     settings: Option<Signal<TermSettings>>,
 }
@@ -29,13 +31,20 @@ pub struct Terminal {
 /// The view of a session, in the kit's mono face at 13 px with lines of 20. It takes the
 /// room its parent gives it.
 pub fn terminal(session: &Session) -> Terminal {
-    Terminal { session: session.clone(), font: (13.0, 20.0), autofocus: false, settings: None }
+    Terminal { session: session.clone(), font: (13.0, 20.0), look: None, autofocus: false, settings: None }
 }
 
 impl Terminal {
     /// The size of the text and the height of a line, in pixels.
     pub fn font(mut self, size: f32, line: f32) -> Self {
         self.font = (size, line);
+        self
+    }
+
+    /// How it looks, followed as it changes: the grid is sized again, the view repainted.
+    /// It stands for `font`.
+    pub fn look(mut self, look: Signal<TermLook>) -> Self {
+        self.look = Some(look);
         self
     }
 
@@ -70,11 +79,10 @@ pub(crate) fn send(tree: &mut Tree, id: NodeId, session: &Session, bytes: &[u8])
 
 impl View for Terminal {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let Terminal { session, font: (size, line), autofocus, settings } = self;
-        let family = Some(quadra_design::fonts::MONO.into());
-        let text =
-            TextValues { family, size: Some(size), line_height: Some(line / size), ..TextValues::default() };
-        let mut style = Style { text, ..Style::default() };
+        let Terminal { session, font: (size, line), look, autofocus, settings } = self;
+        let look = look
+            .unwrap_or_else(|| signal(TermLook { size, line_height: line / size, ..TermLook::default() }));
+        let mut style = Style { text: look.get_untracked().text(), ..Style::default() };
         (style.layout.grow, style.layout.shrink) = (1.0, 1.0);
         style.layout.basis = quadra_layout::Length::Px(0.0);
         (style.layout.min_width, style.layout.min_height) =
@@ -96,16 +104,24 @@ impl View for Terminal {
         // The grid follows the box, once layout has sized it.
         let (box_size, writer, s) = (cx.tree.size_signal(id), cx.handle.clone(), session.clone());
         cx.handle.bind(move || {
-            let size = box_size.get();
-            if size.width <= 0.0 || size.height <= 0.0 {
-                return; // not laid out yet
-            }
+            box_size.get();
+            let s = s.clone();
+            writer.with(move |tree| regrid(tree, id, &s));
+        });
+        // A new look: the text values, the room and the colours, then the grid once the cells
+        // are measured again.
+        let (writer, s) = (cx.handle.clone(), session.clone());
+        cx.handle.bind(move || {
+            let look = look.get();
             let s = s.clone();
             writer.with(move |tree| {
-                let Some(w) = tree.widget_mut::<TerminalWidget>(id) else { return };
-                let (rows, cols) = w.grid_for(size);
-                s.resize(rows, cols);
-                crate::widget::repaint(tree, id);
+                tree.set_text_values(id, look.text());
+                if let Some(w) = tree.widget_mut::<TerminalWidget>(id) {
+                    (w.pad, w.colors) = (look.padding, look.colors);
+                    w.paint_colors();
+                }
+                tree.mark_paint(id);
+                tree.after_layout(move |tree| regrid(tree, id, &s));
             });
         });
 
@@ -154,6 +170,21 @@ impl View for Terminal {
         crate::pointer::pointer(cx, id, &session, settings);
         id
     }
+}
+
+/// The grid that fits the box, once layout has sized it.
+fn regrid(tree: &mut Tree, id: NodeId, s: &Session) {
+    if !tree.is_alive(id) {
+        return; // the view went before the layout came
+    }
+    let size = tree.window_rect(id).size();
+    if size.width <= 0.0 || size.height <= 0.0 {
+        return; // not laid out yet
+    }
+    let Some(w) = tree.widget_mut::<TerminalWidget>(id) else { return };
+    let (rows, cols) = w.grid_for(size);
+    s.resize(rows, cols);
+    crate::widget::repaint(tree, id);
 }
 
 /// The focus: told to the program when it asked, and the cursor's blink while it is there.

@@ -7,7 +7,7 @@ use quadra_prim::{Color, Edges, Point, Rect};
 use quadra_render::Quad;
 use quadra_tree::{PaintCx, paint_glyph};
 
-use crate::widget::{PADDING, TerminalWidget, color};
+use crate::widget::{TerminalWidget, color};
 
 /// The colours a cell's style paints with: inverse swaps them, faint is the text at 60 %.
 fn colors(w: &TerminalWidget, style: &Style) -> (Color, Color) {
@@ -25,7 +25,7 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx) {
     w.scale = cx.scale;
     let background = color(w.palette.background);
     cx.quad(Quad { bounds: cx.rect, background, ..Quad::default() });
-    let (left, top) = (cx.rect.x + PADDING, cx.rect.y + PADDING);
+    let (left, top) = (cx.rect.x + w.pad, cx.rect.y + w.pad);
     w.tiles.clear();
     let block = w.cursor_block();
     let rows = std::mem::take(&mut w.state);

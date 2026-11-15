@@ -21,12 +21,12 @@ use quadra_view::MountCx;
 use crate::actions::TermSettings;
 use crate::session::Session;
 use crate::view::send;
-use crate::widget::{PADDING, TerminalWidget};
+use crate::widget::TerminalWidget;
 
 /// Where a point of the node is in the grid: a row and a column, as fractions.
 fn grid_at(tree: &mut Tree, id: NodeId, at: Point) -> Option<(f32, f32)> {
     let w = tree.widget_mut::<TerminalWidget>(id)?;
-    Some(((at.y - PADDING) / w.line, (at.x - PADDING) / w.cell))
+    Some(((at.y - w.pad) / w.line, (at.x - w.pad) / w.cell))
 }
 
 fn button(b: MouseButton) -> Option<TerminalMouseButton> {

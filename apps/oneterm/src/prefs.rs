@@ -13,12 +13,24 @@ pub const STARTS: [&str; 2] = ["The active space's directory", "Home"];
 pub const STATUS_SHOWN: [&str; 3] = ["On the tab and the header", "On the tab only", "Ignored"];
 pub const BELLS: [&str; 2] = ["A dot and a count", "Ignored"];
 pub const NOTICES: [&str; 3] = ["A card for 6 s", "A card until dismissed", "Silent"];
+/// The colours a terminal may have over the theme's: their keys and names.
+pub const COLORS: [(&str, &str); 4] = [
+    ("terminal.colors.foreground", "Foreground"),
+    ("terminal.colors.background", "Background"),
+    ("terminal.colors.cursor", "Cursor"),
+    ("terminal.colors.selection", "Selection"),
+];
 
 /// The settings, as signals: writing one saves it.
 #[derive(Clone, Copy)]
 pub struct Prefs {
     pub theme: Signal<usize>,
     pub font_size: Signal<f64>,
+    /// A family of the system; empty, the kit's mono face.
+    pub font_family: Signal<String>,
+    pub line_height: Signal<f64>,
+    /// Colours over the theme's, as `#rrggbb`; empty, the theme's.
+    pub colors: [Signal<String>; 4],
     pub cursor: Signal<usize>,
     pub blink: Signal<bool>,
     pub scrollback: Signal<f64>,
@@ -59,6 +71,9 @@ impl Prefs {
         Prefs {
             theme: choice(s, "appearance.theme", &THEMES),
             font_size: s.value("terminal.font_size", 13.0),
+            font_family: s.value("terminal.font_family", String::new()),
+            line_height: s.value("terminal.line_height", 1.5),
+            colors: COLORS.map(|(key, _)| s.value(key, String::new())),
             cursor: choice(s, "terminal.cursor", &CURSORS),
             blink: s.value("terminal.cursor_blink", false),
             scrollback: s.value("terminal.scrollback", 10_000.0),
@@ -89,6 +104,25 @@ impl Prefs {
 }
 
 impl Prefs {
+    /// How a terminal looks, read where it is called.
+    pub fn look(&self) -> quadra_term::TermLook {
+        let [foreground, background, cursor, selection] =
+            self.colors.map(|it| it.with(|words| quadra::Color::parse_hex(words.trim())));
+        quadra_term::TermLook {
+            family: self.font_family.get(),
+            size: self.font_size.get().clamp(6.0, 48.0) as f32,
+            line_height: self.line_height.get().clamp(1.0, 2.5) as f32,
+            colors: quadra_term::TermColors {
+                foreground,
+                background,
+                cursor,
+                selection,
+                ..Default::default()
+            },
+            ..quadra_term::TermLook::default()
+        }
+    }
+
     /// What a terminal view is given of the settings, read where it is called.
     pub fn term(&self) -> quadra_term::TermSettings {
         quadra_term::TermSettings {

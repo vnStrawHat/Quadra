@@ -5,6 +5,7 @@
 mod actions;
 mod feed;
 mod keys;
+mod look;
 mod paint;
 mod pointer;
 mod session;
@@ -18,6 +19,7 @@ pub use oneterm_vt as vt;
 pub use actions::TermSettings;
 pub use feed::{Feeder, Notice};
 pub use keys::{TERMINAL_CONTEXT, TermCommand, bind_keys};
+pub use look::{TermColors, TermLook};
 pub use session::{Link, Session, echo};
 pub use status::ProgramState;
 pub use view::{Terminal, terminal};

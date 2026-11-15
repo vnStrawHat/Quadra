@@ -14,6 +14,7 @@ mod report;
 mod router;
 mod services;
 mod settings;
+mod text_size;
 pub mod time;
 
 use std::cell::RefCell;
@@ -38,6 +39,7 @@ pub use report::{AppError, FrameReport, Result};
 pub use router::{Router, router};
 pub use services::AppDirs;
 pub use settings::{Settings, Stored};
+pub use text_size::{SystemText, TextSize, text_size};
 
 type FrameHook = Box<dyn FnMut(&FrameReport)>;
 
@@ -103,6 +105,7 @@ impl<R: Renderer> App<R> {
             provide(settings.clone());
             let appearance = signal(platform.appearance());
             provide(appearance);
+            provide(signal(TextSize::default()));
             (theme, settings, appearance)
         });
         App {
@@ -198,16 +201,7 @@ impl<R: Renderer> App<R> {
         tree.set_keymap(self.keymap.clone());
         let clock = self.platform.clone();
         tree.set_clock(move || clock.now());
-        // The window has the app's theme, now and whenever it is another one.
-        let (theme, handle) = (self.theme, tree.handle());
-        tree.set_theme(theme.get_untracked());
-        scope.run(|| {
-            let writer = handle.clone();
-            handle.bind(move || {
-                let theme = theme.get();
-                writer.with(move |tree| tree.set_theme(theme));
-            });
-        });
+        self.follow(&mut tree, &scope);
         scope.run(|| mount_with(&mut tree, view));
         window.request_frame();
         let id = window.id();
@@ -262,7 +256,8 @@ impl<R: Renderer> App<R> {
         }
         let stats = w.tree.frame(w.window.size(), w.window.scale());
         if let Some(update) = w.tree.take_semantic_update() {
-            w.window.update_semantics(&update); // the a11y pass: only while something listens
+            // The a11y pass: only while something listens.
+            w.window.update_semantics(&text_size::outward(&w.tree, update));
         }
         let (renderer, fonts, started) = (&mut self.renderer, &self.fonts, Instant::now());
         let mut frame = || {

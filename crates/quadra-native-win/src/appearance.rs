@@ -50,7 +50,10 @@ pub(crate) fn appearance() -> Appearance {
         )
     };
     let high_contrast = read.is_ok() && contrast.dwFlags.contains(HCF_HIGHCONTRASTON);
-    Appearance { dark, high_contrast, accent, colors: Some(system_colors()) }
+    // Percent, from 100 to 225; not there at 100.
+    let text = dword(r"Software\Microsoft\Accessibility", "TextScaleFactor").unwrap_or(100);
+    let text_scale = text.clamp(100, 225) as f32 / 100.0;
+    Appearance { dark, high_contrast, accent, colors: Some(system_colors()), text_scale }
 }
 
 /// The colours of the system's controls; a colour of it is 0x00BBGGRR.

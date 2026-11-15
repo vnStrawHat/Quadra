@@ -4,7 +4,7 @@
 //! close (specs/15, "Closing").
 
 use quadra_platform::HitRegion;
-use quadra_prim::Point;
+use quadra_prim::{Point, Size};
 use quadra_reactive::{Signal, signal};
 
 use crate::input::Handler;
@@ -22,6 +22,41 @@ pub enum WindowRequest {
     Close,
     /// Close, asking nothing: what a view does once the user said what to do.
     CloseNow,
+}
+
+impl Tree {
+    /// Draws the whole UI `zoom` times larger: the next frame lays out a window so many times
+    /// smaller at a scale so many times larger. What comes from the window in its logical
+    /// pixels is divided by it (`zoom()`), as the app does.
+    pub fn set_zoom(&mut self, zoom: f32) {
+        if zoom != self.zoom {
+            self.zoom = zoom;
+            let (size, scale) = self.window;
+            self.fit(size, scale); // this frame lays out at it, if it has not yet
+        }
+    }
+
+    /// The size and scale of a window of `size` at `scale`, zoomed.
+    pub(crate) fn fit(&mut self, size: Size, scale: f32) {
+        self.window = (size, scale);
+        let (size, scale) = (Size::new(size.width / self.zoom, size.height / self.zoom), scale * self.zoom);
+        if size != self.size {
+            self.relayout = true;
+        }
+        if scale != self.scale {
+            // Snapping and glyph sizes depend on the scale: everything is painted again. A
+            // listener is told the root again, which carries the scale to device pixels.
+            (self.repaint, self.repaint_all) = (true, true);
+            if let Some(root) = self.root {
+                self.semantics_changed(root);
+            }
+        }
+        (self.size, self.scale) = (size, scale);
+    }
+
+    pub fn zoom(&self) -> f32 {
+        self.zoom
+    }
 }
 
 impl Handle {

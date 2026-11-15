@@ -99,21 +99,10 @@ impl Tree {
     }
 
     /// Runs the passes for a window of `size` logical pixels at `scale` device pixels each,
-    /// and returns what they visited. Afterwards the scene is ready to draw.
+    /// zoomed (`set_zoom`), and returns what they visited. Afterwards the scene is ready to draw.
     pub fn frame(&mut self, size: Size, scale: f32) -> FrameStats {
         self.stats = FrameStats::default();
-        if size != self.size {
-            self.relayout = true;
-        }
-        if scale != self.scale {
-            // Snapping and glyph sizes depend on the scale: everything is painted again. A
-            // listener is told the root again, which carries the scale to device pixels.
-            (self.repaint, self.repaint_all) = (true, true);
-            if let Some(root) = self.root {
-                self.semantics_changed(root);
-            }
-        }
-        (self.size, self.scale) = (size, scale);
+        self.fit(size, scale);
         let (mut times, mut clock) = (PassTimes::default(), Instant::now());
         let mut lap = || std::mem::replace(&mut clock, Instant::now()).elapsed();
         self.run_frame_callbacks();

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use quadra_prim::Color;
 
 /// How the user set the system to look.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Appearance {
     /// Apps are asked to be dark.
     pub dark: bool,
@@ -16,6 +16,15 @@ pub struct Appearance {
     /// The colours of the system's own controls, if it says them: under high contrast,
     /// those of the contrast the user chose.
     pub colors: Option<SystemColors>,
+    /// How much larger the user wants text, 1 at the system's own size (specs/12, "Text
+    /// size").
+    pub text_scale: f32,
+}
+
+impl Default for Appearance {
+    fn default() -> Appearance {
+        Appearance { dark: false, high_contrast: false, accent: None, colors: None, text_scale: 1.0 }
+    }
 }
 
 /// The colours a system paints its own controls with.

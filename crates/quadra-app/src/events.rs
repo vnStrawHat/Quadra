@@ -14,6 +14,7 @@ use quadra_render::Renderer;
 use quadra_tree::{PointerInput, WindowRequest};
 
 use crate::App;
+use crate::text_size::{inward, outward};
 
 impl<R: Renderer> PlatformHandler for App<R> {
     fn event(&mut self, window: WindowId, event: PlatformEvent) {
@@ -34,11 +35,15 @@ impl<R: Renderer> PlatformHandler for App<R> {
                 };
                 let now = self.platform.now();
                 if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    let at = inward(&w.tree, at);
                     w.tree.pointer(input, button, at, mods, now);
                 }
             }
             PlatformEvent::Wheel { delta, precise, at, mods } => {
                 if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
+                    // A precise delta is in pixels: as far as the content moves on the screen.
+                    let (at, delta) =
+                        (inward(&w.tree, at), if precise { inward(&w.tree, delta) } else { delta });
                     w.tree.wheel(delta, precise, at, mods);
                 }
             }
@@ -81,12 +86,12 @@ impl<R: Renderer> PlatformHandler for App<R> {
                     Dropped::Text(text) => Rc::new(DroppedText(text)),
                 };
                 if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.os_drag_enter(payload, at);
+                    w.tree.os_drag_enter(payload, inward(&w.tree, at));
                 }
             }
             PlatformEvent::DragOver { at } => {
                 if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.os_drag_over(at);
+                    w.tree.os_drag_over(inward(&w.tree, at));
                 }
             }
             PlatformEvent::DragLeave => {
@@ -96,7 +101,7 @@ impl<R: Renderer> PlatformHandler for App<R> {
             }
             PlatformEvent::Drop { at } => {
                 if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
-                    w.tree.os_drop(at);
+                    w.tree.os_drop(inward(&w.tree, at));
                 }
             }
             PlatformEvent::Semantic { node, action } => {
@@ -127,7 +132,7 @@ impl<R: Renderer> PlatformHandler for App<R> {
 
     fn hit_test(&mut self, window: WindowId, at: Point) -> HitRegion {
         let w = self.windows.iter().find(|w| w.window.id() == window);
-        w.map_or(HitRegion::Client, |w| w.tree.window_region_at(at))
+        w.map_or(HitRegion::Client, |w| w.tree.window_region_at(inward(&w.tree, at)))
     }
 }
 
@@ -154,10 +159,10 @@ impl<R: Renderer> App<R> {
             } else if let Some(update) = w.tree.take_semantic_update() {
                 // No frame is coming to send it after: a listener that just arrived, a focus
                 // that moved.
-                w.window.update_semantics(&update);
+                w.window.update_semantics(&outward(&w.tree, update));
             }
             // Where text is typed, or that it is not: what an input method goes by.
-            let caret = w.tree.text_caret();
+            let caret = w.tree.text_caret().map(|caret| caret.scale(w.tree.zoom()));
             if std::mem::replace(&mut w.caret, caret) != caret {
                 w.window.set_text_input(caret);
             }

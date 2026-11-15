@@ -36,6 +36,10 @@ pub struct Tree {
     /// The size and scale of the last frame.
     pub(crate) size: Size,
     pub(crate) scale: f32,
+    /// How much larger the whole UI is drawn than the window's own scale (specs/12, "Text size").
+    pub(crate) zoom: f32,
+    /// The window's own size and scale, before the zoom.
+    pub(crate) window: (Size, f32),
     /// A layout value changed, or the root: the layout pass has work.
     pub(crate) relayout: bool,
     /// Some node has a paint flag.
@@ -109,6 +113,8 @@ impl Tree {
             root: None,
             size: Size::ZERO,
             scale: 1.0,
+            zoom: 1.0,
+            window: (Size::ZERO, 1.0),
             relayout: false,
             repaint: false,
             repaint_all: false,

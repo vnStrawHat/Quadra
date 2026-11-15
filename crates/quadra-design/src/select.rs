@@ -10,7 +10,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, Paint};
-use quadra_view::{MountCx, NodeRef, View, by_text, column, div, row, text};
+use quadra_view::{IntoProp, MountCx, NodeRef, Prop, View, by_text, column, div, row, text};
 
 use crate::icon::icon;
 use crate::menu::{Ends, MenuItem, rows};
@@ -24,13 +24,15 @@ pub struct Select {
     placeholder: String,
     /// What the field of a select that is searched says while it is empty.
     search: Option<String>,
+    label: Option<Prop<String>>,
     test_id: Option<&'static str>,
 }
 
 /// A dropdown of `options`: `chosen` holds the index of the one that is chosen.
 pub fn select<S: Into<String>>(options: impl IntoIterator<Item = S>, chosen: Signal<usize>) -> Select {
     let options = Rc::new(options.into_iter().map(Into::into).collect());
-    Select { options, chosen, width: 160.0, placeholder: String::new(), search: None, test_id: None }
+    let (placeholder, search, label, test_id) = (String::new(), None, None, None);
+    Select { options, chosen, width: 160.0, placeholder, search, label, test_id }
 }
 
 impl Select {
@@ -54,6 +56,13 @@ impl Select {
         self
     }
 
+    /// What a reader calls it, a constant or words that change; the option it shows is then
+    /// its value. Without one it is called by that option.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
+        self
+    }
+
     pub fn test_id(mut self, id: &'static str) -> Self {
         self.test_id = Some(id);
         self
@@ -65,7 +74,7 @@ impl View for Select {
         let (chosen, open, opener) = (self.chosen, signal(false), NodeRef::new());
         let options = self.options.clone();
         let (count, none) = (options.len(), self.placeholder);
-        let value = move || options.get(chosen.get()).cloned().unwrap_or_else(|| none.clone());
+        let value = Rc::new(move || options.get(chosen.get()).cloned().unwrap_or_else(|| none.clone()));
         let tone =
             move || -> Paint { if chosen.get() < count { token::TEXT.into() } else { token::TEXT_3.into() } };
         // Filled, with a hairline border, 28 px high; the border is where the focus shows.
@@ -81,7 +90,14 @@ impl View for Select {
             Some(id) => face.test_id(id),
             None => face,
         };
-        let face = face.child(div().grow(1.0).text_color(tone).child(text(value)));
+        let face = match self.label {
+            Some(name) => {
+                let shown = value.clone();
+                face.label(name).value(move || shown())
+            }
+            None => face,
+        };
+        let face = face.child(div().grow(1.0).text_color(tone).child(text(move || value())));
         let face = face.child(icon(icons::CHEVRONS_UP_DOWN).size(12.0).color(token::TEXT_2));
         let (options, width) = (self.options, self.width);
         if let Some(ask) = self.search {

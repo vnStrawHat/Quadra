@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use quadra_design::{color_input, dark, icons, input, token};
+use quadra_design::{color_input, combobox, dark, icons, input, number_input, textarea, token};
 use quadra_platform::{Key, Mods};
 use quadra_reactive::signal;
 use quadra_testing::Harness;
@@ -97,4 +97,41 @@ fn a_colour_input_shows_its_colour_or_the_fallback_and_refuses_what_is_no_colour
     h.get_by_role(Role::TextInput, "Accent").set_value("red");
     h.frame();
     assert_eq!(look(&h), (theme.color(token::ACCENT), theme.color(token::ERROR)), "no colour: not accepted");
+}
+
+#[test]
+fn a_label_names_a_field_to_a_reader_and_follows_its_words() {
+    let (query, notes, accent, count) =
+        (signal(String::new()), signal(String::new()), signal(String::new()), signal(2.0));
+    let (city, name) = (signal(String::new()), signal("Find notes".to_string()));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let fields = column()
+            .child(input(query).placeholder("Search").label(name))
+            .child(textarea(notes).placeholder("Write here").label("Notes"))
+            .child(color_input(accent).placeholder("#rrggbb").label("Accent colour"))
+            .child(number_input(count).label("Copies"))
+            .child(number_input(count).stepper().label(move || format!("Copies of {}", name.get())))
+            .child(combobox(["Hanoi", "Hue"], city).placeholder("City").label("Home city"));
+        quadra_design::root().child(fields)
+    });
+    h.frame();
+    let named = |h: &Harness, name: &str| {
+        h.query(|n| n.semantics.role == Role::TextInput && n.semantics.name == name).len()
+    };
+    for name in ["Find notes", "Notes", "Accent colour", "Copies", "Copies of Find notes", "Home city"] {
+        assert_eq!(named(&h, name), 1, "{name}:\n{}", h.semantics());
+    }
+    // The placeholder is no name while a label is given; words that change are followed.
+    assert_eq!(named(&h, "Search") + named(&h, "Write here") + named(&h, "City"), 0);
+    name.set("Find files".to_string());
+    h.frame();
+    assert_eq!(
+        (named(&h, "Find files"), named(&h, "Copies of Find files"), named(&h, "Find notes")),
+        (1, 1, 0)
+    );
+    h.get_by_role(Role::TextInput, "Copies").set_value("4");
+    h.frame();
+    assert_eq!(count.get_untracked(), 4.0);
 }

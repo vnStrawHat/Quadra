@@ -50,7 +50,7 @@ impl Size {
 pub struct Button {
     /// Without one the button is its icon, and `name` is what a reader calls it.
     label: Option<Prop<String>>,
-    name: Option<&'static str>,
+    name: Option<Prop<String>>,
     icon: Option<&'static str>,
     variant: Variant,
     size: Size,
@@ -66,7 +66,7 @@ pub struct Button {
 /// A button that is only an icon: a ghost, 22 px square. `name` is what a reader calls it.
 pub fn icon_button(body: &'static str, name: &'static str) -> Button {
     let plain = button("").variant(Variant::Ghost).size(Size::Sm).icon(body);
-    Button { label: None, name: Some(name), ..plain }
+    Button { label: None, name: Some(Prop::Value(name.into())), ..plain }
 }
 
 /// A button with a label: a constant, or something reactive.
@@ -157,6 +157,13 @@ impl Button {
     /// In the second text colour: a button of a status bar, which is not to draw the eye.
     pub fn muted(mut self) -> Self {
         self.muted = true;
+        self
+    }
+
+    /// What a reader calls it when that is not its label: "Reset Copy" for one of a few
+    /// "Reset". A constant or words that change; drawn nowhere.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.name = Some(name.into_prop());
         self
     }
 

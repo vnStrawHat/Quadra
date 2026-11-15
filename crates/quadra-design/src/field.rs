@@ -82,12 +82,13 @@ pub struct Textarea {
     rows: u32,
     width: f32,
     placeholder: String,
+    label: Option<Prop<String>>,
 }
 
 /// A field of several lines that edits `value`, in the frame of an input: 240 px wide and
 /// at least three lines tall unless told, growing with what it holds.
 pub fn textarea(value: Signal<String>) -> Textarea {
-    Textarea { value, rows: 3, width: 240.0, placeholder: String::new() }
+    Textarea { value, rows: 3, width: 240.0, placeholder: String::new(), label: None }
 }
 
 impl Textarea {
@@ -102,9 +103,15 @@ impl Textarea {
         self
     }
 
-    /// What stands in it while it is empty.
+    /// What stands in it while it is empty, and what a reader calls it without a label.
     pub fn placeholder(mut self, words: impl Into<String>) -> Self {
         self.placeholder = words.into();
+        self
+    }
+
+    /// What a reader calls it, a constant or words that change.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
         self
     }
 }
@@ -119,6 +126,11 @@ impl View for Textarea {
         let frame = frame.cursor(Cursor::Text).selection_color(token::SELECTION).role(Role::Group);
         let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
         let frame = frame.when(State::INVALID, |s| s.border_color(token::ERROR));
-        frame.child(text_area(self.value).placeholder(&self.placeholder)).mount(cx)
+        let area = text_area(self.value).placeholder(&self.placeholder);
+        let area = match self.label {
+            Some(name) => area.label(name),
+            None => area,
+        };
+        frame.child(area).mount(cx)
     }
 }

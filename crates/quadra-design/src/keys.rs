@@ -6,14 +6,14 @@ use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
 use quadra_tree::NodeId;
-use quadra_view::{AnyView, Div, MountCx, View, by_text, dynamic, row, text};
+use quadra_view::{AnyView, Div, IntoProp, MountCx, Prop, View, by_text, dynamic, row, text};
 
 use crate::display::key_label;
 use crate::token;
 
 pub struct KeyInput {
     value: Signal<String>,
-    label: Option<String>,
+    label: Option<Prop<String>>,
     width: f32,
 }
 
@@ -24,9 +24,9 @@ pub fn key_input(value: Signal<String>) -> KeyInput {
 }
 
 impl KeyInput {
-    /// What a reader calls it: the action it binds.
-    pub fn label(mut self, name: impl Into<String>) -> Self {
-        self.label = Some(name.into());
+    /// What a reader calls it: the action it binds. A constant or words that change.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
         self
     }
 

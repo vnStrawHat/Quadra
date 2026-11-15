@@ -4,7 +4,7 @@
 use quadra_prim::Color;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint};
-use quadra_view::{AnyView, MountCx, View, div};
+use quadra_view::{AnyView, IntoProp, MountCx, Prop, View, div};
 
 use crate::input::input;
 use crate::token;
@@ -13,19 +13,26 @@ use crate::token;
 pub struct ColorInput {
     value: Signal<String>,
     placeholder: String,
+    label: Option<Prop<String>>,
     width: f32,
     fallback: Paint,
 }
 
 /// A field, 120 px wide, for a colour written `#rrggbb` (or `#rrggbbaa`) in `value`.
 pub fn color_input(value: Signal<String>) -> ColorInput {
-    ColorInput { value, placeholder: String::new(), width: 120.0, fallback: Paint::default() }
+    ColorInput { value, placeholder: String::new(), label: None, width: 120.0, fallback: Paint::default() }
 }
 
 impl ColorInput {
-    /// What stands in the field while it is empty, and what a reader calls it.
+    /// What stands in the field while it is empty, and what a reader calls it without a label.
     pub fn placeholder(mut self, text: &str) -> Self {
         self.placeholder = text.to_string();
+        self
+    }
+
+    /// What a reader calls it, a constant or words that change.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
         self
     }
 
@@ -51,6 +58,9 @@ impl View for ColorInput {
         let invalid = move || typed().is_none() && !value.with(|it| it.trim().is_empty());
         let mut field = input(value).placeholder(&self.placeholder).width(self.width).invalid(invalid);
         field.before = Some(AnyView::new(swatch));
+        if let Some(name) = self.label {
+            field = field.label(name);
+        }
         field.mount(cx)
     }
 }

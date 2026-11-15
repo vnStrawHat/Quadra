@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use quadra_design::{KitTheme, checkbox, dark, radio_group, segmented, switch, token};
+use quadra_design::{KitTheme, checkbox, dark, radio_group, segmented, select, slider, switch, token};
 use quadra_platform::{Key, Mods};
 use quadra_prim::{Color, Size};
 use quadra_reactive::{Signal, signal};
@@ -140,4 +140,30 @@ fn a_radio_group_and_a_segmented_control_hold_one_of_a_few() {
     let list = p.node(Role::Radio, "List");
     assert_eq!(p.h.tree.rect(list).height, 22.0); // a small cell, around a 12 px label
     assert_eq!(p.h.tree.inherited(p.h.tree.children(list)[0]).color, p.theme.color(token::ACCENT_TEXT));
+}
+
+#[test]
+fn a_label_names_a_group_a_select_and_a_slider() {
+    let (mode, theme, size) = (signal(0usize), signal(1usize), signal(40.0));
+    let mut h = Harness::new();
+    h.mount(move || {
+        let what = move || if mode.get() == 0 { "Text size" } else { "Line height" };
+        column()
+            .child(radio_group(["Insert", "Append"], mode).label("A file there"))
+            .child(select(["Dark", "Light"], theme).label("Theme"))
+            .child(select(["Dark", "Light"], theme))
+            .child(slider(size).label(what))
+    });
+    h.frame();
+    h.get_by_role(Role::Group, "A file there");
+    // Labelled, the select tells the option it shows as its value; without, as its name.
+    let labelled = h.get_by_role(Role::Button, "Theme").node();
+    let says = h.tree.semantic_tree();
+    let node = says.nodes.iter().find(|n| h.tree.node_of(n.id) == Some(labelled)).unwrap();
+    assert_eq!(node.semantics.value.as_deref(), Some("Light"));
+    h.get_by_role(Role::Button, "Light");
+    h.get_by_role(Role::Slider, "Text size");
+    mode.set(1);
+    h.frame();
+    h.get_by_role(Role::Slider, "Line height");
 }

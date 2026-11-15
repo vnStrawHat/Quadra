@@ -197,3 +197,22 @@ fn a_keymap_file_names_the_kits_actions() {
     p.h.key(Key::F9, Mods::NONE);
     assert_eq!(p.saved.get_untracked(), 1);
 }
+
+#[test]
+fn a_label_names_a_button_apart_from_its_words() {
+    let (reset, which) = (signal(0), signal("Copy".to_string()));
+    let mut h = Harness::new();
+    h.mount(move || {
+        let first = button("Reset").label(move || format!("Reset {}", which.get()));
+        let second = button("Reset").label("Reset Paste").on_click(move || reset.set(2));
+        quadra_design::root().child(row().child(first).child(second))
+    });
+    h.frame();
+    assert!(h.has_text("Reset"), "the words shown are the label's");
+    h.get_by_role(Role::Button, "Reset Paste").click();
+    assert_eq!(reset.get_untracked(), 2);
+    which.set("Lock".to_string());
+    h.frame();
+    h.get_by_role(Role::Button, "Reset Lock");
+    assert!(h.query(|n| n.semantics.name == "Reset Copy").is_empty());
+}

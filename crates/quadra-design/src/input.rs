@@ -13,6 +13,7 @@ use crate::{icons, token};
 pub struct Input {
     value: Signal<String>,
     placeholder: String,
+    label: Option<Prop<String>>,
     password: bool,
     invalid: Prop<bool>,
     disabled: Prop<bool>,
@@ -34,6 +35,7 @@ pub fn input(value: Signal<String>) -> Input {
     Input {
         value,
         placeholder: String::new(),
+        label: None,
         password: false,
         invalid: Prop::Value(false),
         disabled: Prop::Value(false),
@@ -48,9 +50,15 @@ pub fn input(value: Signal<String>) -> Input {
 }
 
 impl Input {
-    /// What stands in the field while it is empty, and what a reader calls it.
+    /// What stands in the field while it is empty, and what a reader calls it without a label.
     pub fn placeholder(mut self, text: &str) -> Self {
         self.placeholder = text.to_string();
+        self
+    }
+
+    /// What a reader calls it, a constant or words that change: drawn nowhere.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
         self
     }
 
@@ -108,6 +116,10 @@ impl Input {
     pub(crate) fn build(self) -> Div {
         let field = text_input(self.value).placeholder(&self.placeholder);
         let field = if self.password { field.password() } else { field };
+        let field = match self.label {
+            Some(name) => field.label(name),
+            None => field,
+        };
         let field = match self.submit {
             Some(submit) => field.on_submit(submit),
             None => field,

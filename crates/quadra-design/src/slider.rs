@@ -15,13 +15,13 @@ pub struct Slider {
     ends: (f32, f32),
     step: f32,
     width: f32,
-    name: String,
+    name: Prop<String>,
     disabled: Prop<bool>,
 }
 
 /// A slider of `value`, from 0 to 100 in steps of 1, 200 px wide, unless told otherwise.
 pub fn slider(value: Signal<f32>) -> Slider {
-    let (ends, name, disabled) = ((0.0, 100.0), String::new(), Prop::Value(false));
+    let (ends, name, disabled) = ((0.0, 100.0), Prop::Value(String::new()), Prop::Value(false));
     Slider { value, ends, step: 1.0, width: 200.0, name, disabled }
 }
 
@@ -37,9 +37,9 @@ impl Slider {
         self
     }
 
-    /// What a reader calls it.
-    pub fn label(mut self, name: impl Into<String>) -> Self {
-        self.name = name.into();
+    /// What a reader calls it, a constant or words that change.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.name = name.into_prop();
         self
     }
 

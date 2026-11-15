@@ -8,6 +8,8 @@ use std::time::Duration;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, TextField, TextValues, Tree};
 
+use crate::prop::{IntoProp, Prop};
+
 /// How long the caret is shown, and then hidden.
 const CARET_BLINK: Duration = Duration::from_millis(530);
 
@@ -20,6 +22,7 @@ pub struct TextInput {
     multiline: bool,
     fit: bool,
     placeholder: String,
+    label: Option<Prop<String>>,
     test_id: Option<&'static str>,
     submit: Option<Submit>,
 }
@@ -35,7 +38,8 @@ pub fn text_input(value: Signal<String>) -> TextInput {
     let placeholder = String::new();
     let (masked, multiline) = (false, false);
     let fit = false;
-    TextInput { value, values, color, masked, multiline, fit, placeholder, test_id: None, submit: None }
+    let (label, test_id, submit) = (None, None, None);
+    TextInput { value, values, color, masked, multiline, fit, placeholder, label, test_id, submit }
 }
 
 /// Text on as many lines as it takes at the width the area is given: Enter starts a line, and
@@ -67,6 +71,12 @@ impl TextInput {
     /// What stands in the input while it holds nothing: what to type there.
     pub fn placeholder(mut self, text: &str) -> Self {
         self.placeholder = text.to_string();
+        self
+    }
+
+    /// What a reader calls it, a constant or words that change; without one, its placeholder.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
         self
     }
 

@@ -160,7 +160,8 @@ As built so far:
   over those of every window, and `install` gives them to the app.
 - **`button(label)`**: `.variant(Primary | Secondary | Outline | Ghost | Danger | Link)`,
   `.size(Xs | Sm | Md | Lg)`, `.disabled(..)`, `.toggled(..)`, `.full()`, `.test_id(..)`,
-  `.on_click(|| ..)`. A click and `Confirm` do the same thing. Its colours are roles: the
+  `.label(words)` (its name to a reader when it is not the visible words: "Reset Copy" for one
+  of several "Reset"), `.on_click(|| ..)`. A click and `Confirm` do the same thing. Its colours are roles: the
   fill, the label, the fill under the pointer and while pressed, the border (behaviour/15,
   "States"); a tinted button's hover is a role of its own (`accent_tint_hover`,
   `error_tint_hover`: the tint 8 % towards its colour unless a theme says). The label is a
@@ -189,13 +190,21 @@ As built so far:
   `.disabled(..)`, `.width(..)`, `.on_submit(..)`, `.test_id(..)`. The border is where the
   focus shows; a value that is not accepted has the colour of errors with the focus or
   without (the state `INVALID`, applied after every other); a disabled field is a step back
-  and takes neither the focus nor text. A reader hears the placeholder as its name.
+  and takes neither the focus nor text. A reader hears `.label(words)` as its name, or the
+  placeholder without one.
+- **Names for a reader.** Each control of the kit can be named to a reader by `.label(words)`,
+  a constant or words that change (a signal, a closure), drawn nowhere: `input`, `textarea`,
+  `color_input`, `number_input` (both looks), `combobox`, `key_input`, `slider`,
+  `range_slider`, `radio_group` and `segmented` (the group), `button` (beside its visible
+  label). The label of a `checkbox` or a `switch` is its visible words, and its name. A control that is named by what it shows (`select` by its option,
+  `date_picker` by its date, `time_input` by its time) keeps those words as its value when
+  a label names it.
 - **`color_input(value)`** is an input, 120 px, for a colour written `#rrggbb` (or `#rrggbbaa`,
   `Color::parse_hex`) in `value`, a `String`: a swatch of 14 px before the text, filled with the
   colour typed, or while the field is empty with `.fallback(paint)` (the colour that stands when
   none is set: a role of the theme), else left empty in its hairline border. Text that is no
   colour is not accepted (`INVALID`) and the swatch shows the fallback. `.placeholder(..)`
-  (its name to a reader), `.width(..)`.
+  (its name to a reader without a label), `.label(..)`, `.width(..)`.
 - **`checkbox(checked)` and `switch(on)`** take the signal that holds their value and write
   it: by a click on the control or its label, by `Confirm`, or when a reader toggles them.
   `.label(..)`, `.disabled(..)`, `.test_id(..)`. The checkbox is a box of 16 px with a

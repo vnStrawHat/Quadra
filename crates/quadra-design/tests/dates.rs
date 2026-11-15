@@ -155,3 +155,21 @@ fn the_parts_of_a_time_are_stepped_and_typed() {
     settle(&mut h);
     assert!(time.get_untracked() == TimeOfDay::new(9, 59) && h.semantics().contains("Group \"09:59\""));
 }
+
+#[test]
+fn a_label_names_a_date_and_a_time_that_keep_their_words_as_values() {
+    let (day, at) = (signal(Date::new(2026, 3, 5)), signal(TimeOfDay::new(9, 30)));
+    let mut h = mount(move || {
+        column()
+            .child(date_picker(day).label("Due"))
+            .child(time_input(at).label(move || "Starts".to_string()))
+    });
+    let value = |h: &mut Harness, role: Role, name: &str| {
+        let node = h.get_by_role(role, name).node();
+        let says = h.tree.semantic_tree();
+        let found = says.nodes.iter().find(|n| h.tree.node_of(n.id) == Some(node)).unwrap();
+        found.semantics.value.clone()
+    };
+    assert_eq!(value(&mut h, Role::Button, "Due").as_deref(), Some("05/03/2026"));
+    assert_eq!(value(&mut h, Role::Group, "Starts").as_deref(), Some("09:30"));
+}

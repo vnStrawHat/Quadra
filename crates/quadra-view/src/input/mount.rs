@@ -13,6 +13,7 @@ use quadra_tree::{
 };
 
 use super::{CARET_BLINK, TextInput, edit, lines_of};
+use crate::prop::Prop;
 use crate::view::{MountCx, View};
 
 impl View for TextInput {
@@ -47,6 +48,17 @@ impl View for TextInput {
         cx.tree.set_focusable(id, true);
         if let Some(test_id) = self.test_id {
             cx.tree.update_semantics(id, |says| says.test_id = Some(test_id.to_string()));
+        }
+        match self.label {
+            Some(Prop::Value(name)) => cx.tree.update_semantics(id, |says| says.name = name),
+            Some(Prop::Reactive(read)) => {
+                let writer = cx.handle.clone();
+                cx.handle.bind(move || {
+                    let name = read();
+                    writer.with(move |tree| tree.update_semantics(id, |says| says.name = name));
+                });
+            }
+            None => {}
         }
         cx.tree.set_cursor(id, Some(Cursor::Text));
         cx.tree.set_key_context(id, if multiline { TEXT_AREA_CONTEXT } else { TEXT_CONTEXT });

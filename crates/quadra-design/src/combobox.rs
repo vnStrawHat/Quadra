@@ -8,7 +8,7 @@ use quadra_headless::pick::Parts;
 use quadra_layout::{Align, Length};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Along, NodeId, Side, State};
-use quadra_view::{MountCx, Place, View, by_text, column, div, row, scroll};
+use quadra_view::{IntoProp, MountCx, Place, Prop, View, by_text, column, div, row, scroll};
 
 use crate::input::input;
 use crate::palette::{fuzzy_hits, marked};
@@ -25,18 +25,25 @@ pub struct Combobox {
     options: Rc<Vec<String>>,
     value: Signal<String>,
     placeholder: String,
+    label: Option<Prop<String>>,
     pick: Option<Pick>,
 }
 
 /// An input of `value`, 280 px wide, that offers the `options` its text matches.
 pub fn combobox<S: Into<String>>(options: impl IntoIterator<Item = S>, value: Signal<String>) -> Combobox {
     let options = Rc::new(options.into_iter().map(Into::into).collect());
-    Combobox { options, value, placeholder: String::new(), pick: None }
+    Combobox { options, value, placeholder: String::new(), label: None, pick: None }
 }
 
 impl Combobox {
     pub fn placeholder(mut self, words: impl Into<String>) -> Self {
         self.placeholder = words.into();
+        self
+    }
+
+    /// What a reader calls its input, a constant or words that change.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
         self
     }
 
@@ -64,8 +71,13 @@ impl View for Combobox {
             row: Rc::new(face),
             empty: None,
         };
+        let label = self.label;
         let field = move |submit: Rc<dyn Fn()>| {
             let field = input(value).placeholder(&placeholder).icon(icons::SEARCH).width(280.0);
+            let field = match label {
+                Some(name) => field.label(name),
+                None => field,
+            };
             field.on_submit(move |_| submit())
         };
         let panel = |found: &quadra_headless::pick::Found, rows| {

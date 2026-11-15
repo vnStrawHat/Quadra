@@ -7,7 +7,7 @@ use quadra_layout::{Align, Direction, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_view::{Div, MountCx, View, by_text, column, div, row, text_input};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, by_text, column, div, row, text_input};
 
 use crate::icon::icon;
 use crate::input::input;
@@ -19,12 +19,21 @@ pub struct NumberInput {
     step: f64,
     decimals: usize,
     stepper: bool,
+    label: Option<Prop<String>>,
     test_id: Option<&'static str>,
 }
 
 /// A field that edits `value`: whole numbers in steps of 1 unless told otherwise.
 pub fn number_input(value: Signal<f64>) -> NumberInput {
-    NumberInput { value, ends: (-1.0e15, 1.0e15), step: 1.0, decimals: 0, stepper: false, test_id: None }
+    NumberInput {
+        value,
+        ends: (-1.0e15, 1.0e15),
+        step: 1.0,
+        decimals: 0,
+        stepper: false,
+        label: None,
+        test_id: None,
+    }
 }
 
 impl NumberInput {
@@ -51,6 +60,12 @@ impl NumberInput {
         self
     }
 
+    /// What a reader calls the field, a constant or words that change.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
+        self
+    }
+
     pub fn test_id(mut self, id: &'static str) -> Self {
         self.test_id = Some(id);
         self
@@ -74,6 +89,10 @@ impl View for NumberInput {
                 Some(id) => field.test_id(id),
                 None => field,
             };
+            let field = match self.label {
+                Some(name) => field.label(name),
+                None => field,
+            };
             let ghost = |around: Div| {
                 around.hover(|s| s.bg(token::LINE.alpha(0.4))).active(|s| s.bg(token::LINE.alpha(0.6)))
             };
@@ -91,6 +110,10 @@ impl View for NumberInput {
         let field = input(words).width(140.0).invalid(wrong);
         let field = match self.test_id {
             Some(id) => field.test_id(id),
+            None => field,
+        };
+        let field = match self.label {
+            Some(name) => field.label(name),
             None => field,
         };
         // Two halves of the field's height at its end, inside its frame: the frame is 32 px,

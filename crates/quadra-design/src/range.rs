@@ -7,7 +7,7 @@ use quadra_layout::Length;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_view::{Div, MountCx, View, div};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, div};
 
 use crate::slider::{knob, rail, scale};
 use crate::token;
@@ -18,13 +18,13 @@ pub struct RangeSlider {
     ends: (f32, f32),
     step: f32,
     width: f32,
-    name: String,
+    name: Prop<String>,
 }
 
 /// A slider of the range from `low` to `high`, between 0 and 100 in steps of 1, 200 px wide,
 /// unless told otherwise.
 pub fn range_slider(low: Signal<f32>, high: Signal<f32>) -> RangeSlider {
-    RangeSlider { low, high, ends: (0.0, 100.0), step: 1.0, width: 200.0, name: String::new() }
+    RangeSlider { low, high, ends: (0.0, 100.0), step: 1.0, width: 200.0, name: Prop::Value(String::new()) }
 }
 
 impl RangeSlider {
@@ -39,9 +39,9 @@ impl RangeSlider {
         self
     }
 
-    /// What a reader calls the pair.
-    pub fn label(mut self, name: impl Into<String>) -> Self {
-        self.name = name.into();
+    /// What a reader calls the pair, a constant or words that change.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.name = name.into_prop();
         self
     }
 }

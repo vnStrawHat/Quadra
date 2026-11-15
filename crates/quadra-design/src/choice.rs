@@ -18,6 +18,7 @@ pub struct Choice {
     horizontal: bool,
     size: Size,
     disabled: Prop<bool>,
+    label: Option<Prop<String>>,
 }
 
 /// Options one under the other, each with a ring: `chosen` holds which one has the dot.
@@ -29,6 +30,7 @@ pub fn radio_group<S: Into<String>>(options: impl IntoIterator<Item = S>, chosen
         horizontal: false,
         size: Size::Sm,
         disabled: Prop::Value(false),
+        label: None,
     }
 }
 
@@ -53,6 +55,12 @@ impl Choice {
 
     pub fn disabled<M>(mut self, disabled: impl IntoProp<bool, M>) -> Self {
         self.disabled = disabled.into_prop();
+        self
+    }
+
+    /// What a reader calls the group, a constant or words that change.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
         self
     }
 
@@ -103,6 +111,10 @@ impl Choice {
             parts.push(AnyView::new(quadra_headless::radio(option.cursor(Cursor::Pointer), i, chosen)));
         }
         let group = chooser(quadra_headless::radio_group(div(), count, chosen));
+        let group = match self.label {
+            Some(name) => group.label(name),
+            None => group,
+        };
         let group =
             group.disabled(self.disabled).when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
         let group = match (self.segmented, self.horizontal) {

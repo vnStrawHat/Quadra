@@ -9,7 +9,7 @@ use quadra_layout::{Align, Justify};
 use quadra_platform::{Cursor, Key};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, State};
-use quadra_view::{Div, MountCx, NodeRef, View, by_text, column, div, dynamic, row, text};
+use quadra_view::{Div, IntoProp, MountCx, NodeRef, Prop, View, by_text, column, div, dynamic, row, text};
 
 use crate::button::icon_button;
 use crate::icon::icon;
@@ -124,15 +124,23 @@ pub fn calendar(value: Signal<Date>) -> Div {
 
 pub struct DatePicker {
     value: Signal<Date>,
+    label: Option<Prop<String>>,
     test_id: Option<&'static str>,
 }
 
 /// A field of 180 px that shows a date, and opens a calendar to choose another.
 pub fn date_picker(value: Signal<Date>) -> DatePicker {
-    DatePicker { value, test_id: None }
+    DatePicker { value, label: None, test_id: None }
 }
 
 impl DatePicker {
+    /// What a reader calls it, a constant or words that change; the date is then its value.
+    /// Without one it is called by the date.
+    pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
+        self.label = Some(name.into_prop());
+        self
+    }
+
     pub fn test_id(mut self, id: &'static str) -> Self {
         self.test_id = Some(id);
         self
@@ -148,7 +156,11 @@ impl View for DatePicker {
         let face = face.padding_x(8.0).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
-        let face = face.cursor(Cursor::Pointer).label(move || lang.locale().date(value.get()));
+        let date = move || lang.locale().date(value.get());
+        let face = match self.label {
+            Some(name) => face.cursor(Cursor::Pointer).label(name).value(date),
+            None => face.cursor(Cursor::Pointer).label(date),
+        };
         let face = match self.test_id {
             Some(id) => face.test_id(id),
             None => face,

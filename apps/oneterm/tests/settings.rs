@@ -67,7 +67,7 @@ fn the_page_opens_from_the_title_bar_and_writes_what_is_chosen() {
     a.h.settle();
     assert!(a.says("Tabs & spaces"));
     let switches = a.h.query(|n| n.semantics.role == Role::Switch);
-    assert_eq!(switches.len(), 1, "the page's one switch: vertical tabs");
+    assert_eq!(switches.len(), 2, "the page's switches: vertical tabs, then a folded rail");
     a.h.tree.act(switches[0], &SemanticAction::Click);
     a.h.settle();
     assert!(!a.settings.value("tabs.vertical", true).get());
@@ -114,4 +114,25 @@ fn silent_notifications_and_ignored_bells_count_nothing() {
     a.key(Key::D, Mods::CTRL);
     a.feed(0, b"\x07");
     assert!(a.says("0 bells and notices"), "a bell the settings ignore is seen as it rings");
+}
+
+#[test]
+fn new_local_shells_are_logged_where_the_settings_say() {
+    let mut a = app();
+    let folder = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.tmp/oneterm-logs-test");
+    _ = std::fs::remove_dir_all(&folder);
+    a.settings.value("logging.folder", String::new()).set(folder.display().to_string());
+    a.settings.value("logging.local", false).set(true);
+    a.h.settle();
+    a.key(Key::T, Mods::CTRL);
+    let n = a.made.borrow().len() - 1;
+    assert!(a.made.borrow()[n].1.logging());
+    a.feed(n, b"\x1b[1mhello\x1b[0m\r\n");
+    a.made.borrow()[n].1.stop_log();
+    let files: Vec<_> = std::fs::read_dir(&folder).unwrap().flatten().map(|it| it.path()).collect();
+    assert_eq!(files.len(), 1);
+    let name = files[0].file_name().unwrap().to_string_lossy().into_owned();
+    assert!(name.starts_with("local_") && name.ends_with(".log"), "{name}");
+    let text = std::fs::read_to_string(&files[0]).unwrap();
+    assert!(text.starts_with('[') && text.ends_with("] hello\n"), "{text:?}");
 }

@@ -45,14 +45,41 @@ impl Tab {
         self.spaces.with(|spaces| spaces.get(at.min(spaces.len().saturating_sub(1))).cloned())
     }
 
-    /// What the tab is called: the user's name, else its focused program's title.
+    /// What the tab is called: the user's name, else its focused program's title (a path of
+    /// a program shortened to its name), or as the settings say, "Terminal" or the host.
     pub fn title(&self) -> String {
         if let Some(name) = self.name.get() {
             return name;
         }
-        let title = self.focused().map(|space| space.session.title().get()).unwrap_or_default();
-        if title.is_empty() { "Terminal".into() } else { title }
+        let space = self.focused();
+        let fixed = || match space.as_ref().and_then(|it| it.remote.as_ref()) {
+            Some(remote) => remote.target.label(),
+            None => "Terminal".into(),
+        };
+        if self.prefs.tab_title.get() == 1 {
+            return fixed();
+        }
+        let title = space.as_ref().map(|space| space.session.title().get()).unwrap_or_default();
+        if title.is_empty() { fixed() } else { short(&title) }
     }
+}
+
+/// A path of a program, `C:\Windows\system32\cmd.exe - ping`, as `cmd.exe - ping`.
+fn short(title: &str) -> String {
+    let (program, rest) = title.split_once(" - ").map_or((title, None), |(a, b)| (a, Some(b)));
+    let program = match program.rsplit_once('\\') {
+        Some((_, name)) if !name.is_empty() => name,
+        _ => program,
+    };
+    rest.map_or_else(|| program.to_string(), |rest| format!("{program} - {rest}"))
+}
+
+#[cfg(test)]
+#[test]
+fn paths_of_programs_are_shortened() {
+    assert_eq!(short("C:\\Windows\\system32\\cmd.exe"), "cmd.exe");
+    assert_eq!(short("C:\\Windows\\system32\\cmd.exe - ping x"), "cmd.exe - ping x");
+    assert_eq!(short("vim notes.md"), "vim notes.md");
 }
 
 /// What the keys of the app ask for.

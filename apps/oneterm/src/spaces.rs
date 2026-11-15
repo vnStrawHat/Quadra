@@ -156,15 +156,16 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
         .child(column().grow(1.0).min_height(0.0).padding_x(12.0).padding_y(10.0).child(menu_of(
             model,
             &s,
-            space.id,
+            &space,
             terminal(&s),
         )))
 }
 
 /// The space's menu for the other button (specs/19, "Spaces"), when the settings have it; the
 /// terminal follows the settings of the pointer and the wheel.
-fn menu_of(model: &Model, s: &Session, id: u64, view: quadra_term::Terminal) -> impl View + use<> {
-    let p = model.prefs();
+fn menu_of(model: &Model, s: &Session, space: &Space, view: quadra_term::Terminal) -> impl View + use<> {
+    let (p, id, folder) = (model.prefs(), space.id, crate::logs::folder(&model.prefs()));
+    let name = space.remote.as_ref().map_or_else(|| "local".to_string(), |it| it.target.host.clone());
     let (settings, look) = (signal(untrack(|| p.term())), signal(untrack(|| p.look())));
     effect(move || settings.set(p.term()));
     // A new look is followed by the terminal as it is: its screen stays.
@@ -194,6 +195,7 @@ fn menu_of(model: &Model, s: &Session, id: u64, view: quadra_term::Terminal) -> 
             }),
             MenuItem::new("Select all").on_select(move || all.select_all()),
             MenuItem::new("Clear scrollback").on_select(move || clears.clear_history()),
+            logging(&model, &s, &name, folder.clone()),
             MenuItem::separator(),
             MenuItem::new("Split space")
                 .icon(icons::COLUMNS_2)
@@ -204,4 +206,13 @@ fn menu_of(model: &Model, s: &Session, id: u64, view: quadra_term::Terminal) -> 
             }),
         ]
     })
+}
+
+/// Start logging, or Stop logging while a log is open.
+fn logging(model: &Model, s: &Session, name: &str, folder: Option<std::path::PathBuf>) -> MenuItem {
+    let (model, s, name) = (model.clone(), s.clone(), name.to_string());
+    match s.logging() {
+        true => MenuItem::new("Stop logging").on_select(move || s.stop_log()),
+        false => MenuItem::new("Start logging").on_select(move || model.start_log(&s, &name, folder.clone())),
+    }
 }

@@ -108,8 +108,7 @@ pub(crate) fn when(seconds: u64) -> String {
     if seconds == 0 {
         return String::new();
     }
-    let offset = quadra::time::local_now().to_unix(0) - quadra::time::unix_now();
-    let at = quadra::time::DateTime::from_unix(seconds as i64, offset as i32);
+    let at = quadra::time::DateTime::from_unix(seconds as i64, quadra::time::utc_offset());
     format!("{} {:02}:{:02}", at.date, at.time.hour, at.time.minute)
 }
 

@@ -20,7 +20,7 @@ struct App {
     downloads: PathBuf,
 }
 
-/// The app with one tab connected to a test server by a key, its dock open.
+/// The app with one tab connected to a test server by a key, its dock open as an SSH tab's is.
 fn app(name: &str) -> App {
     let dir = folder(name);
     let served = dir.join("served");
@@ -50,10 +50,8 @@ fn app(name: &str) -> App {
         app.view()
     });
     h.settle();
-    let mut a = App { h, served, downloads };
-    a.h.get_by_role(Role::Button, "SFTP").click();
-    a.h.settle();
-    a
+    // An SSH tab shows its dock by itself.
+    App { h, served, downloads }
 }
 
 impl App {

@@ -54,7 +54,10 @@ status bar (26 px). Colours are the kit's roles; the accent is the theme's.
 
 ## Rail (vertical tabs)
 
-248 px on the panel colour, a line on its right. A heading "Tabs" with the count at its right,
+248 px on the panel colour (the setting, 140 to 400), a line on its right. Folded (the heading's
+Fold the tabs, or the setting) it is 44 px: a box of 32 px a tab with its icon, filled with an accent
+bar while it shows, its title as a tooltip that follows it, then a `+` that opens a tab; Unfold the
+tabs at the top. A heading "Tabs" with the count and Fold the tabs at its right,
 then a row per tab: an icon (a terminal, or a window when a space is remote; in the accent while
 it shows), the title, and at the end the tab's signal (below). The active row is filled, has an
 accent bar on its left and a second line in the secondary colour (`2 ssh · 1 local · 3 spaces`).
@@ -133,9 +136,19 @@ A window of its own (980 by 700, its place kept; the title bar's Settings opens 
 it to the front; it closes when 1Term locks and with the main window; where no window can open,
 the harness, the page shows in the main window with Done), the kit's `settings` in its layout of cards: pages with icons, each with
 what it is about, groups with titles; the title bar names the page), a search, pages:
-Appearance, Terminal, Tabs & spaces, SSH & hosts (the count of saved hosts with Add SSH host,
-the recent targets with Forget), SFTP (the downloads folder), Notifications & signals, Status bar,
-Security & lock (and whether programs may read the clipboard by OSC 52, off), Keybindings, Advanced (the file, and a note that settings save as they change).
+Appearance (and the UI's text size, 75 to 200 %, the terminals' with it: the app's
+`TextSize::text`), Terminal, Tabs & spaces (and the tab's title: the program's, a path of a program
+shortened to its name, or "Terminal" and the host), SSH & hosts (the count of saved hosts with Add SSH host,
+the recent targets with Forget; Connections: the keepalive, on, every 30 s from 5 to 3600, given up
+after 3 unanswered from 1 to 20), SFTP (the downloads folder), Notifications & signals, Status bar
+(and frames a second, off: `window().frames()` counted each second), and whether the SFTP dock is
+open is kept for each kind of tab that shows (a local shell's, closed at first; an SSH space's,
+open): it follows the tab, and opening or closing it is remembered for the kind,
+Security & lock (and whether programs may read the clipboard by OSC 52, off), Terminal's
+Logging (log new local shells, log new SSH spaces, both off; the folder, empty for `session-logs`
+in the app's data folder; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
+its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
+logging, and a log that cannot be opened is a card), Keybindings, Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Appearance: the theme; the terminal's text (font family,
 empty for the kit's mono face; size; line height, 1.5) and colours over the theme's

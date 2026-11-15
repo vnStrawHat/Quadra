@@ -260,3 +260,23 @@ fn the_plus_menu_makes_a_tab_or_splits_the_space() {
     a.h.settle();
     assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
 }
+
+#[test]
+fn the_rail_folds_to_its_icons_and_unfolds() {
+    let mut a = app();
+    a.key(Key::T, Mods::CTRL);
+    a.h.get_by_role(Role::Button, "Fold the tabs").click();
+    a.h.settle();
+    assert!(!a.h.has_text("TABS"), "no heading folded");
+    assert_eq!(a.tabs(), 2);
+    let first = a.h.query(|n| n.semantics.role == Role::Tab)[0];
+    a.h.tree.act(first, &quadra::SemanticAction::Click);
+    a.h.settle();
+    assert!(a.h.query(|n| n.semantics.role == Role::Tab && n.semantics.selected).contains(&first));
+    a.h.get_by_role(Role::Button, "New terminal").click();
+    a.h.settle();
+    assert_eq!(a.tabs(), 3);
+    a.h.get_by_role(Role::Button, "Unfold the tabs").click();
+    a.h.settle();
+    assert!(a.h.has_text("TABS"));
+}

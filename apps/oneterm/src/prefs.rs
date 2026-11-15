@@ -12,25 +12,34 @@ pub const CURSORS: [&str; 3] = ["Block", "Bar", "Underline"];
 pub const STARTS: [&str; 2] = ["The active space's directory", "Home"];
 pub const STATUS_SHOWN: [&str; 3] = ["On the tab and the header", "On the tab only", "Ignored"];
 pub const BELLS: [&str; 2] = ["A dot and a count", "Ignored"];
+pub const TITLES: [&str; 2] = ["The program's title", "Terminal, or the host"];
 pub const NOTICES: [&str; 3] = ["A card for 6 s", "A card until dismissed", "Silent"];
 /// The colours a terminal may have over the theme's: their keys and names.
-pub const COLORS: [(&str, &str); 4] = [
+pub const COLORS: [(&str, &str); 8] = [
     ("terminal.colors.foreground", "Foreground"),
     ("terminal.colors.background", "Background"),
     ("terminal.colors.cursor", "Cursor"),
     ("terminal.colors.selection", "Selection"),
+    ("terminal.colors.gutter_fg", "Gutter text"),
+    ("terminal.colors.gutter_bg", "Gutter background"),
+    ("terminal.colors.clock_fg", "Gutter clock"),
+    ("terminal.colors.line_number_fg", "Gutter line number"),
 ];
 
 /// The settings, as signals: writing one saves it.
 #[derive(Clone, Copy)]
 pub struct Prefs {
     pub theme: Signal<usize>,
+    /// The UI's text, in percent of the kit's sizes.
+    pub ui_text: Signal<f64>,
     pub font_size: Signal<f64>,
     /// A family of the system; empty, the kit's mono face.
     pub font_family: Signal<String>,
     pub line_height: Signal<f64>,
     /// Colours over the theme's, as `#rrggbb`; empty, the theme's.
-    pub colors: [Signal<String>; 4],
+    pub colors: [Signal<String>; 8],
+    /// The gutter: when each row was written and its line number.
+    pub show_gutter: Signal<bool>,
     pub cursor: Signal<usize>,
     pub blink: Signal<bool>,
     pub scrollback: Signal<f64>,
@@ -44,6 +53,22 @@ pub struct Prefs {
     pub shell: Signal<String>,
     pub start: Signal<usize>,
     pub vertical: Signal<bool>,
+    /// The rail's width, and whether it is folded to its icons.
+    pub rail_width: Signal<f64>,
+    pub rail_folded: Signal<bool>,
+    /// Whether the SFTP dock is open while a local tab shows, and while an SSH tab does.
+    pub dock_local: Signal<bool>,
+    pub dock_ssh: Signal<bool>,
+    /// What names a tab not renamed: the program's title (OSC 0/2) or a fixed label.
+    pub tab_title: Signal<usize>,
+    pub keepalive_on: Signal<bool>,
+    /// New local shells and new SSH spaces are logged; where, and after or over a file.
+    pub log_local: Signal<bool>,
+    pub log_ssh: Signal<bool>,
+    pub log_folder: Signal<String>,
+    pub log_mode: Signal<usize>,
+    pub keepalive_secs: Signal<f64>,
+    pub keepalive_max: Signal<f64>,
     pub status_shown: Signal<usize>,
     pub toast_blocked: Signal<bool>,
     pub progress_tab: Signal<bool>,
@@ -53,6 +78,7 @@ pub struct Prefs {
     pub show_git: Signal<bool>,
     pub show_usage: Signal<bool>,
     pub show_clock: Signal<bool>,
+    pub show_fps: Signal<bool>,
     /// The master password's hash; empty: none, and no lock.
     pub password: Signal<String>,
     pub lock_after: Signal<f64>,
@@ -72,10 +98,12 @@ impl Prefs {
         let s = &*settings;
         Prefs {
             theme: choice(s, "appearance.theme", &THEMES),
+            ui_text: s.value("appearance.ui_text_percent", 100.0),
             font_size: s.value("terminal.font_size", 13.0),
             font_family: s.value("terminal.font_family", String::new()),
             line_height: s.value("terminal.line_height", 1.5),
             colors: COLORS.map(|(key, _)| s.value(key, String::new())),
+            show_gutter: s.value("terminal.show_gutter", false),
             cursor: choice(s, "terminal.cursor", &CURSORS),
             blink: s.value("terminal.cursor_blink", false),
             scrollback: s.value("terminal.scrollback", 10_000.0),
@@ -87,6 +115,18 @@ impl Prefs {
             shell: s.value("terminal.shell", String::new()),
             start: choice(s, "terminal.start_in", &STARTS),
             vertical: s.value("tabs.vertical", true),
+            rail_width: s.value("tabs.rail_width", 248.0),
+            rail_folded: s.value("tabs.rail_folded", false),
+            dock_local: s.value("sftp.dock_open_local", false),
+            dock_ssh: s.value("sftp.dock_open_ssh", true),
+            tab_title: choice(s, "tabs.title", &TITLES),
+            keepalive_on: s.value("ssh.keepalive", true),
+            log_local: s.value("logging.local", false),
+            log_ssh: s.value("logging.ssh", false),
+            log_folder: s.value("logging.folder", String::new()),
+            log_mode: choice(s, "logging.write_mode", &crate::logs::MODES),
+            keepalive_secs: s.value("ssh.keepalive_interval_secs", 30.0),
+            keepalive_max: s.value("ssh.keepalive_max", 3.0),
             status_shown: choice(s, "signals.status", &STATUS_SHOWN),
             toast_blocked: s.value("signals.status_toast", true),
             progress_tab: s.value("signals.progress_tab", true),
@@ -96,6 +136,7 @@ impl Prefs {
             show_git: s.value("status_bar.git", true),
             show_usage: s.value("status_bar.usage", true),
             show_clock: s.value("status_bar.clock", true),
+            show_fps: s.value("status_bar.fps", false),
             password: s.value("security.password", String::new()),
             lock_after: s.value("security.lock_after_minutes", 10.0),
             clipboard_read: s.value("security.allow_clipboard_read", false),
@@ -109,21 +150,34 @@ impl Prefs {
 impl Prefs {
     /// How a terminal looks, read where it is called.
     pub fn look(&self) -> quadra_term::TermLook {
-        let [foreground, background, cursor, selection] =
+        let [foreground, background, cursor, selection, gutter_fg, gutter_bg, clock_fg, line_number_fg] =
             self.colors.map(|it| it.with(|words| quadra::Color::parse_hex(words.trim())));
         quadra_term::TermLook {
             family: self.font_family.get(),
             size: self.font_size.get().clamp(6.0, 48.0) as f32,
             line_height: self.line_height.get().clamp(1.0, 2.5) as f32,
+            gutter: self.show_gutter.get(),
             colors: quadra_term::TermColors {
                 foreground,
                 background,
                 cursor,
                 selection,
+                gutter_fg,
+                gutter_bg,
+                clock_fg,
+                line_number_fg,
                 ..Default::default()
             },
             ..quadra_term::TermLook::default()
         }
+    }
+
+    /// The SSH keepalive a new connection asks for.
+    pub fn keepalive(&self) -> (Option<std::time::Duration>, usize) {
+        let every =
+            std::time::Duration::from_secs(self.keepalive_secs.get_untracked().clamp(5.0, 3600.0) as u64);
+        let on = self.keepalive_on.get_untracked();
+        (on.then_some(every), self.keepalive_max.get_untracked().clamp(1.0, 20.0) as usize)
     }
 
     /// What a terminal view is given of the settings, read where it is called.

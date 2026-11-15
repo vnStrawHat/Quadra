@@ -51,8 +51,8 @@ async fn open(
 ) -> Result<Link, String> {
     let (host, port) = (hop.target.host.clone(), hop.target.port);
     let config = Arc::new(client::Config {
-        keepalive_interval: Some(Duration::from_secs(30)),
-        keepalive_max: 3,
+        keepalive_interval: options.keepalive,
+        keepalive_max: options.keepalive_max.max(1),
         ..Default::default()
     });
     let checker =

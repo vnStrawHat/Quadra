@@ -6,7 +6,9 @@ use quadra::{
     Align, AnyView, BorderStyle, Display, Length, MouseButton, NodeRef, PointerKind, Role, Signal, View,
     by_text, column, div, dynamic, each, row, signal, text,
 };
-use quadra_design::{MenuItem, context_menu, fonts, icon, icons, input, searched_menu, token};
+use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, input, searched_menu, token};
+
+mod narrow;
 
 use crate::marks;
 use crate::model::{Model, Tab};
@@ -16,9 +18,21 @@ use crate::shells;
 pub(crate) struct Dragged(pub u64);
 
 pub(crate) fn rail(model: &Model) -> impl View + use<> {
-    let (tabs, expanded) = (model.tabs(), model.ui().expanded);
+    let (folded, shown) = (model.prefs().rail_folded, model.clone());
+    dynamic(move || match folded.get() {
+        true => AnyView::new(narrow::narrow(&shown, folded)),
+        false => AnyView::new(full(&shown, folded)),
+    })
+}
+
+/// The rail at its width: the tabs, New terminal, the hosts.
+fn full(model: &Model, folded: Signal<bool>) -> impl View + use<> {
+    let (tabs, expanded, wide) = (model.tabs(), model.ui().expanded, model.prefs().rail_width);
     let count = div().font_weight(500).child(text(move || tabs.with(Vec::len).to_string()));
-    let heading = heading("TABS", 10.0).child(count);
+    let fold = icon_button(icons::PANEL_LEFT, "Fold the tabs").size(quadra_design::Size::Xs);
+    let ends =
+        row().align_items(Align::Center).gap(6.0).child(count).child(fold.on_click(move || folded.set(true)));
+    let heading = heading("TABS", 10.0).child(ends);
     let shown = model.clone();
     let rows =
         each(move || tabs.get(), |tab| tab.id, move |tab: Signal<Tab>| tab_row(&shown, tab.get_untracked()));
@@ -42,7 +56,7 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .child(div().grow(1.0).child(text("New terminal")))
         .child(div().font_family(fonts::MONO).text_size(11.0).child(text("Ctrl+T")));
     column()
-        .width(248.0)
+        .width(move || wide.get().clamp(140.0, 400.0) as f32)
         .shrink(0.0)
         .bg(token::PANEL)
         .border_right(1.0)

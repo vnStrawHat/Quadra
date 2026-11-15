@@ -4,8 +4,8 @@
 
 use quadra::{Align, column, div, effect, row, signal, text};
 use quadra_design::{
-    SettingsGroup, SettingsPage, Variant, button, icon, icons, input, key_hint, select, settings, switch,
-    token,
+    SettingsGroup, SettingsPage, Variant, button, icon, icons, input, key_hint, number_input, segmented,
+    select, settings, switch, token,
 };
 
 use crate::model::Model;
@@ -14,7 +14,7 @@ mod look;
 use crate::prefs::{self, Prefs};
 
 /// Each page: its name, its icon and what it is about.
-const PAGES_ABOUT: [(&str, &str, &str); 10] = [
+const PAGES_ABOUT: [(&str, &str, &str); 11] = [
     ("Appearance", icons::PALETTE, "The theme, and the terminal's text and colours."),
     (
         "Terminal",
@@ -29,6 +29,7 @@ const PAGES_ABOUT: [(&str, &str, &str); 10] = [
     ("Security & lock", icons::LOCK, "The master password and the lock when idle."),
     ("Keybindings", icons::COMMAND, "The app's keys."),
     ("Advanced", icons::CODE, "The settings file."),
+    ("About", icons::INFO, "Which 1Term this is."),
 ];
 
 /// The app's keys as the Keybindings page lists them.
@@ -81,11 +82,19 @@ pub(crate) fn page(model: &Model) -> quadra::Div {
 }
 
 fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
-    let tabs = SettingsGroup::new("Tabs & spaces").row(
-        "Vertical tabs",
-        "Tabs in a rail at the left; off, in a strip above the spaces.",
-        switch(p.vertical),
-    );
+    let tabs = SettingsGroup::new("Tabs & spaces")
+        .row(
+            "Vertical tabs",
+            "Tabs in a rail at the left; off, in a strip above the spaces.",
+            switch(p.vertical),
+        )
+        .row(
+            "Rail width",
+            "The vertical tabs' width, from 140 to 400 px.",
+            number_input(p.rail_width).range(140.0, 400.0).step(10.0),
+        )
+        .row("Fold the rail", "Only the tabs' icons, in 44 px.", switch(p.rail_folded))
+        .row("Tab title", "What names a tab not renamed.", select(prefs::TITLES, p.tab_title).width(240.0));
     let signals = SettingsGroup::new("Signals")
         .row("Program states", "OSC 7501.", select(prefs::STATUS_SHOWN, p.status_shown).width(240.0))
         .row("Card when blocked", "A card when a program waits or failed.", switch(p.toast_blocked))
@@ -96,7 +105,8 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
     let status = SettingsGroup::new("Status bar")
         .row("Git", "The branch and the files changed.", switch(p.show_git))
         .row("CPU and memory", "What 1Term uses.", switch(p.show_usage))
-        .row("Clock", "The local time.", switch(p.show_clock));
+        .row("Clock", "The local time.", switch(p.show_clock))
+        .row("Frames a second", "What the window draws, counted each second.", switch(p.show_fps));
     let lock = crate::locked::security(model.lock(), p.lock_after);
     let keys = KEYS
         .iter()
@@ -113,9 +123,23 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .child(text(format!("Settings are saved to {file} as you change them.")));
     vec![
         look::appearance(p),
-        look::terminal(p),
+        look::terminal(p).into_iter().chain([logging(p)]).collect(),
         vec![tabs],
-        vec![hosts(p, model)],
+        vec![
+            hosts(p, model),
+            SettingsGroup::new("Connections")
+                .row("Keepalive", "Asked of an idle server so the connection stays.", switch(p.keepalive_on))
+                .row(
+                    "Every",
+                    "Seconds between two, from 5 to 3600.",
+                    number_input(p.keepalive_secs).range(5.0, 3600.0).step(5.0),
+                )
+                .row(
+                    "Unanswered",
+                    "How many go unanswered before the connection is given up.",
+                    number_input(p.keepalive_max).range(1.0, 20.0),
+                ),
+        ],
         vec![SettingsGroup::new("Downloads").row(
             "Downloads folder",
             "Where a file downloaded from the dock goes; empty, the user's Downloads.",
@@ -133,7 +157,31 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         ],
         vec![keys],
         vec![advanced, SettingsGroup::new("").wide(note)],
+        vec![
+            SettingsGroup::new("1Term")
+                .row("Version", "", text(env!("CARGO_PKG_VERSION")))
+                .row("Terminal engine", "", text("oneterm-vt 0.2"))
+                .row("Built with", "", text("Quadra, a native UI framework on Direct3D 11 and DirectWrite"))
+                .row("License", "", text(env!("CARGO_PKG_LICENSE"))),
+        ],
     ]
+}
+
+/// Which spaces are logged from their start, where, and how a file there is written.
+fn logging(p: Prefs) -> SettingsGroup {
+    SettingsGroup::new("Logging")
+        .row("Log local shells", "Each new local shell writes what it shows to a file.", switch(p.log_local))
+        .row("Log SSH spaces", "Each new SSH space does.", switch(p.log_ssh))
+        .row(
+            "Folder",
+            "Where logs go; empty, session-logs in 1Term's data folder.",
+            input(p.log_folder).placeholder("session-logs").width(240.0),
+        )
+        .row(
+            "A file there",
+            "Written after what it holds, or over it.",
+            segmented(crate::logs::MODES, p.log_mode),
+        )
 }
 
 /// The saved hosts and the recent targets, with what adds one and what forgets them.

@@ -24,10 +24,33 @@ use transfers::transfers;
 /// How many entries the list shows; a longer folder says how many more.
 const SHOWN: usize = 2000;
 
+/// The dock is open or closed as the user left it for the kind of tab that shows: a local
+/// shell's, closed at first, or an SSH space's, open.
+fn follow_kind(model: &Model, open: quadra::Signal<bool>) {
+    let (p, kinds) = (model.prefs(), model.clone());
+    let remote = memo(move || {
+        kinds.active_tab().is_some_and(|tab| tab.spaces.with(|all| all.iter().any(|it| it.remote.is_some())))
+    });
+    let slot = move |remote: bool| if remote { p.dock_ssh } else { p.dock_local };
+    effect(move || {
+        let wanted = slot(remote.get()).get();
+        if quadra::untrack(|| open.get()) != wanted {
+            open.set(wanted);
+        }
+    });
+    effect(move || {
+        let (now, slot) = (open.get(), slot(quadra::untrack(|| remote.get())));
+        if quadra::untrack(|| slot.get()) != now {
+            slot.set(now);
+        }
+    });
+}
+
 /// The dock, or in the workspace's place the expanded view.
 pub(crate) fn dock(model: &Model) -> impl View + use<> {
     let (open, expanded) = (model.ui().dock, model.ui().expanded);
     let d = Dock::new(model, open);
+    follow_kind(model, open);
     let views = model.clone();
     let shows = dynamic(move || match expanded.get() {
         true => AnyView::new(crate::expanded::view(&views, d)),

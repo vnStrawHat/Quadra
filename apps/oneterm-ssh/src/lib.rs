@@ -49,6 +49,10 @@ pub struct Options {
     /// The jump hosts, in the order they are gone through (4 at most).
     pub jumps: Vec<Hop>,
     pub forwards: Vec<Forward>,
+    /// A keepalive asked of the server while idle, every so often (`None`: never), and how
+    /// many go unanswered before the connection is given up.
+    pub keepalive: Option<Duration>,
+    pub keepalive_max: usize,
 }
 
 /// A host on the way, and how to sign in to it.
@@ -101,6 +105,8 @@ impl Options {
             cols: 80,
             jumps: Vec::new(),
             forwards: Vec::new(),
+            keepalive: Some(Duration::from_secs(30)),
+            keepalive_max: 3,
         }
     }
 }

@@ -12,6 +12,7 @@ mod hosts;
 mod local;
 mod lock;
 mod locked;
+mod logs;
 mod marks;
 mod model;
 mod page;
@@ -82,6 +83,16 @@ impl OneTerm {
 
     pub fn view(&self) -> impl View + use<> {
         let (model, window) = (self.model.clone(), use_context::<Window>());
+        // The size of the UI's text, the terminals' with it, as the settings say.
+        if let Some(size) = use_context::<quadra::Signal<quadra::TextSize>>() {
+            let percent = model.prefs().ui_text;
+            quadra::effect(move || {
+                let text = (percent.get().clamp(75.0, 200.0) / 100.0) as f32;
+                if quadra::untrack(|| size.get()).text != text {
+                    size.update(|it| it.text = text);
+                }
+            });
+        }
         // The tabs in the rail at the left, or in a strip above the spaces.
         let (vertical, shown) = (model.vertical(), model.clone());
         let body = dynamic(move || match vertical.get() {

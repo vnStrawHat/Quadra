@@ -26,6 +26,8 @@ pub struct Launch {
     pub scrollback: u32,
     /// A host to connect to instead of a local shell (P2).
     pub ssh: Option<Remote>,
+    /// The SSH keepalive: how often (`None`: never) and how many may go unanswered.
+    pub keepalive: (Option<std::time::Duration>, usize),
 }
 
 /// A host and how to sign in to it.
@@ -96,6 +98,7 @@ impl Model {
             cursor,
             scrollback: p.scrollback.get_untracked().clamp(0.0, 1.0e6) as u32,
             ssh: None,
+            keepalive: p.keepalive(),
         }
     }
 

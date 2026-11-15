@@ -109,6 +109,10 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
         .child(div().grow(1.0))
         .child(meter(&shows))
         .child(ruled(move || open() && prefs.show_usage.get(), using))
+        .child(ruled(move || open() && prefs.show_fps.get(), {
+            let said = fps(prefs.show_fps);
+            bright(move || said.get())
+        }))
         .child(ruled(open, bells))
         .child(ruled(move || open() && left().is_some(), locks))
         .child(
@@ -158,6 +162,20 @@ fn meter(model: &Model) -> impl View + use<> {
                 .text_color(token::ACCENT)
                 .child(text(move || part_of.get().map(|n| format!("{n}%")).unwrap_or_default())),
         )
+}
+
+/// The frames the window made in the last second, `60 fps`, counted while shown.
+fn fps(shown: Signal<bool>) -> Signal<String> {
+    let (said, window) = (quadra::signal(String::new()), quadra::use_context::<quadra::Window>());
+    let last = std::cell::Cell::new(0u64);
+    let _ = interval(Duration::from_secs(1), move || {
+        let made = window.as_ref().map_or(0, quadra::Window::frames);
+        let n = made.saturating_sub(last.replace(made));
+        if shown.get_untracked() {
+            said.set(format!("{n} fps"));
+        }
+    });
+    said
 }
 
 /// The processor and memory 1Term uses, read every 2 s: `3%`, `182 MB`.

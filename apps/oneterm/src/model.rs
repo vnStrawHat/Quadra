@@ -138,7 +138,17 @@ impl Model {
         let scope = self.0.owner.run(Scope::child);
         let (id, remote) = (self.id(), launch.ssh.clone());
         let session = scope.run(|| {
+            let p = self.0.prefs;
+            let (logged, name) = match &launch.ssh {
+                Some(remote) => (p.log_ssh.get_untracked(), remote.target.host.clone()),
+                None => {
+                    (p.log_local.get_untracked(), launch.shell.as_ref().map_or("local", |it| it.name).into())
+                }
+            };
             let session = (self.0.new_session)(launch);
+            if logged {
+                self.start_log(&session, &name, crate::logs::folder(&p));
+            }
             self.watch(id, &session);
             let (rows, kept) = (self.0.prefs.scrollback, session.clone());
             quadra::effect(move || kept.set_scrollback(rows.get().clamp(0.0, 1.0e6) as u32));

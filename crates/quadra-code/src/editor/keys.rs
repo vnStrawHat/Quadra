@@ -43,6 +43,8 @@ pub enum EditorCommand {
     FindNext(bool),
 }
 
+// ponytail: one action with data, so a keymap file cannot name a command yet; names for
+// them (`Actions::add_with`) when a user's file needs them.
 impl Action for EditorCommand {
     const NAME: &'static str = "editor::Command";
 }

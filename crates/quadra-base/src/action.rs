@@ -1,7 +1,7 @@
 //! What the keyboard asks of components (specs/13, "Components"; specs/17): actions, bound in
 //! the keymap of the base, never raw keys. Their names keep the prefix `kit::`.
 
-use quadra_tree::{Action, Keymap};
+use quadra_tree::{Action, Actions, Keymap};
 
 /// The key context of a control that is activated: a button, a checkbox, a tab.
 pub const CONTROL: &str = "control";
@@ -159,6 +159,16 @@ pub struct Cancel;
 
 impl Action for Cancel {
     const NAME: &'static str = "kit::cancel";
+}
+
+/// The actions of the base, and the tree's, for a keymap file to name (`Keymap::load`).
+pub fn actions() -> Actions {
+    let mut all = Actions::new();
+    all.add(Confirm).add(MoveNext).add(MovePrevious).add(MoveFirst).add(MoveLast);
+    all.add(PageNext).add(PagePrevious).add(ExtendNext).add(ExtendPrevious).add(Copy);
+    all.add(NextChange).add(PreviousChange).add(Increase).add(Decrease).add(IncreaseMore);
+    all.add(DecreaseMore).add(MoveInto).add(MoveOut).add(Cancel);
+    all
 }
 
 /// The key bindings of the base over those every window has. An app adds its own to it.

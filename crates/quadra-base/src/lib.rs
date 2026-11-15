@@ -25,4 +25,4 @@ pub mod time;
 pub mod tree;
 pub mod work;
 
-pub use action::keymap;
+pub use action::{actions, keymap};

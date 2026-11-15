@@ -183,3 +183,17 @@ fn a_button_shows_an_icon_before_its_label_or_alone() {
     // the pointer comes), three icons, and eight letters.
     assert_eq!(stats.instances_written, 1 + 3 + 3 + 8);
 }
+
+#[test]
+fn a_keymap_file_names_the_kits_actions() {
+    let mut p = page();
+    let mut keymap = quadra_kit::keymap();
+    keymap.load("[control && !menu]\nf9 = kit::confirm\n", &quadra_kit::actions()).unwrap();
+    p.h.tree.set_keymap(Rc::new(keymap));
+    p.dirty.set(true);
+    p.h.frame();
+    let save = p.node("save");
+    p.h.tree.focus(save);
+    p.h.key(Key::F9, Mods::NONE);
+    assert_eq!(p.saved.get_untracked(), 1);
+}

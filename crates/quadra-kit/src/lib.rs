@@ -75,7 +75,7 @@ pub use number::{NumberInput, number_input};
 pub use palette::{Command, command_palette, fuzzy, fuzzy_hits, marked};
 pub use popup::{Edge, popover};
 pub use progress::{Busy, Skeleton, Spinner, progress, progress_busy, skeleton, spinner};
-pub use quadra_base::{action, keymap};
+pub use quadra_base::{action, actions, keymap};
 pub use range::{RangeSlider, range_slider};
 pub use root::{install, install_system, root};
 pub use select::{Select, select};

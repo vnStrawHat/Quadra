@@ -20,7 +20,8 @@ use windows::Win32::UI::Accessibility::{
     CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationInvokePattern,
     IUIAutomationRangeValuePattern, IUIAutomationTextPattern, IUIAutomationTogglePattern, ToggleState_On,
     TreeScope_Descendants, UIA_AutomationIdPropertyId, UIA_ButtonControlTypeId, UIA_InvokePatternId,
-    UIA_RangeValuePatternId, UIA_TextPatternId, UIA_TogglePatternId,
+    UIA_LevelPropertyId, UIA_PositionInSetPropertyId, UIA_RangeValuePatternId, UIA_SizeOfSetPropertyId,
+    UIA_TextPatternId, UIA_TogglePatternId,
 };
 use windows::core::{BSTR, Result};
 
@@ -29,14 +30,16 @@ const SAVE: u64 = 2;
 const DONE: u64 = 3;
 const NAME: u64 = 4;
 const VOLUME: u64 = 5;
+const FILES: u64 = 6;
+const ROW: u64 = 7;
 
 fn node(id: u64, role: Role, name: &str, bounds: Rect, children: &[u64]) -> SemanticNode {
     let semantics = Semantics { role, name: name.to_string(), ..Semantics::default() };
     SemanticNode { id, semantics, bounds, focused: false, focusable: true, children: children.to_vec() }
 }
 
-/// A window holding a button, a checkbox, an input with a selection and a slider, as the
-/// tree would describe them.
+/// A window holding a button, a checkbox, an input with a selection, a slider and a tree of
+/// seven rows that show, as the tree would describe them.
 fn page(done: bool) -> TreeUpdate {
     let mut save = node(SAVE, Role::Button, "Save", Rect::new(10.0, 20.0, 80.0, 24.0), &[]);
     save.semantics.test_id = Some("save".to_string());
@@ -49,9 +52,14 @@ fn page(done: bool) -> TreeUpdate {
     let mut volume = node(VOLUME, Role::Slider, "Volume", Rect::new(100.0, 60.0, 120.0, 20.0), &[]);
     volume.semantics.test_id = Some("volume".to_string());
     volume.semantics.range = Some(RangeValue { value: 40.0, min: 0.0, max: 100.0, step: 5.0 });
-    let all = [SAVE, DONE, NAME, VOLUME];
+    let mut files = node(FILES, Role::Tree, "Files", Rect::new(10.0, 100.0, 200.0, 80.0), &[ROW]);
+    files.semantics.set_size = Some(7);
+    let mut row = node(ROW, Role::TreeItem, "main.rs", Rect::new(10.0, 100.0, 200.0, 20.0), &[]);
+    row.semantics.test_id = Some("row".to_string());
+    (row.semantics.level, row.semantics.position) = (Some(2), Some(4));
+    let all = [SAVE, DONE, NAME, VOLUME, FILES];
     let window = node(WINDOW, Role::Window, "", Rect::new(0.0, 0.0, 320.0, 200.0), &all);
-    TreeUpdate { nodes: vec![window, save, check, name, volume], root: WINDOW, focus: None }
+    TreeUpdate { nodes: vec![window, save, check, name, volume, files, row], root: WINDOW, focus: None }
 }
 
 /// The app's part: it sends the tree when it is wanted, and checks the box when asked to.
@@ -106,6 +114,8 @@ struct Read {
     /// The selected text of the input, and the slider's value and maximum.
     selected: String,
     volume: (f64, f64),
+    /// The row of the tree: its level, its place in the set from 1, and the set's size.
+    row: (i32, i32, i32),
 }
 
 /// A screen reader's side, on a thread of its own: calls into the window's thread wait for
@@ -128,6 +138,13 @@ fn read(hwnd: isize) -> Result<Read> {
         let range: IUIAutomationRangeValuePattern =
             find("volume")?.GetCurrentPatternAs(UIA_RangeValuePatternId)?;
         let volume = (range.CurrentValue()?, range.CurrentMaximum()?);
+        let row = find("row")?;
+        let number = |id| -> Result<i32> { i32::try_from(&row.GetCurrentPropertyValue(id)?) };
+        let row = (
+            number(UIA_LevelPropertyId)?,
+            number(UIA_PositionInSetPropertyId)?,
+            number(UIA_SizeOfSetPropertyId)?,
+        );
         let bounds = save.CurrentBoundingRectangle()?;
         let toggle: IUIAutomationTogglePattern = done.GetCurrentPatternAs(UIA_TogglePatternId)?;
         let checked_before = toggle.CurrentToggleState()? == ToggleState_On;
@@ -147,6 +164,7 @@ fn read(hwnd: isize) -> Result<Read> {
             checked_after: toggle.CurrentToggleState()? == ToggleState_On,
             selected,
             volume,
+            row,
         })
     }
 }
@@ -173,7 +191,8 @@ fn a_screen_reader_finds_the_controls_of_a_window_and_asks_them_to_act() {
     let size = ((80.0 * scale).round() as i32, (24.0 * scale).round() as i32);
     let (selected, volume) = ("Việt".to_string(), (40.0, 100.0));
     let (name, checked_before, checked_after) = ("Save".to_string(), false, true);
-    let want = Read { name, is_button: true, size, checked_before, checked_after, selected, volume };
+    let row = (2, 5, 7);
+    let want = Read { name, is_button: true, size, checked_before, checked_after, selected, volume, row };
     assert_eq!(read, want);
     // The tree was asked for once, and each request came back as semantic actions: the
     // adapter gives what can have the focus the focus before it clicks it.

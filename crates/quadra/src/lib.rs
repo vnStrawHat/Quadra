@@ -51,9 +51,9 @@ pub use quadra_reactive::{
 };
 
 pub use quadra_tree::{
-    Action, Along, BorderStyle, Fit, FocusNext, FocusPrevious, GoBack, GoForward, Gradient, GradientKind,
-    KeyEvent, Keymap, KeymapError, Keystroke, Paint, PointerEvent, PointerKind, Role, SemanticAction, Side,
-    State, Theme, Token,
+    Action, Actions, Along, BorderStyle, Fit, FocusNext, FocusPrevious, GoBack, GoForward, Gradient,
+    GradientKind, KeyEvent, Keymap, KeymapError, Keystroke, Paint, PointerEvent, PointerKind, Role,
+    SemanticAction, Side, State, Theme, Token,
 };
 pub use quadra_ui::{
     AnyView, Div, ImageSource, ImageView, Images, IntoProp, MountCx, NodeRef, Place, Refine, Region, Span,

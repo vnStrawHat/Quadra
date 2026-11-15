@@ -31,16 +31,13 @@ pub trait Branch: Sized + 'static {
     }
 }
 
-/// A row that shows: the thing, how deep it is, the row of what it is in, and its place
-/// among the things that are in that too.
+/// A row that shows: the thing, how deep it is, and the row of what it is in.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Shown<R> {
     pub id: String,
     pub row: R,
     pub depth: usize,
     pub parent: Option<usize>,
-    pub place: usize,
-    pub siblings: usize,
     /// Whether it holds anything, and whether it is open.
     pub holds: bool,
     pub open: bool,
@@ -53,11 +50,11 @@ fn walk<B: Branch>(
     parent: Option<usize>,
     out: &mut Vec<Shown<B::Row>>,
 ) {
-    for (place, node) in nodes.iter().enumerate() {
+    for node in nodes {
         let holds = !node.children().is_empty() || node.lazy();
         let is_open = holds && open.contains(node.id());
-        let (id, row, siblings) = (node.id().to_string(), node.row(is_open), nodes.len());
-        out.push(Shown { id, row, depth, parent, place, siblings, holds, open: is_open });
+        let (id, row) = (node.id().to_string(), node.row(is_open));
+        out.push(Shown { id, row, depth, parent, holds, open: is_open });
         if is_open {
             walk(node.children(), open, depth + 1, Some(out.len() - 1), out);
         }
@@ -179,7 +176,7 @@ impl<B: Branch> View for Tree<B> {
             self.row_height,
             signal(0.0),
             move |at| {
-                let face = face.clone();
+                let (row_at, face) = (at, face.clone());
                 let here = memo(move || shown.get().get(at.get()).cloned());
                 dynamic(move || {
                     let Some(at) = here.get() else { return div() };
@@ -194,9 +191,11 @@ impl<B: Branch> View for Tree<B> {
                     let state = Line { on: on.clone(), here: Rc::new(here), focused };
                     let line = face(&at, state).role(Role::TreeItem);
                     let on = move || on();
-                    // To a reader: how deep it is, and its place among its siblings.
-                    let line = line.selected(on).level(at.depth + 1);
-                    let line = line.place_in_set(at.place).set_size(at.siblings);
+                    // To a reader: how deep it is, and its place among the rows that show, the set
+                    // its container counts.
+                    // ponytail: not among its siblings: the UI Automation adapter takes the size of
+                    // the set from the container only; siblings when an item can say its own.
+                    let line = line.selected(on).level(at.depth + 1).place_in_set(move || row_at.get());
                     let line = if at.holds { line.expanded(at.open) } else { line };
                     line.on_click(move |e| {
                         let plain = !e.mods.contains(Mods::CTRL) && !e.mods.contains(Mods::SHIFT);

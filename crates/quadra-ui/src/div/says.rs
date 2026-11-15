@@ -91,8 +91,7 @@ impl Div {
         })
     }
 
-    /// How many items the set of the box holds, mounted or not; or, of an item, the set it
-    /// is in.
+    /// How many items the set of the box holds, mounted or not.
     pub fn set_size<M>(self, count: impl IntoProp<usize, M>) -> Self {
         self.with_value(count.into_prop(), |tree, id, count| {
             tree.update_semantics(id, |says| says.set_size = Some(count))

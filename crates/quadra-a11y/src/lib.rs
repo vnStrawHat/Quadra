@@ -97,8 +97,7 @@ pub struct Semantics {
     /// Where an item is in its set, from 0: a tab, an option, a row of a list.
     pub position: Option<usize>,
     /// How many items the set of a container holds, those that are not mounted too: a list
-    /// of a million rows says so while it holds forty nodes. An item may say it of the set it
-    /// is in: a row of a tree, of its siblings.
+    /// of a million rows says so while it holds forty nodes.
     pub set_size: Option<usize>,
     /// How deep an item is, from 1: a row of a tree.
     pub level: Option<usize>,

@@ -17,7 +17,7 @@ use quadra_tree::{NodeId, Token};
 use quadra_ui::{IntoProp, MountCx, Prop, View, column, div, dynamic, uniform_list, virtual_list};
 
 use crate::{fonts, token};
-pub use lines::{Step, diff_lines};
+pub use lines::{Step, diff_ids, diff_lines};
 pub use rows::DiffMode;
 use rows::rows;
 use view::build;

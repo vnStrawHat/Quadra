@@ -1,7 +1,9 @@
 //! The marks of a diff in the gutter (behaviour/18, "View"): against a text the editor is
 //! told is the base, which lines were added, which changed, and where lines were removed.
 
-use quadra_kit::{Step, diff_lines, token};
+use std::hash::{DefaultHasher, Hash, Hasher};
+
+use quadra_kit::{Step, diff_ids, diff_lines, token};
 use quadra_prim::{Color, Rect};
 use quadra_render::Quad;
 use quadra_tree::{PaintCx, Theme};
@@ -21,9 +23,14 @@ pub enum Mark {
 /// change of as many of them as there are of both.
 pub fn marks(old: &str, new: &str) -> Vec<Mark> {
     let (old, new): (Vec<&str>, Vec<&str>) = (old.split('\n').collect(), new.split('\n').collect());
-    let mut out = vec![Mark::None; new.len()];
+    marks_of(diff_lines(&old, &new), new.len())
+}
+
+/// The marks of the `lines` lines of a new text, from the script to it.
+fn marks_of(script: Vec<Step>, lines: usize) -> Vec<Mark> {
+    let mut out = vec![Mark::None; lines];
     let mut removed = 0;
-    for step in diff_lines(&old, &new) {
+    for step in script {
         match step {
             Step::Removed(_) => removed += 1,
             Step::Added(line) if removed > 0 => {
@@ -53,14 +60,44 @@ pub(super) fn colors(theme: &Theme) -> [Color; 3] {
     [theme.color(token::OK), theme.color(token::WARN), theme.color(token::ERROR)]
 }
 
+/// What the marks compare: a hash of each line of the base, and of each line of the text as
+/// of a version of it. Lines whose hashes are equal are taken for equal.
+pub(super) struct Base {
+    old: Vec<u64>,
+    new: Vec<u64>,
+    version: Option<u64>,
+}
+
+fn hash(line: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    line.hash(&mut hasher);
+    hasher.finish()
+}
+
+impl Base {
+    pub fn new(text: &str) -> Base {
+        Base { old: text.split('\n').map(hash).collect(), new: Vec::new(), version: None }
+    }
+}
+
 impl EditorWidget {
-    /// Finds the marks again, when there is a base.
-    // ponytail: the whole text is compared after each change; against the changed lines only
-    // if large files with a base make typing slow.
+    /// Finds the marks again, when there is a base: the lines changed since are hashed
+    /// again, and the script between the hashes is found (what both start and end with
+    /// alike costs a comparison of numbers a line).
     pub(super) fn remark(&mut self) {
-        if let Some(base) = &self.base {
-            self.marks = marks(base, &self.doc.text());
+        let (Some(base), doc) = (&mut self.base, &self.doc) else { return };
+        let line = |n: usize| hash(&doc.buffer.line(n));
+        let stale = base.version.and_then(|version| {
+            doc.changed_lines(version, |lines, now| {
+                base.new.splice(lines, std::iter::repeat_n(0, now));
+            })
+        });
+        match stale {
+            Some(stale) => stale.into_iter().flatten().for_each(|n| base.new[n] = line(n)),
+            None => base.new = (0..doc.buffer.line_count()).map(line).collect(),
         }
+        base.version = Some(doc.version);
+        self.marks = marks_of(diff_ids(&base.old, &base.new), base.new.len());
     }
 
     /// Paints the mark of a line on its rows, a bar two cells left of the gutter's edge; a

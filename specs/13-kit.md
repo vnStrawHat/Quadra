@@ -1123,7 +1123,9 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     pass over the bytes; as the text changes only the lines its changes were are wrapped
     again, and the rows after them move. The document notes the lines of each change
     (`LineChange`: a line, how many lines it was, how many it is; `Doc::line_changes_since`
-    gives those after a version, the last 256 of them; a view further behind builds again).
+    gives those after a version, the last 256 of them; a view further behind builds again;
+    `Doc::changed_lines` takes what a view keeps a line each through them and says which
+    lines of now are to be made again).
     On 100,000 lines a letter typed costs 24 µs where building them all costs 66 ms. A
     test of random edits, several at once and undone, holds the kept rows to rows built
     again. Rows drive every y: paint (the band of a line over all its
@@ -1138,9 +1140,13 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     hook links are text.
   - **The marks of a diff** (`.base(text)`): each line is marked against the base as added,
     changed or after lines removed (`marks(old, new)`, from the kit's `diff_lines`), found
-    again after each change (ponytail: the whole text, against the changed lines only if
-    large files with a base make typing slow); a bar beside the numbers, a short one above
-    a line where some were removed.
+    again after each change. The editor keeps a hash of each line of the base and of the
+    text, hashes again the lines the change was (`Doc::changed_lines`), and finds the
+    script between the hashes (`diff_ids`): what both start and end with alike is a
+    comparison of numbers a line. On 100,000 lines the whole text compared took 16 ms a
+    letter; a letter and its frame take 1.4 ms now. A test of random typing, keys, undo
+    and cursors holds the kept marks to those of the whole text; a bar beside the numbers,
+    a short one above a line where some were removed.
 - In the find bar's query Enter goes to the next match and Shift-Enter to the one before
   (an input submits on Enter alone, and leaves Shift-Enter to what is around it).
 - `.top_line(line)`: the line at the top of the view, a signal kept as it scrolls (the

@@ -33,8 +33,15 @@ pub fn diff_lines<'a>(old: &[&'a str], new: &[&'a str]) -> Vec<Step> {
             out.push(*ids.entry(line).or_insert(next));
         }
     }
+    diff_ids(&a, &b)
+}
+
+/// The same script between texts whose lines are given as values equal for equal lines
+/// (numbers, or hashes of the lines): what a caller that keeps them as a text changes
+/// compares.
+pub fn diff_ids<T: PartialEq>(a: &[T], b: &[T]) -> Vec<Step> {
     let mut script = Vec::with_capacity(a.len().max(b.len()));
-    part(&a, &b, (0, 0), &mut script);
+    part(a, b, (0, 0), &mut script);
     // In each run of changes, the lines removed before those added, each kind in its order.
     let same = |step: &Step| matches!(step, Step::Same(..));
     for run in script.chunk_by_mut(|a, b| same(a) == same(b)) {
@@ -46,7 +53,7 @@ pub fn diff_lines<'a>(old: &[&'a str], new: &[&'a str]) -> Vec<Step> {
 /// The script of a part of the texts, `(i, j)` where it starts in each: what it starts and
 /// ends with alike is not searched, and what is between is split where a shortest script
 /// is half done.
-fn part(a: &[u32], b: &[u32], (i, j): (usize, usize), out: &mut Vec<Step>) {
+fn part<T: PartialEq>(a: &[T], b: &[T], (i, j): (usize, usize), out: &mut Vec<Step>) {
     let start = a.iter().zip(b).take_while(|(x, y)| x == y).count();
     out.extend((0..start).map(|k| Step::Same(i + k, j + k)));
     let (a, b, i, j) = (&a[start..], &b[start..], i + start, j + start);
@@ -71,7 +78,7 @@ fn part(a: &[u32], b: &[u32], (i, j): (usize, usize), out: &mut Vec<Step>) {
 /// are further apart than [`FARTHEST`] from each end. `reach[0][k]` is how far along `a`
 /// the best path from the start on the diagonal `k` has got, `reach[1][k]` the same from
 /// the end (in the coordinates of the texts turned round), -1 where none has been.
-fn middle(a: &[u32], b: &[u32]) -> Option<(usize, usize)> {
+fn middle<T: PartialEq>(a: &[T], b: &[T]) -> Option<(usize, usize)> {
     let (n, m) = (a.len() as isize, b.len() as isize);
     let most = ((n + m + 1) / 2).min(FARTHEST as isize);
     let width = 2 * most + 2;

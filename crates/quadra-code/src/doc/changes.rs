@@ -2,6 +2,7 @@
 //! (the rows of a wrapped text) is made again for those alone.
 
 use std::collections::VecDeque;
+use std::ops::Range;
 
 use super::Doc;
 
@@ -51,5 +52,35 @@ impl Doc {
         let changes = &self.changes;
         (version >= changes.lost)
             .then(|| changes.kept.iter().filter(move |(v, _)| *v > version).map(|(_, c)| *c))
+    }
+
+    /// Takes what a view keeps a line each, as of `version`, to the lines of now: `splice`
+    /// puts `now` lines not yet known in place of `lines`, a change at a time; what is given
+    /// back is the lines of the text as it is now that are to be made again (in ranges
+    /// apart). `None` when the changes are no longer all known.
+    pub fn changed_lines(
+        &self,
+        version: u64,
+        mut splice: impl FnMut(Range<usize>, usize),
+    ) -> Option<Vec<Range<usize>>> {
+        let mut stale: Vec<Range<usize>> = Vec::new();
+        for change in self.line_changes_since(version)? {
+            let (from, to) = (change.line, change.line + change.was);
+            let by = change.now as isize - change.was as isize;
+            let mut fresh = from..to;
+            stale.retain_mut(|range| {
+                if range.end < from || range.start > to {
+                    if range.start > to {
+                        *range = range.start.wrapping_add_signed(by)..range.end.wrapping_add_signed(by);
+                    }
+                    return true;
+                }
+                fresh = fresh.start.min(range.start)..fresh.end.max(range.end);
+                false
+            });
+            stale.push(fresh.start..fresh.end.wrapping_add_signed(by));
+            splice(from..to, change.now);
+        }
+        Some(stale)
     }
 }

@@ -63,7 +63,7 @@ pub struct EditorWidget {
     /// The widest line painted so far: how far it scrolls sideways.
     pub(super) widest: f32,
     /// The text the marks of the gutter compare with, the marks, and their colours.
-    pub(super) base: Option<String>,
+    pub(super) base: Option<super::marks::Base>,
     pub marks: Vec<Mark>,
     pub(super) mark_colors: [Color; 3],
     /// The link under the pointer, and whether Ctrl is held over it.

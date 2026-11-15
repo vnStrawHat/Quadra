@@ -66,26 +66,11 @@ impl Rows {
         if (self.key.1, self.key.2) != (cols, tab) {
             return None;
         }
-        // The changes in turn, each a line a row for now; what is to wrap again is kept as
-        // ranges of lines of the text as it is after them.
-        let mut stale: Vec<Range<usize>> = Vec::new();
-        for change in doc.line_changes_since(self.key.0)? {
-            let (from, to, by) =
-                (change.line, change.line + change.was, change.now as isize - change.was as isize);
-            let mut fresh = from..to;
-            stale.retain_mut(|range| {
-                if range.end < from || range.start > to {
-                    if range.start > to {
-                        *range = range.start.wrapping_add_signed(by)..range.end.wrapping_add_signed(by);
-                    }
-                    return true;
-                }
-                fresh = fresh.start.min(range.start)..fresh.end.max(range.end);
-                false
-            });
-            stale.push(fresh.start..fresh.end.wrapping_add_signed(by));
-            self.splice(from..to, (0..change.now as u32).collect(), vec![0; change.now]);
-        }
+        // The changes in turn, each line of them a row for now; then the lines they are
+        // wrapped again.
+        let stale = doc.changed_lines(self.key.0, |lines, now| {
+            self.splice(lines, (0..now as u32).collect(), vec![0; now])
+        })?;
         for range in stale {
             let (first, starts) = wrap(doc, range.clone(), cols, tab);
             self.splice(range, first, starts);

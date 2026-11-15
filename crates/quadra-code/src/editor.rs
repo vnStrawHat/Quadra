@@ -180,7 +180,7 @@ impl View for Surface {
         let mut widget = EditorWidget::new(&editor.text, editor.highlight.unwrap_or_else(tokens));
         widget.wrap = editor.wrap;
         widget.prose = matches!(tokenizer, Tokenizer::Plain | Tokenizer::Markdown);
-        widget.base = editor.base;
+        widget.base = editor.base.as_deref().map(marks::Base::new);
         widget.remark();
         let editor_link = editor.on_link.clone();
         let (size, line) = editor.font;

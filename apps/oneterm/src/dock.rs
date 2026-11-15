@@ -7,7 +7,7 @@ use quadra::{
     signal, text,
 };
 use quadra_design::{
-    MenuItem, Variant, button, context_menu, fonts, icon, icon_button, icons, input, menu_icon_button, token,
+    MenuItem, Variant, button, context_menu, fonts, icon, icon_button, icons, menu_icon_button, token,
     tooltip,
 };
 
@@ -16,7 +16,9 @@ use crate::model::Model;
 use crate::panes::size;
 use crate::sftp::Dock;
 
+mod menus;
 mod transfers;
+pub(crate) use menus::{Ask, local as local_menu, remote as remote_menu, remote_area};
 use transfers::transfers;
 
 /// How many entries the list shows; a longer folder says how many more.
@@ -27,21 +29,22 @@ pub(crate) fn dock(model: &Model) -> impl View + use<> {
     let (open, expanded) = (model.ui().dock, model.ui().expanded);
     let d = Dock::new(model, open);
     let views = model.clone();
-    dynamic(move || match expanded.get() {
+    let shows = dynamic(move || match expanded.get() {
         true => AnyView::new(crate::expanded::view(&views, d)),
         false => AnyView::new(panel(&views, d)),
-    })
+    });
     // Expanded, it takes the workspace's room.
-    .container(
-        row()
-            .min_width(quadra::Length::Px(0.0))
-            .grow(move || if expanded.get() { 1.0 } else { 0.0 })
-            .display(shown(move || open.get())),
-    )
+    let grows = move || if expanded.get() { 1.0 } else { 0.0 };
+    row()
+        .min_width(quadra::Length::Px(0.0))
+        .grow(grows)
+        .display(shown(move || open.get()))
+        .child(shows.container(row().min_width(quadra::Length::Px(0.0)).grow(grows)))
+        .child(menus::dialogs(model, d))
 }
 
 fn panel(model: &Model, d: Dock) -> impl View + use<> {
-    let (open, naming) = (model.ui().dock, signal(false));
+    let open = model.ui().dock;
     // The connection of the focused space, again whenever another space has the focus.
     let follows = model.clone();
     let focused = memo(move || follows.active_tab().and_then(|tab| tab.focused()).map(|it| it.id));
@@ -52,7 +55,7 @@ fn panel(model: &Model, d: Dock) -> impl View + use<> {
             quadra::untrack(|| d.load(&loads, None));
         }
     });
-    let (named, host_of) = (model.clone(), model.clone());
+    let host_of = model.clone();
     let host = move || {
         let space = host_of.active_tab().and_then(|tab| tab.focused());
         let remote = space.and_then(|it| it.remote);
@@ -64,7 +67,7 @@ fn panel(model: &Model, d: Dock) -> impl View + use<> {
         let refreshes = refreshes.clone();
         vec![
             MenuItem::new("Refresh").on_select(move || d.refresh(&refreshes)),
-            MenuItem::new("New folder").on_select(move || naming.set(true)),
+            MenuItem::new("New folder\u{2026}").on_select(move || d.ask.folder()),
         ]
     })
     .size(quadra_design::Size::Sm);
@@ -96,18 +99,6 @@ fn panel(model: &Model, d: Dock) -> impl View + use<> {
         .child(more)
         .child(tooltip("Expand: local and remote side by side", expand))
         .child(tooltip("Hide SFTP panel", close));
-    let folder_name = signal(String::new());
-    let new_folder = div().padding_x(10.0).padding_bottom(6.0).display(shown(move || naming.get())).child(
-        input(folder_name).placeholder("New folder name").width(280.0).test_id("sftp-new-folder").on_submit(
-            move |name: &str| {
-                if !name.trim().is_empty() {
-                    d.mkdir(&named, name.trim());
-                }
-                folder_name.set(String::new());
-                naming.set(false);
-            },
-        ),
-    );
     column()
         .width(300.0)
         .shrink(0.0)
@@ -118,7 +109,6 @@ fn panel(model: &Model, d: Dock) -> impl View + use<> {
         .on_drop(move |files: &DroppedFiles, _| d.upload(&drops, files.0.clone()))
         .drop_target(|s| s.bg(token::ACCENT_TINT))
         .child(head)
-        .child(new_folder)
         .child(crumbs(model, d))
         .child(entries(model, d))
         .child(transfers(d))
@@ -170,7 +160,7 @@ fn crumbs(model: &Model, d: Dock) -> impl View + use<> {
 }
 
 fn entries(model: &Model, d: Dock) -> impl View + use<> {
-    let model = model.clone();
+    let (model, model_of) = (model.clone(), model.clone());
     let list = dynamic(move || {
         let said = d.said.get();
         if said == crate::sftp::LOCAL {
@@ -201,7 +191,8 @@ fn entries(model: &Model, d: Dock) -> impl View + use<> {
         }
         AnyView::new(list)
     });
-    quadra::scroll(signal(0.0), list).container(column().grow(1.0).min_height(0.0))
+    let area = column().grow(1.0).min_height(0.0);
+    context_menu(quadra::scroll(signal(0.0), list).container(area), menus::remote_area(&model_of, d))
 }
 
 /// A row: its icon, its name, its size.
@@ -249,18 +240,11 @@ fn local(model: &Model) -> impl View + use<> {
 }
 
 fn entry_row(model: &Model, d: Dock, entry: Entry) -> impl View + use<> {
-    let (opens, menu, kept) = (model.clone(), model.clone(), entry.clone());
+    let (opens, kept) = (model.clone(), entry.clone());
     let face = line(&entry).on_click(move |e| match (kept.dir, e.clicks) {
         (true, _) => d.load(&opens, Some(oneterm_ssh::join(&d.dir.get_untracked(), &kept.name))),
         (false, 2) => d.download(&opens, &kept),
         _ => {}
     });
-    context_menu(face, move || {
-        let (gets, gone, (a, b)) = (menu.clone(), menu.clone(), (entry.clone(), entry.clone()));
-        let mut items = vec![MenuItem::new("Delete").on_select(move || d.delete(&gone, &b))];
-        if !entry.dir {
-            items.insert(0, MenuItem::new("Download").on_select(move || d.download(&gets, &a)));
-        }
-        items
-    })
+    context_menu(face, menus::remote(model, d, &entry))
 }

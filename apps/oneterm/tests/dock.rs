@@ -76,6 +76,19 @@ impl App {
         !self.h.query(|n| n.semantics.name == name && n.semantics.role != Role::Button).is_empty()
     }
 
+    /// A click of the other button on an entry, then a row of its menu.
+    fn menu(&mut self, name: &str, row: &str) {
+        let node = self.h.get_by_role(Role::Button, name).node();
+        let at = self.h.tree.window_rect(node).center();
+        for input in [quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up] {
+            let now = self.h.now();
+            self.h.tree.pointer(input, quadra::MouseButton::Right, at, quadra::Mods::NONE, now);
+        }
+        self.h.settle();
+        self.h.get_by_role(Role::MenuItem, row).click();
+        self.h.settle();
+    }
+
     fn entry(&self, name: &str) -> bool {
         !self.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == name).is_empty()
     }
@@ -116,14 +129,32 @@ fn dropped_files_upload_and_a_folder_is_made() {
 
     a.h.get_by_role(Role::Button, "More").click();
     a.h.settle();
-    a.h.get_by_role(Role::MenuItem, "New folder").click();
+    a.h.get_by_role(Role::MenuItem, "New folder\u{2026}").click();
     a.h.settle();
-    a.h.get_by_test_id("sftp-new-folder").set_value("made");
+    a.h.get_by_test_id("sftp-name").set_value("made");
     a.h.settle();
-    a.h.get_by_test_id("sftp-new-folder").focus();
-    a.h.key(quadra::Key::Enter, quadra::Mods::NONE);
+    a.h.get_by_role(Role::Button, "Create").click();
     let made = a.served.join("home/made");
     a.wait(|a| made.is_dir() && a.entry("made"), "the folder made");
+}
+
+#[test]
+fn an_entry_s_menu_copies_its_path_renames_and_deletes_it() {
+    let mut a = app("dock-menu");
+    a.wait(|a| a.entry("config.yaml"), "the home folder");
+    a.menu("config.yaml", "Copy path");
+    assert_eq!(a.h.clipboard.read_text().as_deref(), Some("/home/config.yaml"));
+    a.menu("config.yaml", "Rename\u{2026}");
+    a.h.get_by_test_id("sftp-name").set_value("app.yaml");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Rename").click();
+    let renamed = a.served.join("home/app.yaml");
+    a.wait(|a| renamed.is_file() && a.entry("app.yaml"), "the file renamed");
+
+    a.menu("app.yaml", "Delete\u{2026}");
+    assert!(a.h.has_text("Delete the file app.yaml from the server? It cannot be undone."));
+    a.h.get_by_role(Role::Button, "Delete").click();
+    a.wait(|a| !renamed.exists() && !a.entry("app.yaml"), "the file deleted");
 }
 
 #[test]

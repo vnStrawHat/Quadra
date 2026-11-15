@@ -247,11 +247,15 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   button; it follows the focused space's connection. A local space: the header says
   `local space · n/a`, the body why it is empty and a button that shows the first tab with a
   remote space (`Show prod-api-01`). Its header: a folder icon, `SFTP`, the host, a More menu
-  (Refresh, New folder), Expand (a bordered button) and Hide; the path is a breadcrumb in mono
+  (Refresh, New folder…), Expand (a bordered button) and Hide; the path is a breadcrumb in mono
   whose parts go there (the last in the text colour); then `..` and the entries, a folder or file icon, the name,
   the size (`—` for a folder). A click on a folder opens it; two on a file downloads it to
-  the user's Downloads folder (`name (1).ext` when the name is taken); a row's menu has
-  Download and Delete. Files dropped from the OS upload to the folder shown. Transfers show
+  the user's Downloads folder (`name (1).ext` when the name is taken). The other button gives
+  a remote row's menu (Open or Download, Rename…, Copy path, Delete…) and, where no row is, the
+  list's (New folder…, Refresh), in the dock and the expanded view's Remote pane alike; a local
+  row's menu there has Open or Upload, Copy path, Refresh. New folder and Rename ask the name in a
+  dialog (not empty, `.`, `..` or with a `/`); Delete asks first (a folder only when empty).
+  Files dropped from the OS upload to the folder shown. Transfers show
   under the list: an arrow, `name → remote` or `name ← local`, its state (`48%`, `done`), a
   cross that cancels, and a bar of 3 px; a failed one says why. Names that start with `.` show only while `.hidden` is on (both views).
 - **The expanded view**: the dock's Expand button (and the title bar's Collapse SFTP, back)

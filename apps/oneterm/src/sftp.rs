@@ -82,6 +82,7 @@ pub(crate) struct Dock {
     /// The expanded view, whose Local pane downloads go to.
     pub expanded: Signal<bool>,
     pub local: Local,
+    pub ask: crate::dock::Ask,
     owner: Scope,
 }
 
@@ -105,6 +106,7 @@ impl Dock {
             hidden: signal(false),
             expanded: model.ui().expanded,
             local: Local::new(downloads(model)),
+            ask: crate::dock::Ask::new(),
             owner: Scope::current(),
         };
         let (model, waits) = (model.clone(), std::cell::Cell::new(0u32));
@@ -178,6 +180,17 @@ impl Dock {
     pub fn mkdir(&self, model: &Model, name: &str) {
         let (path, again) = (join(&self.dir.get_untracked(), name), model.clone());
         self.with_files(model, move |files| files.mkdir(&path), move |dock, got| dock.after(&again, got));
+    }
+
+    /// Renames an entry of the folder shown.
+    pub fn rename(&self, model: &Model, from: &str, to: &str) {
+        let dir = self.dir.get_untracked();
+        let (from, to, again) = (join(&dir, from), join(&dir, to), model.clone());
+        self.with_files(
+            model,
+            move |files| files.rename(&from, &to),
+            move |dock, got| dock.after(&again, got),
+        );
     }
 
     pub fn delete(&self, model: &Model, entry: &Entry) {

@@ -57,8 +57,9 @@ fn a_folder_lists_folders_first_and_files_go_both_ways() {
     assert!(now.abs_diff(modified) < 60, "the mtime is told: {modified}");
     assert_eq!(listed, [Entry { name: "copy.yaml".into(), dir: false, size: 200_000, modified }]);
 
-    files.mkdir("/home/new").unwrap();
-    assert!(served.join("home/new").is_dir());
+    files.mkdir("/home/old").unwrap();
+    files.rename("/home/old", "/home/new").unwrap();
+    assert!(served.join("home/new").is_dir() && !served.join("home/old").exists());
     files.remove("/home/new", true).unwrap();
     files.remove("/home/src/copy.yaml", false).unwrap();
     assert!(!served.join("home/new").exists() && !served.join("home/src/copy.yaml").exists());

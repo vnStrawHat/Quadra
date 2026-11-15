@@ -5,7 +5,7 @@
 use quadra::{
     Align, AnyView, Length, Role, Signal, View, by_text, column, div, dynamic, effect, row, signal, text,
 };
-use quadra_design::{button, checkbox, fonts, icon, icon_button, icons, token, tooltip};
+use quadra_design::{button, checkbox, context_menu, fonts, icon, icon_button, icons, token, tooltip};
 
 use crate::model::Model;
 use crate::panes::{compared, visible};
@@ -56,7 +56,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
             icon_button(icons::WINDOW_RESTORE, "Collapse SFTP to side panel")
                 .on_click(move || collapse.set(false)),
         ));
-    let local = d.local;
+    let (local, locals_of) = (d.local, model.clone());
     let local_rows = dynamic(move || {
         let (all, said) = (visible(&local.entries.get(), d.hidden.get()), local.said.get());
         let mut list = column().width(Length::Fill).padding(4.0);
@@ -70,10 +70,11 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         for entry in all {
             let (name, picks, opens) = (entry.name.clone(), entry.name.clone(), entry.clone());
             let line = line(&entry, None).selected(move || local.selected.get().as_deref() == Some(&name));
-            list = list.child(line.on_click(move |e| match (opens.dir, e.clicks) {
+            let line = line.on_click(move |e| match (opens.dir, e.clicks) {
                 (true, 2) => local.load(local.dir.get_untracked().join(&opens.name)),
                 _ => local.selected.set(Some(picks.clone())),
-            }));
+            });
+            list = list.child(context_menu(line, crate::dock::local_menu(&locals_of, d, &entry)));
         }
         AnyView::new(list)
     });
@@ -93,10 +94,11 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
                     (entry.name.clone(), entry.name.clone(), entry.clone(), remotes.clone());
                 let line = line(&entry, compared(&entry, &locals))
                     .selected(move || d.selected.get().as_deref() == Some(&name));
-                list = list.child(line.on_click(move |e| match (opens.dir, e.clicks) {
+                let line = line.on_click(move |e| match (opens.dir, e.clicks) {
                     (true, 2) => d.load(&goes, Some(oneterm_ssh::join(&d.dir.get_untracked(), &opens.name))),
                     _ => d.selected.set(Some(picks.clone())),
-                }));
+                });
+                list = list.child(context_menu(line, crate::dock::remote_menu(&remotes, d, &entry)));
             }
             AnyView::new(list)
         });
@@ -116,7 +118,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
             d.load(&ups, Some(if up.is_empty() { "/".into() } else { up.into() }));
         },
         move || d.refresh(&refreshes),
-        remote_rows,
+        context_menu(remote_rows, crate::dock::remote_area(model, d)),
     );
     let sends = model.clone();
     let mid =

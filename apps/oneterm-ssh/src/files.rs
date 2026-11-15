@@ -73,6 +73,10 @@ impl Files {
         runtime().block_on(self.sftp.create_dir(path)).map_err(said)
     }
 
+    pub fn rename(&self, from: &str, to: &str) -> Result<(), String> {
+        runtime().block_on(self.sftp.rename(from, to)).map_err(said)
+    }
+
     /// Removes a file, or an empty folder.
     pub fn remove(&self, path: &str, dir: bool) -> Result<(), String> {
         match dir {

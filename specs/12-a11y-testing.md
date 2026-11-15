@@ -104,6 +104,38 @@ semantic children attach to the nearest semantic ancestor.
 Requirements carried from the design language (behaviour/15): visible focus for keyboard users,
 contrast of the themes, respect for the OS text scale and high-contrast setting.
 
+### Text size
+
+A user who needs larger text sets it in the system (on Windows, Accessibility, Text size:
+100 to 225 %) or in the app. Two ways to follow it, each a factor of its own:
+
+- **Zoom**: the whole UI larger, as on a display of a higher density. The tree is given a
+  window `zoom` times smaller at a scale `zoom` times larger; what comes in from the
+  platform in logical pixels (the pointer, the wheel's place, drags, the hit test of a
+  custom frame) is divided by it, and what goes out (the caret's rectangle for an input
+  method, the bounds told to a reader) is multiplied. Nothing overflows: a layout is the
+  one of a smaller window. It is done by the app (`quadra-app/src/zoom.rs`).
+- **Text**: only text larger, as a reader of small screens asks. The tree multiplies the
+  size of every text by `Tree::set_text_scale(f)` where the text values are resolved
+  (`Inherited::style`, and `Inherited::scale` for a widget that has sizes of its own, a run
+  of rich text that says its size). Spaces, radii, borders and icons keep their size;
+  controls that hold a line of text are at least their height and grow with it
+  (`.min_height(..)`), and the rows of uniform lists are as much taller as their text.
+
+`TextSize { zoom, text, system }` says both factors as the user chose them and which of
+them the system's text size multiplies (`SystemText::Zoom`, the default, `Text` or `None`).
+The app takes it from `App::text_size(..)` and keeps it as a signal in the context of views
+(`quadra_app::text_size()`), so a settings page changes it while the app runs; keeping it
+is the app's (`Settings`). Each factor is held between 0.5 and 4. The system's is
+`Appearance::text_scale` (1 where the system has no such setting; on Windows the value
+`TextScaleFactor` under `HKCU\Software\Microsoft\Accessibility`, absent at 100 %, read again
+when the system says a setting changed).
+
+Tests: a window at zoom 1.5 lays out, hits and paints as one 1.5 times smaller at a scale
+1.5 times larger; text at 1.5 is shaped at 1.5 times its size and the controls around it
+grow; at 1 every picture of the gallery is the same to the byte. `tools/shots.sh` takes
+`QUADRA_TEXT=1.5` to draw the pages with larger text, to look for what is cut.
+
 ## The harness
 
 `quadra-testing` builds an app on the headless platform, the null renderer and a fake text

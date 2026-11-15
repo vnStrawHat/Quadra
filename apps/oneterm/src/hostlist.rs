@@ -7,7 +7,8 @@ use quadra::{
     untrack,
 };
 use quadra_design::{
-    MenuItem, Notice, Tone, Variant, context_menu, fonts, icon, icons, input, select, token,
+    MenuItem, Notice, Tone, Variant, context_menu, fonts, icon, icon_button, icons, input, select, token,
+    tooltip,
 };
 
 use crate::hosts::{Host, auth_of};
@@ -16,19 +17,19 @@ use crate::shells::Remote;
 
 const AUTHS: [&str; 4] = ["Auto (agent, keys, password)", "Agent (ssh-agent)", "Key file", "Password"];
 
-/// The heading, the filter, the groups and their hosts, then "Add SSH host…".
+/// The heading with its Add button, the filter, the groups (folded by a click on their
+/// heading) and their hosts.
 pub(crate) fn hosts(model: &Model) -> impl View + use<> {
-    let filter = signal(String::new());
+    let (filter, folded) = (signal(String::new()), signal(Vec::<String>::new()));
     let (shown, adds) = (model.clone(), model.ui().adding);
-    let heading = div()
-        .padding_left(14.0)
-        .padding_top(14.0)
-        .height(by_text(36.0))
-        .text_size(11.0)
-        .text_color(token::TEXT_3)
-        .child(text("SSH HOSTS"));
-    let field =
-        input(filter).placeholder("Filter hosts").icon(icons::SEARCH).width(232.0).test_id("host-filter");
+    let add =
+        tooltip("Add SSH host", icon_button(icons::PLUS, "Add SSH host").on_click(move || adds.set(true)));
+    let heading = crate::rail::heading("SSH HOSTS", 18.0).child(add);
+    let field = input(filter)
+        .placeholder("Filter hosts\u{2026}")
+        .icon(icons::SEARCH)
+        .width(232.0)
+        .test_id("host-filter");
     let list = dynamic(move || {
         let words = filter.get().to_lowercase();
         let hosts: Vec<Host> = (shown.hosts().into_iter())
@@ -42,44 +43,47 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
                 groups.push(host.group.clone());
             }
         }
-        let mut list = column().gap(2.0);
-        for group in groups {
+        let mut list = column().gap(2.0).width(Length::Fill);
+        for (n, group) in groups.into_iter().enumerate() {
+            let closed = folded.with(|it| it.contains(&group));
             if !group.is_empty() {
+                let name = group.clone();
+                let fold = move |_: &mut quadra::PointerEvent| {
+                    folded.update(|it| match it.iter().position(|g| *g == name) {
+                        Some(at) => _ = it.remove(at),
+                        None => it.push(name.clone()),
+                    })
+                };
+                let chevron = if closed { icons::CHEVRON_RIGHT } else { icons::CHEVRON_DOWN };
                 list = list.child(
-                    div()
-                        .padding_x(8.0)
-                        .padding_top(6.0)
+                    row()
+                        .align_items(Align::Center)
+                        .gap(4.0)
+                        .padding_x(6.0)
+                        .padding_top(if n == 0 { 6.0 } else { 10.0 })
+                        .padding_bottom(2.0)
                         .text_size(11.0)
-                        .text_color(token::TEXT_3)
+                        .text_color(token::TEXT_2)
+                        .role(Role::Button)
+                        .label(group.clone())
+                        .expanded(!closed)
+                        .on_click(fold)
+                        .child(icon(chevron).size(12.0))
                         .child(text(group.clone())),
                 );
             }
-            for host in hosts.iter().filter(|it| it.group == group) {
+            for host in hosts.iter().filter(|it| it.group == group && !closed) {
                 list = list.child(host_row(&shown, host.clone()));
             }
         }
         AnyView::new(list)
     });
-    let add = row()
-        .align_items(Align::Center)
-        .gap(10.0)
-        .padding_x(8.0)
-        .height(by_text(30.0))
-        .radius(6.0)
-        .text_color(token::TEXT_2)
-        .hover(|s| s.bg(token::PANEL_HOVER).text_color(token::TEXT))
-        .role(Role::Button)
-        .label("Add SSH host…")
-        .on_click(move |_| adds.set(true))
-        .child(icon(icons::PLUS).size(14.0))
-        .child(text("Add SSH host…"));
     column()
         .grow(1.0)
         .min_height(0.0)
         .child(heading)
-        .child(div().padding_x(8.0).padding_bottom(4.0).child(field))
+        .child(div().padding_x(8.0).padding_bottom(6.0).child(field))
         .child(quadra::scroll(signal(0.0), list).container(column().grow(1.0).min_height(0.0).padding_x(8.0)))
-        .child(div().padding_x(8.0).child(add))
 }
 
 /// A host: a dot while a space is connected to it, its name, its address.
@@ -93,11 +97,14 @@ fn host_row(model: &Model, host: Host) -> impl View + use<> {
         .bg(move || if on.connected_to(&target) { token::OK } else { token::LINE_STRONG });
     let remote = host.remote.clone();
     let face = row()
+        .width(Length::Fill)
         .align_items(Align::Center)
-        .gap(10.0)
-        .padding_x(8.0)
-        .height(by_text(28.0))
+        .gap(8.0)
+        .padding_left(22.0)
+        .padding_right(8.0)
+        .height(by_text(30.0))
         .radius(6.0)
+        .text_color(token::TEXT)
         .hover(|s| s.bg(token::PANEL_HOVER))
         .role(Role::Button)
         .label(host.name.clone())
@@ -108,7 +115,7 @@ fn host_row(model: &Model, host: Host) -> impl View + use<> {
             div()
                 .font_family(fonts::MONO)
                 .text_size(11.0)
-                .text_color(token::TEXT_3)
+                .text_color(token::TEXT_2)
                 .child(text(short(&host.remote.target))),
         );
     context_menu(face, move || host_menu(&menu, &host))

@@ -1,6 +1,7 @@
 //! The icons of the kit: the bodies of 24 by 24 stroked icons from Lucide 0.460.0 (ISC, see
 //! `LICENSE-lucide.txt`). [`crate::icon`] shows one.
 
+pub const APP_WINDOW: &str = r#"<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 4v4"/><path d="M2 8h20"/><path d="M6 4v4"/>"#;
 pub const ARROW_DOWN: &str = r#"<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>"#;
 pub const ARROW_LEFT: &str = r#"<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>"#;
 pub const ARROW_RIGHT: &str = r#"<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>"#;
@@ -77,6 +78,7 @@ pub const SLIDERS_HORIZONTAL: &str = r#"<line x1="21" x2="14" y1="4" y2="4"/><li
 pub const SQUARE_CHECK: &str =
     r#"<rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>"#;
 pub const SQUARE_CODE: &str = r#"<path d="M10 9.5 8 12l2 2.5"/><path d="m14 9.5 2 2.5-2 2.5"/><rect width="18" height="18" x="3" y="3" rx="2"/>"#;
+pub const SQUARE_TERMINAL: &str = r#"<path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>"#;
 pub const STAR: &str = r#"<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>"#;
 pub const STRIKETHROUGH: &str = r#"<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/>"#;
 pub const SUN: &str = r#"<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>"#;
@@ -99,7 +101,8 @@ pub const WINDOW_MAXIMIZE: &str = r#"<rect width="14" height="14" x="5" y="5" rx
 pub const WINDOW_RESTORE: &str = r#"<rect width="12" height="12" x="4" y="8" rx="1"/><path d="M8 8V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-3"/>"#;
 
 /// Every icon, with the name it is known by: what a catalogue of them shows.
-pub const ALL: [(&str, &str); 87] = [
+pub const ALL: [(&str, &str); 89] = [
+    ("app-window", APP_WINDOW),
     ("arrow-down", ARROW_DOWN),
     ("arrow-left", ARROW_LEFT),
     ("arrow-right", ARROW_RIGHT),
@@ -170,6 +173,7 @@ pub const ALL: [(&str, &str); 87] = [
     ("sliders-horizontal", SLIDERS_HORIZONTAL),
     ("square-check", SQUARE_CHECK),
     ("square-code", SQUARE_CODE),
+    ("square-terminal", SQUARE_TERMINAL),
     ("star", STAR),
     ("strikethrough", STRIKETHROUGH),
     ("sun", SUN),

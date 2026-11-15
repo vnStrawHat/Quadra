@@ -56,11 +56,13 @@ status bar (26 px). Colours are the kit's roles; the accent is the theme's.
 
 ## Rail (vertical tabs)
 
-248 px on the panel colour, a line on its right. A heading "Tabs" with the count, then a row
-per tab: an icon (terminal, or the host's), the title, a second line in the secondary colour
-(`2 ssh · 1 local · 3 spaces`, or the program's state word), and at the end the tab's signal
-(below). The active row is filled and has an accent bar on its left. Then "New terminal" with
-`Ctrl+T`. From P2 the SSH hosts follow, under a filter.
+248 px on the panel colour, a line on its right. A heading "Tabs" with the count at its right,
+then a row per tab: an icon (a terminal, or a window when a space is remote; in the accent while
+it shows), the title, and at the end the tab's signal (below). The active row is filled, has an
+accent bar on its left and a second line in the secondary colour (`2 ssh · 1 local · 3 spaces`).
+A tab with a progress has a bar of 3 px under its row. Then "New terminal" with `Ctrl+T`, its
+border dashed. From P2 the SSH hosts follow, under a filter. The switch to horizontal tabs is in
+the settings.
 
 Click selects; middle closes; double-click renames; the right button opens the tab menu (Rename,
 Duplicate, Close, Close others). Rows drag to reorder.
@@ -83,9 +85,9 @@ space), `Ctrl+Alt+Left/Right` moves the focus. A space whose program ended shows
 
 | Signal | Tab | Space header | Status bar | Else |
 |---|---|---|---|---|
-| OSC 7501 status | an icon at the end (working spinner, blocked `?` in warn, done check in ok, error cross in error); the state word on line 2 | a chip with the state word | | blocked and error raise a toast (setting) |
-| OSC 9;4 progress | percentage on line 2 and a 2 px bar under the row | the percentage | a 56 px meter and percentage | |
-| BEL in an unfocused space | a red dot on the icon and a bell mark | | the count | |
+| OSC 7501 status | a mark at the end: blocked a `?` on a warn disc (18 px), done a check on an ok disc (16 px), error a cross on an error disc, working its word; else `idle` | a chip with the state word | | blocked and error raise a toast (setting) |
+| OSC 9;4 progress | the percentage in mono and the accent at the end, a 3 px bar under the row | the percentage | a 56 px meter and percentage | |
+| BEL in an unfocused space | a red dot on the icon and a bell in the error colour | | the count | |
 | OSC 9 notification | | | the count | a toast at the workspace's top right (title "OSC 9", the tab, "now", the text), 6 s or until dismissed (setting) |
 
 Seen clears: selecting the tab clears its bell dot and a "done" seen state.
@@ -196,12 +198,13 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   (target as `Target::label` writes it; auth `Auto`, `Agent`, `Key`, `Password`), so the
   file reads as the page does; `ssh.recent` holds the last 5 targets connected to, newest
   first, with the time in seconds.
-- **The rail**, under "New terminal": "SSH hosts", a filter (on the name and the target,
-  whatever the case), then the hosts by group in the order first met, each a row of a dot
+- **The rail**, under "New terminal": "SSH hosts" with an Add SSH host button at its right, a
+  filter (on the name and the target, whatever the case), then the hosts by group in the order
+  first met (a click on a group's heading folds it), each a row of a dot
   (in `OK` while a space is connected to it), its name and its address. A click opens a tab
   connected to it; its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
-  filled, titled Edit SSH host; a new name takes the old one's place), Remove. "Add SSH host…"
-  ends the list; the dialog takes the name (the host when empty), the group, the target,
+  filled, titled Edit SSH host; a new name takes the old one's place), Remove. The Add dialog
+  takes the name (the host when empty), the group, the target,
   the auth and the key file. Quick connect has "Save as host".
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
   Quick connect, and Add SSH host. It has no search field: the rail's filter and Quick

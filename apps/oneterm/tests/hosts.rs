@@ -36,7 +36,7 @@ fn app() -> App {
 
 impl App {
     fn add(&mut self, name: &str, group: &str, target: &str) {
-        self.h.get_by_role(Role::Button, "Add SSH host…").click();
+        self.h.get_by_role(Role::Button, "Add SSH host").click();
         self.h.settle();
         for (id, value) in [("host-name", name), ("host-group", group), ("host-target", target)] {
             self.h.get_by_test_id(id).set_value(value);
@@ -75,7 +75,7 @@ fn a_host_added_is_saved_listed_and_connects_on_a_click() {
 fn a_host_reached_through_another_carries_its_way_and_forwards() {
     let mut a = app();
     a.add("bastion", "", "ops@203.0.113.5");
-    a.h.get_by_role(Role::Button, "Add SSH host…").click();
+    a.h.get_by_role(Role::Button, "Add SSH host").click();
     a.h.settle();
     for (id, value) in
         [("host-name", "db"), ("host-target", "trung@10.0.0.9"), ("host-forwards", "5432:localhost:5432")]

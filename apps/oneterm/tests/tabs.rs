@@ -175,9 +175,16 @@ fn a_tab_dragged_onto_another_takes_its_place() {
 #[test]
 fn the_tabs_go_into_a_strip_and_back_into_the_rail() {
     let mut a = app();
-    a.h.get_by_role(Role::Button, "Horizontal tabs").click();
+    // The settings' switch of vertical tabs.
+    a.h.get_by_role(Role::Button, "Settings").click();
     a.h.settle();
-    assert!(a.h.query(|n| n.semantics.name == "Horizontal tabs").is_empty());
+    a.h.get_by_role(Role::TreeItem, "Tabs & spaces").click();
+    a.h.settle();
+    let switch = a.h.query(|n| n.semantics.role == Role::Switch)[0];
+    a.h.tree.act(switch, &quadra::SemanticAction::Click);
+    a.h.get_by_role(Role::Button, "Done").click();
+    a.h.settle();
+    assert!(!a.h.has_text("TABS"), "the rail is gone");
     assert_eq!(a.tabs(), 1);
     a.typed("still");
     a.h.get_by_role(Role::Button, "Vertical").click();

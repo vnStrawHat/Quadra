@@ -3,10 +3,10 @@
 //! two clicks rename it, the right button opens its menu, and rows drag to reorder.
 
 use quadra::{
-    Align, AnyView, Display, MouseButton, NodeRef, PointerKind, Role, Signal, View, by_text, column, div,
-    dynamic, each, row, signal, text,
+    Align, AnyView, BorderStyle, Display, Length, MouseButton, NodeRef, PointerKind, Role, Signal, View,
+    by_text, column, div, dynamic, each, row, signal, text,
 };
-use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, input, searched_menu, token};
+use quadra_design::{MenuItem, context_menu, fonts, icon, icons, input, searched_menu, token};
 
 use crate::marks;
 use crate::model::{Model, Tab};
@@ -16,38 +16,31 @@ use crate::shells;
 pub(crate) struct Dragged(pub u64);
 
 pub(crate) fn rail(model: &Model) -> impl View + use<> {
-    let (tabs, vertical) = (model.tabs(), model.vertical());
-    let heading = row()
-        .align_items(Align::Center)
-        .gap(6.0)
-        .padding_left(14.0)
-        .padding_right(6.0)
-        .height(by_text(36.0))
-        .text_size(11.0)
-        .text_color(token::TEXT_3)
-        .child(div().child(text("TABS")))
-        .child(div().grow(1.0).font_family(fonts::MONO).child(text(move || tabs.with(Vec::len).to_string())))
-        .child(icon_button(icons::LAYOUT_GRID, "Horizontal tabs").on_click(move || vertical.set(false)));
+    let tabs = model.tabs();
+    let count = div().font_weight(500).child(text(move || tabs.with(Vec::len).to_string()));
+    let heading = heading("TABS", 10.0).child(count);
     let shown = model.clone();
     let rows =
         each(move || tabs.get(), |tab| tab.id, move |tab: Signal<Tab>| tab_row(&shown, tab.get_untracked()));
     let (open, opener, making) = (signal(false), NodeRef::new(), model.clone());
     let new = row()
+        .width(Length::Fill)
         .align_items(Align::Center)
-        .gap(10.0)
-        .padding_x(8.0)
-        .height(by_text(32.0))
+        .gap(8.0)
+        .padding_x(10.0)
+        .height(by_text(34.0))
         .radius(6.0)
+        .border(1.0)
+        .border_style(BorderStyle::Dashed)
+        .border_color(token::LINE_STRONG)
         .text_color(token::TEXT_2)
         .hover(|s| s.bg(token::PANEL_HOVER).text_color(token::TEXT))
         .role(Role::Button)
         .label("New terminal")
         .on_click(move |_| open.update(|open| *open = !*open))
-        .child(icon(icons::PLUS).size(14.0))
+        .child(icon(icons::PLUS).size(16.0))
         .child(div().grow(1.0).child(text("New terminal")))
-        .child(
-            div().font_family(fonts::MONO).text_size(11.0).text_color(token::TEXT_3).child(text("Ctrl+T")),
-        );
+        .child(div().font_family(fonts::MONO).text_size(11.0).child(text("Ctrl+T")));
     column()
         .width(248.0)
         .shrink(0.0)
@@ -56,11 +49,27 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .border_color(token::LINE)
         .child(heading)
         .child(rows.container(column().gap(2.0).padding_x(8.0).role(Role::TabList).label("Tabs")))
-        .child(div().padding_x(8.0).padding_y(4.0).node_ref(&opener).child(new))
+        .child(div().padding_x(8.0).padding_top(8.0).node_ref(&opener).child(new))
         .child(searched_menu(open, &opener, quadra::Side::Right, ASK, move |typed: &str| {
             new_menu(&making, typed)
         }))
         .child(crate::hostlist::hosts(model))
+}
+
+/// A heading of the rail, `top` px under what is above it: small capitals in the muted
+/// colour; what is added sits at its right.
+pub(crate) fn heading(words: &'static str, top: f32) -> quadra::Div {
+    row()
+        .align_items(Align::Center)
+        .justify(quadra::Justify::Between)
+        .padding_left(14.0)
+        .padding_right(12.0)
+        .padding_top(top)
+        .padding_bottom(6.0)
+        .text_size(11.0)
+        .font_weight(600)
+        .text_color(token::TEXT_2)
+        .child(text(words))
 }
 
 /// What the `+` menu's field says while empty.
@@ -186,27 +195,34 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
     let bar = div()
         .absolute()
         .left(0.0)
-        .top(8.0)
-        .bottom(8.0)
+        .top(6.0)
+        .bottom(6.0)
         .width(2.0)
+        .radius(1.0)
         .bg(token::ACCENT)
         .display(move || if on() { Display::Flex } else { Display::None });
+    // The second line, only while the tab shows.
+    let line = div()
+        .text_size(11.0)
+        .text_color(token::TEXT_2)
+        .display(move || if on() { Display::Flex } else { Display::None })
+        .child(text(move || marks::tab_line(tab)).ellipsis());
     let words = column()
         .grow(1.0)
         .min_width(0.0)
         .child(div().text_color(token::TEXT).child(title(model, tab)))
-        .child(
-            div()
-                .text_size(11.0)
-                .font_family(fonts::MONO)
-                .text_color(token::TEXT_2)
-                .child(text(move || marks::tab_line(tab)).ellipsis()),
-        );
-    let face = row()
+        .child(line);
+    let top = row()
         .align_items(Align::Center)
         .gap(10.0)
+        .child(marks::tab_icon(tab, on))
+        .child(words)
+        .child(marks::tab_mark(tab));
+    let face = column()
+        .gap(6.0)
         .padding_x(10.0)
-        .height(by_text(46.0))
+        .padding_y(8.0)
+        .min_height(by_text(36.0))
         .radius(6.0)
         .bg(move || if on() { token::RAISED } else { token::PANEL })
         .hover(|s| s.bg(token::PANEL_HOVER))
@@ -231,9 +247,7 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
             moves.move_tab(dragged.0, to.unwrap_or(usize::MAX));
         })
         .child(bar)
-        .child(marks::tab_icon(tab))
-        .child(words)
-        .child(marks::tab_mark(tab))
+        .child(top)
         .child(marks::progress_bar(tab));
     context_menu(face, move || tab_menu(&menu, tab.id))
 }

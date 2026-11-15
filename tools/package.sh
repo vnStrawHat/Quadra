@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
-# tools/package.sh <example>: the release binary of examples/<example> (the package
-# quadra-<example>, whose binary is <example>) with tools/app.manifest embedded by the
-# linker, put in target/package/<example>/ (specs/16, "Packaging"). Fonts and images are in
-# the binary (specs/15, "Assets"), so the folder holds it alone.
+# tools/package.sh <example|oneterm>: the release binary of examples/<example> (the package
+# quadra-<example>, whose binary is <example>), or of 1Term (apps/oneterm, binary 1term),
+# with tools/app.manifest embedded by the linker, put in target/package/<name>/ (specs/16,
+# "Packaging"). Fonts and images are in the binary (specs/15, "Assets"); 1Term's folder also
+# holds its console host and the host's notice (specs/19, "The console host").
 # ponytail: no installer, version resource or icon of the executable; an MSIX package when
 # an app ships.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-name="${1:?usage: tools/package.sh <example>}"
-[ -d "examples/$name" ] || { echo "package: no examples/$name" >&2; exit 1; }
+name="${1:?usage: tools/package.sh <example|oneterm>}"
+case "$name" in
+oneterm) crate=oneterm bin=1term ;;
+*)
+	[ -d "examples/$name" ] || { echo "package: no examples/$name" >&2; exit 1; }
+	crate="quadra-$name" bin="$name"
+	;;
+esac
 manifest=$(cygpath -w "$PWD/tools/app.manifest")
 # Only the final crate is linked again with these arguments; its dependencies are built once.
-tools/cargo.sh rustc --release --quiet -p "quadra-$name" --bin "$name" -- \
+tools/cargo.sh rustc --release --quiet -p "$crate" --bin "$bin" -- \
 	-C link-arg=/MANIFEST:EMBED -C "link-arg=/MANIFESTINPUT:$manifest"
 out="target/package/$name"
 rm -rf "$out"
 mkdir -p "$out"
-cp "target/release/$name.exe" "$out/"
-grep -q PerMonitorV2 "$out/$name.exe" || { echo "package: the manifest is not in $out/$name.exe" >&2; exit 1; }
-echo "package: $out/$name.exe ($(du -k "$out/$name.exe" | cut -f1) KB)"
+cp "target/release/$bin.exe" "$out/"
+grep -q PerMonitorV2 "$out/$bin.exe" || { echo "package: the manifest is not in $out/$bin.exe" >&2; exit 1; }
+if [ "$name" = oneterm ]; then
+	tools/conpty.sh "$out" > /dev/null
+	cp tools/notices/conpty.txt "$out/THIRD-PARTY-NOTICES.txt"
+fi
+echo "package: $out/$bin.exe ($(du -k "$out/$bin.exe" | cut -f1) KB)"

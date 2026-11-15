@@ -245,6 +245,15 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
 - **Sessions keep app data**: `Session::keep(Rc<dyn Any>)` and `kept::<T>()` (specs/18), how
   the app finds a remote space's `Ssh`.
 
+### The console host
+
+1Term's folder holds `conpty.dll` and `OpenConsole.exe` beside `1term.exe` (specs/01, R15):
+`oneterm-vt` uses them before the system's host, which passes about half as much output
+(specs/14, "Terminal throughput"). `tools/conpty.sh` fetches the pinned package into
+`.cache/conpty`, checks it and copies the two files to `target/debug`, `target/release` and
+`target/release/examples`; `tools/package.sh oneterm` puts them in the package with the
+license's notice. Without them every space still runs, on the system's host.
+
 ### M10 in detail
 
 - **Jump hosts**: `Options::jumps`, at most 4 hops, each a target and its auth. The engine

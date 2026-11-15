@@ -96,7 +96,10 @@ writes `<cols>x<rows> <frames> frames <fps> fps <bytes> bytes a frame`):
 - **Reference**: the same program in another terminal, by hand.
 
 The goal is the best fps there is: 1Term's is to come as near the feed's as the console host
-lets it, and never below the poor band.
+lets it, and never below the poor band. A fourth number, `doomfire-conpty`, is that host's
+own ceiling: the demo through the pseudo console with its output read and dropped. 1Term
+ships a newer host than the system's (specs/01, R15): `tools/conpty.sh` puts it beside the
+binaries, and every number of 1Term is taken with it.
 
 ## Baselines
 

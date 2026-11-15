@@ -20,12 +20,18 @@ the writer sees it. Release builds.
 | The console host alone: the pseudo console read and dropped (`doomfire-conpty`) | 147x40 | 336 to 350 | 109 | 37 |
 | The console host alone | 200x50 | 235 | 155 | 36 |
 | **1Term**, release, a real window of 1440 by 900 (`tools/doomfire.sh 15`) | 147x40 | **340** | 109 | 37 |
+| Feed | 147x40 | 1,447 to 1,465 (a snapshot holds the lock 53 µs) | 109 | 158 |
+| The console host 1.25.260930003 beside the binary (`tools/conpty.sh`), alone | 147x40 | 627 to 634 | 109 | 68 |
+| The console host 1.25 alone | 200x50 | 434 | 155 | 66 |
+| **1Term with the console host 1.25** | 147x40 | **592 to 593** | 109 | 64 |
 
-1Term is at the console host's ceiling: what Windows' pseudo console passes on is all it
-gets, and it takes it as fast as nothing at all would (a read buffer of 256 KB in place of
-16 KB changed nothing). The engine could take five times as much. In the demo's bands 340 is
-"great" (100 or more). Going higher needs a faster console host than the system's (a newer
-one that passes the program's output through as it is); that is the user's call.
+With the system's console host 1Term is at that host's ceiling: what it passes on is all
+1Term gets, and 1Term takes it as fast as nothing at all would (a read buffer of 256 KB in
+place of 16 KB changed nothing). The engine could take five times as much. Microsoft's newer
+host, beside the binary (the user's choice; specs/01, R15), passes nearly twice as much, and
+1Term takes 93 % of it: 592 fps, "great" in the demo's bands (100 or more). The rest is not
+the lock (53 µs 60 times a second) and the machine has 12 threads; most likely the host and
+the parsing thread share cores.
 
 ## 2026-11-15 — a new band of a long page (on 57c15af plus this commit)
 

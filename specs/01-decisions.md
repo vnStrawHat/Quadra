@@ -150,6 +150,14 @@ implementation described by specs 00–14 of the V repository.
   | `russh` (features `ring`, `rsa`), `russh-sftp`, `tokio` (`rt-multi-thread`, `net`, `time`, `sync`, `io-util`) | 1Term's SSH and SFTP (specs/19, P2): the protocol, its crypto, the agent and the file protocol. **Two exceptions to the rule, the user's choice (2026-11-15)**: `tokio` is an async runtime, and `russh` must have a crypto backend that builds C and assembly (`ring`, by `cc` with the MSVC the target needs anyway). The tree is about 215 crates, none in the framework. Removing them costs SSH, or an engine of our own | `oneterm-ssh` only |
   | `regex-lite` | The patterns a user types to filter a log (and to find in text, when the editor does): the syntax everyone knows, which Quadra gains nothing by writing again. It has no dependency and is small on purpose (slower than `regex`, which is four crates and far larger in the binary). Removing it costs the filter by pattern, or an engine of our own | `quadra-data` (the log's filter), `quadra-code` (finding in a document) |
 
+  Beside the crates, one binary: **Microsoft's console host** (`conpty.dll` and
+  `OpenConsole.exe` of the NuGet package `Microsoft.Windows.Console.ConPTY`, MIT, version
+  1.25.260930003, the package's SHA-256 checked by `tools/conpty.sh`), put beside 1Term's
+  executable, where `oneterm-vt` finds it before the system's. The user's choice
+  (2026-11-15), for throughput: the system's host passes 336 fps of the fire demo at 147 by
+  40, this one 627 (specs/14). Removing it costs half of that; a terminal still works on the
+  system's.
+
   One version of `windows` is used: the one the accessibility adapter depends on. It brings
   three build-time crates of its own macros (`syn`, `quote`, `proc-macro2`); nothing of them
   is in the binary, and the crate with them builds in a few seconds. `windows-core`, a part

@@ -1156,6 +1156,11 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     a short one above a line where some were removed.
 - In the find bar's query Enter goes to the next match and Shift-Enter to the one before
   (an input submits on Enter alone, and leaves Shift-Enter to what is around it).
+- To a reader the editor is a text input of many lines: its text and its selection in
+  characters, told again when the text changes and when the primary cursor moves. A text of
+  more than 256 KB is told as the 200 lines on each side of the primary cursor's line (the
+  selection in them), so a change does not send megabytes to a reader; the lines told
+  follow the cursor. `tests/reader.rs`.
 - `.top_line(line)`: the line at the top of the view, a signal kept as it scrolls (the
   wheel, the keys); setting it scrolls that line to the top, as far as the view goes, and
   the line it then shows is told back. For a preview that follows the editor.

@@ -230,15 +230,28 @@ impl Widget for EditorWidget {
         self.focused.then(|| self.caret_rect())
     }
 
-    /// A text input of many lines: its text, and its selection in characters.
-    // ponytail: the whole text a change; a window of it if large files make readers slow.
+    /// A text input of many lines: its text, and its selection in characters. A text of
+    /// more than `WHOLE` bytes is told as the lines around the primary cursor, `AROUND` on
+    /// each side: a change does not send megabytes to a reader.
     fn semantics(&self, says: &mut Semantics) {
+        const WHOLE: usize = 256 * 1024;
+        const AROUND: usize = 200;
         if says.role == Role::None {
             says.role = Role::TextInput;
         }
-        let text = self.doc.text();
-        let primary = self.doc.primary();
-        let at = |offset: usize| text[..offset.min(text.len())].chars().count();
+        let (buffer, primary) = (&self.doc.buffer, self.doc.primary());
+        let shown = if buffer.len() <= WHOLE {
+            0..buffer.len()
+        } else {
+            let line = buffer.line_of(primary.head);
+            let last = (line + AROUND).min(buffer.line_count() - 1);
+            buffer.line_start(line.saturating_sub(AROUND))..buffer.line_end(last)
+        };
+        let text = buffer.slice(shown.clone()).into_owned();
+        let at = |offset: usize| {
+            let offset = offset.clamp(shown.start, shown.end) - shown.start;
+            text[..offset].chars().count()
+        };
         says.selection = Some((at(primary.anchor), at(primary.head)));
         says.value = Some(text);
     }

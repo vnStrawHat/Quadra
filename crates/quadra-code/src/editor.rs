@@ -135,12 +135,14 @@ fn edit(
     let Some(w) = tree.widget_mut::<EditorWidget>(id) else { return };
     w.sync_rows();
     let (lines, version, rows) = (w.doc.buffer.line_count(), w.doc.version, w.row_count());
+    let held = (w.doc.primary().anchor, w.doc.primary().head);
     w.doc.now = now;
     f(w, ((view / w.line_px) as usize).max(1));
     w.caret_on = true; // a caret in use does not blink away
     w.follow_caret();
     w.sync_rows();
     let changed = w.doc.version != version;
+    let moved = (w.doc.primary().anchor, w.doc.primary().head) != held;
     let relaid = w.doc.buffer.line_count() != lines || w.row_count() != rows;
     if changed && w.find.is_some() {
         w.refind_changed(); // the matches of the text as it is now
@@ -153,8 +155,8 @@ fn edit(
         tree.mark_layout(id);
     }
     tree.mark_paint(id);
-    if changed || relaid {
-        tree.update_semantics(id, |_| {});
+    if changed || relaid || moved {
+        tree.update_semantics(id, |_| {}); // the text, the caret and the selection, for a reader
     }
     if relaid {
         tree.after_layout(move |tree| tree.scroll_rect_into_view(id, caret));

@@ -72,6 +72,8 @@ pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
             MenuItem::new(name).on_select(move || makes.new_tab_with(makes.launch(Some(shell.clone())))),
         );
     }
+    let connects = model.connecting();
+    items.push(MenuItem::new("Quick connect…").keys("Ctrl+Shift+K").on_select(move || connects.set(true)));
     items.push(MenuItem::separator());
     items.push(MenuItem::new("Split current space").keys("Ctrl+D").on_select(move || splits.split()));
     items

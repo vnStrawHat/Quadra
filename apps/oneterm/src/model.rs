@@ -33,6 +33,7 @@ struct Inner {
     notices: Notices,
     unread: Signal<u32>,
     settings_open: Signal<bool>,
+    connecting: Signal<bool>,
     lock: Lock,
 }
 
@@ -50,6 +51,7 @@ impl Model {
             notices: notices().below(38.0 + 12.0),
             unread: signal(0),
             settings_open: signal(false),
+            connecting: signal(false),
             lock: Lock::new(prefs),
         };
         let model = Model(Rc::new(inner));
@@ -91,7 +93,13 @@ impl Model {
         let shape =
             [CursorShape::Block, CursorShape::Beam, CursorShape::Underline][p.cursor.get_untracked().min(2)];
         let cursor = CursorStyle { shape, blinking: p.blink.get_untracked() };
-        Launch { shell, cwd, cursor, scrollback: p.scrollback.get_untracked().clamp(0.0, 1.0e6) as u32 }
+        Launch {
+            shell,
+            cwd,
+            cursor,
+            scrollback: p.scrollback.get_untracked().clamp(0.0, 1.0e6) as u32,
+            ssh: None,
+        }
     }
 
     /// The directory of the focused space of the tab that shows.
@@ -106,6 +114,11 @@ impl Model {
 
     pub fn unread(&self) -> Signal<u32> {
         self.0.unread
+    }
+
+    /// Whether the quick connect dialog is open.
+    pub fn connecting(&self) -> Signal<bool> {
+        self.0.connecting
     }
 
     pub fn lock(&self) -> Lock {
@@ -131,7 +144,7 @@ impl Model {
     /// A space of its own scope under the model's, its session made in it.
     fn space(&self, launch: Launch) -> Space {
         let scope = self.0.owner.run(Scope::child);
-        let id = self.id();
+        let (id, remote) = (self.id(), launch.ssh.clone());
         let session = scope.run(|| {
             let session = (self.0.new_session)(launch);
             self.watch(id, &session);
@@ -139,7 +152,7 @@ impl Model {
             quadra::effect(move || kept.set_scrollback(rows.get().clamp(0.0, 1.0e6) as u32));
             session
         });
-        Space { id, session, scope }
+        Space { id, session, scope, remote }
     }
 
     /// A tab with a new local shell, after the others, shown.
@@ -153,8 +166,14 @@ impl Model {
     }
 
     /// A tab with a new local shell right after a tab, shown.
+    /// A tab after it starting what its focused space started: the same host, else a shell.
     pub fn duplicate(&self, id: u64) {
-        self.insert_tab(self.index_of(id).map_or(usize::MAX, |at| at + 1), self.launch(None));
+        let tab = self.0.tabs.with_untracked(|tabs| tabs.iter().find(|tab| tab.id == id).copied());
+        let ssh = tab.and_then(|tab| quadra::untrack(|| tab.focused())).and_then(|space| space.remote);
+        self.insert_tab(
+            self.index_of(id).map_or(usize::MAX, |at| at + 1),
+            Launch { ssh, ..self.launch(None) },
+        );
     }
 
     fn index_of(&self, id: u64) -> Option<usize> {
@@ -195,8 +214,13 @@ impl Model {
 
     /// A new space beside the focused one of the active tab, with the focus.
     pub fn split(&self) {
+        self.split_with(Launch { cwd: self.focused_cwd(), ..self.launch(None) });
+    }
+
+    /// A new space running a launch beside the focused one of the active tab, with the focus.
+    pub fn split_with(&self, launch: Launch) {
         let Some(tab) = self.active_tab() else { return };
-        let space = self.space(Launch { cwd: self.focused_cwd(), ..self.launch(None) });
+        let space = self.space(launch);
         let at = tab.focus.get_untracked() + 1;
         tab.spaces.update(|spaces| spaces.insert(at.min(spaces.len()), space));
         tab.focus.set(at);

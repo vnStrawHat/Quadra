@@ -119,7 +119,7 @@ impl Model {
     }
 
     /// A card, and one more unseen; locked, only counted (a card would show what it says).
-    fn notify(&self, notice: Notice) {
+    pub(crate) fn notify(&self, notice: Notice) {
         if !self.lock().locked.get_untracked() {
             self.notices().notify(notice);
         }

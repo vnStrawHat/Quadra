@@ -20,6 +20,15 @@ pub struct Launch {
     /// The cursor until a program sets one, and the rows of history kept.
     pub cursor: quadra_term::vt::CursorStyle,
     pub scrollback: u32,
+    /// A host to connect to instead of a local shell (P2).
+    pub ssh: Option<Remote>,
+}
+
+/// A host and how to sign in to it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Remote {
+    pub target: oneterm_ssh::Target,
+    pub auth: oneterm_ssh::Auth,
 }
 
 /// The shells whose programs are where they are installed, in the menu's order.

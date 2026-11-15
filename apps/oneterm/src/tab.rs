@@ -11,6 +11,8 @@ pub struct Space {
     pub id: u64,
     pub session: Session,
     pub(crate) scope: Scope,
+    /// The host it connected to, if it is remote.
+    pub remote: Option<crate::shells::Remote>,
 }
 
 impl PartialEq for Space {
@@ -63,6 +65,8 @@ pub enum Command {
     FocusNext(bool),
     /// Lock at once (with a master password).
     Lock,
+    /// The quick connect dialog.
+    QuickConnect,
 }
 
 impl Action for Command {

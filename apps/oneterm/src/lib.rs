@@ -3,6 +3,7 @@
 //! app ([`local_shell`]), `quadra_term::echo` in tests.
 
 mod chrome;
+mod connect;
 mod git;
 mod local;
 mod lock;
@@ -12,6 +13,7 @@ mod model;
 mod page;
 mod prefs;
 mod rail;
+mod remote;
 mod shells;
 mod signals;
 mod spaces;
@@ -26,11 +28,17 @@ use quadra_term::Session;
 pub use local::local_shell;
 pub use model::{Command, Model, Space, Tab};
 pub use prefs::{Prefs, theme};
-pub use shells::{Launch, Shell};
+pub use remote::remote_shell;
+pub use shells::{Launch, Remote, Shell};
 pub use signals::{percent, state_word};
 
 /// Makes the session of a new space: it is called in the scope the space lives in.
 pub type NewSession = Rc<dyn Fn(Launch) -> Session>;
+
+/// The app's sessions: a host's shell when the launch names one, else a local one.
+pub fn start(launch: Launch) -> Session {
+    if launch.ssh.is_some() { remote_shell(launch) } else { local_shell(launch) }
+}
 
 /// The app's keys: the kit's, the terminal's, and the tabs' and spaces'.
 pub fn keymap() -> Keymap {
@@ -43,6 +51,7 @@ pub fn keymap() -> Keymap {
         ("ctrl-alt-right", Command::FocusNext(true)),
         ("ctrl-alt-left", Command::FocusNext(false)),
         ("ctrl-shift-l", Command::Lock),
+        ("ctrl-shift-k", Command::QuickConnect),
     ];
     for (stroke, command) in ours {
         keys.bind(stroke, command).expect("the app's bindings are well formed");
@@ -96,6 +105,7 @@ impl OneTerm {
             .child(body)
             .child(chrome::status_bar(&self.model, self.clock))
             .child(cards)
+            .child(connect::dialog(&self.model))
     }
 }
 
@@ -111,6 +121,7 @@ fn run(model: &Model, command: Command) -> bool {
         Command::CloseSpace => return model.close_focused(),
         Command::FocusNext(forward) => model.focus_next(forward),
         Command::Lock => model.lock().lock_now(),
+        Command::QuickConnect => model.connecting().set(true),
     }
     true
 }

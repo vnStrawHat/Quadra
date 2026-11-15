@@ -8,7 +8,7 @@
 
 use std::rc::Rc;
 
-use oneterm::{NewSession, OneTerm, keymap, local_shell, theme};
+use oneterm::{NewSession, OneTerm, keymap, start, theme};
 use quadra::{AppDirs, WindowOptions};
 
 fn main() -> quadra::Result<()> {
@@ -24,6 +24,6 @@ fn main() -> quadra::Result<()> {
     let app = quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), seen));
     let options =
         WindowOptions::new("1Term").size(1440.0, 900.0).fit(0.85).centered().custom_frame().remember("main");
-    let shells: NewSession = Rc::new(local_shell);
+    let shells: NewSession = Rc::new(start);
     app.keymap(keymap()).window(options, move || OneTerm::new(shells).view())?.run()
 }

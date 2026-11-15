@@ -38,7 +38,7 @@ pub use report::{AppError, FrameReport, Result};
 pub use router::{Router, router};
 pub use services::AppDirs;
 pub use settings::{Settings, Stored};
-pub use text_size::{SystemText, TextSize, text_size};
+pub use text_size::{SystemText, TextSize, app_keymap, text_size};
 pub use windows::Windows;
 
 type FrameHook = Box<dyn FnMut(&FrameReport)>;
@@ -69,7 +69,8 @@ pub struct App<R: Renderer> {
     pub(crate) root: Scope,
     clear: Color,
     /// The key bindings every window of the app uses.
-    pub(crate) keymap: Rc<Keymap>,
+    /// The app's bindings: every window follows them (`app_keymap`).
+    pub(crate) keymap: Signal<Rc<Keymap>>,
     /// What the platform's timers mean (specs/11).
     pub(crate) timers: Rc<Timers>,
     /// The tasks of the app's views, run between events.
@@ -97,7 +98,7 @@ impl<R: Renderer> App<R> {
         // theme.
         let (root, timers, tasks) =
             (Scope::child(), Timers::new(platform.clone()), Executor::new(&*platform));
-        let (theme, settings, appearance) = root.run(|| {
+        let (theme, settings, appearance, keymap) = root.run(|| {
             provide(timers.clone());
             provide(tasks.clone());
             provide(Images::new(platform.image_decoder()));
@@ -112,7 +113,9 @@ impl<R: Renderer> App<R> {
             let size = signal(TextSize::default());
             provide(size);
             provide(TextScale(memo(move || size.get().factors(appearance.get().text_scale).1)));
-            (theme, settings, appearance)
+            let keymap = signal(Rc::new(Keymap::default()));
+            provide(keymap);
+            (theme, settings, appearance, keymap)
         });
         App {
             platform,
@@ -121,7 +124,7 @@ impl<R: Renderer> App<R> {
             windows: Vec::new(),
             root,
             clear: Color::WHITE,
-            keymap: Rc::new(Keymap::default()),
+            keymap,
             timers,
             tasks,
             theme,
@@ -163,11 +166,8 @@ impl<R: Renderer> App<R> {
 
     /// The app's key bindings: its defaults, then the user's (specs/09). Windows opened
     /// before and after use them.
-    pub fn keymap(mut self, keymap: Keymap) -> App<R> {
-        self.keymap = Rc::new(keymap);
-        for w in &mut self.windows {
-            w.tree.set_keymap(self.keymap.clone());
-        }
+    pub fn keymap(self, keymap: Keymap) -> App<R> {
+        self.keymap.set_always(Rc::new(keymap));
         self
     }
 

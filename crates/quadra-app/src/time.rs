@@ -124,8 +124,17 @@ impl fmt::Display for DateTime {
 /// says. In UTC where no app is around.
 pub fn local_now() -> DateTime {
     let now = unix_now();
-    let offset = use_context::<Rc<dyn Platform>>().map_or(0, |platform| platform.utc_offset(now));
-    DateTime::from_unix(now, offset)
+    DateTime::from_unix(now, utc_offset_at(now))
+}
+
+/// How many seconds the user's clock is ahead of UTC now: what a thread without the app
+/// takes along to say local times (`DateTime::from_unix(unix_now(), offset)`).
+pub fn utc_offset() -> i32 {
+    utc_offset_at(unix_now())
+}
+
+fn utc_offset_at(now: i64) -> i32 {
+    use_context::<Rc<dyn Platform>>().map_or(0, |platform| platform.utc_offset(now))
 }
 
 /// Seconds since 1970-01-01 00:00 UTC by the system's clock.

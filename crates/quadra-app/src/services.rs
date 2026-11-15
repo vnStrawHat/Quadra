@@ -47,6 +47,8 @@ impl<R: Renderer> App<R> {
         log::to_folder(&dirs.data.join("logs"));
         crash::report_panics(&dirs.crashes());
         let settings = self.root.run(|| {
+            // Views find where the app keeps its files.
+            provide(Rc::new(dirs.clone()));
             let settings = Settings::open(dirs.config.join("settings.json"));
             provide(settings.clone());
             settings

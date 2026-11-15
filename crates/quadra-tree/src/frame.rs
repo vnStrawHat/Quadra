@@ -137,6 +137,7 @@ impl Tree {
         self.compose_pass();
         times.compose = lap();
         (self.times, self.frames, self.snap) = (times, self.frames + 1, false);
+        self.shared.made.set(self.frames);
         self.stats
     }
 

@@ -41,6 +41,8 @@ pub(crate) struct Shared {
     pub asked: RefCell<Vec<crate::window::WindowRequest>>,
     /// The clock of the window the tree is in, when it was given one.
     pub clock: RefCell<Option<Rc<dyn Fn() -> Instant>>>,
+    /// The frames the tree has made, as the handle reads them.
+    pub made: Cell<u64>,
 }
 
 impl Tree {
@@ -54,6 +56,14 @@ impl Tree {
 /// A cheap, clonable way to reach a tree from a closure.
 #[derive(Clone)]
 pub struct Handle(pub(crate) Rc<Shared>);
+
+impl Handle {
+    /// How many frames the tree has made: read twice a second apart, the frames a second.
+    /// Not a signal, so reading it makes no frame.
+    pub fn frames(&self) -> u64 {
+        self.0.made.get()
+    }
+}
 
 impl Handle {
     fn push(&self, op: Op) {

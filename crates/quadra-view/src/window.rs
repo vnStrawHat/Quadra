@@ -54,6 +54,11 @@ impl Window {
         self.handle.ask_window(WindowRequest::CloseNow);
     }
 
+    /// How many frames the window has made (`Handle::frames`).
+    pub fn frames(&self) -> u64 {
+        self.handle.frames()
+    }
+
     /// Whether the window is maximized: a read that what it is in runs again for.
     pub fn is_maximized(&self) -> bool {
         self.maximized.get()

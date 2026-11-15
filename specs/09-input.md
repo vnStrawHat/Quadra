@@ -117,6 +117,11 @@ The keymap is data: default bindings from the kit and the app, then the user's f
 are checked when loaded; an unknown action name or a malformed keystroke is reported, not
 ignored.
 
+The app's keymap is a signal in the context of views (`quadra_app::app_keymap()`, set by
+`App::keymap`); every window follows it, so a page of settings puts another keymap while the
+app runs. A `Keystroke` prints as `Keystroke::parse` reads it (`ctrl-shift-t`, `ctrl-comma`),
+and `is_bindable` says it is not a modifier alone: what a field that records keys keeps.
+
 ### The keymap file
 
 Text, a binding a line, `keys = name arguments`; a line `[predicate]` names the context of

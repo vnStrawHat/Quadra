@@ -4,7 +4,9 @@
 
 use quadra_headless::hint;
 use quadra_tree::{Along, Anchor, NodeId, Role, Side};
-use quadra_view::{Div, MountCx, View, div, row, text};
+use std::rc::Rc;
+
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, div, row, text};
 
 use crate::popup::{hang, surface};
 use crate::token;
@@ -24,16 +26,17 @@ pub fn tip(words: &str) -> Div {
 }
 
 pub struct Tooltip<V> {
-    tip: String,
+    tip: Prop<String>,
     keys: Option<String>,
     meta: Option<String>,
     side: Side,
     of: V,
 }
 
-/// Gives a view a tooltip: `tip` shows above it once the pointer has rested on it.
-pub fn tooltip<V: View + 'static>(tip: impl Into<String>, of: V) -> Tooltip<V> {
-    Tooltip { tip: tip.into(), keys: None, meta: None, side: Side::Above, of }
+/// Gives a view a tooltip: `tip` shows above it once the pointer has rested on it. It may
+/// change (a closure or a signal): the bubble and what a reader is told follow.
+pub fn tooltip<V: View + 'static, M>(tip: impl IntoProp<String, M>, of: V) -> Tooltip<V> {
+    Tooltip { tip: tip.into_prop(), keys: None, meta: None, side: Side::Above, of }
 }
 
 impl<V> Tooltip<V> {
@@ -64,14 +67,31 @@ impl<V: View + 'static> View for Tooltip<V> {
         let of = self.of.mount(cx);
         let shown = quadra_headless::tooltip(cx, of, hint::TOOLTIP_REST);
         // To a reader the words are the description of what they are about, there or not.
-        let said = self.tip.clone();
-        cx.tree.update_semantics(of, move |says| says.description = Some(said));
+        let tip: Rc<dyn Fn() -> String> = match self.tip {
+            Prop::Value(said) => {
+                let told = said.clone();
+                cx.tree.update_semantics(of, move |says| says.description = Some(told));
+                Rc::new(move || said.clone())
+            }
+            Prop::Reactive(said) => {
+                let (said, writer): (Rc<dyn Fn() -> String>, _) = (Rc::from(said), cx.handle.clone());
+                let told = said.clone();
+                cx.handle.bind(move || {
+                    let words = told();
+                    writer.with(move |tree| {
+                        tree.update_semantics(of, move |says| says.description = Some(words))
+                    });
+                });
+                said
+            }
+        };
 
         // The bubble is an overlay opened by hand, above the view and centred on it.
-        let words = (self.tip, self.keys, self.meta);
+        let words = (tip, self.keys, self.meta);
         let anchor = Anchor::Beside { node: of, side: self.side, along: Along::Center, gap: 6.0 };
         hang(cx, of, shown, anchor, move || {
-            let line = tip_line(&words.0);
+            let said = words.0.clone();
+            let line = row().gap(16.0).padding_x(8.0).padding_y(4.0).child(text(move || said()));
             let line = match &words.1 {
                 Some(keys) => line.child(text(keys.clone()).color(token::TEXT_2)),
                 None => line,

@@ -4,7 +4,9 @@
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, use_context};
 use quadra_render::Renderer;
-use quadra_tree::Tree;
+use std::rc::Rc;
+
+use quadra_tree::{Keymap, Tree};
 
 use crate::App;
 
@@ -44,6 +46,12 @@ impl TextSize {
     }
 }
 
+/// The app's keymap, from the context of a view: a page of settings puts another, and every
+/// window follows.
+pub fn app_keymap() -> Signal<Rc<Keymap>> {
+    use_context::<Signal<Rc<Keymap>>>().expect("app_keymap() is called inside an app")
+}
+
 /// The app's text size, from the context of a view: a settings page writes it.
 pub fn text_size() -> Signal<TextSize> {
     use_context::<Signal<TextSize>>().expect("text_size() is called inside an app")
@@ -56,13 +64,15 @@ impl<R: Renderer> App<R> {
         self
     }
 
-    /// What a window follows of the app: its theme and its text size, now and whenever
-    /// they change.
+    /// What a window follows of the app: its theme, its text size and its keymap, now and
+    /// whenever they change.
     pub(crate) fn follow(&self, tree: &mut Tree, scope: &Scope) {
         let (theme, size, appearance, handle) =
             (self.theme, self.root.run(text_size), self.appearance, tree.handle());
         let factors = move || size.get().factors(appearance.get().text_scale);
+        let keymap = self.keymap;
         tree.set_theme(theme.get_untracked());
+        tree.set_keymap(keymap.get_untracked());
         let (zoom, text) = scope.run(|| quadra_reactive::untrack(factors));
         tree.set_zoom(zoom);
         tree.set_text_scale(text);
@@ -71,6 +81,11 @@ impl<R: Renderer> App<R> {
             handle.bind(move || {
                 let theme = theme.get();
                 writer.with(move |tree| tree.set_theme(theme));
+            });
+            let writer = handle.clone();
+            handle.bind(move || {
+                let keymap = keymap.get();
+                writer.with(move |tree| tree.set_keymap(keymap));
             });
             let writer = handle.clone();
             handle.bind(move || {

@@ -9,7 +9,8 @@ superseded by this file.
 
 ## Where files go
 
-An app writes nothing unless it is told where: `App::dirs(AppDirs::for_app("name"))` takes
+An app writes nothing unless it is told where: `App::dirs(AppDirs::for_app("name"))` (then
+`Rc<AppDirs>` in the context of views) takes
 the folders of the user's account (`%APPDATA%\name` for settings, `%LOCALAPPDATA%\name` for
 logs and crash reports), read from the environment. Without them settings live in memory,
 the log in its ring, and a crash report on the standard error stream. So tests, the shots
@@ -49,7 +50,8 @@ tool and the benches never write outside the project; a test that does gives a f
 - `quadra_app::time`: `Date { year, month, day }` (the proleptic Gregorian calendar,
   `days_in`, `weekday`, `add_days`, days from 1970), `Time { hour, minute, second }`,
   `DateTime`, `DateTime::from_unix(seconds, offset)`, and `local_now()`, which reads the
-  clock and the offset of the app's platform. The kit's calendar is on this `Date`.
+  clock and the offset of the app's platform; `utc_offset()` is that offset, for a thread
+  without the app to say local times. The kit's calendar is on this `Date`.
 
 ## Language
 

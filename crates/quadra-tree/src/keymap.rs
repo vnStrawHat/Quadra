@@ -14,6 +14,7 @@ use crate::field::TextCommand;
 
 mod context;
 mod file;
+mod text;
 
 use context::Context;
 pub use file::Actions;

@@ -125,3 +125,24 @@ fn a_dialog_is_answered_by_its_buttons_or_given_up() {
     assert_eq!((p.asking.get_untracked(), p.deleted.get_untracked()), (false, 1));
     assert!(!p.h.semantics().contains("Dialog"));
 }
+
+#[test]
+fn a_tooltip_follows_words_that_change() {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    let name = signal("one".to_string());
+    h.mount(move || quadra_design::root().child(tooltip(name, button("Tab").test_id("tab"))));
+    h.frame();
+    let told = |h: &Harness| {
+        let nodes = h.tree.semantic_tree().nodes;
+        nodes
+            .iter()
+            .find(|n| n.semantics.test_id.as_deref() == Some("tab"))
+            .and_then(|n| n.semantics.description.clone())
+    };
+    assert_eq!(told(&h).as_deref(), Some("one"));
+    name.set("two".into());
+    h.frame();
+    while h.frame_if_needed().is_some() {}
+    assert_eq!(told(&h).as_deref(), Some("two"));
+}

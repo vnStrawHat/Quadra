@@ -66,7 +66,6 @@ impl<R: Renderer> App<R> {
         let surface = self.renderer.create_surface(target, device_size(&*window))?;
         let scope = self.root.run(Scope::child);
         let mut tree = Tree::new(self.fonts.clone());
-        tree.set_keymap(self.keymap.clone());
         let clock = self.platform.clone();
         tree.set_clock(move || clock.now());
         self.follow(&mut tree, &scope);

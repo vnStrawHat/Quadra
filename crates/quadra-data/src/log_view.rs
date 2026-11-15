@@ -68,7 +68,7 @@ fn line(log: &Log, place: usize, timestamps: bool, sx: Signal<f32>) -> Div {
         if pen.bold { run.bold() } else { run }
     });
     let spans: Vec<_> = spans.collect();
-    let line = row().height(by_text(ROW)).align_items(Align::Center).padding_left(8.0);
+    let line = row().grow(1.0).height(by_text(ROW)).align_items(Align::Center).padding_left(8.0);
     let letter = by_text(LETTER)();
     let line = match (timestamps, at_ms) {
         (false, _) => line,
@@ -84,7 +84,8 @@ fn line(log: &Log, place: usize, timestamps: bool, sx: Signal<f32>) -> Div {
     // A long line is cut at the edge and scrolls sideways; the times stay.
     // As wide as the line at least (a byte is a cell or more of it): it never wraps.
     let wide = said.len() as f32 * letter + 8.0;
-    let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).child(rich_text(spans));
+    let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).cut_to_parent();
+    let words = words.child(rich_text(spans));
     line.child(div().width(0.0).grow(1.0).height(by_text(ROW)).overflow_x(Overflow::Hidden).child(words))
 }
 

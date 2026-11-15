@@ -175,6 +175,10 @@ fn lines_are_selected_and_copied_and_a_long_one_scrolls_sideways() {
     };
     let time = |h: &Harness| h.tree.window_rect(h.query(|n| n.semantics.name == "12:01:40.000")[0]).x;
     let (x, at) = (line(&h), time(&h));
+    // What a line says is painted within the rest of its row, cut to it: not a box of nothing.
+    let found = h.query(|n| n.semantics.role == Role::Text && n.semantics.name.starts_with("INFO wide"))[0];
+    let cut = h.tree.parent(h.tree.parent(found).unwrap()).unwrap();
+    assert!(h.tree.window_rect(cut).width > 400.0, "{:?}", h.tree.window_rect(cut));
     let y = h.tree.window_rect(h.query(|n| n.semantics.name == "12:01:40.000")[0]).y + 9.0;
     h.tree.wheel(quadra_prim::Point::new(0.0, -1.0), false, quadra_prim::Point::new(300.0, y), Mods::SHIFT);
     settle(&mut h);

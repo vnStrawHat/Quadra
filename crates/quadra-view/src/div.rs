@@ -200,6 +200,13 @@ impl Div {
         self.on_mount(move |tree, id| tree.set_clip_shape(id, Some(svg)))
     }
 
+    /// Paints the box and what it holds within the box of its parent: a layer cut to it. A
+    /// parent's overflow cuts only its layout, so what is moved over its edge by hand (columns
+    /// scrolled sideways under a pinned one) needs this not to be painted past it.
+    pub fn cut_to_parent(self) -> Self {
+        self.on_mount(|tree, id| tree.make_layer(id, true))
+    }
+
     /// The shape the pointer has over the box and what it holds.
     pub fn cursor(self, cursor: Cursor) -> Self {
         self.on_mount(move |tree, id| tree.set_cursor(id, Some(cursor)))

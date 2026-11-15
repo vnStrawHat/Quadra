@@ -6,7 +6,7 @@ use quadra_prim::{Point, Rect};
 use quadra_reactive::{Signal, memo};
 use quadra_tree::{NodeId, PointerEvent, PointerKind, Role};
 
-use crate::div::div;
+use crate::div::{Div, div};
 use crate::flow::Region;
 use crate::scrollbar::{self, Scrolled};
 use crate::view::{MountCx, View};
@@ -140,4 +140,19 @@ fn strip<V: View + 'static>(scroll_x: Signal<f32>, content: V, plain_wheel: bool
         });
     };
     Region::new(div().grow(1.0), bind)
+}
+
+/// A box whose content its owner moves sideways by hand, `scroll` pixels, which goes
+/// `end(width)` past a box so wide: a scrollbar along its bottom that shows and is dragged as
+/// a scroll container's. A table with pinned columns has one.
+pub fn sideways_bar(content: Div, scroll: Signal<f32>, end: impl Fn(f32) -> f32 + 'static) -> Region {
+    Region::new(content, move |viewport, cx| {
+        let view = cx.tree.size_signal(viewport);
+        let end = memo(move || end(view.get().width).max(0.0));
+        let top = memo(move || scroll.get().clamp(0.0, end.get()));
+        let bar = scrollbar::attach(cx, viewport, Scrolled { scroll, top, end, view, sideways: true });
+        let mut children = cx.tree.children(viewport).to_vec();
+        children.push(bar);
+        cx.tree.set_children(viewport, &children);
+    })
 }

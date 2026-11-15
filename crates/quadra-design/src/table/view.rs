@@ -7,7 +7,9 @@ use quadra_layout::{Align, Display, Justify, Length, Overflow};
 use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Paint, Role, State as On};
-use quadra_view::{Div, View, by_text, column, div, dynamic, row, scroll_x, text, uniform_list};
+use quadra_view::{
+    AnyView, Div, View, by_text, column, div, dynamic, row, scroll_x, sideways_bar, text, uniform_list,
+};
 
 use super::{CellKind, Column, age_text};
 use crate::icon::icon;
@@ -77,16 +79,17 @@ fn shown(state: &Sheet, c: usize, part: Div) -> Div {
     part.display(move || if hidden.with(|all| all.contains(&c)) { Display::None } else { Display::Flex })
 }
 
-/// A row of parts: the pinned ones where they are, the others in a box that cuts them,
-/// moved left by `sx`. With none pinned, all of them in the row.
+/// A row of parts: the pinned ones where they are, the others in a box that cuts them (a
+/// layer cut to it: a box's overflow cuts its layout, not what is painted), moved left by
+/// `sx`. With none pinned, all of them in the row.
 fn split(row_of: Div, parts: Vec<Div>, pinned: usize, sx: Signal<f32>) -> Div {
     if pinned == 0 {
         return row_of.children(parts);
     }
     let mut parts = parts.into_iter();
     let fixed: Vec<Div> = parts.by_ref().take(pinned).collect();
-    let rest =
-        row().absolute().top(0.0).bottom(0.0).left(move || -sx.get()).children(parts.collect::<Vec<_>>());
+    let rest = row().absolute().top(0.0).bottom(0.0).left(move || -sx.get());
+    let rest = rest.children(parts.collect::<Vec<_>>()).cut_to_parent();
     let cut = row().width(0.0).grow(1.0).height(Length::Fill).overflow_x(Overflow::Hidden).child(rest);
     row_of.children(fixed).child(cut.border_left(1.0).border_color(token::LINE))
 }
@@ -154,14 +157,14 @@ pub(crate) fn build(
     columns: Rc<Vec<Column>>,
     (height, pinned): (f32, usize),
     clipboard: Option<Rc<dyn Clipboard>>,
-) -> Div {
+) -> AnyView {
     let (count, rows, cursor, of) = (state.rows.clone(), state.clone(), state.cursor, columns.clone());
     let sx = signal(0.0f32);
     // With columns pinned, the others move under the wheel sideways, as far as they go past
     // the room they have.
     let (widths, hidden) = (state.widths, state.hidden);
     let end = move |width: f32| {
-        let (all, hidden) = (widths.get_untracked(), hidden.get_untracked());
+        let (all, hidden) = (widths.get(), hidden.get()); // tracked where a bar follows it
         let wide = |range: std::ops::Range<usize>| {
             range.filter(|c| !hidden.contains(c)).map(|c| all[c]).sum::<f32>()
         };
@@ -181,12 +184,13 @@ pub(crate) fn build(
     let head = header(&state, &columns, (pinned, sx));
     if pinned > 0 {
         let head = columns_menu(crate::rows::sideways(head, sx, end), columns, hidden);
-        return all.child(head).child(body);
+        // A bar along the bottom: what scrolls has no box of its own to have one.
+        return AnyView::new(sideways_bar(all.child(head).child(body), sx, end));
     }
     let head = columns_menu(head, columns, hidden);
     // Columns wider than the table scroll sideways, the header with the rows.
     // ponytail: the rows' own scrollbar is at the right end of what scrolls sideways; a bar
     // at the table's edge when tables that wide are common.
     let sheet = column().grow(1.0).child(head).child(body);
-    all.child(scroll_x(signal(0.0), sheet).container(div().grow(1.0)))
+    AnyView::new(all.child(scroll_x(signal(0.0), sheet).container(div().grow(1.0))))
 }

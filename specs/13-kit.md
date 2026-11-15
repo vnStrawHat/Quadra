@@ -358,10 +358,12 @@ As built so far:
 - A table whose columns are wider than it scrolls sideways (`scroll_x`), the header with
   the rows.
 - `.pinned(n)`: the first `n` columns stay where they are; the others are in a box that
-  cuts them, after a line, moved left as the wheel turns sideways (or with Shift), as far as
-  the last column's end at the table's edge, the header with the rows. Moving them lays out
-  the rows that show and nothing else. ponytail: no scrollbar along the bottom then; one
-  when tables with pinned columns are used without a wheel that turns sideways.
+  cuts them, after a line, moved left as the wheel turns sideways (or with Shift) or the
+  scrollbar along the bottom is dragged (`sideways_bar`), as far as the last column's end at
+  the table's edge, the header with the rows. The box's overflow cuts only its layout: what
+  moves in it is a layer cut to it (`Div::cut_to_parent`), so nothing is painted past the
+  table or over the pinned columns. Moving them lays out the rows that show and nothing
+  else. The diff and the log view cut the words of a line the same way.
 - `.hidden(columns)`: a signal of the columns, by their places, that do not show (their
   parts are not displayed) and are not copied.
 - `.cells(column)`: a cursor on cells. The left and right arrows move the column of the

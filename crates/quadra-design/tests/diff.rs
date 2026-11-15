@@ -35,14 +35,15 @@ fn names(h: &Harness) -> Vec<String> {
     lines(h).into_iter().map(|(_, _, name)| name).collect()
 }
 
-/// The instances painted in a colour: where each starts and how wide it is.
+/// The instances painted in a colour: where each starts in the window (its layer placed
+/// there; the scale is 1) and how wide it is.
 fn filled(h: &Harness, color: quadra_prim::Color) -> Vec<(f32, f32)> {
     let layers = h.renderer.steps().iter().filter_map(|step| match step {
-        quadra_render::Step::Layer { id, .. } => Some(h.tree.scene().layer(*id)),
+        quadra_render::Step::Layer { id, world } => Some((h.tree.scene().layer(*id), world.transform.tx)),
         quadra_render::Step::Run { .. } => None,
     });
-    let of = layers.flat_map(|layer| layer.instances().iter());
-    of.filter(|i| i.color == color.to_array()).map(|i| (i.bounds[0], i.bounds[2])).collect()
+    let of = layers.flat_map(|(layer, x)| layer.instances().iter().map(move |i| (i, x)));
+    of.filter(|(i, _)| i.color == color.to_array()).map(|(i, x)| (i.bounds[0] + x, i.bounds[2])).collect()
 }
 
 #[test]
@@ -61,11 +62,11 @@ fn the_lines_are_one_column_or_the_old_text_beside_the_new() {
     assert!(lines(&h).iter().enumerate().all(|(i, line)| (line.0, line.1) == (i as f32 * 18.0, 0.0)));
     // What changed in the line that was edited is filled: one letter of 7.2 px where it
     // was "1", two where it is "22", after two numbers, the mark and twelve letters, from
-    // a whole pixel to a whole pixel.
+    // a whole pixel to a whole pixel of the layer the words are in (a pixel either way).
     let ink = |role| dark().color(role).alpha(0.3);
     let at = (2.0 * (2.0 * 7.2 + 16.0) + 16.0 + 12.0 * 7.2_f32).round();
     let close = |found: Vec<(f32, f32)>, x: f32, width: f32| {
-        found.len() == 1 && (found[0].0 - x).abs() < 0.01 && (found[0].1 - width).abs() < 0.01
+        found.len() == 1 && (found[0].0 - x).abs() <= 1.0 && (found[0].1 - width).abs() <= 1.0
     };
     assert!(close(filled(&h, ink(token::ERROR)), at, 7.0), "{:?}", filled(&h, ink(token::ERROR)));
     assert!(close(filled(&h, ink(token::OK)), at, 15.0), "{:?}", filled(&h, ink(token::OK)));

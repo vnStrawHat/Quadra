@@ -5,7 +5,7 @@ use quadra_layout::{Align, Justify, Overflow};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{Role, Token};
-use quadra_ui::{Div, div, rich_text, row, span, text};
+use quadra_ui::{Div, by_text, div, rich_text, row, span, text};
 
 use super::rows::{DiffMode, Row};
 use super::words::changed_parts;
@@ -64,7 +64,7 @@ fn line(
     let spans: Vec<_> = cuts.windows(2).map(piece).collect();
 
     let number = |n: &Option<usize>| {
-        let cell = row().width(gutter).height(ROW).align_items(Align::Center).shrink(0.0);
+        let cell = row().width(gutter).height(by_text(ROW)).align_items(Align::Center).shrink(0.0);
         let cell = cell.justify(Justify::End).padding_right(8.0);
         let cell = cell.text_color(token::TEXT_3);
         match n {
@@ -74,10 +74,11 @@ fn line(
     };
     let line = match wrap {
         true => row().min_height(ROW).align_items(Align::Start),
-        false => row().height(ROW).align_items(Align::Center),
+        false => row().height(by_text(ROW)).align_items(Align::Center),
     };
     let line = line.role(Role::Cell).label(name).children(numbers.iter().map(number).collect::<Vec<_>>());
-    let sign = row().width(16.0).height(ROW).align_items(Align::Center).shrink(0.0).child(text(sign));
+    let sign =
+        row().width(16.0).height(by_text(ROW)).align_items(Align::Center).shrink(0.0).child(text(sign));
     let line = match tint {
         Some((tint, ink)) => line.bg(tint).child(sign.text_color(ink)),
         None => line.child(sign),
@@ -93,7 +94,7 @@ fn line(
     // As wide as the line at least (a byte is a cell or more of it): it never wraps.
     let wide = (said.len() + 3 * said.matches('\t').count()) as f32 * 7.2 + 8.0;
     let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).child(rich_text(spans));
-    line.child(div().width(0.0).grow(1.0).height(ROW).overflow_x(Overflow::Hidden).child(words))
+    line.child(div().width(0.0).grow(1.0).height(by_text(ROW)).overflow_x(Overflow::Hidden).child(words))
 }
 
 /// The old text's half of a row beside the new one's, as wide as each other; as high as
@@ -107,7 +108,7 @@ fn halves(left: Div, right: Div, wrap: bool) -> Div {
 /// The row of lines that do not show: a button that shows them.
 fn fold(old: usize, count: usize, open: Signal<Vec<usize>>) -> Div {
     let show = move || open.update(|open| open.push(old));
-    let fold = row().height(ROW).align_items(Align::Center).justify(Justify::Center);
+    let fold = row().height(by_text(ROW)).align_items(Align::Center).justify(Justify::Center);
     let fold = fold.bg(token::PANEL).text_color(token::TEXT_3).hover(|s| s.bg(token::PANEL_HOVER));
     let fold = fold.cursor(Cursor::Pointer).focus_visible(|s| s.outline(token::BORDER_FOCUSED));
     quadra_base::press::press(fold.child(text(format!("{count} unchanged lines")))).on_click(show).build()

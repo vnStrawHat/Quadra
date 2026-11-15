@@ -9,7 +9,7 @@ use quadra_layout::{Align, Justify};
 use quadra_platform::{Cursor, Key};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, State};
-use quadra_ui::{Div, MountCx, NodeRef, View, column, div, dynamic, row, text};
+use quadra_ui::{Div, MountCx, NodeRef, View, by_text, column, div, dynamic, row, text};
 
 use crate::button::icon_button;
 use crate::icon::icon;
@@ -47,8 +47,9 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static, focused: bool
     let names = dynamic(move || {
         let words = heads.locale();
         let first = words.first_day();
-        let name =
-            |i: u8| cell().height(22.0).child(text(words.day((first + i) % 7)).size(size::TEXT_SM.size));
+        let name = |i: u8| {
+            cell().height(by_text(22.0)).child(text(words.day((first + i) % 7)).size(size::TEXT_SM.size))
+        };
         row().gap(2.0).text_color(token::TEXT_2).children((0..7).map(name).collect::<Vec<_>>())
     });
     // The days in weeks of seven, the first week begun where its first day falls.
@@ -58,10 +59,10 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static, focused: bool
         let words = lang.locale();
         let first = words.first_day();
         let before = ((Date::new(year, month, 1).weekday() + 7 - first) % 7) as usize;
-        let mut cells: Vec<Div> = (0..before).map(|_| cell().height(28.0)).collect();
+        let mut cells: Vec<Div> = (0..before).map(|_| cell().height(by_text(28.0))).collect();
         for day in 1..=Date::days_in(year, month) {
             let (date, picked) = (Date::new(year, month, day), picked.clone());
-            let on = cell().height(28.0).radius(token::RADIUS_MD).cursor(Cursor::Pointer);
+            let on = cell().height(by_text(28.0)).radius(token::RADIUS_MD).cursor(Cursor::Pointer);
             let on = on.hover(|s| s.bg(token::PANEL_HOVER));
             let on = on.when(State::SELECTED, |s| s.bg(token::ACCENT_TINT).text_color(token::ACCENT_TEXT));
             let on = time::day(on, words.date(date), date, value, picked);
@@ -142,7 +143,8 @@ impl View for DatePicker {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (value, open, opener) = (self.value, signal(false), NodeRef::new());
         let (lang, said) = (language(), language());
-        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).width(180.0).height(size::H_MD);
+        let face =
+            row().align_items(Align::Center).gap(6.0).shrink(0.0).width(180.0).height(by_text(size::H_MD));
         let face = face.padding_x(8.0).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));

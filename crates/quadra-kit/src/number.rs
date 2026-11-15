@@ -7,7 +7,7 @@ use quadra_layout::{Align, Direction, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_ui::{Div, MountCx, View, column, div, row, text_input};
+use quadra_ui::{Div, MountCx, View, by_text, column, div, row, text_input};
 
 use crate::icon::icon;
 use crate::input::input;
@@ -79,7 +79,7 @@ impl View for NumberInput {
             };
             let side = || ghost(row().width(32.0).height(30.0));
             let middle = row().grow(1.0).justify(Justify::Center).cursor(Cursor::Text).child(field);
-            let frame = around.size(128.0, 32.0).radius(token::RADIUS_LG).border(1.0);
+            let frame = around.width(128.0).height(by_text(32.0)).radius(token::RADIUS_LG).border(1.0);
             let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG);
             let frame = frame.overflow_x(quadra_layout::Overflow::Hidden).selection_color(token::SELECTION);
             let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));

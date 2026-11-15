@@ -7,7 +7,7 @@ use quadra_platform::Cursor;
 use quadra_prim::Corners;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, Role, State};
-use quadra_ui::{AnyView, Div, IntoProp, MountCx, Prop, View, div, row, show, text};
+use quadra_ui::{AnyView, Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
 
 use crate::button::Size;
 use crate::{size, token};
@@ -76,7 +76,7 @@ impl Choice {
     fn cell(&self, label: String) -> Div {
         let small = matches!(self.size, Size::Xs | Size::Sm);
         let cell = row().align_items(Align::Center).justify(Justify::Center).shrink(0.0);
-        let cell = cell.height(self.size.height()).padding_x(if small { 8.0 } else { 12.0 });
+        let cell = cell.height(by_text(self.size.height())).padding_x(if small { 8.0 } else { 12.0 });
         let cell = match small {
             true => cell.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height()),
             false => cell,

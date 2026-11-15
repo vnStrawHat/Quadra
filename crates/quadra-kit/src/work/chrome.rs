@@ -7,7 +7,7 @@ use quadra_layout::{Align, Display, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, Role, Side};
-use quadra_ui::{AnyView, Div, MountCx, View, column, div, row, text};
+use quadra_ui::{AnyView, Div, MountCx, View, by_text, column, div, row, text};
 
 use crate::icon::icon;
 use crate::token;
@@ -64,7 +64,7 @@ fn tool(active: Signal<&'static str>, it: Activity) -> AnyView {
     let words = move || if more() > 99 { "99+".to_string() } else { more().to_string() };
     // The count stands on the panel in the accent, ringed by the panel so it parts from the
     // icon.
-    let chip = row().height(14.0).min_width(14.0).padding_x(2.0).radius(7.0);
+    let chip = row().height(by_text(14.0)).min_width(14.0).padding_x(2.0).radius(7.0);
     let chip = chip.bg(token::ACCENT).text_size(9.0).text_color(token::TEXT_ON_ACCENT);
     let chip = chip.align_items(Align::Center).justify(Justify::Center);
     let badge = div().absolute().top(-2.0).right(-4.0).radius(8.0).padding(1.0).bg(token::PANEL);
@@ -93,7 +93,7 @@ impl View for ActivityBar {
 /// The title strip of a panel: 28 px on the panel's plane over a line, the title muted.
 /// What is added to it (`.child(..)`) stands at its end: quiet icon buttons.
 pub fn panel_header(title: impl Into<String>) -> Div {
-    let strip = row().align_items(Align::Center).gap(4.0).height(28.0).shrink(0.0);
+    let strip = row().align_items(Align::Center).gap(4.0).height(by_text(28.0)).shrink(0.0);
     let strip = strip.padding_left(8.0).padding_right(4.0).bg(token::PANEL);
     let strip = strip.border_bottom(1.0).border_color(token::LINE);
     strip.child(text(title.into()).color(token::TEXT_2)).child(div().grow(1.0))

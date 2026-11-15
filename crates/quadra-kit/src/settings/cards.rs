@@ -4,7 +4,7 @@
 use quadra_layout::{Align, Justify, Length};
 use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_tree::{Role, State};
-use quadra_ui::{AnyView, Div, column, div, dynamic, row, scroll, text};
+use quadra_ui::{AnyView, Div, by_text, column, div, dynamic, row, scroll, text};
 
 use quadra_base::settings::{Model, opens, shown};
 
@@ -14,7 +14,7 @@ use crate::{icons, size, token};
 
 /// A row of the column, 28 px: filled when chosen, its label a step heavier.
 fn line(title: &str, on: impl Fn() -> bool + 'static) -> Div {
-    let line = row().align_items(Align::Center).gap(8.0).height(28.0).padding_x(8.0).shrink(0.0);
+    let line = row().align_items(Align::Center).gap(8.0).min_height(by_text(28.0)).padding_x(8.0).shrink(0.0);
     let line = line.radius(token::RADIUS_MD).role(Role::TreeItem).label(title.to_string()).selected(on);
     let line = line.hover(|s| s.bg(token::PRESS.alpha(0.8)));
     line.when(State::SELECTED, |s| s.bg(token::PRESS).font_weight(500))

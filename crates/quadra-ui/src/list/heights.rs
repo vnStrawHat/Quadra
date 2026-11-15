@@ -26,6 +26,13 @@ impl Heights {
         }
     }
 
+    /// Gives every row of a list that does not measure them another height.
+    pub fn set_fixed(&mut self, to: f32) {
+        if let Heights::Uniform { height, .. } = self {
+            *height = to;
+        }
+    }
+
     /// Where a row starts and ends, and whether that is measured and not estimated.
     pub fn span(&self, row: usize) -> (f64, f64, bool) {
         let measured = match self {

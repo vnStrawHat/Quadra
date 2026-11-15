@@ -10,7 +10,7 @@ use quadra_layout::Align;
 use quadra_platform::Clipboard;
 use quadra_reactive::{memo, signal, untrack, use_context};
 use quadra_tree::{NodeId, Paint};
-use quadra_ui::{IntoProp, MountCx, Prop, View, column, div, row, text};
+use quadra_ui::{IntoProp, MountCx, Prop, View, by_text, column, div, row, text};
 
 use crate::value::Value;
 
@@ -74,7 +74,7 @@ impl View for ValueView {
         let path = div().grow(1.0).text_size(12.0).font_family(fonts::MONO);
         let path = path.child(path_text.color(token::TEXT_2).selectable());
         let button = button("Copy path").size(Size::Sm).disabled(move || chosen.with(Option::is_none));
-        let bar = row().align_items(Align::Center).gap(6.0).padding_x(8.0).height(28.0).shrink(0.0);
+        let bar = row().align_items(Align::Center).gap(6.0).padding_x(8.0).height(by_text(28.0)).shrink(0.0);
         let bar =
             bar.border_bottom(1.0).border_color(token::LINE).child(path).child(button.on_click(copy.clone()));
         let rows = tree(move || (*all.get()).clone(), chosen).open(open).row_height(24.0).indent(16.0);

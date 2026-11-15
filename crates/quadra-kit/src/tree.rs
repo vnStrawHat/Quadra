@@ -8,7 +8,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, Paint, Side, State};
-use quadra_ui::{Div, MountCx, View, column, div, row, text};
+use quadra_ui::{Div, MountCx, View, by_text, column, div, row, text};
 
 use crate::display::chosen_mark;
 use crate::icon::icon;
@@ -157,7 +157,7 @@ impl Tree {
 /// in the accent, unless it has a colour of its own.
 fn line(at: &Shown<Look>, (height, indent): (f32, f32), on: impl Fn() -> bool + Clone + 'static) -> Div {
     let left = 8.0 + at.depth as f32 * indent;
-    let mut line = row().align_items(Align::Center).gap(2.0).grow(1.0).height(height);
+    let mut line = row().align_items(Align::Center).gap(2.0).grow(1.0).height(by_text(height));
     line = line.padding_left(left).padding_right(8.0).cursor(Cursor::Pointer);
     line = line.label(at.row.label.clone());
     for level in 0..at.depth {
@@ -177,8 +177,12 @@ fn line(at: &Shown<Look>, (height, indent): (f32, f32), on: impl Fn() -> bool + 
         line = line.child(div().text_color(tone).child(icon(body).size(16.0)));
     }
     line = line.child(chosen_mark(Side::Left, on));
-    let label = text(at.row.label.clone());
-    let label = at.row.color.map_or_else(|| text(at.row.label.clone()), |color| label.color(color));
+    // One line: a row is as high as one, and its label ends with "…" where it does not fit.
+    let label = text(at.row.label.clone()).ellipsis();
+    let label = match at.row.color {
+        Some(color) => label.color(color),
+        None => label,
+    };
     let line = line.child(div().padding_left(4.0).child(label));
     match &at.row.detail {
         Some((detail, color)) => {

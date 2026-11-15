@@ -4,7 +4,7 @@
 use quadra_layout::{Align, Display, Justify};
 use quadra_prim::Color;
 use quadra_tree::{Role, Side, Token};
-use quadra_ui::{Div, TextView, column, div, row, text};
+use quadra_ui::{Div, TextView, by_text, column, div, row, text};
 
 use crate::{fonts, size, token};
 
@@ -70,7 +70,8 @@ pub fn tag(words: impl Into<String>) -> Div {
 }
 
 fn chip(height: f32) -> Div {
-    let chip = row().align_items(Align::Center).shrink(0.0).height(height).padding_x(4.0).border(1.0);
+    let chip =
+        row().align_items(Align::Center).shrink(0.0).height(by_text(height)).padding_x(4.0).border(1.0);
     let chip = chip.radius(token::RADIUS_MD).font_family(fonts::MONO);
     chip.text_size(size::TEXT_XS.size).line_height(size::TEXT_XS.line_height())
 }

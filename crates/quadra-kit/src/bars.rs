@@ -6,7 +6,7 @@ use std::rc::Rc;
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{AnyView, Div, IntoProp, MountCx, View, div, row, text};
+use quadra_ui::{AnyView, Div, IntoProp, MountCx, View, by_text, div, row, text};
 
 use crate::button::{Button, icon_button};
 use crate::icon::icon;
@@ -15,7 +15,7 @@ use crate::{fonts, size, token};
 /// A toolbar: 45 px on the canvas with a line under it, its controls 4 px apart. Give it
 /// children; [`crate::vdivider`] splits groups.
 pub fn toolbar() -> Div {
-    let bar = row().align_items(Align::Center).gap(4.0).padding_x(8.0).padding_y(6.0).height(45.0);
+    let bar = row().align_items(Align::Center).gap(4.0).padding_x(8.0).padding_y(6.0).height(by_text(45.0));
     bar.shrink(0.0).bg(token::CANVAS).border_bottom(1.0).border_color(token::LINE)
 }
 
@@ -45,7 +45,7 @@ impl Statusbar {
 
 impl View for Statusbar {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let bar = row().align_items(Align::Center).gap(12.0).padding_x(8.0).height(30.0).shrink(0.0);
+        let bar = row().align_items(Align::Center).gap(12.0).padding_x(8.0).height(by_text(30.0)).shrink(0.0);
         let bar = bar.bg(token::STATUS_BG).border_top(1.0).border_color(token::LINE_STRONG);
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());
         let bar = bar.role(Role::Group).test_id("statusbar");

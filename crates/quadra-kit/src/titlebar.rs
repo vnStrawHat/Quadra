@@ -9,7 +9,9 @@ use quadra_platform::HitRegion;
 use quadra_prim::Color;
 use quadra_reactive::signal;
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{AnyView, Div, IntoProp, MountCx, NodeRef, Prop, View, div, dynamic, row, text, window};
+use quadra_ui::{
+    AnyView, Div, IntoProp, MountCx, NodeRef, Prop, View, by_text, div, dynamic, row, text, window,
+};
 
 use crate::button::icon_button;
 use crate::icon::icon;
@@ -82,7 +84,7 @@ fn caption(name: &'static str, height: f32, danger: bool) -> Div {
 impl View for Titlebar {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let height = if self.title_size.is_some() { 34.0 } else { 32.0 };
-        let bar = row().align_items(Align::Center).shrink(0.0).height(height);
+        let bar = row().align_items(Align::Center).shrink(0.0).height(by_text(height));
         let bar = bar.role(Role::Group).test_id("titlebar");
         let bar = bar.bg(token::CHROME).border_bottom(1.0).border_color(token::LINE_STRONG);
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());

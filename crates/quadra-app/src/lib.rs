@@ -26,11 +26,11 @@ use quadra_platform::{
     Appearance, Cursor, Platform, PlatformError, PlatformWindow, WindowHandle, WindowId, WindowOptions,
 };
 use quadra_prim::{Color, Rect};
-use quadra_reactive::{Scope, Signal, provide, signal};
+use quadra_reactive::{Scope, Signal, memo, provide, signal};
 use quadra_render::{DeviceSize, Pixels, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
 use quadra_tree::{Fonts, Keymap, Theme, Tree};
-use quadra_ui::{Images, View, mount_with};
+use quadra_ui::{Images, TextScale, View, mount_with};
 
 pub use i18n::{Arg, I18n, Language, language, t, t_with};
 pub use locale::Locale;
@@ -105,7 +105,9 @@ impl<R: Renderer> App<R> {
             provide(settings.clone());
             let appearance = signal(platform.appearance());
             provide(appearance);
-            provide(signal(TextSize::default()));
+            let size = signal(TextSize::default());
+            provide(size);
+            provide(TextScale(memo(move || size.get().factors(appearance.get().text_scale).1)));
             (theme, settings, appearance)
         });
         App {

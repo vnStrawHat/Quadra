@@ -8,7 +8,7 @@ use quadra_platform::Cursor;
 use quadra_prim::Color;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Role, Side, State};
-use quadra_ui::{Div, MountCx, Refine, View, row, text};
+use quadra_ui::{Div, MountCx, Refine, View, by_text, row, text};
 
 use crate::button::Size;
 use crate::choice::chooser;
@@ -35,7 +35,8 @@ impl Tabs {
 
     fn tab(&self, i: usize, label: String) -> Div {
         let (chosen, pill) = (self.chosen, self.pill);
-        let tab = row().align_items(Align::Center).shrink(0.0).height(Size::Md.height()).padding_x(8.0);
+        let tab =
+            row().align_items(Align::Center).shrink(0.0).height(by_text(Size::Md.height())).padding_x(8.0);
         let tab = tab.radius(token::RADIUS_MD).cursor(Cursor::Pointer);
         let tab = tab.text_color(if pill { token::TEXT } else { token::TEXT_2 });
         let tab = tab.hover(|s| s.bg(token::PANEL_HOVER).text_color(token::TEXT));

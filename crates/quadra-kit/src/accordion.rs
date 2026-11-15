@@ -6,7 +6,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_ui::{AnyView, Div, MountCx, View, column, div, dynamic, row, text};
+use quadra_ui::{AnyView, Div, MountCx, View, by_text, column, div, dynamic, row, text};
 
 use crate::icon::icon;
 use crate::{icons, size, token};
@@ -44,7 +44,7 @@ fn head(title: String, open: Signal<bool>) -> Div {
         let body = if open.get() { icons::CHEVRON_DOWN } else { icons::CHEVRON_RIGHT };
         icon(body).size(14.0).color(token::TEXT_2)
     };
-    let head = row().align_items(Align::Center).gap(4.0).padding_x(8.0).height(size::H_MD);
+    let head = row().align_items(Align::Center).gap(4.0).padding_x(8.0).height(by_text(size::H_MD));
     let head = head.cursor(Cursor::Pointer);
     let head = head.hover(|s| s.bg(token::PANEL_HOVER)).focus_visible(|s| s.bg(token::PANEL_HOVER));
     disclose::head(head, open).child(dynamic(chevron)).child(text(title))

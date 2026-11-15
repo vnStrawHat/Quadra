@@ -10,7 +10,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, Paint};
-use quadra_ui::{MountCx, NodeRef, View, column, div, row, text};
+use quadra_ui::{MountCx, NodeRef, View, by_text, column, div, row, text};
 
 use crate::icon::icon;
 use crate::menu::{Ends, MenuItem, rows};
@@ -69,7 +69,7 @@ impl View for Select {
         let tone =
             move || -> Paint { if chosen.get() < count { token::TEXT.into() } else { token::TEXT_3.into() } };
         // Filled, with a hairline border, 28 px high; the border is where the focus shows.
-        let face = row().width(self.width).height(size::H_MD).padding_x(8.0).gap(8.0).shrink(0.0);
+        let face = row().width(self.width).height(by_text(size::H_MD)).padding_x(8.0).gap(8.0).shrink(0.0);
         let face = face.align_items(Align::Center).radius(token::RADIUS_MD).bg(token::RAISED);
         let face = face.border(1.0).border_color(token::LINE_STRONG).hover(|s| s.bg(token::RAISED_HOVER));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));

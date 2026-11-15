@@ -25,6 +25,7 @@ use crate::flow::Region;
 use crate::scroll::{reveals, wheel_scrolls};
 use crate::scrollbar::{self, Scrolled};
 use crate::view::{MountCx, View};
+use crate::window::TextScale;
 
 /// Rows kept mounted above and below the viewport, so a small scroll shows no gap.
 const OVERSCAN: usize = 2;
@@ -64,6 +65,8 @@ impl View for ListView {
 /// far the list is scrolled, in pixels; it is kept between zero and the end.
 ///
 /// The list fills its container (see [`Region::container`]); give that a size or let it grow.
+/// The rows are `row_height` at a text scale of 1, and as many times taller as text is
+/// larger (`TextScale`): what holds a line of text grows with it (`by_text`).
 pub fn uniform_list<V: View + 'static>(
     count: impl Fn() -> usize + 'static,
     row_height: f32,
@@ -109,7 +112,8 @@ fn list<V: View + 'static>(
 
         let size = tree.size_signal(viewport);
         let total = memo(count);
-        let measures = heights.fixed().is_none();
+        let (measures, base) = (heights.fixed().is_none(), heights.fixed());
+        let scale = quadra_reactive::use_context::<TextScale>();
         let heights = Rc::new(RefCell::new(heights));
         // Written when a row turned out to have another height than it counted with: what
         // depends on where rows are runs again.
@@ -118,6 +122,9 @@ fn list<V: View + 'static>(
         let extent = memo(move || {
             moved.get();
             let mut heights = known.borrow_mut();
+            if let Some(base) = base {
+                heights.set_fixed(base * scale.map_or(1.0, |scale| scale.0.get()));
+            }
             heights.resize(total.get());
             heights.before(usize::MAX) as f32
         });
@@ -195,10 +202,11 @@ fn list<V: View + 'static>(
         };
         let measured = measures.then(|| Rc::new(record) as Rc<dyn Fn(usize, f32)>);
         let slots = RefCell::new(Vec::new());
-        let list = Rc::new(List { content, owner, heights, slots, row: Box::new(row), measured });
+        let placed = Cell::new(base.unwrap_or(0.0));
+        let list = Rc::new(List { content, owner, heights, slots, row: Box::new(row), measured, placed });
         let writer = cx.handle.clone();
         cx.handle.bind(move || {
-            let ((first, last), _) = (range.get(), moved.get());
+            let ((first, last), _, _) = (range.get(), moved.get(), extent.get());
             let list = list.clone();
             writer.with(move |tree| {
                 if list.realize(tree, first..last) && list.measured.is_some() {

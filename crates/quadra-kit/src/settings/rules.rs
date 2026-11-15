@@ -4,7 +4,7 @@
 use quadra_layout::{Align, Justify};
 use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_tree::{Role, State};
-use quadra_ui::{AnyView, Div, Region, column, div, dynamic, row, scroll, text};
+use quadra_ui::{AnyView, Div, Region, by_text, column, div, dynamic, row, scroll, text};
 
 use quadra_base::settings::{Model, opens, shown};
 
@@ -35,7 +35,11 @@ pub(super) fn nav(
         let under = column().gap(2.0).display(move || shown(open.get() && kept.get()));
         let groups = page.groups.iter().enumerate().map(|(g, group)| {
             let (kept, model) = (model.groups[i][g], model.clone());
-            let line = row().align_items(Align::Center).height(26.0).padding_left(28.0).padding_right(6.0);
+            let line = row()
+                .align_items(Align::Center)
+                .min_height(by_text(26.0))
+                .padding_left(28.0)
+                .padding_right(6.0);
             let line = line.shrink(0.0).radius(token::RADIUS_MD).text_color(token::TEXT_2);
             let line = line.role(Role::TreeItem).label(group.title.clone());
             let line = line.display(move || shown(kept.get())).hover(|s| s.bg(token::PANEL_HOVER));
@@ -65,7 +69,7 @@ fn page_row(i: usize, page: &SettingsPage, model: &Model) -> Div {
         e.stop(); // the chevron opens; it does not choose the page
     });
     let chevron = chevron.child(dynamic(move || body().size(12.0).color(token::TEXT_2)));
-    let line = row().align_items(Align::Center).gap(6.0).height(28.0).padding_x(5.0).shrink(0.0);
+    let line = row().align_items(Align::Center).gap(6.0).min_height(by_text(28.0)).padding_x(5.0).shrink(0.0);
     let line = line.radius(token::RADIUS_MD).border(1.0).border_color(token::LINE.alpha(0.0));
     let line = line.role(Role::TreeItem).label(page.title.clone()).selected(move || on.get() == i);
     let line = line.hover(|s| s.bg(token::PANEL_HOVER));

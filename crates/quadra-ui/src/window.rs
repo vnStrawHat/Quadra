@@ -1,7 +1,7 @@
 //! The window a view is in (specs/10, "Windows with their own frame"): what a title bar
 //! drawn by the app asks of it.
 
-use quadra_reactive::{Signal, expect};
+use quadra_reactive::{Memo, Signal, expect, use_context};
 use quadra_tree::{Handle, WindowRequest};
 
 /// The window of the view that asked for it.
@@ -9,6 +9,17 @@ use quadra_tree::{Handle, WindowRequest};
 pub struct Window {
     handle: Handle,
     maximized: Signal<bool>,
+}
+
+/// The text scale of the app's windows (specs/12, "Text size"), as the app gives it to views.
+#[derive(Clone, Copy)]
+pub struct TextScale(pub Memo<f32>);
+
+/// `px` at a text scale of 1, and as many times more as text is larger: the height of a box
+/// that holds a line of text (`.height(by_text(28.0))`). Call it while the view is built.
+pub fn by_text(px: f32) -> impl Fn() -> f32 + Clone + 'static {
+    let scale = use_context::<TextScale>();
+    move || px * scale.map_or(1.0, |scale| scale.0.get())
 }
 
 /// The window the calling view is in. Call it while the view is built.

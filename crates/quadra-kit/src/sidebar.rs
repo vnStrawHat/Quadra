@@ -6,7 +6,7 @@ use quadra_layout::{Align, Display, Justify, Length};
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{NodeId, Paint, Side, State};
-use quadra_ui::{AnyView, Div, MountCx, View, column, div, row, scroll, text};
+use quadra_ui::{AnyView, Div, MountCx, View, by_text, column, div, row, scroll, text};
 
 use crate::display::{chosen_mark, label};
 use crate::icon::icon;
@@ -110,7 +110,8 @@ fn place(
     folded: impl Fn() -> bool + 'static,
 ) -> Div {
     let id = item.id;
-    let line = row().align_items(Align::Center).gap(6.0).height(26.0).padding_left(10.0).padding_right(8.0);
+    let line =
+        row().align_items(Align::Center).gap(6.0).height(by_text(26.0)).padding_left(10.0).padding_right(8.0);
     let line = line.justify(move || if folded() { Justify::Center } else { Justify::Start });
     let line = line.cursor(Cursor::Pointer).label(item.label.clone());
     let on = move || chosen.get() == id;

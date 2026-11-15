@@ -10,7 +10,7 @@ use quadra_platform::{Cursor, Key};
 use quadra_reactive::{Signal, effect, memo, signal};
 use quadra_tree::{NodeId, Paint, Role};
 use quadra_ui::{
-    AnyView, Div, MountCx, NodeRef, View, div, dynamic, each, row, scroll_strip, text, text_input,
+    AnyView, Div, MountCx, NodeRef, View, by_text, div, dynamic, each, row, scroll_strip, text, text_input,
 };
 
 use crate::icon::icon;
@@ -131,7 +131,7 @@ fn field(tab: Signal<Tab>, editing: Signal<Option<String>>, rename: Rename, id: 
 
 /// What follows the pointer while a tab is dragged: its icon and its title on a chip.
 fn chip(tab: &Tab) -> Div {
-    let chip = row().align_items(Align::Center).gap(4.0).height(28.0).padding_x(8.0);
+    let chip = row().align_items(Align::Center).gap(4.0).height(by_text(28.0)).padding_x(8.0);
     let chip = match tab.icon {
         Some(body) => chip.child(icon(body).color(token::TEXT_2)),
         None => chip,
@@ -248,7 +248,7 @@ impl View for TabStrip {
         let end = row().align_items(Align::Center).gap(4.0).padding_x(6.0).shrink(0.0);
         let end = end.border_bottom(1.0).border_left(1.0).border_color(token::LINE_STRONG);
         let end = end.children(actions).child(menu_icon_button(icons::ELLIPSIS, "Tabs", list));
-        let bar = row().height(32.0).shrink(0.0).bg(token::TAB_BG);
+        let bar = row().height(by_text(32.0)).shrink(0.0).bg(token::TAB_BG);
         let bar = bar.child(scroll_strip(signal(0.0), all)).child(end).mount(cx);
         strip.mounted(cx, bar);
         bar

@@ -7,7 +7,7 @@ use quadra_base::menu::{self, Ends, Line};
 use quadra_layout::Align;
 use quadra_reactive::signal;
 use quadra_tree::{Along, Side, State};
-use quadra_ui::{Div, NodeRef, Place, column, div, row, scroll, text};
+use quadra_ui::{Div, NodeRef, Place, by_text, column, div, row, scroll, text};
 
 use super::MenuItem;
 use crate::icon::icon;
@@ -21,7 +21,7 @@ const MOST: f32 = 450.0;
 /// A row that is chosen: 23 px high, 4 px in from the menu's edge, 6 px beside what it holds
 /// and between its parts, the shortcut at the right and 16 px from the label at least.
 fn face(item: &MenuItem, marks: bool) -> Div {
-    let face = row().height(ROW).grow(1.0).padding_x(6.0).gap(6.0).radius(token::RADIUS_MD);
+    let face = row().height(by_text(ROW)).grow(1.0).padding_x(6.0).gap(6.0).radius(token::RADIUS_MD);
     let face = face.align_items(Align::Center);
     let face = face.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
     let face = if item.danger { face.text_color(token::ERROR) } else { face };
@@ -60,7 +60,7 @@ pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
         }
         if item.heading {
             let words = text(item.label.clone()).size(size::TEXT_SM.size).color(token::TEXT_2);
-            let head = row().height(20.0).padding_x(10.0).align_items(Align::Center).child(words);
+            let head = row().height(by_text(20.0)).padding_x(10.0).align_items(Align::Center).child(words);
             lines.push(Line::Part(Box::new(head)));
             height += 20.0;
             continue;

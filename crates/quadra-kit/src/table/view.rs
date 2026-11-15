@@ -7,7 +7,7 @@ use quadra_layout::{Align, Display, Justify, Length, Overflow};
 use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Paint, Role, State as On};
-use quadra_ui::{Div, View, column, div, dynamic, row, scroll_x, text, uniform_list};
+use quadra_ui::{Div, View, by_text, column, div, dynamic, row, scroll_x, text, uniform_list};
 
 use super::{CellKind, Column, age_text};
 use crate::icon::icon;
@@ -21,7 +21,8 @@ const GRIP: f32 = 5.0;
 /// The header: the titles on the plane of table heads over a line; the arrow of the column
 /// the rows are sorted by is in the accent.
 fn header(state: &Sheet, columns: &[Column], (pinned, sx): (usize, Signal<f32>)) -> Div {
-    let head = row().height(28.0).shrink(0.0).bg(token::TABLE_HEAD_BG).text_color(token::TABLE_HEAD_FG);
+    let head =
+        row().height(by_text(28.0)).shrink(0.0).bg(token::TABLE_HEAD_BG).text_color(token::TABLE_HEAD_FG);
     let head = head.border_bottom(1.0).border_color(token::LINE).role(Role::Row);
     let mut titles = Vec::new();
     for (c, at) in columns.iter().enumerate() {
@@ -105,7 +106,7 @@ fn line(
         let here = mark.column.is_none() && mark.focused.get() && mark.cursor.get() == Some(place.get());
         if here { token::BORDER_FOCUSED.into() } else { Paint::default() }
     };
-    let line = row().align_items(Align::Center).grow(1.0).height(height);
+    let line = row().align_items(Align::Center).grow(1.0).height(by_text(height));
     let line = line.border_bottom(1.0).border_color(token::TABLE_ROW_BORDER).outline(ring);
     let line = line
         .hover(|s| s.bg(token::RAISED_HOVER.alpha(0.6)))

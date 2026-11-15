@@ -8,7 +8,7 @@ use quadra_base::list as base;
 use quadra_layout::Align;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, State};
-use quadra_ui::{MountCx, View, column, row, text};
+use quadra_ui::{MountCx, View, by_text, column, row, text};
 
 use crate::token;
 
@@ -62,7 +62,7 @@ where
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (row_height, build) = (self.row_height, self.row);
         let line = move |index: Signal<usize>| {
-            let line = row().align_items(Align::Center).grow(1.0).height(row_height).padding_x(6.0);
+            let line = row().align_items(Align::Center).grow(1.0).height(by_text(row_height)).padding_x(6.0);
             let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
             line.child(build(index))
         };

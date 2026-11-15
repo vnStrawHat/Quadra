@@ -10,7 +10,7 @@ pub use quadra_base::pick::{fuzzy, fuzzy_hits};
 use quadra_layout::{Align, Length};
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{NodeId, State};
-use quadra_ui::{Div, MountCx, Place, View, column, div, row, scroll, text, text_input};
+use quadra_ui::{Div, MountCx, Place, View, by_text, column, div, row, scroll, text, text_input};
 
 use crate::display::key_label;
 use crate::popup::{EDGE, popup};
@@ -125,7 +125,8 @@ where
         let face = move |k: usize, i: usize| {
             let command = &all[i];
             let hits = fuzzy_hits(&query.get_untracked(), &command.title).unwrap_or_default();
-            let line = row().align_items(Align::Center).gap(8.0).grow(1.0).height(ROW).padding_x(6.0);
+            let line =
+                row().align_items(Align::Center).gap(8.0).grow(1.0).height(by_text(ROW)).padding_x(6.0);
             let line = line.radius(4.0).label(command.title.clone());
             let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
             let line =
@@ -156,7 +157,7 @@ where
         let rows = found.rows(parts, |_| 0, run.clone());
         let (enter, submit, matches) = (run.clone(), run, found.matches);
         let field = text_input(query).placeholder(&ask).on_submit(move |_| submit(on.get_untracked()));
-        let ask = row().align_items(Align::Center).height(37.0).padding_x(10.0);
+        let ask = row().align_items(Align::Center).height(by_text(37.0)).padding_x(10.0);
         let ask = ask.border_bottom(1.0).border_color(token::LINE).child(div().grow(1.0).child(field));
         let tall = move || Length::Px((matches.get().len().max(1) as f32 * ROW + 8.0).min(MOST));
         let list = scroll(signal(0.0), rows).container(div().height(tall));

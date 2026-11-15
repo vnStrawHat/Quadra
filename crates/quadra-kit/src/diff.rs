@@ -14,7 +14,7 @@ use std::rc::Rc;
 use quadra_platform::Clipboard;
 use quadra_reactive::{Signal, effect, memo, signal, untrack, use_context};
 use quadra_tree::{NodeId, Token};
-use quadra_ui::{IntoProp, MountCx, Prop, View, column, div, dynamic, uniform_list, virtual_list};
+use quadra_ui::{IntoProp, MountCx, Prop, View, by_text, column, div, dynamic, uniform_list, virtual_list};
 
 use crate::{fonts, token};
 pub use lines::{Step, diff_ids, diff_lines};
@@ -180,7 +180,7 @@ impl View for Diff {
                 let (widest, gutter) = untrack(|| (widest.get(), gutter.get()));
                 widest + 8.0 - (width / halves - numbers * gutter - 16.0)
             };
-            let face = crate::rows::selectable(&rows_of, div().height(ROW), place);
+            let face = crate::rows::selectable(&rows_of, div().height(by_text(ROW)), place);
             built.container(crate::rows::sideways(face, sx, end))
         };
         let list = match wrap {

@@ -1,7 +1,7 @@
 //! The mounted rows of a list: the boxes it places, given from the rows that leave to the
 //! rows that enter, and measured where the list does not know their height.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::ops::Range;
 use std::rc::Rc;
 
@@ -28,6 +28,8 @@ pub(super) struct List<V> {
     pub row: Box<dyn Fn(Signal<usize>) -> V>,
     /// Told the height a row was laid out with, in a list that measures its rows.
     pub measured: Option<Rc<dyn Fn(usize, f32)>>,
+    /// The height the rows of a uniform list were last placed at.
+    pub placed: Cell<f32>,
 }
 
 impl<V: View> List<V> {
@@ -69,8 +71,10 @@ impl<V: View> List<V> {
             return false;
         }
         let slots = &mut *self.slots.borrow_mut();
-        if self.measured.is_some() {
-            // A row that turned out taller moved the ones after it.
+        let fixed = self.heights.borrow().fixed();
+        if self.measured.is_some() || fixed.is_some_and(|height| self.placed.replace(height) != height) {
+            // A row that turned out taller moved the ones after it; rows of another height
+            // (another text scale) moved all.
             for slot in slots.iter().filter(|slot| range.contains(&slot.at)) {
                 tree.set_layout_style(slot.wrapper, self.place(slot.at));
             }

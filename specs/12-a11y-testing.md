@@ -119,8 +119,10 @@ A user who needs larger text sets it in the system (on Windows, Accessibility, T
   size of every text by `Tree::set_text_scale(f)` where the text values are resolved
   (`Inherited::style`, and `Inherited::scale` for a widget that has sizes of its own, a run
   of rich text that says its size). Spaces, radii, borders and icons keep their size;
-  controls that hold a line of text are at least their height and grow with it
-  (`.min_height(..)`), and the rows of uniform lists are as much taller as their text.
+  a box that holds a line of text is as many times taller (`.height(by_text(28.0))`: the
+  height times the scale, which views read from `TextScale` in their context), and so are
+  the rows of uniform lists; a box whose text may wrap is at least that high
+  (`.min_height(by_text(..))`) and grows with its lines. At a scale of 1 nothing moves.
 
 `TextSize { zoom, text, system }` says both factors as the user chose them and which of
 them the system's text size multiplies (`SystemText::Zoom`, the default, `Text` or `None`).

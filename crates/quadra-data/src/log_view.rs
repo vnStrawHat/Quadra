@@ -11,7 +11,9 @@ use quadra_platform::Clipboard;
 use quadra_prim::Color;
 use quadra_reactive::{Signal, effect, memo, signal, use_context};
 use quadra_tree::{NodeId, Paint};
-use quadra_ui::{Div, MountCx, View, column, div, dynamic, rich_text, row, span, text, uniform_list};
+use quadra_ui::{
+    Div, MountCx, View, by_text, column, div, dynamic, rich_text, row, span, text, uniform_list,
+};
 
 use crate::ansi::{Ink, Pen, plain, runs};
 use crate::log::{Log, clock};
@@ -61,7 +63,7 @@ fn line(log: &Log, place: usize, timestamps: bool, sx: Signal<f32>) -> Div {
         if pen.bold { run.bold() } else { run }
     });
     let spans: Vec<_> = spans.collect();
-    let line = row().height(ROW).align_items(Align::Center).padding_left(8.0);
+    let line = row().height(by_text(ROW)).align_items(Align::Center).padding_left(8.0);
     let line = match (timestamps, at_ms) {
         (false, _) => line,
         (true, 0) => line.child(div().width(GUTTER - 8.0).shrink(0.0)),
@@ -77,7 +79,7 @@ fn line(log: &Log, place: usize, timestamps: bool, sx: Signal<f32>) -> Div {
     // As wide as the line at least (a byte is a cell or more of it): it never wraps.
     let wide = said.len() as f32 * 7.2 + 8.0;
     let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).child(rich_text(spans));
-    line.child(div().width(0.0).grow(1.0).height(ROW).overflow_x(Overflow::Hidden).child(words))
+    line.child(div().width(0.0).grow(1.0).height(by_text(ROW)).overflow_x(Overflow::Hidden).child(words))
 }
 
 /// A line as copying gives it: its time, when they show, and what it says.
@@ -154,7 +156,7 @@ impl View for LogView {
                     changed.get();
                     line(&rows, place.get(), timestamps, sx)
                 });
-                let face = selectable(&picks, div().height(ROW), place);
+                let face = selectable(&picks, div().height(by_text(ROW)), place);
                 built.container(sideways(face, sx, reach.clone()))
             },
         );
@@ -171,7 +173,7 @@ impl View for LogView {
             _ => format!("{} of {}", shown.listed(), all.len()),
         });
         let follow = move || scroll.set(if scroll.get_untracked() == FOLLOWING { end() } else { FOLLOWING });
-        let bar = row().align_items(Align::Center).gap(4.0).padding_x(8.0).height(45.0).shrink(0.0);
+        let bar = row().align_items(Align::Center).gap(4.0).padding_x(8.0).height(by_text(45.0)).shrink(0.0);
         let bar = bar.border_bottom(1.0).border_color(token::LINE);
         let bar = bar.child(input(query).placeholder("Filter").width(240.0).invalid(wrong));
         let bar = bar.child(toggle(

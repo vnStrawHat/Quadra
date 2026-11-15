@@ -157,6 +157,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     let app = quadra_kit::install(app, &kit)?;
     let mut app = app.keymap(quadra_gallery::keymap());
+    // QUADRA_TEXT draws text that many times larger (specs/12, "Text size"): 1.5 or 2.
+    if let Some(text) = std::env::var("QUADRA_TEXT").ok().and_then(|text| text.parse().ok()) {
+        let size = quadra_app::TextSize { text, system: quadra_app::SystemText::None, ..Default::default() };
+        app = app.text_size(size);
+    }
     let shown: Rc<Cell<Option<Gallery>>> = Rc::default();
     let tell = shown.clone();
     let window = app.open_window(WindowOptions::new("shots").size(SIZE.0, SIZE.1), move || {

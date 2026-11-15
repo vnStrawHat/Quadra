@@ -9,7 +9,7 @@ use quadra_base::pick::Parts;
 use quadra_layout::{Align, Length};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Along, NodeId, Side, State};
-use quadra_ui::{MountCx, Place, View, column, div, row, scroll};
+use quadra_ui::{MountCx, Place, View, by_text, column, div, row, scroll};
 
 use crate::input::input;
 use crate::palette::{fuzzy_hits, marked};
@@ -53,7 +53,8 @@ impl View for Combobox {
         let (options, value, placeholder) = (self.options.clone(), self.value, self.placeholder);
         let face = move |_: usize, i: usize| {
             let hits = fuzzy_hits(&value.get_untracked(), &options[i]).unwrap_or_default();
-            let line = row().align_items(Align::Center).grow(1.0).height(ROW).padding_x(6.0).radius(4.0);
+            let line =
+                row().align_items(Align::Center).grow(1.0).height(by_text(ROW)).padding_x(6.0).radius(4.0);
             let line = line.label(options[i].clone());
             let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
             line.child(marked(&options[i], &hits))

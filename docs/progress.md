@@ -144,6 +144,16 @@ The user's list of what the apps will need, and of what the components lack.
   note wrapped and marked. Tests: `quadra-code/tests/editor.rs`.
 - **Manual checks**: turn the system dark and light with the gallery open; drop a picture
   from the file manager on the page `image`, and text from an editor on nothing.
+- **The text size** (specs/12, "Text size"): `TextSize { zoom, text, system }` in the
+  context of views (`text_size()`), the system's `Appearance::text_scale`. Zoom draws the
+  whole UI larger (`Tree::set_zoom`); text alone is larger by `Tree::set_text_scale`, and
+  the kit's boxes of a line of text and the rows of uniform lists grow with it (`by_text`).
+  The gallery at 1.5 times the text was looked at (`QUADRA_TEXT=1.5 tools/shots.sh`); at 1
+  every picture is the same to the byte. Tests: `quadra-app/tests/text_size.rs`,
+  `quadra-ui/tests/text_scale.rs`, `quadra-kit/tests/text_size.rs`. Manual check: change
+  the system's text size with an app open; it follows when the system says a setting
+  changed. ponytail: fixed widths (the time input, a select) do not grow; a uniform list
+  keeps its scroll in pixels when the scale changes.
 
 ### The exit of R4 (specs/00, Phases)
 

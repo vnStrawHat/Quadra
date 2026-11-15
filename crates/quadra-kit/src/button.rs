@@ -8,7 +8,7 @@ use quadra_layout::{Align, Display, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::memo;
 use quadra_tree::{NodeId, Paint, State};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, row, show, text};
+use quadra_ui::{Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
 
 use crate::icon::icon;
 use crate::progress::spinner;
@@ -190,7 +190,7 @@ impl Button {
         let face = row().align_items(Align::Center).justify(Justify::Center).gap(4.0).shrink(0.0);
         // An icon alone sits in a square; a label has 4 or 8 px beside it.
         let face = match self.label {
-            Some(_) => face.height(self.size.height()).padding_x(if small { 4.0 } else { 8.0 }),
+            Some(_) => face.height(by_text(self.size.height())).padding_x(if small { 4.0 } else { 8.0 }),
             None => face.size(self.size.height(), self.size.height()),
         };
         let label = if self.muted { token::TEXT_2.into() } else { label };

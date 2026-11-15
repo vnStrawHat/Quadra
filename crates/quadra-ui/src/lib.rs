@@ -46,4 +46,4 @@ pub use scroll::{scroll, scroll_strip, scroll_x};
 pub use text::{TextView, text};
 pub use tween::tween;
 pub use view::{AnyView, MountCx, View, each_frame, mount_root, mount_with};
-pub use window::{Window, window};
+pub use window::{TextScale, Window, by_text, window};

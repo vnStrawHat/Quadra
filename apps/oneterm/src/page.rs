@@ -90,6 +90,20 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
             "The history each space keeps.",
             number_input(p.scrollback).range(0.0, 100_000.0).step(1000.0),
         );
+    let mouse = SettingsGroup::new("Mouse & wheel")
+        .row("Context menu", "The other button opens a space's menu.", switch(p.context_menu))
+        .row("Copy on select", "A selection is copied when the button is released.", switch(p.copy_on_select))
+        .row("Middle-click paste", "The middle button pastes.", switch(p.middle_paste))
+        .row(
+            "Scroll speed",
+            "Times the rows of the wheel.",
+            number_input(p.scroll_speed).range(0.1, 10.0).step(0.5),
+        )
+        .row(
+            "Alternate scroll",
+            "On a full-screen program the wheel sends arrows.",
+            switch(p.alternate_scroll),
+        );
     let shell = SettingsGroup::new("Shell")
         .row("Default shell", "What Ctrl+T and New tab start.", shell_choice(p.shell))
         .row(
@@ -129,7 +143,7 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .child(text(format!("Settings are saved to {file} as you change them.")));
     vec![
         vec![appearance],
-        vec![cursor, shell],
+        vec![cursor, mouse, shell],
         vec![tabs],
         vec![hosts(p, model)],
         vec![SettingsGroup::new("Downloads").row(

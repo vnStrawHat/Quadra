@@ -598,6 +598,8 @@ the popup closes the focus goes back to what had it.
   gap of a popup (4 px), on a click with the other button, where it fits in the window. It
   adds no node around the view (as the tooltip): the popup is opened by hand, from the
   handler (`popup::open_now`), and goes with the scope of the view if it is still open then.
+  The items are asked for as it opens; none, and nothing opens (an app's setting turns the
+  menu off so, without mounting the view again).
 - The width a popup is said to have is that of its plane, border and all: what it holds
   asks for 2 px less (`popup::EDGE`). A menu is 200 px at least so.
 - The region a popup is shown in is not displayed (`.display(Display::None)`): where the

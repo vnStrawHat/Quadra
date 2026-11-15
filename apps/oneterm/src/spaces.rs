@@ -5,11 +5,14 @@
 
 use std::time::Instant;
 
+use std::rc::Rc;
+
 use quadra::{
-    Align, AnyView, MountCx, NodeId, Signal, View, by_text, column, div, dynamic, each, effect, row, text,
+    Align, AnyView, Clipboard, MountCx, NodeId, Signal, View, by_text, column, div, dynamic, each, effect,
+    row, signal, text, untrack, use_context,
 };
-use quadra_design::{fonts, token};
-use quadra_term::{Link, terminal};
+use quadra_design::{MenuItem, context_menu, fonts, icons, token};
+use quadra_term::{Link, Session, terminal};
 
 use crate::model::{Model, Space, Tab};
 
@@ -154,12 +157,53 @@ fn space_view(model: &Model, tab: Tab, space: Space, font: f32) -> quadra::Div {
             }
         })
         .child(header)
-        .child(
-            column()
-                .grow(1.0)
-                .min_height(0.0)
-                .padding_x(12.0)
-                .padding_y(10.0)
-                .child(terminal(&s).font(font, (font * 1.54).round())),
-        )
+        .child(column().grow(1.0).min_height(0.0).padding_x(12.0).padding_y(10.0).child(menu_of(
+            model,
+            &s,
+            space.id,
+            terminal(&s).font(font, (font * 1.54).round()),
+        )))
+}
+
+/// The space's menu for the other button (specs/19, "Spaces"), when the settings have it; the
+/// terminal follows the settings of the pointer and the wheel.
+fn menu_of(model: &Model, s: &Session, id: u64, view: quadra_term::Terminal) -> impl View + use<> {
+    let p = model.prefs();
+    let settings = signal(untrack(|| p.term()));
+    effect(move || settings.set(p.term()));
+    let (s, model, clipboard) = (s.clone(), model.clone(), use_context::<Rc<dyn Clipboard>>());
+    context_menu(view.settings(settings), move || {
+        if !p.context_menu.get_untracked() {
+            return Vec::new();
+        }
+        let chosen = s.selection_text();
+        let (copies, pastes, (all, clears)) = (clipboard.clone(), clipboard.clone(), (s.clone(), s.clone()));
+        let (pasted, (splits, closes)) = (s.clone(), (model.clone(), model.clone()));
+        vec![
+            MenuItem::new("Copy")
+                .icon(icons::COPY)
+                .keys("Ctrl+Shift+C")
+                .disabled(chosen.is_none())
+                .on_select(move || {
+                    if let (Some(clipboard), Some(text)) = (&copies, &chosen) {
+                        clipboard.write_text(text);
+                    }
+                }),
+            MenuItem::new("Paste").keys("Ctrl+Shift+V").on_select(move || {
+                if let Some(clipboard) = &pastes {
+                    pasted.paste(&clipboard.read_text().unwrap_or_default());
+                }
+            }),
+            MenuItem::new("Select all").on_select(move || all.select_all()),
+            MenuItem::new("Clear scrollback").on_select(move || clears.clear_history()),
+            MenuItem::separator(),
+            MenuItem::new("Split space")
+                .icon(icons::COLUMNS_2)
+                .keys("Ctrl+D")
+                .on_select(move || splits.split()),
+            MenuItem::new("Close space").keys("Ctrl+W").danger().on_select(move || {
+                _ = closes.close_space(id);
+            }),
+        ]
+    })
 }

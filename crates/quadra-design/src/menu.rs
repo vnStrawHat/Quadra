@@ -150,8 +150,11 @@ where
         let (of, items) = (self.of.mount(cx), Rc::new(self.items));
         quadra_headless::menu::on_context(cx, of, move |tree, owner, at| {
             // Under the pointer by the gap of a popup: the pointer is then over none of its rows.
-            let (place, items) = (Place::At(Point::new(at.x, at.y + 4.0)), items.clone());
-            open_now(tree, owner, place, move |close| rows(items(), Ends { done: close, leave: None }))
+            // No items, no menu: the app's setting may turn it off.
+            let (place, items) = (Place::At(Point::new(at.x, at.y + 4.0)), items());
+            if !items.is_empty() {
+                open_now(tree, owner, place, move |close| rows(items, Ends { done: close, leave: None }))
+            }
         });
         of
     }

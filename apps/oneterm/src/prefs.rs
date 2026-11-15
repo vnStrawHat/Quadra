@@ -22,6 +22,12 @@ pub struct Prefs {
     pub cursor: Signal<usize>,
     pub blink: Signal<bool>,
     pub scrollback: Signal<f64>,
+    /// The pointer and the wheel in a space (`TermSettings`), and its menu.
+    pub context_menu: Signal<bool>,
+    pub copy_on_select: Signal<bool>,
+    pub middle_paste: Signal<bool>,
+    pub scroll_speed: Signal<f64>,
+    pub alternate_scroll: Signal<bool>,
     /// The name of the shell Ctrl+T and New terminal start; empty: the OS's.
     pub shell: Signal<String>,
     pub start: Signal<usize>,
@@ -56,6 +62,11 @@ impl Prefs {
             cursor: choice(s, "terminal.cursor", &CURSORS),
             blink: s.value("terminal.cursor_blink", false),
             scrollback: s.value("terminal.scrollback", 10_000.0),
+            context_menu: s.value("mouse.context_menu", true),
+            copy_on_select: s.value("mouse.copy_on_select", true),
+            middle_paste: s.value("mouse.middle_click_paste", true),
+            scroll_speed: s.value("scroll.multiplier", 1.0),
+            alternate_scroll: s.value("scroll.alternate", true),
             shell: s.value("terminal.shell", String::new()),
             start: choice(s, "terminal.start_in", &STARTS),
             vertical: s.value("tabs.vertical", true),
@@ -73,6 +84,18 @@ impl Prefs {
             hosts: s.value("ssh.hosts", Vec::new()),
             recent: s.value("ssh.recent", Vec::new()),
             downloads: s.value("sftp.downloads", String::new()),
+        }
+    }
+}
+
+impl Prefs {
+    /// What a terminal view is given of the settings, read where it is called.
+    pub fn term(&self) -> quadra_term::TermSettings {
+        quadra_term::TermSettings {
+            copy_on_select: self.copy_on_select.get(),
+            middle_paste: self.middle_paste.get(),
+            scroll: self.scroll_speed.get() as f32,
+            alternate_scroll: self.alternate_scroll.get(),
         }
     }
 }

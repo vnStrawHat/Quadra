@@ -84,7 +84,9 @@ The terminal has 10 px of room above and below and 12 at its sides. The focused 
 1 px accent ring, its own border (nothing lies over the terminal for the pointer). Notification cards stand at the workspace's top right, clear of the dock. `Ctrl+D` splits
 the active space (a new local shell in its cwd), `Ctrl+W` closes it (the tab with its last
 space), `Ctrl+Alt+Left/Right` moves the focus. A space whose program ended shows
-`[process exited N]` and closes on a key.
+`[process exited N]` and closes on a key. The other button opens a space's menu (when the
+setting has it, the default): Copy (with a selection), Paste, Select all, Clear scrollback, then
+Split space and Close space; a program that reports the mouse takes the press instead.
 
 ## Signals
 
@@ -137,7 +139,9 @@ Security & lock, Keybindings, Advanced (the file, and a note that settings save 
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Terminal: font family and size, ligatures, cursor shape and
 blink, scrollback lines, the default local shell, where new spaces start (active space's cwd,
-home, last used). In M5: size, cursor, scrollback, shell, active cwd or home; the font family,
+home, last used); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
+the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
+the view's `TermSettings` (specs/18). In M5: size, cursor, scrollback, shell, active cwd or home; the font family,
 ligatures, "last used" and a bell's sound or flash wait. A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
 blocked; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound / badge and flash /
 ignore; OSC 9: toast 6 s / until dismissed / silent.

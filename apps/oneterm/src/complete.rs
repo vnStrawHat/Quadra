@@ -134,8 +134,8 @@ pub(crate) fn around<V: View + 'static>(
         .min_height(0.0)
         .child(inner(view))
         .child(marker(line, shown).node_ref(&anchor))
-        // Open for as long as the space, shown while it has rows: nothing is mounted per key.
-        .child(overlay(place, overlay::list(shown, most).display(crate::locked::shown(open))))
+        // Mounted while it has rows: keys that only change the rows build nothing else.
+        .child(quadra::show(open, move || overlay(place.clone(), overlay::list(shown, most))))
 }
 
 /// A box over the caret, moved back to where the token completed starts: what the overlay

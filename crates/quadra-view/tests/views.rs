@@ -162,6 +162,45 @@ fn a_region_whose_box_goes_as_it_is_built_again_is_dropped() {
 }
 
 #[test]
+fn a_region_inside_a_part_that_closes_as_it_is_built_again_is_dropped() {
+    // A dynamic inside a show: both change in one frame, in whichever order they are written.
+    for open_first in [true, false] {
+        let (open, turn) = (signal(true), signal(0));
+        let inner = move || column().child(dynamic(move || text(format!("at {}", turn.get()))));
+        let mut h = Harness::new();
+        mount_root(&mut h.tree, column().child(text("top")).child(show(move || open.get(), inner)));
+        h.frame();
+        quadra_reactive::batch(|| match open_first {
+            true => {
+                open.set(false);
+                turn.set(1);
+            }
+            false => {
+                turn.set(1);
+                open.set(false);
+            }
+        });
+        h.frame();
+        assert_eq!(all_texts(&mut h), ["top"]);
+        open.set(true);
+        h.frame();
+        assert_eq!(all_texts(&mut h), ["top", "at 1"]);
+    }
+    // One signal read by both: the part's condition and the region inside it.
+    let n = signal(1);
+    let inner = move || column().child(dynamic(move || text(n.get().to_string())));
+    let mut h = Harness::new();
+    mount_root(&mut h.tree, column().child(text("top")).child(show(move || n.get() > 0, inner)));
+    h.frame();
+    n.set(0);
+    h.frame();
+    assert_eq!(all_texts(&mut h), ["top"]);
+    n.set(2);
+    h.frame();
+    assert_eq!(all_texts(&mut h), ["top", "2"]);
+}
+
+#[test]
 fn removing_the_root_frees_everything_the_views_made() {
     let before = stats();
     let n = signal(0);

@@ -136,8 +136,9 @@ fn region(content: impl Fn() -> Option<AnyView> + 'static) -> Region {
                     tree.remove(old);
                 }
                 // The box may have gone in this very frame: a row of a list that is built
-                // again while the list drops it.
-                let there = tree.is_alive(container);
+                // again while the list drops it. Or the region's owner went before its box
+                // did (inside an overlay, which closes a write later): the scope went with it.
+                let there = tree.is_alive(container) && scope.is_alive();
                 let Some(view) = view.filter(|_| there) else {
                     scope.dispose();
                     if there {

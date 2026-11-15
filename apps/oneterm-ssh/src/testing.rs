@@ -1,7 +1,6 @@
-//! A `russh` server in the test process on 127.0.0.1, and a client of the engine; shared by
-//! the engine's tests. Every file is under `.tmp/ssh-tests`.
-
-#![allow(dead_code)]
+//! For tests only (the feature `testing`): a `russh` server in the test process on
+//! 127.0.0.1, with SFTP over a folder, and a client of the engine. Every file is under
+//! `.tmp/ssh-tests`; the user's agent, keys and known hosts are never used.
 
 mod fs;
 
@@ -11,11 +10,23 @@ use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use oneterm_ssh::{Auth, Options, Ssh, Target};
+use crate::{Auth, Options, Ssh, Target};
 use russh::keys::ssh_key::private::Ed25519Keypair;
 use russh::keys::{PrivateKey, PublicKey};
 use russh::server::{self, Auth as Verdict, Msg, Session, VerifiedPublicKey};
 use russh::{Channel, ChannelId};
+
+/// Writes the server of `seed` on `port` to a known hosts file.
+pub fn trust(port: u16, seed: u8, known_hosts: &std::path::Path) {
+    russh::keys::known_hosts::learn_known_hosts_path("127.0.0.1", port, key(seed).public_key(), known_hosts)
+        .unwrap();
+}
+
+/// Writes the user key the server takes (seed 9) to a file, as OpenSSH writes it.
+pub fn write_user_key(path: &std::path::Path) {
+    let text = key(9).to_openssh(russh::keys::ssh_key::LineEnding::LF).unwrap();
+    std::fs::write(path, text.as_bytes()).unwrap();
+}
 
 pub fn key(seed: u8) -> PrivateKey {
     PrivateKey::from(Ed25519Keypair::from_seed(&[seed; 32]))

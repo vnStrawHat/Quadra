@@ -66,6 +66,8 @@ pub(crate) struct Shared {
     exited: Signal<Option<i32>>,
     link_note: Signal<String>,
     notices: RefCell<Vec<Rc<NoticeFn>>>,
+    /// What the app keeps with the session.
+    kept: RefCell<Vec<Rc<dyn std::any::Any>>>,
 }
 
 impl Session {
@@ -104,6 +106,7 @@ impl Session {
             exited: signal(None),
             link_note: signal(String::new()),
             notices: RefCell::new(Vec::new()),
+            kept: RefCell::new(Vec::new()),
         });
         let (took, ended) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
         events
@@ -217,6 +220,17 @@ impl Session {
     /// whoever made the link, empty for a local program.
     pub fn link_note(&self) -> Signal<String> {
         self.0.link_note
+    }
+
+    /// Keeps a value of the app's with the session, for as long as the session lives: a
+    /// remote space's connection, for one.
+    pub fn keep(&self, value: Rc<dyn std::any::Any>) {
+        self.0.kept.borrow_mut().push(value);
+    }
+
+    /// The value of type `T` kept with the session, if any.
+    pub fn kept<T: 'static>(&self) -> Option<Rc<T>> {
+        self.0.kept.borrow().iter().find_map(|it| it.clone().downcast::<T>().ok())
     }
 
     /// The program's exit code, once it ended.

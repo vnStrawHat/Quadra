@@ -11,9 +11,8 @@ use quadra_design::{Notices, notices};
 use crate::NewSession;
 use crate::lock::Lock;
 use crate::prefs::Prefs;
-use crate::shells::{self, Launch, Shell};
+use crate::shells::Launch;
 pub use crate::tab::{Command, Space, Tab};
-use quadra_term::vt::{CursorShape, CursorStyle};
 
 /// What is open over the window: the settings page (it takes the body), the quick connect
 /// dialog, the dialog that adds a host.
@@ -22,6 +21,8 @@ pub struct Ui {
     pub settings: Signal<bool>,
     pub connecting: Signal<bool>,
     pub adding: Signal<bool>,
+    /// The SFTP dock.
+    pub dock: Signal<bool>,
 }
 
 /// The window's tabs. A copy is the same one.
@@ -58,7 +59,12 @@ impl Model {
             prefs,
             notices: notices().below(38.0 + 12.0),
             unread: signal(0),
-            ui: Ui { settings: signal(false), connecting: signal(false), adding: signal(false) },
+            ui: Ui {
+                settings: signal(false),
+                connecting: signal(false),
+                adding: signal(false),
+                dock: signal(false),
+            },
             lock: Lock::new(prefs),
         };
         let model = Model(Rc::new(inner));
@@ -85,34 +91,6 @@ impl Model {
 
     pub fn prefs(&self) -> Prefs {
         self.0.prefs
-    }
-
-    /// What a new space starts as the settings say: a shell (the default one when none is
-    /// given), in the active space's directory or home, with the cursor and the history set.
-    pub fn launch(&self, shell: Option<Shell>) -> Launch {
-        let p = self.0.prefs;
-        let named = p.shell.get_untracked();
-        let shell = shell.or_else(|| shells::found().into_iter().find(|it| it.name == named));
-        let cwd = match p.start.get_untracked() {
-            0 => self.focused_cwd(),
-            _ => std::env::var_os("USERPROFILE").map(Into::into),
-        };
-        let shape =
-            [CursorShape::Block, CursorShape::Beam, CursorShape::Underline][p.cursor.get_untracked().min(2)];
-        let cursor = CursorStyle { shape, blinking: p.blink.get_untracked() };
-        Launch {
-            shell,
-            cwd,
-            cursor,
-            scrollback: p.scrollback.get_untracked().clamp(0.0, 1.0e6) as u32,
-            ssh: None,
-        }
-    }
-
-    /// The directory of the focused space of the tab that shows.
-    fn focused_cwd(&self) -> Option<std::path::PathBuf> {
-        let space = quadra::untrack(|| self.active_tab().and_then(|tab| tab.focused()))?;
-        Some(space.session.cwd().get_untracked()).filter(|cwd| !cwd.is_empty()).map(Into::into)
     }
 
     pub fn notices(&self) -> Notices {

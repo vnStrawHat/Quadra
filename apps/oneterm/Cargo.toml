@@ -22,5 +22,6 @@ quadra-shell = { path = "../../crates/quadra-shell" }
 quadra-term = { path = "../../crates/quadra-term" }
 
 [dev-dependencies]
+oneterm-ssh = { path = "../oneterm-ssh", features = ["testing"] }
 quadra-testing = { path = "../../crates/quadra-testing" }
 quadra-tree = { path = "../../crates/quadra-tree" }

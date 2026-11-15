@@ -41,6 +41,8 @@ pub struct Prefs {
     /// Saved hosts and recent targets, rows of words (`hosts.rs`).
     pub hosts: Signal<Vec<Vec<String>>>,
     pub recent: Signal<Vec<Vec<String>>>,
+    /// Where downloads go; empty: the user's Downloads folder.
+    pub downloads: Signal<String>,
 }
 
 impl Prefs {
@@ -70,6 +72,7 @@ impl Prefs {
             lock_after: s.value("security.lock_after_minutes", 10.0),
             hosts: s.value("ssh.hosts", Vec::new()),
             recent: s.value("ssh.recent", Vec::new()),
+            downloads: s.value("sftp.downloads", String::new()),
         }
     }
 }

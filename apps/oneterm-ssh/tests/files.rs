@@ -2,16 +2,14 @@
 //! files are a folder of `.tmp`: home, listing in order, download and upload through a part
 //! file, a cancelled transfer leaving nothing, a folder made and removed.
 
-mod support;
-
 use std::sync::atomic::AtomicBool;
 
+use oneterm_ssh::testing::{connect, folder, key, options, serve_files};
 use oneterm_ssh::{Auth, Entry, Files};
 use russh::keys::known_hosts::learn_known_hosts_path;
-use support::{connect, folder, key, options, serve_files};
 
 /// A connection with its shell open, and its files; the server serves `served`.
-fn files(name: &str) -> (support::Client, Files, std::path::PathBuf) {
+fn files(name: &str) -> (oneterm_ssh::testing::Client, Files, std::path::PathBuf) {
     let dir = folder(name);
     let served = dir.join("served");
     std::fs::create_dir_all(served.join("home/src")).unwrap();

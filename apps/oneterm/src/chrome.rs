@@ -39,10 +39,14 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         icon_button(icons::SETTINGS, "Settings").on_click(move || open.update(|on| *on = !*on)),
     );
     let locks = tooltip("Lock", icon_button(icons::LOCK, "Lock").on_click(move || lock.lock_now()));
+    let dock = seen.ui().dock;
+    let files =
+        tooltip("SFTP", icon_button(icons::FOLDER, "SFTP").on_click(move || dock.update(|on| *on = !*on)));
     // Locked, what would open something is not displayed.
     let buttons = row()
         .align_items(Align::Center)
         .display(shown(move || !lock.locked.get()))
+        .child(files)
         .child(div().display(shown(move || lock.can_lock())).child(locks))
         .child(notifications(&seen))
         .child(gear);

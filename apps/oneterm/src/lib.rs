@@ -4,6 +4,7 @@
 
 mod chrome;
 mod connect;
+mod dock;
 mod git;
 mod hostlist;
 mod hosts;
@@ -16,6 +17,7 @@ mod page;
 mod prefs;
 mod rail;
 mod remote;
+mod sftp;
 mod shells;
 mod signals;
 mod spaces;
@@ -31,7 +33,7 @@ pub use hosts::Host;
 pub use local::local_shell;
 pub use model::{Command, Model, Space, Tab};
 pub use prefs::{Prefs, theme};
-pub use remote::remote_shell;
+pub use remote::{remote_shell, remote_shell_with};
 pub use shells::{Launch, Remote, Shell};
 pub use signals::{percent, state_word};
 
@@ -80,10 +82,19 @@ impl OneTerm {
         // The tabs in the rail at the left, or in a strip above the spaces.
         let (vertical, shown) = (model.vertical(), model.clone());
         let body = dynamic(move || match vertical.get() {
-            true => AnyView::new(row().grow(1.0).child(rail::rail(&shown)).child(spaces::workspace(&shown))),
-            false => {
-                AnyView::new(column().grow(1.0).child(strip::strip(&shown)).child(spaces::workspace(&shown)))
-            }
+            true => AnyView::new(
+                row()
+                    .grow(1.0)
+                    .child(rail::rail(&shown))
+                    .child(spaces::workspace(&shown))
+                    .child(dock::dock(&shown)),
+            ),
+            false => AnyView::new(
+                column()
+                    .grow(1.0)
+                    .child(strip::strip(&shown))
+                    .child(row().grow(1.0).child(spaces::workspace(&shown)).child(dock::dock(&shown))),
+            ),
         });
         // Locked, only the lock's card is displayed.
         let (open, lock) = (model.ui().settings, model.lock());

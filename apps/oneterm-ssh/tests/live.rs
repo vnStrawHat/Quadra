@@ -3,14 +3,12 @@
 //! key file, typing, a resize, the exit status, a connection dropped. Every file is under
 //! `.tmp/ssh-tests`; the user's agent and keys are never tried.
 
-mod support;
-
 use std::time::{Duration, Instant};
 
 use oneterm_ssh::Auth;
+use oneterm_ssh::testing::{connect, folder, key, options, serve};
 use russh::keys::known_hosts::learn_known_hosts_path;
 use russh::keys::ssh_key::LineEnding;
-use support::{connect, folder, key, options, serve};
 
 #[test]
 fn an_unknown_host_is_asked_then_the_password_opens_a_shell() {

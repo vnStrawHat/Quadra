@@ -996,6 +996,7 @@ dependencies = [
 name = "oneterm-ssh"
 version = "0.1.0"
 dependencies = [
+ "oneterm-ssh",
  "russh",
  "russh-sftp",
  "tokio",

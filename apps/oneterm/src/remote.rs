@@ -10,8 +10,15 @@ use quadra_term::{Link, Session};
 
 use crate::shells::Launch;
 
-/// A session running a host's shell; called with a launch that names one.
+/// A session running a host's shell; called with a launch that names one. The user's own
+/// SSH files and agent are used.
 pub fn remote_shell(launch: Launch) -> Session {
+    remote_shell_with(launch, Options::new)
+}
+
+/// As [`remote_shell`], with the engine's options made from the target by `options` (a test
+/// gives its own files and no agent).
+pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Target) -> Options) -> Session {
     let mut config = Config::default();
     (config.default_cursor_style, config.scrollback_limit) = (launch.cursor, launch.scrollback);
     // A server's terminal reflows its own lines; the viewport's top stays.
@@ -19,7 +26,7 @@ pub fn remote_shell(launch: Launch) -> Session {
     let Some(remote) = launch.ssh else { return session };
     session.title().set(remote.target.label());
     let size = session.size();
-    let mut options = Options::new(remote.target);
+    let mut options = options(remote.target);
     options.auth = remote.auth;
     (options.rows, options.cols) = (size.rows, size.cols);
     // The engine calls from its threads.
@@ -33,7 +40,9 @@ pub fn remote_shell(launch: Launch) -> Session {
         },
         move |code| ended.exited(code),
     );
-    let ssh = std::rc::Rc::new(ssh);
+    // Kept with the session, where the SFTP dock finds it.
+    let ssh = Arc::new(ssh);
+    session.keep(std::rc::Rc::new(ssh.clone()));
     // The latency the engine measured, read every 2 s.
     let (pings, note) = (ssh.clone(), session.link_note());
     let _ = quadra::interval(std::time::Duration::from_secs(2), move || {

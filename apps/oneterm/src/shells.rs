@@ -3,6 +3,10 @@
 
 use std::path::PathBuf;
 
+use quadra_term::vt::{CursorShape, CursorStyle};
+
+use crate::model::Model;
+
 /// A program a space can run.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Shell {
@@ -54,4 +58,34 @@ pub fn found() -> Vec<Shell> {
             Some(Shell { name, program, args: args.iter().map(|arg| arg.to_string()).collect() })
         })
         .collect()
+}
+
+impl Model {
+    /// What a new space starts as the settings say: a shell (the default one when none is
+    /// given), in the active space's directory or home, with the cursor and the history set.
+    pub fn launch(&self, shell: Option<Shell>) -> Launch {
+        let p = self.prefs();
+        let named = p.shell.get_untracked();
+        let shell = shell.or_else(|| found().into_iter().find(|it| it.name == named));
+        let cwd = match p.start.get_untracked() {
+            0 => self.focused_cwd(),
+            _ => std::env::var_os("USERPROFILE").map(Into::into),
+        };
+        let shape =
+            [CursorShape::Block, CursorShape::Beam, CursorShape::Underline][p.cursor.get_untracked().min(2)];
+        let cursor = CursorStyle { shape, blinking: p.blink.get_untracked() };
+        Launch {
+            shell,
+            cwd,
+            cursor,
+            scrollback: p.scrollback.get_untracked().clamp(0.0, 1.0e6) as u32,
+            ssh: None,
+        }
+    }
+
+    /// The directory of the focused space of the tab that shows.
+    pub(crate) fn focused_cwd(&self) -> Option<std::path::PathBuf> {
+        let space = quadra::untrack(|| self.active_tab().and_then(|tab| tab.focused()))?;
+        Some(space.session.cwd().get_untracked()).filter(|cwd| !cwd.is_empty()).map(Into::into)
+    }
 }

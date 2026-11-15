@@ -7,6 +7,8 @@ mod files;
 mod prompt;
 mod session;
 mod target;
+#[cfg(feature = "testing")]
+pub mod testing;
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -62,6 +64,9 @@ impl Options {
     }
 }
 
+/// What [`Ssh::files`] says before the shell is open.
+pub const NOT_YET: &str = "Not connected yet";
+
 /// A connection running a shell. Dropping it closes it.
 pub struct Ssh {
     to: UnboundedSender<Cmd>,
@@ -112,7 +117,7 @@ impl Ssh {
             return Ok(files.clone());
         }
         let handle = self.shared.handle.lock().unwrap_or_else(|e| e.into_inner()).clone();
-        let opened = Files::open(handle.ok_or("not connected yet")?)?;
+        let opened = Files::open(handle.ok_or(NOT_YET)?)?;
         *files = Some(opened.clone());
         Ok(opened)
     }

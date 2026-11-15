@@ -10,7 +10,14 @@ publish.workspace = true
 [lints]
 workspace = true
 
+[features]
+# The test server and client (`testing`), for this crate's tests and the app's.
+testing = []
+
 [dependencies]
 russh = { version = "0.65", default-features = false, features = ["ring", "rsa"] }
 russh-sftp = "3"
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "time", "sync", "io-util"] }
+
+[dev-dependencies]
+oneterm-ssh = { path = ".", features = ["testing"] }

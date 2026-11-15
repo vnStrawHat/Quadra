@@ -63,7 +63,7 @@ impl Model {
             active: signal(0),
             renaming: signal(None),
             prefs,
-            notices: notices().below(38.0 + 12.0),
+            notices: notices(),
             unread: signal(0),
             ui: Ui {
                 settings: signal(false),

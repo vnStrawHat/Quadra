@@ -10,9 +10,10 @@ use quadra_term::vt::Progress;
 use crate::model::Tab;
 use crate::signals::{percent, state_word};
 
-/// A filled circle of `size` px holding `inside`, read as `word`.
+/// A filled circle of `size` px holding `inside`, read as `word` (unless empty: what follows
+/// says it).
 fn disc(size: f32, fill: quadra::Token, word: &'static str, inside: impl View + 'static) -> quadra::Div {
-    row()
+    let face = row()
         .size(size, size)
         .radius(size / 2.0)
         .shrink(0.0)
@@ -20,9 +21,8 @@ fn disc(size: f32, fill: quadra::Token, word: &'static str, inside: impl View + 
         .justify(Justify::Center)
         .bg(fill)
         .text_color(token::TEXT_ON_STATUS)
-        .role(Role::Image)
-        .label(word)
-        .child(inside)
+        .child(inside);
+    if word.is_empty() { face } else { face.role(Role::Image).label(word) }
 }
 
 /// The part done of a tab's progress, when the settings show it on tabs.
@@ -126,26 +126,51 @@ pub(crate) fn progress_bar(tab: Tab) -> impl View {
         .child(fill)
 }
 
-/// What a space's header says at its right: a chip of its state, its progress.
+/// What a space's header says at its right: its progress, then its state on a disc in the
+/// state's colour and the link's note (a remote one's latency); with no state, a green dot
+/// and the note, else the program's title.
 pub(crate) fn header_signal(
-    status: quadra::Signal<ProgramState>,
-    progress: quadra::Signal<Option<Progress>>,
+    s: &quadra_term::Session,
     prefs: crate::prefs::Prefs,
-) -> impl View {
+    title: quadra::Signal<String>,
+) -> impl View + use<> {
+    let (status, progress, note) = (s.status(), s.progress(), s.link_note());
     // The settings say whether the header shows states.
     let status =
         quadra::memo(move || if prefs.status_shown.get() == 0 { status.get() } else { ProgramState::Idle });
-    let chip = div()
-        .padding_x(6.0)
-        .radius(3.0)
-        .bg(move || match status.get() {
-            ProgramState::Error => token::ERROR_TINT,
-            ProgramState::Blocked => token::WARN_TINT,
-            ProgramState::Done => token::OK_TINT,
-            _ => token::ACCENT_TINT,
-        })
-        .display(move || if state_word(status.get()).is_some() { Display::Flex } else { Display::None })
-        .child(text(move || state_word(status.get()).unwrap_or("").to_string()));
+    let mark = dynamic(move || {
+        let Some(word) = state_word(status.get()) else {
+            return AnyView::new(div().size(6.0, 6.0).radius(3.0).bg(token::OK));
+        };
+        let (fill, inside) = match status.get() {
+            ProgramState::Blocked => {
+                (token::WARN, AnyView::new(div().text_size(9.0).font_weight(700).child(text("?"))))
+            }
+            ProgramState::Done => {
+                (token::OK, AnyView::new(icon(icons::CHECK).size(8.0).color(token::TEXT_ON_STATUS)))
+            }
+            ProgramState::Error => {
+                (token::ERROR, AnyView::new(icon(icons::X).size(8.0).color(token::TEXT_ON_STATUS)))
+            }
+            _ => (token::ACCENT, AnyView::new(div())),
+        };
+        AnyView::new(
+            row()
+                .align_items(Align::Center)
+                .gap(6.0)
+                .child(disc(12.0, fill, "", inside))
+                .child(div().text_color(fill).child(text(word))),
+        )
+    });
+    let said = text(move || {
+        let note = note.get();
+        match (state_word(status.get()).is_some(), note.is_empty()) {
+            (true, true) => String::new(),
+            (true, false) => format!("\u{B7} {note}"),
+            (false, true) => title.get(),
+            (false, false) => note,
+        }
+    });
     let part = text(move || progress.get().and_then(percent).map(|n| format!("{n}%")).unwrap_or_default());
-    row().align_items(Align::Center).gap(6.0).font_family(fonts::MONO).child(part).child(chip)
+    row().align_items(Align::Center).gap(6.0).shrink(0.0).child(part).child(mark).child(said)
 }

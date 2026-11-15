@@ -73,10 +73,14 @@ an accent line under it, `+` after the last, "Vertical" at the end to switch bac
 
 ## Spaces
 
-A tab holds one or more spaces side by side (a row of equal columns, 1 px lines between).
-Each space has an 18 px header in mono 11 px on the panel colour: its title on the left (the
-program's title, else `user@host:cwd`, cut at its start), its signal on the right (a status chip,
-a progress percentage, the latency). The focused space has a 1 px accent ring. `Ctrl+D` splits
+A tab holds one or more spaces side by side (a row of equal columns, 1 px lines between);
+beside the rail, three or more stand as the first on the left and the others stacked at its
+right. Each space has an 18 px header in mono 11 px on the panel colour: where it is on the left
+(the cwd, after `user@host:` for a remote space; in the text colour while focused), its signal
+on the right (a progress percentage; the state on a 12 px disc and its word in the state's
+colour, then the latency; with no state a green dot and the latency, else the program's title).
+The terminal has 10 px of room above and below and 12 at its sides. The focused space has a
+1 px accent ring. Notification cards stand at the workspace's top right, clear of the dock. `Ctrl+D` splits
 the active space (a new local shell in its cwd), `Ctrl+W` closes it (the tab with its last
 space), `Ctrl+Alt+Left/Right` moves the focus. A space whose program ended shows
 `[process exited N]` and closes on a key.

@@ -38,7 +38,7 @@ fn the_window_shows_a_terminal_that_has_the_focus_and_says_where_it_is() {
     h.settle();
     assert!(h.has_text("vim") && h.has_text("1 space"));
     assert!(h.has_text("/home/me/src"));
-    h.get_by_text("/home/me/src").click();
+    h.get_by_role(quadra::Role::Button, "Working directory").click();
     assert_eq!(h.clipboard.read_text().as_deref(), Some("/home/me/src"));
 }
 

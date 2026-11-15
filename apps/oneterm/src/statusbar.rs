@@ -47,6 +47,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
     let (clipboard, said, repo_of) = (use_context::<Rc<dyn Clipboard>>(), cwd.clone(), cwd.clone());
     let repo = crate::git::follow(repo_of);
     let place = part()
+        .role(Role::Button)
         .label("Working directory")
         .display(shown(open))
         .on_click(move |_| {

@@ -9,7 +9,7 @@ use quadra_design::{MenuItem, Variant, dialog, field, icons, input};
 
 use crate::model::Model;
 use crate::panes::Local;
-use crate::sftp::Dock;
+use crate::sftp::{Dock, Editing};
 
 /// What the dialogs of a dock ask about.
 #[derive(Clone, Copy)]
@@ -17,6 +17,8 @@ pub(crate) struct Ask {
     pub folder: Signal<bool>,
     pub rename: Signal<bool>,
     pub delete: Signal<bool>,
+    /// A file larger than editing takes without asking.
+    pub large: Signal<bool>,
     /// The entry renamed or deleted, and the name typed.
     pub entry: Signal<Option<Entry>>,
     pub name: Signal<String>,
@@ -25,7 +27,8 @@ pub(crate) struct Ask {
 impl Ask {
     pub fn new() -> Ask {
         let no = || signal(false);
-        Ask { folder: no(), rename: no(), delete: no(), entry: signal(None), name: signal(String::new()) }
+        let name = signal(String::new());
+        Ask { folder: no(), rename: no(), delete: no(), large: no(), entry: signal(None), name }
     }
 
     pub fn folder(&self) {
@@ -49,7 +52,7 @@ fn copies(path: String) -> impl Fn() + 'static {
 
 /// A remote entry's menu: open or download it, rename, copy its path, delete.
 pub(crate) fn remote(model: &Model, d: Dock, entry: &Entry) -> impl Fn() -> Vec<MenuItem> + use<> {
-    let (model, entry, copy) = (model.clone(), entry.clone(), clipboard());
+    let (model, entry, copy, editing) = (model.clone(), entry.clone(), clipboard(), Editing::here());
     move || {
         let path = join(&d.dir.get_untracked(), &entry.name);
         let (opens, (a, b, c)) = (model.clone(), (entry.clone(), entry.clone(), entry.clone()));
@@ -62,9 +65,21 @@ pub(crate) fn remote(model: &Model, d: Dock, entry: &Entry) -> impl Fn() -> Vec<
                 MenuItem::new("Download").icon(icons::ARROW_DOWN).on_select(move || d.download(&opens, &a))
             }
         };
-        let copy = copy.clone();
-        vec![
-            first,
+        let (copy, edits, (asks, e), editing) =
+            (copy.clone(), model.clone(), (entry.clone(), entry.clone()), editing.clone());
+        let edit = MenuItem::new("Edit\u{2026}").icon(icons::PENCIL).on_select(move || {
+            if d.too_large(&edits, &e) {
+                d.ask.entry.set(Some(asks.clone()));
+                d.ask.large.set(true);
+            } else {
+                d.edit(&edits, &e, &editing);
+            }
+        });
+        let mut items = vec![first];
+        if !entry.dir {
+            items.push(edit);
+        }
+        items.extend([
             MenuItem::new("Rename\u{2026}").on_select(move || {
                 d.ask.name.set(b.name.clone());
                 d.ask.entry.set(Some(b.clone()));
@@ -80,7 +95,8 @@ pub(crate) fn remote(model: &Model, d: Dock, entry: &Entry) -> impl Fn() -> Vec<
                 d.ask.entry.set(Some(c.clone()));
                 d.ask.delete.set(true);
             }),
-        ]
+        ]);
+        items
     }
 }
 
@@ -176,5 +192,19 @@ pub(crate) fn dialogs(model: &Model, d: Dock) -> impl View + use<> {
                 d.delete(&deletes, &entry);
             }
         });
-    div().child(folder).child(rename).child(delete)
+    let (edits, editing) = (model.clone(), Editing::here());
+    let large = move || {
+        let entry = ask.entry.get();
+        let (name, size) = entry.as_ref().map(|it| (it.name.clone(), it.size)).unwrap_or_default();
+        format!("{name} is {}. Download it to edit anyway?", crate::panes::size(size))
+    };
+    let large =
+        dialog(ask.large, "A large file", move || div().width(320.0).padding_x(12.0).child(text(large)))
+            .action("Cancel", Variant::Secondary, || {})
+            .action("Edit", Variant::Primary, move || {
+                if let Some(entry) = ask.entry.get_untracked() {
+                    d.edit(&edits, &entry, &editing);
+                }
+            });
+    div().child(folder).child(rename).child(delete).child(large)
 }

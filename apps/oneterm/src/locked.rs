@@ -178,4 +178,11 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>) -> SettingsGroup {
             "Minutes without a key or the pointer, 1 to 480.",
             number_input(after).range(1.0, 480.0),
         )
+        .row(
+            "Lock now",
+            "As Ctrl+Shift+L does.",
+            div()
+                .display(shown(move || lock.can_lock()))
+                .child(button("Lock now").on_click(move || lock.lock_now())),
+        )
 }

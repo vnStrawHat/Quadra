@@ -140,11 +140,30 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                     number_input(p.keepalive_max).range(1.0, 20.0),
                 ),
         ],
-        vec![SettingsGroup::new("Downloads").row(
-            "Downloads folder",
-            "Where a file downloaded from the dock goes; empty, the user's Downloads.",
-            input(p.downloads).placeholder("Downloads").width(240.0),
-        )],
+        vec![
+            SettingsGroup::new("Downloads").row(
+                "Downloads folder",
+                "Where a file downloaded from the dock goes; empty, the user's Downloads.",
+                input(p.downloads).placeholder("Downloads").width(240.0),
+            ),
+            SettingsGroup::new("Editing")
+                .row(
+                    "Editor",
+                    "What a file's Edit opens it in.",
+                    select(crate::sftp::EDITORS, p.editor).width(240.0),
+                )
+                .row(
+                    "Program",
+                    "The editor's program, when it is one.",
+                    input(p.editor_program).placeholder("notepad.exe").width(240.0),
+                )
+                .row("Arguments", "Before the file, split at spaces.", input(p.editor_args).width(240.0))
+                .row(
+                    "Asked above",
+                    "A file larger, in KB, is edited only when asked; 0, any.",
+                    number_input(p.edit_limit_kb).range(0.0, 1_048_576.0).step(256.0),
+                ),
+        ],
         vec![signals],
         vec![status],
         vec![
@@ -175,13 +194,27 @@ fn logging(p: Prefs) -> SettingsGroup {
         .row(
             "Folder",
             "Where logs go; empty, session-logs in 1Term's data folder.",
-            input(p.log_folder).placeholder("session-logs").width(240.0),
+            folder_field(p.log_folder),
         )
+        .row("File name", "%n is the shell or the host.", text("%n_%Y-%m-%d_%H-%M-%S.log"))
+        .row("A line", "%msg is a line of what the space showed.", text("[%Y-%m-%d %H:%M:%S] %msg"))
         .row(
             "A file there",
             "Written after what it holds, or over it.",
             segmented(crate::logs::MODES, p.log_mode),
         )
+}
+
+/// A folder typed, or chosen in the system's dialog.
+fn folder_field(folder: quadra::Signal<String>) -> quadra::Div {
+    let dialogs = quadra::use_context::<std::rc::Rc<dyn quadra_shell::Dialogs>>();
+    let choose = button("Choose\u{2026}").variant(Variant::Secondary).on_click(move || {
+        let asked = quadra_shell::FileDialog::new("The folder of logs");
+        if let Some(chosen) = dialogs.as_ref().and_then(|it| it.pick_folder(&asked)) {
+            folder.set(chosen.display().to_string());
+        }
+    });
+    row().gap(8.0).child(input(folder).placeholder("session-logs").width(240.0)).child(choose)
 }
 
 /// The saved hosts and the recent targets, with what adds one and what forgets them.

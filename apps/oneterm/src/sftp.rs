@@ -12,7 +12,10 @@ use oneterm_ssh::{Entry, Files, Ssh, join, safe_name};
 use quadra::{Scope, Signal, background, interval, signal, spawn, untrack};
 
 use crate::model::Model;
+
+mod edit;
 use crate::panes::{Local, free_name};
+pub(crate) use edit::{EDITORS, Editing};
 
 /// A file going one way or the other.
 /// What the dock says of a space that is not remote.

@@ -18,6 +18,9 @@ struct App {
     h: Harness,
     served: PathBuf,
     downloads: PathBuf,
+    /// The app's folders, and what stands for the system's opener.
+    data: PathBuf,
+    shell: Rc<quadra_shell::FakeShell>,
 }
 
 /// The app with one tab connected to a test server by a key, its dock open as an SSH tab's is.
@@ -35,6 +38,8 @@ fn app(name: &str) -> App {
     let settings = Settings::memory();
     settings.value("sftp.downloads", String::new()).set(downloads.display().to_string());
     let (base, key_file) = (dir.clone(), dir.join("id"));
+    let (home, shell) = (dir.join("app"), quadra_shell::FakeShell::new());
+    let (data, given) = (home.join("data"), shell.clone());
     let sessions: NewSession = Rc::new(move |launch: oneterm::Launch| match launch.ssh {
         Some(_) => remote_shell_with(launch, |_| options(port, &base, Auth::Auto)),
         None => echo(),
@@ -44,6 +49,8 @@ fn app(name: &str) -> App {
     h.tree.set_keymap(Rc::new(keymap()));
     h.mount(move || {
         provide(settings.clone());
+        provide(Rc::new(quadra::AppDirs::under(&home)));
+        given.provide();
         let app = OneTerm::new(sessions);
         let target = oneterm_ssh::Target { user: "tester".into(), host: "127.0.0.1".into(), port };
         app.model.connect_to(Remote::new(target, Auth::Key(key_file.clone())), false);
@@ -51,7 +58,7 @@ fn app(name: &str) -> App {
     });
     h.settle();
     // An SSH tab shows its dock by itself.
-    App { h, served, downloads }
+    App { h, served, downloads, data, shell }
 }
 
 impl App {
@@ -224,4 +231,26 @@ fn a_local_space_is_not_an_ssh_space() {
     h.get_by_role(Role::Button, "SFTP").click();
     h.settle();
     assert!(h.has_text("local space \u{B7} n/a"));
+}
+
+#[test]
+fn a_file_is_edited_and_sent_back_when_it_is_saved() {
+    let mut a = app("dock-edit");
+    a.wait(|a| a.entry("config.yaml"), "the home folder");
+    a.menu("config.yaml", "Edit\u{2026}");
+    let folder = a.data.join("sftp-edit");
+    let found = |folder: &std::path::Path| {
+        let first = std::fs::read_dir(folder).ok()?.flatten().next()?;
+        Some(first.path().join("config.yaml")).filter(|it| it.is_file())
+    };
+    let whole = |it: &PathBuf| std::fs::metadata(it).is_ok_and(|m| m.len() == 2458);
+    a.wait(|_| found(&folder).is_some_and(|it| whole(&it)), "the download");
+    let local = found(&folder).unwrap();
+    let opened =
+        |a: &App| a.shell.asked().iter().any(|it| it.starts_with("open: ") && it.ends_with("config.yaml"));
+    a.wait(opened, "opened");
+    std::thread::sleep(Duration::from_millis(20));
+    std::fs::write(&local, b"edited").unwrap();
+    let served = a.served.join("home/config.yaml");
+    a.wait(|_| std::fs::read(&served).is_ok_and(|it| it == b"edited"), "sent back");
 }

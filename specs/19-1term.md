@@ -144,14 +144,14 @@ after 3 unanswered from 1 to 20), SFTP (the downloads folder), Notifications & s
 (and frames a second, off: `window().frames()` counted each second), and whether the SFTP dock is
 open is kept for each kind of tab that shows (a local shell's, closed at first; an SSH space's,
 open): it follows the tab, and opening or closing it is remembered for the kind,
-Security & lock (and whether programs may read the clipboard by OSC 52, off), Terminal's
-Logging (log new local shells, log new SSH spaces, both off; the folder, empty for `session-logs`
-in the app's data folder; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
+Security & lock (Lock now while a password is set; and whether programs may read the clipboard by OSC 52, off), Terminal's
+Logging (log new local shells, log new SSH spaces, both off; the folder, typed or chosen in the
+system's dialog, empty for `session-logs` in the app's data folder; the formats shown, fixed; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
 logging, and a log that cannot be opened is a card), Keybindings, Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Appearance: the theme; the terminal's text (font family,
-empty for the kit's mono face; size; line height, 1.5) and colours over the theme's
+empty for the kit's mono face; size; weight, Normal and Thin to Black; line height, 1.5) and colours over the theme's
 (foreground, background, cursor, selection as `#rrggbb`), the view's `TermLook` (specs/18):
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
 blink, scrollback lines, the default local shell, where new spaces start (active space's cwd,
@@ -267,7 +267,10 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   whose parts go there (the last in the text colour); then `..` and the entries, a folder or file icon, the name,
   the size (`—` for a folder). A click on a folder opens it; two on a file downloads it to
   the user's Downloads folder (`name (1).ext` when the name is taken). The other button gives
-  a remote row's menu (Open or Download, Rename…, Copy path, Delete…) and, where no row is, the
+  a remote row's menu (Open or Download; for a file Edit…: downloaded to `sftp-edit` in the app's data
+  folder, opened in the system's app for it or the program the settings name with its arguments
+  (`Opener::open_with`), sent back each time it is saved, a card saying so; above the size set, 1 MB,
+  asked first; Rename…, Copy path, Delete…) and, where no row is, the
   list's (New folder…, Refresh), in the dock and the expanded view's Remote pane alike; a local
   row's menu there has Open or Upload, Copy path, Refresh. New folder and Rename ask the name in a
   dialog (not empty, `.`, `..` or with a `/`); Delete asks first (a folder only when empty).

@@ -12,6 +12,10 @@ pub const CURSORS: [&str; 3] = ["Block", "Bar", "Underline"];
 pub const STARTS: [&str; 2] = ["The active space's directory", "Home"];
 pub const STATUS_SHOWN: [&str; 3] = ["On the tab and the header", "On the tab only", "Ignored"];
 pub const BELLS: [&str; 2] = ["A dot and a count", "Ignored"];
+/// The weights of a face, from thin to black; the first is the usual one.
+pub const WEIGHTS: [&str; 9] =
+    ["Normal", "Thin", "Extra light", "Light", "Medium", "Semibold", "Bold", "Extra bold", "Black"];
+const WEIGHT_OF: [u16; 9] = [400, 100, 200, 300, 500, 600, 700, 800, 900];
 pub const TITLES: [&str; 2] = ["The program's title", "Terminal, or the host"];
 pub const NOTICES: [&str; 3] = ["A card for 6 s", "A card until dismissed", "Silent"];
 /// The colours a terminal may have over the theme's: their keys and names.
@@ -36,6 +40,8 @@ pub struct Prefs {
     /// A family of the system; empty, the kit's mono face.
     pub font_family: Signal<String>,
     pub line_height: Signal<f64>,
+    /// The terminal's weight, an index of `WEIGHTS`.
+    pub weight: Signal<usize>,
     /// Colours over the theme's, as `#rrggbb`; empty, the theme's.
     pub colors: [Signal<String>; 8],
     /// The gutter: when each row was written and its line number.
@@ -89,6 +95,12 @@ pub struct Prefs {
     pub recent: Signal<Vec<Vec<String>>>,
     /// Where downloads go; empty: the user's Downloads folder.
     pub downloads: Signal<String>,
+    /// What edits a remote file: the system's app for it, or a program with arguments; and
+    /// the size, in KB, edited without asking (0: any).
+    pub editor: Signal<usize>,
+    pub editor_program: Signal<String>,
+    pub editor_args: Signal<String>,
+    pub edit_limit_kb: Signal<f64>,
 }
 
 impl Prefs {
@@ -102,6 +114,7 @@ impl Prefs {
             font_size: s.value("terminal.font_size", 13.0),
             font_family: s.value("terminal.font_family", String::new()),
             line_height: s.value("terminal.line_height", 1.5),
+            weight: choice(s, "terminal.font_weight", &WEIGHTS),
             colors: COLORS.map(|(key, _)| s.value(key, String::new())),
             show_gutter: s.value("terminal.show_gutter", false),
             cursor: choice(s, "terminal.cursor", &CURSORS),
@@ -143,6 +156,10 @@ impl Prefs {
             hosts: s.value("ssh.hosts", Vec::new()),
             recent: s.value("ssh.recent", Vec::new()),
             downloads: s.value("sftp.downloads", String::new()),
+            editor: choice(s, "sftp.editor", &crate::sftp::EDITORS),
+            editor_program: s.value("sftp.editor_program", String::new()),
+            editor_args: s.value("sftp.editor_args", String::new()),
+            edit_limit_kb: s.value("sftp.edit_max_kb", 1024.0),
         }
     }
 }
@@ -168,6 +185,7 @@ impl Prefs {
                 line_number_fg,
                 ..Default::default()
             },
+            weight: WEIGHT_OF[self.weight.get().min(8)],
             ..quadra_term::TermLook::default()
         }
     }

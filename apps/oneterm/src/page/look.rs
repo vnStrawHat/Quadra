@@ -21,6 +21,7 @@ pub(super) fn appearance(p: Prefs) -> Vec<SettingsGroup> {
             input(p.font_family).placeholder("Mono").width(240.0),
         )
         .row("Font size", "In pixels.", number_input(p.font_size).range(8.0, 32.0))
+        .row("Weight", "Where the face has it.", select(prefs::WEIGHTS, p.weight).width(240.0))
         .row("Line height", "Times the size.", number_input(p.line_height).range(1.0, 2.5).step(0.1))
         .row("Gutter", "When each line was written, and its number.", switch(p.show_gutter));
     let colors = prefs::COLORS.iter().zip(p.colors).fold(

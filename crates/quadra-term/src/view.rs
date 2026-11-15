@@ -92,6 +92,8 @@ impl View for Terminal {
         cx.tree.set_cursor(id, Some(Cursor::Text));
         cx.tree.set_key_context(id, TERMINAL_CONTEXT);
         session.0.view.set(Some(id));
+        *session.0.clipboard.borrow_mut() = use_context::<Rc<dyn Clipboard>>();
+        session.0.settings.set(settings);
         *session.0.handle.borrow_mut() = Some(cx.handle.clone());
         // Once the view is gone, output paints nothing; a view mounted since keeps its own.
         let shown = Rc::downgrade(&session.0);

@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Instant;
 
-use oneterm_vt::{EventBatch, Progress, ShellMark, StringTerm, Terminal, VtEvent};
+use oneterm_vt::{ClipboardKind, EventBatch, Progress, ShellMark, StringTerm, Terminal, VtEvent};
 use quadra_async::Sender;
 
 use crate::status::{ProgramState, Report, Statuses};
@@ -27,6 +27,8 @@ pub(crate) enum Event {
     Notice(Notice),
     Progress(Progress),
     Status(ProgramState),
+    ClipStore(String),
+    ClipLoad,
 }
 
 /// An OSC 9 notification (or OSC 777's): what a program wants the user told.
@@ -98,8 +100,12 @@ impl Feeder {
                             Report::Dropped => {}
                         }
                     }
-                    // ponytail: OSC 52 stores are dropped; an app setting lets them through
-                    // when one asks for it.
+                    VtEvent::ClipboardStore { selection: ClipboardKind::Clipboard, text } => {
+                        events.push(Event::ClipStore(batch.str(text).to_string()))
+                    }
+                    VtEvent::ClipboardLoad { selection: ClipboardKind::Clipboard } => {
+                        events.push(Event::ClipLoad)
+                    }
                     _ => {}
                 }
             }

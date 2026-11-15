@@ -3,7 +3,9 @@
 
 use std::time::Instant;
 
-use crate::session::Session;
+use oneterm_vt::ResizePolicy;
+
+use crate::session::{Link, Session};
 
 /// How a terminal view takes the pointer and the wheel. The default is what a view does
 /// without settings: no copy on select, no paste by the middle button.
@@ -17,11 +19,19 @@ pub struct TermSettings {
     pub scroll: f32,
     /// On the alternate screen the wheel sends arrows, even when the program did not ask.
     pub alternate_scroll: bool,
+    /// A program may read the clipboard (OSC 52 with `?`); writing it is always let through.
+    pub clipboard_read: bool,
 }
 
 impl Default for TermSettings {
     fn default() -> TermSettings {
-        TermSettings { copy_on_select: false, middle_paste: false, scroll: 1.0, alternate_scroll: false }
+        TermSettings {
+            copy_on_select: false,
+            middle_paste: false,
+            scroll: 1.0,
+            alternate_scroll: false,
+            clipboard_read: false,
+        }
     }
 }
 
@@ -60,4 +70,19 @@ impl Session {
             handle.with(move |tree| crate::widget::repaint(tree, id));
         }
     }
+}
+
+/// A session whose link writes what is typed back as its output (Enter as a new line): for
+/// tests and the gallery.
+pub fn echo() -> Session {
+    let session = Session::new(ResizePolicy::BottomAnchor);
+    let feeder = session.feeder();
+    session.connect(Link::new(move |bytes: &[u8]| {
+        let mut shown = Vec::with_capacity(bytes.len());
+        for b in bytes {
+            shown.extend_from_slice(if *b == b'\r' { b"\r\n" } else { std::slice::from_ref(b) });
+        }
+        feeder.feed(&shown, Instant::now());
+    }));
+    session
 }

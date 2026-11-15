@@ -3,6 +3,7 @@
 //! (`quadra-shell`), a network channel, or `echo()`.
 
 mod actions;
+mod clip;
 mod feed;
 mod keys;
 mod look;
@@ -17,10 +18,11 @@ mod widget;
 pub use oneterm_vt as vt;
 
 pub use actions::TermSettings;
+pub use actions::echo;
 pub use feed::{Feeder, Notice};
 pub use keys::{TERMINAL_CONTEXT, TermCommand, bind_keys};
 pub use look::{TermColors, TermLook};
-pub use session::{Link, Session, echo};
+pub use session::{Link, Session};
 pub use status::ProgramState;
 pub use view::{Terminal, terminal};
 pub use widget::TerminalWidget;

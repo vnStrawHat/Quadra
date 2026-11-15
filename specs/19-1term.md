@@ -135,7 +135,7 @@ the harness, the page shows in the main window with Done), the kit's `settings` 
 what it is about, groups with titles; the title bar names the page), a search, pages:
 Appearance, Terminal, Tabs & spaces, SSH & hosts (the count of saved hosts with Add SSH host,
 the recent targets with Forget), SFTP (the downloads folder), Notifications & signals, Status bar,
-Security & lock, Keybindings, Advanced (the file, and a note that settings save as they change).
+Security & lock (and whether programs may read the clipboard by OSC 52, off), Keybindings, Advanced (the file, and a note that settings save as they change).
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Appearance: the theme; the terminal's text (font family,
 empty for the kit's mono face; size; line height, 1.5) and colours over the theme's

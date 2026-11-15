@@ -124,3 +124,17 @@ fn a_menu_selects_everything_pastes_and_clears_the_history() {
     t.h.settle();
     assert_eq!(t.s.screen_text()[0], "line 23", "no history left to scroll into");
 }
+
+#[test]
+fn a_program_writes_the_clipboard_and_reads_it_only_when_let() {
+    let mut t = term(TermSettings::default());
+    t.feed(b"\x1b]52;c;aGVsbG8=\x07");
+    assert_eq!(t.h.clipboard.read_text().as_deref(), Some("hello"));
+    t.feed(b"\x1b]52;c;?\x07");
+    assert!(t.taken().is_empty(), "no answer by default");
+
+    let mut t = term(TermSettings { clipboard_read: true, ..TermSettings::default() });
+    t.h.clipboard.write_text("hi");
+    t.feed(b"\x1b]52;c;?\x07");
+    assert_eq!(t.taken(), b"\x1b]52;c;aGk=\x07");
+}

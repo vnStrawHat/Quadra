@@ -6,7 +6,6 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::time::Instant;
 
 use oneterm_vt::{Config, EventBatch, OscRoute, Progress, ResizePolicy, Size, Terminal};
 use quadra_async::inbox;
@@ -68,6 +67,9 @@ pub(crate) struct Shared {
     notices: RefCell<Vec<Rc<NoticeFn>>>,
     /// What the app keeps with the session.
     kept: RefCell<Vec<Rc<dyn std::any::Any>>>,
+    /// The view's clipboard and settings, for OSC 52.
+    pub clipboard: RefCell<Option<Rc<dyn quadra_platform::Clipboard>>>,
+    pub settings: Cell<Option<Signal<crate::TermSettings>>>,
 }
 
 impl Session {
@@ -107,6 +109,8 @@ impl Session {
             link_note: signal(String::new()),
             notices: RefCell::new(Vec::new()),
             kept: RefCell::new(Vec::new()),
+            clipboard: RefCell::new(None),
+            settings: Cell::new(None),
         });
         let (took, ended) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
         events
@@ -117,7 +121,7 @@ impl Session {
             })
             .on_data(move |burst| {
                 if let Some(s) = took.upgrade() {
-                    s.take(burst);
+                    Session(s).take(burst);
                 }
             });
         Session(shared)
@@ -248,48 +252,35 @@ impl Session {
     }
 }
 
-impl Shared {
+impl Session {
     /// A burst from the inbox: the signals follow it, and the view is painted again.
     fn take(&self, burst: &mut Vec<Event>) {
         for event in burst.drain(..) {
             match event {
                 Event::Output => {
-                    self.feeder.pending.store(false, Ordering::Release);
-                    if let (Some(id), Some(handle)) = (self.view.get(), self.handle.borrow().clone()) {
+                    self.0.feeder.pending.store(false, Ordering::Release);
+                    if let (Some(id), Some(handle)) = (self.0.view.get(), self.0.handle.borrow().clone()) {
                         handle.with(move |tree| {
                             crate::widget::repaint(tree, id);
                             tree.update_semantics(id, |_| {}); // a reader is told the rows
                         });
                     }
                 }
-                Event::Title(title) => self.title.set(title),
-                Event::Cwd(cwd) => self.cwd.set(cwd),
-                Event::Bell => self.bells.update(|n| *n += 1),
+                Event::Title(title) => self.0.title.set(title),
+                Event::Cwd(cwd) => self.0.cwd.set(cwd),
+                Event::Bell => self.0.bells.update(|n| *n += 1),
                 Event::Notice(notice) => {
-                    let notices = self.notices.borrow().clone();
+                    let notices = self.0.notices.borrow().clone();
                     for f in notices {
                         f(&notice);
                     }
                 }
-                Event::Progress(Progress::Remove) => self.progress.set(None),
-                Event::Progress(p) => self.progress.set(Some(p)),
-                Event::Status(state) => self.status.set(state),
+                Event::Progress(Progress::Remove) => self.0.progress.set(None),
+                Event::Progress(p) => self.0.progress.set(Some(p)),
+                Event::Status(state) => self.0.status.set(state),
+                Event::ClipStore(text) => self.clip_store(&text),
+                Event::ClipLoad => self.clip_load(),
             }
         }
     }
-}
-
-/// A session whose link writes what is typed back as its output (Enter as a new line): for
-/// tests and the gallery.
-pub fn echo() -> Session {
-    let session = Session::new(ResizePolicy::BottomAnchor);
-    let feeder = session.feeder();
-    session.connect(Link::new(move |bytes: &[u8]| {
-        let mut shown = Vec::with_capacity(bytes.len());
-        for b in bytes {
-            shown.extend_from_slice(if *b == b'\r' { b"\r\n" } else { std::slice::from_ref(b) });
-        }
-        feeder.feed(&shown, Instant::now());
-    }));
-    session
 }

@@ -123,7 +123,14 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         )],
         vec![signals],
         vec![status],
-        vec![lock],
+        vec![
+            lock,
+            SettingsGroup::new("Clipboard").row(
+                "Programs read the clipboard",
+                "OSC 52 asked with `?`, by a local or a remote program. Writing it is always let through.",
+                switch(p.clipboard_read),
+            ),
+        ],
         vec![keys],
         vec![advanced, SettingsGroup::new("").wide(note)],
     ]

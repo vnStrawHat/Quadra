@@ -56,6 +56,8 @@ pub struct Prefs {
     /// The master password's hash; empty: none, and no lock.
     pub password: Signal<String>,
     pub lock_after: Signal<f64>,
+    /// Programs may read the clipboard by OSC 52.
+    pub clipboard_read: Signal<bool>,
     /// Saved hosts and recent targets, rows of words (`hosts.rs`).
     pub hosts: Signal<Vec<Vec<String>>>,
     pub recent: Signal<Vec<Vec<String>>>,
@@ -96,6 +98,7 @@ impl Prefs {
             show_clock: s.value("status_bar.clock", true),
             password: s.value("security.password", String::new()),
             lock_after: s.value("security.lock_after_minutes", 10.0),
+            clipboard_read: s.value("security.allow_clipboard_read", false),
             hosts: s.value("ssh.hosts", Vec::new()),
             recent: s.value("ssh.recent", Vec::new()),
             downloads: s.value("sftp.downloads", String::new()),
@@ -130,6 +133,7 @@ impl Prefs {
             middle_paste: self.middle_paste.get(),
             scroll: self.scroll_speed.get() as f32,
             alternate_scroll: self.alternate_scroll.get(),
+            clipboard_read: self.clipboard_read.get(),
         }
     }
 }

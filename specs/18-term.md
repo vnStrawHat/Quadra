@@ -91,6 +91,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   view: the app's context menu (`quadra_design::context_menu` around the terminal).
 - What a menu does: `Session::selection_text`, `paste(text)`, `select_all`, `clear_history`
   (the scrollback, as ED 3 would).
+- OSC 52: a program's text for the clipboard (`c`) is written to it, always; a program that asks
+  for it (`?`) is answered (`52;c;<base64>` and BEL) only when `TermSettings::clipboard_read`
+  says so, off by default. The view gives the session its clipboard and settings as it mounts.
 
 ## Signals an app reads
 

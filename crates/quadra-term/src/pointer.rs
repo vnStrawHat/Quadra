@@ -127,6 +127,13 @@ pub(crate) fn pointer(
             });
         });
     }
+    // A click the program took is not the app's either: its menu listens for clicks.
+    let s = session.clone();
+    cx.tree.on_pointer(id, PointerKind::Click, move |e| {
+        if s.engine().term.mouse_reporting().is_some() && !e.mods.contains(Mods::SHIFT) {
+            e.stop();
+        }
+    });
     let (writer, s) = (cx.handle.clone(), session.clone());
     let notches = Rc::new(Cell::new(0.0f32));
     cx.tree.on_pointer(id, PointerKind::Wheel, move |e| {

@@ -125,30 +125,43 @@ pub(crate) fn dialogs(model: &Model, d: Dock) -> impl View + use<> {
         let name = name.trim();
         (!name.is_empty() && name != "." && name != ".." && !name.contains('/')).then(|| name.to_string())
     };
+    let (makes, renames, deletes) = (model.clone(), model.clone(), model.clone());
+    let create: Rc<dyn Fn()> = Rc::new(move || {
+        if let Some(name) = named() {
+            d.mkdir(&makes, &name);
+        }
+    });
+    let rename: Rc<dyn Fn()> = Rc::new(move || {
+        if let (Some(name), Some(entry)) = (named(), ask.entry.get_untracked())
+            && name != entry.name
+        {
+            d.rename(&renames, &entry.name, &name);
+        }
+    });
+    // Enter does what the dialog that shows is for, and closes it.
+    let (creates, renames) = (create.clone(), rename.clone());
     let body = move || {
+        let (creates, renames) = (creates.clone(), renames.clone());
+        let submit = move |_: &str| {
+            for (open, does) in [(ask.folder, &creates), (ask.rename, &renames)] {
+                if open.get_untracked() {
+                    does();
+                    open.set(false);
+                }
+            }
+        };
         column()
             .width(320.0)
             .padding_x(12.0)
-            .child(field("Name", input(ask.name).width(296.0).test_id("sftp-name")))
+            .child(field("Name", input(ask.name).width(296.0).test_id("sftp-name").on_submit(submit)))
     };
-    let (makes, renames, deletes) = (model.clone(), model.clone(), model.clone());
-    let folder = dialog(ask.folder, "New folder", body).action("Cancel", Variant::Secondary, || {}).action(
-        "Create",
-        Variant::Primary,
-        move || {
-            if let Some(name) = named() {
-                d.mkdir(&makes, &name);
-            }
-        },
-    );
+    let folder = dialog(ask.folder, "New folder", body.clone())
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Create", Variant::Primary, move || create());
     let rename = dialog(ask.rename, "Rename", body).action("Cancel", Variant::Secondary, || {}).action(
         "Rename",
         Variant::Primary,
-        move || {
-            if let (Some(name), Some(entry)) = (named(), ask.entry.get_untracked()) {
-                d.rename(&renames, &entry.name, &name);
-            }
-        },
+        move || rename(),
     );
     let asked = move || {
         let entry = ask.entry.get();

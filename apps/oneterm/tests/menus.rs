@@ -92,3 +92,21 @@ fn the_setting_turns_the_menu_off() {
     a.other_click();
     assert!(a.h.query(|n| n.semantics.role == Role::MenuItem).is_empty());
 }
+
+#[test]
+fn a_program_that_reports_the_mouse_takes_the_press_and_a_click_copies_nothing() {
+    let mut a = app();
+    a.h.clipboard.write_text("kept");
+    let id = a.h.query(|n| n.semantics.role == Role::TextInput && n.semantics.name == "Terminal")[0];
+    let at: Point = a.h.tree.window_rect(id).center();
+    for input in [PointerInput::Down, PointerInput::Up] {
+        a.h.tree.pointer(input, MouseButton::Left, at, Mods::NONE, a.h.now());
+    }
+    a.h.settle();
+    assert_eq!(a.h.clipboard.read_text().as_deref(), Some("kept"), "a click selects nothing to copy");
+
+    a.made.borrow()[0].feeder().feed(b"\x1b[?1000h", std::time::Instant::now());
+    a.h.settle();
+    a.other_click();
+    assert!(a.h.query(|n| n.semantics.role == Role::MenuItem).is_empty(), "no menu over the program");
+}

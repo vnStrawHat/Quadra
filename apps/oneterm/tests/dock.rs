@@ -133,7 +133,8 @@ fn dropped_files_upload_and_a_folder_is_made() {
     a.h.settle();
     a.h.get_by_test_id("sftp-name").set_value("made");
     a.h.settle();
-    a.h.get_by_role(Role::Button, "Create").click();
+    a.h.get_by_test_id("sftp-name").focus();
+    a.h.key(quadra::Key::Enter, quadra::Mods::NONE);
     let made = a.served.join("home/made");
     a.wait(|a| made.is_dir() && a.entry("made"), "the folder made");
 }

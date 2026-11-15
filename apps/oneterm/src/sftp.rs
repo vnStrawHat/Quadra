@@ -202,10 +202,13 @@ impl Dock {
         );
     }
 
+    /// The list again after a change; what failed is a card, the list kept.
     fn after(&self, model: &Model, got: Result<(), String>) {
         match got {
             Ok(()) => self.refresh(model),
-            Err(why) => self.said.set(why),
+            Err(why) => {
+                model.notify(quadra_design::Notice::new("SFTP").body(why).tone(quadra_design::Tone::Warning))
+            }
         }
     }
 

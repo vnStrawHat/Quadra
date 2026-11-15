@@ -50,7 +50,9 @@ pub use fonts::{Fonts, GlyphKey, GlyphMeta, GlyphTile, SUBPIXEL_STEPS, TileKey};
 pub use frame::{FrameStats, PassTimes};
 pub use inherit::{Inherited, TextValues};
 pub use input::{PointerEvent, PointerKind};
-pub use keymap::{Keymap, KeymapError, Keystroke, TEXT_AREA_CONTEXT, TEXT_CONTEXT, TEXT_SELECT_CONTEXT};
+pub use keymap::{
+    Actions, Keymap, KeymapError, Keystroke, TEXT_AREA_CONTEXT, TEXT_CONTEXT, TEXT_SELECT_CONTEXT,
+};
 pub use motion::{Step, Timeline, Transition};
 pub use node::{NodeId, PaintStyle, Pose, Style};
 pub use overlay::{Along, Anchor, Side};

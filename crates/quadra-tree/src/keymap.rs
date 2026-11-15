@@ -12,6 +12,12 @@ use quadra_text::Motion;
 use crate::action::{Action, AnyAction, FocusNext, FocusPrevious, GoBack, GoForward};
 use crate::field::TextCommand;
 
+mod context;
+mod file;
+
+use context::Context;
+pub use file::Actions;
+
 /// The key context of a text field: where the editing keys are bound.
 pub const TEXT_CONTEXT: &str = "text";
 /// The key context of a text field of several lines: the same keys, and those that go by
@@ -110,9 +116,9 @@ impl Keystroke {
 
 struct Binding {
     keys: Vec<Keystroke>,
-    /// The context it applies in: a name on the focused node or on one around it. `None`:
-    /// everywhere.
-    context: Option<Rc<str>>,
+    /// The context it applies in: a predicate over the names on the focused node and those
+    /// around it. `None`: everywhere.
+    context: Option<Rc<Context>>,
     action: Rc<dyn AnyAction>,
 }
 
@@ -201,11 +207,11 @@ impl Keymap {
         let only = read.iter().map(|binding| (TEXT_SELECT_CONTEXT, binding));
         for (context, (keys, command)) in both.chain(area).chain(only) {
             let stroke = Keystroke::parse(keys).expect("the built-in bindings are well formed");
-            self.push(vec![stroke], Some(Rc::from(context)), *command);
+            self.push(vec![stroke], Some(Rc::new(Context::name(context))), *command);
         }
     }
 
-    fn push(&mut self, keys: Vec<Keystroke>, context: Option<Rc<str>>, action: impl Action) {
+    fn push(&mut self, keys: Vec<Keystroke>, context: Option<Rc<Context>>, action: impl Action) {
         self.bindings.push(Binding { keys, context, action: Rc::new(action) });
     }
 
@@ -215,15 +221,16 @@ impl Keymap {
         self.bind_in_context(None, keys, action)
     }
 
-    /// As [`Keymap::bind`], where the focus is on a node of that context or inside one. With
-    /// the same keys, the binding of the context nearest the focus wins.
+    /// As [`Keymap::bind`], where the focus is on a node of that context or inside one; or
+    /// where a predicate of contexts holds (`editor && !find`, `a || b`). With the same keys,
+    /// the binding whose context is nearest the focus wins.
     pub fn bind_in(&mut self, context: &str, keys: &str, action: impl Action) -> Result<(), KeymapError> {
-        self.bind_in_context(Some(Rc::from(context)), keys, action)
+        self.bind_in_context(Some(Rc::new(Context::parse(context)?)), keys, action)
     }
 
     fn bind_in_context(
         &mut self,
-        context: Option<Rc<str>>,
+        context: Option<Rc<Context>>,
         keys: &str,
         action: impl Action,
     ) -> Result<(), KeymapError> {
@@ -254,8 +261,8 @@ impl Keymap {
             // How near the focus its context is: the nearest is the largest.
             let near = match &binding.context {
                 None => 0,
-                Some(name) => match contexts.iter().position(|c| *c == &**name) {
-                    Some(at) => contexts.len() - at,
+                Some(context) => match context.near(contexts) {
+                    Some(near) => near,
                     None => continue,
                 },
             };

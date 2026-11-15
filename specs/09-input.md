@@ -94,7 +94,10 @@ Three steps for a key press:
 
 **Contexts** are names on nodes (`.key_context("editor")`), interned at mount. The context of a
 dispatch is the list of names from the focused node to the root. A binding's context is a
-predicate over that list, so the deepest matching binding wins.
+predicate over that list, so the deepest matching binding wins: a name holds where it is in
+the list, `!name` where it is not, `&&` binds closer than `||` (`editor && !find`,
+`find || side`). How near a predicate holds is that of the nearest name it needs; one of
+only `!` holds as far as a binding for everywhere.
 
 **Actions** are Rust types:
 
@@ -113,6 +116,23 @@ impl Action for Save { const NAME: &'static str = "file::save"; }
 The keymap is data: default bindings from the kit and the app, then the user's file. Bindings
 are checked when loaded; an unknown action name or a malformed keystroke is reported, not
 ignored.
+
+### The keymap file
+
+Text, a binding a line, `keys = name arguments`; a line `[predicate]` names the context of
+those after it (before one, they hold everywhere); `#` starts a comment. The app says which
+actions a file may name (`Actions`: `add(action)` for one that takes nothing, `add_with(build)`
+for one built from what follows its name; the tree's own are there). `Keymap::load(text,
+&actions)` adds the file after what the keymap has, so its bindings win; a wrong line (a
+keystroke, a predicate, an unknown name, arguments its action does not take) is reported
+with its number and none of the file is taken.
+
+```text
+ctrl-s = file::save
+[editor && !find]
+ctrl-k ctrl-c = editor::comment
+ctrl-1 = tabs::select 0
+```
 
 How a key press is decided:
 

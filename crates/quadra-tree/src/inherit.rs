@@ -93,7 +93,10 @@ impl TextValues {
 /// The text values that hold at a node: what a widget lays out and paints its text with.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Inherited {
+    /// Its size times the tree's text scale (`Tree::set_text_scale`).
     pub style: TextStyle,
+    /// The text scale: for a widget with sizes of its own, a run of rich text that says one.
+    pub scale: f32,
     pub color: Color,
     pub placeholder: Color,
     pub selection: Color,
@@ -106,13 +109,14 @@ const SELECTION: Color = Color::rgba(0x3366FF4D);
 impl Default for Inherited {
     fn default() -> Inherited {
         let (style, color) = (TextStyle::default(), Color::BLACK);
-        Inherited { style, color, placeholder: color.alpha(0.5), selection: SELECTION, caret: color }
+        let (placeholder, selection) = (color.alpha(0.5), SELECTION);
+        Inherited { style, scale: 1.0, color, placeholder, selection, caret: color }
     }
 }
 
 /// What holds at a node: its own values, then those of each node around it for what is
 /// still not set, then the defaults. It stops as soon as everything is set.
-pub(crate) fn inherit(nodes: &[Node], index: usize, root: Option<u32>) -> Inherited {
+pub(crate) fn inherit(nodes: &[Node], index: usize, root: Option<u32>, scale: f32) -> Inherited {
     let (mut values, mut at) = (TextValues::default(), Some(index));
     while let Some(i) = at.filter(|_| !values.complete()) {
         if let Some(own) = &nodes[i].text {
@@ -128,11 +132,12 @@ pub(crate) fn inherit(nodes: &[Node], index: usize, root: Option<u32>) -> Inheri
     Inherited {
         style: TextStyle {
             family: values.family.unwrap_or(base.style.family),
-            size: values.size.unwrap_or(base.style.size),
+            size: values.size.unwrap_or(base.style.size) * scale,
             weight: values.weight.unwrap_or(base.style.weight),
             italic: values.italic.unwrap_or(base.style.italic),
             line_height: values.line_height.unwrap_or(base.style.line_height),
         },
+        scale,
         color,
         placeholder: values.placeholder.unwrap_or(color.alpha(color.a * 0.5)),
         selection: values.selection.unwrap_or(base.selection),
@@ -146,13 +151,14 @@ pub(crate) fn inherit(nodes: &[Node], index: usize, root: Option<u32>) -> Inheri
 pub(crate) struct TextAt {
     pub epoch: u32,
     pub root: Option<u32>,
+    pub scale: f32,
 }
 
 /// Gives a node's widget the text values that hold at the node, if they may have changed
 /// since it was last given them.
 pub(crate) fn refresh(nodes: &mut [Node], index: usize, at: TextAt) {
     if nodes[index].inherited_at != at.epoch && nodes[index].widget.is_some() {
-        let inherited = inherit(nodes, index, at.root);
+        let inherited = inherit(nodes, index, at.root, at.scale);
         let node = &mut nodes[index];
         node.inherited_at = at.epoch;
         if let Some(widget) = &mut node.widget {
@@ -169,13 +175,40 @@ impl Tree {
 
     /// What the passes give widgets their text values with.
     pub(crate) fn text_at(&self) -> TextAt {
-        TextAt { epoch: self.text_epoch, root: self.root.map(|root| root.index) }
+        TextAt { epoch: self.text_epoch, root: self.root.map(|root| root.index), scale: self.text_scale }
     }
 
     /// The text values that hold at a node.
     pub fn inherited(&self, id: NodeId) -> Inherited {
         let root = self.root.map(|root| root.index);
-        if self.is_alive(id) { inherit(&self.nodes, id.index as usize, root) } else { Inherited::default() }
+        let scale = self.text_scale;
+        if self.is_alive(id) {
+            inherit(&self.nodes, id.index as usize, root, scale)
+        } else {
+            Inherited::default()
+        }
+    }
+
+    /// Every text `scale` times its size (specs/12, "Text size"): each is shaped and laid out
+    /// again.
+    pub fn set_text_scale(&mut self, scale: f32) {
+        if scale == self.text_scale {
+            return;
+        }
+        (self.text_scale, self.text_epoch) = (scale, self.text_epoch + 1);
+        let mut under: Vec<NodeId> = self.root.into_iter().chain(self.overlays()).collect();
+        while let Some(at) = under.pop() {
+            let node = &self.nodes[at.index as usize];
+            under.extend(&node.children);
+            if node.widget.is_some() {
+                self.mark_layout(at);
+                self.mark_paint(at);
+            }
+        }
+    }
+
+    pub fn text_scale(&self) -> f32 {
+        self.text_scale
     }
 
     /// Gives a node the text values it says. The widgets in it and under it are laid out

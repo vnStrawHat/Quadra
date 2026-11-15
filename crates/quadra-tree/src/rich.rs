@@ -60,6 +60,8 @@ pub struct RichText {
     /// The style and the colour that hold at its node.
     style: TextStyle,
     color: Color,
+    /// The tree's text scale: the sizes runs say are so many times larger.
+    scale: f32,
     /// Shaped at the first measure, and again when the style changed.
     paragraph: Option<Paragraph>,
     stale: bool,
@@ -87,6 +89,7 @@ impl RichText {
             colors,
             style,
             color,
+            scale: 1.0,
             paragraph,
             stale: false,
             links,
@@ -164,10 +167,13 @@ impl Widget for RichText {
         let stale = std::mem::take(&mut self.stale);
         // A box says how wide it is in the style of its span, before the text is shaped
         // around it: the first time, and when the style changed.
+        let scale = self.scale;
+        let sized =
+            |shaping: &Shaping| Shaping { size: shaping.size.map(|px| px * scale), ..shaping.clone() };
         if !self.boxes.is_empty() && (stale || self.paragraph.is_none()) {
             for (span, inline) in &mut self.boxes {
                 let shaping = &mut self.spans[*span].shaping;
-                let (width, above, below) = inline.measure(cx, &shaping.over(&self.style));
+                let (width, above, below) = inline.measure(cx, &sized(shaping).over(&self.style));
                 (shaping.advance, shaping.reach) = (Some(width), (above, below));
             }
             self.paragraph = None;
@@ -180,7 +186,7 @@ impl Widget for RichText {
                 paragraph
             }
             none => {
-                let runs = self.spans.iter().map(|span| (span.end, span.shaping.clone())).collect();
+                let runs = self.spans.iter().map(|span| (span.end, sized(&span.shaping))).collect();
                 none.insert(Paragraph::rich(cx.text, self.text.as_str(), self.style.clone(), runs))
             }
         };
@@ -258,6 +264,9 @@ impl Widget for RichText {
 
     fn inherit(&mut self, inherited: &Inherited) {
         (self.color, self.selection) = (inherited.color, inherited.selection);
+        if self.scale != inherited.scale {
+            (self.scale, self.paragraph) = (inherited.scale, None); // its runs are shaped again
+        }
         if self.style != inherited.style {
             self.style.clone_from(&inherited.style);
             self.stale = true;

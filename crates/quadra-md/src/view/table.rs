@@ -27,11 +27,12 @@ impl Table {
     /// What each column asks for: its longest cell on one line. The columns share the width
     /// of the table by it, and none is narrower than its longest word.
     fn wants(&self, columns: usize, cx: &mut MountCx) -> Vec<f32> {
-        let (fonts, mut wants) = (cx.tree.fonts(), vec![0.0f32; columns]);
+        let (fonts, mut wants, scale) = (cx.tree.fonts(), vec![0.0f32; columns], cx.tree.text_scale());
         let text = &mut fonts.borrow_mut().text;
         for (r, cells) in self.rows.iter().enumerate() {
             let weight = if r == 0 { size::WEIGHT_STRONG } else { size::WEIGHT_NORMAL };
-            let style = TextStyle { family: fonts::UI.into(), size: BODY, weight, ..TextStyle::default() };
+            let style =
+                TextStyle { family: fonts::UI.into(), size: BODY * scale, weight, ..TextStyle::default() };
             for (want, cell) in wants.iter_mut().zip(cells) {
                 let wide = Paragraph::new(text, plain(cell), style.clone()).wrap(text, f32::INFINITY).width;
                 *want = want.max(wide);

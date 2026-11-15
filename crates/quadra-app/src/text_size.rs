@@ -63,7 +63,9 @@ impl<R: Renderer> App<R> {
             (self.theme, self.root.run(text_size), self.appearance, tree.handle());
         let factors = move || size.get().factors(appearance.get().text_scale);
         tree.set_theme(theme.get_untracked());
-        tree.set_zoom(scope.run(|| quadra_reactive::untrack(factors)).0);
+        let (zoom, text) = scope.run(|| quadra_reactive::untrack(factors));
+        tree.set_zoom(zoom);
+        tree.set_text_scale(text);
         scope.run(|| {
             let writer = handle.clone();
             handle.bind(move || {
@@ -72,8 +74,11 @@ impl<R: Renderer> App<R> {
             });
             let writer = handle.clone();
             handle.bind(move || {
-                let (zoom, _) = factors();
-                writer.with(move |tree| tree.set_zoom(zoom));
+                let (zoom, text) = factors();
+                writer.with(move |tree| {
+                    tree.set_zoom(zoom);
+                    tree.set_text_scale(text);
+                });
             });
         });
     }

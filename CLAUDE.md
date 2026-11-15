@@ -233,4 +233,5 @@ Habits that cost time when forgotten:
 `oneterm-vt` (git tag v0.2.0, a clone to read in `.cache/vendor/oneterm-vt`; never edit that repository), and the app is
 `apps/oneterm` (specs/19), drawn after the user's design canvas "1Term". P1 is local shells (milestones M1-M6); P2 is SSH and
 SFTP, whose engine the user decides when P2 starts. The V repository's specs 22-27 and `apps/oneterm` are the reference
-for behaviour the design leaves open.
+for behaviour the design leaves open. **P1 is done** (M1-M6, docs/progress.md): `tools/cargo.sh run -p oneterm`; a trial run takes
+`ONETERM_HOME=.tmp/1term` so it writes nothing outside the project. P2 waits for the user's choice of an SSH engine.

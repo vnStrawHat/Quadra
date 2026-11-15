@@ -6,29 +6,18 @@ use std::rc::Rc;
 
 use quadra::{Appearance, Settings, Signal, Theme, effect, signal, untrack, use_context};
 
+mod look;
+
+pub use look::{ANSI, COLORS, LookPrefs, PADDING, WEIGHTS};
+
 /// The choices of the settings that are one of a few.
 pub const THEMES: [&str; 3] = ["System", "Dark", "Light"];
 pub const CURSORS: [&str; 3] = ["Block", "Bar", "Underline"];
 pub const STARTS: [&str; 2] = ["The active space's directory", "Home"];
 pub const STATUS_SHOWN: [&str; 3] = ["On the tab and the header", "On the tab only", "Ignored"];
 pub const BELLS: [&str; 2] = ["A dot and a count", "Ignored"];
-/// The weights of a face, from thin to black; the first is the usual one.
-pub const WEIGHTS: [&str; 9] =
-    ["Normal", "Thin", "Extra light", "Light", "Medium", "Semibold", "Bold", "Extra bold", "Black"];
-const WEIGHT_OF: [u16; 9] = [400, 100, 200, 300, 500, 600, 700, 800, 900];
 pub const TITLES: [&str; 2] = ["The program's title", "Terminal, or the host"];
 pub const NOTICES: [&str; 3] = ["A card for 6 s", "A card until dismissed", "Silent"];
-/// The colours a terminal may have over the theme's: their keys and names.
-pub const COLORS: [(&str, &str); 8] = [
-    ("terminal.colors.foreground", "Foreground"),
-    ("terminal.colors.background", "Background"),
-    ("terminal.colors.cursor", "Cursor"),
-    ("terminal.colors.selection", "Selection"),
-    ("terminal.colors.gutter_fg", "Gutter text"),
-    ("terminal.colors.gutter_bg", "Gutter background"),
-    ("terminal.colors.clock_fg", "Gutter clock"),
-    ("terminal.colors.line_number_fg", "Gutter line number"),
-];
 
 /// The settings, as signals: writing one saves it.
 #[derive(Clone, Copy)]
@@ -38,16 +27,8 @@ pub struct Prefs {
     pub colour_theme: Signal<usize>,
     /// The UI's text, in percent of the kit's sizes.
     pub ui_text: Signal<f64>,
-    pub font_size: Signal<f64>,
-    /// A family of the system; empty, the kit's mono face.
-    pub font_family: Signal<String>,
-    pub line_height: Signal<f64>,
-    /// The terminal's weight, an index of `WEIGHTS`.
-    pub weight: Signal<usize>,
-    /// Colours over the theme's, as `#rrggbb`; empty, the theme's.
-    pub colors: [Signal<String>; 8],
-    /// The gutter: when each row was written and its line number.
-    pub show_gutter: Signal<bool>,
+    /// How terminals look: their text, cells, room and colours.
+    pub look: LookPrefs,
     pub cursor: Signal<usize>,
     pub blink: Signal<bool>,
     pub scrollback: Signal<f64>,
@@ -114,12 +95,7 @@ impl Prefs {
             theme: choice(s, "appearance.theme", &THEMES),
             colour_theme: choice(s, "appearance.colour_theme", &COLOUR_THEMES),
             ui_text: s.value("appearance.ui_text_percent", 100.0),
-            font_size: s.value("terminal.font_size", 13.0),
-            font_family: s.value("terminal.font_family", String::new()),
-            line_height: s.value("terminal.line_height", 1.5),
-            weight: choice(s, "terminal.font_weight", &WEIGHTS),
-            colors: COLORS.map(|(key, _)| s.value(key, String::new())),
-            show_gutter: s.value("terminal.show_gutter", false),
+            look: LookPrefs::load(),
             cursor: choice(s, "terminal.cursor", &CURSORS),
             blink: s.value("terminal.cursor_blink", false),
             scrollback: s.value("terminal.scrollback", 10_000.0),
@@ -170,27 +146,7 @@ impl Prefs {
 impl Prefs {
     /// How a terminal looks, read where it is called.
     pub fn look(&self) -> quadra_term::TermLook {
-        let [foreground, background, cursor, selection, gutter_fg, gutter_bg, clock_fg, line_number_fg] =
-            self.colors.map(|it| it.with(|words| quadra::Color::parse_hex(words.trim())));
-        quadra_term::TermLook {
-            family: self.font_family.get(),
-            size: self.font_size.get().clamp(6.0, 48.0) as f32,
-            line_height: self.line_height.get().clamp(1.0, 2.5) as f32,
-            gutter: self.show_gutter.get(),
-            colors: quadra_term::TermColors {
-                foreground,
-                background,
-                cursor,
-                selection,
-                gutter_fg,
-                gutter_bg,
-                clock_fg,
-                line_number_fg,
-                ..Default::default()
-            },
-            weight: WEIGHT_OF[self.weight.get().min(8)],
-            ..quadra_term::TermLook::default()
-        }
+        self.look.look()
     }
 
     /// The SSH keepalive a new connection asks for.

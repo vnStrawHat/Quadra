@@ -1,8 +1,8 @@
 //! The settings of how terminals look and behave (specs/19, "Settings"): the pages
 //! Appearance and Terminal.
 
-use quadra::{Signal, View, effect, signal, untrack};
-use quadra_design::{SettingsGroup, input, number_input, segmented, select, switch};
+use quadra::{Signal, View, effect, row, signal, untrack};
+use quadra_design::{SettingsGroup, color_input, input, number_input, segmented, select, switch, token};
 
 use crate::prefs::{self, Prefs};
 
@@ -19,27 +19,58 @@ pub(super) fn appearance(p: Prefs) -> Vec<SettingsGroup> {
             "All of 1Term's text, the terminals' with it, in percent.",
             number_input(p.ui_text).range(75.0, 200.0).step(5.0),
         );
+    let l = p.look;
     let text = SettingsGroup::new("Terminal text")
         .row(
             "Font family",
             "A family of this machine; empty, the kit's mono face.",
-            input(p.font_family).placeholder("Mono").width(240.0),
+            input(l.font_family).placeholder("Mono").width(240.0),
         )
-        .row("Font size", "In pixels.", number_input(p.font_size).range(8.0, 32.0))
-        .row("Weight", "Where the face has it.", select(prefs::WEIGHTS, p.weight).width(240.0))
-        .row("Line height", "Times the size.", number_input(p.line_height).range(1.0, 2.5).step(0.1))
-        .row("Gutter", "When each line was written, and its number.", switch(p.show_gutter));
-    let colors = prefs::COLORS.iter().zip(p.colors).fold(
+        .row(
+            "Fallback fonts",
+            "Families tried in order, separated by commas, for what the font lacks (icons of patched fonts).",
+            input(l.fallbacks).placeholder("Fallback fonts").width(240.0),
+        )
+        .row("Font size", "In pixels.", number_input(l.font_size).range(8.0, 32.0))
+        .row("Weight", "Where the face has it.", select(prefs::WEIGHTS, l.weight).width(240.0))
+        .row("Line height", "Times the size.", number_input(l.line_height).range(1.0, 2.5).step(0.1))
+        .row(
+            "Cell width",
+            "In pixels; 0, the width of the font's 0.",
+            number_input(l.cell_width).range(0.0, 48.0).step(0.5).test_id("cell-width"),
+        )
+        .row("Gutter", "When each line was written, and its number.", switch(l.show_gutter));
+    let text = prefs::PADDING.iter().zip(l.padding).fold(text, |group, (&(key, name, _), side)| {
+        let id = &key["terminal.".len()..];
+        group.row(name, "Room around the grid, in pixels.", number_input(side).range(0.0, 64.0).test_id(id))
+    });
+    let theirs = [token::EDITOR_FOREGROUND, token::CANVAS, token::EDITOR_CURSOR, token::EDITOR_SELECTION];
+    let colors = prefs::COLORS.iter().zip(l.colors).enumerate().fold(
         SettingsGroup::new("Terminal colours"),
-        |group, ((_, name), color)| {
-            group.row(
-                name,
-                "#rrggbb over the theme's; empty, the theme's.",
-                input(color).placeholder("Theme").width(120.0),
-            )
+        |group, (n, ((_, name), color))| {
+            let field = color_input(color).placeholder(name);
+            let field = match theirs.get(n) {
+                Some(&role) => field.fallback(role),
+                None => field,
+            };
+            group.row(name, "#rrggbb over the theme's; empty, the theme's.", field)
         },
     );
-    vec![theme, text, colors]
+    let colors = colors.row(
+        "Minimum contrast",
+        "Text is lightened or darkened to stand out this much from its background; 1 is off.",
+        number_input(l.min_contrast).range(1.0, 21.0).step(0.5).test_id("min-contrast"),
+    );
+    let ansi = (0..8).fold(SettingsGroup::new("ANSI colours"), |group, n| {
+        let field =
+            |at: usize| color_input(l.ansi[at]).placeholder(prefs::ANSI[at].1).fallback(token::ANSI[at]);
+        group.row(
+            prefs::ANSI[n].1,
+            "Normal and bright, #rrggbb; empty, the theme's.",
+            row().gap(8.0).child(field(n)).child(field(n + 8)),
+        )
+    });
+    vec![theme, text, colors, ansi]
 }
 
 pub(super) fn terminal(p: Prefs) -> Vec<SettingsGroup> {

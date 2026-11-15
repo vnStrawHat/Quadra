@@ -987,6 +987,7 @@ dependencies = [
  "oneterm-ssh",
  "quadra",
  "quadra-design",
+ "quadra-render",
  "quadra-shell",
  "quadra-term",
  "quadra-testing",

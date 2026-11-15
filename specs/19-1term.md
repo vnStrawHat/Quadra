@@ -185,13 +185,19 @@ Saved to `settings.json` in the app's
 folder as they change (specs/15). Appearance: the theme (System, Dark, Light), and a colour theme over
 it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/themes`, made by
 `.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
-empty for the kit's mono face; size; weight, Normal and Thin to Black; line height, 1.5) and colours over the theme's
-(foreground, background, cursor, selection as `#rrggbb`), the view's `TermLook` (specs/18):
+empty for the kit's mono face; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
+Nerd Font"; size; weight, Normal and Thin to Black; line height, 1.5; the cell's width, 0 for the advance of `0`, up to
+48 px; the padding a side, top 0, right 5, bottom 0, left 10, each 0 to 64 px) and colours over the theme's
+(foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_input`, its swatch the
+theme's colour while it is empty but for the gutter's; the minimum contrast, 4.5, from 1, off, to 21; the sixteen ANSI colours, a row a
+colour with its normal and bright fields), the view's `TermLook` (specs/18). Keys: `terminal.font_fallbacks`,
+`terminal.cell_width`, `terminal.padding.top` (`right`, `bottom`, `left`), `terminal.colors.min_contrast`,
+`terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`):
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
 blink, scrollback lines, the default local shell, where new spaces start (active space's cwd,
 home, last used); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
-the view's `TermSettings` (specs/18). Not yet: ligatures (a glyph is a cell), the ANSI colours one by one, "last used", a bell's
+the view's `TermSettings` (specs/18). Not yet: ligatures (a glyph is a cell), "last used", a bell's
 sound or flash. A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
 blocked; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound / badge and flash /
 ignore; OSC 9: toast 6 s / until dismissed / silent.

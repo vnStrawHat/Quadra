@@ -7,6 +7,7 @@ use std::time::Instant;
 
 use oneterm::{Launch, NewSession, OneTerm, keymap};
 use quadra::{Key, Mods, Role, SemanticAction, Settings, provide};
+use quadra_render::{Kind, Step};
 use quadra_term::vt::CursorShape;
 use quadra_term::{Session, echo};
 use quadra_testing::Harness;
@@ -135,4 +136,58 @@ fn new_local_shells_are_logged_where_the_settings_say() {
     assert!(name.starts_with("local_") && name.ends_with(".log"), "{name}");
     let text = std::fs::read_to_string(&files[0]).unwrap();
     assert!(text.starts_with('[') && text.ends_with("] hello\n"), "{text:?}");
+}
+
+#[test]
+fn the_look_page_sets_the_room_the_cells_the_contrast_the_ansi_colours_and_the_fallbacks() {
+    let mut a = app();
+    let s = a.made.borrow()[0].1.clone();
+    let cols = s.size().cols;
+    a.h.get_by_role(Role::Button, "Settings").click();
+    a.h.settle();
+    for words in
+        ["Fallback fonts", "Cell width", "Padding top", "Padding left", "Minimum contrast", "ANSI colours"]
+    {
+        assert!(a.says(words), "{words}");
+    }
+    // More room at the left: fewer columns, a cell's worth for each 8 or 9 px.
+    a.h.get_by_test_id("padding.left").set_value("110");
+    a.h.settle();
+    assert_eq!(a.settings.value("terminal.padding.left", 0.0).get(), 110.0);
+    let roomier = s.size().cols;
+    assert!(roomier < cols && roomier + 20 > cols, "{cols} then {roomier}");
+    a.h.get_by_test_id("cell-width").set_value("20");
+    a.h.settle();
+    assert!(s.size().cols < roomier / 2, "wider cells: {roomier} then {}", s.size().cols);
+    a.h.get_by_role(Role::TextInput, "Bright red").set_value("#400000");
+    a.h.get_by_role(Role::TextInput, "Fallback fonts").set_value("Cascadia Code, Segoe UI Symbol");
+    a.h.settle();
+    assert_eq!(a.settings.value("terminal.colors.ansi.bright_red", String::new()).get(), "#400000");
+    a.h.get_by_role(Role::Button, "Done").click();
+    a.h.settle();
+
+    let families = a.h.tree.fonts().borrow().text.fallbacks().to_vec();
+    assert_eq!(families, ["Cascadia Code", "Segoe UI Symbol"]);
+    a.feed(0, b"[91mX");
+    // A dark red on the dark canvas: lightened to the contrast of 4.5, then as it is with 1.
+    let dark_red = quadra::Color::rgb(0x400000).to_array();
+    assert!(!painted(&mut a.h, dark_red), "moved to the contrast");
+    a.h.get_by_role(Role::Button, "Settings").click();
+    a.h.settle();
+    a.h.get_by_test_id("min-contrast").set_value("1");
+    a.h.get_by_role(Role::Button, "Done").click();
+    a.h.settle();
+    assert!(painted(&mut a.h, dark_red), "a glyph in the bright red set");
+}
+
+/// Whether a glyph is drawn in `color`.
+fn painted(h: &mut Harness, color: [f32; 4]) -> bool {
+    h.frame();
+    let scene = h.tree.scene();
+    h.renderer.steps().iter().any(|step| match step {
+        Step::Layer { id, .. } => {
+            scene.layer(*id).instances().iter().any(|i| i.kind == Kind::Mono as u32 && i.color == color)
+        }
+        _ => false,
+    })
 }

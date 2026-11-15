@@ -7,7 +7,9 @@ use crate::token::TokenKind;
 /// What an open string is: these are added to 1000 and its quote.
 const RAW: u32 = 256; // no escapes
 const TRIPLE: u32 = 512; // closed by three quotes
-const HASH: u32 = 1024; // a raw string with one hash: r#"..."#
+const HASH: u32 = 1024; // a raw string with hashes: r#"..."#, r##"..."##
+/// How many hashes a raw string has, from this bit up.
+const HASHES: u32 = 11;
 
 impl Lex<'_> {
     /// Goes past what opens a string where it is and gives the string's state; 0 when
@@ -19,9 +21,10 @@ impl Lex<'_> {
             k += 1;
         }
         let q = self.byte(k);
-        if k > self.i && q == b'#' && self.byte(k + 1) == b'"' && raw {
-            self.i = k + 2;
-            return 1000 + u32::from(b'"') + RAW + HASH;
+        let hashes = self.s[k.min(self.s.len())..].iter().take_while(|&&b| b == b'#').count().min(255);
+        if k > self.i && hashes > 0 && self.byte(k + hashes) == b'"' && raw {
+            self.i = k + hashes + 1;
+            return 1000 + u32::from(b'"') + RAW + HASH + ((hashes as u32) << HASHES);
         }
         if !(has(sp.quotes, q) || has(sp.multi_quotes, q)) {
             if k == self.i && q == b'[' && sp.long_brackets && self.at(1) == b'[' {
@@ -55,7 +58,10 @@ impl Lex<'_> {
         if kind & TRIPLE != 0 {
             3 * usize::from(here(&[q, q, q]))
         } else if kind & HASH != 0 {
-            2 * usize::from(here(b"\"#"))
+            let hashes = (kind >> HASHES) as usize;
+            let closes = self.at(0) == b'"'
+                && self.s[self.i + 1..].iter().take_while(|&&b| b == b'#').count() >= hashes;
+            (hashes + 1) * usize::from(closes)
         } else if q == b'[' {
             2 * usize::from(here(b"]]"))
         } else {

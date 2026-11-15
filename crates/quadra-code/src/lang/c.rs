@@ -120,7 +120,6 @@ pub const GO: LangSpec = LangSpec {
     ..LIKE_C
 };
 
-// ponytail: a raw string with two hashes or more (r##"..."##) ends at the first "#.
 pub const RUST: LangSpec = LangSpec {
     names: "rust rs",
     keywords: "as async await const crate dyn enum extern fn impl let mod move mut pub ref self Self static struct super trait type union unsafe use where",

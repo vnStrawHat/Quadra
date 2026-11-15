@@ -1041,7 +1041,8 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   deep the key of the scalar is); Markdown (fences, math, the marks in a line).
 - **The others are rows of one table** (`LangSpec`), read by one scanner: the words of the
   language (keywords, control, types, constants, builtins), its comments, its quotes and
-  what they hold (escapes, expressions, raw strings, three quotes, strings over lines), and
+  what they hold (escapes, expressions, raw strings with any count of hashes, closed by a
+  quote and as many, three quotes, strings over lines), and
   switches for what families of languages differ in (`$name`, `@name`, directives after a
   `#`, attributes, lifetimes, `name!`, keys before a `:` or an `=`, sections, selectors).
   The rows: C, C++, C#, Java, Kotlin, Swift, Go, Rust, JavaScript, TypeScript, Dart,

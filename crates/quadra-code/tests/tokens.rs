@@ -135,6 +135,12 @@ fn the_languages_like_c() {
     has(&s[0], &["fn:keyword", "<:operator 'a:attribute >:operator", "&:operator 'a:attribute str:type"]);
     has(&s[0], &[r##"r#"q"#:str"##, "println!:function", "'x':str"]);
     has(&s[1], &["#[derive(Debug)]:attribute", "let:keyword", "1_000.5e-3:number"]);
+    // Two hashes and more: closed by a quote and as many hashes, over lines too.
+    let first = r####"let a = r##"x"#y"##; let b = r###"one"###;"####;
+    let s = spans("rs", &[first, r####"let c = r##"q"#"####, r####"z"## + 1;"####]);
+    has(&s[0], &[r####"r##"x"#y"##:str"####, r####"r###"one"###:str"####, "let:keyword"]);
+    has(&s[1], &[r####"r##"q"#:str"####]);
+    has(&s[2], &[r####"z"##:str"####, "+:operator"]);
     let s = spans("javascript", &["const a = `x ${b}", "y`; if (a) { return f(1) } // c"]);
     has(&s[0], &["const:keyword", "`x :str", "${:escape", "b:variable"]);
     has(&s[1], &["y`:str", "if:control", "return:control", "f:function", "// c:comment"]);

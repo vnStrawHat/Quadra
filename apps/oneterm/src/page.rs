@@ -41,6 +41,32 @@ const KEYS: [(&str, &str); 8] = [
     ("ctrl-shift-l", "Lock"),
 ];
 
+/// Opens the settings in a window of their own, or brings it to the front: its own title bar
+/// and the page. It closes when 1Term locks, and with the main window.
+pub(crate) fn open_window(windows: &quadra::Windows, model: &Model) {
+    let model = model.clone();
+    let options =
+        quadra::WindowOptions::new("1Term Settings").size(980.0, 700.0).custom_frame().remember("settings");
+    windows.open(options, move || {
+        let (locked, me) = (model.lock().locked, quadra::window());
+        effect(move || {
+            if locked.get() {
+                me.close_now();
+            }
+        });
+        let mark = row()
+            .align_items(Align::Center)
+            .gap(8.0)
+            .padding_left(12.0)
+            .child(icon(icons::SETTINGS).size(16.0).color(token::ACCENT))
+            .child(div().font_weight(600).child(text("1Term Settings")));
+        // Using the settings is using 1Term: idle starts again.
+        crate::locked::watches(quadra_design::root(), model.lock())
+            .child(quadra_design::titlebar("").height(38.0).control(mark).control(div().grow(1.0)))
+            .child(page(&model))
+    });
+}
+
 pub(crate) fn page(model: &Model) -> quadra::Div {
     // The title bar says the page and has Done.
     let (p, current, query) = (model.prefs(), model.ui().page, signal(String::new()));

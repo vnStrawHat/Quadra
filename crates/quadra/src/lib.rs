@@ -34,7 +34,7 @@ use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
 pub use quadra_app::{
     AppDirs, AppError, Arg, Feature, FrameReport, I18n, Language, Locale, Result, Router, Settings, Stored,
-    SystemText, TextSize, language, log, router, t, t_with, text_size, time,
+    SystemText, TextSize, Windows, language, log, router, t, t_with, text_size, time,
 };
 pub use quadra_async::{
     Background, CancelToken, Full, Inbox, Panicked, Sender, Task, Timer, background, background_with,

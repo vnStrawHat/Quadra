@@ -141,6 +141,7 @@ impl<R: Renderer> App<R> {
     /// something to do asks for a frame, and every window does when the renderer wants one.
     pub(crate) fn request_frames(&mut self) {
         self.tasks.run_ready();
+        self.open_asked();
         let all = self.renderer.wants_frame();
         let mut closed = Vec::new();
         for w in &mut self.windows {

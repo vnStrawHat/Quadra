@@ -127,7 +127,9 @@ connected to it) and its address at the right (Recent: the host and how long ago
 
 ## Settings
 
-A page in the window (the kit's `settings` in its layout of cards: pages with icons, each with
+A window of its own (980 by 700, its place kept; the title bar's Settings opens it or brings
+it to the front; it closes when 1Term locks and with the main window; where no window can open,
+the harness, the page shows in the main window with Done), the kit's `settings` in its layout of cards: pages with icons, each with
 what it is about, groups with titles; the title bar names the page), a search, pages:
 Appearance, Terminal, Tabs & spaces, SSH & hosts (the count of saved hosts with Add SSH host,
 the recent targets with Forget), SFTP (the downloads folder), Notifications & signals, Status bar,

@@ -16,21 +16,20 @@ mod services;
 mod settings;
 mod text_size;
 pub mod time;
+mod windows;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_async::{Executor, Timers};
-use quadra_platform::{
-    Appearance, Cursor, Platform, PlatformError, PlatformWindow, WindowHandle, WindowId, WindowOptions,
-};
+use quadra_platform::{Appearance, Cursor, Platform, PlatformError, PlatformWindow, WindowId, WindowOptions};
 use quadra_prim::{Color, Rect};
 use quadra_reactive::{Scope, Signal, memo, provide, signal};
-use quadra_render::{DeviceSize, Pixels, RenderError, Renderer, SurfaceId, SurfaceTarget};
+use quadra_render::{DeviceSize, Pixels, RenderError, Renderer, SurfaceId};
 use quadra_text::TextBackend;
 use quadra_tree::{Fonts, Keymap, Theme, Tree};
-use quadra_view::{Images, TextScale, View, mount_with};
+use quadra_view::{Images, TextScale, View};
 
 pub use i18n::{Arg, I18n, Language, language, t, t_with};
 pub use locale::Locale;
@@ -40,6 +39,7 @@ pub use router::{Router, router};
 pub use services::AppDirs;
 pub use settings::{Settings, Stored};
 pub use text_size::{SystemText, TextSize, text_size};
+pub use windows::Windows;
 
 type FrameHook = Box<dyn FnMut(&FrameReport)>;
 
@@ -55,19 +55,21 @@ pub(crate) struct AppWindow {
     pub(crate) window: Box<dyn PlatformWindow>,
     /// The name its place is kept under, if it is.
     remember: Option<String>,
+    /// The window it was opened from, which it closes with.
+    parent: Option<WindowId>,
 }
 
 pub struct App<R: Renderer> {
     pub(crate) platform: Rc<dyn Platform>,
     /// The renderer, open to tests and tools: its counters, and losing its device.
     pub renderer: R,
-    fonts: Rc<RefCell<Fonts>>,
+    pub(crate) fonts: Rc<RefCell<Fonts>>,
     pub(crate) windows: Vec<AppWindow>,
     /// The scope of everything the app creates.
-    root: Scope,
+    pub(crate) root: Scope,
     clear: Color,
     /// The key bindings every window of the app uses.
-    keymap: Rc<Keymap>,
+    pub(crate) keymap: Rc<Keymap>,
     /// What the platform's timers mean (specs/11).
     pub(crate) timers: Rc<Timers>,
     /// The tasks of the app's views, run between events.
@@ -77,13 +79,15 @@ pub struct App<R: Renderer> {
     theme: Signal<Rc<Theme>>,
     /// The system's appearance, in the context of views too.
     pub(crate) appearance: Signal<Appearance>,
-    on_error: Box<dyn FnMut(&AppError)>,
+    pub(crate) on_error: Box<dyn FnMut(&AppError)>,
     on_presented: Option<FrameHook>,
     /// Where the app keeps its files, once it is told (specs/15).
     pub(crate) dirs: Option<AppDirs>,
     pub(crate) settings: Rc<Settings>,
     pub(crate) args: Vec<String>,
     pub(crate) quit_on_last: bool,
+    /// The windows views asked for.
+    waiting: windows::Waiting,
 }
 
 impl<R: Renderer> App<R> {
@@ -128,6 +132,7 @@ impl<R: Renderer> App<R> {
             settings,
             args: std::env::args().skip(1).collect(),
             quit_on_last: true,
+            waiting: windows::Waiting::default(),
         }
     }
 
@@ -186,32 +191,6 @@ impl<R: Renderer> App<R> {
         Ok(self)
     }
 
-    pub fn open_window<V: View>(
-        &mut self,
-        options: WindowOptions,
-        view: impl FnOnce() -> V,
-    ) -> Result<WindowId> {
-        let options = self.recall(options);
-        let window = self.platform.open_window(&options)?;
-        let target = match window.handle() {
-            WindowHandle::Win32 { hwnd } => SurfaceTarget::Win32 { hwnd },
-            WindowHandle::Headless => SurfaceTarget::Offscreen,
-        };
-        let surface = self.renderer.create_surface(target, device_size(&*window))?;
-        let scope = self.root.run(Scope::child);
-        let mut tree = Tree::new(self.fonts.clone());
-        tree.set_keymap(self.keymap.clone());
-        let clock = self.platform.clone();
-        tree.set_clock(move || clock.now());
-        self.follow(&mut tree, &scope);
-        scope.run(|| mount_with(&mut tree, view));
-        window.request_frame();
-        let id = window.id();
-        let (caret, cursor, remember) = (None, Cursor::Arrow, options.remember);
-        self.windows.push(AppWindow { scope, tree, surface, caret, cursor, window, remember });
-        Ok(id)
-    }
-
     /// Runs the platform's loop until the last window closes.
     pub fn run(mut self) -> Result<()> {
         let platform = self.platform.clone();
@@ -236,18 +215,6 @@ impl<R: Renderer> App<R> {
         let surface =
             surface.ok_or_else(|| PlatformError(format!("{window:?} is not a window of the app")))?;
         Ok(self.renderer.read_pixels(surface)?)
-    }
-
-    pub(crate) fn close(&mut self, window: WindowId) {
-        let Some(at) = self.windows.iter().position(|w| w.window.id() == window) else { return };
-        let closed = self.windows.remove(at);
-        self.remember(closed.remember.as_deref(), &*closed.window);
-        closed.scope.dispose();
-        self.renderer.forget_scene(closed.tree.scene().id());
-        self.renderer.drop_surface(closed.surface);
-        if self.windows.is_empty() && self.quit_on_last {
-            self.platform.quit();
-        }
     }
 
     pub(crate) fn draw(&mut self, window: WindowId) {

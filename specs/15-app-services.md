@@ -105,6 +105,12 @@ forward buttons of a mouse over it.
   app's own), such handlers are asked until one says no, and the window closes only if none
   does. A handler that says no asks the user (a dialog) and closes the window itself later
   with `window().close_now()`, taken while the view is built, which asks nothing.
+- **Windows a view opens**: `Windows` is in the context of every window's views;
+  `windows.open(options, || view)` opens a window after the entry point that asked (views
+  cannot reach the app while a handler runs). The window belongs to the one it was asked from
+  and closes with it. One kept under a name (`WindowOptions::remember`) that is open already
+  closes first, so asking again brings the window to the front, its place kept. The harness
+  has no `Windows`: a view that finds none shows the same thing in its own window.
 - **The last window**: the app quits when its last window closes, unless
   `quit_on_last_window(false)` (an app of the tray).
 - **One instance**: opt-in, in `quadra-shell` (16).

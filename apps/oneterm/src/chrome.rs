@@ -33,9 +33,15 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
             .size(quadra_design::Size::Sm)
             .on_click(move || hosts.update(|on| *on = !*on)),
     );
+    // The settings open in a window of their own; where there are no windows to open (the
+    // harness), in this one.
+    let (windows, opens) = (quadra::use_context::<quadra::Windows>(), seen.clone());
     let gear = tooltip(
         "Settings",
-        icon_button(icons::SETTINGS, "Settings").on_click(move || open.update(|on| *on = !*on)),
+        icon_button(icons::SETTINGS, "Settings").on_click(move || match &windows {
+            Some(windows) => crate::page::open_window(windows, &opens),
+            None => open.update(|on| *on = !*on),
+        }),
     );
     let collapse = div()
         .display(shown(move || expanded.get()))

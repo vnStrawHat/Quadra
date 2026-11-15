@@ -147,14 +147,13 @@ user on 2026-11-14; specs/17 is the design of the base and of the open tokens.
 R1 comes before any kit work on purpose: the paradigm is proven with numbers on four small
 programs before the components are written against it.
 
-**On hold**: `quadra-term`. The user put it on hold on 2026-11-11; it is not built in any phase
-above until the user says so. Its behaviour, limits and corpus stay specified (behaviour/17),
-and the surface-widget design it needs (04, 07) is built and exercised by `quadra-code`. When
-it resumes, its exit is: the terminal corpus, the limit tests and the fuzzers pass, and
-`bench/term` is at or above the V numbers.
+**`quadra-term`**: on hold from 2026-11-11, resumed by the user on 2026-11-15 over the
+user's own terminal engine, `oneterm-vt` (18): the parser, grid, limits and corpus are the
+engine's and tested there; Quadra writes the view, the input and the delivery.
 
-**After Quadra**: Notes, Folio, Cluster and OneTerm, each from its spec in the V repository.
-Decisions that belong to an app, such as OneTerm's SSH client, are taken then.
+**After Quadra**: the apps, each from its spec. 1Term (the V repository's OneTerm, redesigned
+by the user) is first, from 2026-11-15 (19); Notes, Folio and Cluster follow. Decisions that
+belong to an app, such as 1Term's SSH engine, are taken when its phase starts.
 
 ## Risks
 

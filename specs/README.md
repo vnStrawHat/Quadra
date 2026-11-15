@@ -31,6 +31,8 @@ designed from its goals, and what survives from the V implementation survives on
 | [15-app-services.md](15-app-services.md) | Settings, window state, local time, language, log and crashes, pages, start and end |
 | [16-shell.md](16-shell.md) | Dialogs, opening, tray and notifications, one instance, crash reports, packaging |
 | [17-headless.md](17-headless.md) | Components without a look: parts, the behaviour's numbers, open tokens, what moves out of the kit |
+| [18-term.md](18-term.md) | The terminal: a session over the `oneterm-vt` engine, its view, input and delivery |
+| [19-1term.md](19-1term.md) | 1Term, the terminal app: phases, window, tabs and spaces, signals, settings, lock |
 
 Reading order: 00, 01, 02, 03, 04, 05, then the rest.
 
@@ -51,10 +53,10 @@ the old frame pipeline) they are superseded by the files above.
 | [13-apps-roadmap](behaviour/13-apps-roadmap.md) | The After-v1 list | 00 for phases |
 | [15-design-language](behaviour/15-design-language.md) | The visual language and themes | nothing |
 | [16-devtool-kit](behaviour/16-devtool-kit.md) | Panels, tables, trees, status | 13 |
-| [17-terminal](behaviour/17-terminal.md) | The terminal's behaviour and limits | 04, 07 for the widget |
+| [17-terminal](behaviour/17-terminal.md) | The terminal's behaviour (its model, parser and limits are the engine's) | 18 |
 | [18-editor](behaviour/18-editor.md) | The code editor's behaviour | 04, 07 for the widget |
 | [19-live-data](behaviour/19-live-data.md) | Live table, log view, value viewer, charts | 13 |
 | [21-markdown-app](behaviour/21-markdown-app.md) | Markdown rendering rules, math, diagrams | 13 |
 
 Not carried: the V specs of the old architecture (00, 01, 03, 06, 07, 11, 12, 14), the gap
-analysis (20), and the apps (22–27), which are ported after Quadra is complete.
+analysis (20), and the apps (22–27): 1Term (19) reads OneTerm's there where its design is silent.

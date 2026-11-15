@@ -228,5 +228,8 @@ Habits that cost time when forgotten:
 - The V runner and bench are built in the V repository (`tools/v.sh -cc clang -prod ...`; the
   runner needs `-cflags -Wno-int-conversion`).
 
-`quadra-term` is **on hold** by the user's decision: do not build it until told. The apps come
-after Quadra is complete.
+**1Term has started (2026-11-15, the user's decision)**: `quadra-term` (specs/18) is resumed over the user's own engine
+`oneterm-vt` (git tag v0.2.0, a clone to read in `.cache/vendor/oneterm-vt`; never edit that repository), and the app is
+`apps/oneterm` (specs/19), drawn after the user's design canvas "1Term". P1 is local shells (milestones M1-M6); P2 is SSH and
+SFTP, whose engine the user decides when P2 starts. The V repository's specs 22-27 and `apps/oneterm` are the reference
+for behaviour the design leaves open.

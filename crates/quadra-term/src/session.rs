@@ -92,6 +92,7 @@ impl Session {
             statuses: Statuses::default(),
             stamps: Default::default(),
             marked: false,
+            status: None,
         };
         let engine = Arc::new(Mutex::new(engine));
         let events = inbox::<Event>();

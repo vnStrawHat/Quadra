@@ -13,6 +13,7 @@ use quadra_tree::{GlyphTile, Inherited, MeasureCx, NodeId, PaintCx, Theme, Tree,
 
 use crate::contrast::Contrast;
 use crate::feed::Engine;
+use crate::highlight::Marks;
 use crate::look::TermColors;
 use crate::session::Session;
 
@@ -49,6 +50,13 @@ pub struct TerminalWidget {
     pub(crate) gutter_rows: Vec<Option<(u64, Option<Instant>)>>,
     pub(crate) clock: (Instant, i64),
     pub(crate) label: String,
+    /// Tokens shaped together; semantic highlighting, its classes by row, and the status of
+    /// the command that ended last.
+    pub(crate) ligatures: bool,
+    pub(crate) highlighting: bool,
+    pub(crate) marks: Marks,
+    pub(crate) status: Option<i32>,
+    pub(crate) shaping: crate::shape::Scratch,
 }
 
 pub(crate) fn color(rgb: Rgb) -> Color {
@@ -88,6 +96,11 @@ impl TerminalWidget {
             gutter_rows: Vec::new(),
             clock: (Instant::now(), 0),
             label: String::new(),
+            ligatures: false,
+            highlighting: false,
+            marks: Marks::default(),
+            status: None,
+            shaping: Default::default(),
         }
     }
 
@@ -113,7 +126,8 @@ impl TerminalWidget {
     /// gutter needs more digits, so the grid is sized again.
     pub(crate) fn refresh(&mut self) -> bool {
         let mut engine = self.session.engine();
-        let Engine { term, stamps, .. } = &mut *engine;
+        let Engine { term, stamps, status, .. } = &mut *engine;
+        self.status = *status;
         // ponytail: a `?2026` block held past its deadline waits for the next output or key
         // to be shown; a timer at `sync().deadline()` when a program leaves one open.
         term.snapshot_update(&mut self.state, Instant::now());
@@ -144,6 +158,12 @@ impl TerminalWidget {
     /// The glyphs the last paint holds.
     pub fn tiles_painted(&self) -> usize {
         self.tiles.len()
+    }
+
+    /// The logical lines scanned for semantic highlighting so far: a paint scans those that
+    /// changed.
+    pub fn lines_scanned(&self) -> usize {
+        self.marks.scanned
     }
 }
 

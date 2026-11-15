@@ -147,6 +147,7 @@ impl View for Terminal {
                         w.fallbacks = look.fallbacks;
                     }
                     (w.pad, w.colors, w.gutter) = (look.padding, look.colors, look.gutter);
+                    (w.ligatures, w.highlighting) = (look.ligatures, look.highlighting);
                     w.paint_colors();
                 }
                 tree.mark_paint(id);

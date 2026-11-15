@@ -8,6 +8,7 @@ use oneterm_vt::Palette;
 use quadra_prim::{Color, Edges};
 use quadra_tree::TextValues;
 
+use crate::highlight::Highlight;
 use crate::widget::rgb;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,6 +32,10 @@ pub struct TermLook {
     pub min_contrast: f32,
     /// The gutter at the left: when each row was written and its line number.
     pub gutter: bool,
+    /// The cells of a word shaped together, so the font's ligatures show; off, a glyph a cell.
+    pub ligatures: bool,
+    /// Text in the default foreground coloured by what it means (`Highlight`).
+    pub highlighting: bool,
     pub colors: TermColors,
 }
 
@@ -46,6 +51,8 @@ impl Default for TermLook {
             padding: Edges::all(8.0),
             min_contrast: 1.0,
             gutter: false,
+            ligatures: false,
+            highlighting: false,
             colors: TermColors::default(),
         }
     }
@@ -67,6 +74,9 @@ pub struct TermColors {
     /// The time and the line number; else `gutter_fg`.
     pub clock_fg: Option<Color>,
     pub line_number_fg: Option<Color>,
+    /// A colour a class of semantic highlighting, at `Highlight::index`; else the palette's
+    /// ANSI colour `Highlight::ansi`.
+    pub highlights: [Option<Color>; Highlight::COUNT],
 }
 
 impl TermLook {

@@ -71,7 +71,40 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   left), the minimum contrast, and colours that stand over the theme's (`TermColors`:
   foreground, background, cursor, selection, the sixteen ANSI). A new look sets the node's text
   values, the padding and the palette, and sizes the grid again after layout: the view is not
-  mounted again, the session keeps its screen. Ligatures are not drawn: a glyph is a cell.
+  mounted again, the session keeps its screen.
+- Ligatures (`TermLook::ligatures`, off by default; off, a glyph a cell): a row's cells are shaped
+  in tokens, so the font's ligatures and contextual forms (on by default in a face, `liga` and
+  `calt`) show: a token is a run of narrow cells of one style run, a scalar each, and no blank;
+  wide cells, clusters, drawings (as for contrast) and the cell of a block cursor stay a glyph a
+  cell. The grid stays: a token's glyphs fall in groups by the character they start at (the
+  shaped glyph's `cluster`), and each group is put at its character's column, in the middle of
+  the cells it covers (to the next group's column): a ligature of two characters spans their
+  two cells. A glyph's colour is its group's cell's. Tokens go through the text system's cache
+  of words, so a row that did not change costs lookups, not shaping; nothing is shaped by row.
+- Semantic highlighting (`TermLook::highlighting`, off by default): text in the default
+  foreground is coloured by what it means, per class (`Highlight`): the prompt's sign, the
+  command and its options; the words of errors, success, warnings, information and debugging
+  (whole words, any case, a fixed list; `not supported` is an error); paths, IPv4 and IPv6
+  addresses, MAC addresses, dates and times, numbers, quoted strings, operators, brackets, URLs
+  (`quadra_text::find_urls`), and the permission bits of `ls -l` (type, read, write, execute,
+  special, none). A cell a program coloured keeps its colour; URLs and addresses are also
+  underlined. The unit is a logical line (rows joined by soft wraps, a viewport's first row
+  starts one). Its role comes from the shell's OSC 133 zones on the cells: a line whose first
+  marked cell is a prompt, after a line that was not a prompt or that closed its prompt (has
+  input cells), is a prompt line (the sign is the last sign glyph before the first input cell,
+  or the last non-blank there; what follows is the command); one whose first marked cell is
+  output is output; anything else, or the viewport's first line, is told by the prompt's look
+  (`user@host:~$ `, `[user ~]# `, `C:\path>`, `PS C:\path>`). On a prompt line the path in the
+  prompt is a path, the first word after the sign is the command (again after `;`, `|`, `&&`,
+  `||`), words with `-` are options, the rest is left. On an output line the matchers run in
+  order, each only on what the ones before left: strings, permissions, keywords, MAC, IPv6,
+  dates and times, IPv4, paths, numbers, options, operators and brackets; URLs over all. After a
+  command ended (OSC 133 `D` with a status), while the viewport is at the bottom, the sign of the
+  prompt above the newest one takes success's colour for 0, error's otherwise. Colours:
+  `TermColors::highlights`, a colour a class; unset, an ANSI colour of the palette each class
+  names (`Highlight::ansi`), so a colour theme colours it too. Cost: classes are kept by row id,
+  with the row's stamp, its line's rows and the mark of the line above; a paint scans only lines
+  whose key changed, and a line with no default-foreground character is not scanned.
 - Fallback families (`TermLook::fallbacks`, tried in order for a character the face lacks, before
   the system's; specs/08): the text system has one list for the whole app, so a view sets it
   when its look's list differs from the one it set last (at first none, so a view with no list
@@ -186,6 +219,12 @@ done, idle. OSC 133 A (a new prompt) drops working, blocked and idle. `?` is ans
   OSC 0, 7, 9, 9;4, BEL and the end of the program.
 - `tests/line.rs`: the command line from fed OSC 133 marks and from a prompt's sign, the
   alternate screen, the caret, keys taken first.
+- `tests/ligatures.rs`: on, a token is shaped once and its glyphs keep their columns (a cell
+  wider than the advance included); off, a glyph a cell; a unit test places hand-made glyphs (a
+  ligature over two cells, glyphs of their own clusters).
+- `tests/highlight.rs`: words, paths, numbers and URLs take their class's colour, a coloured
+  cell keeps its own, a prompt by OSC 133 and by its look, the exit status on the sign, off
+  paints as before, and an unchanged screen scans nothing again; unit tests of the scanner.
 - `tests/look.rs`: a new look sizes the grid again in the same view; the padding a side, the
   cell's width and the fallback families reach what is drawn; minimum contrast moves a glyph's
   colour until the ratio holds and leaves a 24-bit one alone.

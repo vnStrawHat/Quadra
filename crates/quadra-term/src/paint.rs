@@ -1,13 +1,17 @@
 //! Painting the terminal (specs/18, "The view"): the snapshot is taken under the lock, then
 //! each row that shows is drawn from it alone: runs of background, the selection, the cursor,
-//! a glyph per cell at its column, underline and strike. A glyph's colour keeps the look's
-//! minimum contrast against its cell's background.
+//! a glyph per cell at its column (or a token's glyphs on their cells, with ligatures),
+//! underline and strike. A glyph's colour is its class's when the program left it the default
+//! (semantic highlighting), and keeps the look's minimum contrast against its background.
 
 use oneterm_vt::{Attrs, Color as VtColor, CursorShape, Pos, SnapshotContent, SnapshotRow, Style};
 use quadra_prim::{Color, Edges, Point, Rect};
 use quadra_render::Quad;
+use quadra_text::FaceId;
 use quadra_tree::{PaintCx, paint_glyph};
 
+use crate::highlight::{Highlight, plain};
+use crate::shape::Scratch;
 use crate::widget::{TerminalWidget, color};
 
 /// The colours a cell's style paints with: inverse swaps them.
@@ -16,13 +20,17 @@ fn colors(w: &TerminalWidget, style: &Style) -> (Color, Color) {
     if style.attrs.contains(Attrs::INVERSE) { (bg, fg) } else { (fg, bg) }
 }
 
-/// A glyph's colour: its style's, moved to the look's contrast unless the program named it
-/// exactly or the character is a drawing (specs/18, "The view"); faint is it at 60 %.
-fn glyph_color(w: &mut TerminalWidget, style: &Style, c: Option<char>) -> Color {
+/// A glyph's colour: its class's when it has one (the program left it the default), else its
+/// style's; moved to the look's contrast unless the program named it exactly or the character
+/// is a drawing (specs/18, "The view"); faint is it at 60 %.
+fn glyph_color(w: &mut TerminalWidget, style: &Style, c: Option<char>, class: Option<Highlight>) -> Color {
     let named = if style.attrs.contains(Attrs::INVERSE) { style.bg } else { style.fg };
     let exact = matches!(named, VtColor::Rgb(_) | VtColor::Palette(16..));
     let drawing = c.is_some_and(|c| matches!(c as u32, 0x2500..=0x25FF | 0xE0B0..=0xE0D7));
-    let (fg, bg) = colors(w, style);
+    let (mut fg, bg) = colors(w, style);
+    if let Some(class) = class {
+        fg = w.colors.highlights[class.index()].unwrap_or_else(|| color(w.palette.indexed[class.ansi()]));
+    }
     let fg = if exact || drawing { fg } else { w.contrast.fg(fg, bg) };
     if style.attrs.contains(Attrs::DIM) { fg.alpha(0.6) } else { fg }
 }
@@ -34,13 +42,28 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx) {
     let (left, top) = (cx.rect.x + w.gutter_width() + w.pad.left, cx.rect.y + w.pad.top);
     w.tiles.clear();
     crate::gutter::paint(w, cx, top);
-    let block = w.cursor_block();
+    let cursor = (w.cursor_block(), w.cursor_cell());
     let rows = std::mem::take(&mut w.state);
+    let mut marks = std::mem::take(&mut w.marks);
+    let tint = if w.highlighting {
+        marks.update(rows.rows());
+        w.status.filter(|_| rows.scroll_offset() == 0).and_then(|s| marks.tinted(rows.rows(), s))
+    } else {
+        marks.clear();
+        None
+    };
     for (r, row) in rows.rows().iter().enumerate() {
         let y = top + r as f32 * w.line;
         under(w, cx, row, &rows, (left, y), r, background);
-        text(w, cx, row, (left, y), block);
+        let classes = marks.classes(row.id);
+        let sign = tint.as_ref().filter(|(rows, _)| rows.contains(&r)).map(|it| it.1);
+        let class = |col: usize| match classes.get(col).copied() {
+            Some(c) if c == Highlight::PromptSign as u8 => sign.or(Some(c)),
+            it => it,
+        };
+        text(w, cx, row, (left, y), cursor, &class);
     }
+    w.marks = marks;
     w.state = rows;
 }
 
@@ -107,33 +130,44 @@ fn under(
     cx.quad(quad);
 }
 
-/// A glyph a cell, in the face of its style, in the middle of its cells; then its lines.
+/// A cell: its row and column.
+type Cell = (oneterm_vt::RowId, u16);
+
+/// A glyph a cell, in the face of its style, in the middle of its cells (or, with ligatures, a
+/// token's glyphs on their cells); then its lines. `class` is a column's class; `cursor` the
+/// cell the block cursor fills now, and the one it is on in either phase of its blink (a token
+/// stops there, so a ligature does not come and go as it blinks).
 fn text(
     w: &mut TerminalWidget,
     cx: &mut PaintCx,
     row: &SnapshotRow,
     at: (f32, f32),
-    cursor: Option<(oneterm_vt::RowId, u16)>,
+    cursor: (Option<Cell>, Option<Cell>),
+    class: &dyn Fn(usize) -> Option<u8>,
 ) {
     let scale = cx.scale;
     let (ascent, descent) = cx.fonts.text.line_metrics(&w.style);
     let baseline = ((at.1 + (w.line - ascent - descent) / 2.0 + ascent) * scale).round();
-    let mut buf = String::new();
+    let on_row = |c: Option<Cell>| c.filter(|c| c.0 == row.id).map(|c| usize::from(c.1));
+    let (stop, split) = (on_row(cursor.0), on_row(cursor.1));
+    let (mut buf, mut token_to) = (String::new(), 0);
     for (col, cell) in row.cells.iter().enumerate() {
         if cell.width.is_spacer() {
             continue;
         }
         let style = row.style_of(cell);
+        let meant = class(col).filter(|_| plain(style)).and_then(Highlight::of);
+        let underlined = meant.is_some_and(Highlight::underlined);
         let blank = matches!(cell.content, SnapshotContent::Scalar(' '));
-        if blank && !style.attrs.intersects(Attrs::ALL_UNDERLINES | Attrs::STRIKEOUT) {
+        if blank && !underlined && !style.attrs.intersects(Attrs::ALL_UNDERLINES | Attrs::STRIKEOUT) {
             continue; // nothing to draw, so no colour to work out
         }
         let first = match cell.content {
             SnapshotContent::Scalar(c) => Some(c),
             SnapshotContent::Cluster { .. } => None,
         };
-        let mut fg = glyph_color(w, style, first);
-        if cursor == Some((row.id, col as u16)) {
+        let mut fg = glyph_color(w, style, first, meant);
+        if stop == Some(col) {
             fg = color(w.palette.background); // on the block, the text is the background's
         }
         let cols = if cell.width == oneterm_vt::CellWidth::Wide { 2 } else { 1 };
@@ -141,24 +175,28 @@ fn text(
         let lines =
             [(Attrs::ALL_UNDERLINES, b.bottom() - 2.0), (Attrs::STRIKEOUT, b.y + (w.line / 2.0).round())];
         for (attr, y) in lines {
-            if style.attrs.intersects(attr) {
+            if style.attrs.intersects(attr) || (underlined && attr == Attrs::ALL_UNDERLINES) {
                 let bounds = Rect::new(b.x, y, b.width, 1.0);
                 cx.quad(Quad { bounds, background: fg, ..Quad::default() });
             }
         }
+        if blank || style.attrs.contains(Attrs::HIDDEN) || col < token_to {
+            continue;
+        }
+        let face = face(w, cx, style);
+        if w.ligatures {
+            let end = crate::shape::token_end(row, col, split);
+            if end > col + 1 {
+                token_to = end;
+                token(w, cx, row, (col, end), (b.x, baseline), face, class);
+                continue;
+            }
+        }
         buf.clear();
         match cell.content {
-            SnapshotContent::Scalar(' ') => continue,
             SnapshotContent::Scalar(c) => buf.push(c),
             SnapshotContent::Cluster { start, len } => buf.extend(row.cluster(start, len)),
         }
-        if style.attrs.contains(Attrs::HIDDEN) {
-            continue;
-        }
-        let mut face_style = w.style.clone();
-        face_style.weight = if style.attrs.contains(Attrs::BOLD) { 700 } else { face_style.weight };
-        face_style.italic = style.attrs.contains(Attrs::ITALIC);
-        let face = cx.fonts.text.face_for(&face_style);
         let word = cx.fonts.text.word(&buf, face, w.style.size);
         let shift = (b.width - word.width) / 2.0;
         for g in &word.glyphs {
@@ -168,7 +206,68 @@ fn text(
     }
 }
 
+/// The face of a cell's style: the look's, bold and italic as the style says.
+fn face(w: &TerminalWidget, cx: &mut PaintCx, style: &Style) -> FaceId {
+    let mut face_style = w.style.clone();
+    face_style.weight = if style.attrs.contains(Attrs::BOLD) { 700 } else { face_style.weight };
+    face_style.italic = style.attrs.contains(Attrs::ITALIC);
+    cx.fonts.text.face_for(&face_style)
+}
+
+/// The cells `from..to` shaped as one word, each glyph on the cell its character is in, in
+/// that cell's colour; `x` is the first cell's left.
+fn token(
+    w: &mut TerminalWidget,
+    cx: &mut PaintCx,
+    row: &SnapshotRow,
+    (from, to): (usize, usize),
+    (x, baseline): (f32, f32),
+    face: FaceId,
+    class: &dyn Fn(usize) -> Option<u8>,
+) {
+    let mut s = std::mem::take(&mut w.shaping);
+    let Scratch { text, starts, placed, inks } = &mut s;
+    text.clear();
+    starts.clear();
+    inks.clear();
+    for cell in &row.cells[from..to] {
+        starts.push(text.len() as u32);
+        if let SnapshotContent::Scalar(c) = cell.content {
+            text.push(c);
+        }
+    }
+    let word = cx.fonts.text.word(text, face, w.style.size);
+    crate::shape::place(&word.glyphs, starts, w.cell, placed);
+    inks.resize(to - from, None);
+    for &(g, at, dx) in placed.iter() {
+        let col = from + at;
+        let style = row.style_of(&row.cells[col]);
+        let fg = match inks[at] {
+            Some(fg) => fg,
+            None => {
+                let first = text[starts[at] as usize..].chars().next();
+                let meant = class(col).filter(|_| plain(style)).and_then(Highlight::of);
+                *inks[at].insert(glyph_color(w, style, first, meant))
+            }
+        };
+        let glyph = &word.glyphs[g];
+        let pen = Point::new((x + dx) * cx.scale, baseline - (glyph.y * cx.scale).round());
+        w.tiles.extend(paint_glyph(cx, (glyph.face, glyph.id), w.style.size * cx.scale, pen, fg));
+    }
+    w.shaping = s;
+}
+
 impl TerminalWidget {
+    /// The cell a focused block cursor is on, in either phase of its blink.
+    fn cursor_cell(&self) -> Option<(oneterm_vt::RowId, u16)> {
+        let cursor = self.state.cursor();
+        (self.focused
+            && cursor.visible
+            && cursor.row.is_some()
+            && self.cursor_style.shape == CursorShape::Block)
+            .then_some((cursor.id, cursor.col))
+    }
+
     /// The cell a filled block cursor covers, when one shows.
     fn cursor_block(&self) -> Option<(oneterm_vt::RowId, u16)> {
         let cursor = self.state.cursor();

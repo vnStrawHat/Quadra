@@ -57,7 +57,9 @@ pub(crate) fn rail(model: &Model) -> impl View + use<> {
         .child(heading)
         .child(rows.container(column().gap(2.0).padding_x(8.0).role(Role::TabList).label("Tabs")))
         .child(div().padding_x(8.0).padding_y(4.0).node_ref(&opener).child(new))
-        .child(searched_menu(open, &opener, ASK, move |typed: &str| new_menu(&making, typed)))
+        .child(searched_menu(open, &opener, quadra::Side::Right, ASK, move |typed: &str| {
+            new_menu(&making, typed)
+        }))
         .child(crate::hostlist::hosts(model))
 }
 

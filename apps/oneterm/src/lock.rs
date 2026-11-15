@@ -58,6 +58,15 @@ impl Lock {
         !self.prefs.password.with(String::is_empty)
     }
 
+    /// Whole minutes left before the window locks while idle; None when it cannot lock.
+    pub fn left(&self) -> Option<u32> {
+        if !self.can_lock() {
+            return None;
+        }
+        let minutes = self.prefs.lock_after.get().clamp(1.0, 480.0) as u32;
+        Some((minutes * 60).saturating_sub(self.idle.get()).div_ceil(60))
+    }
+
     /// Something was done in the window: idle starts again.
     pub fn active(&self) {
         if self.idle.get_untracked() != 0 {

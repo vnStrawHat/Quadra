@@ -90,7 +90,7 @@ fn a_password_set_on_the_page_locks_and_opens_the_window() {
     assert!(a.says("Password set"));
     let stored = a.settings.value("security.password", String::new()).get();
     assert!(stored.starts_with("pbkdf2-sha256$") && !stored.contains("open sesame"));
-    a.h.get_by_role(Role::Button, "Back to the terminal").click();
+    a.h.get_by_role(Role::Button, "Done").click();
     a.h.settle();
 
     a.h.get_by_role(Role::Button, "Lock").click();

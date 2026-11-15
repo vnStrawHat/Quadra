@@ -40,16 +40,19 @@ Custom frame (`WindowOptions::custom_frame`), 1440×900 at most 85 % of the disp
 at least 720×480, its place remembered. Top to bottom: the title bar (38 px), the body, the
 status bar (26 px). Colours are the kit's roles; the accent is the theme's.
 
-- **Title bar**: the terminal glyph in the accent and "1Term"; the active tab's title, `·`, and
-  its space count ("3 spaces") in the secondary text colour; then, right, icon buttons Search
-  sessions (M4), Notifications with an unread count (M3), Lock (M6), Settings (M5); the window
-  buttons.
+- **Title bar**: the terminal glyph in the accent and "1Term"; a chip on the canvas colour with
+  a line round it: what shows (the active tab's title, or "Settings") and, in the secondary
+  colour, its detail (the space count "3 spaces", the settings' page, `SFTP expanded`); then,
+  right, icon buttons Search sessions and hosts (M4; the `+` menu under it), SFTP (P2),
+  Notifications with an unread badge (M3), Lock (M6), Settings (M5); the window buttons. In the
+  settings only Done shows; locked, only "Locked".
 - **Body**: the rail (248 px, vertical tabs), the workspace, and from P2 the SFTP dock (300 px)
   on the right.
 - **Status bar**: in mono 11 px, items split by 1 px lines: the active space's cwd (a click
   copies it), git branch and changes (M4), the host and its latency (P2), then right the
-  OSC 9;4 meter (M3), CPU and memory of 1Term (M4), the bell and notification count (M3), the
-  time to lock (M6), the clock `Wed 28 Oct · 11:00` (the app's locale).
+  OSC 9;4 meter (M3), CPU and memory of 1Term (M4), one count of bells not heard and notices
+  not seen (M3; a click marks the notices seen), `lock in Nm` (M6), the clock `We 28 Oct · 11:00`
+  (the app's locale). Labels are the secondary colour, values the text colour.
 
 ## Rail (vertical tabs)
 
@@ -115,7 +118,7 @@ P2 Quick connect, Recent and the saved hosts by group, Add SSH host.
 
 ## Settings
 
-A page in the window (the kit's `settings`), "1Term Settings · <page>", a search, pages:
+A page in the window (the kit's `settings`; the title bar names the page), a search, pages:
 Appearance, Terminal, Tabs & spaces, Notifications & signals, Status bar, Security & lock,
 Keybindings, Advanced; from P2 SSH & hosts and SFTP. Saved to `settings.json` in the app's
 folder as they change (specs/15). Terminal: font family and size, ligatures, cursor shape and

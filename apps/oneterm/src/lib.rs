@@ -23,6 +23,7 @@ mod sftp;
 mod shells;
 mod signals;
 mod spaces;
+mod statusbar;
 mod strip;
 mod tab;
 
@@ -119,7 +120,7 @@ impl OneTerm {
             })
             .child(chrome::title_bar(&self.model))
             .child(body)
-            .child(chrome::status_bar(&self.model, self.clock))
+            .child(statusbar::status_bar(&self.model, self.clock))
             .child(cards)
             .child(connect::dialog(&self.model))
             .child(hostlist::add_dialog(&self.model))

@@ -2,15 +2,15 @@
 //! `1Term Settings · <page>` above the page, a search in the column. Each control writes a
 //! setting, which saves it.
 
-use quadra::{Align, Signal, View, column, div, effect, row, signal, text, untrack};
+use quadra::{Signal, View, column, div, effect, signal, untrack};
 use quadra_design::{
-    SettingsGroup, SettingsPage, button, icons, key_hint, number_input, segmented, select, settings, switch,
+    SettingsGroup, SettingsPage, icons, key_hint, number_input, segmented, select, settings, switch,
 };
 
 use crate::model::Model;
 use crate::prefs::{self, Prefs};
 
-const PAGES: [&str; 8] = [
+pub(crate) const PAGES: [&str; 8] = [
     "Appearance",
     "Terminal",
     "Tabs & spaces",
@@ -34,14 +34,9 @@ const KEYS: [(&str, &str); 8] = [
 ];
 
 pub(crate) fn page(model: &Model) -> quadra::Div {
-    let (p, open) = (model.prefs(), model.ui().settings);
-    let (current, query) = (signal(0usize), signal(String::new()));
-    let head = row()
-        .align_items(Align::Center)
-        .gap(8.0)
-        .child(div().grow(1.0).child(text(move || format!("1Term Settings \u{B7} {}", PAGES[current.get()]))))
-        .child(button("Back to the terminal").on_click(move || open.set(false)));
-    let mut view = settings(current).search(query).header(head);
+    // The title bar says the page and has Done.
+    let (p, current, query) = (model.prefs(), model.ui().page, signal(String::new()));
+    let mut view = settings(current).search(query);
     for (at, group) in groups(p, model).into_iter().enumerate() {
         let icon = [icons::PALETTE, icons::TERMINAL, icons::LAYERS, icons::BELL, icons::LIST, icons::LOCK]
             .get(at)

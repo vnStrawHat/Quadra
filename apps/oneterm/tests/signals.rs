@@ -69,7 +69,7 @@ fn a_program_that_waits_raises_a_card() {
     let mut a = app();
     a.feed(0, b"\x1b]7501;state=blocked:id=deploy\x07");
     assert!(a.says("Terminal blocked"));
-    assert!(a.says("1 new"));
+    assert!(a.says("1 bells and notices"));
 }
 
 #[test]
@@ -85,12 +85,12 @@ fn progress_shows_on_the_tab_and_in_the_status_bar() {
 fn a_bell_counts_where_it_is_not_seen_and_is_seen_with_the_focus() {
     let mut a = app();
     a.feed(0, b"\x07");
-    assert!(a.says("bell 0"), "the space looked at hears its own bell");
+    assert!(a.says("0 bells and notices"), "the space looked at hears its own bell");
     a.key(Key::D, Mods::CTRL);
     a.feed(0, b"\x07\x07");
-    assert!(a.says("bell 2"));
+    assert!(a.says("2 bells and notices"));
     a.key(Key::Left, Mods::CTRL | Mods::ALT);
-    assert!(a.says("bell 0"));
+    assert!(a.says("0 bells and notices"));
 }
 
 #[test]
@@ -98,8 +98,8 @@ fn a_notification_is_a_card_and_counts_until_looked_at() {
     let mut a = app();
     a.feed(0, b"\x1b]9;tests passed\x07");
     assert!(a.says("OSC 9"));
-    assert!(a.says("1 new"));
+    assert!(a.says("1 bells and notices"));
     a.h.get_by_role(Role::Button, "Notifications").click();
     a.h.settle();
-    assert!(a.says("0 new"));
+    assert!(a.says("0 bells and notices"));
 }

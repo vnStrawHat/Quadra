@@ -58,23 +58,23 @@ fn the_page_opens_from_the_title_bar_and_writes_what_is_chosen() {
     let mut a = app();
     a.h.get_by_role(Role::Button, "Settings").click();
     a.h.settle();
-    assert!(a.says("1Term Settings \u{B7} Appearance"));
+    assert!(a.says("Settings") && a.says("Appearance"));
     a.h.get_by_role(Role::Radio, "Dark").click();
     a.h.settle();
     assert_eq!(a.settings.value("appearance.theme", String::new()).get(), "Dark");
 
     a.h.get_by_role(Role::TreeItem, "Tabs & spaces").click();
     a.h.settle();
-    assert!(a.says("1Term Settings \u{B7} Tabs & spaces"));
+    assert!(a.says("Tabs & spaces"));
     let switches = a.h.query(|n| n.semantics.role == Role::Switch);
     assert_eq!(switches.len(), 1, "the page's one switch: vertical tabs");
     a.h.tree.act(switches[0], &SemanticAction::Click);
     a.h.settle();
     assert!(!a.settings.value("tabs.vertical", true).get());
 
-    a.h.get_by_role(Role::Button, "Back to the terminal").click();
+    a.h.get_by_role(Role::Button, "Done").click();
     a.h.settle();
-    assert!(!a.says("1Term Settings \u{B7} Tabs & spaces"));
+    assert!(!a.says("Tabs & spaces"));
 }
 
 #[test]
@@ -97,8 +97,8 @@ fn silent_notifications_and_ignored_bells_count_nothing() {
     a.h.settle();
     a.feed(0, b"\x1b]9;tests passed\x07");
     assert!(!a.says("OSC 9"));
-    assert!(a.says("0 new"));
+    assert!(a.says("0 bells and notices"));
     a.key(Key::D, Mods::CTRL);
     a.feed(0, b"\x07");
-    assert!(a.says("bell 0"), "a bell the settings ignore is seen as it rings");
+    assert!(a.says("0 bells and notices"), "a bell the settings ignore is seen as it rings");
 }

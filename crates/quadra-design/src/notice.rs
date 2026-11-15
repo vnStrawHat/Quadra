@@ -82,17 +82,26 @@ pub struct Notices {
     queue: Queue<Notice>,
     /// How far above the bottom of the window the stacks stand: the height of a status bar.
     lift: f32,
+    /// The cards stand this far under the top of the window, at its right, instead.
+    top: Option<f32>,
 }
 
 /// The notifications of a window: make it where the window's view is built.
 pub fn notices() -> Notices {
-    Notices { queue: Queue::new(), lift: 0.0 }
+    Notices { queue: Queue::new(), lift: 0.0, top: None }
 }
 
 impl Notices {
     /// Lifts the stacks over what is at the bottom of the window: 30 for a status bar.
     pub fn above(mut self, px: f32) -> Self {
         self.lift = px;
+        self
+    }
+
+    /// Stands the cards at the top right, this far under the top of the window: under an
+    /// app's title bar.
+    pub fn below(mut self, px: f32) -> Self {
+        self.top = Some(px);
         self
     }
 
@@ -170,10 +179,14 @@ impl Notices {
 
     /// What shows the notifications: mount it once, anywhere in the window. It takes no room.
     pub fn host(&self) -> impl View + use<> {
-        let (me, lift) = (*self, self.lift);
+        let (me, lift, top) = (*self, self.lift, self.top);
         let cards = move || {
             let stack = each(move || me.ids(false), |id| *id, move |id| me.card(id.get_untracked()));
-            overlay(Place::BottomRight(12.0, 12.0 + lift), stack.container(column().gap(8.0)))
+            let place = match top {
+                Some(down) => Place::TopRight(12.0, 12.0 + down),
+                None => Place::BottomRight(12.0, 12.0 + lift),
+            };
+            overlay(place, stack.container(column().gap(8.0)))
         };
         let toasts = move || {
             let stack = each(move || me.ids(true), |id| *id, move |id| me.line(id.get_untracked()));

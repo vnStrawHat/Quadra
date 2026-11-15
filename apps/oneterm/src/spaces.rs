@@ -93,6 +93,7 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> impl View + use<> {
                 .ellipsis(),
             ),
         )
+        .child(crate::marks::header_signal(s.status(), s.progress()))
         .child(text(move || exited.get().map(|code| format!("exited {code}")).unwrap_or_default()));
     let ring = div()
         .absolute()

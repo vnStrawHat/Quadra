@@ -8,6 +8,7 @@ use quadra::{
 };
 use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, input, token};
 
+use crate::marks;
 use crate::model::{Model, Tab};
 
 /// What a tab's row carries while it is dragged.
@@ -102,10 +103,6 @@ pub(crate) fn title(model: &Model, tab: Tab) -> impl View + use<> {
 fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
     let active = model.active();
     let on = move || active.get() == tab.id;
-    let spaces = move || {
-        let n = tab.spaces.with(Vec::len);
-        format!("{n} local \u{B7} {n} {}", if n == 1 { "space" } else { "spaces" })
-    };
     let (shows, closes, moves, menu) = (model.clone(), model.clone(), model.clone(), model.clone());
     let bar = div()
         .absolute()
@@ -124,7 +121,7 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
                 .text_size(11.0)
                 .font_family(fonts::MONO)
                 .text_color(token::TEXT_2)
-                .child(text(spaces).ellipsis()),
+                .child(text(move || marks::tab_line(tab)).ellipsis()),
         );
     let face = row()
         .align_items(Align::Center)
@@ -139,7 +136,7 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
         .label(move || tab.title())
         .selected(on)
         .on_click(move |e| {
-            shows.active().set(tab.id);
+            shows.show(tab.id);
             if e.clicks == 2 {
                 shows.renaming().set(Some(tab.id));
             }
@@ -155,7 +152,9 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
             moves.move_tab(dragged.0, to.unwrap_or(usize::MAX));
         })
         .child(bar)
-        .child(icon(icons::TERMINAL).size(14.0).color(token::TEXT_2))
-        .child(words);
+        .child(marks::tab_icon(tab))
+        .child(words)
+        .child(marks::tab_mark(tab))
+        .child(marks::progress_bar(tab));
     context_menu(face, move || tab_menu(&menu, tab.id))
 }

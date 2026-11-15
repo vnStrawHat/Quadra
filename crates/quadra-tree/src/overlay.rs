@@ -45,6 +45,9 @@ pub enum Anchor {
     /// In the bottom right corner of the window, this far from its right edge and from its
     /// bottom: notifications.
     BottomRight(f32, f32),
+    /// In the top right corner of the window, this far from its right edge and from its
+    /// top: notifications under an app's bars.
+    TopRight(f32, f32),
 }
 
 pub(crate) struct Overlay {
@@ -93,6 +96,7 @@ fn place(anchor: Anchor, target: Option<Rect>, size: Size, window: Size) -> Poin
         (Anchor::BottomRight(left, up), _) => {
             (window.width - size.width - left, window.height - size.height - up)
         }
+        (Anchor::TopRight(left, down), _) => (window.width - size.width - left, down),
         _ => ((window.width - size.width) / 2.0, (window.height - size.height) / 2.0),
     };
     Point::new(inside(x, size.width, window.width).round(), inside(y, size.height, window.height).round())

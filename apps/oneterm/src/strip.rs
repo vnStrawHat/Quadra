@@ -63,7 +63,7 @@ fn tab_button(model: &Model, tab: Tab) -> impl View + use<> {
         .label(move || tab.title())
         .selected(on)
         .on_click(move |e| {
-            shows.active().set(tab.id);
+            shows.show(tab.id);
             if e.clicks == 2 {
                 shows.renaming().set(Some(tab.id));
             }
@@ -80,6 +80,8 @@ fn tab_button(model: &Model, tab: Tab) -> impl View + use<> {
         })
         .child(icon(icons::TERMINAL).size(14.0))
         .child(div().min_width(0.0).child(title(model, tab)))
+        .child(crate::marks::tab_mark(tab))
+        .child(crate::marks::progress_bar(tab))
         .child(line);
     context_menu(face, move || tab_menu(&menu, tab.id))
 }

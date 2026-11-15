@@ -6,6 +6,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use quadra::{Action, Scope, Signal, signal};
+use quadra_design::{Notices, notices};
 use quadra_term::Session;
 
 use crate::NewSession;
@@ -84,6 +85,9 @@ struct Inner {
     renaming: Signal<Option<u64>>,
     /// Tabs in the rail, or in a strip under the title bar.
     vertical: Signal<bool>,
+    /// The cards of notifications, and how many came since they were last looked at.
+    notices: Notices,
+    unread: Signal<u32>,
 }
 
 impl Model {
@@ -97,6 +101,8 @@ impl Model {
             active: signal(0),
             renaming: signal(None),
             vertical: signal(true),
+            notices: notices().below(38.0 + 12.0),
+            unread: signal(0),
         };
         let model = Model(Rc::new(inner));
         model.new_tab();
@@ -120,6 +126,14 @@ impl Model {
         self.0.vertical
     }
 
+    pub fn notices(&self) -> Notices {
+        self.0.notices
+    }
+
+    pub fn unread(&self) -> Signal<u32> {
+        self.0.unread
+    }
+
     pub fn active_tab(&self) -> Option<Tab> {
         let active = self.0.active.get();
         self.0.tabs.with(|tabs| tabs.iter().find(|tab| tab.id == active).copied())
@@ -134,8 +148,13 @@ impl Model {
     /// A space of its own scope under the model's, its session made in it.
     fn space(&self) -> Space {
         let scope = self.0.owner.run(Scope::child);
-        let session = scope.run(|| (self.0.new_session)());
-        Space { id: self.id(), session, scope }
+        let id = self.id();
+        let session = scope.run(|| {
+            let session = (self.0.new_session)();
+            self.watch(id, &session);
+            session
+        });
+        Space { id, session, scope }
     }
 
     /// A tab with a new local shell, after the others, shown.

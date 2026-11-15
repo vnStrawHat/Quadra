@@ -4,8 +4,10 @@
 
 mod chrome;
 mod local;
+mod marks;
 mod model;
 mod rail;
+mod signals;
 mod spaces;
 mod strip;
 
@@ -16,6 +18,7 @@ use quadra_term::Session;
 
 pub use local::local_shell;
 pub use model::{Command, Model, Space, Tab};
+pub use signals::{percent, state_word};
 
 /// Makes the session of a new space: it is called in the scope the space lives in.
 pub type NewSession = Rc<dyn Fn() -> Session>;
@@ -72,6 +75,7 @@ impl OneTerm {
             .child(chrome::title_bar(&self.model))
             .child(body)
             .child(chrome::status_bar(&self.model, self.clock))
+            .child(self.model.notices().host())
     }
 }
 

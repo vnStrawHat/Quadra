@@ -25,6 +25,8 @@ pub enum Place {
     Bottom(f32),
     /// In the bottom right corner, this far from the right edge and from the bottom.
     BottomRight(f32, f32),
+    /// In the top right corner, this far from the right edge and from the top.
+    TopRight(f32, f32),
 }
 
 pub struct OverlayView {
@@ -70,6 +72,7 @@ impl View for OverlayView {
             Place::Top(down) => Anchor::Top(down),
             Place::Bottom(up) => Anchor::Bottom(up),
             Place::BottomRight(left, up) => Anchor::BottomRight(left, up),
+            Place::TopRight(left, down) => Anchor::TopRight(left, down),
         };
         cx.tree.open_overlay(root, anchor);
         if let Some(mut outside) = self.outside {

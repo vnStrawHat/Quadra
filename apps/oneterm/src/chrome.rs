@@ -6,13 +6,17 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::model::Model;
-use quadra::{Align, Clipboard, Signal, View, by_text, div, interval, row, text, time, use_context};
-use quadra_design::{fonts, icon, icons, titlebar, token};
+use quadra::{
+    Align, Clipboard, Display, Length, Signal, View, by_text, div, interval, row, text, time, use_context,
+};
+use quadra_design::{fonts, icon, icon_button, icons, titlebar, token, tooltip};
+
+use crate::signals::{all_bells, percent};
 
 /// The terminal's mark in the accent, "1Term", then the active tab's title and the count of
 /// its spaces in the secondary colour.
 pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
-    let model = model.clone();
+    let (model, seen) = (model.clone(), model.clone());
     let shown = move || {
         let Some(tab) = model.active_tab() else { return String::new() };
         let n = tab.spaces.with(Vec::len);
@@ -25,12 +29,31 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .child(icon(icons::TERMINAL).size(16.0).color(token::ACCENT))
         .child(div().font_weight(600).child(text("1Term")))
         .child(div().text_color(token::TEXT_2).child(text(shown)));
-    titlebar("").height(38.0).control(mark).control(div().grow(1.0))
+    titlebar("").height(38.0).control(mark).control(div().grow(1.0)).control(notifications(&seen))
+}
+
+/// The button of notifications, with how many came unseen; a press marks them seen.
+fn notifications(model: &crate::model::Model) -> impl View + use<> {
+    let unread = model.unread();
+    let count = div()
+        .absolute()
+        .top(2.0)
+        .right(0.0)
+        .padding_x(4.0)
+        .radius(7.0)
+        .bg(token::ACCENT)
+        .text_color(token::TEXT_ON_ACCENT)
+        .text_size(10.0)
+        .display(move || if unread.get() > 0 { Display::Flex } else { Display::None })
+        .child(text(move || unread.get().to_string()));
+    let button = icon_button(icons::BELL, "Notifications").on_click(move || unread.set(0));
+    div().child(tooltip("Notifications", button)).child(count)
 }
 
 /// The working directory at the left, the clock at the right.
 pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + use<> {
     tick(clock);
+    let (tabs, unread, shows) = (model.tabs(), model.unread(), model.clone());
     let model = model.clone();
     let cwd = move || {
         let space = model.active_tab().and_then(|tab| tab.focused());
@@ -63,7 +86,29 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
         .test_id("status")
         .child(place)
         .child(div().grow(1.0))
+        .child(meter(&shows))
+        .child(div().label("Bells").child(text(move || format!("bell {}", all_bells(tabs)))))
+        .child(div().label("Notices").child(text(move || format!("{} new", unread.get()))))
         .child(div().label("Clock").child(text(move || clock.get())))
+}
+
+/// The progress of the tab that shows: a meter of 56 px and its percentage.
+fn meter(model: &crate::model::Model) -> impl View + use<> {
+    let model = model.clone();
+    let part = quadra::memo(move || model.active_tab().and_then(|tab| tab.progress()).and_then(percent));
+    let fill = div()
+        .height(4.0)
+        .radius(2.0)
+        .bg(token::ACCENT)
+        .width(move || Length::Pct(f32::from(part.get().unwrap_or(0))));
+    let track = div().width(56.0).height(4.0).radius(2.0).bg(token::LINE_STRONG).child(fill);
+    row()
+        .align_items(Align::Center)
+        .gap(6.0)
+        .label("Progress")
+        .display(move || if part.get().is_some() { Display::Flex } else { Display::None })
+        .child(track)
+        .child(text(move || part.get().map(|n| format!("{n}%")).unwrap_or_default()))
 }
 
 /// Keeps `clock` the local time as the app's locale says it: `We 28 Oct · 11:00`.

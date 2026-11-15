@@ -41,6 +41,9 @@ fn a_long_page_paints_what_is_near_the_window_and_scrolls_inside_it_for_one_cons
     let (stats, _) = h.frame();
     // Row 2 crosses the band's edge with its box; the line of its text ends on the edge.
     assert_eq!((stats.layers_rebuilt, stats.instances_written), (1, ink(2..=47)), "{stats:?}");
+    // Of the 500 rows and their texts, the rows are looked at, and the texts of those near
+    // the old band and the new one.
+    assert!(stats.nodes_walked < 600, "{stats:?}");
     y.set(900.0);
     assert_eq!(h.frame().0.nodes_painted, 0);
 

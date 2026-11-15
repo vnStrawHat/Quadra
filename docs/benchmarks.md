@@ -7,6 +7,23 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-15 — a new band of a long page (on b71f3c1 plus this commit)
+
+A page of plain rows (a box of 40 px and a text each) in a `scroll`, not a virtual list,
+scrolled 1,300 px a frame so every frame paints a new band; release build, the harness's
+platform, microseconds of the frame (all of it the paint pass):
+
+| Rows | Before | Now |
+|---|---|---|
+| 2,000 | 140 | 55 |
+| 20,000 | 1,723 | 529 |
+| 100,000 | 12,325 | 4,073 |
+
+A node outside the band that emitted nothing in the last one and has nothing to paint is
+skipped with what it holds; before, every node of the layer was walked and its range written.
+What is left is a look at each row of the column, some 25 ns: a search among children placed
+in order would take it lower, if pages that long are ever scrolled without a virtual list.
+
 ## 2026-11-15 — what a number costs to lay out (on 7c16cc6 plus this commit)
 
 `tools/bench.sh grid document`, headless, microseconds a frame, three runs each:

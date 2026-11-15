@@ -31,7 +31,7 @@ impl Tree {
             let as_child = (self.nodes[i].start, self.nodes[i].len, self.nodes[i].own);
             (self.nodes[i].start, self.nodes[i].len, self.nodes[i].own) = (0, len, own);
             self.verify_node(
-                (root, band),
+                (root, band, false),
                 root,
                 Point::new(-origin.x, -origin.y),
                 0,
@@ -62,7 +62,7 @@ impl Tree {
     #[allow(clippy::too_many_arguments)]
     fn verify_node(
         &mut self,
-        (id, band): (NodeId, Option<Rect>),
+        (id, band, culled): (NodeId, Option<Rect>, bool),
         root: NodeId,
         origin: Point,
         parent_start: usize,
@@ -84,7 +84,9 @@ impl Tree {
             own = out.len() - start;
         } else {
             let rect = self.layout.rect(self.nodes[i].layout).translate(origin.x, origin.y);
-            if !outside(band, rect) {
+            // Outside the band a node paints nothing, nor what it holds.
+            let culled = culled || outside(band, rect);
+            if !culled {
                 let theme = self.theme_at(id).clone();
                 let how = (self.scale, band, self.text_at(), &*theme);
                 paint_own(&mut self.nodes, i, &self.layout, rect, how, fonts, out);
@@ -93,7 +95,8 @@ impl Tree {
             if shown {
                 for k in 0..self.nodes[i].children.len() {
                     let child = self.nodes[i].children[k];
-                    self.verify_node((child, band), root, rect.origin(), start, fonts, out, layers, wrong);
+                    let at = (child, band, culled);
+                    self.verify_node(at, root, rect.origin(), start, fonts, out, layers, wrong);
                 }
             }
         }

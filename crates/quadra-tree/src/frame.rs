@@ -30,6 +30,8 @@ pub struct FrameStats {
     pub nodes_measured: u32,
     /// Nodes whose paint ran.
     pub nodes_painted: u32,
+    /// Nodes the paint pass looked at: those on the paths it walked, painted or not.
+    pub nodes_walked: u32,
     pub instances_written: u32,
     /// Layers whose instances were overwritten in place.
     pub layers_patched: u32,

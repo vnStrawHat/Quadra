@@ -46,6 +46,8 @@ struct Painter<'a> {
     themes: &'a [(NodeId, std::rc::Rc<Theme>)],
     /// The part of the layer that is painted, if it paints only near what shows.
     band: Option<Rect>,
+    /// The walk is under a node outside the band: nothing is painted.
+    culled: bool,
     /// The scale changed: everything is painted, in every layer.
     all: bool,
     /// Every repainted node emitted as many instances as it had, and no list of children
@@ -80,16 +82,23 @@ impl Painter<'_> {
         if !force && flags == 0 {
             return;
         }
+        self.stats.nodes_walked += 1;
         if self.child_layer(id) {
             return self.collect_marker(id, abs, force);
         }
         let rect = self.layout.rect(self.nodes[i].layout).translate(origin.x, origin.y);
+        // Outside the band nothing is painted, nor anything held: what emitted nothing and
+        // has nothing to paint emits nothing again, and its subtree is not walked.
+        // ponytail: each child of a long column is still looked at (some 25 ns a row: 0.5 ms
+        // a band for 20,000); a search among children placed in order if such pages scroll.
+        let culled = self.culled || outside(self.band, rect);
+        if culled && flags == 0 && self.nodes[i].len == 0 {
+            return;
+        }
         let force = force || flags & flag::SUBTREE != 0;
         if force || flags & flag::PAINT != 0 {
             let from = self.scratch.len() as u32;
-            // ponytail: a new band visits every node of the layer to find those in it; a
-            // spatial index if pages of a hundred thousand nodes scroll.
-            if !outside(self.band, rect) {
+            if !culled {
                 // Under themes of their own, a widget is told the one it paints under.
                 if let Some(widget) = self.nodes[i].widget.as_mut().filter(|_| !self.themes.is_empty()) {
                     widget.theme(self.theme);
@@ -109,11 +118,13 @@ impl Painter<'_> {
             self.same &= self.nodes[i].len == 0;
             return;
         }
+        let outer = std::mem::replace(&mut self.culled, culled);
         for k in 0..self.nodes[i].children.len() {
             let child = self.nodes[i].children[k];
             let child_abs = abs + self.nodes[child.index as usize].start;
             self.collect(child, rect.origin(), child_abs, force);
         }
+        self.culled = outer;
     }
 
     /// A child layer met in the walk: here it is one marker, and its own content is left to its
@@ -246,6 +257,7 @@ impl Tree {
             theme,
             themes: &self.themes,
             band,
+            culled: false,
             all,
             same: true,
         };

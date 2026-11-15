@@ -121,8 +121,13 @@ and demotion repaint that subtree once.
 
 **A scroll container's content is painted only near what shows.** The layer keeps a band, in
 its own space: the part of it the viewport shows, with the viewport's size added on every
-side. A node outside the band emits nothing, and a text skips its lines outside it. Scrolling
-inside the band is still one constant (and one more for the thumb of the scrollbar).
+side. A node whose box is outside the band emits nothing, nor does anything it holds, and a
+text skips its lines outside it. What reaches past its holder's box by more than a viewport
+is so not painted while the holder is outside the band. A new band skips the subtree of a
+node outside it that emitted nothing in the last one and has nothing to paint: of a long
+page only the nodes near the old and the new band are walked, and the rows of a long column
+are looked at once each. Scrolling inside the band is still one constant (and one more for
+the thumb of the scrollbar).
 A layer is also turned about its middle by a constant (`Tree::set_layer_turn`): a spinner. When the part that shows leaves the band, the layer
 gets a new band around it and is painted again: once per viewport scrolled, for three
 viewports of content, whatever the length of the page. So a long page costs what its visible

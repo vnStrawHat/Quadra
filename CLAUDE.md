@@ -213,9 +213,9 @@ keymap file (`quadra_design::actions()` names the kit's; the editor's commands h
 widgets too (`button`, `checkbox`, `switch`, `radio_group`/`radio`, `tabs`/`tab`, `accordion_head`/`accordion_body`,
 `tooltip`, `hover_card`, `combobox`; specs/17, "Widget names"): a look uses those. One manual check is open: glass over scrolling content in a real window. No phase follows R6 in specs/00: what comes next is the user's to say (the apps come after Quadra is complete).
 
-Room left that the numbers show (`tools/bench.sh grid`; docs/benchmarks.md, "the grid's update and layout"): 190 ns a binding of the grid's update, 130 of it running
-the binding (the reactive runtime and the scene's own formatting); a flex item is measured once per height its column offers though its
-height does not depend on it; a new painted band visits every node of its layer.
+Room left that the numbers show (docs/benchmarks.md, 2026-11-15): the grid's update is the scene's formatting (66 µs), the
+reactive runtime (some 70) and applying 1,200 writes (56), each tried and found lean; a new band of a long page still looks at
+each row of a column once (25 ns a row).
 
 Habits that cost time when forgotten:
 

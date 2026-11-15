@@ -1118,10 +1118,15 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     changes, and painted under the text, the chosen one stronger.
   - **Soft wrap** (`editor(..).wrap(true)`, for prose): a line is broken into rows at the
     text's width in cells, after the last blank that fits; a word longer than a row breaks
-    inside it, and blanks hang past the edge. The rows (`editor/rows.rs`: the first row of
-    each line, where each row starts) are built again when the text, the width or the tab
-    size changes, a pass over the bytes (ponytail: from the changed line on, if long wrapped
-    documents make typing slow). Rows drive every y: paint (the band of a line over all its
+    inside it, and blanks hang past the edge. The rows (`editor/rows/wrap.rs`: the first row
+    of each line, where each row starts) are built when the width or the tab size changes, a
+    pass over the bytes; as the text changes only the lines its changes were are wrapped
+    again, and the rows after them move. The document notes the lines of each change
+    (`LineChange`: a line, how many lines it was, how many it is; `Doc::line_changes_since`
+    gives those after a version, the last 256 of them; a view further behind builds again).
+    On 100,000 lines a letter typed costs 24 µs where building them all costs 66 ms. A
+    test of random edits, several at once and undone, holds the kept rows to rows built
+    again. Rows drive every y: paint (the band of a line over all its
     rows, its number on the first), the pointer, the caret kept in view, the height. Up,
     down and the page keys go by rows in the column they came from; Home and End stay the
     line's. Nothing scrolls sideways.

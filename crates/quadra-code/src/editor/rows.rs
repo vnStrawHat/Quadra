@@ -5,55 +5,12 @@
 
 use std::ops::Range;
 
+mod wrap;
+
 use quadra_prim::{Point, Rect};
-use quadra_text::cell_step;
 
 use super::EditorWidget;
-use crate::doc::Doc;
-
-/// The rows of a wrapped text, as of a version of it, a count of columns and a tab size.
-pub(super) struct Rows {
-    key: (u64, usize, usize),
-    /// The first row of each line, and the count of rows after the last.
-    first: Vec<u32>,
-    /// Where each row starts, as an offset in its line.
-    starts: Vec<u32>,
-}
-
-impl Rows {
-    // ponytail: built again whole for each change, a pass over the bytes; from the changed
-    // line on if long wrapped documents make typing slow.
-    fn build(doc: &Doc, cols: usize, tab: usize) -> Rows {
-        let (mut first, mut starts) = (Vec::new(), Vec::new());
-        for line in 0..doc.buffer.line_count() {
-            first.push(starts.len() as u32);
-            starts.push(0);
-            let text = doc.buffer.line(line);
-            let (mut at, mut col, mut row_start, mut row_col) = (0, 0, 0, 0);
-            let mut blank: Option<(usize, usize)> = None; // after the last blank of the row
-            while at < text.len() {
-                let (end, width) = cell_step(&text, at);
-                let byte = text.as_bytes()[at];
-                let next = if byte == b'\t' { (col / tab + 1) * tab } else { col + width };
-                let is_blank = byte == b' ' || byte == b'\t';
-                if !is_blank && next - row_col > cols && at > row_start {
-                    let (b, c) = blank.filter(|&(b, _)| b > row_start).unwrap_or((at, col));
-                    starts.push(b as u32);
-                    (row_start, row_col, blank) = (b, c, None);
-                    if b < at {
-                        continue; // what is left of the word may not fit either
-                    }
-                }
-                if is_blank {
-                    blank = Some((end, next));
-                }
-                (col, at) = (next, end);
-            }
-        }
-        first.push(starts.len() as u32);
-        Rows { key: (doc.version, cols, tab), first, starts }
-    }
-}
+pub(super) use wrap::Rows;
 
 impl EditorWidget {
     /// How many columns a row holds.
@@ -61,16 +18,20 @@ impl EditorWidget {
         ((self.text_width() / self.cell).floor() as usize).max(1)
     }
 
-    /// Builds the rows again if the text, the width or the tab size changed since.
+    /// Brings the rows up to the text, the width and the tab size: the lines that changed
+    /// are wrapped again, or all of them when the width or the tab size did.
     pub(super) fn sync_rows(&mut self) {
         if !self.wrap {
             self.rows = None;
             return;
         }
         let key = (self.doc.version, self.cols(), self.doc.tab_size.max(1));
-        if self.rows.as_ref().is_none_or(|rows| rows.key != key) {
-            self.rows = Some(Rows::build(&self.doc, key.1, key.2));
-        }
+        let rows = match self.rows.take() {
+            Some(rows) if rows.key == key => Some(rows),
+            Some(rows) => rows.update(&self.doc, key.1, key.2),
+            None => None,
+        };
+        self.rows = Some(rows.unwrap_or_else(|| Rows::build(&self.doc, key.1, key.2)));
     }
 
     pub(super) fn row_count(&self) -> usize {

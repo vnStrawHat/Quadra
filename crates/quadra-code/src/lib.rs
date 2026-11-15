@@ -16,7 +16,7 @@ mod v;
 mod yaml;
 
 pub use buffer::Buffer;
-pub use doc::{Cursor, Doc, Edit, Move};
+pub use doc::{Cursor, Doc, Edit, LineChange, Move};
 pub use editor::{EDITOR_CONTEXT, Editor, EditorCommand, EditorWidget, Mark, bind_keys, editor, marks};
 pub use find::{Query, next_match};
 pub use highlight::{Highlight, Highlighter};

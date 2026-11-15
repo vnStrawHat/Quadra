@@ -2,6 +2,7 @@
 //! it in groups that undo takes back, and the commands of editing. Nothing here draws or
 //! knows of keys: the editor calls it, and so does a test.
 
+mod changes;
 mod commands;
 mod lines;
 pub(crate) mod motion;
@@ -11,6 +12,7 @@ use std::ops::Range;
 
 use crate::buffer::Buffer;
 
+pub use changes::LineChange;
 pub use motion::Move;
 
 /// The groups undo keeps: the oldest goes when there is one more.
@@ -108,6 +110,7 @@ pub struct Doc {
     /// The time of the command that comes, in milliseconds: whoever drives the document
     /// sets it, and typing after a pause is a group of its own.
     pub now: u64,
+    changes: changes::Changes,
     undo: Vec<Group>,
     redo: Vec<Group>,
 }
@@ -123,6 +126,7 @@ impl Doc {
             version: 0,
             dirty: usize::MAX,
             now: 0,
+            changes: changes::Changes::default(),
             undo: Vec::new(),
             redo: Vec::new(),
         }
@@ -184,8 +188,7 @@ impl Doc {
         // The last first: the offsets of those before it stay what they were.
         for edit in edits.iter().rev() {
             let removed = self.buffer.slice(edit.range.clone()).into_owned();
-            self.buffer.delete(edit.range.clone());
-            self.buffer.insert(edit.range.start, &edit.text);
+            self.put(edit.range.start, &removed, &edit.text);
             changes.push(Change { at: edit.range.start, removed, inserted: edit.text.clone() });
         }
         // With carets an edit puts the cursor that asked for it; without, every cursor is
@@ -242,8 +245,7 @@ impl Doc {
         let Some(group) = self.undo.pop() else { return false };
         for change in group.changes.iter().rev() {
             self.touch(change.at);
-            self.buffer.delete(change.at..change.at + change.inserted.len());
-            self.buffer.insert(change.at, &change.removed);
+            self.put(change.at, &change.inserted, &change.removed);
         }
         self.cursors.clone_from(&group.before);
         self.version += 1;
@@ -256,8 +258,7 @@ impl Doc {
         let Some(mut group) = self.redo.pop() else { return false };
         for change in &group.changes {
             self.touch(change.at);
-            self.buffer.delete(change.at..change.at + change.removed.len());
-            self.buffer.insert(change.at, &change.inserted);
+            self.put(change.at, &change.removed, &change.inserted);
         }
         self.cursors.clone_from(&group.after);
         self.version += 1;

@@ -93,10 +93,13 @@ impl OneTerm {
                     .child(dock::dock(&shown)),
             ),
             false => AnyView::new(
-                column()
-                    .grow(1.0)
-                    .child(strip::strip(&shown))
-                    .child(row().grow(1.0).child(spaces::workspace(&shown)).child(dock::dock(&shown))),
+                column().grow(1.0).child(strip::strip(&shown)).child(
+                    row()
+                        .grow(1.0)
+                        .child(hosts_panel(&shown))
+                        .child(spaces::workspace(&shown))
+                        .child(dock::dock(&shown)),
+                ),
             ),
         });
         // Locked, only the lock's card is displayed.
@@ -130,6 +133,20 @@ impl OneTerm {
             .child(connect::dialog(&self.model))
             .child(hostlist::add_dialog(&self.model))
     }
+}
+
+/// The hosts of the rail as a panel at the left, while the tabs are in a strip and the title
+/// bar's Hosts says so.
+fn hosts_panel(model: &Model) -> impl View + use<> {
+    let on = model.ui().hosts;
+    column()
+        .width(248.0)
+        .shrink(0.0)
+        .bg(quadra_design::token::PANEL)
+        .border_right(1.0)
+        .border_color(quadra_design::token::LINE)
+        .display(locked::shown(move || on.get()))
+        .child(hostlist::hosts(model))
 }
 
 /// Does a command; false when no tab is left. Locked, only locking does anything.

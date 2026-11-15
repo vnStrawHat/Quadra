@@ -65,7 +65,16 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .child(div().font_weight(600).child(text("1Term")))
         .child(chip)
         .child(locked);
-    let (dock, open) = (seen.ui().dock, seen.ui().settings);
+    let (dock, open, hosts, vertical) =
+        (seen.ui().dock, seen.ui().settings, seen.ui().hosts, seen.vertical());
+    // With the tabs in a strip, the hosts are a panel this opens.
+    let panel = div().display(shown(move || !vertical.get())).child(
+        button("Hosts")
+            .icon(icons::APP_WINDOW)
+            .variant(quadra_design::Variant::Secondary)
+            .size(quadra_design::Size::Sm)
+            .on_click(move || hosts.update(|on| *on = !*on)),
+    );
     let gear = tooltip(
         "Settings",
         icon_button(icons::SETTINGS, "Settings").on_click(move || open.update(|on| *on = !*on)),
@@ -84,6 +93,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .gap(4.0)
         .display(shown(move || !lock.locked.get() && !settings.get()))
         .child(collapse)
+        .child(panel)
         .child(search(&seen))
         .child(files)
         .child(notifications(&seen))

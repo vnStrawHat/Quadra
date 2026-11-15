@@ -187,7 +187,7 @@ fn the_tabs_go_into_a_strip_and_back_into_the_rail() {
     assert!(!a.h.has_text("TABS"), "the rail is gone");
     assert_eq!(a.tabs(), 1);
     a.typed("still");
-    a.h.get_by_role(Role::Button, "Vertical").click();
+    a.h.get_by_role(Role::Button, "Switch to vertical tabs").click();
     a.h.settle();
     assert_eq!(a.made.borrow().len(), 1, "the shell lives on");
     assert_eq!(a.screen(0), "still");

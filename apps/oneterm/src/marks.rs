@@ -78,6 +78,50 @@ pub(crate) fn tab_mark(tab: Tab) -> impl View {
     })
 }
 
+/// What a tab of the strip says after its title: a state on a disc, else its progress, else
+/// a bell, else (while it shows) how many spaces it has.
+pub(crate) fn strip_mark(tab: Tab, on: impl Fn() -> bool + 'static) -> impl View {
+    dynamic(move || {
+        let word = state_word(tab.status()).unwrap_or("");
+        let small = || div().font_family(fonts::MONO).text_size(10.0);
+        match tab.status() {
+            ProgramState::Blocked => AnyView::new(disc(
+                14.0,
+                token::WARN,
+                word,
+                div().text_size(9.0).font_weight(700).child(text("?")),
+            )),
+            ProgramState::Done => AnyView::new(disc(
+                14.0,
+                token::OK,
+                word,
+                icon(icons::CHECK).size(9.0).color(token::TEXT_ON_STATUS),
+            )),
+            ProgramState::Error => AnyView::new(disc(
+                14.0,
+                token::ERROR,
+                word,
+                icon(icons::X).size(9.0).color(token::TEXT_ON_STATUS),
+            )),
+            _ if part_of(tab).is_some() => AnyView::new(
+                small()
+                    .text_color(token::ACCENT)
+                    .child(text(move || part_of(tab).map(|n| format!("{n}%")).unwrap_or_default())),
+            ),
+            _ if tab.bells() > 0 => AnyView::new(
+                div()
+                    .role(Role::Image)
+                    .label("Bell rang")
+                    .child(icon(icons::BELL).size(12.0).color(token::ERROR)),
+            ),
+            _ if on() => AnyView::new(
+                small().text_color(token::TEXT_2).child(text(tab.spaces.with(Vec::len).to_string())),
+            ),
+            _ => AnyView::new(div()),
+        }
+    })
+}
+
 /// The tab's icon: a window for a tab with a remote space, a terminal else; in the accent
 /// while it shows, with a red dot while a bell rang unseen.
 pub(crate) fn tab_icon(tab: Tab, on: impl Fn() -> bool + 'static) -> impl View {
@@ -119,6 +163,7 @@ pub(crate) fn progress_bar(tab: Tab) -> impl View {
             if matches!(tab.progress(), Some(Progress::Error(_))) { token::ERROR } else { token::ACCENT }
         });
     div()
+        .width(Length::Fill)
         .height(3.0)
         .radius(2.0)
         .bg(token::LINE)

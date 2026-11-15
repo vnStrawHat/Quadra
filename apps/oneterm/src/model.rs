@@ -21,6 +21,8 @@ pub struct Ui {
     pub settings: Signal<bool>,
     pub connecting: Signal<bool>,
     pub adding: Signal<bool>,
+    /// The hosts panel at the left while the tabs are in a strip.
+    pub hosts: Signal<bool>,
     /// The settings' page shown.
     pub page: Signal<usize>,
     /// The saved host being edited, by name.
@@ -69,6 +71,7 @@ impl Model {
                 settings: signal(false),
                 connecting: signal(false),
                 adding: signal(false),
+                hosts: signal(false),
                 page: signal(0),
                 editing: signal(None),
                 dock: signal(false),

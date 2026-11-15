@@ -68,8 +68,11 @@ Click selects; middle closes; double-click renames; the right button opens the t
 Duplicate, Close, Close others). Rows drag to reorder.
 
 **Horizontal variant** (setting "Tabs: vertical | horizontal"): no rail; a 36 px strip under the
-title bar, one tab per button (icon, title, its signal), the active one on the editor colour with
-an accent line under it, `+` after the last, "Vertical" at the end to switch back.
+title bar, one tab per button (icon, title, then a state on a disc, else the progress in the
+accent with a bar along the tab's bottom, else a bell, else for the active one its space count),
+the active one on the editor colour with an accent line under it, `+` after the last, "Vertical"
+(Switch to vertical tabs) at the end. The title bar's Hosts button opens the rail's hosts as a
+panel of 248 px at the left.
 
 ## Spaces
 

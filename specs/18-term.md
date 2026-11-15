@@ -84,7 +84,8 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 paused), `status` (OSC 7501), `exited` (the code once the program ended), and each OSC 9
 notification as an event (`on_notification`). `link_note` is what the link says of itself in
 a few words, written by whoever made the link (a remote one's latency, `124 ms`); empty for a
-local program.
+local program. An app keeps its own data with a session (`keep`, `kept::<T>()`): a remote
+space's connection, for one.
 
 **OSC 7501** (program status, rev 0.3): routed to the session (`OscRoute::Forward`). The body is
 `key=value` pairs joined by `:`: `state` (`idle`, `working`, `done`, `blocked`, `error`, `clear`),

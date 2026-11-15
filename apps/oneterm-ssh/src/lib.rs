@@ -3,18 +3,20 @@
 //! password) is asked in the terminal, as the OpenSSH client does.
 
 mod auth;
+mod files;
 mod prompt;
 mod session;
 mod target;
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 
+pub use files::{Entry, Files, join, safe_name};
 use prompt::Cmd;
 pub use target::Target;
 
@@ -63,8 +65,17 @@ impl Options {
 /// A connection running a shell. Dropping it closes it.
 pub struct Ssh {
     to: UnboundedSender<Cmd>,
+    shared: Arc<Shared>,
+}
+
+/// What the connection's task and the handle share.
+#[derive(Default)]
+pub(crate) struct Shared {
     /// The last ping's time in microseconds; 0 before the first.
-    latency: Arc<AtomicU32>,
+    latency: AtomicU32,
+    /// The connection, once the shell is open.
+    handle: Mutex<Option<Arc<russh::client::Handle<session::Checker>>>>,
+    files: Mutex<Option<Files>>,
 }
 
 impl Ssh {
@@ -77,21 +88,33 @@ impl Ssh {
         exited: impl FnOnce(i32) + Send + 'static,
     ) -> Ssh {
         let (to, from) = unbounded_channel();
-        let latency = Arc::new(AtomicU32::new(0));
-        let pings = latency.clone();
-        runtime().spawn(session::run(options, from, Arc::new(output), Box::new(exited), pings));
-        Ssh { to, latency }
+        let shared = Arc::new(Shared::default());
+        runtime().spawn(session::run(options, from, Arc::new(output), Box::new(exited), shared.clone()));
+        Ssh { to, shared }
     }
 
     /// How long the last ping took, once the shell is open (every 5 s).
     pub fn latency(&self) -> Option<Duration> {
-        let micros = self.latency.load(Ordering::Relaxed);
+        let micros = self.shared.latency.load(Ordering::Relaxed);
         (micros > 0).then(|| Duration::from_micros(micros.into()))
     }
 
     /// Bytes typed: an answer while the engine asks, else the shell's input.
     pub fn write(&self, bytes: &[u8]) {
         let _ = self.to.send(Cmd::Input(bytes.to_vec()));
+    }
+
+    /// The connection's files over SFTP, opened the first time; an error before the shell
+    /// is open. It blocks: an app calls it on its pool.
+    pub fn files(&self) -> Result<Files, String> {
+        let mut files = self.shared.files.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(files) = &*files {
+            return Ok(files.clone());
+        }
+        let handle = self.shared.handle.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        let opened = Files::open(handle.ok_or("not connected yet")?)?;
+        *files = Some(opened.clone());
+        Ok(opened)
     }
 
     pub fn resize(&self, rows: u16, cols: u16) {
@@ -110,7 +133,7 @@ impl Drop for Ssh {
 }
 
 /// The engine's runtime: two threads, made with the first connection.
-fn runtime() -> &'static Runtime {
+pub(crate) fn runtime() -> &'static Runtime {
     static RUNTIME: OnceLock<Runtime> = OnceLock::new();
     RUNTIME.get_or_init(|| {
         tokio::runtime::Builder::new_multi_thread()

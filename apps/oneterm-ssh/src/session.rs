@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use russh::ChannelMsg;
@@ -13,8 +13,8 @@ use russh::keys::{HashAlg, PublicKeyOrCertificate};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::UnboundedReceiver;
 
-use crate::Options;
 use crate::prompt::{Cmd, Out, Prompt};
+use crate::{Options, Shared};
 
 const CONNECT: Duration = Duration::from_secs(20);
 const PING: Duration = Duration::from_secs(5);
@@ -24,10 +24,10 @@ pub(crate) async fn run(
     input: UnboundedReceiver<Cmd>,
     out: Out,
     exited: Box<dyn FnOnce(i32) + Send>,
-    latency: Arc<AtomicU32>,
+    shared: Arc<Shared>,
 ) {
     let prompt = Arc::new(Prompt::new(out, input, options.rows, options.cols));
-    let code = match shell(&options, prompt.clone(), latency).await {
+    let code = match shell(&options, prompt.clone(), &shared).await {
         Ok(code) => code,
         Err(why) => {
             prompt.say(&format!("\n[connection closed: {why}]\n"));
@@ -37,7 +37,7 @@ pub(crate) async fn run(
     exited(code);
 }
 
-async fn shell(options: &Options, prompt: Arc<Prompt>, latency: Arc<AtomicU32>) -> Result<i32, String> {
+async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> Result<i32, String> {
     let target = &options.target;
     let address = (target.host.as_str(), target.port);
     let socket = match tokio::time::timeout(CONNECT, TcpStream::connect(address)).await {
@@ -71,7 +71,8 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, latency: Arc<AtomicU32>) 
     let (mut read, write) = channel.split();
     // A ping every 5 s: how long the server takes to answer.
     let handle = Arc::new(handle);
-    let pings = handle.clone();
+    *shared.handle.lock().unwrap_or_else(|e| e.into_inner()) = Some(handle.clone());
+    let (pings, latency) = (handle.clone(), shared.clone());
     let pinger = tokio::spawn(async move {
         loop {
             let start = Instant::now();
@@ -79,7 +80,7 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, latency: Arc<AtomicU32>) 
                 break;
             }
             let micros = start.elapsed().as_micros().clamp(1, u128::from(u32::MAX)) as u32;
-            latency.store(micros, Ordering::Relaxed);
+            latency.latency.store(micros, Ordering::Relaxed);
             tokio::time::sleep(PING).await;
         }
     });
@@ -110,12 +111,15 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, latency: Arc<AtomicU32>) 
     }
     writer.abort();
     pinger.abort();
+    // The files go with the shell (specs/19).
+    *shared.handle.lock().unwrap_or_else(|e| e.into_inner()) = None;
+    *shared.files.lock().unwrap_or_else(|e| e.into_inner()) = None;
     let _ = handle.disconnect(russh::Disconnect::ByApplication, "", "").await;
     code.ok_or_else(|| "the connection dropped".to_string())
 }
 
 /// Checks the server's key against the known hosts, asking about one it has never seen.
-struct Checker {
+pub(crate) struct Checker {
     host: String,
     port: u16,
     file: PathBuf,

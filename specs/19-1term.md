@@ -204,6 +204,28 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   bar shows the focused space's host (its name, else `user@host`) and it, or `local`.
 - **A tab's second line** counts its spaces by kind: `2 ssh · 1 local · 3 spaces`.
 
+### M9 in detail
+
+- **The engine's files**: `Ssh::files()` opens SFTP (version 3, `russh-sftp`) on the same
+  connection once the shell is open, and gives `Files`, whose calls block (an app makes them
+  on its pool): `home`, `list` (folders first, then names whatever the case; no `.` or `..`;
+  at most 100,000 entries), `download(remote, local, progress, cancel)`, `upload(local,
+  remote, progress, cancel)`, `mkdir`, `remove`. A transfer writes `<name>.part` beside its
+  target and renames it once whole, so a target is never half written; a cancelled or failed
+  one removes its part. A remote name that would leave its folder as a local path (`/`, `\`,
+  `:`, `..`, a control character) is refused.
+- **The dock**: 300 px at the workspace's right, opened and closed by the title bar's SFTP
+  button; it follows the focused space's connection (a local space: "Not an SSH space").
+  Its header says `SFTP` and the host, with Refresh, New folder and Close; the path is a
+  breadcrumb whose parts go there; then `..` and the entries, a folder or file icon, the name,
+  the size (`—` for a folder). A click on a folder opens it; two on a file downloads it to
+  the user's Downloads folder (`name (1).ext` when the name is taken); a row's menu has
+  Download and Delete. Files dropped from the OS upload to the folder shown. Transfers show
+  under the list, `name → remote 48%` or `name ← local`, with a cross that cancels; a failed
+  one says why. The expanded view waits.
+- **Sessions keep app data**: `Session::keep(Rc<dyn Any>)` and `kept::<T>()` (specs/18), how
+  the app finds a remote space's `Ssh`.
+
 ## Tests
 
 The app's tests drive it through the semantic tree on the headless platform with `echo()`

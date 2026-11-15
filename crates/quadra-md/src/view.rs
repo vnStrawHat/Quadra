@@ -18,7 +18,7 @@ use quadra_layout::{Align as Across, Justify, Length};
 use quadra_reactive::signal;
 use quadra_text::find_urls;
 use quadra_tree::Role;
-use quadra_ui::{
+use quadra_view::{
     Div, Span as Run, View, by_text, column, div, inline, inline_image, rich_text, row, scroll_x, span, text,
 };
 

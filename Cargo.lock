@@ -83,7 +83,7 @@ dependencies = [
  "quadra-prim",
  "quadra-reactive",
  "quadra-tree",
- "quadra-ui",
+ "quadra-view",
 ]
 
 [[package]]
@@ -104,7 +104,7 @@ dependencies = [
  "quadra-render",
  "quadra-text",
  "quadra-tree",
- "quadra-ui",
+ "quadra-view",
  "serde_json",
 ]
 
@@ -159,7 +159,7 @@ dependencies = [
  "quadra-testing",
  "quadra-text",
  "quadra-tree",
- "quadra-ui",
+ "quadra-view",
  "regex-lite",
 ]
 
@@ -174,7 +174,7 @@ dependencies = [
  "quadra-reactive",
  "quadra-testing",
  "quadra-tree",
- "quadra-ui",
+ "quadra-view",
  "regex-lite",
 ]
 
@@ -194,8 +194,8 @@ dependencies = [
  "quadra-testing",
  "quadra-text",
  "quadra-tree",
- "quadra-ui",
  "quadra-vector",
+ "quadra-view",
  "serde_json",
 ]
 
@@ -223,7 +223,7 @@ dependencies = [
  "quadra-testing",
  "quadra-text",
  "quadra-tree",
- "quadra-ui",
+ "quadra-view",
 ]
 
 [[package]]
@@ -249,8 +249,8 @@ dependencies = [
  "quadra-testing",
  "quadra-text",
  "quadra-tree",
- "quadra-ui",
  "quadra-vector",
+ "quadra-view",
 ]
 
 [[package]]
@@ -267,7 +267,7 @@ dependencies = [
  "quadra-render",
  "quadra-text",
  "quadra-tree",
- "quadra-ui",
+ "quadra-view",
  "windows",
  "windows-core",
 ]
@@ -314,7 +314,7 @@ dependencies = [
  "quadra-reactive",
  "quadra-render",
  "quadra-text",
- "quadra-ui",
+ "quadra-view",
  "windows",
 ]
 
@@ -330,7 +330,7 @@ dependencies = [
  "quadra-render",
  "quadra-text",
  "quadra-tree",
- "quadra-ui",
+ "quadra-view",
 ]
 
 [[package]]
@@ -355,7 +355,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "quadra-ui"
+name = "quadra-vector"
+version = "0.1.0"
+dependencies = [
+ "quadra-prim",
+]
+
+[[package]]
+name = "quadra-view"
 version = "0.1.0"
 dependencies = [
  "quadra-async",
@@ -371,13 +378,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quadra-vector"
-version = "0.1.0"
-dependencies = [
- "quadra-prim",
-]
-
-[[package]]
 name = "quadra-viz"
 version = "0.1.0"
 dependencies = [
@@ -388,7 +388,7 @@ dependencies = [
  "quadra-render",
  "quadra-testing",
  "quadra-tree",
- "quadra-ui",
+ "quadra-view",
 ]
 
 [[package]]

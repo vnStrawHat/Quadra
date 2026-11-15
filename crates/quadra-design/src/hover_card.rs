@@ -5,7 +5,7 @@
 
 use quadra_headless::hint;
 use quadra_tree::{Along, Anchor, NodeId, Role, Side};
-use quadra_ui::{MountCx, View};
+use quadra_view::{MountCx, View};
 
 use crate::popup::{hang, surface};
 

@@ -9,7 +9,7 @@ use quadra_text::TextStyle;
 use quadra_tree::{
     GlyphTile, Inherited, InlineBox, MeasureCx, NodeId, PaintCx, Role, Semantics, Style, Widget, paint_glyph,
 };
-use quadra_ui::{MountCx, Span, View, div, inline, span, text};
+use quadra_view::{MountCx, Span, View, div, inline, span, text};
 
 use super::layout::{Laid, Lay, Part};
 use super::{List, parse};

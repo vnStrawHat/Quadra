@@ -7,7 +7,7 @@ use quadra_prim::{Color, Size};
 use quadra_render::{DeviceSize, Pixels, Renderer, SurfaceTarget};
 use quadra_text::FakeBackend;
 use quadra_tree::{Fonts, Gradient, Tree};
-use quadra_ui::{View, div, mount_root, row};
+use quadra_view::{View, div, mount_root, row};
 
 const RED: Color = Color::rgb(0xFF0000);
 const BLUE: Color = Color::rgb(0x0000FF);

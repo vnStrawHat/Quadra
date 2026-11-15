@@ -7,7 +7,7 @@ use quadra_design::{fonts, token};
 use quadra_layout::{Align, Justify, Length};
 use quadra_reactive::{Signal, memo};
 use quadra_tree::{NodeId, Paint};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, column, div, each, row, text};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, column, div, each, row, text};
 
 use crate::geometry::{max_of, nice_max, short};
 

@@ -3,7 +3,7 @@
 
 use quadra_layout::{Align, Justify};
 use quadra_tree::Token;
-use quadra_ui::{AnyView, Div, div, row, text};
+use quadra_view::{AnyView, Div, div, row, text};
 
 use crate::icon::icon;
 use crate::{icons, token};

@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use quadra_reactive::Signal;
 use quadra_tree::Role;
-use quadra_ui::Div;
+use quadra_view::Div;
 
 /// The page of a dialog on its face: a dialog to a reader, named by its title.
 pub fn page(face: Div, title: impl Into<String>) -> Div {

@@ -4,7 +4,7 @@
 
 use quadra_reactive::Signal;
 use quadra_tree::Role;
-use quadra_ui::{Div, IntoProp, Region, View};
+use quadra_view::{Div, IntoProp, Region, View};
 
 use crate::press::Press;
 use crate::{choice, disclose, press};

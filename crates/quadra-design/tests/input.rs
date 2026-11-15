@@ -8,7 +8,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::{NodeId, Role};
-use quadra_ui::column;
+use quadra_view::column;
 
 #[test]
 fn the_frame_shows_the_focus_and_what_is_not_accepted() {

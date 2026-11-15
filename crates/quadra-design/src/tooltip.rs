@@ -4,7 +4,7 @@
 
 use quadra_headless::hint;
 use quadra_tree::{Along, Anchor, NodeId, Role, Side};
-use quadra_ui::{Div, MountCx, View, div, row, text};
+use quadra_view::{Div, MountCx, View, div, row, text};
 
 use crate::popup::{hang, surface};
 use crate::token;

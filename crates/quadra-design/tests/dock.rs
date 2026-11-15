@@ -8,7 +8,7 @@ use quadra_design::work::{Dock, DockEvent, Pane, Tab, Zone, dock, panes, tab_str
 use quadra_prim::{Point, Rect};
 use quadra_testing::Harness;
 use quadra_tree::{PointerInput, Role};
-use quadra_ui::{column, div};
+use quadra_view::{column, div};
 
 /// "main.rs" and "app.rs" at the left, "Logs" and "Shell" at the right, in 806 by 406.
 fn page() -> (Harness, Dock) {

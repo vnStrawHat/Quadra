@@ -8,7 +8,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::{Keymap, Role};
-use quadra_ui::column;
+use quadra_view::column;
 
 #[test]
 fn the_line_at_the_top_follows_the_view_and_moves_it() {

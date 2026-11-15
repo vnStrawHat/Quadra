@@ -6,7 +6,7 @@ use quadra_layout::Length;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo};
 use quadra_tree::{NodeId, Paint};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, div};
 
 use crate::token;
 

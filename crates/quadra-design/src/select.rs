@@ -10,7 +10,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, Paint};
-use quadra_ui::{MountCx, NodeRef, View, by_text, column, div, row, text};
+use quadra_view::{MountCx, NodeRef, View, by_text, column, div, row, text};
 
 use crate::icon::icon;
 use crate::menu::{Ends, MenuItem, rows};

@@ -8,7 +8,7 @@ use quadra_design::{fonts, token};
 use quadra_layout::{Align, Display, Justify, Length};
 use quadra_reactive::{Memo, Signal, memo, signal, untrack};
 use quadra_tree::{NodeId, Paint, PointerEvent, PointerKind, Role};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, column, div, row, text};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, column, div, row, text};
 
 use crate::geometry::{hh_mm, max_of, nice_max, short};
 use crate::plot::filling;

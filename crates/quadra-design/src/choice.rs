@@ -6,7 +6,7 @@ use quadra_platform::Cursor;
 use quadra_prim::Corners;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, State};
-use quadra_ui::{AnyView, Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
+use quadra_view::{AnyView, Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
 
 use crate::button::Size;
 use crate::{size, token};
@@ -81,7 +81,7 @@ impl Choice {
             false => cell,
         };
         let cell = cell.hover(|s| s.bg(token::PANEL_HOVER));
-        let chosen = |s: quadra_ui::Refine| s.bg(token::ACCENT_TINT).text_color(token::ACCENT_TEXT);
+        let chosen = |s: quadra_view::Refine| s.bg(token::ACCENT_TINT).text_color(token::ACCENT_TEXT);
         cell.when(State::CHECKED, chosen).child(text(label))
     }
 

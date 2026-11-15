@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use quadra_reactive::{Memo, Signal};
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View};
 
 use crate::action::{CONTROL, Confirm};
 

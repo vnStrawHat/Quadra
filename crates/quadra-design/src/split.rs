@@ -6,7 +6,7 @@ use quadra_layout::{Direction, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_ui::{AnyView, MountCx, View, div};
+use quadra_view::{AnyView, MountCx, View, div};
 
 use crate::token;
 

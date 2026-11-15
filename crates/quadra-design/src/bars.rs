@@ -6,7 +6,7 @@ use std::rc::Rc;
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{AnyView, Div, IntoProp, MountCx, View, by_text, div, row, text};
+use quadra_view::{AnyView, Div, IntoProp, MountCx, View, by_text, div, row, text};
 
 use crate::button::{Button, icon_button};
 use crate::icon::icon;

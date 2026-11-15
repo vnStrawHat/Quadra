@@ -4,7 +4,7 @@
 use quadra_layout::{Align, Justify};
 use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_tree::{Role, State};
-use quadra_ui::{AnyView, Div, Region, by_text, column, div, dynamic, row, scroll, text};
+use quadra_view::{AnyView, Div, Region, by_text, column, div, dynamic, row, scroll, text};
 
 use quadra_headless::settings::{Model, opens, shown};
 

@@ -4,7 +4,7 @@ use quadra_code::{TokenKind, role, tokenizer_for};
 use quadra_design::{fonts, size, token};
 use quadra_reactive::signal;
 use quadra_text::find_urls;
-use quadra_ui::{Div, column, div, scroll_x, span};
+use quadra_view::{Div, column, div, scroll_x, span};
 
 use super::{CODE, OnLink, rich};
 

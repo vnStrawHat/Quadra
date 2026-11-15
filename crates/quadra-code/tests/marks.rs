@@ -7,7 +7,7 @@ use quadra_code::{EditorWidget, bind_keys, editor, marks};
 use quadra_platform::{Key, Mods};
 use quadra_testing::Harness;
 use quadra_tree::{Keymap, Role};
-use quadra_ui::column;
+use quadra_view::column;
 
 #[test]
 fn marks_kept_through_typing_undoing_and_lines_are_those_of_the_whole_text() {

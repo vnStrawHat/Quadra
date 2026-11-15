@@ -218,9 +218,9 @@ CPU before any GPU work is already near the V build's whole frame (0.69 ms): pai
 lines near the visible part, as the V build does, is the likely answer, to decide with the real
 backend.
 
-## 2026-11-11 — the comparison scenes without a window (on c92b93f plus the uncommitted `quadra-ui`)
+## 2026-11-11 — the comparison scenes without a window (on c92b93f plus the uncommitted `quadra-view`)
 
-`tools/cargo.sh run --release -p quadra-ui --example scenes`
+`tools/cargo.sh run --release -p quadra-view --example scenes`
 
 The passes on the CPU only: fake text backend, null renderer, 800 x 600. No glyph is rasterized
 and nothing reaches a GPU, so these are not yet comparable with the V numbers, which are whole

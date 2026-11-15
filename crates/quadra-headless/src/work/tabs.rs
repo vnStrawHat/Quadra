@@ -12,7 +12,7 @@ use quadra_platform::MouseButton;
 use quadra_prim::Size;
 use quadra_reactive::{Signal, on_cleanup};
 use quadra_tree::{NodeId, PointerEvent, PointerKind, Role};
-use quadra_ui::{Div, MountCx, View};
+use quadra_view::{Div, MountCx, View};
 
 use super::dock::{Dock, TabDrag, take_tabs};
 

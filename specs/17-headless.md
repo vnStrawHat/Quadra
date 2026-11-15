@@ -12,7 +12,7 @@ kit of another look is built from it with no change to it.
 
 `quadra-headless` stands between `quadra-app` and `quadra-design` (02, "Crates"). It depends on
 `quadra-prim`, `quadra-reactive`, `quadra-layout`, `quadra-platform` (keys, the clipboard),
-`quadra-tree`, `quadra-ui` and `quadra-async` (timers). It does not depend on `quadra-app`:
+`quadra-tree`, `quadra-view` and `quadra-async` (timers). It does not depend on `quadra-app`:
 what it needs of the app (the clipboard, the window) comes through the context of views, as
 in the kit today.
 

@@ -5,8 +5,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use quadra_ui::{DrawingView, drawing};
 use quadra_vector::Svg;
+use quadra_view::{DrawingView, drawing};
 
 thread_local! {
     /// The drawings of the bodies shown so far: a body is read once.

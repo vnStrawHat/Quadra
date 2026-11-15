@@ -10,7 +10,7 @@ use quadra_headless::popup::hang_with;
 use quadra_prim::Point;
 use quadra_reactive::{Scope, effect, signal};
 use quadra_tree::{Anchor, NodeId};
-use quadra_ui::{MountCx, RichTextView, View};
+use quadra_view::{MountCx, RichTextView, View};
 
 pub(super) struct Hinted(pub RichTextView);
 

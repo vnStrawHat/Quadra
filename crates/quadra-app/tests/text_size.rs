@@ -14,7 +14,7 @@ use quadra_prim::{Point, Rect, Size};
 use quadra_reactive::{Signal, signal};
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
-use quadra_ui::{column, div, text};
+use quadra_view::{column, div, text};
 
 struct Page {
     platform: HeadlessPlatform,
@@ -103,7 +103,7 @@ fn the_systems_text_size_zooms_until_the_user_says_otherwise() {
 
 #[test]
 fn text_alone_grows_when_a_view_asks_while_the_app_runs() {
-    use quadra_ui::{by_text, uniform_list};
+    use quadra_view::{by_text, uniform_list};
 
     let platform = HeadlessPlatform::new();
     let mut app = App::with(Rc::new(platform.clone()), NullRenderer::new(), Box::new(FakeBackend::new()));

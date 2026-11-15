@@ -7,7 +7,7 @@ use quadra_design::{button, dark, list};
 use quadra_reactive::{Signal, memo, provide, signal};
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_ui::{TextScale, column, div, text};
+use quadra_view::{TextScale, column, div, text};
 
 struct Page {
     h: Harness,

@@ -11,13 +11,13 @@ use quadra_prim::Size;
 use quadra_reactive::{Signal, signal};
 use quadra_render::{NullRenderer, Renderer};
 use quadra_text::FakeBackend;
-use quadra_ui::{column, text};
+use quadra_view::{column, text};
 
 fn app(platform: &HeadlessPlatform) -> App<NullRenderer> {
     App::with(Rc::new(platform.clone()), NullRenderer::new(), Box::new(FakeBackend::new()))
 }
 
-fn label(of: Signal<String>) -> impl FnOnce() -> quadra_ui::Div {
+fn label(of: Signal<String>) -> impl FnOnce() -> quadra_view::Div {
     move || column().child(text(of))
 }
 
@@ -124,7 +124,7 @@ fn a_lost_device_is_made_again_and_everything_is_drawn_again() {
 fn pointer_events_of_a_window_reach_the_handlers_of_its_view() {
     use quadra_platform::{Mods, MouseButton, PointerKind};
     use quadra_prim::Point;
-    use quadra_ui::div;
+    use quadra_view::div;
 
     let platform = HeadlessPlatform::new();
     let mut app = app(&platform);
@@ -156,7 +156,7 @@ fn pointer_events_of_a_window_reach_the_handlers_of_its_view() {
 fn the_apps_keymap_turns_keys_into_actions_in_every_window() {
     use quadra_platform::{Key, Mods};
     use quadra_tree::{Action, Keymap};
-    use quadra_ui::div;
+    use quadra_view::div;
 
     struct Add(i32);
     impl Action for Add {
@@ -188,7 +188,7 @@ fn the_apps_keymap_turns_keys_into_actions_in_every_window() {
 #[test]
 fn a_window_is_told_where_text_is_typed_and_when_it_is_not() {
     use quadra_platform::{Key, Mods};
-    use quadra_ui::{div, text_input};
+    use quadra_view::{div, text_input};
 
     let platform = HeadlessPlatform::new();
     let mut app = app(&platform);

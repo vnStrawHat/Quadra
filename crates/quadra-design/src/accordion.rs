@@ -6,7 +6,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_ui::{AnyView, Div, MountCx, View, by_text, column, div, dynamic, row, text};
+use quadra_view::{AnyView, Div, MountCx, View, by_text, column, div, dynamic, row, text};
 
 use crate::icon::icon;
 use crate::{icons, size, token};

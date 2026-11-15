@@ -7,7 +7,7 @@ use quadra_headless as headless;
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_ui::{column, div, text};
+use quadra_view::{column, div, text};
 
 #[test]
 fn each_widget_name_is_that_widget_to_a_reader() {

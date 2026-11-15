@@ -9,7 +9,7 @@ use quadra_code::{EditorWidget, bind_keys, editor};
 use quadra_platform::{Key, Mods};
 use quadra_testing::Harness;
 use quadra_tree::{Keymap, NodeId, PointerInput, Role};
-use quadra_ui::column;
+use quadra_view::column;
 
 struct Ed {
     h: Harness,

@@ -11,7 +11,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::{memo, signal};
 use quadra_testing::Harness;
 use quadra_tree::{Along, Anchor, PointerInput, Role, Side};
-use quadra_ui::{AnyView, Div, NodeRef, Place, View, column, div, text, text_input};
+use quadra_view::{AnyView, Div, NodeRef, Place, View, column, div, text, text_input};
 
 fn mounted<V: View + 'static>(view: impl Fn() -> V + 'static) -> Harness {
     let mut h = Harness::new();
@@ -188,7 +188,7 @@ fn a_tooltip_shows_after_a_rest_and_goes_on_a_press_and_notices_go_when_they_las
 struct TipHost(Div);
 
 impl View for TipHost {
-    fn mount(self, cx: &mut quadra_ui::MountCx) -> quadra_tree::NodeId {
+    fn mount(self, cx: &mut quadra_view::MountCx) -> quadra_tree::NodeId {
         let of = self.0.mount(cx);
         let shown = hint::tooltip(cx, of, hint::TOOLTIP_REST);
         let anchor = Anchor::Beside { node: of, side: Side::Below, along: Along::Center, gap: 0.0 };

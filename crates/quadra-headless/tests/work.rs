@@ -8,7 +8,7 @@ use quadra_prim::Point;
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::{PointerInput, Role};
-use quadra_ui::{View, div, each, row};
+use quadra_view::{View, div, each, row};
 
 fn mounted<V: View + 'static>(view: impl FnOnce() -> V) -> Harness {
     let mut h = Harness::new();
@@ -49,7 +49,8 @@ fn a_tab_is_chosen_moved_and_closed_by_the_middle_button() {
 fn a_seam_is_dragged_and_a_double_click_makes_the_sides_even() {
     let root = signal(Pane::row(Pane::leaf("left"), Pane::leaf("right"), 0.5));
     let mut h = mounted(move || {
-        let seam = Rc::new(|strip: quadra_ui::Div, _: Axis, _: bool| strip.role(Role::Group).test_id("seam"));
+        let seam =
+            Rc::new(|strip: quadra_view::Div, _: Axis, _: bool| strip.role(Role::Group).test_id("seam"));
         let parts = Parts { grip: 6.0, seam, veil: Rc::new(|_| div()) };
         let tree = work::panes(root, |group: &str| div().label(group.to_string()), parts);
         row().size(400.0, 200.0).child(tree)

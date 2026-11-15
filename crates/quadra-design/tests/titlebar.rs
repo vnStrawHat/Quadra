@@ -8,7 +8,7 @@ use quadra_platform::HitRegion;
 use quadra_prim::Point;
 use quadra_testing::Harness;
 use quadra_tree::{Role, WindowRequest};
-use quadra_ui::{div, text};
+use quadra_view::{div, text};
 
 fn page(small: bool) -> Harness {
     let mut h = Harness::new();

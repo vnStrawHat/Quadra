@@ -5,7 +5,7 @@ use quadra_design::{fonts, size, token};
 use quadra_layout::{Justify, Track, TrackSize};
 use quadra_text::{Paragraph, TextStyle};
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{MountCx, View, div, row};
+use quadra_view::{MountCx, View, div, row};
 
 use super::{BODY, OnLink, rich, spans};
 use crate::block::Align;

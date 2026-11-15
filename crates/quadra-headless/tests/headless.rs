@@ -8,7 +8,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_ui::{NodeRef, Place, column, div, row, text};
+use quadra_view::{NodeRef, Place, column, div, row, text};
 
 fn harness() -> Harness {
     let mut h = Harness::new();

@@ -4,7 +4,7 @@
 use quadra_code::editor;
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_ui::column;
+use quadra_view::column;
 
 /// The value and the selection the editor tells, after `f` moved its cursor.
 fn told(text: String, f: impl FnOnce(&mut quadra_code::EditorWidget)) -> (String, (usize, usize)) {

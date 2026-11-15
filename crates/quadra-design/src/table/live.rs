@@ -6,7 +6,7 @@ use std::time::Instant;
 use quadra_headless::table::{FLASH, Live, Sheet};
 use quadra_layout::Length;
 use quadra_reactive::{Signal, memo};
-use quadra_ui::{Region, div, dynamic};
+use quadra_view::{Region, div, dynamic};
 
 use crate::token;
 

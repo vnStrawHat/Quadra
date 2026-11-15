@@ -8,7 +8,7 @@ use quadra_app::App;
 use quadra_platform::{HeadlessPlatform, Platform, PlatformEvent, WindowOptions};
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
-use quadra_ui::{Window, column, window};
+use quadra_view::{Window, column, window};
 
 #[test]
 fn a_window_closes_when_what_is_in_it_says_it_may() {

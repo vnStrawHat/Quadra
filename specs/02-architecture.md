@@ -32,7 +32,7 @@ quadra-render          layers, display lists, instances, atlases, the Renderer t
 quadra-a11y            semantic nodes, incremental updates, the mirror tests follow them with
 quadra-platform        Platform and Window traits, events, keys, the headless platform
 quadra-tree            nodes, widgets, passes, input dispatch, focus, keymap
-quadra-ui              views, properties, control flow, built-in widgets (box, text, image, scroll, lists)
+quadra-view              views, properties, control flow, built-in widgets (box, text, image, scroll, lists)
 quadra-async           local executor, background pool, inbox, timers
 quadra-app             App, windows, the frame loop, settings, assets, i18n, logging
 quadra-native-win      Win32 platform, D3D11 renderer, DirectWrite backend, the accessibility

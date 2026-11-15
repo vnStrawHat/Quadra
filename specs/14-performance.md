@@ -36,7 +36,7 @@ unrelated nodes. "Path" means the node and its ancestors up to the layout bounda
 
 The scroll position is a signal, so scrolling runs the binding that turns it into a layer
 offset: that is the one binding of the scroll rows. The tests are
-`crates/quadra-ui/tests/budgets.rs` and `tests/list.rs`; the rows about input, style
+`crates/quadra-view/tests/budgets.rs` and `tests/list.rs`; the rows about input, style
 variants, themes and the terminal are added as those are built.
 
 The same table, read against the V design: scrolling prepainted and painted the window; a text

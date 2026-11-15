@@ -7,7 +7,7 @@ use quadra_layout::{Align, Direction, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_ui::{Div, MountCx, View, by_text, column, div, row, text_input};
+use quadra_view::{Div, MountCx, View, by_text, column, div, row, text_input};
 
 use crate::icon::icon;
 use crate::input::input;

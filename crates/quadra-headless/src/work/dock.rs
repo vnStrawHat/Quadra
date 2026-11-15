@@ -9,7 +9,7 @@ use std::rc::Rc;
 use quadra_prim::{Point, Rect};
 use quadra_reactive::{Scope, Signal, signal};
 use quadra_tree::NodeId;
-use quadra_ui::MountCx;
+use quadra_view::MountCx;
 
 use super::pane::{Axis, Pane};
 use super::tabs::{Tab, Widths};

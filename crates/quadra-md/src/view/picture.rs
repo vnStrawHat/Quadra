@@ -10,7 +10,7 @@ use quadra_layout::Align as Across;
 use quadra_prim::Size;
 use quadra_reactive::{signal, use_context};
 use quadra_tree::Image;
-use quadra_ui::{
+use quadra_view::{
     Div, ImageSource, Images, column, dynamic, image, image_info, image_pixels, row, show, text,
 };
 

@@ -11,7 +11,7 @@ use quadra_platform::{HeadlessPlatform, Placement, Platform, PlatformEvent, Wind
 use quadra_prim::Size;
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
-use quadra_ui::column;
+use quadra_view::column;
 use serde_json::Value;
 
 /// A folder of the test's own under `.tmp/`, empty.

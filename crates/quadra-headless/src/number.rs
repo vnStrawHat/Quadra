@@ -6,7 +6,7 @@
 
 use quadra_reactive::{Signal, effect, signal};
 use quadra_tree::Role;
-use quadra_ui::Div;
+use quadra_view::Div;
 
 use crate::action::{Decrease, Increase, NUMBER};
 

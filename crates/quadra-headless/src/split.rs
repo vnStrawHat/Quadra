@@ -11,7 +11,7 @@ use quadra_layout::{Direction, Length, Overflow};
 use quadra_prim::Size;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, PointerEvent, PointerKind};
-use quadra_ui::{AnyView, Div, MountCx, View, div};
+use quadra_view::{AnyView, Div, MountCx, View, div};
 
 pub struct Split {
     first: AnyView,

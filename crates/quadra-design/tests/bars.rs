@@ -14,7 +14,7 @@ use quadra_prim::{Color, Size};
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_ui::{View, column, div, row};
+use quadra_view::{View, column, div, row};
 
 fn mount<V: View + 'static>(build: impl FnOnce() -> V + 'static) -> Harness {
     let mut h = Harness::new();

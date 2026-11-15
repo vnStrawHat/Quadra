@@ -11,7 +11,7 @@ use quadra_platform::Cursor;
 use quadra_prim::{Ease, Point};
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_ui::{Div, MountCx, Place, View, column, div, row, text, timeline};
+use quadra_view::{Div, MountCx, Place, View, column, div, row, text, timeline};
 
 use crate::button::{Variant, button};
 use crate::icon::icon;

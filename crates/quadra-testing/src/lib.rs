@@ -22,7 +22,7 @@ use quadra_reactive::provide;
 use quadra_render::{DeviceSize, NullRenderer, RenderStats, Renderer, Step, SurfaceId, SurfaceTarget};
 use quadra_text::FakeBackend;
 use quadra_tree::{Fonts, FrameStats, NodeId, PointerInput, Tree};
-use quadra_ui::{Images, View, mount_with};
+use quadra_view::{Images, View, mount_with};
 
 pub use find::Found;
 

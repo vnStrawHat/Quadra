@@ -10,7 +10,7 @@ use quadra_prim::{Color, Size};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
 use quadra_tree::{NodeId, Role, SemanticAction};
-use quadra_ui::column;
+use quadra_view::column;
 
 struct Page {
     h: Harness,

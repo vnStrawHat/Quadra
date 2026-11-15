@@ -7,7 +7,7 @@ use quadra_layout::Length;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_ui::{Div, MountCx, View, div};
+use quadra_view::{Div, MountCx, View, div};
 
 use crate::slider::{knob, rail, scale};
 use crate::token;

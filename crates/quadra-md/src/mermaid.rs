@@ -18,7 +18,7 @@ use quadra_layout::Known;
 use quadra_prim::Size;
 use quadra_text::TextStyle;
 use quadra_tree::{GlyphTile, Inherited, MeasureCx, NodeId, PaintCx, Role, Semantics, Style, Theme, Widget};
-use quadra_ui::{MountCx, View};
+use quadra_view::{MountCx, View};
 
 use draw::{Drawing, Measure};
 use flow::Flow;

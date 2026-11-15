@@ -8,7 +8,7 @@ use quadra_headless::pick::{Found, Parts};
 use quadra_layout::{Align, Length};
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::State;
-use quadra_ui::{Div, by_text, column, div, row, scroll, text, text_input};
+use quadra_view::{Div, by_text, column, div, row, scroll, text, text_input};
 
 use crate::icon::icon;
 use crate::palette::{best, fuzzy_hits, marked};

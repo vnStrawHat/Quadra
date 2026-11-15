@@ -10,7 +10,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
 use quadra_tree::{PointerInput, Role};
-use quadra_ui::{column, text};
+use quadra_view::{column, text};
 
 struct Page {
     h: Harness,

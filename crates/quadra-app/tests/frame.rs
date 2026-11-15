@@ -12,11 +12,11 @@ use quadra_platform::{
 use quadra_prim::{Point, Size};
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
-use quadra_ui::{column, div, row, text, window};
+use quadra_view::{column, div, row, text, window};
 
 /// A bar of 32 px that drags the window, with a menu button of the app's at its left and,
 /// at its right, buttons that minimize, maximize and close. Under it, the content.
-fn page() -> impl quadra_ui::View {
+fn page() -> impl quadra_view::View {
     let window = window();
     let (min, max, close, state) = (window.clone(), window.clone(), window.clone(), window);
     let button = || div().size(40.0, 32.0);

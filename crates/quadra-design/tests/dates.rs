@@ -9,7 +9,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_ui::{View, column};
+use quadra_view::{View, column};
 
 /// In Vietnamese: days written day first, weeks from Monday.
 fn mount<V: View + 'static>(build: impl FnOnce() -> V + 'static) -> Harness {

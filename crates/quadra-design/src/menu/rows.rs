@@ -7,7 +7,7 @@ use quadra_headless::menu::{self, Ends, Line};
 use quadra_layout::Align;
 use quadra_reactive::signal;
 use quadra_tree::{Along, Side, State};
-use quadra_ui::{Div, NodeRef, Place, by_text, column, div, row, scroll, text};
+use quadra_view::{Div, NodeRef, Place, by_text, column, div, row, scroll, text};
 
 use super::MenuItem;
 use crate::icon::icon;

@@ -7,7 +7,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
 use quadra_tree::{Role, SemanticAction};
-use quadra_ui::div;
+use quadra_view::div;
 
 /// Two short pages, and one long enough to scroll.
 fn prefs(current: Signal<usize>, query: Signal<String>) -> Settings {

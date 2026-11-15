@@ -11,7 +11,7 @@ use quadra_layout::Display;
 use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_text::fold_diacritics;
 use quadra_tree::{Handle, NodeId, SemanticAction};
-use quadra_ui::{Div, NodeRef};
+use quadra_view::{Div, NodeRef};
 
 use crate::action::{CONTROL, Confirm};
 

@@ -4,7 +4,7 @@
 use quadra_platform::MouseButton;
 use quadra_reactive::{Signal, memo, signal, untrack};
 use quadra_tree::{GoBack, GoForward, PointerKind};
-use quadra_ui::{Div, View, div, dynamic};
+use quadra_view::{Div, View, div, dynamic};
 
 /// Where the app has been, and where it is: `R` is any value of the app that names a page.
 /// A handle: copies are the same router.

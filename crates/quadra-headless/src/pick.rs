@@ -10,7 +10,7 @@ use std::rc::Rc;
 use quadra_reactive::{Memo, Signal, signal};
 use quadra_text::fold_diacritics;
 use quadra_tree::Role;
-use quadra_ui::{Div, NodeRef, View, dynamic};
+use quadra_view::{Div, NodeRef, View, dynamic};
 
 use crate::action::{Confirm, LIST, MoveNext, MovePrevious};
 

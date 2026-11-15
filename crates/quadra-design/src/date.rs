@@ -9,7 +9,7 @@ use quadra_layout::{Align, Justify};
 use quadra_platform::{Cursor, Key};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, State};
-use quadra_ui::{Div, MountCx, NodeRef, View, by_text, column, div, dynamic, row, text};
+use quadra_view::{Div, MountCx, NodeRef, View, by_text, column, div, dynamic, row, text};
 
 use crate::button::icon_button;
 use crate::icon::icon;

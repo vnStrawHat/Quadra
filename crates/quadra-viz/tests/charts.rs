@@ -8,7 +8,7 @@ use quadra_reactive::signal;
 use quadra_render::{Instance, Kind};
 use quadra_testing::Harness;
 use quadra_tree::{NodeId, PointerInput, Role};
-use quadra_ui::div;
+use quadra_view::div;
 use quadra_viz::{Bar, Series, bar_chart, line_chart, sparkline};
 
 /// Noon of a day, in milliseconds since 1970.

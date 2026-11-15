@@ -9,7 +9,7 @@ use quadra_layout::Align;
 use quadra_prim::Point;
 use quadra_reactive::{Signal, signal};
 use quadra_tree::NodeId;
-use quadra_ui::{AnyView, Div, MountCx, NodeRef, Place, View, by_text, div, row};
+use quadra_view::{AnyView, Div, MountCx, NodeRef, Place, View, by_text, div, row};
 
 pub(crate) use self::rows::rows;
 use crate::button::{Button, Size, Variant, button, icon_button};

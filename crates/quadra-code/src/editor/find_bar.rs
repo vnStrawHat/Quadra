@@ -11,7 +11,7 @@ use quadra_layout::Align;
 use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{Handle, NodeId};
-use quadra_ui::{Div, MountCx, NodeRef, column, row, show, text};
+use quadra_view::{Div, MountCx, NodeRef, column, row, show, text};
 
 use super::{EditorCommand, EditorWidget, edit};
 use crate::find::Query;

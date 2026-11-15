@@ -5,7 +5,7 @@ use quadra_layout::{Align, Justify, Overflow};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{Role, Token};
-use quadra_ui::{Div, by_text, div, rich_text, row, span, text};
+use quadra_view::{Div, by_text, div, rich_text, row, span, text};
 
 use super::rows::{DiffMode, Row};
 use super::words::changed_parts;

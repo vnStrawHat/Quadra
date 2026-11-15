@@ -68,7 +68,7 @@ pub trait PlatformHandler {
   Over `Caption` and `Maximize` the pointer still reaches the app as moves, and a press and
   release on `Maximize` as a press and release: the button shows them and its click is the
   app's to act on. Minimize and close are buttons of the app's like any other.
-- **What a view asks of its window.** `quadra_ui::window()` gives the window the calling
+- **What a view asks of its window.** `quadra_view::window()` gives the window the calling
   view is in: `.minimize()`, `.toggle_maximize()`, `.close()` (as the close button of the
   OS: the app decides), and `.is_maximized()`, a read that what it is in runs again for.
   The asks wait on the tree (`Tree::take_window_requests`) and the app does them after the

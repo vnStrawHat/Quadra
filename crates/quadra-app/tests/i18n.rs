@@ -11,7 +11,7 @@ use quadra_app::{App, I18n, Locale, language};
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
-use quadra_ui::{column, text};
+use quadra_view::{column, text};
 
 fn strings() -> Rc<I18n> {
     let i18n = I18n::new(Locale::en());

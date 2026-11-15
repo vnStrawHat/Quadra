@@ -10,7 +10,7 @@ use quadra_platform::{Clipboard, Cursor, Mods, MouseButton};
 use quadra_prim::Point;
 use quadra_reactive::use_context;
 use quadra_tree::{NodeId, PointerEvent, PointerKind, RichText, TEXT_SELECT_CONTEXT, TextCommand, Tree};
-use quadra_ui::MountCx;
+use quadra_view::MountCx;
 
 /// Where a selection ends: a text, and an offset in it.
 type End = (NodeId, usize);

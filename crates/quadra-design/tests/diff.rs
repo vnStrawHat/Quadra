@@ -214,7 +214,7 @@ fn long_lines_wrap_and_their_rows_are_as_high() {
     h.tree.set_theme(Rc::new(dark().theme()));
     h.mount(move || {
         let view = diff(long.clone(), changed.clone()).wrap();
-        quadra_design::root().child(quadra_ui::column().width(400.0).height(400.0).child(view))
+        quadra_design::root().child(quadra_view::column().width(400.0).height(400.0).child(view))
     });
     h.frame();
     h.settle();

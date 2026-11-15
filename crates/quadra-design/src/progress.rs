@@ -8,7 +8,7 @@ use std::rc::Rc;
 use quadra_layout::{Length, Overflow};
 use quadra_prim::Point;
 use quadra_tree::{NodeId, RangeValue, Role};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, each_frame};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, div, each_frame};
 
 use crate::icon::icon;
 use crate::{icons, token};

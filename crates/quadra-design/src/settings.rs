@@ -12,7 +12,7 @@ use quadra_headless::settings::Model;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::NodeId;
-use quadra_ui::{AnyView, Div, MountCx, View, row};
+use quadra_view::{AnyView, Div, MountCx, View, row};
 
 use crate::input::{Input, input};
 use crate::{icons, size, token};

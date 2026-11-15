@@ -5,7 +5,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo};
 use quadra_tree::{NodeId, Role, State};
-use quadra_ui::{AnyView, IntoProp, MountCx, Prop, View, column, dynamic, row, text, text_area};
+use quadra_view::{AnyView, IntoProp, MountCx, Prop, View, column, dynamic, row, text, text_area};
 
 pub use quadra_headless::rules::{Rule, validate};
 

@@ -21,7 +21,7 @@ quadra-reactive = { path = "../quadra-reactive" }
 quadra-render = { path = "../quadra-render" }
 quadra-text = { path = "../quadra-text" }
 quadra-tree = { path = "../quadra-tree" }
-quadra-ui = { path = "../quadra-ui" }
+quadra-view = { path = "../quadra-view" }
 quadra-vector = { path = "../quadra-vector" }
 serde_json = "1"
 

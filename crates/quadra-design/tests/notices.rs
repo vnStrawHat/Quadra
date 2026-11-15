@@ -10,7 +10,7 @@ use quadra_design::{Notice, Notices, Tone, dark, notices};
 use quadra_prim::Rect;
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_ui::{div, text};
+use quadra_view::{div, text};
 
 fn page() -> (Harness, Notices) {
     let told: Rc<Cell<Option<Notices>>> = Rc::default();

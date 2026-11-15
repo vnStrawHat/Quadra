@@ -9,7 +9,7 @@ use quadra_prim::Rect;
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
 use quadra_tree::{NodeId, PointerInput, Role};
-use quadra_ui::{column, div};
+use quadra_view::{column, div};
 
 struct Page {
     h: Harness,

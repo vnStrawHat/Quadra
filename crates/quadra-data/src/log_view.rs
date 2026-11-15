@@ -11,7 +11,7 @@ use quadra_platform::Clipboard;
 use quadra_prim::Color;
 use quadra_reactive::{Signal, effect, memo, signal, use_context};
 use quadra_tree::{NodeId, Paint};
-use quadra_ui::{
+use quadra_view::{
     Div, MountCx, View, by_text, column, div, dynamic, rich_text, row, span, text, uniform_list,
 };
 

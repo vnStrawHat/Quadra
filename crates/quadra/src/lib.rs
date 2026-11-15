@@ -17,7 +17,7 @@
 //!
 //! - State: [`signal`], [`memo`], [`effect`], [`provide`] and [`use_context`] (`quadra-reactive`).
 //! - Views: [`div`], [`row`], [`column()`], [`text()`], [`text_input`], [`scroll`],
-//!   [`uniform_list`], [`overlay`] and the rest of `quadra-ui`; styles by state on a [`Div`],
+//!   [`uniform_list`], [`overlay`] and the rest of `quadra-view`; styles by state on a [`Div`],
 //!   colours by [`Token`] of a [`Theme`].
 //! - Keys and commands: [`Action`], [`Keymap`] (`App::keymap`).
 //! - Work off the UI thread and over time: [`spawn`], [`background`], [`inbox`], [`timeout`]
@@ -55,7 +55,7 @@ pub use quadra_tree::{
     GradientKind, KeyEvent, Keymap, KeymapError, Keystroke, Paint, PointerEvent, PointerKind, Role,
     SemanticAction, Side, State, Theme, Token,
 };
-pub use quadra_ui::{
+pub use quadra_view::{
     AnyView, Div, ImageSource, ImageView, Images, IntoProp, MountCx, NodeRef, Place, Refine, Region, Span,
     TextView, Timeline, View, Window, column, div, dynamic, each, each_frame, image, inline, overlay,
     rich_text, row, scroll, scroll_strip, scroll_x, show, span, text, text_area, text_input, timeline, tween,

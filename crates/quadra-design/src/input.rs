@@ -1,11 +1,11 @@
-//! The text input of the kit (specs/behaviour/15, "Text input"): the field of `quadra-ui` in
+//! The text input of the kit (specs/behaviour/15, "Text input"): the field of `quadra-view` in
 //! a frame. The frame's border says where the focus is and whether the value is accepted.
 
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Role, State};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, row, show, text, text_input};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, row, show, text, text_input};
 
 use crate::icon::icon;
 use crate::{icons, token};

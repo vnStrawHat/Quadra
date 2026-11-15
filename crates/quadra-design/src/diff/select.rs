@@ -8,7 +8,7 @@ use quadra_headless::table::Sheet;
 use quadra_platform::{Clipboard, Mods};
 use quadra_reactive::{Memo, Signal, untrack};
 use quadra_tree::Role;
-use quadra_ui::Div;
+use quadra_view::Div;
 
 use super::Sides;
 use super::rows::Row;

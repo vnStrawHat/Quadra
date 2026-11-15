@@ -6,7 +6,7 @@ use std::rc::Rc;
 use quadra_headless::popup as base;
 use quadra_reactive::{Scope, Signal};
 use quadra_tree::{Along, Side, Tree};
-use quadra_ui::{Div, NodeRef, Place, Region, View, column};
+use quadra_view::{Div, NodeRef, Place, Region, View, column};
 
 pub use quadra_headless::popup::Edge;
 pub(crate) use quadra_headless::popup::{Shown, hang};

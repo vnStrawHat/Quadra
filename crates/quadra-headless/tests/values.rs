@@ -10,7 +10,7 @@ use quadra_platform::{Key, Mods};
 use quadra_reactive::{memo, signal};
 use quadra_testing::Harness;
 use quadra_tree::{PointerInput, Role, SemanticAction};
-use quadra_ui::{View, column, div, text, text_input};
+use quadra_view::{View, column, div, text, text_input};
 
 fn mounted<V: View + 'static>(view: impl Fn() -> V + 'static) -> Harness {
     let mut h = Harness::new();

@@ -7,7 +7,7 @@ use quadra_layout::{Align, Display, Justify, Length, Overflow};
 use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Paint, Role, State as On};
-use quadra_ui::{Div, View, by_text, column, div, dynamic, row, scroll_x, text, uniform_list};
+use quadra_view::{Div, View, by_text, column, div, dynamic, row, scroll_x, text, uniform_list};
 
 use super::{CellKind, Column, age_text};
 use crate::icon::icon;

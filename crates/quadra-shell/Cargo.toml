@@ -39,7 +39,7 @@ windows = { version = "0.62", features = [
 [dev-dependencies]
 quadra-platform = { path = "../quadra-platform" }
 quadra-text = { path = "../quadra-text" }
-quadra-ui = { path = "../quadra-ui" }
+quadra-view = { path = "../quadra-view" }
 
 # Explicitly not inheriting the workspace lints (see above).
 [lints]

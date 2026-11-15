@@ -10,7 +10,7 @@ use std::time::Duration;
 use quadra_async::{Timer, timeout};
 use quadra_reactive::{Scope, Signal, signal};
 use quadra_tree::{NodeId, PointerKind};
-use quadra_ui::{Div, MountCx};
+use quadra_view::{Div, MountCx};
 
 /// How long the pointer rests before a tooltip shows.
 pub const TOOLTIP_REST: Duration = Duration::from_millis(500);

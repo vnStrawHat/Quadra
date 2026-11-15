@@ -13,7 +13,7 @@ use std::rc::Rc;
 use quadra_platform::{Clipboard, Mods};
 use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_tree::{PointerKind, Role};
-use quadra_ui::Div;
+use quadra_view::Div;
 
 use crate::action::{Copy, ExtendNext, ExtendPrevious, MoveFirst, MoveLast, MoveNext, MovePrevious, TABLE};
 use crate::action::{MoveInto, MoveOut, PageNext, PagePrevious};

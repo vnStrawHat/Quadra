@@ -8,7 +8,7 @@ use quadra_headless::list as base;
 use quadra_layout::Align;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, State};
-use quadra_ui::{MountCx, View, by_text, column, row, text};
+use quadra_view::{MountCx, View, by_text, column, row, text};
 
 use crate::token;
 

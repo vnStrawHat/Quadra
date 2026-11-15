@@ -3,7 +3,7 @@
 
 use quadra_app::{App, AppError, Feature};
 use quadra_render::Renderer;
-use quadra_ui::{Div, column};
+use quadra_view::{Div, column};
 
 use crate::theme::{KitTheme, system_theme};
 use crate::{fonts, size, token};

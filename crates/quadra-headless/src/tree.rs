@@ -12,7 +12,7 @@ use std::rc::Rc;
 use quadra_platform::Mods;
 use quadra_reactive::{Signal, memo, signal, untrack};
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{Div, MountCx, View, div, dynamic, uniform_list};
+use quadra_view::{Div, MountCx, View, div, dynamic, uniform_list};
 
 use crate::action::{Confirm, MoveFirst, MoveInto, MoveLast, MoveNext, MoveOut, MovePrevious, TREE};
 
@@ -99,7 +99,7 @@ pub fn tree<B: Branch>(
 ) -> Tree<B> {
     let (roots, face) = (Box::new(roots), Rc::new(face));
     let (on_open, many) = (None, None);
-    Tree { roots, chosen, open, row_height, frame: quadra_ui::column(), face, on_open, many }
+    Tree { roots, chosen, open, row_height, frame: quadra_view::column(), face, on_open, many }
 }
 
 impl<B: Branch> Tree<B> {

@@ -8,7 +8,7 @@ use quadra_layout::{Direction, Display, Justify};
 use quadra_platform::Cursor;
 use quadra_prim::{Edges, Rect};
 use quadra_reactive::{Memo, Signal};
-use quadra_ui::{Div, View, div};
+use quadra_view::{Div, View, div};
 
 use crate::token;
 

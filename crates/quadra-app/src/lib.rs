@@ -30,7 +30,7 @@ use quadra_reactive::{Scope, Signal, memo, provide, signal};
 use quadra_render::{DeviceSize, Pixels, RenderError, Renderer, SurfaceId, SurfaceTarget};
 use quadra_text::TextBackend;
 use quadra_tree::{Fonts, Keymap, Theme, Tree};
-use quadra_ui::{Images, TextScale, View, mount_with};
+use quadra_view::{Images, TextScale, View, mount_with};
 
 pub use i18n::{Arg, I18n, Language, language, t, t_with};
 pub use locale::Locale;

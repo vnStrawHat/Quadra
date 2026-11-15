@@ -12,7 +12,7 @@ use quadra_platform::{
 use quadra_prim::Point;
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
-use quadra_ui::text;
+use quadra_view::text;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Page {

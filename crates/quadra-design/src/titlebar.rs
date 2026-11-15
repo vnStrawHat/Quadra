@@ -9,7 +9,7 @@ use quadra_platform::HitRegion;
 use quadra_prim::Color;
 use quadra_reactive::signal;
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{
+use quadra_view::{
     AnyView, Div, IntoProp, MountCx, NodeRef, Prop, View, by_text, div, dynamic, row, text, window,
 };
 

@@ -7,7 +7,7 @@ use quadra_layout::{Align, Display, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::memo;
 use quadra_tree::{NodeId, Paint, State};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
 
 use crate::icon::icon;
 use crate::progress::spinner;
@@ -221,7 +221,7 @@ impl Button {
             None => face,
         };
         // Disabled: as it is at rest, whatever the pointer does, in the colour of what is off.
-        let quiet = |s: quadra_ui::Refine| s.bg(fill).border_color(border).text_color(token::TEXT_DISABLED);
+        let quiet = |s: quadra_view::Refine| s.bg(fill).border_color(border).text_color(token::TEXT_DISABLED);
         let face = face.when(State::DISABLED, quiet);
         // Busy looks as it did, with a spinner where an icon goes; its click does nothing.
         let busy = self.loading.map(|loading| match loading {

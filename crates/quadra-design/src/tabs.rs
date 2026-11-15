@@ -7,7 +7,7 @@ use quadra_platform::Cursor;
 use quadra_prim::Color;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Side, State};
-use quadra_ui::{Div, MountCx, Refine, View, by_text, div, row, text};
+use quadra_view::{Div, MountCx, Refine, View, by_text, div, row, text};
 
 use crate::button::Size;
 use crate::choice::chooser;

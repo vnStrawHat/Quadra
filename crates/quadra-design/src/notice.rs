@@ -9,7 +9,7 @@ use std::time::Duration;
 use quadra_headless::notices::{Queue, TOAST};
 use quadra_layout::{Align, Justify};
 use quadra_tree::{PointerKind, Role};
-use quadra_ui::{Div, Place, View, column, div, each, overlay, row, show, text};
+use quadra_view::{Div, Place, View, column, div, each, overlay, row, show, text};
 
 use crate::button::{Size, Variant, button, icon_button};
 use crate::display::Tone;

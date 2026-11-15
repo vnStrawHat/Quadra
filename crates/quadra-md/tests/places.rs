@@ -8,7 +8,7 @@ use quadra_design::dark;
 use quadra_md::{Place, markdown};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
-use quadra_ui::{column, scroll};
+use quadra_view::{column, scroll};
 
 /// Sections of a heading and a paragraph, `n` of them: each starts on line 4 × k.
 fn sections(n: usize) -> String {

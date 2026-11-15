@@ -11,7 +11,7 @@ use quadra_design::{
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::{NodeId, PointerInput, Role};
-use quadra_ui::{View, column};
+use quadra_view::{View, column};
 
 fn mount<V: View + 'static>(build: impl FnOnce() -> V + 'static) -> Harness {
     let mut h = Harness::new();
@@ -118,7 +118,7 @@ fn a_question_has_two_answers_and_a_bar_has_menus() {
 #[test]
 fn a_value_of_a_description_list_is_copied_by_its_button() {
     let mut h = mount(|| {
-        let node = quadra_ui::AnyView::new(quadra_ui::text("n1"));
+        let node = quadra_view::AnyView::new(quadra_view::text("n1"));
         quadra_design::description_list([("Pod IP", quadra_design::copyable("10.42.0.17")), ("Node", node)])
     });
     h.get_by_role(Role::Button, "Copy").click();

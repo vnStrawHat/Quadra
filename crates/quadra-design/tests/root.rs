@@ -8,7 +8,7 @@ use quadra_design::{dark, fonts, light, size, token};
 use quadra_platform::{HeadlessPlatform, WindowOptions};
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
-use quadra_ui::text;
+use quadra_view::text;
 
 #[test]
 fn a_window_of_the_kit_has_the_canvas_and_the_text_of_the_theme() {

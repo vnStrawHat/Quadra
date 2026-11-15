@@ -6,7 +6,7 @@ use quadra_prim::{Color, Size};
 use quadra_render::{DeviceSize, Pixels, Renderer, SurfaceTarget};
 use quadra_text::FakeBackend;
 use quadra_tree::{Fonts, Tree};
-use quadra_ui::{div, mount_root, row};
+use quadra_view::{div, mount_root, row};
 
 /// Red on the left half, blue on the right, and over the seam a box that blurs them: with no
 /// fill, or with a white one at half alpha. Drawn twice.

@@ -10,7 +10,7 @@ use std::rc::Rc;
 use quadra_layout::Display;
 use quadra_reactive::{Signal, effect, memo, signal};
 use quadra_tree::NodeId;
-use quadra_ui::{AnyView, Div, MountCx, NodeRef, Place, View, column, div, overlay, show};
+use quadra_view::{AnyView, Div, MountCx, NodeRef, Place, View, column, div, overlay, show};
 
 use crate::action::{Cancel, LIST, MoveNext, MovePrevious, POPUP};
 use crate::pick::{Found, Parts, best};

@@ -7,7 +7,7 @@ use quadra_code::{EditorWidget, editor};
 use quadra_platform::Mods;
 use quadra_testing::Harness;
 use quadra_tree::{NodeId, PointerInput, Role};
-use quadra_ui::column;
+use quadra_view::column;
 
 struct Ed {
     h: Harness,

@@ -10,7 +10,7 @@ use quadra_layout::{Align, Justify, Track};
 use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Scope, signal, use_context};
 use quadra_tree::Role;
-use quadra_ui::{AnyView, Div, View, column, div, dynamic, row, text};
+use quadra_view::{AnyView, Div, View, column, div, dynamic, row, text};
 
 use crate::display::Tone;
 use crate::icon::icon;

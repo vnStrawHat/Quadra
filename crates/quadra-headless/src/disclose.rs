@@ -4,7 +4,7 @@
 
 use quadra_reactive::Signal;
 use quadra_tree::Role;
-use quadra_ui::{Div, Region, View, show};
+use quadra_view::{Div, Region, View, show};
 
 use crate::action::{CONTROL, Confirm};
 

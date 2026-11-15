@@ -9,7 +9,7 @@ use quadra_prim::{Color, Size};
 use quadra_render::{DeviceSize, Renderer, SurfaceTarget};
 use quadra_text::{FaceId, FontKey, GlyphFormat, TextBackend};
 use quadra_tree::{Fonts, Tree};
-use quadra_ui::{column, mount_root, text};
+use quadra_view::{column, mount_root, text};
 
 fn key(family: &str) -> FontKey {
     FontKey { family: Rc::from(family), weight: 400, italic: false }

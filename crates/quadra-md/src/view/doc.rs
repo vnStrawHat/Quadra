@@ -11,7 +11,7 @@ use quadra_design::token;
 use quadra_layout::Length;
 use quadra_reactive::{Signal, effect, memo};
 use quadra_tree::{NodeId, Tree};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, column, dynamic, each, virtual_list};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, column, dynamic, each, virtual_list};
 
 use super::{BODY, Entry, OnLink, block, entries};
 

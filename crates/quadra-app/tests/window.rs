@@ -10,7 +10,7 @@ use quadra_prim::Color;
 use quadra_reactive::{Signal, signal};
 use quadra_render::{NullRenderer, Renderer};
 use quadra_text::FakeBackend;
-use quadra_ui::{column, text};
+use quadra_view::{column, text};
 
 fn app(platform: &HeadlessPlatform) -> App<NullRenderer> {
     App::with(Rc::new(platform.clone()), NullRenderer::new(), Box::new(FakeBackend::new()))
@@ -25,7 +25,7 @@ fn turn(platform: &HeadlessPlatform, app: &mut App<NullRenderer>) -> bool {
 #[test]
 fn a_window_tells_assistive_technology_its_tree_once_asked_and_does_what_it_asks() {
     use quadra_tree::{Role, SemanticAction};
-    use quadra_ui::div;
+    use quadra_view::div;
 
     let platform = HeadlessPlatform::new();
     let mut app = app(&platform);
@@ -63,7 +63,7 @@ fn a_window_tells_assistive_technology_its_tree_once_asked_and_does_what_it_asks
 fn a_window_is_given_the_cursor_of_what_the_pointer_is_over() {
     use quadra_platform::{Cursor, Mods, MouseButton, PointerKind};
     use quadra_prim::Point;
-    use quadra_ui::{div, text_input};
+    use quadra_view::{div, text_input};
 
     let platform = HeadlessPlatform::new();
     let mut app = app(&platform);
@@ -88,7 +88,7 @@ fn a_window_is_given_the_cursor_of_what_the_pointer_is_over() {
 fn every_window_has_the_apps_theme_and_a_view_can_change_it() {
     use quadra_reactive::use_context;
     use quadra_tree::{Theme, Token};
-    use quadra_ui::div;
+    use quadra_view::div;
 
     const SURFACE: Token = Token(0);
     let platform = HeadlessPlatform::new();

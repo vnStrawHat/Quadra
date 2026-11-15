@@ -8,7 +8,7 @@ use quadra_reactive::signal;
 use quadra_render::{DeviceSize, Pixels, Renderer, SurfaceTarget};
 use quadra_text::FakeBackend;
 use quadra_tree::{Fonts, Tree};
-use quadra_ui::{column, div, mount_root, text};
+use quadra_view::{column, div, mount_root, text};
 
 fn at(pixels: &Pixels, x: u32, y: u32) -> u32 {
     let i = ((y * pixels.size.width + x) * 4) as usize;

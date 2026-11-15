@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use quadra_reactive::{Memo, Signal};
 use quadra_tree::{PointerKind, RangeValue, Role, SemanticAction};
-use quadra_ui::Div;
+use quadra_view::Div;
 
 use crate::action::{Decrease, DecreaseMore, Increase, IncreaseMore, MoveFirst, MoveLast, SLIDER};
 

@@ -10,7 +10,7 @@ pub use quadra_headless::pick::{fuzzy, fuzzy_hits};
 use quadra_layout::{Align, Length};
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{NodeId, State};
-use quadra_ui::{Div, MountCx, Place, View, by_text, column, div, row, scroll, text, text_input};
+use quadra_view::{Div, MountCx, Place, View, by_text, column, div, row, scroll, text, text_input};
 
 use crate::display::key_label;
 use crate::popup::{EDGE, popup};

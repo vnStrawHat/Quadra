@@ -8,7 +8,7 @@ use std::time::Duration;
 use quadra_async::{Timers, interval};
 use quadra_reactive::{Scope, Signal, use_context};
 use quadra_tree::NodeId;
-use quadra_ui::MountCx;
+use quadra_view::MountCx;
 
 use super::EditorWidget;
 

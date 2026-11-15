@@ -10,7 +10,7 @@ use quadra_layout::Align;
 use quadra_platform::Clipboard;
 use quadra_reactive::{memo, signal, untrack, use_context};
 use quadra_tree::{NodeId, Paint};
-use quadra_ui::{IntoProp, MountCx, Prop, View, by_text, column, div, row, text};
+use quadra_view::{IntoProp, MountCx, Prop, View, by_text, column, div, row, text};
 
 use crate::value::Value;
 

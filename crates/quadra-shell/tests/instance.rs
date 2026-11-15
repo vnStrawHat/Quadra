@@ -10,7 +10,7 @@ use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 use quadra_render::NullRenderer;
 use quadra_shell::{Instance, Launch, single_instance};
 use quadra_text::FakeBackend;
-use quadra_ui::column;
+use quadra_view::column;
 
 #[test]
 fn a_later_start_hands_the_first_its_arguments() {

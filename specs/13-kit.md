@@ -183,7 +183,7 @@ As built so far:
   is `Drawing` in the tree, and `drawing(svg)` the view for any drawing. A button takes
   `.icon(body)` before its label (14 px, 16 in the two larger sizes), and
   `icon_button(body, name)` is a ghost of 22 px with the icon alone, named for a reader.
-- **`input(value)`**: the field of `quadra-ui` in a frame (the field's fill, a hairline
+- **`input(value)`**: the field of `quadra-view` in a frame (the field's fill, a hairline
   border, 8 by 6 px around a line of text, at least 32 high, 240 wide unless told):
   `.placeholder(..)`, `.password()`, `.icon(body)` before the text, `.invalid(..)`,
   `.disabled(..)`, `.width(..)`, `.on_submit(..)`, `.test_id(..)`. The border is where the
@@ -317,7 +317,7 @@ As built so far:
   mark after it; under the control is `.help(words)` or, while it is not empty, what
   `.error(..)` says, in the colour of errors after a mark. `validate(value, &rules)` gives
   what the first broken `Rule` says (`Required`, `MinLen`, `MaxLen`, `Email`): plain data.
-  `textarea(value)` is the text area of `quadra-ui` in the frame of an input, at least
+  `textarea(value)` is the text area of `quadra-view` in the frame of an input, at least
   three lines tall unless told.
 - **What is under way** (`progress.rs`). `progress(part)` is a bar of 6 px on the chrome
   plane, filled with the accent as far as `part` (0 to 1, a constant or reactive), and a

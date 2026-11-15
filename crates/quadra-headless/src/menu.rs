@@ -12,7 +12,7 @@ use quadra_platform::{Key, Mods, MouseButton};
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, signal};
 use quadra_tree::{NodeId, PointerKind, Role, Tree};
-use quadra_ui::{AnyView, Div, MountCx, NodeRef, Region};
+use quadra_view::{AnyView, Div, MountCx, NodeRef, Region};
 
 use crate::action::{Confirm, MENU, MoveInto, MoveNext, MoveOut, MovePrevious};
 use crate::popup::Shown;

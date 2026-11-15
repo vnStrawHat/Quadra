@@ -9,7 +9,7 @@ use quadra_prim::Size;
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_ui::{View, column};
+use quadra_view::{View, column};
 
 fn mount<V: View + 'static>(build: impl FnOnce() -> V + 'static) -> Harness {
     let mut h = Harness::new();

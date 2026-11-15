@@ -4,7 +4,7 @@
 use quadra_layout::{Align, Display, Justify};
 use quadra_prim::Color;
 use quadra_tree::{Role, Side, Token};
-use quadra_ui::{Div, TextView, by_text, column, div, row, text};
+use quadra_view::{Div, TextView, by_text, column, div, row, text};
 
 use crate::{fonts, size, token};
 

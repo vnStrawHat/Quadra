@@ -10,7 +10,7 @@ use quadra_layout::{Display, Length};
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, on_cleanup, untrack};
 use quadra_tree::{Anchor, NodeId, Tree};
-use quadra_ui::{Div, MountCx, NodeRef, Place, Region, View, div, overlay, show};
+use quadra_view::{Div, MountCx, NodeRef, Place, Region, View, div, overlay, show};
 
 use crate::action::{Cancel, POPUP};
 

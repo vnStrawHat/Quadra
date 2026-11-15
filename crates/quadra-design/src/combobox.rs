@@ -8,7 +8,7 @@ use quadra_headless::pick::Parts;
 use quadra_layout::{Align, Length};
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Along, NodeId, Side, State};
-use quadra_ui::{MountCx, Place, View, by_text, column, div, row, scroll};
+use quadra_view::{MountCx, Place, View, by_text, column, div, row, scroll};
 
 use crate::input::input;
 use crate::palette::{fuzzy_hits, marked};
@@ -75,7 +75,7 @@ impl View for Combobox {
             surface(1).width(280.0).child(scroll(signal(0.0), rows).container(div().height(tall)))
         };
         let place =
-            |anchor: &quadra_ui::NodeRef| Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);
+            |anchor: &quadra_view::NodeRef| Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);
         let combo = quadra_headless::combobox(self.options, value, parts, field, panel, place);
         match self.pick {
             Some(pick) => combo.on_pick(move |i| pick(i)),

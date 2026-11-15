@@ -5,7 +5,7 @@
 use quadra_code::editor;
 use quadra_render::{Kind, Step};
 use quadra_testing::Harness;
-use quadra_ui::column;
+use quadra_view::column;
 
 #[test]
 fn a_glyph_narrower_than_its_cells_is_in_the_middle_of_them() {

@@ -4,7 +4,7 @@
 
 use quadra_reactive::Signal;
 use quadra_tree::Role;
-use quadra_ui::Div;
+use quadra_view::Div;
 
 use crate::action::{CHOICE, MoveNext, MovePrevious};
 

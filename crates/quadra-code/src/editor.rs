@@ -18,7 +18,7 @@ use std::time::Instant;
 use quadra_platform::{Clipboard, Cursor, Mods};
 use quadra_reactive::{Signal, signal, use_context};
 use quadra_tree::{NodeId, PointerKind, Style, TextValues, Tree};
-use quadra_ui::{MountCx, NodeRef, View, column, div, scroll, show};
+use quadra_view::{MountCx, NodeRef, View, column, div, scroll, show};
 
 use find_bar::Finding;
 

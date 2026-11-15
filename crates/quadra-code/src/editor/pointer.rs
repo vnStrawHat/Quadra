@@ -14,7 +14,7 @@ use quadra_platform::{Mods, MouseButton};
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, effect, signal};
 use quadra_tree::{Anchor, Handle, NodeId, PointerEvent, PointerKind};
-use quadra_ui::MountCx;
+use quadra_view::MountCx;
 
 use super::{EditorWidget, edit};
 use crate::doc::Cursor;

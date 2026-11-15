@@ -7,7 +7,7 @@ use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, State};
-use quadra_ui::{Div, IntoProp, MountCx, Prop, View, div, dynamic, row, show, text};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, div, dynamic, row, show, text};
 
 use crate::icon::icon;
 use crate::{icons, token};

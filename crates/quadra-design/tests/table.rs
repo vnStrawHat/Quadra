@@ -195,7 +195,7 @@ fn a_pinned_column_stays_while_the_others_scroll_and_hidden_ones_do_not_show() {
     h.mount(move || {
         let columns = (0..8).map(|c| Column::new(format!("C{c}")).width(150.0));
         let table = table(columns, || 20, |row, column| format!("r{row}c{column}"));
-        quadra_ui::column().size(500.0, 400.0).child(table.pinned(1).hidden(hidden))
+        quadra_view::column().size(500.0, 400.0).child(table.pinned(1).hidden(hidden))
     });
     h.frame();
     let x = |h: &mut Harness, name: &str| {

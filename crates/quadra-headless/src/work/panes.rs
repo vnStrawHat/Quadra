@@ -10,7 +10,7 @@ use quadra_layout::{Direction, Overflow};
 use quadra_prim::{Rect, Size};
 use quadra_reactive::{Memo, Signal, effect, memo, signal};
 use quadra_tree::{NodeId, PointerEvent, PointerKind};
-use quadra_ui::{AnyView, Div, MountCx, View, div, each};
+use quadra_view::{AnyView, Div, MountCx, View, div, each};
 
 use super::dock::{Dock, DockEvent, TabDrag, Zone, zone_at, zone_rect};
 use super::pane::{Axis, Pane, Part};

@@ -8,7 +8,7 @@ use quadra_prim::{Color, Size};
 use quadra_render::{DeviceSize, Pixels, Renderer, SurfaceTarget};
 use quadra_text::FakeBackend;
 use quadra_tree::{Fit, Fonts, Image, Picture, Tree};
-use quadra_ui::{column, image, mount_root};
+use quadra_view::{column, image, mount_root};
 
 /// A bitmap file of 24 bits a pixel: rows from the bottom up, blue first, padded to four
 /// bytes.

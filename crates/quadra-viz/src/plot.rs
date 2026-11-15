@@ -6,7 +6,7 @@ use quadra_layout::{Known, Length, Position};
 use quadra_prim::{Color, Rect, Size};
 use quadra_render::{Line, LineMode, Quad};
 use quadra_tree::{MeasureCx, NodeId, Paint, PaintCx, Role, Style, Theme, Tree, Widget};
-use quadra_ui::{IntoProp, MountCx, Prop, View};
+use quadra_view::{IntoProp, MountCx, Prop, View};
 
 use crate::geometry::{line_spans, max_of};
 

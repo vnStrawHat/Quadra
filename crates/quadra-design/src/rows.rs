@@ -7,7 +7,7 @@ use quadra_headless::table::{Column, Sheet, sheet};
 use quadra_platform::Mods;
 use quadra_reactive::Signal;
 use quadra_tree::{Paint, PointerKind, State as On};
-use quadra_ui::Div;
+use quadra_view::Div;
 
 use crate::token;
 

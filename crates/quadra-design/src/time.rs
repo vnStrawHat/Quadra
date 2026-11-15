@@ -6,7 +6,7 @@ pub use quadra_headless::time::TimeOfDay;
 use quadra_layout::Align;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{Div, MountCx, View, by_text, div, row, text};
+use quadra_view::{Div, MountCx, View, by_text, div, row, text};
 
 use crate::icon::icon;
 use crate::{icons, size, token};

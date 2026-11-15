@@ -12,7 +12,7 @@ use quadra_headless::table::{self, Cells, Rows};
 use quadra_platform::Clipboard;
 use quadra_reactive::{Signal, use_context};
 use quadra_tree::NodeId;
-use quadra_ui::{MountCx, View};
+use quadra_view::{MountCx, View};
 
 /// How a column shows what its cells say.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

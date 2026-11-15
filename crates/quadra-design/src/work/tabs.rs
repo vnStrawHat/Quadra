@@ -9,7 +9,7 @@ use quadra_layout::{Align, Display, Justify};
 use quadra_platform::{Cursor, Key};
 use quadra_reactive::{Signal, effect, memo, signal};
 use quadra_tree::{NodeId, Paint, Role};
-use quadra_ui::{
+use quadra_view::{
     AnyView, Div, MountCx, NodeRef, View, by_text, div, dynamic, each, row, scroll_strip, text, text_input,
 };
 

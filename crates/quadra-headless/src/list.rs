@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{NodeId, Role};
-use quadra_ui::{AnyView, Div, MountCx, View, column, div, show, uniform_list};
+use quadra_view::{AnyView, Div, MountCx, View, column, div, show, uniform_list};
 
 use crate::action::{Confirm, LIST, MoveFirst, MoveLast, MoveNext, MovePrevious};
 

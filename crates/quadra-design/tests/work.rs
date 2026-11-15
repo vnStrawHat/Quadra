@@ -10,7 +10,7 @@ use quadra_prim::Point;
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::{PointerInput, Role, SemanticAction};
-use quadra_ui::{View, column, row};
+use quadra_view::{View, column, row};
 
 fn mounted<V: View>(build: impl FnOnce() -> V) -> Harness {
     let mut h = Harness::new();

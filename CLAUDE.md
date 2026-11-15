@@ -16,7 +16,7 @@ reference for behaviour, tests and measured numbers. Never edit that repository 
 3. **Conventional Commits** for every commit message (`feat(tree): ...`, `fix(layout): ...`,
    `docs(specs): ...`, `refactor: ...`, `test: ...`, `chore: ...`, `perf: ...`; `!` or a
    `BREAKING CHANGE:` footer for breaking API changes). Scopes are crate names without the
-   `quadra-` prefix (prim, reactive, layout, text, render, platform, tree, ui, async, a11y,
+   `quadra-` prefix (prim, reactive, layout, text, render, platform, tree, view, async, a11y,
    app, native, shell, testing, headless, design, code, md, data, viz), or specs, tools.
 4. **Never test the real clipboard.**
 5. **Commit each finished part** once `tools/check.sh prod` exits 0, then go on with the
@@ -83,7 +83,7 @@ tested (specs/01, R1 to R5) stand.
 
 What exists, in short (`docs/progress.md` has each crate with what it lacks and its tests):
 `quadra-reactive`, `quadra-layout` (done); `quadra-render`, `quadra-text`, `quadra-tree`,
-`quadra-ui`, `quadra-testing` (passes, layers, atlases, glyph tiles, views, virtual list,
+`quadra-view`, `quadra-testing` (passes, layers, atlases, glyph tiles, views, virtual list,
 scroll with culling, frame callbacks); `quadra-platform` (traits, the headless platform),
 `quadra-app` (windows, the frame loop, recovery), `quadra` (the facade, `quadra::app()`);
 `quadra-native-win` (Win32 platform, D3D11 with swap chains and the two-device start,
@@ -98,7 +98,7 @@ bench's counter counts real clicks. Styles have state variants (`.hover(..)`, `.
 scrolls `scroll` and `uniform_list`, nested ones included. Focus and keys are in
 (`quadra-tree/src/focus.rs`: press to focus, Tab inside a focus scope, the ring, keys along
 the focus path, `NodeRef::focus`), and so are actions and the keymap (`action.rs`,
-`keymap.rs`; `App::keymap`; Tab is a binding). **The text input is done** (`text_input(value)` in `quadra-ui/src/input.rs`, the `TextField`
+`keymap.rs`; `App::keymap`; Tab is a binding). **The text input is done** (`text_input(value)` in `quadra-view/src/input.rs`, the `TextField`
 widget and `TextCommand` in `quadra-tree/src/field.rs`, the buffer in
 `quadra-text/src/edit.rs`): typing, the editing keys, pointer selection, undo, the clipboard
 (the app provides it as context; the Win32 one is never run by a test, and must not be), a
@@ -107,7 +107,7 @@ caret that blinks on a timer (`quadra-async`: `timeout`, `interval`; `Harness::m
 `PlatformWindow::set_text_input`, `quadra-native-win/src/ime.rs`). `crates/quadra/examples/form.rs`
 shows it in a real window. One manual check is open: composing with a real input method
 (Vietnamese Telex) on a desktop.
-Overlays are in (`quadra-tree/src/overlay.rs`, `overlay(place, view)` in `quadra-ui`; the
+Overlays are in (`quadra-tree/src/overlay.rs`, `overlay(place, view)` in `quadra-view`; the
 example has a menu). The semantic tree is in (`quadra-a11y`; `quadra-tree/src/semantics.rs`;
 `.role(..)`, `.label(..)`, the state setters; the harness finds controls with `get_by_role`
 and the like and drives them with semantic actions: prefer these in new tests). The bridge
@@ -117,14 +117,14 @@ to assistive technology is in (`PlatformEvent::SemanticsWanted` and `Semantic`,
 panics on an update that is not well formed (specs/12 lists the rules): a change to what the
 tree tells a listener goes through `semantics_changed`, and `quadra_a11y::Mirror` in the
 random test is what catches a missed case. Lists with rows of different heights are in
-(`virtual_list` beside `uniform_list` in `quadra-ui/src/list.rs`, heights in
+(`virtual_list` beside `uniform_list` in `quadra-view/src/list.rs`, heights in
 `list/heights.rs`, `Tree::after_layout`), and so are the tab index, cursors and scrolling
 into view (`Tree::scroll_into_view`, `on_reveal`; `.reveal(..)` on lists). **Phase R2 is done**
 (docs/progress.md, "The exit of R2", maps each interaction test of the V suite to its test
 here). Since the tab index: cursors, scrolling into view (`Tree::scroll_into_view`,
 `on_reveal`; `.reveal(..)` on lists), the password input and `.on_submit`, the text area
 (`text_area`; `TextField::sync`, `Paragraph::place`), text that can be selected, drag and
-drop (`quadra-tree/src/drag.rs`, `quadra-ui/src/div/drag.rs`, the example `board`), and
+drop (`quadra-tree/src/drag.rs`, `quadra-view/src/div/drag.rs`, the example `board`), and
 `tween` on the window's clock (`Tree::set_clock`, `Handle::now`). **R3 has started** (specs/13;
 the design language is specs/behaviour/15): colours of box styles can be roles of the theme
 (`Paint`, `Token`, `Theme` in `quadra-tree/src/theme.rs`; `Tree::set_theme`; the app's theme
@@ -145,11 +145,11 @@ focus mark of what has no border), and popups (`popup.rs`: focus in and back, Es
 press outside; `popover`, `menu`, `select`), the tooltip (no node of its own: handlers on
 the view's node, a timer, an overlay opened by hand) and the dialog (`Place::Top`), and
 shadows (`.elevation(1|2)`, a paint value), `tabs` and `list` (boxes have `.display(..)` and
-one-sided borders now). Every scroll view and list has a scrollbar (`quadra-ui/src/scrollbar.rs`,
+one-sided borders now). Every scroll view and list has a scrollbar (`quadra-view/src/scrollbar.rs`,
 the widget `ScrollThumb`: a layer of its own, shown on activity, faded by a timer). The kit has its display
 parts (`display.rs`), `accordion` and `split`; boxes have padding by side and `overflow_x`. Windows can have
 their own frame (`WindowOptions::custom_frame`, `PlatformHandler::hit_test`, `.window_region(..)`,
-`quadra_ui::window()`; Win32 in `quadra-native-win/src/frame.rs`) and the kit its `titlebar`, `toolbar`,
+`quadra_view::window()`; Win32 in `quadra-native-win/src/frame.rs`) and the kit its `titlebar`, `toolbar`,
 `statusbar`, `breadcrumb`, `sidebar` and status marks, and its form controls (`slider`, `number_input`,
 `field` with rules, `textarea`; boxes have `.absolute()` with insets), and `progress`, `progress_busy`,
 `spinner`, `skeleton` (compose-only: `Tree::set_layer_turn` beside offset and opacity). Menus have headings,
@@ -188,7 +188,7 @@ a page `math` with no reference; rich text takes what is no text (`inline(what)`
 `quadra_md::mermaid` has diagrams: `diagram(source)`, sequence diagrams (`seq.rs`, `seq/layout.rs`) and flowcharts (`flow.rs` reads, `flow/rank.rs`, `order.rs`, `place.rs` lay out in layers, `draw.rs` is the list a layout gives,
 `paint.rs` paints it; a line is `quadra_render::stroke`, a segment an instance, shaded by distance: use it for any line that is not a chart's; limits are checked while reading), with a page `diagram` with no reference;
 `quadra-code` has the buffer (`Buffer`: pieces of 4 KB, their counts in a Fenwick tree, `buffer/counts.rs`); and the document (`Doc` in `doc.rs`, `doc/motion.rs`, `commands.rs`, `lines.rs`, `select.rs`: cursors, `apply(edits, typing)`, undo, the commands; a test of random commands holds it); `quadra_text::display_width` counts cells; next the highlighter, finding and the editor's widget;
-images are in: `image(source)` in `quadra-ui/src/image.rs` (a path, `&'static [u8]` or bytes; decoded on the pool by `Platform::image_decoder`, WIC in `quadra-native-win/src/image.rs`, `FlatImages` in tests; the widget `Picture` paints pieces of 512 px from the colour atlas, `Fonts::image`; `Images` is the app's cache), and a paragraph of images in a document shows them (`markdown(..).base(folder)`); the gallery has a page `image`)
+images are in: `image(source)` in `quadra-view/src/image.rs` (a path, `&'static [u8]` or bytes; decoded on the pool by `Platform::image_decoder`, WIC in `quadra-native-win/src/image.rs`, `FlatImages` in tests; the widget `Picture` paints pieces of 512 px from the colour atlas, `Fonts::image`; `Images` is the app's cache), and a paragraph of images in a document shows them (`markdown(..).base(folder)`); the gallery has a page `image`)
 (R4: `quadra-code`, `quadra-md`) and the terminal (on hold). **R4 is done** (docs/progress.md, "The exit of R4"):
 `quadra-code` has the highlighter (`Highlighter`, through the trait `Highlight` so a parser of grammars can be another),
 finding (`Query`) and the editor (`editor(text).path(name)`: `EditorWidget` in a scroll view, `EditorCommand` in the
@@ -209,7 +209,7 @@ keymap file (`quadra_design::actions()` names the kit's; the editor's commands h
 (specs/12): `TextSize { zoom, text, system }` (`text_size()` in views), zoom by `Tree::set_zoom`, text alone by
 `Tree::set_text_scale`; a box of a line of text in the kit is `.height(by_text(px))`, so new components do the same;
 `QUADRA_TEXT=1.5 tools/shots.sh` draws the gallery with larger text. Since 2026-11-15 `quadra-base` is
-`quadra-headless` and `quadra-kit` is `quadra-design` (the user's names); the headless crate names its components as
+`quadra-headless`, `quadra-kit` is `quadra-design` and `quadra-ui` is `quadra-view` (the user's names); the headless crate names its components as
 widgets too (`button`, `checkbox`, `switch`, `radio_group`/`radio`, `tabs`/`tab`, `accordion_head`/`accordion_body`,
 `tooltip`, `hover_card`, `combobox`; specs/17, "Widget names"): a look uses those. One manual check is open: glass over scrolling content in a real window. No phase follows R6 in specs/00: what comes next is the user's to say (the apps come after Quadra is complete).
 

@@ -7,7 +7,7 @@ use std::fmt;
 
 use quadra_reactive::Signal;
 use quadra_tree::Role;
-use quadra_ui::Div;
+use quadra_view::Div;
 
 use crate::action::{Decrease, Increase, MoveFirst, MoveLast, SLIDER};
 

@@ -11,7 +11,7 @@ use quadra_shell::{
     Answer, Dialogs, FakeShell, FileDialog, Message, MessageKind, Opener, Tray, TrayEvent, dialogs, opener,
 };
 use quadra_text::FakeBackend;
-use quadra_ui::{column, window};
+use quadra_view::{column, window};
 
 #[test]
 fn a_window_not_saved_asks_the_user_before_it_closes() {

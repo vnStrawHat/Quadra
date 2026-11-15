@@ -8,7 +8,7 @@ use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{NodeId, Paint, Side, State};
-use quadra_ui::{Div, MountCx, View, by_text, column, div, row, text};
+use quadra_view::{Div, MountCx, View, by_text, column, div, row, text};
 
 use crate::display::chosen_mark;
 use crate::icon::icon;

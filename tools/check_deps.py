@@ -9,7 +9,7 @@ import sys
 # windows-core is part of windows: its `implement` macro names the crate by that name.
 ADMITTED = {
     "windows", "windows-core", "accesskit", "accesskit_windows", "serde", "serde_json", "regex-lite",
-    "oneterm-vt", "polling",
+    "oneterm-vt", "polling", "russh", "tokio",
 }
 
 meta = json.load(sys.stdin)

@@ -1,0 +1,15 @@
+[package]
+name = "oneterm-ssh"
+description = "1Term's SSH and SFTP: russh on a tokio runtime of its own, behind a blocking API (specs/19, P2)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+russh = { version = "0.65", default-features = false, features = ["ring", "rsa"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "time", "sync", "io-util"] }

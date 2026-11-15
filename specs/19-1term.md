@@ -12,7 +12,7 @@ open. The terminal is `quadra-term` (18).
 | Phase | Contents |
 |---|---|
 | **P1 Local** | the window, tabs and spaces, local shells, the terminal signals, the `+` menu, the status bar, settings, the lock screen |
-| **P2 Remote** | SSH (its engine is decided when P2 starts: R15 admits neither an async runtime nor C built at compile time), saved hosts in the rail, quick connect, the SFTP dock and its expanded view |
+| **P2 Remote** | SSH over `russh` on a `tokio` runtime of its own with `ring` for its crypto (the user's choice, 2026-11-15; specs/01, R15), saved hosts in the rail, quick connect, the SFTP dock and its expanded view |
 
 P1 milestones, each committed green on `tools/check.sh prod` before the next:
 
@@ -24,6 +24,15 @@ P1 milestones, each committed green on `tools/check.sh prod` before the next:
 | M4 | the `+` menu (local shells, split), the status bar's git, CPU, memory |
 | M5 | settings (pages, saved as they change) and themes |
 | M6 | the master password and the lock screen |
+
+P2 milestones:
+
+| Id | Contents |
+|---|---|
+| M7 | the SSH engine (`apps/oneterm-ssh`): connect, host keys, authentication, the shell; quick connect from the `+` menu |
+| M8 | saved hosts: the rail's SSH hosts with a filter, the menu's search, Recent and groups, Add SSH host; the host and its latency in the status bar and the space's header; `n ssh · n local` |
+| M9 | the SFTP dock (300 px) and its expanded view: listing, moving about, upload and download, transfers |
+| M10 | jump hosts and port forwards |
 
 ## Window
 
@@ -137,6 +146,42 @@ how many sessions are connected and how many notices came), a status bar that sh
   keeps its window buttons and says "Locked"; the app's keys do nothing but `Ctrl+Shift+L`;
   the card is a focus scope with the focus in the password field. Unlocking gives the focus
   back to the focused space.
+
+## SSH (P2)
+
+The engine is the crate `oneterm-ssh` (`apps/oneterm-ssh`), the one place `russh` and `tokio`
+are named: a runtime of two worker threads, made when the first connection starts, behind a
+blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output, exited)`,
+`write`, `resize`, `close`. The UI thread never waits on the network.
+
+### M7 in detail
+
+- **Target**: `user@host`, `host:port`, `[user@]host -p port`, `-l user`, and a leading `ssh`
+  are read by `Target::parse`; no user is the OS's (`USERNAME`); no port is 22.
+- **Prompts are the terminal's**, as the OpenSSH client asks them: what the engine asks is
+  written to the space, and what is typed there, up to Enter, is the answer (a password is
+  not echoed; Backspace takes back a character; Ctrl+C or Ctrl+D gives up). So a remote
+  space is a session like a local one, and its link is the engine's.
+- **Host keys**: `~/.ssh/known_hosts` (the path is an option). A known key goes on; an
+  unknown one asks `Are you sure you want to continue connecting (yes/no)?` with its SHA-256
+  fingerprint, and `yes` writes it to the file; a changed key is refused with a warning that
+  names the line, never asked.
+- **Authentication**, by the option `Auth`: `Auto` (the default) tries the agent
+  (`\\.\pipe\openssh-ssh-agent`, at most 6 keys), then `~/.ssh/id_ed25519`, `id_ecdsa`,
+  `id_rsa` where they are (a passphrase is asked), then the password, three times;
+  `Agent`, `Key(path)` and `Password` try only theirs. An RSA key signs with the hash the
+  server names in `server-sig-algs`.
+- **The shell**: a PTY of `xterm-256color` of the space's size, `COLORTERM=truecolor`; a
+  resize is a window change; the channel's exit status is the space's `[process exited N]`,
+  and a connection that drops is `[connection closed: reason]` and exit status 255.
+  Keepalive every 30 s, given up after 3 unanswered. Connecting gives up after 20 s.
+- **Quick connect**: the `+` menu's item (`Ctrl+Shift+K`) opens a dialog: the target, Auth
+  (Auto, Agent, Key file, Password), "In current tab (new space)"; Connect starts a tab (or a
+  space) whose header says `user@host`. Jump hosts, Save as host and Open SFTP alongside
+  come with M8-M10.
+- **Tests**: a `russh` server in the test process on 127.0.0.1 (no other host, ever):
+  password and key authentication, unknown, known and changed host keys, typing, resize, the
+  exit status, a connection dropped.
 
 ## Tests
 

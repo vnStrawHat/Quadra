@@ -99,9 +99,11 @@ Seen clears: selecting the tab clears its bell dot and a "done" seen state.
 ## The `+` menu
 
 Under "New terminal" (and `+` of the strip): a search field ("Search hosts, or type
-user@host…"), Local shell (the default shell, `Ctrl+T`), the other local shells found (Command
-Prompt, Windows PowerShell, PowerShell 7, Git Bash, WSL), Split current space (`Ctrl+D`); from
-P2 Quick connect, Recent and the saved hosts by group, Add SSH host.
+user@host…"; at the rail's right, 360 wide), Local shell (the default shell, its name after it,
+`Ctrl+T`), the other local shells found (Command Prompt, Windows PowerShell, PowerShell 7, Git
+Bash, WSL), Split current space (`Ctrl+D`); from P2 Quick connect (`ssh user@host`), Recent and
+the saved hosts by group, Add SSH host. Rows have icons; a host has a dot (green while a space is
+connected to it) and its address at the right (Recent: the host and how long ago).
 
 ## M4 in detail
 
@@ -188,10 +190,11 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   resize is a window change; the channel's exit status is the space's `[process exited N]`,
   and a connection that drops is `[connection closed: reason]` and exit status 255.
   Keepalive every 30 s, given up after 3 unanswered. Connecting gives up after 20 s.
-- **Quick connect**: the `+` menu's item (`Ctrl+Shift+K`) opens a dialog: the target, Auth
-  (Auto, Agent, Key file, Password), "In current tab (new space)"; Connect starts a tab (or a
-  space) whose header says `user@host`. Jump hosts, Save as host and Open SFTP alongside
-  come with M8-M10.
+- **Quick connect**: the `+` menu's item (`Ctrl+Shift+K`) opens a dialog: a note "Not saved to
+  hosts unless you tick it", the target after `ssh` with what it accepts under it, Auth (Auto,
+  Agent, Key file, Password) and Jump host side by side, then Open SFTP alongside (on), Save as
+  host, "In current tab (new space)"; Connect starts a tab (or a space) whose header says
+  `user@host`, and opens the dock when asked.
 - **Tests**: a `russh` server in the test process on 127.0.0.1 (no other host, ever):
   password and key authentication, unknown, known and changed host keys, typing, resize, the
   exit status, a connection dropped.

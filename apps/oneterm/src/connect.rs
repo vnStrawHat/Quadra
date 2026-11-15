@@ -1,14 +1,15 @@
 //! Quick connect (specs/19, "M7 in detail"): a target as one types it to `ssh`, how to sign
-//! in, and whether it opens a tab or a space beside the focused one.
+//! in and through which host, whether the SFTP dock opens with it, whether it is saved, and
+//! whether it opens a tab or a space beside the focused one.
 
 use oneterm_ssh::Target;
-use quadra::{Display, Signal, View, column, div, signal, text};
-use quadra_design::{Notice, Tone, Variant, checkbox, input, select, token};
+use quadra::{Align, Display, Signal, View, column, div, row, signal, text};
+use quadra_design::{Notice, Tone, Variant, checkbox, field, input, select, token};
 
 use crate::model::Model;
 use crate::shells::Remote;
 
-const AUTHS: [&str; 4] = ["Auto (agent, keys, password)", "Agent (ssh-agent)", "Key file", "Password"];
+const AUTHS: [&str; 4] = ["Auto", "Agent (ssh-agent)", "Key file", "Password"];
 
 #[derive(Clone, Copy)]
 struct Form {
@@ -18,6 +19,8 @@ struct Form {
     here: Signal<bool>,
     save: Signal<bool>,
     jump: Signal<usize>,
+    /// Opens the SFTP dock with it.
+    sftp: Signal<bool>,
 }
 
 pub(crate) fn dialog(model: &Model) -> impl View + use<> {
@@ -29,11 +32,12 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
         here: signal(false),
         save: signal(false),
         jump: signal(0),
+        sftp: signal(true),
     };
     let (submits, goes, lists) = (model.clone(), model.clone(), model.clone());
     let body = move || {
         let submits = submits.clone();
-        let field = input(form.target)
+        let typed = input(form.target)
             .placeholder("user@host, host:port, or an ssh command line")
             .test_id("connect-target")
             .width(370.0)
@@ -43,21 +47,36 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
                 }
             });
         let key = input(form.key).placeholder("Path of the key file").test_id("connect-key").width(416.0);
+        let note = div()
+            .text_size(11.0)
+            .text_color(token::TEXT_2)
+            .child(text("Not saved to hosts unless you tick it"));
+        let target = field("Target", row_of(text("ssh"), typed))
+            .help("Accepts user@host, host:port, or a full ssh command line.");
+        let how = row().gap(12.0).child(field("Auth", select(AUTHS, form.auth).width(202.0))).child(field(
+            "Jump host",
+            select(lists.jump_choices(), form.jump).width(202.0).test_id("connect-jump"),
+        ));
+        let boxes = row()
+            .gap(16.0)
+            .align_items(Align::Center)
+            .child(checkbox(form.sftp).label("Open SFTP alongside"))
+            .child(checkbox(form.save).label("Save as host"));
+        let boxes =
+            column().gap(10.0).child(boxes).child(checkbox(form.here).label("In current tab (new space)"));
         column()
-            .gap(10.0)
+            .gap(14.0)
             .padding_x(12.0)
-            .width(440.0)
-            .child(div().text_size(12.0).text_color(token::TEXT_2).child(text("Target")))
-            .child(row_of(text("ssh"), field))
-            .child(select(AUTHS, form.auth).width(240.0))
+            .width(416.0)
+            .child(note)
+            .child(target)
+            .child(how)
             .child(
                 div()
                     .display(move || if form.auth.get() == 2 { Display::Flex } else { Display::None })
                     .child(key),
             )
-            .child(select(lists.jump_choices(), form.jump).width(240.0).test_id("connect-jump"))
-            .child(checkbox(form.here).label("In current tab (new space)"))
-            .child(checkbox(form.save).label("Save as host"))
+            .child(boxes)
     };
     quadra_design::dialog(open, "Quick connect", body).action("Cancel", Variant::Secondary, || {}).action(
         "Connect",
@@ -87,6 +106,9 @@ fn go(model: &Model, form: Form) -> bool {
         model.save_host(crate::hosts::Host { name, group: String::new(), remote: remote.clone(), jump });
     }
     model.connect_to(remote, form.here.get_untracked());
+    if form.sftp.get_untracked() {
+        model.ui().dock.set(true);
+    }
     form.target.set(String::new());
     true
 }

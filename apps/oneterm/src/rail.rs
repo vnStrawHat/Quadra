@@ -94,20 +94,27 @@ pub(crate) fn new_menu(model: &Model, typed: &str) -> Vec<MenuItem> {
         return items;
     }
     let (local, splits) = (model.clone(), model.clone());
-    items.push(MenuItem::new("Local shell").keys("Ctrl+T").on_select(move || local.new_tab()));
+    let shell = model.prefs().shell.get_untracked();
+    let shell = if shell.is_empty() { "default".to_string() } else { shell };
+    let first = MenuItem::new("Local shell").icon(icons::SQUARE_TERMINAL).detail(shell).keys("Ctrl+T");
+    items.push(first.on_select(move || local.new_tab()));
     for shell in shells::found() {
         let (makes, name) = (model.clone(), shell.name);
         items.push(
-            MenuItem::new(name).on_select(move || makes.new_tab_with(makes.launch(Some(shell.clone())))),
+            MenuItem::new(name)
+                .icon(icons::TERMINAL)
+                .on_select(move || makes.new_tab_with(makes.launch(Some(shell.clone())))),
         );
     }
     let connects = model.ui().connecting;
-    items.push(MenuItem::new("Quick connect…").keys("Ctrl+Shift+K").on_select(move || connects.set(true)));
-    items.push(MenuItem::new("Split current space").keys("Ctrl+D").on_select(move || splits.split()));
+    let quick = MenuItem::new("Quick connect\u{2026}").icon(icons::LINK).detail("ssh user@host");
+    items.push(quick.keys("Ctrl+Shift+K").on_select(move || connects.set(true)));
+    let split = MenuItem::new("Split current space").icon(icons::COLUMNS_2).keys("Ctrl+D");
+    items.push(split.on_select(move || splits.split()));
     items.extend(found_hosts(model, &holds));
     let adds = model.ui().adding;
     items.push(MenuItem::separator());
-    items.push(MenuItem::new("Add SSH host…").on_select(move || adds.set(true)));
+    items.push(MenuItem::new("Add SSH host\u{2026}").icon(icons::PLUS).on_select(move || adds.set(true)));
     items
 }
 
@@ -123,10 +130,15 @@ fn found_hosts(model: &Model, holds: &dyn Fn(&str) -> bool) -> Vec<MenuItem> {
         items.push(MenuItem::separator());
         items.push(MenuItem::heading("Recent"));
     }
+    // A host's dot is green while a space is connected to it.
+    let dot = |target: &oneterm_ssh::Target| {
+        if model.connected_to(target) { token::OK } else { token::LINE_STRONG }
+    };
     for (remote, at) in recent.into_iter().take(3) {
         let (goes, name) = (model.clone(), model.host_name(&remote));
-        let when = crate::hosts::ago(at);
-        items.push(MenuItem::new(name).keys(when).on_select(move || goes.connect_to(remote.clone(), false)));
+        let when = format!("{} \u{B7} {}", remote.target.host, crate::hosts::ago(at));
+        let item = MenuItem::new(name).dot(dot(&remote.target)).keys(when);
+        items.push(item.on_select(move || goes.connect_to(remote.clone(), false)));
     }
     let hosts = model.hosts().into_iter().filter(|it| holds(&it.name) || holds(&it.address()));
     let mut group = None;
@@ -141,6 +153,7 @@ fn found_hosts(model: &Model, holds: &dyn Fn(&str) -> bool) -> Vec<MenuItem> {
         let (goes, remote) = (model.clone(), host.remote.clone());
         items.push(
             MenuItem::new(host.name.clone())
+                .dot(dot(&host.remote.target))
                 .keys(host.detail())
                 .on_select(move || goes.connect_to(remote.clone(), false)),
         );

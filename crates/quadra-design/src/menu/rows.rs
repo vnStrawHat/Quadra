@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use quadra_headless::menu::{self, Ends, Line};
-use quadra_layout::Align;
+use quadra_layout::{Align, Justify};
 use quadra_reactive::signal;
 use quadra_tree::{Along, Side, State};
 use quadra_view::{Div, NodeRef, Place, by_text, column, div, row, scroll, text};
@@ -32,9 +32,17 @@ fn face(item: &MenuItem, marks: bool) -> Div {
         (_, Some(true), _) => face.child(icon(icons::CHECK).color(token::ACCENT_TEXT)),
         (_, _, Some(body)) if item.disabled => face.child(icon(body)),
         (_, _, Some(body)) => face.child(icon(body).color(token::TEXT_2)),
-        _ => face.child(div().width(14.0)),
+        _ => match item.dot {
+            Some(color) => face.child(row().width(14.0).justify(Justify::Center).child(dot(color))),
+            None => face.child(div().width(14.0)),
+        },
     };
-    let face = face.child(text(item.label.clone())).child(div().grow(1.0).min_width(16.0));
+    let face = face.child(text(item.label.clone()));
+    let face = match &item.detail {
+        Some(words) => face.child(div().text_size(11.0).text_color(token::TEXT_2).child(text(words.clone()))),
+        None => face,
+    };
+    let face = face.child(div().grow(1.0).min_width(16.0));
     let face = match &item.keys {
         Some(keys) if item.disabled => face.child(text(keys.clone())),
         Some(keys) => face.child(text(keys.clone()).color(token::TEXT_2)),
@@ -46,9 +54,14 @@ fn face(item: &MenuItem, marks: bool) -> Div {
     }
 }
 
+/// A dot of 7 px.
+fn dot(color: quadra_tree::Token) -> Div {
+    div().size(7.0, 7.0).radius(3.5).bg(color)
+}
+
 /// The rows of a menu as a view: the headless crate's (`quadra_headless::menu`) with the kit's faces.
 pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
-    let marks = items.iter().any(|item| item.icon.is_some() || item.checked.is_some());
+    let marks = items.iter().any(|item| item.icon.is_some() || item.dot.is_some() || item.checked.is_some());
     let mut lines = Vec::new();
     let mut height = 8.0;
     for item in items {

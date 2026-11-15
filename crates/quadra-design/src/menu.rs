@@ -24,6 +24,10 @@ pub(crate) use quadra_headless::menu::Ends;
 pub struct MenuItem {
     label: String,
     icon: Option<&'static str>,
+    /// A dot of this colour in the place of an icon: a host that is connected.
+    dot: Option<quadra_tree::Token>,
+    /// A few words after the label, in the second text colour.
+    detail: Option<String>,
     keys: Option<String>,
     checked: Option<bool>,
     disabled: bool,
@@ -62,6 +66,18 @@ impl MenuItem {
     /// An icon before the label: one of [`crate::icons`].
     pub fn icon(mut self, body: &'static str) -> Self {
         self.icon = Some(body);
+        self
+    }
+
+    /// A dot of a colour in the place of an icon: a state, as a host that is connected.
+    pub fn dot(mut self, color: quadra_tree::Token) -> Self {
+        self.dot = Some(color);
+        self
+    }
+
+    /// A few words after the label in the second text colour: what the row is ("zsh").
+    pub fn detail(mut self, words: impl Into<String>) -> Self {
+        self.detail = Some(words.into());
         self
     }
 

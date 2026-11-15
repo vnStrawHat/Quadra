@@ -303,11 +303,13 @@ same rule: no backdrop, an outside click closes them.
   right arrow, left arrow closes it; submenus overlap their row by 2 px. A long menu is capped
   at half the window or 450 px and scrolls. A labelled separator is rule, 12 px `text_2`
   label, rule; a `heading` row is a section header. A row may lead with an 8 px color square
-  (`swatch`). A destructive item (`.danger()`) has its label and icon in `error`. Closing a
+  (`swatch`), or a 7 px dot of a role in its icon column (`.dot(..)`: a state), and say a few
+  words after its label in 11 px `text_2` (`.detail(..)`). A destructive item (`.danger()`) has its label and icon in `error`. Closing a
   popup gives the focus back
   to what had it when the popup opened (its trigger), so keys and actions reach the window.
   A searched menu (`searched_menu`) has the select's search head over its rows (32 tall, a
-  12 px `search` in `text_3`, a rule under it), the focus in its field; the rows are asked
+  12 px `search` in `text_3`, a rule under it), 360 wide, below its opener or at its right,
+  the focus in its field; the rows are asked
   again with what the field says as it changes, and Enter does the first row that can be done.
 - **Tooltip:** level 1, padding 8 × 4, 14 text, max width 288, shortcut muted 16 to the
   right, an optional meta line under it in 12 `text_2`, shown after 500 ms.

@@ -168,6 +168,9 @@ pub struct TreeUpdate {
     pub nodes: Vec<SemanticNode>,
     pub root: u64,
     pub focus: Option<u64>,
+    /// Device pixels a logical pixel of the bounds is: the window's scale times the zoom
+    /// (specs/12, "Text size"). `None`: the window's own scale.
+    pub scale: Option<f32>,
 }
 
 /// What a listener holds after the updates it was sent: the tree, when they were well formed.

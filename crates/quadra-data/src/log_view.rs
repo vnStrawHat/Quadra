@@ -18,10 +18,15 @@ use quadra_ui::{
 use crate::ansi::{Ink, Pen, plain, runs};
 use crate::log::{Log, clock};
 
-/// The height of a row, and what a time takes before its line: twelve letters of the mono
-/// face at 12 px, 7.2 px each, and 20 px of gaps.
+/// The height of a row, and the width of a letter of the mono face at 12 px. What a time
+/// takes before its line is twelve letters and 20 px of gaps (`gutter`). Both grow with the
+/// text scale (`by_text`).
 const ROW: f32 = 18.0;
-const GUTTER: f32 = 12.0 * 7.2 + 20.0;
+const LETTER: f32 = 7.2;
+
+fn gutter(letter: f32) -> f32 {
+    12.0 * letter + 20.0
+}
 /// A place past the end of any list: the list keeps it at its end, which is following.
 const FOLLOWING: f32 = f32::MAX;
 
@@ -64,12 +69,13 @@ fn line(log: &Log, place: usize, timestamps: bool, sx: Signal<f32>) -> Div {
     });
     let spans: Vec<_> = spans.collect();
     let line = row().height(by_text(ROW)).align_items(Align::Center).padding_left(8.0);
+    let letter = by_text(LETTER)();
     let line = match (timestamps, at_ms) {
         (false, _) => line,
-        (true, 0) => line.child(div().width(GUTTER - 8.0).shrink(0.0)),
+        (true, 0) => line.child(div().width(gutter(letter) - 8.0).shrink(0.0)),
         (true, at) => {
             let time = text(clock(at)).color(token::TEXT_3.alpha(fade));
-            line.child(div().width(GUTTER - 8.0).shrink(0.0).child(time))
+            line.child(div().width(gutter(letter) - 8.0).shrink(0.0).child(time))
         }
     };
     if spans.is_empty() {
@@ -77,7 +83,7 @@ fn line(log: &Log, place: usize, timestamps: bool, sx: Signal<f32>) -> Div {
     }
     // A long line is cut at the edge and scrolls sideways; the times stay.
     // As wide as the line at least (a byte is a cell or more of it): it never wraps.
-    let wide = said.len() as f32 * 7.2 + 8.0;
+    let wide = said.len() as f32 * letter + 8.0;
     let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).child(rich_text(spans));
     line.child(div().width(0.0).grow(1.0).height(by_text(ROW)).overflow_x(Overflow::Hidden).child(words))
 }
@@ -117,11 +123,11 @@ impl View for LogView {
         let follows = memo(move || scroll.get() == FOLLOWING);
         let (seen, mounted): (Rc<Cell<Option<Signal<quadra_prim::Size>>>>, _) =
             (Rc::default(), signal(false));
-        let (count, view) = (log.clone(), seen.clone());
+        let (count, view, row_px) = (log.clone(), seen.clone(), by_text(ROW));
         let end = move || {
             mounted.get();
             let height = view.get().map_or(0.0, |size| size.get().height);
-            (count.listed() as f32 * ROW - height).max(0.0)
+            (count.listed() as f32 * row_px() - height).max(0.0)
         };
         // Scrolled down to the end, or with nothing to scroll: it follows again.
         let (to_end, before) = (end.clone(), Cell::new(FOLLOWING));
@@ -141,8 +147,11 @@ impl View for LogView {
             changed.get();
             chosen.set(Vec::new());
         });
-        let (sx, widest) = (signal(0.0f32), log.clone());
-        let reach = move |width: f32| widest.widest() as f32 * 7.2 + 16.0 - (width - GUTTER);
+        let (sx, widest, letter) = (signal(0.0f32), log.clone(), by_text(LETTER));
+        let reach = move |width: f32| {
+            let letter = letter();
+            widest.widest() as f32 * letter + 16.0 - (width - gutter(letter))
+        };
         let (rows, counted, picks) = (log.clone(), log.clone(), sheet.clone());
         let list = uniform_list(
             move || counted.listed(),

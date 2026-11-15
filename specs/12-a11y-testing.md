@@ -112,9 +112,12 @@ A user who needs larger text sets it in the system (on Windows, Accessibility, T
 - **Zoom**: the whole UI larger, as on a display of a higher density. The tree is given a
   window `zoom` times smaller at a scale `zoom` times larger; what comes in from the
   platform in logical pixels (the pointer, the wheel's place, drags, the hit test of a
-  custom frame) is divided by it, and what goes out (the caret's rectangle for an input
-  method, the bounds told to a reader) is multiplied. Nothing overflows: a layout is the
-  one of a smaller window. It is done by the app (`quadra-app/src/text_size.rs`).
+  custom frame) is divided by it, and the caret's rectangle for an input method is
+  multiplied. A reader is told the tree's bounds and the scale that makes them device
+  pixels (`TreeUpdate::scale`, the bridge's transform of the root), so a change of zoom is
+  one update of the root. Nothing overflows: a layout is the one of a smaller window. It is
+  done by the app (`quadra-app/src/text_size.rs`); the gallery binds Ctrl-=, Ctrl-minus
+  and Ctrl-0 to it.
 - **Text**: only text larger, as a reader of small screens asks. The tree multiplies the
   size of every text by `Tree::set_text_scale(f)` where the text values are resolved
   (`Inherited::style`, and `Inherited::scale` for a widget that has sizes of its own, a run

@@ -275,7 +275,7 @@ impl PlatformWindow for WinWindow {
 
     fn update_semantics(&self, update: &TreeUpdate) {
         if let Some(access) = self.0.access.get() {
-            access.update(update, self.0.scale.get());
+            access.update(update, update.scale.unwrap_or(self.0.scale.get()));
         }
     }
 

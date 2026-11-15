@@ -159,7 +159,8 @@ where
         let field = text_input(query).placeholder(&ask).on_submit(move |_| submit(on.get_untracked()));
         let ask = row().align_items(Align::Center).height(by_text(37.0)).padding_x(10.0);
         let ask = ask.border_bottom(1.0).border_color(token::LINE).child(div().grow(1.0).child(field));
-        let tall = move || Length::Px((matches.get().len().max(1) as f32 * ROW + 8.0).min(MOST));
+        let row_px = by_text(ROW);
+        let tall = move || Length::Px((matches.get().len().max(1) as f32 * row_px() + 8.0).min(MOST));
         let list = scroll(signal(0.0), rows).container(div().height(tall));
         let panel = column().width(608.0 - EDGE).selection_color(token::SELECTION);
         found.keys(panel, enter).child(ask).child(list)

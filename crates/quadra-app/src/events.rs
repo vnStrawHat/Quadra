@@ -14,7 +14,7 @@ use quadra_render::Renderer;
 use quadra_tree::{PointerInput, WindowRequest};
 
 use crate::App;
-use crate::text_size::{inward, outward};
+use crate::text_size::inward;
 
 impl<R: Renderer> PlatformHandler for App<R> {
     fn event(&mut self, window: WindowId, event: PlatformEvent) {
@@ -159,7 +159,7 @@ impl<R: Renderer> App<R> {
             } else if let Some(update) = w.tree.take_semantic_update() {
                 // No frame is coming to send it after: a listener that just arrived, a focus
                 // that moved.
-                w.window.update_semantics(&outward(&w.tree, update));
+                w.window.update_semantics(&update);
             }
             // Where text is typed, or that it is not: what an input method goes by.
             let caret = w.tree.text_caret().map(|caret| caret.scale(w.tree.zoom()));

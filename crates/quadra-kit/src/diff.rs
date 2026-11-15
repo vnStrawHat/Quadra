@@ -151,11 +151,13 @@ impl View for Diff {
             Rc::new(open.with(|open| rows(&sides.script, mode, context, open, &alike)))
         });
         // Room for the number of the last line, and of two digits at least.
+        let letter = by_text(LETTER);
+        let wide = letter.clone();
         let gutter = memo(move || {
             let digits = sides.with(|s| s.old.at.len().max(s.new.at.len())).to_string().len().max(2);
-            digits as f32 * LETTER + 16.0
+            digits as f32 * wide() + 16.0
         });
-        let widest = memo(move || sides.with(|s| s.widest()) as f32 * LETTER);
+        let widest = memo(move || sides.with(|s| s.widest()) as f32 * letter());
         let (sx, sheet) = (signal(0.0), select::sheet_of(sides, listed));
         let (rows_of, shown, wrap) = (sheet.clone(), mode.clone(), self.wrap);
         let count = move || listed.with(|rows| rows.len());
@@ -169,7 +171,7 @@ impl View for Diff {
             });
             if wrap {
                 // As high as its lines, which wrap: nothing to scroll sideways.
-                let face = crate::rows::selectable(&rows_of, div().min_height(ROW), place);
+                let face = crate::rows::selectable(&rows_of, div().min_height(by_text(ROW)), place);
                 return built.container(face);
             }
             let shown = shown.clone();

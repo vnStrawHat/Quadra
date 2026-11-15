@@ -77,12 +77,12 @@ fn a_zoomed_window_is_a_smaller_one_at_a_larger_scale() {
     assert_eq!(zoomed.click(140.0, 30.0), 1);
     assert_eq!(zoomed.click(160.0, 30.0), 1);
 
-    // A reader is told the window's pixels.
+    // A reader is told the tree's pixels and the scale that makes them device pixels.
     zoomed.platform.push(zoomed.window, PlatformEvent::SemanticsWanted);
     zoomed.settle();
     let told = zoomed.platform.take_semantics(zoomed.window);
     let root = told.last().unwrap().nodes.iter().find(|n| n.id == told[0].root).unwrap().bounds;
-    assert_eq!(root.size(), Size::new(300.0, 210.0));
+    assert_eq!((root.size(), told.last().unwrap().scale), (Size::new(200.0, 140.0), Some(1.5)));
 }
 
 #[test]
@@ -99,4 +99,44 @@ fn the_systems_text_size_zooms_until_the_user_says_otherwise() {
     assert_eq!(p.root().size(), Size::new(300.0, 240.0));
     // Held between 0.5 and 4.
     assert_eq!(TextSize { zoom: 9.0, text: 0.1, system: SystemText::Text }.factors(2.0), (4.0, 0.5));
+}
+
+#[test]
+fn text_alone_grows_when_a_view_asks_while_the_app_runs() {
+    use quadra_ui::{by_text, uniform_list};
+
+    let platform = HeadlessPlatform::new();
+    let mut app = App::with(Rc::new(platform.clone()), NullRenderer::new(), Box::new(FakeBackend::new()));
+    let found = Rc::new(Cell::new(None));
+    let size = found.clone();
+    let view = move || {
+        size.set(Some(text_size()));
+        let rows = uniform_list(|| 10, 20.0, signal(0.0), |at| text(move || format!("row {}", at.get())));
+        column()
+            .child(text("words"))
+            .child(div().height(by_text(28.0)))
+            .child(div().height(200.0).child(rows))
+    };
+    let window = app.open_window(WindowOptions::new("text").size(400.0, 400.0), view).unwrap();
+    platform.step(&mut app);
+    let look = |app: &App<NullRenderer>| {
+        let tree = app.tree(window).unwrap();
+        let root = tree.root().unwrap();
+        let [words, boxed, list] = [0, 1, 2].map(|i| tree.children(root)[i]);
+        let rows: Vec<f32> = tree
+            .semantic_tree()
+            .nodes
+            .iter()
+            .filter(|n| n.semantics.name.starts_with("row "))
+            .map(|n| tree.window_rect(tree.node_of(n.id).unwrap()).y - tree.window_rect(list).y)
+            .take(2)
+            .collect();
+        (tree.inherited(words).style.size, tree.rect(boxed).height, rows)
+    };
+    assert_eq!(look(&app), (14.0, 28.0, vec![0.0, 20.0]));
+    let size = found.get().unwrap();
+    size.set(TextSize { text: 1.5, ..size.get_untracked() });
+    platform.waker().wake();
+    while platform.step(&mut app) {}
+    assert_eq!(look(&app), (21.0, 42.0, vec![0.0, 30.0]));
 }

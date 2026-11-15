@@ -73,7 +73,7 @@ fn line(
         }
     };
     let line = match wrap {
-        true => row().min_height(ROW).align_items(Align::Start),
+        true => row().min_height(by_text(ROW)).align_items(Align::Start),
         false => row().height(by_text(ROW)).align_items(Align::Center),
     };
     let line = line.role(Role::Cell).label(name).children(numbers.iter().map(number).collect::<Vec<_>>());
@@ -92,7 +92,7 @@ fn line(
     }
     // A long line is cut at the edge and scrolls sideways; the numbers stay.
     // As wide as the line at least (a byte is a cell or more of it): it never wraps.
-    let wide = (said.len() + 3 * said.matches('\t').count()) as f32 * 7.2 + 8.0;
+    let wide = (said.len() + 3 * said.matches('\t').count()) as f32 * by_text(super::LETTER)() + 8.0;
     let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).child(rich_text(spans));
     line.child(div().width(0.0).grow(1.0).height(by_text(ROW)).overflow_x(Overflow::Hidden).child(words))
 }
@@ -101,7 +101,7 @@ fn line(
 /// the higher when lines wrap.
 fn halves(left: Div, right: Div, wrap: bool) -> Div {
     let right = row().border_left(1.0).border_color(token::LINE).child(right.grow(1.0));
-    let pair = if wrap { row().min_height(ROW) } else { row().height(ROW) };
+    let pair = if wrap { row().min_height(by_text(ROW)) } else { row().height(by_text(ROW)) };
     pair.child(left.width(0.0).grow(1.0)).child(right.width(0.0).grow(1.0))
 }
 

@@ -4,7 +4,7 @@
 use quadra_prim::Point;
 use quadra_reactive::{Scope, Signal, use_context};
 use quadra_render::Renderer;
-use quadra_tree::{Tree, TreeUpdate};
+use quadra_tree::Tree;
 
 use crate::App;
 
@@ -87,12 +87,4 @@ impl<R: Renderer> App<R> {
 /// A point in the window's logical pixels, in the tree's.
 pub(crate) fn inward(tree: &Tree, at: Point) -> Point {
     Point::new(at.x / tree.zoom(), at.y / tree.zoom())
-}
-
-/// What a listener is told, in the window's logical pixels.
-pub(crate) fn outward(tree: &Tree, mut update: TreeUpdate) -> TreeUpdate {
-    if tree.zoom() != 1.0 {
-        update.nodes.iter_mut().for_each(|node| node.bounds = node.bounds.scale(tree.zoom()));
-    }
-    update
 }

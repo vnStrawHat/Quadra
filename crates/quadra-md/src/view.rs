@@ -19,7 +19,7 @@ use quadra_reactive::signal;
 use quadra_text::find_urls;
 use quadra_tree::Role;
 use quadra_ui::{
-    Div, Span as Run, View, column, div, inline, inline_image, rich_text, row, scroll_x, span, text,
+    Div, Span as Run, View, by_text, column, div, inline, inline_image, rich_text, row, scroll_x, span, text,
 };
 
 use crate::block::{Kind, parse};
@@ -159,7 +159,7 @@ fn item(
     source: &str,
     on_link: &Option<OnLink>,
 ) -> Div {
-    let mark = row().width(22.0).shrink(0.0).height(BODY * 1.5).align_items(Across::Center);
+    let mark = row().width(22.0).shrink(0.0).height(by_text(BODY * 1.5)).align_items(Across::Center);
     let mark = match (task, number) {
         (Some(done), _) => {
             // A box that is read, not clicked: outlined, with a check in the accent.

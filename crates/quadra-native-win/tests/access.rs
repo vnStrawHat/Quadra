@@ -59,7 +59,8 @@ fn page(done: bool) -> TreeUpdate {
     (row.semantics.level, row.semantics.position) = (Some(2), Some(4));
     let all = [SAVE, DONE, NAME, VOLUME, FILES];
     let window = node(WINDOW, Role::Window, "", Rect::new(0.0, 0.0, 320.0, 200.0), &all);
-    TreeUpdate { nodes: vec![window, save, check, name, volume, files, row], root: WINDOW, focus: None }
+    let nodes = vec![window, save, check, name, volume, files, row];
+    TreeUpdate { nodes, root: WINDOW, focus: None, scale: None }
 }
 
 /// The app's part: it sends the tree when it is wanted, and checks the box when asked to.

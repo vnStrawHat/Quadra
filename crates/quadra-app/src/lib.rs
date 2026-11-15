@@ -259,7 +259,7 @@ impl<R: Renderer> App<R> {
         let stats = w.tree.frame(w.window.size(), w.window.scale());
         if let Some(update) = w.tree.take_semantic_update() {
             // The a11y pass: only while something listens.
-            w.window.update_semantics(&text_size::outward(&w.tree, update));
+            w.window.update_semantics(&update);
         }
         let (renderer, fonts, started) = (&mut self.renderer, &self.fonts, Instant::now());
         let mut frame = || {

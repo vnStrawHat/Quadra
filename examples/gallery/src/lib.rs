@@ -8,13 +8,16 @@ mod registry;
 mod shell;
 
 pub use registry::{PAGES, PageInfo};
-pub use shell::{Gallery, OpenPalette};
+pub use shell::{Gallery, OpenPalette, Zoom};
 
-/// The gallery's keys: the kit's, the editor's, and Ctrl-K for the command palette wherever
-/// the focus is.
+/// The gallery's keys: the kit's, the editor's, Ctrl-K for the command palette wherever the
+/// focus is, and Ctrl-=, Ctrl-minus and Ctrl-0 for the size of the whole window.
 pub fn keymap() -> quadra::Keymap {
     let mut keys = quadra_kit::keymap();
     keys.bind("ctrl-k", OpenPalette).expect("the binding is well formed");
+    for (stroke, step) in [("ctrl-=", 1), ("ctrl-minus", -1), ("ctrl-0", 0)] {
+        keys.bind(stroke, Zoom(step)).expect("the binding is well formed");
+    }
     quadra_code::bind_keys(&mut keys);
     keys
 }

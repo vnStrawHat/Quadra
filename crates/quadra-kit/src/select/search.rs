@@ -68,7 +68,8 @@ pub(super) fn searched(
     let head = head.border_bottom(1.0).border_color(token::LINE);
     let head = head.child(icon(icons::SEARCH).size(12.0).color(token::TEXT_3));
     let head = head.child(div().grow(1.0).child(field));
-    let tall = move || Length::Px((matches.get().len().max(1) as f32 * ROW + 8.0).min(MOST));
+    let row_px = by_text(ROW);
+    let tall = move || Length::Px((matches.get().len().max(1) as f32 * row_px() + 8.0).min(MOST));
     let list = scroll(signal(0.0), rows).container(div().height(tall));
     let panel = column().width(width).selection_color(token::SELECTION);
     found.keys(panel, take).child(head).child(list)

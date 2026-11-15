@@ -71,7 +71,8 @@ impl View for Combobox {
         };
         let panel = |found: &quadra_base::pick::Found, rows| {
             let matches = found.matches;
-            let tall = move || Length::Px((matches.get().len() as f32 * ROW + 8.0).min(MOST));
+            let row_px = by_text(ROW);
+            let tall = move || Length::Px((matches.get().len() as f32 * row_px() + 8.0).min(MOST));
             surface(1).width(280.0).child(scroll(signal(0.0), rows).container(div().height(tall)))
         };
         let place =

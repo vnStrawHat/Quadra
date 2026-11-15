@@ -165,7 +165,7 @@ impl Tree {
         let mut nodes = Vec::new();
         let Some(root) = self.root else { return TreeUpdate::default() };
         self.describe(root, None, &mut Vec::new(), &mut nodes);
-        TreeUpdate { nodes, root: semantic_id(root), focus: self.semantic_focus() }
+        TreeUpdate { nodes, root: semantic_id(root), focus: self.semantic_focus(), scale: Some(self.scale) }
     }
 
     /// The node of a semantic id, if it is still there.
@@ -221,7 +221,7 @@ impl Tree {
             return None;
         }
         self.listening.focus = focus;
-        Some(TreeUpdate { nodes, root: self.root.map_or(0, semantic_id), focus })
+        Some(TreeUpdate { nodes, root: self.root.map_or(0, semantic_id), focus, scale: Some(self.scale) })
     }
 
     /// Whether a text is part of the name of the semantic node around it.

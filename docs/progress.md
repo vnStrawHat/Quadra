@@ -152,8 +152,9 @@ The user's list of what the apps will need, and of what the components lack.
   every picture is the same to the byte. Tests: `quadra-app/tests/text_size.rs`,
   `quadra-ui/tests/text_scale.rs`, `quadra-kit/tests/text_size.rs`. Manual check: change
   the system's text size with an app open; it follows when the system says a setting
-  changed. ponytail: fixed widths (the time input, a select) do not grow; a uniform list
-  keeps its scroll in pixels when the scale changes.
+  changed. The gallery zooms with Ctrl-=, Ctrl-minus and Ctrl-0. ponytail: fixed widths
+  (the time input, a select) do not grow; a uniform list keeps its scroll in pixels when the
+  scale changes; a document's table measures its columns at mount.
 
 ### The exit of R4 (specs/00, Phases)
 

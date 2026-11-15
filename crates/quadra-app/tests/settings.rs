@@ -7,7 +7,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use quadra_app::{App, AppDirs, Settings, log};
-use quadra_platform::{HeadlessPlatform, Placement, PlatformEvent, WindowOptions};
+use quadra_platform::{HeadlessPlatform, Placement, Platform, PlatformEvent, WindowOptions};
 use quadra_prim::Size;
 use quadra_render::NullRenderer;
 use quadra_text::FakeBackend;
@@ -122,4 +122,19 @@ fn a_remembered_window_opens_where_it_was_when_it_closed() {
     let window = app.open_window(options(), column).unwrap();
     let place = Placement { x: 120, y: 80, width: 640, height: 480, maximized: false };
     assert_eq!(platform.placement(window), Some(place));
+}
+
+#[test]
+fn a_window_still_open_when_the_app_ends_is_remembered_too() {
+    let (platform, dirs) = (HeadlessPlatform::new(), AppDirs::under(&folder("window-open")));
+    let mut app = app(&platform, dirs.clone());
+    let window =
+        app.open_window(WindowOptions::new("main").size(400.0, 300.0).remember("main"), column).unwrap();
+    platform.step(&mut app);
+    platform.move_window(window, 30, 40);
+    // The app ends with the window open (a tray's Quit, the session's end).
+    platform.quit();
+    app.run().unwrap();
+    let kept = read(&dirs.config.join("settings.json"))["window.main"].clone();
+    assert_eq!((kept["x"].as_i64(), kept["y"].as_i64()), (Some(30), Some(40)));
 }

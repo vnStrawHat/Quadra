@@ -220,7 +220,7 @@ impl<R: Renderer> App<R> {
     pub fn run(mut self) -> Result<()> {
         let platform = self.platform.clone();
         let ran = platform.run(&mut self);
-        self.settings.save_now(); // what waited to be written
+        self.ended();
         Ok(ran?)
     }
 

@@ -40,12 +40,19 @@ impl<R: Renderer> App<R> {
         options
     }
 
-    /// Keeps where a window closing is.
-    // ponytail: only a window that closes is kept; one still open when the app quits by
-    // `Platform::quit` is not.
+    /// Keeps where a window is: one that closes, and one still open as the app ends.
     pub(crate) fn remember(&self, name: Option<&str>, window: &dyn PlatformWindow) {
         if let Some(name) = name {
             self.settings.value(&key(name), None).set(Some(window.placement()));
         }
+    }
+
+    /// The app ends: where the windows still open are is kept, and what waited to be
+    /// written is written.
+    pub(crate) fn ended(&self) {
+        for open in &self.windows {
+            self.remember(open.remember.as_deref(), &*open.window);
+        }
+        self.settings.save_now();
     }
 }

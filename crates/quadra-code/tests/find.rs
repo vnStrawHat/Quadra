@@ -44,3 +44,47 @@ fn next_goes_round_and_replace_all_is_one_undo() {
     doc.replace(4..5, "x");
     assert_eq!(doc.text(), "a b x b a");
 }
+
+#[test]
+fn matches_kept_through_changes_are_the_matches_found_again() {
+    use quadra_code::Edit;
+    let pieces = ["ab", "abab", " ", "\n", "Ab_", "x", "a", "b", "\n\n"];
+    let mut doc = Doc::new(&"ab abab\nxab Ab\n".repeat(20));
+    let mut seed = 5u64;
+    let mut next = |n: usize| {
+        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        (seed >> 33) as usize % n.max(1)
+    };
+    for (word, case) in [(false, false), (true, false), (false, true)] {
+        let query = Query { word, case, ..q("ab") };
+        let mut kept = query.matches(&doc).unwrap();
+        let mut version = doc.version;
+        for step in 0..300 {
+            // An edit, or several at once (cursors), each removing a little and putting in
+            // a piece; now and then one undone.
+            let text = doc.buffer.text();
+            let mut at: Vec<usize> = (0..1 + next(3)).map(|_| next(text.len() + 1)).collect();
+            at.sort_unstable();
+            at.dedup();
+            let mut edits: Vec<Edit> = Vec::new();
+            for a in at {
+                let end = (a + next(3)).min(text.len());
+                if edits.last().is_some_and(|e| e.range.end > a) {
+                    continue;
+                }
+                edits.push(Edit { range: a..end, text: pieces[next(pieces.len())].into(), caret: None });
+            }
+            doc.apply(edits, false);
+            if next(5) == 0 {
+                doc.undo();
+            }
+            if next(2) == 0 {
+                kept = query.rematch(&doc, version, kept).expect("a query of text is kept");
+                version = doc.version;
+                assert_eq!(kept, query.matches(&doc).unwrap(), "{word} {case} {step}");
+            }
+        }
+    }
+    // A pattern may match across lines: it is found again whole.
+    assert!(Query { regex: true, ..q("a") }.rematch(&doc, 0, Vec::new()).is_none());
+}

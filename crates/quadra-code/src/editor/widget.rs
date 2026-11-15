@@ -42,6 +42,8 @@ pub struct EditorWidget {
     /// that is chosen.
     pub find: Option<Query>,
     pub matches: Vec<Range<usize>>,
+    /// The version of the text the matches are of.
+    pub(super) matched: u64,
     pub current: Option<usize>,
     /// Told the place of the chosen match and the count, or `None` for a bad pattern.
     pub(super) found: Option<Signal<Option<(usize, usize)>>>,
@@ -86,6 +88,7 @@ impl EditorWidget {
             highlight,
             find: None,
             matches: Vec::new(),
+            matched: 0,
             current: None,
             found: None,
             preedit: None,
@@ -125,6 +128,23 @@ impl EditorWidget {
             Some(query) => query.matches(&self.doc),
             None => Ok(Vec::new()),
         };
+        self.chosen(found);
+    }
+
+    /// After the text changed: the lines of the changes are searched again, when the query
+    /// lets that be; all of it otherwise.
+    pub(super) fn refind_changed(&mut self) {
+        let kept = std::mem::take(&mut self.matches);
+        match self.find.as_ref().and_then(|query| query.rematch(&self.doc, self.matched, kept)) {
+            Some(matches) => self.chosen(Ok(matches)),
+            None => self.refind(),
+        }
+    }
+
+    /// Takes the matches found, chooses the one at or after the primary cursor, and tells
+    /// the bar.
+    fn chosen(&mut self, found: Result<Vec<Range<usize>>, String>) {
+        self.matched = self.doc.version;
         let told = found.as_ref().ok().map(|m| (0, m.len()));
         self.matches = found.unwrap_or_default();
         self.current = next_match(&self.matches, self.doc.primary().start(), false);

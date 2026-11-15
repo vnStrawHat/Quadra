@@ -9,13 +9,17 @@ use super::Doc;
 /// The changes kept: a view further behind makes what it keeps again whole.
 const KEPT: usize = 256;
 
-/// A change of lines: the `was` lines from `line` are now `now` lines. Its line is as the
-/// text was just before it; the changes of one version come in the order they were made.
+/// A change of lines: the `was` lines from `line` are now `now` lines; in bytes, the
+/// `removed` bytes at `at` are now `inserted` bytes. Its places are as the text was just
+/// before it; the changes of one version come in the order they were made.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LineChange {
     pub line: usize,
     pub was: usize,
     pub now: usize,
+    pub at: usize,
+    pub removed: usize,
+    pub inserted: usize,
 }
 
 #[derive(Default)]
@@ -36,7 +40,8 @@ impl Doc {
         let line = self.buffer.line_of(at);
         self.buffer.delete(at..at + removed.len());
         self.buffer.insert(at, text);
-        let change = LineChange { line, was: breaks(removed) + 1, now: breaks(text) + 1 };
+        let (was, now) = (breaks(removed) + 1, breaks(text) + 1);
+        let change = LineChange { line, was, now, at, removed: removed.len(), inserted: text.len() };
         let changes = &mut self.changes;
         changes.kept.push_back((self.version + 1, change));
         if changes.kept.len() > KEPT

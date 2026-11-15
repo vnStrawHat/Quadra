@@ -1115,14 +1115,21 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     the arrow up to the one before, Escape closes it and gives the editor the focus.
     Replace puts the text in place of the chosen match and goes to the next; All replaces
     every match as one undo. The matches are found again as the query, a switch or the text
-    changes, and painted under the text, the chosen one stronger.
+    changes, and painted under the text, the chosen one stronger. When the text changes
+    and the query is text (not a pattern, which may match across lines), only the lines
+    the changes were are searched again and the matches after them move
+    (`Query::rematch`, by the bytes each `LineChange` removed and put in): on 400,000 lines
+    with a match on each, 230 µs a letter where the whole text took 306 ms. A test of
+    random edits, several at once and undone, holds the kept matches to those found
+    again, with whole words and with case.
   - **Soft wrap** (`editor(..).wrap(true)`, for prose): a line is broken into rows at the
     text's width in cells, after the last blank that fits; a word longer than a row breaks
     inside it, and blanks hang past the edge. The rows (`editor/rows/wrap.rs`: the first row
     of each line, where each row starts) are built when the width or the tab size changes, a
     pass over the bytes; as the text changes only the lines its changes were are wrapped
     again, and the rows after them move. The document notes the lines of each change
-    (`LineChange`: a line, how many lines it was, how many it is; `Doc::line_changes_since`
+    (`LineChange`: a line, how many lines it was, how many it is, and in bytes where it is,
+    what it removed and what it put in; `Doc::line_changes_since`
     gives those after a version, the last 256 of them; a view further behind builds again;
     `Doc::changed_lines` takes what a view keeps a line each through them and says which
     lines of now are to be made again).

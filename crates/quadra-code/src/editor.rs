@@ -143,7 +143,7 @@ fn edit(
     let changed = w.doc.version != version;
     let relaid = w.doc.buffer.line_count() != lines || w.row_count() != rows;
     if changed && w.find.is_some() {
-        w.refind(); // the matches of the text as it is now
+        w.refind_changed(); // the matches of the text as it is now
     }
     if changed {
         w.remark();

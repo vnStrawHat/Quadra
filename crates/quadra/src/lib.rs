@@ -52,7 +52,7 @@ pub use quadra_reactive::{
 
 pub use quadra_tree::{
     Action, Actions, Along, BorderStyle, Fit, FocusNext, FocusPrevious, GoBack, GoForward, Gradient,
-    GradientKind, KeyEvent, Keymap, KeymapError, Keystroke, Paint, PointerEvent, PointerKind, Role,
+    GradientKind, KeyEvent, Keymap, KeymapError, Keystroke, NodeId, Paint, PointerEvent, PointerKind, Role,
     SemanticAction, Side, State, Theme, Token,
 };
 pub use quadra_view::{

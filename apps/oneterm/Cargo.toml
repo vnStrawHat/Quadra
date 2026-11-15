@@ -22,3 +22,4 @@ quadra-term = { path = "../../crates/quadra-term" }
 
 [dev-dependencies]
 quadra-testing = { path = "../../crates/quadra-testing" }
+quadra-tree = { path = "../../crates/quadra-tree" }

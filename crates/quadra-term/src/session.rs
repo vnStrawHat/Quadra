@@ -52,6 +52,8 @@ pub(crate) struct Shared {
     pub engine: Arc<Mutex<Engine>>,
     feeder: Feeder,
     link: RefCell<Link>,
+    /// How many links were connected: one connected while the last was called replaces it.
+    linked: Cell<u64>,
     policy: ResizePolicy,
     /// The view that paints it, told when output came.
     pub view: Cell<Option<NodeId>>,
@@ -84,6 +86,7 @@ impl Session {
             engine,
             feeder,
             link: RefCell::new(Link::new(|_| {})),
+            linked: Cell::new(0),
             policy,
             view: Cell::new(None),
             handle: RefCell::new(None),
@@ -120,20 +123,31 @@ impl Session {
     /// the grid hears it.
     pub fn connect(&self, link: Link) {
         let size = self.size();
-        let mut held = self.0.link.borrow_mut();
-        *held = link;
-        (held.resize)(size);
+        self.0.linked.set(self.0.linked.get() + 1);
+        *self.0.link.borrow_mut() = link;
+        self.with_link(|link| (link.resize)(size));
+    }
+
+    /// Calls the link without holding it: what it calls may write, close or connect again.
+    /// The link is put back unless another was connected meanwhile.
+    fn with_link(&self, f: impl FnOnce(&mut Link)) {
+        let linked = self.0.linked.get();
+        let mut link = std::mem::replace(&mut *self.0.link.borrow_mut(), Link::new(|_| {}));
+        f(&mut link);
+        if self.0.linked.get() == linked {
+            *self.0.link.borrow_mut() = link;
+        }
     }
 
     /// Writes bytes to the program.
     pub fn write(&self, bytes: &[u8]) {
         if !bytes.is_empty() {
-            (self.0.link.borrow_mut().write)(bytes);
+            self.with_link(|link| (link.write)(bytes));
         }
     }
 
     pub fn close(&self) {
-        (self.0.link.borrow_mut().close)();
+        self.with_link(|link| (link.close)());
     }
 
     /// Sets the grid's size: the engine's, then the link's. Nothing when it is that already.
@@ -146,7 +160,7 @@ impl Session {
             }
             engine.term.resize(size, self.0.policy);
         }
-        (self.0.link.borrow_mut().resize)(size);
+        self.with_link(|link| (link.resize)(size));
     }
 
     /// The grid's size.

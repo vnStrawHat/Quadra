@@ -19,7 +19,7 @@ fn app() -> (Harness, Session) {
         *kept.borrow_mut() = Some(s.clone());
         s
     });
-    h.mount(move || OneTerm::new(&sessions).view());
+    h.mount(move || OneTerm::new(sessions).view());
     h.settle();
     let s = made.borrow_mut().take().expect("the window made its session");
     (h, s)

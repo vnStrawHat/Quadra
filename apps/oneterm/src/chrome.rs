@@ -5,18 +5,18 @@
 use std::rc::Rc;
 use std::time::Duration;
 
+use crate::model::Model;
 use quadra::{Align, Clipboard, Signal, View, by_text, div, interval, row, text, time, use_context};
 use quadra_design::{fonts, icon, icons, titlebar, token};
-use quadra_term::Session;
 
-/// The terminal's mark in the accent, "1Term", then the program's title and the count of
-/// spaces in the secondary colour.
-pub(crate) fn title_bar(session: &Session) -> impl View + use<> {
-    let title = session.title();
+/// The terminal's mark in the accent, "1Term", then the active tab's title and the count of
+/// its spaces in the secondary colour.
+pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
+    let model = model.clone();
     let shown = move || {
-        let title = title.get();
-        let title = if title.is_empty() { "Terminal".to_string() } else { title };
-        format!("{title} \u{B7} 1 space")
+        let Some(tab) = model.active_tab() else { return String::new() };
+        let n = tab.spaces.with(Vec::len);
+        format!("{} \u{B7} {n} {}", tab.title(), if n == 1 { "space" } else { "spaces" })
     };
     let mark = row()
         .align_items(Align::Center)
@@ -29,21 +29,25 @@ pub(crate) fn title_bar(session: &Session) -> impl View + use<> {
 }
 
 /// The working directory at the left, the clock at the right.
-pub(crate) fn status_bar(session: &Session, clock: Signal<String>) -> impl View + use<> {
+pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + use<> {
     tick(clock);
-    let cwd = session.cwd();
-    let clipboard = use_context::<Rc<dyn Clipboard>>();
+    let model = model.clone();
+    let cwd = move || {
+        let space = model.active_tab().and_then(|tab| tab.focused());
+        space.map(|space| space.session.cwd().get()).unwrap_or_default()
+    };
+    let (clipboard, said) = (use_context::<Rc<dyn Clipboard>>(), cwd.clone());
     let place = row()
         .align_items(Align::Center)
         .gap(6.0)
         .label("Working directory")
         .on_click(move |_| {
             if let Some(clipboard) = &clipboard {
-                clipboard.write_text(&cwd.get_untracked());
+                clipboard.write_text(&quadra::untrack(&cwd));
             }
         })
         .child(icon(icons::FOLDER).size(12.0).color(token::TEXT_2))
-        .child(text(move || cwd.get()));
+        .child(text(said));
     row()
         .align_items(Align::Center)
         .gap(12.0)

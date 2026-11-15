@@ -5,6 +5,8 @@
 mod chrome;
 mod git;
 mod local;
+mod lock;
+mod locked;
 mod marks;
 mod model;
 mod page;
@@ -18,7 +20,7 @@ mod tab;
 
 use std::rc::Rc;
 
-use quadra::{AnyView, Display, Keymap, Signal, View, Window, column, dynamic, row, signal, use_context};
+use quadra::{AnyView, Keymap, Signal, View, Window, column, div, dynamic, row, signal, use_context};
 use quadra_term::Session;
 
 pub use local::local_shell;
@@ -40,6 +42,7 @@ pub fn keymap() -> Keymap {
         ("ctrl-w", Command::CloseSpace),
         ("ctrl-alt-right", Command::FocusNext(true)),
         ("ctrl-alt-left", Command::FocusNext(false)),
+        ("ctrl-shift-l", Command::Lock),
     ];
     for (stroke, command) in ours {
         keys.bind(stroke, command).expect("the app's bindings are well formed");
@@ -70,14 +73,18 @@ impl OneTerm {
                 AnyView::new(column().grow(1.0).child(strip::strip(&shown)).child(spaces::workspace(&shown)))
             }
         });
-        let open = model.settings_open();
-        let shows = move |on: bool| move || if open.get() == on { Display::Flex } else { Display::None };
+        // Locked, only the lock's card is displayed.
+        let (open, lock) = (model.settings_open(), model.lock());
+        let shows = move |on: bool| move || !lock.locked.get() && open.get() == on;
         let body = column()
             .grow(1.0)
             .min_height(0.0)
-            .child(body.container(column().grow(1.0).display(shows(false))))
-            .child(page::page(&model).display(shows(true)));
-        quadra_design::root()
+            .child(body.container(column().grow(1.0).display(locked::shown(shows(false)))))
+            .child(page::page(&model).display(locked::shown(shows(true))))
+            .child(locked::Card(model.clone()));
+        let cards =
+            div().display(locked::shown(move || !lock.locked.get())).child(self.model.notices().host());
+        locked::watches(quadra_design::root(), lock)
             .on_action::<Command>(move |&command| {
                 if !run(&model, command)
                     && let Some(window) = &window
@@ -88,17 +95,22 @@ impl OneTerm {
             .child(chrome::title_bar(&self.model))
             .child(body)
             .child(chrome::status_bar(&self.model, self.clock))
-            .child(self.model.notices().host())
+            .child(cards)
     }
 }
 
-/// Does a command; false when no tab is left.
+/// Does a command; false when no tab is left. Locked, only locking does anything.
 fn run(model: &Model, command: Command) -> bool {
+    model.lock().active();
+    if model.lock().locked.get_untracked() {
+        return true;
+    }
     match command {
         Command::NewTab => model.new_tab(),
         Command::Split => model.split(),
         Command::CloseSpace => return model.close_focused(),
         Command::FocusNext(forward) => model.focus_next(forward),
+        Command::Lock => model.lock().lock_now(),
     }
     true
 }

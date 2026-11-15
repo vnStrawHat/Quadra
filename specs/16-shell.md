@@ -77,6 +77,16 @@ bytes (`GetProcessTimes`, `GetProcessMemoryInfo`); `None` where the OS has no re
 status bar takes two readings and divides the time between them by the wall time and the
 count of processors.
 
+## Passwords
+
+`hash_password(password) -> Option<String>` and `verify_password(password, stored) -> bool`:
+a password kept as PBKDF2 with HMAC-SHA256 from the OS's crypto (`BCryptDeriveKeyPBKDF2` with
+the HMAC-SHA256 pseudo handle), a salt of 16 random bytes (`BCryptGenRandom`), 600,000 rounds
+and a key of 32 bytes, written `pbkdf2-sha256$<rounds>$<salt hex>$<key hex>` so the rounds can
+grow later. Verifying reads the rounds and salt from what is stored and compares the keys in
+time that does not depend on where they differ. Both take a noticeable part of a second: an
+app runs them on the pool. `None` where the OS has no random bytes.
+
 ## Packaging
 
 `tools/package.sh <example>` builds the release binary of an example with

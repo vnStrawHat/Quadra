@@ -30,7 +30,7 @@ const KEYS: [(&str, &str); 8] = [
     ("ctrl-alt-left", "Previous space"),
     ("ctrl-shift-c", "Copy"),
     ("ctrl-shift-v", "Paste"),
-    ("ctrl-shift-p", "Command palette"),
+    ("ctrl-shift-l", "Lock"),
 ];
 
 pub(crate) fn page(model: &Model) -> quadra::Div {
@@ -42,7 +42,7 @@ pub(crate) fn page(model: &Model) -> quadra::Div {
         .child(div().grow(1.0).child(text(move || format!("1Term Settings \u{B7} {}", PAGES[current.get()]))))
         .child(button("Back to the terminal").on_click(move || open.set(false)));
     let mut view = settings(current).search(query).header(head);
-    for (at, group) in groups(p).into_iter().enumerate() {
+    for (at, group) in groups(p, model).into_iter().enumerate() {
         let icon = [icons::PALETTE, icons::TERMINAL, icons::LAYERS, icons::BELL, icons::LIST, icons::LOCK]
             .get(at)
             .copied()
@@ -52,7 +52,7 @@ pub(crate) fn page(model: &Model) -> quadra::Div {
     column().grow(1.0).min_height(0.0).child(view)
 }
 
-fn groups(p: Prefs) -> Vec<SettingsGroup> {
+fn groups(p: Prefs, model: &Model) -> Vec<SettingsGroup> {
     let appearance = SettingsGroup::new("Colours and text")
         .row("Theme", "System follows the OS's dark or light mode.", segmented(prefs::THEMES, p.theme))
         .row("Font size", "The terminal's text, in pixels.", number_input(p.font_size).range(8.0, 32.0));
@@ -86,7 +86,7 @@ fn groups(p: Prefs) -> Vec<SettingsGroup> {
         .row("Git", "The branch and the files changed.", switch(p.show_git))
         .row("CPU and memory", "What 1Term uses.", switch(p.show_usage))
         .row("Clock", "The local time.", switch(p.show_clock));
-    let lock = SettingsGroup::new("Master password").about("Comes with the lock screen.");
+    let lock = crate::locked::security(model.lock(), p.lock_after);
     let keys = KEYS
         .iter()
         .fold(SettingsGroup::new("Keys"), |group, (keys, does)| group.row(does, "", key_hint(keys, "")));

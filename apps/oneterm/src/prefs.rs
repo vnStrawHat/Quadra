@@ -35,6 +35,9 @@ pub struct Prefs {
     pub show_git: Signal<bool>,
     pub show_usage: Signal<bool>,
     pub show_clock: Signal<bool>,
+    /// The master password's hash; empty: none, and no lock.
+    pub password: Signal<String>,
+    pub lock_after: Signal<f64>,
 }
 
 impl Prefs {
@@ -60,6 +63,8 @@ impl Prefs {
             show_git: s.value("status_bar.git", true),
             show_usage: s.value("status_bar.usage", true),
             show_clock: s.value("status_bar.clock", true),
+            password: s.value("security.password", String::new()),
+            lock_after: s.value("security.lock_after_minutes", 10.0),
         }
     }
 }

@@ -118,8 +118,11 @@ impl Model {
         tab.map(|tab| untrack(|| tab.title())).unwrap_or_default()
     }
 
+    /// A card, and one more unseen; locked, only counted (a card would show what it says).
     fn notify(&self, notice: Notice) {
-        self.notices().notify(notice);
+        if !self.lock().locked.get_untracked() {
+            self.notices().notify(notice);
+        }
         self.unread().update(|n| *n += 1);
     }
 }

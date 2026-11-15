@@ -1,6 +1,8 @@
 //! 1Term in a real window:
 //!
 //!     tools/cargo.sh run -p oneterm
+//!
+//! With `ONETERM_HOME=.tmp/1term` its settings and log go there instead of the user's folders.
 
 #![windows_subsystem = "windows"]
 
@@ -11,7 +13,9 @@ use quadra::{AppDirs, WindowOptions};
 
 fn main() -> quadra::Result<()> {
     let mut app = quadra::app()?;
-    if let Some(dirs) = AppDirs::for_app("1Term") {
+    // ONETERM_HOME puts the settings and the log in one folder (a trial run); else the user's.
+    let home = std::env::var_os("ONETERM_HOME").map(|home| AppDirs::under(std::path::Path::new(&home)));
+    if let Some(dirs) = home.or_else(|| AppDirs::for_app("1Term")) {
         app = app.dirs(dirs);
     }
     // The theme the settings name, the system's by default.

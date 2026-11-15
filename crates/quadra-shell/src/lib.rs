@@ -30,7 +30,7 @@ pub struct Usage {
 }
 pub use pty::{Pty, PtyOptions};
 #[cfg(windows)]
-pub use win::{WinShell, crash_reports, process_usage, single_instance};
+pub use win::{WinShell, crash_reports, hash_password, process_usage, single_instance, verify_password};
 
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,
 /// `("Images", "*.png;*.jpg")`), whether several may be chosen, and where it starts.

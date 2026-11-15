@@ -58,9 +58,10 @@ impl View for SpaceView {
         let SpaceView { model, tab, space, font } = self;
         let shows = focused(tab, space.id);
         let id = space_view(&model, tab, space, font).mount(cx);
-        let handle = cx.handle.clone();
+        let (handle, locked) = (cx.handle.clone(), model.lock().locked);
         effect(move || {
-            if shows() {
+            // Opened again, the focus comes back to the focused space.
+            if shows() && !locked.get() {
                 handle.with(move |tree| _ = tree.focus_first(id));
             }
         });

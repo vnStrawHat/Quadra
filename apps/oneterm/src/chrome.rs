@@ -11,13 +11,17 @@ use quadra::{
 };
 use quadra_design::{fonts, icon, icon_button, icons, titlebar, token, tooltip};
 
+use crate::locked::shown;
 use crate::signals::{all_bells, percent};
 
 /// The terminal's mark in the accent, "1Term", then the active tab's title and the count of
 /// its spaces in the secondary colour.
 pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
-    let (model, seen) = (model.clone(), model.clone());
-    let shown = move || {
+    let (model, seen, lock) = (model.clone(), model.clone(), model.lock());
+    let said = move || {
+        if lock.locked.get() {
+            return "Locked".to_string();
+        }
         let Some(tab) = model.active_tab() else { return String::new() };
         let n = tab.spaces.with(Vec::len);
         format!("{} \u{B7} {n} {}", tab.title(), if n == 1 { "space" } else { "spaces" })
@@ -28,18 +32,21 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .padding_left(12.0)
         .child(icon(icons::TERMINAL).size(16.0).color(token::ACCENT))
         .child(div().font_weight(600).child(text("1Term")))
-        .child(div().text_color(token::TEXT_2).child(text(shown)));
+        .child(div().text_color(token::TEXT_2).child(text(said)));
     let open = seen.settings_open();
     let gear = tooltip(
         "Settings",
         icon_button(icons::SETTINGS, "Settings").on_click(move || open.update(|on| *on = !*on)),
     );
-    titlebar("")
-        .height(38.0)
-        .control(mark)
-        .control(div().grow(1.0))
-        .control(notifications(&seen))
-        .control(gear)
+    let locks = tooltip("Lock", icon_button(icons::LOCK, "Lock").on_click(move || lock.lock_now()));
+    // Locked, what would open something is not displayed.
+    let buttons = row()
+        .align_items(Align::Center)
+        .display(shown(move || !lock.locked.get()))
+        .child(div().display(shown(move || lock.can_lock())).child(locks))
+        .child(notifications(&seen))
+        .child(gear);
+    titlebar("").height(38.0).control(mark).control(div().grow(1.0)).control(buttons)
 }
 
 /// The button of notifications, with how many came unseen; a press marks them seen.
@@ -64,7 +71,9 @@ fn notifications(model: &crate::model::Model) -> impl View + use<> {
 pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + use<> {
     tick(clock);
     let (tabs, unread, shows, prefs) = (model.tabs(), model.unread(), model.clone(), model.prefs());
-    let when = |on: Signal<bool>| move || if on.get() { Display::Flex } else { Display::None };
+    // Locked, only the progress and the clock show.
+    let lock = model.lock();
+    let open = move || !lock.locked.get();
     let model = model.clone();
     let cwd = move || {
         let space = model.active_tab().and_then(|tab| tab.focused());
@@ -74,9 +83,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
     let repo = crate::git::follow(repo_of);
     let git = div()
         .label("Git")
-        .display(move || {
-            if prefs.show_git.get() && repo.with(Option::is_some) { Display::Flex } else { Display::None }
-        })
+        .display(shown(move || open() && prefs.show_git.get() && repo.with(Option::is_some)))
         .child(text(move || match repo.get() {
             Some(repo) => match repo.changes {
                 Some(n) if n > 0 => format!("{} \u{B7} {n} changed", repo.branch),
@@ -88,6 +95,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
         .align_items(Align::Center)
         .gap(6.0)
         .label("Working directory")
+        .display(shown(open))
         .on_click(move |_| {
             if let Some(clipboard) = &clipboard {
                 clipboard.write_text(&quadra::untrack(&cwd));
@@ -112,10 +120,28 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
         .child(git)
         .child(div().grow(1.0))
         .child(meter(&shows))
-        .child(div().label("Usage").display(when(prefs.show_usage)).child(text(usage())))
-        .child(div().label("Bells").child(text(move || format!("bell {}", all_bells(tabs)))))
-        .child(div().label("Notices").child(text(move || format!("{} new", unread.get()))))
-        .child(div().label("Clock").display(when(prefs.show_clock)).child(text(move || clock.get())))
+        .child(
+            div()
+                .label("Usage")
+                .display(shown(move || open() && prefs.show_usage.get()))
+                .child(text(usage())),
+        )
+        .child(div().display(shown(move || !open())).child(text("Locked · details hidden")))
+        .child(
+            div()
+                .label("Bells")
+                .display(shown(open))
+                .child(text(move || format!("bell {}", all_bells(tabs)))),
+        )
+        .child(
+            div().label("Notices").display(shown(open)).child(text(move || format!("{} new", unread.get()))),
+        )
+        .child(
+            div()
+                .label("Clock")
+                .display(shown(move || prefs.show_clock.get()))
+                .child(text(move || clock.get())),
+        )
 }
 
 /// The progress of the tab that shows: a meter of 56 px and its percentage.

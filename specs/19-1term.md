@@ -123,6 +123,21 @@ how many sessions are connected and how many notices came), a status bar that sh
 "Locked · details hidden", the progress meter and the clock. Five wrong tries start a back-off
 (2, 4, 8, 16, 30 s). Sessions keep running.
 
+### M6 in detail
+
+- **The hash** is `quadra_shell::hash_password` (16, "Passwords"), kept in the setting
+  `security.password`; set, change and remove ask for the current password when one is set,
+  and a new one twice. Hashing and verifying run on the pool.
+- **Idle** is no key and no pointer press or move in the window; it is counted in steps of
+  10 s on the app's timers, so it locks within 10 s after the time set.
+- **Locked, the workspace is not displayed** (the design draws it blurred behind): a node
+  that is displayed is in the semantic tree, which any process can read through the OS's
+  accessibility, so blurred tab titles and terminal text would still be readable there. The
+  rail, the spaces, the settings page and the notification cards are hidden; the title bar
+  keeps its window buttons and says "Locked"; the app's keys do nothing but `Ctrl+Shift+L`;
+  the card is a focus scope with the focus in the password field. Unlocking gives the focus
+  back to the focused space.
+
 ## Tests
 
 The app's tests drive it through the semantic tree on the headless platform with `echo()`

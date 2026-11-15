@@ -61,6 +61,8 @@ pub enum Command {
     CloseSpace,
     /// The space to the right, or to the left.
     FocusNext(bool),
+    /// Lock at once (with a master password).
+    Lock,
 }
 
 impl Action for Command {

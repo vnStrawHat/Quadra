@@ -9,6 +9,7 @@ use quadra::{Scope, Signal, signal};
 use quadra_design::{Notices, notices};
 
 use crate::NewSession;
+use crate::lock::Lock;
 use crate::prefs::Prefs;
 use crate::shells::{self, Launch, Shell};
 pub use crate::tab::{Command, Space, Tab};
@@ -32,6 +33,7 @@ struct Inner {
     notices: Notices,
     unread: Signal<u32>,
     settings_open: Signal<bool>,
+    lock: Lock,
 }
 
 impl Model {
@@ -48,6 +50,7 @@ impl Model {
             notices: notices().below(38.0 + 12.0),
             unread: signal(0),
             settings_open: signal(false),
+            lock: Lock::new(prefs),
         };
         let model = Model(Rc::new(inner));
         model.new_tab();
@@ -103,6 +106,10 @@ impl Model {
 
     pub fn unread(&self) -> Signal<u32> {
         self.0.unread
+    }
+
+    pub fn lock(&self) -> Lock {
+        self.0.lock
     }
 
     /// Whether the settings page takes the window's body.

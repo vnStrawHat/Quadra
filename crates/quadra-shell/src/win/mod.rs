@@ -1,14 +1,16 @@
 //! The Windows shell (specs/16): the common file dialogs, the message box, opening by the
-//! shell, the tray, one instance and crash reports. What shows something to the user is
+//! shell, the tray, one instance, crash reports and passwords. What shows something to the user is
 //! never run by a test: those are manual checks.
 
 mod crash;
 mod instance;
+mod secret;
 mod tray;
 mod usage;
 
 pub use crash::crash_reports;
 pub use instance::single_instance;
+pub use secret::{hash_password, verify_password};
 pub use usage::process_usage;
 
 use std::path::{Path, PathBuf};

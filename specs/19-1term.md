@@ -230,14 +230,16 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   one removes its part. A remote name that would leave its folder as a local path (`/`, `\`,
   `:`, `..`, a control character) is refused.
 - **The dock**: 300 px at the workspace's right, opened and closed by the title bar's SFTP
-  button; it follows the focused space's connection (a local space: "Not an SSH space").
-  Its header says `SFTP` and the host, with Refresh, New folder and Close; the path is a
-  breadcrumb whose parts go there; then `..` and the entries, a folder or file icon, the name,
+  button; it follows the focused space's connection. A local space: the header says
+  `local space · n/a`, the body why it is empty and a button that shows the first tab with a
+  remote space (`Show prod-api-01`). Its header: a folder icon, `SFTP`, the host, a More menu
+  (Refresh, New folder), Expand (a bordered button) and Hide; the path is a breadcrumb in mono
+  whose parts go there (the last in the text colour); then `..` and the entries, a folder or file icon, the name,
   the size (`—` for a folder). A click on a folder opens it; two on a file downloads it to
   the user's Downloads folder (`name (1).ext` when the name is taken); a row's menu has
   Download and Delete. Files dropped from the OS upload to the folder shown. Transfers show
-  under the list, `name → remote 48%` or `name ← local`, with a cross that cancels; a failed
-  one says why. Names that start with `.` show only while `.hidden` is on (both views).
+  under the list: an arrow, `name → remote` or `name ← local`, its state (`48%`, `done`), a
+  cross that cancels, and a bar of 3 px; a failed one says why. Names that start with `.` show only while `.hidden` is on (both views).
 - **The expanded view**: the dock's Expand button (and the title bar's Collapse SFTP, back)
   gives SFTP the workspace; the spaces stay mounted and running, not displayed, and the
   title bar's chip adds `SFTP expanded`. Its header: `SFTP`, the host and `ssh session keeps

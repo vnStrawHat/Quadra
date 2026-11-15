@@ -100,7 +100,7 @@ fn the_dock_lists_moves_about_and_downloads() {
     }
     let got = a.downloads.join("config.yaml");
     a.wait(|_| got.is_file(), "the download");
-    a.wait(|a| a.h.has_text("config.yaml \u{2190} local done"), "the transfer done");
+    a.wait(|a| a.h.has_text("config.yaml \u{2190} local") && a.h.has_text("done"), "the transfer done");
     assert_eq!(std::fs::read(&got).unwrap().len(), 2458);
 }
 
@@ -114,7 +114,9 @@ fn dropped_files_upload_and_a_folder_is_made() {
     let up = a.served.join("home/notes.md");
     a.wait(|a| up.is_file() && a.entry("notes.md"), "the upload listed");
 
-    a.h.get_by_role(Role::Button, "New folder").click();
+    a.h.get_by_role(Role::Button, "More").click();
+    a.h.settle();
+    a.h.get_by_role(Role::MenuItem, "New folder").click();
     a.h.settle();
     a.h.get_by_test_id("sftp-new-folder").set_value("made");
     a.h.settle();
@@ -191,5 +193,5 @@ fn a_local_space_is_not_an_ssh_space() {
     h.settle();
     h.get_by_role(Role::Button, "SFTP").click();
     h.settle();
-    assert!(h.has_text("Not an SSH space"));
+    assert!(h.has_text("local space \u{B7} n/a"));
 }

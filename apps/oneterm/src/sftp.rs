@@ -15,6 +15,10 @@ use crate::model::Model;
 use crate::panes::{Local, free_name};
 
 /// A file going one way or the other.
+/// What the dock says of a space that is not remote.
+pub(crate) const LOCAL: &str =
+    "The active space is a local shell. Select an SSH space to browse its files here.";
+
 pub(crate) struct Transfer {
     pub name: String,
     /// To the server.
@@ -124,7 +128,7 @@ impl Dock {
         then: impl FnOnce(Dock, Result<T, String>) + 'static,
     ) {
         let Some(ssh) = connection(model) else {
-            self.said.set("Not an SSH space".into());
+            self.said.set(LOCAL.into());
             self.entries.set(Vec::new());
             return;
         };

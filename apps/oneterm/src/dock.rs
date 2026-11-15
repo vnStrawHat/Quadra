@@ -27,7 +27,13 @@ pub(crate) fn dock(model: &Model) -> impl View + use<> {
         true => AnyView::new(crate::expanded::view(&views, d)),
         false => AnyView::new(panel(&views, d)),
     })
-    .container(row().display(shown(move || open.get())))
+    // Expanded, it takes the workspace's room.
+    .container(
+        row()
+            .min_width(quadra::Length::Px(0.0))
+            .grow(move || if expanded.get() { 1.0 } else { 0.0 })
+            .display(shown(move || open.get())),
+    )
 }
 
 fn panel(model: &Model, d: Dock) -> impl View + use<> {
@@ -128,7 +134,7 @@ fn entries(model: &Model, d: Dock) -> impl View + use<> {
             return AnyView::new(div().padding(10.0).text_color(token::TEXT_2).child(text(said)));
         }
         let all = crate::panes::visible(&d.entries.get(), d.hidden.get());
-        let mut list = column().padding_x(4.0);
+        let mut list = column().width(Length::Fill).padding_x(4.0);
         let dir = d.dir.get_untracked();
         if dir != "/" && !dir.is_empty() {
             let (up, goes) = (dir.rsplit_once('/').map_or("/", |it| it.0).to_string(), model.clone());

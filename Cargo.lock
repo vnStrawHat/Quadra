@@ -1315,6 +1315,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-bench-oneterm-shots"
+version = "0.1.0"
+dependencies = [
+ "oneterm",
+ "quadra",
+ "quadra-app",
+ "quadra-async",
+ "quadra-design",
+ "quadra-native-win",
+ "quadra-platform",
+ "quadra-prim",
+ "quadra-term",
+]
+
+[[package]]
 name = "quadra-bench-shots"
 version = "0.1.0"
 dependencies = [

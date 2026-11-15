@@ -59,7 +59,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
     let local = d.local;
     let local_rows = dynamic(move || {
         let (all, said) = (visible(&local.entries.get(), d.hidden.get()), local.said.get());
-        let mut list = column().padding(4.0);
+        let mut list = column().width(Length::Fill).padding(4.0);
         if !said.is_empty() {
             return AnyView::new(list.child(div().padding(8.0).text_color(token::TEXT_2).child(text(said))));
         }
@@ -76,7 +76,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
     let remotes = model.clone();
     let remote_rows = dynamic(move || {
         let (all, said) = (visible(&d.entries.get(), d.hidden.get()), d.said.get());
-        let mut list = column().padding(4.0);
+        let mut list = column().width(Length::Fill).padding(4.0);
         if !said.is_empty() {
             return AnyView::new(list.child(div().padding(8.0).text_color(token::TEXT_2).child(text(said))));
         }

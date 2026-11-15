@@ -1,0 +1,28 @@
+[package]
+name = "quadra-term"
+description = "Quadra's terminal: the view of a terminal engine's grid, its input and the delivery of a program's output"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+oneterm-vt = { git = "https://github.com/vnStrawHat/oneterm-vt", tag = "v0.2.0", default-features = false }
+quadra-a11y = { path = "../quadra-a11y" }
+quadra-async = { path = "../quadra-async" }
+quadra-design = { path = "../quadra-design" }
+quadra-layout = { path = "../quadra-layout" }
+quadra-platform = { path = "../quadra-platform" }
+quadra-prim = { path = "../quadra-prim" }
+quadra-reactive = { path = "../quadra-reactive" }
+quadra-render = { path = "../quadra-render" }
+quadra-text = { path = "../quadra-text" }
+quadra-tree = { path = "../quadra-tree" }
+quadra-view = { path = "../quadra-view" }
+
+[dev-dependencies]
+quadra-testing = { path = "../quadra-testing" }

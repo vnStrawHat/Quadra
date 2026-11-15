@@ -33,6 +33,7 @@ designed from its goals, and what survives from the V implementation survives on
 | [17-headless.md](17-headless.md) | Components without a look: parts, the behaviour's numbers, open tokens, what moves out of the kit |
 | [18-term.md](18-term.md) | The terminal: a session over the `oneterm-vt` engine, its view, input and delivery |
 | [19-1term.md](19-1term.md) | 1Term, the terminal app: phases, window, tabs and spaces, signals, settings, lock |
+| [20-complete.md](20-complete.md) | 1Term's command completion: families, catalogs, the line at the cursor, ranking, history, redaction |
 
 Reading order: 00, 01, 02, 03, 04, 05, then the rest.
 

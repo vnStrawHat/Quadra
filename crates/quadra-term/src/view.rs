@@ -8,10 +8,11 @@ use std::time::Duration;
 use oneterm_vt::input::{KeyEvent, KeyMods, KeySpec, NamedKey};
 use quadra_async::{Timers, interval};
 use quadra_platform::{Clipboard, Cursor};
-use quadra_reactive::{Scope, on_cleanup, use_context};
+use quadra_reactive::{Scope, Signal, on_cleanup, use_context};
 use quadra_tree::{NodeId, Style, TextValues, Tree};
 use quadra_view::{MountCx, View};
 
+use crate::actions::TermSettings;
 use crate::keys::{TERMINAL_CONTEXT, TermCommand, key_event};
 use crate::session::Session;
 use crate::widget::TerminalWidget;
@@ -22,18 +23,25 @@ pub struct Terminal {
     session: Session,
     font: (f32, f32),
     autofocus: bool,
+    settings: Option<Signal<TermSettings>>,
 }
 
 /// The view of a session, in the kit's mono face at 13 px with lines of 20. It takes the
 /// room its parent gives it.
 pub fn terminal(session: &Session) -> Terminal {
-    Terminal { session: session.clone(), font: (13.0, 20.0), autofocus: false }
+    Terminal { session: session.clone(), font: (13.0, 20.0), autofocus: false, settings: None }
 }
 
 impl Terminal {
     /// The size of the text and the height of a line, in pixels.
     pub fn font(mut self, size: f32, line: f32) -> Self {
         self.font = (size, line);
+        self
+    }
+
+    /// How the pointer and the wheel behave, read as events come.
+    pub fn settings(mut self, settings: Signal<TermSettings>) -> Self {
+        self.settings = Some(settings);
         self
     }
 
@@ -62,7 +70,7 @@ pub(crate) fn send(tree: &mut Tree, id: NodeId, session: &Session, bytes: &[u8])
 
 impl View for Terminal {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let Terminal { session, font: (size, line), autofocus } = self;
+        let Terminal { session, font: (size, line), autofocus, settings } = self;
         let family = Some(quadra_design::fonts::MONO.into());
         let text =
             TextValues { family, size: Some(size), line_height: Some(line / size), ..TextValues::default() };
@@ -143,7 +151,7 @@ impl View for Terminal {
         if autofocus {
             cx.handle.with(move |tree| tree.focus(id));
         }
-        crate::pointer::pointer(cx, id, &session);
+        crate::pointer::pointer(cx, id, &session, settings);
         id
     }
 }

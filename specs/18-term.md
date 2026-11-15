@@ -77,6 +77,14 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   arrows on the alternate screen when the program asked for alternate scroll.
 - Typing scrolls back to the bottom. Focus in and out is told to the program when it asked
   (`encode_focus`).
+- Settings (`TermSettings`, a signal the app gives with `Terminal::settings`, read as events
+  come): `copy_on_select` (a selection is copied when the button is released), `middle_paste`
+  (the middle button pastes, unless the program takes it), `scroll` (times the rows of the
+  wheel), `alternate_scroll` (on the alternate screen the wheel sends arrows even when the
+  program did not ask). A right press the program does not take is left to what is around the
+  view: the app's context menu (`quadra_design::context_menu` around the terminal).
+- What a menu does: `Session::selection_text`, `paste(text)`, `select_all`, `clear_history`
+  (the scrollback, as ED 3 would).
 
 ## Signals an app reads
 

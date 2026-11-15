@@ -1,7 +1,8 @@
 //! The terminal and the pointer (specs/18, "Input"): with mouse reporting on and Shift not
 //! held, presses, drags and the wheel go to the program; otherwise a press and a drag select
-//! (two clicks a word, three the line, Alt a block) and the wheel scrolls the history, or
-//! sends arrows on the alternate screen when the program asked for alternate scroll.
+//! (two clicks a word, three the line, Alt a block; copied on release when the settings say),
+//! the middle button pastes when they say, a right press is left to the app's menu, and the
+//! wheel scrolls the history, or sends arrows on the alternate screen.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -11,11 +12,13 @@ use oneterm_vt::input::{
     encode_mouse_release, encode_wheel_event,
 };
 use oneterm_vt::{Pos, SelectionKind, Side};
-use quadra_platform::{Mods, MouseButton};
+use quadra_platform::{Clipboard, Mods, MouseButton};
 use quadra_prim::Point;
+use quadra_reactive::{Signal, use_context};
 use quadra_tree::{NodeId, PointerEvent, PointerKind, Tree};
 use quadra_view::MountCx;
 
+use crate::actions::TermSettings;
 use crate::session::Session;
 use crate::view::send;
 use crate::widget::{PADDING, TerminalWidget};
@@ -35,18 +38,34 @@ fn button(b: MouseButton) -> Option<TerminalMouseButton> {
     }
 }
 
-pub(crate) fn pointer(cx: &mut MountCx, id: NodeId, session: &Session) {
+pub(crate) fn pointer(
+    cx: &mut MountCx,
+    id: NodeId,
+    session: &Session,
+    settings: Option<Signal<TermSettings>>,
+) {
+    let settings = move || settings.map(|it| it.get_untracked()).unwrap_or_default();
+    let clipboard = use_context::<Rc<dyn Clipboard>>();
     // The button held while the program reports, and whether a selection is being dragged.
     let reported: Rc<Cell<Option<TerminalMouseButton>>> = Rc::new(Cell::new(None));
     let selecting = Rc::new(Cell::new(false));
     for kind in [PointerKind::Down, PointerKind::Move, PointerKind::Up] {
-        let (writer, s) = (cx.handle.clone(), session.clone());
+        let (writer, s, clipboard) = (cx.handle.clone(), session.clone(), clipboard.clone());
         let (reported, selecting) = (reported.clone(), selecting.clone());
         cx.tree.on_pointer(id, kind, move |e: &mut PointerEvent| {
             let (at, mods, clicks, pressed) = (e.local, e.mods, e.clicks, button(e.button));
             let reports = s.engine().term.mouse_reporting().is_some() && !mods.contains(Mods::SHIFT);
             match kind {
                 PointerKind::Down if pressed.is_none() => return,
+                // Not the program's: the right button is the app's menu's, the middle pastes.
+                PointerKind::Down if !reports && pressed == Some(TerminalMouseButton::Right) => return,
+                PointerKind::Down if !reports && pressed == Some(TerminalMouseButton::Middle) => {
+                    if let (true, Some(clipboard)) = (settings().middle_paste, &clipboard) {
+                        e.stop();
+                        s.paste(&clipboard.read_text().unwrap_or_default());
+                    }
+                    return;
+                }
                 PointerKind::Down => e.capture_pointer(),
                 PointerKind::Move if reported.get().is_none() && !selecting.get() && !reports => return,
                 _ => {}
@@ -61,6 +80,9 @@ pub(crate) fn pointer(cx: &mut MountCx, id: NodeId, session: &Session) {
                 PointerKind::Up => (reported.set(None), selecting.set(false)).1,
                 _ => {}
             }
+            let copies = (kind == PointerKind::Up && selects && settings().copy_on_select)
+                .then(|| clipboard.clone())
+                .flatten();
             let s = s.clone();
             writer.with(move |tree| {
                 let Some((row, col)) = grid_at(tree, id, at) else { return };
@@ -97,6 +119,9 @@ pub(crate) fn pointer(cx: &mut MountCx, id: NodeId, session: &Session) {
                     PointerKind::Move | PointerKind::Up if selects => engine.term.selection_update(pos, side),
                     _ => return,
                 }
+                if let Some((clipboard, text)) = copies.zip(engine.term.selection_text()) {
+                    clipboard.write_text(&text);
+                }
                 drop(engine);
                 crate::widget::repaint(tree, id);
             });
@@ -106,20 +131,22 @@ pub(crate) fn pointer(cx: &mut MountCx, id: NodeId, session: &Session) {
     let notches = Rc::new(Cell::new(0.0f32));
     cx.tree.on_pointer(id, PointerKind::Wheel, move |e| {
         e.stop();
-        // Rows of 40 px (the tree's line of a wheel), what is less kept for the next turn.
-        let total = notches.get() + e.delta.y / 40.0;
+        // Rows of 40 px (the tree's line of a wheel) times the setting, what is less kept for
+        // the next turn.
+        let set = settings();
+        let total = notches.get() + e.delta.y / 40.0 * set.scroll.clamp(0.1, 10.0);
         let rows = total.trunc();
         notches.set(total - rows);
         if rows == 0.0 {
             return;
         }
         let (at, mods, s) = (e.local, e.mods, s.clone());
-        writer.with(move |tree| wheel(tree, id, &s, (at, mods), rows as i32));
+        writer.with(move |tree| wheel(tree, id, &s, (at, mods, set.alternate_scroll), rows as i32));
     });
 }
 
 /// `rows` up (positive) or down: to the program, as arrows, or through the history.
-fn wheel(tree: &mut Tree, id: NodeId, s: &Session, (at, mods): (Point, Mods), rows: i32) {
+fn wheel(tree: &mut Tree, id: NodeId, s: &Session, (at, mods, arrows): (Point, Mods, bool), rows: i32) {
     let Some((row, col)) = grid_at(tree, id, at) else { return };
     let (modes, reports) = {
         let engine = s.engine();
@@ -136,7 +163,7 @@ fn wheel(tree: &mut Tree, id: NodeId, s: &Session, (at, mods): (Point, Mods), ro
             held,
         );
         s.write(&one.repeat(rows.unsigned_abs() as usize));
-    } else if modes.alt_screen && modes.alternate_scroll {
+    } else if modes.alt_screen && (modes.alternate_scroll || arrows) {
         let arrow = KeySpec::Named(if rows > 0 { NamedKey::ArrowUp } else { NamedKey::ArrowDown });
         let one = s.engine().term.encode_key(&arrow, KeyMods::default()).unwrap_or_default();
         send(tree, id, s, &one.repeat(rows.unsigned_abs() as usize));

@@ -7,6 +7,26 @@ was taken on. The V implementation's numbers, the baseline of specs/14, are in
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## 2026-11-15 — terminal throughput, the fire demo (on dbe175a plus this commit)
+
+The fire demo written again in Rust (`bench/doomfire`, specs/14 "Terminal throughput"): a
+whole screen of half blocks with 256-colour SGR a frame, one `WriteConsoleA` a frame, fps as
+the writer sees it. Release builds.
+
+| What | Size | fps | KB a frame | MB/s |
+|---|---|---|---|---|
+| Feed: the engine alone, a snapshot taken 60 times a second (`doomfire-feed`) | 200x50 | 1,036 to 1,049 | 156 | 162 |
+| Feed | 120x30 | 2,222 | 74 | 165 |
+| The console host alone: the pseudo console read and dropped (`doomfire-conpty`) | 147x40 | 336 to 350 | 109 | 37 |
+| The console host alone | 200x50 | 235 | 155 | 36 |
+| **1Term**, release, a real window of 1440 by 900 (`tools/doomfire.sh 15`) | 147x40 | **340** | 109 | 37 |
+
+1Term is at the console host's ceiling: what Windows' pseudo console passes on is all it
+gets, and it takes it as fast as nothing at all would (a read buffer of 256 KB in place of
+16 KB changed nothing). The engine could take five times as much. In the demo's bands 340 is
+"great" (100 or more). Going higher needs a faster console host than the system's (a newer
+one that passes the program's output through as it is); that is the user's call.
+
 ## 2026-11-15 — a new band of a long page (on 57c15af plus this commit)
 
 A page of plain rows (a box of 40 px and a text each) in a `scroll`, not a virtual list,

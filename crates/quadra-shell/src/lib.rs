@@ -30,6 +30,8 @@ pub struct Usage {
 }
 pub use pty::{Pty, PtyOptions};
 #[cfg(windows)]
+pub use win::console;
+#[cfg(windows)]
 pub use win::{WinShell, crash_reports, hash_password, process_usage, single_instance, verify_password};
 
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,

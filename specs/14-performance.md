@@ -72,6 +72,32 @@ Targets, to be confirmed or revised with measurements at the end of phase R1:
 | Release binary of the counter | < 3 MB |
 | Release binary of the gallery | < 6 MB |
 
+## Terminal throughput
+
+A terminal is measured the way a known fire demo stresses one (its source is read, never
+built; the user's choice, 2026-11-15): `bench/doomfire` is that demo written again in Rust.
+Each frame is the whole screen at two fire pixels a cell: `▀` with its foreground (the upper
+pixel) and background (the lower) as 256-colour SGR written only when they change from the
+cell before, a row ended by `CSI 0K CSI 1E CSI 1G`, the frame started by `CSI 1;1H` and the
+first colours; about 180 KB at 200 by 50. The fire spreads up from a white last row by the
+demo's own rule (a random step of 0 to 3, the heat less 0 or 1). One write a frame through
+`WriteConsoleA` on the console's UTF-8 code page, then a status line: `mem: <min> min / <avg>
+avg / <max> max [ <fps> fps ]`. Its fps is frames written over seconds since the first: what
+the terminal takes in as the writer sees it, the console host between them included. Bands:
+5 fps or fewer very poor, 24 or fewer poor, 100 or more great.
+
+Three numbers, each with `doomfire --seconds N --out FILE` (it ends after N seconds and
+writes `<cols>x<rows> <frames> frames <fps> fps <bytes> bytes a frame`):
+
+- **Feed**: `doomfire-feed`, the frames fed straight to a `quadra-term` session's `Feeder`
+  with no console and no window: the engine's ceiling.
+- **1Term**: `tools/doomfire.sh`, the app's release build in a real window running
+  `doomfire` in a space through the pseudo console, 1440 by 900.
+- **Reference**: the same program in another terminal, by hand.
+
+The goal is the best fps there is: 1Term's is to come as near the feed's as the console host
+lets it, and never below the poor band.
+
 ## Baselines
 
 The V implementation, measured 2026-11-11 on the development machine with the comparison

@@ -87,6 +87,14 @@ grow later. Verifying reads the rounds and salt from what is stored and compares
 time that does not depend on where they differ. Both take a noticeable part of a second: an
 app runs them on the pool. `None` where the OS has no random bytes.
 
+## Console
+
+For a program of the bench that writes to the console it runs in (`bench/doomfire`):
+`console::size()` (the window's columns and rows, from the screen buffer's window),
+`console::enable_vt()` (virtual terminal processing and no auto return after a line feed on
+the output, the UTF-8 code page; false when the output is no console), `console::write(bytes)`
+(`WriteConsoleA`, all of it; the bytes as they are when the output is no console).
+
 ## Packaging
 
 `tools/package.sh <example>` builds the release binary of an example with

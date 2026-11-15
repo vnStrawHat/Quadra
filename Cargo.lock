@@ -1307,6 +1307,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-bench-doomfire"
+version = "0.1.0"
+dependencies = [
+ "quadra-shell",
+ "quadra-term",
+]
+
+[[package]]
 name = "quadra-bench-shots"
 version = "0.1.0"
 dependencies = [

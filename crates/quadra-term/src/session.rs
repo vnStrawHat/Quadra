@@ -70,6 +70,8 @@ pub(crate) struct Shared {
     /// The view's clipboard and settings, for OSC 52.
     pub clipboard: RefCell<Option<Rc<dyn quadra_platform::Clipboard>>>,
     pub settings: Cell<Option<Signal<crate::TermSettings>>>,
+    /// The command line, once something follows it.
+    pub line: crate::line::Follow,
 }
 
 impl Session {
@@ -89,6 +91,7 @@ impl Session {
             batch: EventBatch::new(),
             statuses: Statuses::default(),
             stamps: Default::default(),
+            marked: false,
         };
         let engine = Arc::new(Mutex::new(engine));
         let events = inbox::<Event>();
@@ -117,6 +120,7 @@ impl Session {
             kept: RefCell::new(Vec::new()),
             clipboard: RefCell::new(None),
             settings: Cell::new(None),
+            line: crate::line::Follow::new(),
         });
         let (took, ended) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
         events

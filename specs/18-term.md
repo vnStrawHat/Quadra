@@ -114,6 +114,25 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   for it (`?`) is answered (`52;c;<base64>` and BEL) only when `TermSettings::clipboard_read`
   says so, off by default. The view gives the session its clipboard and settings as it mounts.
 
+## The command line
+
+What any completion needs, with no knowledge of commands (specs/20 is 1Term's):
+
+- `Session::command_line()` is a signal of `CommandLine { text, at_prompt, alt_screen, caret }`,
+  followed from the first call on: after each burst of output, a focus change and a resize it is
+  read again under the lock and set when it differs. `text` is what is typed, from where the
+  input starts to the cursor. With OSC 133 (a shell that sent `B` once) the input starts after
+  the last prompt cell (`A` to `B`) on the cursor's row, or the first of the rows that wrap into
+  it, and `at_prompt` says the pen is in the input zone (`B`, no `C` since). A shell that marks
+  nothing: the row up to the cursor after the first prompt sign (`>`, or `$ # ❯ ➜ λ` followed by
+  a space or the cursor), and `at_prompt` says one was found; else the row, not at a prompt.
+  `alt_screen` is the alternate screen being up (then the text is empty). `caret` is the cursor's
+  cell in the view's box (its width a cell), while the view has the focus and shows the bottom.
+- `Terminal::on_key_first(|key, mods| bool)` is asked before the program for each key press the
+  view would send, Tab and Shift+Tab with them: true takes the key, and nothing is written. Typed
+  text is not asked; it goes to the program as before. An overlay of suggestions takes Up, Down,
+  Tab, Enter and Escape this way while it is open.
+
 ## Logging
 
 - `Session::start_log(path, append, stamp)` logs the output from then on: the folder is made,
@@ -146,6 +165,8 @@ done, idle. OSC 133 A (a new prompt) drops working, blocked and idle. `?` is ans
 - `tests/session.rs`: on `echo()`, typing shows the text; output paints glyphs at their cells;
   replies are written in order; a resize reaches the engine and the link; the signals follow
   OSC 0, 7, 9, 9;4, BEL and the end of the program.
+- `tests/line.rs`: the command line from fed OSC 133 marks and from a prompt's sign, the
+  alternate screen, the caret, keys taken first.
 - `tests/input.rs`: keys in normal and application cursor mode, Ctrl and Alt; paste bracketed;
   a drag selects and copy gives its text (the harness's clipboard); the wheel scrolls history,
   and goes to a program that reports the mouse.

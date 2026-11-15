@@ -18,6 +18,8 @@ pub(crate) struct Engine {
     pub statuses: Statuses,
     /// When the rows were written, for the gutter.
     pub stamps: crate::gutter::Stamps,
+    /// The shell has marked where its input starts (OSC 133 `B`).
+    pub marked: bool,
 }
 
 /// What the UI thread must hear from a feed.
@@ -63,7 +65,7 @@ impl Feeder {
         let (mut replies, mut events, mut repaint, mut cleared) = (Vec::new(), Vec::new(), false, false);
         {
             let mut engine = lock(&self.engine);
-            let Engine { term, batch, statuses, stamps } = &mut *engine;
+            let Engine { term, batch, statuses, stamps, marked } = &mut *engine;
             term.feed(bytes, batch, now);
             for event in batch.iter() {
                 match *event {
@@ -89,6 +91,7 @@ impl Feeder {
                         })
                     }
                     VtEvent::Progress(p) => events.push(Event::Progress(p)),
+                    VtEvent::ShellMark(ShellMark::PromptEnd) => *marked = true,
                     VtEvent::ShellMark(ShellMark::PromptStart) if statuses.prompt() => {
                         events.push(Event::Status(statuses.summary()))
                     }

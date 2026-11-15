@@ -7,7 +7,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use oneterm_vt::input::{KeyEvent, KeyMods, KeySpec, NamedKey};
 use quadra_async::{Timers, interval};
-use quadra_platform::{Clipboard, Cursor, Platform};
+use quadra_platform::{Clipboard, Cursor, Key, Mods, Platform};
 use quadra_reactive::{Scope, Signal, on_cleanup, signal, use_context};
 use quadra_tree::{NodeId, Style, Tree};
 use quadra_view::{MountCx, View};
@@ -26,12 +26,22 @@ pub struct Terminal {
     look: Option<Signal<TermLook>>,
     autofocus: bool,
     settings: Option<Signal<TermSettings>>,
+    first: Option<Rc<KeyFirst>>,
 }
+
+type KeyFirst = dyn Fn(Key, Mods) -> bool;
 
 /// The view of a session, in the kit's mono face at 13 px with lines of 20. It takes the
 /// room its parent gives it.
 pub fn terminal(session: &Session) -> Terminal {
-    Terminal { session: session.clone(), font: (13.0, 20.0), look: None, autofocus: false, settings: None }
+    Terminal {
+        session: session.clone(),
+        font: (13.0, 20.0),
+        look: None,
+        autofocus: false,
+        settings: None,
+        first: None,
+    }
 }
 
 impl Terminal {
@@ -51,6 +61,13 @@ impl Terminal {
     /// How the pointer and the wheel behave, read as events come.
     pub fn settings(mut self, settings: Signal<TermSettings>) -> Self {
         self.settings = Some(settings);
+        self
+    }
+
+    /// Asks `f` first of each key press the view would send to the program, Tab and Shift+Tab
+    /// with them: true takes the key, and nothing is written. Typed text is not asked.
+    pub fn on_key_first(mut self, f: impl Fn(Key, Mods) -> bool + 'static) -> Self {
+        self.first = Some(Rc::new(f));
         self
     }
 
@@ -79,7 +96,7 @@ pub(crate) fn send(tree: &mut Tree, id: NodeId, session: &Session, bytes: &[u8])
 
 impl View for Terminal {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let Terminal { session, font: (size, line), look, autofocus, settings } = self;
+        let Terminal { session, font: (size, line), look, autofocus, settings, first } = self;
         let look = look
             .unwrap_or_else(|| signal(TermLook { size, line_height: line / size, ..TermLook::default() }));
         let mut style = Style { text: look.get_untracked().text(), ..Style::default() };
@@ -129,9 +146,14 @@ impl View for Terminal {
             });
         });
 
-        let (writer, s) = (cx.handle.clone(), session.clone());
+        let takes =
+            move |first: &Option<Rc<KeyFirst>>, key, mods| first.as_ref().is_some_and(|f| f(key, mods));
+        let (writer, s, asked) = (cx.handle.clone(), session.clone(), first.clone());
         cx.tree.on_key(id, true, move |e| {
             let Some(event) = key_event(e.key, e.mods, e.repeat) else { return };
+            if takes(&asked, e.key, e.mods) {
+                return e.stop();
+            }
             let Some(bytes) = s.engine().term.encode_key_event(&event) else { return };
             e.stop();
             let s = s.clone();
@@ -148,6 +170,11 @@ impl View for Terminal {
         let (writer, s) = (cx.handle.clone(), session.clone());
         cx.tree.on_action::<TermCommand>(id, move |&command| {
             let bytes = match (command, &clipboard) {
+                (TermCommand::Tab(back), _)
+                    if takes(&first, Key::Tab, if back { Mods::SHIFT } else { Mods::NONE }) =>
+                {
+                    return;
+                }
                 (TermCommand::Tab(back), _) => {
                     let mods = KeyMods { shift: back, ..KeyMods::default() };
                     s.engine().term.encode_key(&KeySpec::Named(NamedKey::Tab), mods).unwrap_or_default()

@@ -133,6 +133,7 @@ pub(crate) fn repaint(tree: &mut Tree, id: NodeId) {
     if let Some(session) = grew {
         crate::view::regrid(tree, id, &session);
     }
+    crate::line::follow_line(tree, id);
 }
 
 impl Widget for TerminalWidget {

@@ -4,7 +4,6 @@
 
 use std::rc::Rc;
 
-use quadra_headless::combo::combo;
 use quadra_headless::pick::Parts;
 use quadra_layout::{Align, Length};
 use quadra_reactive::{Signal, signal};
@@ -77,7 +76,7 @@ impl View for Combobox {
         };
         let place =
             |anchor: &quadra_ui::NodeRef| Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);
-        let combo = combo(self.options, value, parts, field, panel, place);
+        let combo = quadra_headless::combobox(self.options, value, parts, field, panel, place);
         match self.pick {
             Some(pick) => combo.on_pick(move |i| pick(i)),
             None => combo,

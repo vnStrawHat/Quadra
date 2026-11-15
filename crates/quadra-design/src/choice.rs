@@ -1,12 +1,11 @@
 //! One choice of a few (specs/behaviour/15, "Components"): the radio group and the segmented
 //! control. Each takes the signal that holds which option is chosen, and writes it.
 
-use quadra_headless::choice;
 use quadra_layout::{Align, Direction, Justify, Overflow};
 use quadra_platform::Cursor;
 use quadra_prim::Corners;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, Paint, Role, State};
+use quadra_tree::{NodeId, Paint, State};
 use quadra_ui::{AnyView, Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
 
 use crate::button::Size;
@@ -101,9 +100,9 @@ impl Choice {
                 true => self.cell(label).radii(ends(i, count)),
                 false => Choice::radio(label, on),
             };
-            parts.push(AnyView::new(choice::option(option.cursor(Cursor::Pointer), Role::Radio, i, chosen)));
+            parts.push(AnyView::new(quadra_headless::radio(option.cursor(Cursor::Pointer), i, chosen)));
         }
-        let group = chooser(Role::Group, count, chosen);
+        let group = chooser(quadra_headless::radio_group(div(), count, chosen));
         let group =
             group.disabled(self.disabled).when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
         let group = match (self.segmented, self.horizontal) {
@@ -125,10 +124,10 @@ fn ends(i: usize, count: usize) -> Corners {
     Corners { top_left: first, bottom_left: first, top_right: last, bottom_right: last }
 }
 
-/// The box around a few options of which one is chosen (`quadra_headless::choice`), with the
-/// focus as a line around it.
-pub(crate) fn chooser(role: Role, count: usize, chosen: Signal<usize>) -> Div {
-    choice::group(div(), role, count, chosen).focus_visible(|s| s.outline(token::BORDER_FOCUSED))
+/// The box around a few options of which one is chosen (a radio group, tabs), with the focus
+/// as a line around it.
+pub(crate) fn chooser(group: Div) -> Div {
+    group.focus_visible(|s| s.outline(token::BORDER_FOCUSED))
 }
 
 impl View for Choice {

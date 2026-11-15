@@ -3,7 +3,6 @@
 //! until the pointer is over it; an outlined one has a hairline border; a tinted one a fill
 //! at low opacity, a border of its colour and an icon in it; a link is accent text.
 
-use quadra_headless::press;
 use quadra_layout::{Align, Display, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::memo;
@@ -235,7 +234,7 @@ impl Button {
             None => face,
         };
         // What it does, by the pointer and the keyboard alike: the headless crate's.
-        let pressed = press::press(face).disabled(move || off.get());
+        let pressed = quadra_headless::button(face).disabled(move || off.get());
         let pressed = match busy {
             Some(busy) => pressed.busy(busy),
             None => pressed,

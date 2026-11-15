@@ -33,7 +33,7 @@ where
 {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let of = self.of.mount(cx);
-        let card = hint::card(cx, of, hint::CARD_REST, hint::CARD_GRACE);
+        let card = quadra_headless::hover_card(cx, of, hint::CARD_REST, hint::CARD_GRACE);
         let (content, shown) = (self.content, card.shown);
         let anchor = Anchor::Beside { node: of, side: Side::Below, along: Along::Start, gap: 6.0 };
         hang(cx, of, shown, anchor, move || {

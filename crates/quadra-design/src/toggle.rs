@@ -3,7 +3,6 @@
 
 use std::rc::Rc;
 
-use quadra_headless::press::toggle;
 use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
@@ -121,7 +120,10 @@ impl Toggle {
         // The keyboard's focus is a line around the control and its label.
         let face = face.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
         let face = face.when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
-        let face = toggle(on, face, self.is_switch, move || off());
+        let face = match self.is_switch {
+            true => quadra_headless::switch(on, face, move || off()),
+            false => quadra_headless::checkbox(on, face, move || off()),
+        };
         let face = match self.test_id {
             Some(id) => face.test_id(id),
             None => face,

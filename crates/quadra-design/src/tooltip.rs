@@ -62,7 +62,7 @@ impl<V> Tooltip<V> {
 impl<V: View + 'static> View for Tooltip<V> {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let of = self.of.mount(cx);
-        let shown = hint::tooltip(cx, of, hint::TOOLTIP_REST);
+        let shown = quadra_headless::tooltip(cx, of, hint::TOOLTIP_REST);
         // To a reader the words are the description of what they are about, there or not.
         let said = self.tip.clone();
         cx.tree.update_semantics(of, move |says| says.description = Some(said));

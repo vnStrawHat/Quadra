@@ -23,6 +23,11 @@ pub mod split;
 pub mod table;
 pub mod time;
 pub mod tree;
+mod widgets;
 pub mod work;
 
 pub use action::{actions, keymap};
+pub use widgets::{
+    accordion_body, accordion_head, button, checkbox, combobox, hover_card, radio, radio_group, switch, tab,
+    tabs, tooltip,
+};

@@ -111,7 +111,7 @@ fn fold(old: usize, count: usize, open: Signal<Vec<usize>>) -> Div {
     let fold = row().height(by_text(ROW)).align_items(Align::Center).justify(Justify::Center);
     let fold = fold.bg(token::PANEL).text_color(token::TEXT_3).hover(|s| s.bg(token::PANEL_HOVER));
     let fold = fold.cursor(Cursor::Pointer).focus_visible(|s| s.outline(token::BORDER_FOCUSED));
-    quadra_headless::press::press(fold.child(text(format!("{count} unchanged lines")))).on_click(show).build()
+    quadra_headless::button(fold.child(text(format!("{count} unchanged lines")))).on_click(show).build()
 }
 
 /// What a row of the listing shows.

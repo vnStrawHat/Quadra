@@ -140,6 +140,27 @@ input, the buttons of a title bar.
 A row that is the headless crate's does not wait for all of them: each moves in its own commit, and
 the kit uses it from then on.
 
+## Widget names
+
+The modules are named by what a component does (`press`, `choice`, `disclose`, `hint`,
+`combo`), and one behaviour is several widgets: a checkbox and a switch, radios and tabs.
+The crate also names them as widgets, at its root (`widgets.rs`): each is the behaviour with
+what makes it that widget, so a look cannot give a radio group the role of a tab list.
+
+| Widget | Is |
+|---|---|
+| `button(face)` | `press::press` |
+| `checkbox(on, face, disabled)`, `switch(..)` | `press::toggle`, a checkbox or a switch |
+| `radio_group(group, count, chosen)`, `radio(face, i, chosen)` | `choice` with `Role::Group` and `Role::Radio` |
+| `tabs(strip, count, chosen)`, `tab(face, i, chosen)` | `choice` with `Role::TabList` and `Role::Tab` |
+| `accordion_head(face, open)`, `accordion_body(open, body)` | `disclose` |
+| `tooltip(cx, of, rest)`, `hover_card(cx, of, rest, grace)` | `hint` |
+| `combobox(..)` | `combo::combo` |
+
+`dialog`, `menu`, `list`, `tree`, `table`, `slider`, `number`, `split`, `popup` and
+`settings` are named as widgets already. A look uses the widget names; the behaviour's stay
+for what is none of them (a disclosure that opens a date picker).
+
 ## Tests
 
 - **What the kit does does not change.** No test in `crates/quadra-design/tests` changes while

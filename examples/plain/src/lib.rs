@@ -6,8 +6,8 @@ mod popups;
 
 pub use popups::{Act, dialog, select};
 
-use quadra::{Align, Color, Cursor, Div, Paint, Refine, Role, Signal, div, memo, row, text};
-use quadra_headless::{choice, list, press, slider};
+use quadra::{Align, Color, Cursor, Div, Paint, Refine, Signal, div, memo, row, text};
+use quadra_headless::{list, slider};
 
 /// The colours of the look: ink, paper, a grey under the pointer, a darker one while pressed.
 pub const INK: Color = Color::rgb(0x1A1A1A);
@@ -36,7 +36,7 @@ pub fn framed() -> Div {
 pub fn button(label: &str, f: impl FnMut() + 'static) -> Div {
     let face = framed().height(HIGH).padding_x(12.0).cursor(Cursor::Pointer).label(label);
     let face = face.hover(|s| s.bg(HOVER)).active(|s| s.bg(PRESSED)).focus_visible(ring);
-    press::press(face.child(text(label.to_string()))).on_click(f).build()
+    quadra_headless::button(face.child(text(label.to_string()))).on_click(f).build()
 }
 
 /// A square filled while `on`, `size` wide.
@@ -49,7 +49,7 @@ fn mark(size: f32, on: impl Fn() -> bool + 'static) -> Div {
 pub fn checkbox(on: Signal<bool>, label: &str) -> Div {
     let face = row().gap(8.0).align_items(Align::Center).cursor(Cursor::Pointer).label(label);
     let face = face.focus_visible(ring).child(mark(14.0, move || on.get())).child(text(label.to_string()));
-    press::toggle(on, face, false, false)
+    quadra_headless::checkbox(on, face, false)
 }
 
 /// A switch: a frame with a square at its left while off, at its right and filled while on.
@@ -58,29 +58,29 @@ pub fn switch(on: Signal<bool>, label: &str) -> Div {
         mark(10.0, move || on.get()).absolute().top(2.0).left(move || if on.get() { 16.0 } else { 2.0 });
     let track = div().size(30.0, 16.0).shrink(0.0).border(1.0).border_color(INK).child(knob);
     let face = row().gap(8.0).align_items(Align::Center).cursor(Cursor::Pointer).label(label);
-    press::toggle(on, face.focus_visible(ring).child(track).child(text(label.to_string())), true, false)
+    quadra_headless::switch(on, face.focus_visible(ring).child(track).child(text(label.to_string())), false)
 }
 
 /// One of a few options, as radios in a column: a square filled for the one chosen.
 pub fn radio_group(options: &[&str], chosen: Signal<usize>) -> Div {
     let group =
-        choice::group(quadra::column().gap(6.0).focus_visible(ring), Role::Group, options.len(), chosen);
+        quadra_headless::radio_group(quadra::column().gap(6.0).focus_visible(ring), options.len(), chosen);
     group.children(options.iter().enumerate().map(|(i, name)| {
         let face = row().gap(8.0).align_items(Align::Center).cursor(Cursor::Pointer).label(*name);
         let face = face.child(mark(12.0, move || chosen.get() == i)).child(text(name.to_string()));
-        choice::option(face, Role::Radio, i, chosen)
+        quadra_headless::radio(face, i, chosen)
     }))
 }
 
 /// Tabs in a row: the chosen one stands on a line of ink 2 px thick.
 pub fn tabs(names: &[&str], chosen: Signal<usize>) -> Div {
     let strip = row().border_bottom(1.0).border_color(INK).focus_visible(ring);
-    let strip = choice::group(strip, Role::TabList, names.len(), chosen);
+    let strip = quadra_headless::tabs(strip, names.len(), chosen);
     strip.children(names.iter().enumerate().map(|(i, name)| {
         let face = row().height(HIGH).padding_x(12.0).align_items(Align::Center).cursor(Cursor::Pointer);
         let face = face.border_bottom(move || if chosen.get() == i { 3.0 } else { 0.0 }).border_color(INK);
         let face = face.hover(|s| s.bg(HOVER)).label(*name).child(text(name.to_string()));
-        choice::option(face, Role::Tab, i, chosen)
+        quadra_headless::tab(face, i, chosen)
     }))
 }
 

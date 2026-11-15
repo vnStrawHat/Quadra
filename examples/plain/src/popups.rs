@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use quadra::{Along, Div, NodeRef, Place, Side, Signal, State, column, div, row, signal, text};
 use quadra_headless::menu::{self, Ends, Line, Row};
-use quadra_headless::{dialog as base, popup, press};
+use quadra_headless::{dialog as base, popup};
 
 use crate::{HIGH, HOVER, INK, PAPER, button, framed, ring};
 
@@ -22,7 +22,10 @@ pub fn select(options: &[&str], chosen: Signal<usize>) -> Div {
     let face = framed().width(160.0).height(HIGH).padding_x(8.0).gap(8.0).cursor(quadra::Cursor::Pointer);
     let face = face.hover(|s| s.bg(HOVER)).focus_visible(ring).node_ref(&opener).label(says.clone());
     let face = face.child(div().grow(1.0).child(text(says))).child(text("▾"));
-    let face = press::press(face).on_click(move || open.update(|open| *open = !*open)).build().expanded(open);
+    let face = quadra_headless::button(face)
+        .on_click(move || open.update(|open| *open = !*open))
+        .build()
+        .expanded(open);
     let rows = move || {
         let on = chosen.get_untracked();
         let line = |(i, name): (usize, &String)| {

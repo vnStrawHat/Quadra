@@ -1,7 +1,7 @@
 //! The accordion (specs/behaviour/09, "Layout"): sections under one another, each opened and
 //! closed by its head. Whether a section is open is a signal of the caller's.
 
-use quadra_headless::disclose;
+use quadra_headless::{accordion_body, accordion_head};
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::Signal;
@@ -47,7 +47,7 @@ fn head(title: String, open: Signal<bool>) -> Div {
     let head = row().align_items(Align::Center).gap(4.0).padding_x(8.0).height(by_text(size::H_MD));
     let head = head.cursor(Cursor::Pointer);
     let head = head.hover(|s| s.bg(token::PANEL_HOVER)).focus_visible(|s| s.bg(token::PANEL_HOVER));
-    disclose::head(head, open).child(dynamic(chevron)).child(text(title))
+    accordion_head(head, open).child(dynamic(chevron)).child(text(title))
 }
 
 impl View for Accordion {
@@ -59,7 +59,7 @@ impl View for Accordion {
             let head = if i > 0 { head.border_top(1.0).border_color(token::LINE) } else { head };
             let inside =
                 move || div().padding_left(26.0).padding_right(12.0).padding_bottom(12.0).child(body());
-            all = all.child(head).child(disclose::body(open, inside));
+            all = all.child(head).child(accordion_body(open, inside));
         }
         all.mount(cx)
     }

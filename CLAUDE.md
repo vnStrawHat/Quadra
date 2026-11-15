@@ -208,7 +208,10 @@ contexts of bindings are predicates (`editor && !find`), and `Keymap::load(text,
 keymap file (`quadra_design::actions()` names the kit's; the editor's commands have no names yet). The text size
 (specs/12): `TextSize { zoom, text, system }` (`text_size()` in views), zoom by `Tree::set_zoom`, text alone by
 `Tree::set_text_scale`; a box of a line of text in the kit is `.height(by_text(px))`, so new components do the same;
-`QUADRA_TEXT=1.5 tools/shots.sh` draws the gallery with larger text. One manual check is open: glass over scrolling content in a real window. No phase follows R6 in specs/00: what comes next is the user's to say (the apps come after Quadra is complete).
+`QUADRA_TEXT=1.5 tools/shots.sh` draws the gallery with larger text. Since 2026-11-15 `quadra-base` is
+`quadra-headless` and `quadra-kit` is `quadra-design` (the user's names); the headless crate names its components as
+widgets too (`button`, `checkbox`, `switch`, `radio_group`/`radio`, `tabs`/`tab`, `accordion_head`/`accordion_body`,
+`tooltip`, `hover_card`, `combobox`; specs/17, "Widget names"): a look uses those. One manual check is open: glass over scrolling content in a real window. No phase follows R6 in specs/00: what comes next is the user's to say (the apps come after Quadra is complete).
 
 Room left that the numbers show (`tools/bench.sh grid`; docs/benchmarks.md, "the grid's update and layout"): 190 ns a binding of the grid's update, 130 of it running
 the binding (the reactive runtime and the scene's own formatting); a flex item is measured once per height its column offers though its

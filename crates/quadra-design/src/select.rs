@@ -76,8 +76,7 @@ impl View for Select {
         let face = face.expanded(open);
         let face = face.cursor(Cursor::Pointer).node_ref(&opener);
         // Enter and Space toggle it too: while it is open the focus is in its menu.
-        let face =
-            quadra_headless::press::press(face).on_click(move || open.update(|open| *open = !*open)).build();
+        let face = quadra_headless::button(face).on_click(move || open.update(|open| *open = !*open)).build();
         let face = match self.test_id {
             Some(id) => face.test_id(id),
             None => face,

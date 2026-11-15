@@ -2,13 +2,12 @@
 //! caller shows the page of the chosen one. Underlined by default, the chosen tab with the
 //! accent's line; `.pill()` tints the chosen tab and draws no line.
 
-use quadra_headless::choice;
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_prim::Color;
 use quadra_reactive::Signal;
-use quadra_tree::{NodeId, Role, Side, State};
-use quadra_ui::{Div, MountCx, Refine, View, by_text, row, text};
+use quadra_tree::{NodeId, Side, State};
+use quadra_ui::{Div, MountCx, Refine, View, by_text, div, row, text};
 
 use crate::button::Size;
 use crate::choice::chooser;
@@ -45,14 +44,14 @@ impl Tabs {
             let s = s.text_color(token::ACCENT_TEXT);
             if pill { s.bg(token::ACCENT_TINT) } else { s.bg(Color::TRANSPARENT) }
         };
-        let tab = choice::option(tab.when(State::SELECTED, on), Role::Tab, i, chosen).child(text(label));
+        let tab = quadra_headless::tab(tab.when(State::SELECTED, on), i, chosen).child(text(label));
         if pill { tab } else { tab.child(chosen_mark(Side::Below, move || chosen.get() == i)) }
     }
 }
 
 impl View for Tabs {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let strip = chooser(Role::TabList, self.labels.len(), self.chosen);
+        let strip = chooser(quadra_headless::tabs(div(), self.labels.len(), self.chosen));
         let strip = match self.pill {
             true => strip.gap(4.0),
             false => strip.border_bottom(1.0).border_color(token::LINE),

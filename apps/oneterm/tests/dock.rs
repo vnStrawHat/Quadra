@@ -46,7 +46,7 @@ fn app(name: &str) -> App {
         provide(settings.clone());
         let app = OneTerm::new(sessions);
         let target = oneterm_ssh::Target { user: "tester".into(), host: "127.0.0.1".into(), port };
-        app.model.connect_to(Remote { target, auth: Auth::Key(key_file.clone()) }, false);
+        app.model.connect_to(Remote::new(target, Auth::Key(key_file.clone())), false);
         app.view()
     });
     h.settle();

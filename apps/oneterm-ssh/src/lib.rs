@@ -5,6 +5,7 @@
 mod auth;
 mod files;
 mod prompt;
+mod route;
 mod session;
 mod target;
 #[cfg(feature = "testing")]
@@ -45,6 +46,44 @@ pub struct Options {
     pub agent: String,
     pub rows: u16,
     pub cols: u16,
+    /// The jump hosts, in the order they are gone through (4 at most).
+    pub jumps: Vec<Hop>,
+    pub forwards: Vec<Forward>,
+}
+
+/// A host on the way, and how to sign in to it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Hop {
+    pub target: Target,
+    pub auth: Auth,
+}
+
+/// A local port carried to a host and port as the server sees them.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Forward {
+    pub local: u16,
+    pub host: String,
+    pub port: u16,
+}
+
+impl Forward {
+    /// `8080:localhost:80`.
+    pub fn parse(text: &str) -> Option<Forward> {
+        let (local, rest) = text.split_once(':')?;
+        let (host, port) = rest.rsplit_once(':')?;
+        let host = host.trim_start_matches('[').trim_end_matches(']');
+        if host.is_empty() {
+            return None;
+        }
+        Some(Forward { local: local.parse().ok()?, host: host.into(), port: port.parse().ok()? })
+    }
+
+    pub fn label(&self) -> String {
+        match self.host.contains(':') {
+            true => format!("{}:[{}]:{}", self.local, self.host, self.port),
+            false => format!("{}:{}:{}", self.local, self.host, self.port),
+        }
+    }
 }
 
 impl Options {
@@ -60,6 +99,8 @@ impl Options {
             agent: r"\\.\pipe\openssh-ssh-agent".into(),
             rows: 24,
             cols: 80,
+            jumps: Vec::new(),
+            forwards: Vec::new(),
         }
     }
 }

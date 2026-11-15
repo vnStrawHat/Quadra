@@ -98,7 +98,7 @@ pub(crate) fn new_menu(model: &Model) -> Vec<MenuItem> {
         let (goes, remote) = (model.clone(), host.remote.clone());
         items.push(
             MenuItem::new(host.name.clone())
-                .keys(host.address())
+                .keys(host.detail())
                 .on_select(move || goes.connect_to(remote.clone(), false)),
         );
     }

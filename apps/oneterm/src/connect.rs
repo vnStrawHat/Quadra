@@ -17,6 +17,7 @@ struct Form {
     key: Signal<String>,
     here: Signal<bool>,
     save: Signal<bool>,
+    jump: Signal<usize>,
 }
 
 pub(crate) fn dialog(model: &Model) -> impl View + use<> {
@@ -27,8 +28,9 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
         key: signal(String::new()),
         here: signal(false),
         save: signal(false),
+        jump: signal(0),
     };
-    let (submits, goes) = (model.clone(), model.clone());
+    let (submits, goes, lists) = (model.clone(), model.clone(), model.clone());
     let body = move || {
         let submits = submits.clone();
         let field = input(form.target)
@@ -53,6 +55,7 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
                     .display(move || if form.auth.get() == 2 { Display::Flex } else { Display::None })
                     .child(key),
             )
+            .child(select(lists.jump_choices(), form.jump).width(240.0).test_id("connect-jump"))
             .child(checkbox(form.here).label("In current tab (new space)"))
             .child(checkbox(form.save).label("Save as host"))
     };
@@ -75,11 +78,13 @@ fn go(model: &Model, form: Form) -> bool {
         model.notify(Notice::new("Quick connect").body(format!("Not a target: {typed}")).tone(Tone::Warning));
         return false;
     };
-    let remote =
-        Remote { target, auth: crate::hosts::auth_of(form.auth.get_untracked(), form.key.get_untracked()) };
+    let auth = crate::hosts::auth_of(form.auth.get_untracked(), form.key.get_untracked());
+    let mut remote = Remote::new(target, auth);
+    let jump = model.jump_host(form.jump.get_untracked());
+    remote.jumps = jump.as_ref().map_or(Vec::new(), |it| it.remote.route());
     if form.save.get_untracked() {
-        let name = remote.target.host.clone();
-        model.save_host(crate::hosts::Host { name, group: String::new(), remote: remote.clone() });
+        let (name, jump) = (remote.target.host.clone(), jump.map_or(String::new(), |it| it.name));
+        model.save_host(crate::hosts::Host { name, group: String::new(), remote: remote.clone(), jump });
     }
     model.connect_to(remote, form.here.get_untracked());
     form.target.set(String::new());

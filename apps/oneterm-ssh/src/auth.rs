@@ -10,19 +10,20 @@ use russh::keys::agent::client::AgentClient;
 use russh::keys::{HashAlg, PrivateKeyWithHashAlg, load_secret_key};
 
 use crate::prompt::Prompt;
-use crate::{Auth, Options};
+use crate::{Auth, Hop, Options};
 
 const KEY_FILES: [&str; 3] = ["id_ed25519", "id_ecdsa", "id_rsa"];
 
 pub(crate) async fn authenticate<H: Handler>(
     handle: &mut Handle<H>,
+    hop: &Hop,
     options: &Options,
     prompt: &Prompt,
 ) -> Result<(), String> {
-    let user = options.target.user.as_str();
+    let user = hop.target.user.as_str();
     // RSA signs with the hash the server names, SHA-512 when it names none.
     let rsa = handle.best_supported_rsa_hash().await.ok().flatten().unwrap_or(Some(HashAlg::Sha512));
-    let auth = &options.auth;
+    let auth = &hop.auth;
     if matches!(auth, Auth::Auto | Auth::Agent) && agent(handle, user, &options.agent, rsa).await {
         return Ok(());
     }
@@ -39,7 +40,7 @@ pub(crate) async fn authenticate<H: Handler>(
         }
     }
     if matches!(auth, Auth::Auto | Auth::Password) {
-        let question = format!("{user}@{}'s password: ", options.target.host);
+        let question = format!("{user}@{}'s password: ", hop.target.host);
         for _ in 0..3 {
             let password = prompt.ask(&question, false).await.ok_or("cancelled")?;
             if handle.authenticate_password(user, password).await.map_err(|e| e.to_string())?.success() {

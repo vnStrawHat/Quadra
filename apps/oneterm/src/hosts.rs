@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use oneterm_ssh::{Auth, Target};
+use oneterm_ssh::{Auth, Forward, Hop, Target};
 
 use crate::model::Model;
 use crate::shells::{Launch, Remote};
@@ -12,6 +12,8 @@ use crate::shells::{Launch, Remote};
 const AUTHS: [&str; 4] = ["Auto", "Agent", "Key", "Password"];
 /// How many recent targets are kept.
 const RECENT: usize = 5;
+/// The most jump hosts on a way, as the engine takes.
+const HOPS: usize = 4;
 
 /// A host the user saved.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -19,6 +21,8 @@ pub struct Host {
     pub name: String,
     pub group: String,
     pub remote: Remote,
+    /// The name of the saved host this one is reached through, or nothing.
+    pub jump: String,
 }
 
 impl Host {
@@ -29,25 +33,50 @@ impl Host {
             Auth::Password => (3, String::new()),
             Auth::Auto => (0, String::new()),
         };
-        vec![self.name.clone(), self.group.clone(), self.remote.target.label(), AUTHS[auth].into(), key]
+        let forwards: Vec<String> = self.remote.forwards.iter().map(Forward::label).collect();
+        let (name, group, target) = (self.name.clone(), self.group.clone(), self.remote.target.label());
+        vec![name, group, target, AUTHS[auth].into(), key, self.jump.clone(), forwards.join(" ")]
     }
 
+    /// A row of five words (before M10) or seven: a jump host and the forwards.
     fn of(row: &[String]) -> Option<Host> {
-        let [name, group, target, auth, key] = row else { return None };
+        let [name, group, target, auth, key, rest @ ..] = row else { return None };
         let auth = match auth.as_str() {
             "Agent" => Auth::Agent,
             "Key" => Auth::Key(PathBuf::from(key)),
             "Password" => Auth::Password,
             _ => Auth::Auto,
         };
-        let remote = Remote { target: Target::parse(target)?, auth };
-        Some(Host { name: name.clone(), group: group.clone(), remote })
+        let mut remote = Remote::new(Target::parse(target)?, auth);
+        let forwards = rest.get(1).map_or("", String::as_str).split_whitespace();
+        remote.forwards = forwards.map(Forward::parse).collect::<Option<_>>()?;
+        let jump = rest.first().cloned().unwrap_or_default();
+        Some(Host { name: name.clone(), group: group.clone(), remote, jump })
     }
 
     /// The host's address as a row shows it: `user@host`, its port when not 22.
     pub fn address(&self) -> String {
         self.remote.target.label()
     }
+
+    /// The address, and `· jump` for a host reached through another.
+    pub fn detail(&self) -> String {
+        match self.jump.is_empty() {
+            true => self.address(),
+            false => format!("{} \u{B7} jump", self.address()),
+        }
+    }
+}
+
+/// The way to a host through the saved host `name` and the ones it is reached through; a
+/// name that is gone ends it.
+fn jumps_of(hosts: &[Host], mut name: String) -> Vec<Hop> {
+    let mut hops = Vec::new();
+    while let Some(host) = hosts.iter().find(|it| it.name == name).filter(|_| hops.len() < HOPS) {
+        hops.insert(0, Hop { target: host.remote.target.clone(), auth: host.remote.auth.clone() });
+        name = host.jump.clone();
+    }
+    hops
 }
 
 /// The index of an auth among the dialogs' choices, and back.
@@ -63,7 +92,25 @@ pub(crate) fn auth_of(index: usize, key: String) -> Auth {
 impl Model {
     /// The saved hosts, in the order saved.
     pub fn hosts(&self) -> Vec<Host> {
-        self.prefs().hosts.with(|rows| rows.iter().filter_map(|row| Host::of(row)).collect())
+        let mut all: Vec<Host> =
+            self.prefs().hosts.with(|rows| rows.iter().filter_map(|row| Host::of(row)).collect());
+        let found = all.clone();
+        for host in &mut all {
+            host.remote.jumps = jumps_of(&found, host.jump.clone());
+        }
+        all
+    }
+
+    /// The choices of a jump host select: none, then the saved hosts.
+    pub(crate) fn jump_choices(&self) -> Vec<String> {
+        std::iter::once("No jump host".to_string())
+            .chain(self.hosts().into_iter().map(|it| it.name))
+            .collect()
+    }
+
+    /// The host chosen in a jump host select.
+    pub(crate) fn jump_host(&self, chosen: usize) -> Option<Host> {
+        chosen.checked_sub(1).and_then(|at| self.hosts().into_iter().nth(at))
     }
 
     /// Saves a host, in place of one of the same name.
@@ -105,7 +152,7 @@ impl Model {
                     let host = self.hosts().into_iter().find(|it| it.address() == *label);
                     let remote = match host {
                         Some(host) => host.remote,
-                        None => Remote { target: Target::parse(label)?, auth: Auth::Auto },
+                        None => Remote::new(Target::parse(label)?, Auth::Auto),
                     };
                     Some((remote, at.parse().unwrap_or(0)))
                 })
@@ -152,12 +199,38 @@ mod tests {
 
     #[test]
     fn a_host_is_a_row_of_words_and_back() {
-        let remote =
-            Remote { target: Target::parse("ops@10.20.0.2:2222").unwrap(), auth: Auth::Key("k".into()) };
-        let host = Host { name: "prod-lb".into(), group: "Production".into(), remote };
-        assert_eq!(host.row(), ["prod-lb", "Production", "ops@10.20.0.2:2222", "Key", "k"]);
+        let mut remote = Remote::new(Target::parse("ops@10.20.0.2:2222").unwrap(), Auth::Key("k".into()));
+        remote.forwards =
+            vec![Forward::parse("8080:localhost:80").unwrap(), Forward::parse("5432:db:5432").unwrap()];
+        let host =
+            Host { name: "prod-lb".into(), group: "Production".into(), remote, jump: "bastion".into() };
+        let row = [
+            "prod-lb",
+            "Production",
+            "ops@10.20.0.2:2222",
+            "Key",
+            "k",
+            "bastion",
+            "8080:localhost:80 5432:db:5432",
+        ];
+        assert_eq!(host.row(), row);
         assert_eq!(Host::of(&host.row()), Some(host));
+        let old: Vec<String> = row[..5].iter().map(|it| it.to_string()).collect();
+        assert_eq!(Host::of(&old).unwrap().jump, "");
         assert_eq!(Host::of(&["a".into(), "b".into(), "-x".into(), "Auto".into(), String::new()]), None);
         assert!(ago(0).ends_with("d ago"));
+    }
+
+    #[test]
+    fn jump_hosts_chain_outermost_first_and_stop() {
+        let host = |name: &str, jump: &str| {
+            let remote = Remote::new(Target::parse(&format!("u@{name}")).unwrap(), Auth::Auto);
+            Host { name: name.into(), group: String::new(), remote, jump: jump.into() }
+        };
+        let all = [host("app", "mid"), host("mid", "edge"), host("edge", ""), host("loop", "loop")];
+        let names = |hops: Vec<Hop>| hops.into_iter().map(|it| it.target.host).collect::<Vec<_>>();
+        assert_eq!(names(jumps_of(&all, "mid".into())), ["edge", "mid"]);
+        assert_eq!(names(jumps_of(&all, "gone".into())), Vec::<String>::new());
+        assert_eq!(jumps_of(&all, "loop".into()).len(), HOPS);
     }
 }

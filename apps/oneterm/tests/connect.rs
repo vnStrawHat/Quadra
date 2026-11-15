@@ -45,7 +45,7 @@ fn tabs(h: &Harness) -> usize {
 fn a_target_opens_a_tab_that_connects_to_it() {
     let (mut h, made) = app();
     connect(&mut h, "ssh trung@10.20.3.41 -p 2222");
-    let want = Remote { target: Target::parse("trung@10.20.3.41:2222").unwrap(), auth: Auth::Auto };
+    let want = Remote::new(Target::parse("trung@10.20.3.41:2222").unwrap(), Auth::Auto);
     assert_eq!(made.borrow().last().and_then(|it| it.ssh.clone()), Some(want.clone()));
     assert_eq!(tabs(&h), 2);
 }
@@ -79,7 +79,7 @@ fn a_remote_session_says_its_connection_failed() {
     let port = listener.local_addr().unwrap().port();
     drop(listener);
     let target = Target { user: "nobody".into(), host: "127.0.0.1".into(), port };
-    let remote = Remote { target, auth: Auth::Password };
+    let remote = Remote::new(target, Auth::Password);
     let mut h = Harness::new();
     let session = Rc::new(RefCell::new(None));
     let kept = session.clone();

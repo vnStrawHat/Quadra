@@ -125,6 +125,29 @@ impl server::Handler for Shell {
         Ok(())
     }
 
+    /// Carries a channel to a host and port of this machine (only 127.0.0.1 is asked).
+    async fn channel_open_direct_tcpip(
+        &mut self,
+        channel: Channel<Msg>,
+        host: &str,
+        port: u32,
+        _from: &str,
+        _from_port: u32,
+        reply: server::ChannelOpenHandle,
+        _session: &mut Session,
+    ) -> Result<(), Self::Error> {
+        let Ok(mut socket) = tokio::net::TcpStream::connect((host, port as u16)).await else {
+            return Ok(());
+        };
+        self.sftp.lock().unwrap().push(channel.id());
+        reply.accept().await;
+        tokio::spawn(async move {
+            let mut stream = channel.into_stream();
+            let _ = tokio::io::copy_bidirectional(&mut socket, &mut stream).await;
+        });
+        Ok(())
+    }
+
     async fn data(
         &mut self,
         channel: ChannelId,

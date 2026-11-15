@@ -57,7 +57,7 @@ fn a_host_added_is_saved_listed_and_connects_on_a_click() {
     assert!(a.h.has_text("local"), "the status bar names a local space");
     a.add("prod-api-01", "Production", "trung@10.20.1.14");
     a.add("", "Staging", "trung@10.30.2.8:2222");
-    assert_eq!(a.rows()[0], ["prod-api-01", "Production", "trung@10.20.1.14", "Auto", ""]);
+    assert_eq!(a.rows()[0], ["prod-api-01", "Production", "trung@10.20.1.14", "Auto", "", "", ""]);
     assert_eq!(a.rows()[1][..3], ["10.30.2.8", "Staging", "trung@10.30.2.8:2222"]);
     assert!(a.h.has_text("Production") && a.h.has_text("Staging"));
 
@@ -69,6 +69,33 @@ fn a_host_added_is_saved_listed_and_connects_on_a_click() {
     assert!(a.h.has_text("prod-api-01"), "the status bar names the host");
     let recent = a.settings.value("ssh.recent", Vec::<Vec<String>>::new()).get();
     assert_eq!(recent[0][0], "trung@10.20.1.14");
+}
+
+#[test]
+fn a_host_reached_through_another_carries_its_way_and_forwards() {
+    let mut a = app();
+    a.add("bastion", "", "ops@203.0.113.5");
+    a.h.get_by_role(Role::Button, "Add SSH host…").click();
+    a.h.settle();
+    for (id, value) in
+        [("host-name", "db"), ("host-target", "trung@10.0.0.9"), ("host-forwards", "5432:localhost:5432")]
+    {
+        a.h.get_by_test_id(id).set_value(value);
+    }
+    a.h.get_by_test_id("host-jump").click();
+    a.h.settle();
+    a.h.get_by_role(Role::MenuItem, "bastion").click();
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.settle();
+    assert_eq!(a.rows()[1][5..], ["bastion", "5432:localhost:5432"]);
+
+    a.h.get_by_role(Role::Button, "db").click();
+    a.h.settle();
+    let remote = a.made.borrow().last().cloned().unwrap().ssh.unwrap();
+    let hops: Vec<String> = remote.jumps.iter().map(|it| it.target.label()).collect();
+    assert_eq!(hops, ["ops@203.0.113.5"]);
+    assert_eq!(remote.forwards[0].label(), "5432:localhost:5432");
 }
 
 #[test]

@@ -27,7 +27,7 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     session.title().set(remote.target.label());
     let size = session.size();
     let mut options = options(remote.target);
-    options.auth = remote.auth;
+    (options.auth, options.jumps, options.forwards) = (remote.auth, remote.jumps, remote.forwards);
     (options.rows, options.cols) = (size.rows, size.cols);
     // The engine calls from its threads.
     let (feeder, ended) = (Arc::new(Mutex::new(session.feeder())), session.feeder());

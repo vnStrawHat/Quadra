@@ -226,6 +226,22 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
 - **Sessions keep app data**: `Session::keep(Rc<dyn Any>)` and `kept::<T>()` (specs/18), how
   the app finds a remote space's `Ssh`.
 
+### M10 in detail
+
+- **Jump hosts**: `Options::jumps`, at most 4 hops, each a target and its auth. The engine
+  connects to the first by TCP, and to each next one through a `direct-tcpip` channel of the
+  one before; every hop has its host key checked and its prompts asked in the space like
+  the target's. An error on a hop is said `jump host user@host: ...`; the hops close with
+  the shell, the target first. A saved host names another saved host as its jump host (a
+  sixth word of its row; a host it names that is gone is no jump), shown in the menu as
+  `· jump`; Quick connect and Add SSH host choose one among the saved hosts.
+- **Local forwards**: `Options::forwards`, each `local port → host:port` as seen from the
+  server; the engine listens on 127.0.0.1 and opens a `direct-tcpip` channel for each
+  connection. A forward that cannot listen is one line in the space; the shell stays up.
+  A saved host keeps its forwards as a seventh word, `8080:localhost:80` joined by spaces,
+  typed so in Add SSH host.
+  Remote and dynamic forwards wait.
+
 ## Tests
 
 The app's tests drive it through the semantic tree on the headless platform with `echo()`

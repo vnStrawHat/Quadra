@@ -7,16 +7,14 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use russh::ChannelMsg;
-use russh::client::{self, Handler};
+use russh::client::Handler;
 use russh::keys::known_hosts::{check_known_hosts_path, learn_known_hosts_path};
 use russh::keys::{HashAlg, PublicKeyOrCertificate};
-use tokio::net::TcpStream;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 use crate::prompt::{Cmd, Out, Prompt};
 use crate::{Options, Shared};
 
-const CONNECT: Duration = Duration::from_secs(20);
 const PING: Duration = Duration::from_secs(5);
 
 pub(crate) async fn run(
@@ -38,30 +36,7 @@ pub(crate) async fn run(
 }
 
 async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> Result<i32, String> {
-    let target = &options.target;
-    let address = (target.host.as_str(), target.port);
-    let socket = match tokio::time::timeout(CONNECT, TcpStream::connect(address)).await {
-        Ok(socket) => socket.map_err(|e| e.to_string())?,
-        Err(_) => return Err("timed out".into()),
-    };
-    let _ = socket.set_nodelay(true);
-    let config = client::Config {
-        keepalive_interval: Some(Duration::from_secs(30)),
-        keepalive_max: 3,
-        ..Default::default()
-    };
-    let checker = Checker {
-        host: target.host.clone(),
-        port: target.port,
-        file: options.known_hosts.clone(),
-        prompt: prompt.clone(),
-    };
-    let refused = |e: russh::Error| match e {
-        russh::Error::UnknownKey => "host key verification failed".to_string(),
-        e => e.to_string(),
-    };
-    let mut handle = client::connect_stream(Arc::new(config), socket, checker).await.map_err(refused)?;
-    crate::auth::authenticate(&mut handle, options, &prompt).await?;
+    let (handle, jumps) = crate::route::reach(options, &prompt).await?;
     let channel = handle.channel_open_session().await.map_err(|e| e.to_string())?;
     let (rows, cols) = prompt.size();
     let fail = |e: russh::Error| e.to_string();
@@ -71,6 +46,7 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> 
     let (mut read, write) = channel.split();
     // A ping every 5 s: how long the server takes to answer.
     let handle = Arc::new(handle);
+    let forwards = crate::route::forward(&handle, &options.forwards, &prompt).await;
     *shared.handle.lock().unwrap_or_else(|e| e.into_inner()) = Some(handle.clone());
     let (pings, latency) = (handle.clone(), shared.clone());
     let pinger = tokio::spawn(async move {
@@ -111,19 +87,26 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> 
     }
     writer.abort();
     pinger.abort();
+    for task in forwards {
+        task.abort();
+    }
     // The files go with the shell (specs/19).
     *shared.handle.lock().unwrap_or_else(|e| e.into_inner()) = None;
     *shared.files.lock().unwrap_or_else(|e| e.into_inner()) = None;
+    // The target first, then the jump hosts inward out.
     let _ = handle.disconnect(russh::Disconnect::ByApplication, "", "").await;
+    for jump in jumps.iter().rev() {
+        let _ = jump.disconnect(russh::Disconnect::ByApplication, "", "").await;
+    }
     code.ok_or_else(|| "the connection dropped".to_string())
 }
 
 /// Checks the server's key against the known hosts, asking about one it has never seen.
 pub(crate) struct Checker {
-    host: String,
-    port: u16,
-    file: PathBuf,
-    prompt: Arc<Prompt>,
+    pub(crate) host: String,
+    pub(crate) port: u16,
+    pub(crate) file: PathBuf,
+    pub(crate) prompt: Arc<Prompt>,
 }
 
 impl Handler for Checker {

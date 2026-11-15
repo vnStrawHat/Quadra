@@ -33,6 +33,22 @@ pub struct Launch {
 pub struct Remote {
     pub target: oneterm_ssh::Target,
     pub auth: oneterm_ssh::Auth,
+    /// The jump hosts on the way, the first connected to first.
+    pub jumps: Vec<oneterm_ssh::Hop>,
+    pub forwards: Vec<oneterm_ssh::Forward>,
+}
+
+impl Remote {
+    pub fn new(target: oneterm_ssh::Target, auth: oneterm_ssh::Auth) -> Remote {
+        Remote { target, auth, jumps: Vec::new(), forwards: Vec::new() }
+    }
+
+    /// The way through this host to another: its jump hosts, then itself.
+    pub fn route(&self) -> Vec<oneterm_ssh::Hop> {
+        let mut hops = self.jumps.clone();
+        hops.push(oneterm_ssh::Hop { target: self.target.clone(), auth: self.auth.clone() });
+        hops
+    }
 }
 
 /// The shells whose programs are where they are installed, in the menu's order.

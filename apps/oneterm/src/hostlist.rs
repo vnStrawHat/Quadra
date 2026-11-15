@@ -137,14 +137,24 @@ struct Form {
     target: Signal<String>,
     auth: Signal<usize>,
     key: Signal<String>,
+    jump: Signal<usize>,
+    forwards: Signal<String>,
 }
 
 /// The dialog that saves a host.
 pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
     let open = model.ui().adding;
     let s = || signal(String::new());
-    let form = Form { name: s(), group: s(), target: s(), auth: signal(0), key: s() };
-    let saves = model.clone();
+    let form = Form {
+        name: s(),
+        group: s(),
+        target: s(),
+        auth: signal(0),
+        key: s(),
+        jump: signal(0),
+        forwards: s(),
+    };
+    let (saves, lists) = (model.clone(), model.clone());
     let body = move || {
         let field =
             |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id).width(416.0);
@@ -158,6 +168,8 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
             .child(field(form.target, "user@host or host:port", "host-target"))
             .child(select(AUTHS, form.auth).width(240.0))
             .child(div().display(crate::locked::shown(move || form.auth.get() == 2)).child(key))
+            .child(select(lists.jump_choices(), form.jump).width(240.0).test_id("host-jump"))
+            .child(field(form.forwards, "Local forwards: 8080:localhost:80 ...", "host-forwards"))
     };
     quadra_design::dialog(open, "Add SSH host", body).action("Cancel", Variant::Secondary, || {}).action(
         "Save",
@@ -174,11 +186,20 @@ fn save(model: &Model, form: Form) {
     };
     let name = form.name.get_untracked().trim().to_string();
     let name = if name.is_empty() { target.host.clone() } else { name };
-    let auth = auth_of(form.auth.get_untracked(), form.key.get_untracked());
-    let host =
-        Host { name, group: form.group.get_untracked().trim().into(), remote: Remote { target, auth } };
-    model.save_host(host);
-    for field in [form.name, form.group, form.target, form.key] {
+    let mut remote = Remote::new(target, auth_of(form.auth.get_untracked(), form.key.get_untracked()));
+    for word in form.forwards.get_untracked().split_whitespace() {
+        let Some(forward) = oneterm_ssh::Forward::parse(word) else {
+            model.notify(
+                Notice::new("Add SSH host").body(format!("Not a forward: {word}")).tone(Tone::Warning),
+            );
+            return;
+        };
+        remote.forwards.push(forward);
+    }
+    let jump = model.jump_host(form.jump.get_untracked()).map_or(String::new(), |it| it.name);
+    model.save_host(Host { name, group: form.group.get_untracked().trim().into(), remote, jump });
+    for field in [form.name, form.group, form.target, form.key, form.forwards] {
         field.set(String::new());
     }
+    form.jump.set(0);
 }

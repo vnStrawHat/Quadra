@@ -42,7 +42,8 @@ implementation is its reference. Its specs, its tests and its own measurements
 - The limited-RAM machine: do not run two release builds at once.
 - Edits by script: Python 3 with `PYTHONUTF8=1`, opening files with `encoding="utf-8",
   newline=""`.
-- No remote yet (the user sets it up later). Every command starts with `cd /d/quadra`.
+- The remote is `origin`, github.com/vnStrawHat/Quadra (public; it held the V code until
+  2026-11-16). Push only when the user asks. Every command starts with `cd /d/quadra`.
 - Habits that cost time when forgotten:
   - Read the gate's exit status, not its output through a pipe:
     `tools/check.sh prod > .tmp/check.log 2>&1; echo $?`, and commit only on 0.

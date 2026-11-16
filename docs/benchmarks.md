@@ -50,6 +50,57 @@ the scene as its first argument and prints `ready` (the counter's first frame), 
 standard error and a table of the medians to standard output. `tools/bench.sh <scene>..`
 runs scenes without a window instead and prints what a frame did and each pass's time.
 
+## 2026-11-16 — every bench again, with the runner in Rust (on fef3e5c)
+
+The numbers the README shows. Machine: i5-12400F, RTX 3050, Windows 11, a 75 Hz display.
+
+**The comparison bench** (`tools/bench.sh compare 3`: the runner, medians of three rounds, real
+windows; the runner spins while it waits, Method), against the last full run (2026-11-11, with
+the accessibility bridge):
+
+| Measure | 2026-11-11 | Now |
+|---|---|---|
+| list / grid / document: CPU per frame | 0.36 / 1.26 / 0.68 ms | 0.39 / 1.24 / 0.79 ms |
+| list / grid / document: p99 frame interval | 13.44 ms | 13.45 / 13.46 / 13.46 ms (75 Hz: 13.33) |
+| list / grid / document: peak memory | 23.2 / 27.8 / 27.5 MB | 23.5 / 30.4 / 27.6 MB |
+| counter: startup | 39 ms | 34 ms |
+| counter: idle memory | 11.1 MB | 11.4 MB |
+| binary size | 1.50 MB | 2.84 MB |
+
+The binary grew with the kit, the code editor, Markdown, charts and the rest the bench app
+links (the budget of specs/14 for the counter is 3 MB). Document is 16 % slower and list 8 %;
+neither has been looked into yet. Idle CPU read 0.57 to 1.21 ms/s across runs, too noisy to
+compare.
+
+**What a frame does** (headless, `BENCH_FRAMES=600 tools/bench.sh <scene>`; the counts are
+exact, the times microseconds):
+
+| Scene | Laid out | Painted | Instances written | Update / layout / paint |
+|---|---|---|---|---|
+| `list`: 100,000 rows, 8 px a frame | 3 | 1 | 9 | 3 / 1 / 2 |
+| `grid`: 600 numbers change | 1,800 | 600 | 3,534 | 229 / 134 / 186 |
+| `document`: the width changes | 340 | 22 | 4,281 | 2 / 40 / 149 |
+| `editor`: a letter typed in 100,000 lines | 0 | 1 | 2,586 | 10 / 0 / 470 |
+| `editor-scroll`: 8 px a frame | 0 | 0 | 31 | 2 / 0 / 10 |
+
+**The editor's paint is slower**: 470 µs a frame, against 367 on 2026-11-14. A bisect over
+the 162 commits between (a release build each, the best of two runs) puts a step of about
+50 µs (some 400 to 450) at the commit that centred glyphs in their cells. Taking out the
+centring, then the whole block that measures a cluster, then keeping the new pattern scan of
+the tokenizer out of line did not move it (455 to 470 each). The other 30 µs are not found:
+the commits before that one read 397 to 411, not 367. Open.
+
+**The GPU** (`BENCH_PHASES=1`, a real window, 600 frames): 42 µs a frame for list, 150 for
+grid, 123 for document, as on 2026-11-14.
+
+**Terminal throughput** (`tools/doomfire.sh`, specs/14):
+
+| Where | Size | fps | Bytes a frame | Throughput |
+|---|---|---|---|---|
+| The engine alone (`doomfire-feed`) | 200×50 | 1,035 | 159,535 | 165 MB/s |
+| The console host alone (`doomfire-conpty`) | 147×40 | 641 | 111,603 | 71.5 MB/s |
+| A real 1Term window | 143×39 | 588 | 107,824 | 63.4 MB/s |
+
 ## 2026-11-15 — terminal throughput, the fire demo (on dbe175a plus this commit)
 
 The fire demo written again in Rust (`bench/doomfire`, specs/14 "Terminal throughput"): a

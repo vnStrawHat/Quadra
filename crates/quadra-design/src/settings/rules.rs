@@ -90,23 +90,32 @@ fn setting(row_: Setting, kept: Memo<bool>) -> Div {
     if !row_.about.is_empty() {
         words = words.child(text(row_.about).size(size::TEXT_SM.size).color(token::TEXT_2));
     }
-    let line = line.role(Role::Group).label(row_.title);
-    line.child(words).child(div().shrink(0.0).child(row_.control))
+    let control = super::control(&row_.title, row_.control, row_.reset);
+    line.role(Role::Group).label(row_.title).child(words).child(control)
 }
 
 /// The pages, in what scrolls: what the app put above them, then of the page that shows its
 /// title and its groups, each a mono header over a hairline and its rows.
-pub(super) fn page(pages: Vec<SettingsPage>, model: &Model, header: Vec<AnyView>) -> Region {
+pub(super) fn page(
+    pages: Vec<SettingsPage>,
+    model: &Model,
+    resets: Vec<Option<Div>>,
+    header: Vec<AnyView>,
+) -> Region {
     let headed = !header.is_empty();
     let mut all = column().padding_left(40.0).padding_right(32.0).padding_y(TOP);
     if headed {
         all = all.child(row().align_items(Align::Center).gap(4.0).children(header));
     }
-    for (i, page) in pages.into_iter().enumerate() {
+    for (i, (page, reset)) in pages.into_iter().zip(resets).enumerate() {
         let (on, kept) = (model.shown, model.groups[i].clone());
         // The first group that shows is nearer the title than the others are to each other.
         let first = memo(move || kept.iter().position(|kept| kept.get()));
         let title = div().padding_top(if headed { 24.0 } else { 0.0 }).child(heading(page.title, 2));
+        let title = match reset {
+            Some(reset) => title.align_items(Align::Center).justify(Justify::Between).child(reset),
+            None => title,
+        };
         let mut one = column().display(move || shown(on.get() == i)).child(title);
         for (g, group) in page.groups.into_iter().enumerate() {
             let kept = model.groups[i][g];

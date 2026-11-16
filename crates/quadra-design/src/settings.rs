@@ -8,20 +8,24 @@ mod cards;
 mod rules;
 
 use quadra_headless::settings as base;
-use quadra_headless::settings::Model;
+use quadra_headless::settings::{Model, Reset, shown};
+use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::NodeId;
-use quadra_view::{AnyView, Div, MountCx, View, row};
+use quadra_view::{AnyView, Div, MountCx, View, div, row};
 
+use crate::button::{Size, Variant, button, icon_button};
 use crate::input::{Input, input};
 use crate::{icons, size, token};
 
-/// A setting: what it is called, a line about it, and its control.
+/// A setting: what it is called, a line about it, its control, and how it goes back to its
+/// default.
 struct Setting {
     title: String,
     about: String,
     control: AnyView,
+    reset: Option<Reset>,
 }
 
 impl Setting {
@@ -53,7 +57,26 @@ impl SettingsGroup {
     /// A setting: its title, a line about it (empty for none), and its control at the right.
     pub fn row(mut self, title: &str, about: &str, control: impl View + 'static) -> Self {
         let (title, about) = (title.to_string(), about.to_string());
-        self.rows.push(Setting { title, about, control: AnyView::new(control) });
+        self.rows.push(Setting { title, about, control: AnyView::new(control), reset: None });
+        self
+    }
+
+    /// The last row goes back to `default`: while `value` differs from it, a button left of
+    /// the control puts it back, and the page's "Reset all" counts the row.
+    pub fn resets<T: PartialEq + Clone + 'static>(self, value: Signal<T>, default: T) -> Self {
+        self.reset_by(Reset::of(value, default))
+    }
+
+    /// The last row differs from its default while `changed` holds, and `reset` puts it
+    /// back: for a row of more than one value.
+    pub fn resets_with(self, changed: impl Fn() -> bool + 'static, reset: impl Fn() + 'static) -> Self {
+        self.reset_by(Reset::new(changed, reset))
+    }
+
+    fn reset_by(mut self, reset: Reset) -> Self {
+        if let Some(last) = self.rows.last_mut() {
+            last.reset = Some(reset);
+        }
         self
     }
 
@@ -159,6 +182,34 @@ fn acts(line: Div, f: impl Fn() + Clone + 'static) -> Div {
     base::acts(line, f)
 }
 
+/// The control of a row at the right, after the button that resets it while it differs.
+fn control(title: &str, control: AnyView, reset: Option<Reset>) -> Div {
+    let at = div().shrink(0.0);
+    let Some(reset) = reset else { return at.child(control) };
+    let changed = reset.changed;
+    let back = icon_button(icons::REFRESH_CW, "").label(format!("Reset {title}"));
+    let back = div().display(move || shown(changed.get())).child(back.on_click(move || reset.reset()));
+    at.align_items(Align::Center).gap(4.0).child(back).child(control)
+}
+
+/// A page's "Reset all", shown while one of the rows a search keeps differs; none for a
+/// page of no row that resets.
+fn reset_all(page: &SettingsPage, at: usize, model: &Model) -> Option<Div> {
+    let rows = (page.groups.iter().enumerate()).flat_map(|(g, group)| {
+        let kept = &model.rows[at][g];
+        group.rows.iter().zip(kept).filter_map(|(row, kept)| Some((*kept, row.reset.clone()?)))
+    });
+    let rows: Vec<_> = rows.collect();
+    if rows.is_empty() {
+        return None;
+    }
+    let (any, all) = base::reset_all(rows);
+    let on = model.shown;
+    let all =
+        button("Reset all").icon(icons::REFRESH_CW).variant(Variant::Ghost).size(Size::Sm).on_click(all);
+    Some(div().display(move || shown(on.get() == at && any.get())).child(all))
+}
+
 /// The search field of the column, `width` wide.
 fn search(query: Signal<String>, width: f32) -> Input {
     input(query).placeholder("Search settings…").icon(icons::SEARCH).width(width)
@@ -173,6 +224,8 @@ impl View for Settings {
             .collect();
         let query = self.query.unwrap_or_else(|| signal(String::new()));
         let model = Model::new(&texts, self.current, query);
+        let resets: Vec<_> =
+            self.pages.iter().enumerate().map(|(i, page)| reset_all(page, i, &model)).collect();
         let whole = row().grow(1.0).min_height(0.0).bg(token::CANVAS).text_color(token::TEXT);
         let whole = whole.text_size(size::TEXT_MD.size);
         let whole =
@@ -180,11 +233,11 @@ impl View for Settings {
                 true => whole.child(cards::nav(&self.pages, &model, self.query)).child(cards::page(
                     self.pages,
                     &model,
-                    self.header,
+                    resets.into_iter().flatten().map(AnyView::new).chain(self.header).collect(),
                 )),
                 false => whole
                     .child(rules::nav(&self.pages, &model, self.query, self.hint))
-                    .child(rules::page(self.pages, &model, self.header)),
+                    .child(rules::page(self.pages, &model, resets, self.header)),
             };
         whole.mount(cx)
     }

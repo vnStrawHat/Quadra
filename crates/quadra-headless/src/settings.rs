@@ -8,7 +8,7 @@ use std::cell::OnceCell;
 use std::rc::Rc;
 
 use quadra_layout::Display;
-use quadra_reactive::{Memo, Signal, memo, signal};
+use quadra_reactive::{Memo, Signal, batch, memo, signal, untrack};
 use quadra_text::fold_diacritics;
 use quadra_tree::{Handle, NodeId, SemanticAction};
 use quadra_view::{Div, NodeRef};
@@ -127,4 +127,43 @@ pub fn opens(line: Div, open: Signal<bool>) -> Div {
         }
         true
     })
+}
+
+/// How a row goes back to its default: whether it differs from it, and what puts it back.
+#[derive(Clone)]
+pub struct Reset {
+    pub changed: Memo<bool>,
+    reset: Rc<dyn Fn()>,
+}
+
+impl Reset {
+    /// Differs while `changed` holds; `reset` puts it back.
+    pub fn new(changed: impl Fn() -> bool + 'static, reset: impl Fn() + 'static) -> Reset {
+        Reset { changed: memo(changed), reset: Rc::new(reset) }
+    }
+
+    /// A value and its default.
+    pub fn of<T: PartialEq + Clone + 'static>(value: Signal<T>, default: T) -> Reset {
+        let back = default.clone();
+        Reset::new(move || value.with(|now| *now != default), move || value.set(back.clone()))
+    }
+
+    /// Puts the row back to its default.
+    pub fn reset(&self) {
+        (self.reset)()
+    }
+}
+
+/// Of rows, each shown while its memo holds (what a search keeps): whether one of those
+/// shown differs from its default, and what resets those, leaving the others.
+pub fn reset_all(rows: Vec<(Memo<bool>, Reset)>) -> (Memo<bool>, impl Fn() + Clone + 'static) {
+    let rows = Rc::new(rows);
+    let shown_changed = |(kept, reset): &(Memo<bool>, Reset)| kept.get() && reset.changed.get();
+    let any = rows.clone();
+    let any = memo(move || any.iter().any(shown_changed));
+    let all = move || {
+        let changed: Vec<_> = rows.iter().filter(|row| untrack(|| shown_changed(row))).collect();
+        batch(|| changed.into_iter().for_each(|(_, reset)| reset.reset()));
+    };
+    (any, all)
 }

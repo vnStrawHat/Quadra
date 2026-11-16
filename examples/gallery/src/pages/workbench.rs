@@ -146,31 +146,36 @@ pub fn settings_page() -> Div {
             "Keep collapsed controls expanded and reachable from the keyboard, for screen readers.",
             switch(accessible),
         )
+        .resets(accessible, false)
         .row(
             "When Closing With No Tabs",
             "What closing the active item does when no tab is open.",
             select(["Platform Default", "Close Window", "Keep Window Open"], closing).width(220.0),
         )
+        .resets(closing, 0)
         .row(
             "On Last Window Closed",
             "What happens when the last window is closed.",
             select(["Platform Default", "Quit App"], quit).width(220.0),
-        );
-    let security = SettingsGroup::new("Security").row(
-        "Trust All Projects",
-        "Run project tasks and language servers without asking first.",
-        switch(trust),
-    );
-    let theme = SettingsGroup::new("Theme").row(
-        "Theme Mode",
-        "Follow the system, or always use the light or the dark theme.",
-        segmented(["Light", "Dark", "System"], mode),
-    );
-    let cursor = SettingsGroup::new("Cursor").row(
-        "Cursor Blink",
-        "Blink the text cursor while the editor has focus.",
-        switch(blink),
-    );
+        )
+        .resets(quit, 0);
+    let security = SettingsGroup::new("Security")
+        .row(
+            "Trust All Projects",
+            "Run project tasks and language servers without asking first.",
+            switch(trust),
+        )
+        .resets(trust, true);
+    let theme = SettingsGroup::new("Theme")
+        .row(
+            "Theme Mode",
+            "Follow the system, or always use the light or the dark theme.",
+            segmented(["Light", "Dark", "System"], mode),
+        )
+        .resets(mode, 2);
+    let cursor = SettingsGroup::new("Cursor")
+        .row("Cursor Blink", "Blink the text cursor while the editor has focus.", switch(blink))
+        .resets(blink, true);
     let json = move || {
         let mode = ["light", "dark", "system"][mode.get()];
         let (accessible, trust, blink) = (accessible.get(), trust.get(), blink.get());
@@ -234,7 +239,10 @@ fn groups() -> Div {
             "Size of all text of the interface, in px.",
             number_input(font).range(10.0, 24.0).stepper(),
         )
+        .resets(font, 16.0)
         .row("Show FPS monitor", "Frame times and dropped frames in the corner.", switch(fps))
-        .row("Vertical tabs", "Tabs in a list at the left instead of a strip above.", switch(vertical));
+        .resets(fps, false)
+        .row("Vertical tabs", "Tabs in a list at the left instead of a strip above.", switch(vertical))
+        .resets(vertical, false);
     column().gap(24.0).width(640.0).child(settings_group(theme_group)).child(settings_group(interface))
 }

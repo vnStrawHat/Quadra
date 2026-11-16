@@ -188,3 +188,56 @@ fn a_group_of_settings_stands_on_its_own_in_a_page() {
     h.frame();
     assert!(fps.get_untracked());
 }
+
+/// Whether a button of that name is shown.
+fn has_button(h: &Harness, name: &str) -> bool {
+    !h.query(|n| n.semantics.role == Role::Button && n.semantics.name == name).is_empty()
+}
+
+#[test]
+fn a_changed_row_goes_back_to_its_default_alone_or_with_its_page() {
+    for cards in [false, true] {
+        let (autosave, size, query) = (signal(false), signal(14.0f64), signal(String::new()));
+        let mut h = Harness::new();
+        h.tree.set_theme(Rc::new(dark().theme()));
+        h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+        h.mount(move || {
+            let group = SettingsGroup::new("General")
+                .row("Autosave", "", quadra_design::switch(autosave))
+                .resets(autosave, false)
+                .row("Font Size", "", div().size(20.0, 20.0))
+                .resets(size, 14.0)
+                .wide(div().size(20.0, 20.0));
+            let all = settings(signal(0)).page(SettingsPage::new("Editor").group(group)).search(query);
+            quadra_design::root().child(if cards { all.cards() } else { all })
+        });
+        settle(&mut h);
+        // At its default a row has no reset, and the page none.
+        assert!(!has_button(&h, "Reset Autosave") && !has_button(&h, "Reset all"));
+
+        h.get_by_role(Role::Switch, "").click();
+        settle(&mut h);
+        assert!(has_button(&h, "Reset Autosave") && !has_button(&h, "Reset Font Size"));
+        assert!(has_button(&h, "Reset all"));
+        h.get_by_role(Role::Button, "Reset Autosave").click();
+        settle(&mut h);
+        assert!(
+            !autosave.get_untracked() && !has_button(&h, "Reset Autosave") && !has_button(&h, "Reset all")
+        );
+
+        // Reset all puts back the rows a search keeps, and leaves the others.
+        autosave.set(true);
+        size.set(20.0);
+        query.set("font".to_string());
+        settle(&mut h);
+        h.get_by_role(Role::Button, "Reset all").click();
+        settle(&mut h);
+        assert_eq!((autosave.get_untracked(), size.get_untracked()), (true, 14.0), "cards: {cards}");
+        assert!(!has_button(&h, "Reset all"));
+        query.set(String::new());
+        settle(&mut h);
+        h.get_by_role(Role::Button, "Reset all").click();
+        settle(&mut h);
+        assert!(!autosave.get_untracked() && !has_button(&h, "Reset all"));
+    }
+}

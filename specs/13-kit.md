@@ -440,6 +440,17 @@ As built so far:
     click on the row also opens them. A click on a group chooses its page and scrolls the
     group's header to the top of the page.
   - `.hint(keys, does)` is a key hint under the column (rules).
+  - A row can go back to its default: `.resets(value, default)` after `.row(..)`, for a
+    `Signal<T>` of a `T: PartialEq + Clone`, or `.resets_with(changed, reset)` for anything
+    else (a row of two controls). While the row differs from its default an icon button shows
+    left of its control (`icons::REFRESH_CW`, ghost, small; to a reader `Reset <title>`),
+    and a click puts the default back; at its default the button is not displayed and the row
+    looks as it does without it. While any row of the page that shows (of those a search
+    keeps) differs, a button "Reset all" shows at the page's header (cards: at the right of
+    its title, before the header views; rules: at the right of the page's title), and it
+    resets those rows, the others of the page are left as they are. A row with no reset is
+    never counted: data that is no setting (a password, a list of hosts) is not given one. The
+    rows of `settings_group(group)` alone reset too; it has no "Reset all".
   - The rows of the column take the focus (Tab), and Enter and Space do what a click does
     (key context `action::CONTROL`). To a reader: a tree of items, selected, expanded or
     collapsed (it can expand and collapse them); the page's title is a heading and each row

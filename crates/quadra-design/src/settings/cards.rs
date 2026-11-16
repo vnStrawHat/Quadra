@@ -91,8 +91,8 @@ fn setting(row_: Setting, kept: Memo<bool>) -> Div {
     if !row_.about.is_empty() {
         words = words.child(text(row_.about).color(token::TEXT_2));
     }
-    let line = line.role(Role::Group).label(row_.title);
-    line.child(words).child(div().shrink(0.0).child(row_.control))
+    let control = super::control(&row_.title, row_.control, row_.reset);
+    line.role(Role::Group).label(row_.title).child(words).child(control)
 }
 
 /// A group: its title and a line about it, muted, over an outlined card of its rows; shown

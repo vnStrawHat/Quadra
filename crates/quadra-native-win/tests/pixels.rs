@@ -234,3 +234,17 @@ fn what_a_frame_cost_the_gpu_comes_back_without_waiting() {
     let gpu = r.stats().gpu.expect("the first frame's time");
     assert!(gpu > std::time::Duration::ZERO && gpu < std::time::Duration::from_secs(1), "{gpu:?}");
 }
+
+#[test]
+fn an_empty_instance_draws_nothing() {
+    // The room a node keeps in its layer is filled with them (specs/07, "Display lists").
+    let mut r = D3d11Renderer::new(true).unwrap();
+    let mut scene = Scene::new();
+    let root = scene.add_layer();
+    scene.set_roots(&[root]);
+    let empty = Instance::default();
+    scene.layer_mut(root).set(&[empty, quad(10.0, 10.0, 20.0, 20.0, RED), empty, empty]);
+    let pixels = draw(&mut r, &mut scene);
+    assert_eq!((at(&pixels, 0, 0), at(&pixels, 1, 1), at(&pixels, 20, 20)), (0xFFFFFF, 0xFFFFFF, RED));
+    assert!(pixels.rgba.chunks(4).filter(|p| p[..3] != [255, 255, 255]).count() == 400); // the quad's 20 by 20
+}

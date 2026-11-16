@@ -108,7 +108,8 @@ impl Painter<'_> {
                 paint_own(self.nodes, i, self.layout, rect, how, self.fonts, self.scratch);
                 self.stats.nodes_painted += 1;
             }
-            let to = from + room(self.nodes[i].own, self.scratch.len() as u32 - from, culled);
+            let kept_none = culled || self.hidden(i);
+            let to = from + room(self.nodes[i].own, self.scratch.len() as u32 - from, kept_none);
             self.scratch.resize(to as usize, Instance::default()); // a default instance draws nothing
             self.nodes[i].fresh = (from, to);
             self.stats.instances_written += to - from;
@@ -214,9 +215,12 @@ impl Painter<'_> {
 }
 
 /// The instances a node keeps in its layer when it paints `count` and kept `own` before
-/// (specs/07, "A node keeps its room"): never fewer than before, but outside the band none.
-fn room(own: u32, count: u32, culled: bool) -> u32 {
-    if culled { count } else { count.max(own) }
+/// (specs/07, "A node keeps its room"): never fewer than before, but none outside the band or
+/// while hidden.
+// ponytail: room never shrinks while shown, so a node uploads its longest ever; give it back
+// when a node's room is many times what it paints, if such nodes ever show.
+fn room(own: u32, count: u32, kept_none: bool) -> u32 {
+    if kept_none { count } else { count.max(own) }
 }
 
 impl Tree {

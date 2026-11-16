@@ -169,7 +169,8 @@ Repainting a layer after a change:
    **A node keeps its room**: one that paints fewer instances than it holds fills the rest
    with empty ones (no size, nothing drawn). A number whose digits come and go (`9.99`,
    `10.00`) rebuilds its layer when it first reaches its longest, and overwrites in place
-   after. A node outside the band keeps no room: what is culled emits nothing.
+   after. A node outside the band or hidden keeps no room: it emits nothing. Room never shrinks
+   while a node shows: what it uploads follows its longest.
 4. **Different count** (a node that outgrew its room, a new or removed node): the layer's
    vector is rebuilt by copying. Clean subtrees are copied as
    whole ranges without being visited, and their relative ranges stay valid. Only nodes on the

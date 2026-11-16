@@ -205,6 +205,43 @@ As built so far:
   none is set: a role of the theme), else left empty in its hairline border. Text that is no
   colour is not accepted (`INVALID`) and the swatch shows the fallback. `.placeholder(..)`
   (its name to a reader without a label), `.label(..)`, `.width(..)`.
+- **`color_picker(value)`** (`color/picker.rs`) chooses a colour in a popover; `value` is a
+  `String` as in `color_input`: `#rrggbb`, or empty for "the default" (the theme's colour of a
+  setting, the tag of a host's group). The opener is a field of 120 px (`.width(..)`) the
+  look of the date picker's: a 14 px swatch of the colour and its text, or while empty the
+  swatch of `.fallback(paint)` and the placeholder in `text_3` (`.placeholder(..)`,
+  "Default" unless told). A button to a reader, named by `.label(..)` with the colour as its
+  value, or by the colour (the placeholder while empty); `.test_id(..)`. A click opens the
+  popover, its focus in the area; opening and closing write nothing. In it, 208 px wide:
+  - the area of saturation (left to right) and brightness (top to bottom) at the hue, a
+    knob where the colour is; a press or a drag sets both, the arrows step them by 1 %
+    (a slider to a reader, "Saturation and brightness", its value the two in per cent);
+  - the hue, a slider over 0 to 360 on a bar of the hues (`quadra_headless::slider`: keys,
+    drag and a reader's value as the kit's slider);
+  - `color_input(value)` for the hex, with the same fallback: typed text that is a colour
+    moves the area and the hue, empty is the default;
+  - the swatches of `.presets([(name, Color)])` in a row that wraps, each a button named by
+    its name; with a fallback they are led by a "Default" swatch of it that empties the
+    value. A swatch chosen writes its colour and closes the popover.
+  What is written is `#rrggbb` in lower case. The picker keeps the hue, saturation and
+  brightness it moves while it is open, so a drag through grey or black keeps its hue; it
+  takes them again from `value` only when that changes to a colour it did not write. A
+  preset is a colour, not a role: a caller whose presets are roles of the theme (1Term's
+  host tags) gives `KitTheme::color(role)` for each. 1Term's settings colours (empty: the
+  theme's) and its hosts' colour tags are its two callers.
+- **`file_picker(value, browse)` and `folder_picker(value, browse)`** (`path_picker.rs`) are a
+  path in an input (240 px, `.width(..)`; `.fill()` the room left in its row) and a secondary
+  button "Browse…"
+  after it, 8 apart. The path can be typed; the button runs `browse(current)`, which asks
+  the system's dialog and answers the path chosen or `None` (given up: the value stays).
+  The kit does not ask the OS itself: `quadra-shell`'s dialogs are the app's, and a kit
+  that depends on it would carry the shell's own dependencies. An app passes
+  `move |_| dialogs.open_files(&FileDialog::new("Identity file")).into_iter().next()`
+  (`pick_folder` for a folder); tests pass `FakeShell`'s, the gallery a closure that
+  answers a sample path, so no test or picture opens a real dialog. They differ by the
+  button's icon (`file`, `folder`) and its name to a reader ("Browse for a file", "for a
+  folder"). `.placeholder(..)`, `.label(..)` (the input's), `.width(..)`, `.test_id(..)` (the
+  input's).
 - **`checkbox(checked)` and `switch(on)`** take the signal that holds their value and write
   it: by a click on the control or its label, by `Confirm`, or when a reader toggles them.
   `.label(..)`, `.disabled(..)`, `.test_id(..)`. The checkbox is a box of 16 px with a
@@ -598,7 +635,9 @@ it opens the focus goes to the first thing in it that can have it (or to its pan
 stays inside, Escape is the action `Cancel` (key context `action::POPUP`), and a press
 outside closes it. A press on its opener is not a press outside (`overlay(..).opener(..)`):
 the button that opened a menu closes it by its own click and does not open it again. When
-the popup closes the focus goes back to what had it.
+the popup closes the focus goes back to what had it. Every popup is on one plane,
+`popup::surface(level)` (behaviour/15, "Elevation"): the `overlay_bg` fill, a 1 px `line`
+border, `radius_sm` (square along an edge of the window) and the shadow of its level.
 
 - `popover(open, &opener, || content)` is the bare popup, below its opener.
 - `menu(open, &opener, || items)`: rows of `MenuItem` (`.icon(..)`, `.keys("Ctrl-C")`,
@@ -621,7 +660,8 @@ the popup closes the focus goes back to what had it.
   the default variant) over a popover, with the content 12 px in from its edge.
 - More of the menu. `MenuItem::heading(name)` names the group of rows under it: 20 px,
   muted, never chosen. `.submenu(items)` makes a row one that opens a menu of those rows
-  beside itself, at its right and over it by 2 px, with a chevron at its end: under the
+  beside itself, against the menu's right edge (its left where only that fits) and never
+  over the menu, its first row level with this one, with a chevron at its end: under the
   pointer, by a click or Enter, or by the right arrow (`MoveInto`); the pointer over
   another row closes it, as does the left arrow in it (`MoveOut`), and a choice in it ends
   the menus together. A menu taller than 450 px shows that much and scrolls; the highlight

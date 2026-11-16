@@ -165,7 +165,7 @@ impl Notices {
             .child(div().padding_top(3.0).child(mark(notice.tone, false)))
             .child(words)
             .child(close);
-        let card = surface(2).bg(token::PANEL).width(448.0).padding(12.0).gap(8.0);
+        let card = surface(2).width(448.0).padding(12.0).gap(8.0);
         let card = me.held(card, id).role(Role::Group).label(notice.title).child(top);
         if notice.actions.is_empty() {
             return card;
@@ -187,8 +187,8 @@ impl Notices {
         let Some(notice) = self.find(id) else { return div() };
         let line = row().align_items(Align::Center).gap(8.0).padding_x(10.0).padding_y(6.0);
         let line = line.child(mark(notice.tone, true)).child(text(notice.title.clone()));
-        let line = surface(2).bg(token::PANEL).role(Role::Group).label(notice.title).child(line);
-        self.held(line.radius(token::RADIUS_XL), id)
+        let line = surface(2).role(Role::Group).label(notice.title).child(line);
+        self.held(line, id)
     }
 
     /// What lasts a while waits while the pointer is on it.

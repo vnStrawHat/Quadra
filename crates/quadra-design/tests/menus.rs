@@ -123,12 +123,20 @@ fn a_row_opens_a_menu_beside_itself_for_the_pointer_and_the_arrows() {
     p.open.set(true);
     p.settle();
     assert!(p.menus() == 1 && !p.h.has_text("Mail"));
-    // The pointer over the row opens its menu, to the right of the row and over it by 2 px.
+    // The pointer over the row opens its menu, against the right edge of the menu (not over
+    // it), its first row level with this one.
     let row = p.rect("Share");
     p.h.pointer(PointerInput::Move, row.center().x, row.center().y);
     p.settle();
+    let outer = p.h.tree.window_rect(p.h.tree.overlays().next().unwrap());
     let inner = p.h.tree.window_rect(p.h.tree.overlays().last().unwrap());
-    assert_eq!((p.menus(), inner.x, inner.y), (2, row.right() - 2.0, row.y));
+    assert_eq!((p.menus(), inner.x, inner.y), (2, outer.right(), row.y - 5.0));
+    assert!(!overlap(outer, inner), "{inner:?} over {outer:?}");
+    assert_eq!(p.rect("Mail").y, row.y);
+    // On its way there the pointer crosses the menu's edge, and the menu stays.
+    p.h.pointer(PointerInput::Move, outer.right() - 1.0, row.center().y);
+    p.settle();
+    assert_eq!(p.menus(), 2);
     // Over another row it closes; a choice in it ends both menus.
     let open_row = p.rect("Open").center();
     p.h.pointer(PointerInput::Move, open_row.x, open_row.y);
@@ -178,4 +186,33 @@ fn a_long_menu_scrolls_and_a_heading_is_not_chosen() {
     assert!(last.bottom() <= panel.bottom() && last.y >= panel.y, "{last:?} in {panel:?}");
     p.key(Key::Enter);
     assert_eq!(p.done.get_untracked(), ["row 39"]);
+}
+
+fn overlap(a: quadra_prim::Rect, b: quadra_prim::Rect) -> bool {
+    a.x < b.right() && b.x < a.right() && a.y < b.bottom() && b.y < a.bottom()
+}
+
+#[test]
+fn a_menu_at_the_right_edge_opens_its_rows_menu_on_its_left() {
+    let (open, at) = (signal(true), NodeRef::new());
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let items = || vec![MenuItem::new("Share").submenu([MenuItem::new("Mail"), MenuItem::new("Link")])];
+        let opener = div().node_ref(&at).child(button("File"));
+        let bar = quadra_view::row().justify(quadra_layout::Justify::End).child(opener);
+        quadra_design::root().child(bar).child(menu(open, &at, items))
+    });
+    h.frame();
+    while h.frame_if_needed().is_some() {}
+    let share = h.get_by_role(Role::MenuItem, "Share").node();
+    let row = h.tree.window_rect(share);
+    h.pointer(PointerInput::Move, row.center().x, row.center().y);
+    h.frame();
+    while h.frame_if_needed().is_some() {}
+    let outer = h.tree.window_rect(h.tree.overlays().next().unwrap());
+    let inner = h.tree.window_rect(h.tree.overlays().last().unwrap());
+    assert_eq!(h.tree.overlays().count(), 2);
+    assert_eq!((inner.right(), inner.y), (outer.x, row.y - 5.0));
+    assert!(!overlap(outer, inner), "{inner:?} over {outer:?}");
 }

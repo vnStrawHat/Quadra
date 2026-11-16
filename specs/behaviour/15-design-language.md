@@ -46,7 +46,7 @@ The palette keeps the kit's role names; each role is one token of the One themes
 | `canvas` | editor, terminal, toolbar, active tab, input fields | `#23272E` | `#FAFAFA` |
 | `panel` | side panels, surfaces | `#1E2227` | `#EBEBEC` |
 | `chrome` | title bar, the window behind empty panes | `#1A1D22` | `#DCDCDD` |
-| `overlay_bg` | menus, tooltips, popovers, pickers, dialogs, toasts: lifted off every plane | `#2A2F37` | `#FFFFFF` |
+| `overlay_bg` | the plane of every overlay: menus, tooltips, popovers, pickers, dialogs, toasts (the One themes give it the `panel`'s colour; another theme may set it apart) | `#1E2227` | `#EBEBEC` |
 | `raised` | filled controls (element background) | `#404754` | `#EBEBEC` |
 | `panel_hover`, `raised_hover` | ghost and filled hover | `#ABB2BF14` | `#DFDFE0` |
 | `press` | pressed, selected rows, keyboard-highlighted rows | `#ABB2BF29` | `#CACACA` |
@@ -165,8 +165,8 @@ diff tints) and the terminal's 16 ANSI colors.
   (`ui_text(.md)` is `text_sm`), so controls stay 14 while plain text is 16.
 - **Icons:** Lucide outlines on a 16 grid, sizes 10, 12, 14 (default in chrome), 16.
 - **Radii:** `radius_sm` 4 (checkbox, key), `radius_md` 6 (buttons, list rows, chips,
-  tooltips' rows), `radius_lg` 6 (inputs, segmented groups, code blocks), `radius_xl` 10
-  (every overlay: menus, tooltips, popovers, pickers, dialogs, toasts). Tabs, panels and
+  tooltips' rows, every overlay: menus, tooltips, popovers, pickers, dialogs, toasts),
+  `radius_lg` 6 (inputs, segmented groups, code blocks), `radius_xl` 10. Tabs, panels and
   tables are square.
 - **Chrome:**
 
@@ -183,10 +183,11 @@ diff tints) and the terminal's 16 ANSI colors.
 
 ### Elevation
 
-Overlays are `overlay_bg` with a 1 px `line_strong` border and `radius_xl`. Lists to choose
-from (menus, context menus, selects, combobox lists, the command palette) are the menu plane
-instead: `panel` with a 1 px `line` border and `radius_sm`, at level 1, the look of a
-terminal's context menu. On a dark plane a light shadow does not show, so dark themes cast
+Every overlay is the menu plane: menus, context menus, selects, combobox lists, the command
+palette, tooltips, popovers, hover cards, the date picker's calendar, dialogs, drawers,
+notifications and toasts are `overlay_bg` with a 1 px `line` border and `radius_sm`, at their
+level (1 or 2), the look of a terminal's context menu; one along an edge of the window (a
+drawer) has square corners. On a dark plane a light shadow does not show, so dark themes cast
 deeper ones.
 
 | Level | Used by | Shadows (x, y, blur, black alpha), light | dark |
@@ -293,6 +294,19 @@ same rule: no backdrop, an outside click closes them.
   puts words in `text_2` before the text (`ssh`), `.mono()` the mono face, `.small()` 12 px text,
   `.fill()` the room left in a row; `.reveal()` gives a password a 22 eye at its end (Show password,
   pressed while the characters show; emptied, it hides again; copy and cut still do nothing).
+- **Color picker:** the opener is the date picker's field (1 px `line_strong`, `radius_md`,
+  28 high, padding 8, hover `panel_hover`), 120 wide: a 14 swatch (`radius_sm`, 1 px
+  `line_strong`) and the hex, or the placeholder in `text_3`. The popover (the overlay plane,
+  padding 12, gap 12, 208 inside): the area 208 × 140, `radius_md`, the hue under a white
+  ramp (left to right, white to clear) and a black one (top to bottom, clear to black); its
+  knob a 12 ring, 2 px white inside 1 px of black at 40 %, its middle at the colour. The hue
+  bar is 208 × 12, radius 6, the hues round from red; its knob the same ring, 14, filled with
+  the hue. Then the hex `color_input`, its width the area's, and the swatches 20 × 20,
+  `radius_sm`, 1 px `line_strong`, 6 apart in rows; the chosen one ringed in `border_focused`
+  (its border and the outline over it), the "Default" one filled with the fallback.
+- **File and folder picker:** a text input with a secondary lg button "Browse…" (32, the
+  input's height) 8 after it,
+  a 14 `file` or `folder` icon before its label.
 - **Key input:** the frame of a text input, 160 wide and 32 high (by text), a pointer
   cursor; the keys in `text`, centred; "Not bound" in `text_3`; "Press keys…" in `text_2`
   while it records; focused: `border_focused`.
@@ -311,7 +325,10 @@ same rule: no backdrop, an outside click closes them.
   above and below, edge to edge. Section header: 20 tall, 12 px `text_2`. Check marks
   `accent_text`, 14 px in the icon column (`checked` on a `MenuItem`). A submenu (`items` on a
   `MenuItem`): a 12 px `chevron_right` at the row's right end; it opens on hover, click or
-  right arrow, left arrow closes it; submenus overlap their row by 2 px. A long menu is capped
+  right arrow, left arrow closes it; a submenu stands against the menu's right edge (its left
+  edge where only that fits), never over the menu, its first row level with the row that
+  opened it; in a window too narrow for either side the window's edge keeps it in, over the
+  menu. A long menu is capped
   at half the window or 450 px and scrolls. A labelled separator is rule, 12 px `text_2`
   label, rule; a `heading` row is a section header. A row may lead with an 8 px color square
   (`swatch`), or a 7 px dot of a role in its icon column (`.dot(..)`: a state), and say a few
@@ -342,7 +359,7 @@ same rule: no backdrop, an outside click closes them.
 - **Dialog:** level 2, 440 wide, header padding 12 / 8 / 4, headline 16 semibold, body 14
   `text_2`, footer padding 8 with a top `line`, buttons right-aligned, gap 4.
 - **Notifications:** stacked at the bottom right above the status bar, 12 from the edges,
-  newest at the bottom, gap 8; each 448 wide, level 2 on `panel`, padding 12: a 16 status
+  newest at the bottom, gap 8; each 448 wide, the overlay plane at level 2, padding 12: a 16 status
   icon, the title over a `text_2` body and an optional 12 px `text_2` note (where it came from,
   `staging-db-01 · OSC 9`), a 22 close button (Dismiss notification), optional action buttons (sm,
   right-aligned, gap 4; the primary one tinted) whose click also closes the card. They stay

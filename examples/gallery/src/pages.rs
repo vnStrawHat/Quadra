@@ -18,5 +18,6 @@ pub mod motion;
 pub mod navigation;
 pub mod overlays;
 pub mod overview;
+pub mod pickers;
 pub mod rich;
 pub mod workbench;

@@ -31,10 +31,11 @@ const SIZE: (f32, f32) = (1200.0, 800.0);
 /// but a hover for the tooltip and the hover card, a right click on the page for the context
 /// menu, for the dock a tab torn off and held over the bottom edge of its pane, and for the
 /// editor a click in its text and Ctrl-H.
-const OPENERS: [(&str, &str); 15] = [
+const OPENERS: [(&str, &str); 16] = [
     ("menu", "mn-file"),
     ("select", "sel-ns"),
     ("date-picker", "dp-date"),
+    ("color-picker", "cp-accent"),
     ("dialog", "dl-open"),
     ("confirm", "cf-open"),
     ("toast", "to-info"),

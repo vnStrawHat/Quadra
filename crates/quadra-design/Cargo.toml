@@ -27,5 +27,6 @@ serde_json = "1"
 
 [dev-dependencies]
 quadra = { path = "../quadra" }
+quadra-shell = { path = "../quadra-shell" }
 quadra-testing = { path = "../quadra-testing" }
 quadra-text = { path = "../quadra-text" }

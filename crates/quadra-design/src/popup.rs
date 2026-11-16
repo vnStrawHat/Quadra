@@ -13,18 +13,12 @@ pub(crate) use quadra_headless::popup::{Shown, hang};
 
 use crate::token;
 
-/// The plane of an overlay: its own fill, a hairline border, the largest radius, and the
-/// shadow of its level above the window (1: menus and tooltips; 2: dialogs).
+/// The plane of every overlay, the menu plane: the overlay's fill, a quiet border, small
+/// corners, and the shadow of its level above the window (1: menus, tooltips, popovers;
+/// 2: dialogs, notifications).
 pub(crate) fn surface(level: u8) -> Div {
-    let plane = column().bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE_STRONG);
-    plane.radius(token::RADIUS_XL).elevation(level)
-}
-
-/// The plane of a list to choose from (menus, selects, the command palette): the panel's fill,
-/// a quiet border and small corners.
-pub(crate) fn menu_surface() -> Div {
-    let plane = column().bg(token::PANEL).border(1.0).border_color(token::LINE);
-    plane.radius(token::RADIUS_SM).elevation(1)
+    let plane = column().bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE);
+    plane.radius(token::RADIUS_SM).elevation(level)
 }
 
 /// What the border of the plane adds to the width of what it holds: a popup that is so wide
@@ -38,24 +32,23 @@ pub(crate) struct Stand {
     place: Place,
     level: u8,
     along: Option<Edge>,
-    menu: bool,
 }
 
 impl From<(Place, u8)> for Stand {
     fn from((place, level): (Place, u8)) -> Stand {
-        Stand { place, level, along: None, menu: false }
+        Stand { place, level, along: None }
     }
 }
 
 impl From<Edge> for Stand {
     fn from(edge: Edge) -> Stand {
-        Stand { place: base::Stand::from(edge).place, level: 2, along: Some(edge), menu: false }
+        Stand { place: base::Stand::from(edge).place, level: 2, along: Some(edge) }
     }
 }
 
-/// A list to choose from at `place`, on the menu plane.
+/// A list to choose from at `place`, at the level of menus.
 pub(crate) fn listing(place: Place) -> Stand {
-    Stand { place, level: 1, along: None, menu: true }
+    Stand { place, level: 1, along: None }
 }
 
 /// Below `opener`, 4 px off it.
@@ -85,11 +78,11 @@ where
     V: View + 'static,
     F: Fn() -> V + 'static,
 {
-    let Stand { place, level, along, menu } = stand.into();
-    let plane = move || match (menu, along) {
-        (true, _) => menu_surface(),
-        (_, Some(_)) => surface(level).radius(0.0),
-        _ => surface(level),
+    let Stand { place, level, along } = stand.into();
+    // Along an edge of the window, its corners are square.
+    let plane = move || match along {
+        Some(_) => surface(level).radius(0.0),
+        None => surface(level),
     };
     base::popup(open, base::Stand { place, along }, opener, plane, content)
 }
@@ -102,5 +95,5 @@ pub(crate) fn open_now<V: View + 'static>(
     place: Place,
     content: impl FnOnce(Rc<dyn Fn()>) -> V,
 ) {
-    base::open_now(tree, owner, place, menu_surface, content)
+    base::open_now(tree, owner, place, || surface(1), content)
 }

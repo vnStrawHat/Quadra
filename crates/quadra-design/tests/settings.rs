@@ -241,3 +241,23 @@ fn a_changed_row_goes_back_to_its_default_alone_or_with_its_page() {
         assert!(!autosave.get_untracked() && !has_button(&h, "Reset all"));
     }
 }
+
+#[test]
+fn every_row_of_the_column_reaches_its_right_end() {
+    for cards in [false, true] {
+        let (mut h, _, _) = mounted(cards);
+        for name in ["Editor", "Long"] {
+            h.get_by_role(Role::TreeItem, name).act(SemanticAction::Expand);
+            settle(&mut h);
+        }
+        let tree = h.tree.semantic_tree();
+        let items: Vec<_> = tree.nodes.iter().filter(|n| n.semantics.role == Role::TreeItem).collect();
+        // The pages and the groups under them, each filled under the pointer as wide as the
+        // column holds it, whatever the length of its title.
+        assert_eq!(items.len(), 3 + 2 + 3, "cards: {cards}");
+        let end = items[0].bounds.right();
+        for n in &items {
+            assert_eq!(n.bounds.right(), end, "{:?}, cards: {cards}", n.semantics.name);
+        }
+    }
+}

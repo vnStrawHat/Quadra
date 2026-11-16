@@ -12,7 +12,7 @@ use quadra_view::{IntoProp, MountCx, Place, Prop, View, by_text, column, div, ro
 
 use crate::input::input;
 use crate::palette::{fuzzy_hits, marked};
-use crate::popup::menu_surface;
+use crate::popup::surface;
 use crate::{icons, token};
 
 /// The height of an option, and the most of the list that shows.
@@ -84,7 +84,7 @@ impl View for Combobox {
             let matches = found.matches;
             let row_px = by_text(ROW);
             let tall = move || Length::Px((matches.get().len() as f32 * row_px() + 8.0).min(MOST));
-            menu_surface().width(280.0).child(scroll(signal(0.0), rows).container(div().height(tall)))
+            surface(1).width(280.0).child(scroll(signal(0.0), rows).container(div().height(tall)))
         };
         let place =
             |anchor: &quadra_view::NodeRef| Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);

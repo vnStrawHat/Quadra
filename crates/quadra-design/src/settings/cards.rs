@@ -71,7 +71,8 @@ pub(super) fn nav(pages: &[SettingsPage], model: &Model, query: Option<Signal<St
             let row = line(&group.title, chosen).display(move || shown(shows.get()));
             under = under.child(acts(row, move || pick.go(i, Some(g), 0.0)).child(text(group.title.clone())));
         }
-        let under = div().padding_left(14.0).display(move || shown(open.get() && lists.get())).child(under);
+        let under =
+            column().padding_left(14.0).display(move || shown(open.get() && lists.get())).child(under);
         let item = column().display(move || shown(!searching.get() || page_kept.get()));
         list = list.child(item.child(head).child(under));
     }

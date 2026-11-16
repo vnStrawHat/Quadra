@@ -30,7 +30,7 @@ roles! {
     RAISED_HOVER = "raised_hover";
     /// Pressed, selected, and highlighted by the keyboard.
     PRESS = "press";
-    /// Menus, tooltips, popovers, dialogs, toasts.
+    /// Tooltips, popovers, dialogs, toasts: the panel's colour in every theme, as menus.
     OVERLAY_BG = "overlay_bg";
     /// Behind a modal dialog.
     SCRIM = "scrim";

@@ -118,8 +118,8 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static, focused: bool
 /// A month calendar in the page: `value` holds the chosen day, and a click on a day writes
 /// it.
 pub fn calendar(value: Signal<Date>) -> Div {
-    let page = month(value, || {}, false).bg(token::OVERLAY_BG).radius(token::RADIUS_XL);
-    page.border(1.0).border_color(token::LINE_STRONG).elevation(1).shrink(0.0)
+    let page = month(value, || {}, false).bg(token::OVERLAY_BG).radius(token::RADIUS_SM);
+    page.border(1.0).border_color(token::LINE).elevation(1).shrink(0.0)
 }
 
 pub struct DatePicker {

@@ -92,17 +92,23 @@ pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
         }
         height += ROW;
         let mut line = menu::Row::new(face(&item, marks), item.label.clone());
-        (line.line, line.disabled, line.checked, line.select) =
-            (Some(div().padding_x(4.0)), item.disabled, item.checked, item.select.clone());
+        let (mut wrap, beside) = (div().padding_x(4.0), NodeRef::new());
         if !item.items.is_empty() {
-            // Beside its row, over it by 2 px.
+            // Beside the menu's edge, not over it: on its right, or on its left where only that
+            // fits, its first row level with this one. It stands against a box as wide as the
+            // menu and 0 high (the pointer never finds it), 5 px above the row: the menu's
+            // border and the 4 px over its first row.
+            let edge = div().absolute().left(-1.0).right(-1.0).top(-5.0).height(0.0).node_ref(&beside);
+            wrap = wrap.child(edge);
             let inside = item.items.clone();
             line.inner = Some(Rc::new(move |at: &NodeRef, shown, ends| {
-                let place = Place::Beside(at.clone(), Side::Right, Along::Start, -2.0);
+                let place = Place::Beside(beside.clone(), Side::Right, Along::Start, 0.0);
                 let inside = inside.clone();
                 popup(shown, listing(place), Some(at.clone()), move || rows(inside.clone(), ends.clone()))
             }));
         }
+        (line.line, line.disabled, line.checked, line.select) =
+            (Some(wrap), item.disabled, item.checked, item.select.clone());
         lines.push(Line::Row(Box::new(line)));
     }
     let list = menu::rows(column().min_width(200.0 - EDGE).padding_y(4.0), lines, ends);

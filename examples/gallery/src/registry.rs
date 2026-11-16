@@ -5,7 +5,7 @@ use quadra_design::{dark, icons, light};
 
 use crate::pages::{
     actions, charts, choices, data, diagram, diff, display, editor, fields, image, layout, live, markdown,
-    math, motion, navigation, overlays, overview, rich, workbench,
+    math, motion, navigation, overlays, overview, pickers, rich, workbench,
 };
 use crate::shell::Gallery;
 
@@ -38,6 +38,8 @@ pub const PAGES: &[PageInfo] = &[
     info("number", "Number input", "Forms", icons::PLUS),
     info("key-input", "Key input", "Forms", icons::COMMAND),
     info("color-input", "Color input", "Forms", icons::PALETTE),
+    info("color-picker", "Color picker", "Forms", icons::PALETTE),
+    info("file-picker", "File and folder pickers", "Forms", icons::FOLDER),
     info("textarea", "Textarea", "Forms", icons::PENCIL),
     info("combobox", "Combobox", "Forms", icons::SEARCH),
     info("select", "Select", "Forms", icons::CHEVRON_DOWN),
@@ -121,6 +123,8 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "number" => fields::number_page(),
         "key-input" => fields::key_input_page(),
         "color-input" => fields::color_input_page(),
+        "color-picker" => pickers::color_picker_page(),
+        "file-picker" => pickers::file_picker_page(),
         "textarea" => fields::textarea_page(),
         "combobox" => fields::combobox_page(),
         "select" => fields::select_page(),

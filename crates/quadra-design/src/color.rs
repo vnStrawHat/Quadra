@@ -1,5 +1,11 @@
 //! The colour input of the kit (specs/13, `color_input`): the kit's input for `#rrggbb`, with
-//! a swatch of the colour typed before the text.
+//! a swatch of the colour typed before the text; and the colour picker (`picker`), which
+//! holds one in its popover.
+
+mod area;
+mod picker;
+
+pub use picker::{ColorPicker, color_picker};
 
 use quadra_prim::Color;
 use quadra_reactive::Signal;

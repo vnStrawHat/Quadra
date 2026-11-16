@@ -92,6 +92,8 @@ pub const TOGGLE_LEFT: &str =
 pub const TRASH_2: &str = r#"<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>"#;
 pub const TRIANGLE_ALERT: &str = r#"<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>"#;
 pub const TYPE: &str = r#"<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>"#;
+pub const UNDO: &str =
+    r#"<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>"#;
 pub const UPLOAD: &str = r#"<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>"#;
 pub const USER: &str =
     r#"<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>"#;
@@ -101,7 +103,7 @@ pub const WINDOW_MAXIMIZE: &str = r#"<rect width="14" height="14" x="5" y="5" rx
 pub const WINDOW_RESTORE: &str = r#"<rect width="12" height="12" x="4" y="8" rx="1"/><path d="M8 8V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-3"/>"#;
 
 /// Every icon, with the name it is known by: what a catalogue of them shows.
-pub const ALL: [(&str, &str); 89] = [
+pub const ALL: [(&str, &str); 90] = [
     ("app-window", APP_WINDOW),
     ("arrow-down", ARROW_DOWN),
     ("arrow-left", ARROW_LEFT),
@@ -185,6 +187,7 @@ pub const ALL: [(&str, &str); 89] = [
     ("trash-2", TRASH_2),
     ("triangle-alert", TRIANGLE_ALERT),
     ("type", TYPE),
+    ("undo", UNDO),
     ("upload", UPLOAD),
     ("user", USER),
     ("workflow", WORKFLOW),

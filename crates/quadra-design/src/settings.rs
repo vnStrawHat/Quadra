@@ -187,7 +187,7 @@ fn control(title: &str, control: AnyView, reset: Option<Reset>) -> Div {
     let at = div().shrink(0.0);
     let Some(reset) = reset else { return at.child(control) };
     let changed = reset.changed;
-    let back = icon_button(icons::REFRESH_CW, "").label(format!("Reset {title}"));
+    let back = icon_button(icons::UNDO, "").label(format!("Reset {title}"));
     let back = div().display(move || shown(changed.get())).child(back.on_click(move || reset.reset()));
     at.align_items(Align::Center).gap(4.0).child(back).child(control)
 }
@@ -205,8 +205,7 @@ fn reset_all(page: &SettingsPage, at: usize, model: &Model) -> Option<Div> {
     }
     let (any, all) = base::reset_all(rows);
     let on = model.shown;
-    let all =
-        button("Reset all").icon(icons::REFRESH_CW).variant(Variant::Ghost).size(Size::Sm).on_click(all);
+    let all = button("Reset all").icon(icons::UNDO).variant(Variant::Ghost).size(Size::Sm).on_click(all);
     Some(div().display(move || shown(on.get() == at && any.get())).child(all))
 }
 

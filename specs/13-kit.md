@@ -443,7 +443,7 @@ As built so far:
   - A row can go back to its default: `.resets(value, default)` after `.row(..)`, for a
     `Signal<T>` of a `T: PartialEq + Clone`, or `.resets_with(changed, reset)` for anything
     else (a row of two controls). While the row differs from its default an icon button shows
-    left of its control (`icons::REFRESH_CW`, ghost, small; to a reader `Reset <title>`),
+    left of its control (`icons::UNDO`, ghost, small; to a reader `Reset <title>`),
     and a click puts the default back; at its default the button is not displayed and the row
     looks as it does without it. While any row of the page that shows (of those a search
     keeps) differs, a button "Reset all" shows at the page's header (cards: at the right of

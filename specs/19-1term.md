@@ -100,6 +100,22 @@ shows the target (and the text when they differ), Open or Cancel; any other sche
 with no host after `//`, a control, space or direction character, a user or password in the
 address, or a target over 256 KiB is refused, with a card saying why.
 
+## Find
+
+`Ctrl+F` (the binding `find` of the Keybindings page; bound for the whole window, so the keys
+reach a shell only once unbound there) opens a find bar at the top right of the focused space,
+over its terminal, and puts the focus in its query; pressed again it gives the focus back to the
+query. The bar is the editor's in the kit's pieces: the query (`input`, placeholder and name
+"Find"), the switches `Aa` (case) and `W` (whole words) as toggled ghost buttons, the count in
+the third text colour ("3 of 12", "No results", nothing while the query is empty), Previous
+match, Next match and Close as icon buttons, on the overlay colour with a strong line, the
+middle radius and the first elevation. Typing finds at once (specs/18, "Find"); Enter and F3
+go to the next match, Shift+Enter and Shift+F3 to the one before, wrapping; Escape or Close
+ends finding and gives the focus back to the terminal. Closed, the bar keeps its query: opened
+again, it finds it again. Open, it stays open with its query when the space's view is built
+again (a tab shown again, the tabs moved to a strip): it is built from the session's finding
+(`Session::find_query`).
+
 ## Completion
 
 A space completes the command being typed (specs/20, the engine; the app makes one `Engine` in
@@ -189,9 +205,12 @@ Security & lock (Lock now while a password is set; and whether programs may read
 Logging (log new local shells, log new SSH spaces, both off; the folder, typed or chosen in the
 system's dialog, empty for `session-logs` in the app's data folder; the formats shown, fixed; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
-logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset (and Reset all at the top), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
+logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset (and Reset all at the top), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
-folder as they change (specs/15). Appearance: the theme (System, Dark, Light), and a colour theme over
+folder as they change (specs/15). Every setting of a page but Keybindings (which has its own) has the
+kit's Reset (specs/13, `settings`), back to the default the app reads it with (`Prefs::load`; the
+defaults are those of settings in memory, written once), and each page its Reset all; the master
+password, the saved hosts and the recent targets are data, not settings, and have none. Appearance: the theme (System, Dark, Light), and a colour theme over
 it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/themes`, made by
 `.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
 chosen from the families of the machine in a select with a search, the first "The kit's mono" for none; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
@@ -377,5 +396,5 @@ license's notice. Without them every space still runs, on the system's host.
 The app's tests drive it through the semantic tree on the headless platform with `echo()`
 sessions: tabs and spaces made, split, closed, moved; the signals on the rail, headers and
 status bar from bytes fed to a session; the menu; completion (`tests/complete.rs`: prompts
-marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); settings written; lock and unlock. Real
+marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); find (`tests/find.rs`: Ctrl+F opens the bar, the count, Enter and Shift+Enter, Escape gives the focus back); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); settings written; lock and unlock. Real
 shells only in `quadra-shell`'s pseudo console test.

@@ -155,11 +155,10 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
             }
         })
         .child(header)
-        .child(
-            column().grow(1.0).min_height(0.0).padding_x(12.0).padding_y(10.0).child(
-                crate::complete::around(model, &space, |view| menu_of(model, &s, &space, view, &links)),
-            ),
-        )
+        .child(column().grow(1.0).min_height(0.0).padding_x(12.0).padding_y(10.0).child(crate::find::around(
+            &s,
+            crate::complete::around(model, &space, |view| menu_of(model, &s, &space, view, &links)),
+        )))
         .child(links.dialog())
 }
 

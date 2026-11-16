@@ -34,8 +34,16 @@ pub struct CompletePrefs {
 impl CompletePrefs {
     /// The app's settings, from the context; in memory where there are none (a test).
     pub fn load() -> CompletePrefs {
-        let settings = use_context::<Rc<Settings>>().unwrap_or_else(Settings::memory);
-        let (s, on) = (&*settings, Config::default());
+        CompletePrefs::of(&use_context::<Rc<Settings>>().unwrap_or_else(Settings::memory))
+    }
+
+    /// What each setting is where nothing was written: what Reset puts back.
+    pub fn defaults() -> CompletePrefs {
+        CompletePrefs::of(&Settings::memory())
+    }
+
+    fn of(s: &Settings) -> CompletePrefs {
+        let on = Config::default();
         let count = |key: &str, default: usize| s.value(key, default as f64);
         CompletePrefs {
             enabled: s.value("completion.enabled", on.enabled),

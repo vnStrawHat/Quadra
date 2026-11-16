@@ -2,7 +2,7 @@
 //! the kit's layout of cards: the pages with their icons and a search in the column, each
 //! page's title and what it is about, its groups. Each control writes a setting, which saves it.
 
-use quadra::{Align, column, div, effect, row, signal, text};
+use quadra::{Align, Signal, column, div, effect, row, signal, text};
 use quadra_design::{
     SettingsGroup, SettingsPage, Variant, button, icon, icons, input, number_input, segmented, select,
     settings, switch, token,
@@ -60,44 +60,70 @@ pub(crate) fn open_window(windows: &quadra::Windows, model: &Model) {
     });
 }
 
+/// A row that goes back to the default of its setting: `default` is the same setting where
+/// nothing was written (`Prefs::defaults`).
+pub(crate) trait Back {
+    fn back<T: PartialEq + Clone + 'static>(self, value: Signal<T>, default: Signal<T>) -> Self;
+}
+
+impl Back for SettingsGroup {
+    fn back<T: PartialEq + Clone + 'static>(self, value: Signal<T>, default: Signal<T>) -> Self {
+        self.resets(value, default.get_untracked())
+    }
+}
+
 pub(crate) fn page(model: &Model) -> quadra::Div {
     // The title bar says the page and has Done.
     let (p, current, query) = (model.prefs(), model.ui().page, signal(String::new()));
     let mut view = settings(current).search(query).cards();
-    for ((name, body, about), groups) in PAGES_ABOUT.into_iter().zip(groups(p, model)) {
+    for ((name, body, about), groups) in PAGES_ABOUT.into_iter().zip(groups(p, Prefs::defaults(), model)) {
         let page = SettingsPage::new(name).icon(body).about(about);
         view = view.page(groups.into_iter().fold(page, SettingsPage::group));
     }
     column().grow(1.0).min_height(0.0).child(view)
 }
 
-fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
+fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
     let tabs = SettingsGroup::new("Tabs & spaces")
         .row(
             "Vertical tabs",
             "Tabs in a rail at the left; off, in a strip above the spaces.",
             switch(p.vertical),
         )
+        .back(p.vertical, d.vertical)
         .row(
             "Rail width",
             "The vertical tabs' width, from 140 to 400 px.",
             number_input(p.rail_width).range(140.0, 400.0).step(10.0).label("Rail width"),
         )
+        .back(p.rail_width, d.rail_width)
         .row("Fold the rail", "Only the tabs' icons, in 44 px.", switch(p.rail_folded))
-        .row("Tab title", "What names a tab not renamed.", select(prefs::TITLES, p.tab_title).width(240.0));
+        .back(p.rail_folded, d.rail_folded)
+        .row("Tab title", "What names a tab not renamed.", select(prefs::TITLES, p.tab_title).width(240.0))
+        .back(p.tab_title, d.tab_title);
     let signals = SettingsGroup::new("Signals")
         .row("Program states", "OSC 7501.", select(prefs::STATUS_SHOWN, p.status_shown).width(240.0))
+        .back(p.status_shown, d.status_shown)
         .row("Card when blocked", "A card when a program waits or failed.", switch(p.toast_blocked))
+        .back(p.toast_blocked, d.toast_blocked)
         .row("Progress on the tab", "OSC 9;4 under the tab.", switch(p.progress_tab))
+        .back(p.progress_tab, d.progress_tab)
         .row("Progress in the status bar", "OSC 9;4 as a meter.", switch(p.progress_bar))
+        .back(p.progress_bar, d.progress_bar)
         .row("Bell", "A bell in a space not looked at.", select(prefs::BELLS, p.bell).width(240.0))
-        .row("Notifications", "OSC 9.", select(prefs::NOTICES, p.notices).width(240.0));
+        .back(p.bell, d.bell)
+        .row("Notifications", "OSC 9.", select(prefs::NOTICES, p.notices).width(240.0))
+        .back(p.notices, d.notices);
     let status = SettingsGroup::new("Status bar")
         .row("Git", "The branch and the files changed.", switch(p.show_git))
+        .back(p.show_git, d.show_git)
         .row("CPU and memory", "What 1Term uses.", switch(p.show_usage))
+        .back(p.show_usage, d.show_usage)
         .row("Clock", "The local time.", switch(p.show_clock))
-        .row("Frames a second", "What the window draws, counted each second.", switch(p.show_fps));
-    let lock = crate::locked::security(model.lock(), p.lock_after);
+        .back(p.show_clock, d.show_clock)
+        .row("Frames a second", "What the window draws, counted each second.", switch(p.show_fps))
+        .back(p.show_fps, d.show_fps);
+    let lock = crate::locked::security(model.lock(), p.lock_after, d.lock_after);
     let keys = keys::group();
     let file = quadra::AppDirs::for_app("1Term")
         .map(|dirs| dirs.config.join("settings.json").display().to_string())
@@ -110,61 +136,72 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .child(icon(icons::INFO).size(14.0))
         .child(text(format!("Settings are saved to {file} as you change them.")));
     vec![
-        look::appearance(p),
-        look::terminal(p).into_iter().chain([complete::completion(model), logging(p)]).collect(),
+        look::appearance(p, d),
+        look::terminal(p, d).into_iter().chain([complete::completion(model), logging(p, d)]).collect(),
         vec![tabs],
         vec![
             hosts(p, model),
             SettingsGroup::new("Connections")
                 .row("Keepalive", "Asked of an idle server so the connection stays.", switch(p.keepalive_on))
+                .back(p.keepalive_on, d.keepalive_on)
                 .row(
                     "Every",
                     "Seconds between two, from 5 to 3600.",
                     number_input(p.keepalive_secs).range(5.0, 3600.0).step(5.0).label("Every"),
                 )
+                .back(p.keepalive_secs, d.keepalive_secs)
                 .row(
                     "Unanswered",
                     "How many go unanswered before the connection is given up.",
                     number_input(p.keepalive_max).range(1.0, 20.0).label("Unanswered"),
-                ),
+                )
+                .back(p.keepalive_max, d.keepalive_max),
         ],
         vec![
-            SettingsGroup::new("Downloads").row(
-                "Downloads folder",
-                "Where a file downloaded from the dock goes; empty, the user's Downloads.",
-                input(p.downloads).placeholder("Downloads").label("Downloads folder").width(240.0),
-            ),
+            SettingsGroup::new("Downloads")
+                .row(
+                    "Downloads folder",
+                    "Where a file downloaded from the dock goes; empty, the user's Downloads.",
+                    input(p.downloads).placeholder("Downloads").label("Downloads folder").width(240.0),
+                )
+                .back(p.downloads, d.downloads),
             SettingsGroup::new("Editing")
                 .row(
                     "Editor",
                     "What a file's Edit opens it in.",
                     select(crate::sftp::EDITORS, p.editor).width(240.0),
                 )
+                .back(p.editor, d.editor)
                 .row(
                     "Program",
                     "The editor's program, when it is one.",
                     input(p.editor_program).placeholder("notepad.exe").label("Program").width(240.0),
                 )
+                .back(p.editor_program, d.editor_program)
                 .row(
                     "Arguments",
                     "Before the file, split at spaces.",
                     input(p.editor_args).label("Arguments").width(240.0),
                 )
+                .back(p.editor_args, d.editor_args)
                 .row(
                     "Asked above",
                     "A file larger, in KB, is edited only when asked; 0, any.",
                     number_input(p.edit_limit_kb).range(0.0, 1_048_576.0).step(256.0).label("Asked above"),
-                ),
+                )
+                .back(p.edit_limit_kb, d.edit_limit_kb),
         ],
         vec![signals],
         vec![status],
         vec![
             lock,
-            SettingsGroup::new("Clipboard").row(
-                "Programs read the clipboard",
-                "OSC 52 asked with `?`, by a local or a remote program. Writing it is always let through.",
-                switch(p.clipboard_read),
-            ),
+            SettingsGroup::new("Clipboard")
+                .row(
+                    "Programs read the clipboard",
+                    "OSC 52 asked with `?`, by a local or a remote program. Writing it is always let through.",
+                    switch(p.clipboard_read),
+                )
+                .back(p.clipboard_read, d.clipboard_read),
         ],
         vec![keys],
         vec![advanced, SettingsGroup::new("").wide(note)],
@@ -179,15 +216,18 @@ fn groups(p: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
 }
 
 /// Which spaces are logged from their start, where, and how a file there is written.
-fn logging(p: Prefs) -> SettingsGroup {
+fn logging(p: Prefs, d: Prefs) -> SettingsGroup {
     SettingsGroup::new("Logging")
         .row("Log local shells", "Each new local shell writes what it shows to a file.", switch(p.log_local))
+        .back(p.log_local, d.log_local)
         .row("Log SSH spaces", "Each new SSH space does.", switch(p.log_ssh))
+        .back(p.log_ssh, d.log_ssh)
         .row(
             "Folder",
             "Where logs go; empty, session-logs in 1Term's data folder.",
             folder_field(p.log_folder),
         )
+        .back(p.log_folder, d.log_folder)
         .row("File name", "%n is the shell or the host.", text("%n_%Y-%m-%d_%H-%M-%S.log"))
         .row("A line", "%msg is a line of what the space showed.", text("[%Y-%m-%d %H:%M:%S] %msg"))
         .row(
@@ -195,6 +235,7 @@ fn logging(p: Prefs) -> SettingsGroup {
             "Written after what it holds, or over it.",
             segmented(crate::logs::MODES, p.log_mode),
         )
+        .back(p.log_mode, d.log_mode)
 }
 
 /// A folder typed, or chosen in the system's dialog.

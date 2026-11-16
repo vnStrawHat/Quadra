@@ -9,6 +9,7 @@ use quadra_design::{SettingsGroup, Variant, button, icon, icons, input, number_i
 
 use crate::lock::Lock;
 use crate::model::Model;
+use crate::page::Back;
 
 /// Shown while `on` says so, else not displayed (and so not in the semantic tree).
 pub(crate) fn shown(on: impl Fn() -> bool + 'static) -> impl Fn() -> Display + 'static {
@@ -139,7 +140,7 @@ fn card(model: &Model) -> Div {
 }
 
 /// Security & lock: the master password set, changed or removed, and the idle time.
-pub(crate) fn security(lock: Lock, after: Signal<f64>) -> SettingsGroup {
+pub(crate) fn security(lock: Lock, after: Signal<f64>, default: Signal<f64>) -> SettingsGroup {
     let (current, new, again, said) =
         (signal(String::new()), signal(String::new()), signal(String::new()), signal(String::new()));
     let field = |value: Signal<String>, hint: &str, name: &str, id: &'static str| {
@@ -180,6 +181,7 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>) -> SettingsGroup {
             "Minutes without a key or the pointer, 1 to 480.",
             number_input(after).range(1.0, 480.0).label("Lock after"),
         )
+        .back(after, default)
         .row(
             "Lock now",
             "As Ctrl+Shift+L does.",

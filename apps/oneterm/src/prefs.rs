@@ -92,13 +92,20 @@ pub struct Prefs {
 impl Prefs {
     /// The app's settings, from the context; in memory where there are none (a test).
     pub fn load() -> Prefs {
-        let settings = use_context::<Rc<Settings>>().unwrap_or_else(Settings::memory);
-        let s = &*settings;
+        Prefs::of(&use_context::<Rc<Settings>>().unwrap_or_else(Settings::memory))
+    }
+
+    /// What each setting is where nothing was written: what Reset puts back.
+    pub fn defaults() -> Prefs {
+        Prefs::of(&Settings::memory())
+    }
+
+    fn of(s: &Settings) -> Prefs {
         Prefs {
             theme: choice(s, "appearance.theme", &THEMES),
             colour_theme: choice(s, "appearance.colour_theme", &COLOUR_THEMES),
             ui_text: s.value("appearance.ui_text_percent", 100.0),
-            look: LookPrefs::load(),
+            look: LookPrefs::of(s),
             cursor: choice(s, "terminal.cursor", &CURSORS),
             blink: s.value("terminal.cursor_blink", false),
             scrollback: s.value("terminal.scrollback", 10_000.0),

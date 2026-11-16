@@ -27,7 +27,7 @@ const fn binding(id: &'static str, name: &'static str, keys: &'static str, bind:
 }
 
 /// The actions, in the order of the page.
-pub(crate) const BINDINGS: [Binding; 15] = [
+pub(crate) const BINDINGS: [Binding; 16] = [
     binding("new_tab", "New tab", "ctrl-t", |k, s| k.bind(s, Command::NewTab)),
     binding("split", "Split the space", "ctrl-d", |k, s| k.bind(s, Command::Split)),
     binding("close_space", "Close the space", "ctrl-w", |k, s| k.bind(s, Command::CloseSpace)),
@@ -38,6 +38,7 @@ pub(crate) const BINDINGS: [Binding; 15] = [
     binding("settings", "Settings", "ctrl-,", |k, s| k.bind(s, Command::Settings)),
     binding("dock", "SFTP dock", "ctrl-shift-b", |k, s| k.bind(s, Command::Dock)),
     binding("select_all", "Select all", "ctrl-shift-a", |k, s| k.bind(s, Command::SelectAll)),
+    binding("find", "Find", "ctrl-f", |k, s| k.bind(s, crate::find::Find)),
     binding("clear", "Clear the scrollback", "", |k, s| k.bind(s, Command::Clear)),
     binding("duplicate", "Duplicate the tab", "", |k, s| k.bind(s, Command::Duplicate)),
     binding("quit", "Quit", "ctrl-shift-q", |k, s| k.bind(s, Command::Quit)),

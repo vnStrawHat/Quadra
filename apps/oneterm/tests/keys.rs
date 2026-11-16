@@ -102,7 +102,7 @@ fn new_tab_is_rebound_unbound_and_reset() {
             && n.semantics.name.starts_with("Reset ")
             && n.semantics.name != "Reset all"
     });
-    assert_eq!(resets.len(), 15, "a Reset a row");
+    assert_eq!(resets.len(), 16, "a Reset a row");
     a.h.get_by_role(Role::Button, "Reset New tab").click();
     a.settle();
     assert_eq!(a.setting("new_tab").get_untracked(), "ctrl-t");

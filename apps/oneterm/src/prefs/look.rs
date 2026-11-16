@@ -1,9 +1,7 @@
 //! The settings of how terminals look (specs/19, "Settings"): signals of the app's `Settings`
 //! under `terminal.*`, and the view's `TermLook` they make.
 
-use std::rc::Rc;
-
-use quadra::{Color, Settings, Signal, use_context};
+use quadra::{Color, Settings, Signal};
 use quadra_term::{TermColors, TermLook};
 
 /// The weights of a face, from thin to black; the first is the usual one.
@@ -79,10 +77,8 @@ pub struct LookPrefs {
 }
 
 impl LookPrefs {
-    /// The app's settings, from the context; in memory where there are none (a test).
-    pub fn load() -> LookPrefs {
-        let settings = use_context::<Rc<Settings>>().unwrap_or_else(Settings::memory);
-        let s = &*settings;
+    /// The settings of `s`.
+    pub fn of(s: &Settings) -> LookPrefs {
         LookPrefs {
             font_size: s.value("terminal.font_size", 13.0),
             font_family: s.value("terminal.font_family", String::new()),

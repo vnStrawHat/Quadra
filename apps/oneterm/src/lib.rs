@@ -7,6 +7,7 @@ mod complete;
 mod connect;
 mod dock;
 mod expanded;
+mod find;
 mod git;
 mod hostlist;
 mod hosts;

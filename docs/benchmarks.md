@@ -1,8 +1,9 @@
 # Benchmarks
 
-Measurements of the Rust implementation, newest first, each with its date and the commit it
-was taken on. The V implementation's numbers, the baseline of specs/14, are in
-[benchmarks-v.md](benchmarks-v.md).
+Quadra's measurements, newest first, each with its date and the commit it was taken on: the
+baseline of specs/14, a change measured against the last of them. The V implementation's
+numbers are in [benchmarks-v.md](benchmarks-v.md), kept as history (since 2026-11-16 Quadra is
+no port of it).
 
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.

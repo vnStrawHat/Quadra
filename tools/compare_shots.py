@@ -2,8 +2,8 @@
 
 For each picture in both it says what share of the pixels of the page differ by more than a
 tolerance in a channel (--tolerance, 24), the worst first. A row may sit up to --drift rows
-(2) higher or lower than in the reference: lines of text are whole pixels tall here, and were
-not in the V pictures. By default only the page is compared: not the title bar, the sidebar
+(2) higher or lower than in the reference: lines of text are whole pixels tall here, and may
+not be in an older picture. By default only the page is compared: not the title bar, the sidebar
 or the status bar of the gallery, which list other pages (--all compares everything). Only
 the standard library.
 """

@@ -3,7 +3,7 @@
 # reference pictures when there are some:
 #   tools/shots.sh [dark|light|contrast] [page ..]
 # The pictures go to .tmp/shots/<theme>. QUADRA_REFERENCE names the folder that holds the
-# reference pictures of that theme (the screenshots of the V gallery are the first ones).
+# reference pictures of that theme (pictures drawn before, such as .tmp/shots/r6-dark).
 # QUADRA_SCALE draws them as a display at that scale shows them (1.5: 150 %). QUADRA_TEXT
 # draws text that many times larger (1.5, 2), to look for what it does not fit.
 set -u

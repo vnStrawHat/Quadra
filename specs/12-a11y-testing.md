@@ -189,8 +189,8 @@ makes a hover lay out a node fails a test, whatever its timing.
   paint logic.
 - **Pixel snapshots**: an offscreen surface on the software device with real text, compared
   with a tolerance. For what only pixels show: the look of components, text rendering. These
-  run in the native test run. The V screenshots of the gallery are the first references (00,
-  phase R3).
+  run in the native test run. The references are pictures Quadra drew before (the V
+  screenshots of the gallery were the first, in phase R3; they are history).
 
   As built: `App::read_pixels(window)` reads back what a window drawn offscreen shows. The
   tool `bench/shots` runs the gallery on the headless platform with the software device and
@@ -205,8 +205,8 @@ makes a hover lay out a node fails a test, whatever its timing.
   of charts) is looked at there too. `tools/shots.sh`
   runs it, and `tools/compare_shots.py` says for each picture what share of the pixels of
   the page differ from the reference by more than a tolerance; a band of rows may sit a
-  pixel or two higher or lower than in the reference (the V pictures have lines of text of
-  fractional heights, 08).
+  pixel or two higher or lower than in the reference (an older picture may have lines of text
+  of fractional heights, 08).
 
 ## Other test kinds
 

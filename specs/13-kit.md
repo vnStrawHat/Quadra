@@ -524,8 +524,8 @@ As built so far:
   real window in either theme: a window with its own title bar, the pages in a sidebar by
   group, the page that shows, a status bar and a command palette. A page is the group it is
   in, its title, what the component is for, and framed demos, each with how it is written
-  (`common.rs`). The pages are those of the V gallery, ported as their components land,
-  and compared with its screenshots (12, "Snapshots").
+  (`common.rs`). The pages began as those of the V gallery; each is compared with pictures
+  the gallery drew before (12, "Snapshots").
 
 ## The workbench
 
@@ -1226,7 +1226,7 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
 Order within phase R3: tokens and themes; text, box and icon; buttons and inputs; selection
 controls; overlays; lists and tabs; panels and the titlebar; the gallery as each lands.
 
-What a component brings from its V version: its look, its states, its keyboard behaviour, its
-semantics, its tests' intent. What it does not bring: its code structure. The V components
-were builders evaluated during layout, with handlers passed as data; none of that shape is
-kept.
+A component is designed from what it is for: its look in the design language, its states,
+its keyboard behaviour, its semantics, its tests. Where a V version of it existed, that was
+history to read, never a shape to keep (the V components were builders evaluated during
+layout, with handlers passed as data).

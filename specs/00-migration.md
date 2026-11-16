@@ -1,5 +1,9 @@
 # 00 — Migration to Rust
 
+> Since 2026-11-16 Quadra is no port of the V implementation (the user's decision). This spec
+> records how the move to Rust was planned and run; its phases are done. The V repository is
+> no reference any more: Quadra's specs, tests and measurements are.
+
 ## Why
 
 The V implementation works and meets its budgets, but the toolchain costs more than the
@@ -46,8 +50,9 @@ Everything else is designed again in 01–14.
 
 ## A new repository
 
-The Rust implementation lives in a new repository. The V repository is frozen at its last
-commit and kept as the reference for behaviour, tests and measured numbers.
+The Rust implementation lives in a new repository. The V repository was frozen at its last
+commit; it was the reference for behaviour, tests and measured numbers while the phases ran,
+and is none since 2026-11-16.
 
 ```
 Cargo.toml  rust-toolchain.toml
@@ -55,18 +60,18 @@ crates/quadra-*        the framework (02-architecture)
 examples/              the gallery (the kit's acceptance test); small demos live with their crates
 bench/                 benches, the comparison runner, the tool that draws the gallery to pictures
 assets/                themes, fonts, icons, shaders
-specs/                 these specs, and the behaviour specs carried from the V repository
+specs/                 these specs, and the behaviour specs (first written for V)
 docs/                  progress.md, benchmarks.md
 tools/                 check.sh, setup.sh, table generators, the shader build
 ```
 
 The V specs these refer to (02, 04, 05, 08, 09, 10, 13, 15–19, 21) are kept under their
 numbers in `specs/behaviour/`. They are written as `behaviour/NN` here. Their API sections
-describe the V code and are superseded; their behaviour is the reference.
+described the V code and are superseded; their behaviour is Quadra's.
 
 ## Toolchain and rules
 
-The hard rules are in `CLAUDE.md`. They are those of the V repository, with two exceptions
+The hard rules are in `CLAUDE.md`. They began as those of the V repository, with two exceptions
 the user granted on 2026-11-11 for the build tool:
 
 - **Cargo is the fork that shares build output between projects.** It keeps intermediate files
@@ -151,7 +156,7 @@ programs before the components are written against it.
 user's own terminal engine, `oneterm-vt` (18): the parser, grid, limits and corpus are the
 engine's and tested there; Quadra writes the view, the input and the delivery.
 
-**After Quadra**: the apps, each from its spec. 1Term (the V repository's OneTerm, redesigned
+**After Quadra**: the apps, each from its spec. 1Term (after the user's own OneTerm, redesigned
 by the user) is first, from 2026-11-15 (19); Notes, Folio and Cluster follow. Decisions that
 belong to an app, such as 1Term's SSH engine, are taken when its phase starts.
 

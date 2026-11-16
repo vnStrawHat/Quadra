@@ -46,7 +46,8 @@ change rendered and laid out its whole view; hover was a special patch path.
 
 ## Time and memory budgets
 
-The budgets of the V implementation are the floor: the Rust implementation must not be slower.
+These budgets are the floor, and Quadra's own last measurements (`docs/benchmarks.md`) the
+baseline: a change must not make them slower.
 
 | Scenario | Budget |
 |---|---|
@@ -103,8 +104,10 @@ binaries, and every number of 1Term is taken with it.
 
 ## Baselines
 
-The V implementation, measured 2026-11-11 on the development machine with the comparison
-bench (`bench/compare`; the scenarios are defined in `docs/benchmarks-v.md`):
+Quadra's numbers are in `docs/benchmarks.md`, each with its date and commit; a change is
+measured against the last of them. The V implementation's, measured 2026-11-11 on the
+development machine with the comparison bench (`bench/compare`; the scenarios are defined in
+`docs/benchmarks-v.md`), are kept as history:
 
 | Scenario | CPU per frame | Peak memory |
 |---|---|---|
@@ -164,6 +167,6 @@ used (01, R15); build output shared between checkouts by the build tool (00).
 - `FrameStats` and pass timings in every build; the frame HUD in debug builds (12).
 - Micro-benches per crate (reactive propagation, layout, paragraph, display-list repaint).
 - The comparison bench with its outside-the-process runner, unchanged in method so numbers stay
-  comparable across the V build, the Rust build and the other framework it measures.
+  comparable over time and across the frameworks it measures.
 - A memory probe that reports arena sizes, atlas use and layer buffers.
 - Bench results are recorded in `docs/benchmarks.md` with the date and the commit.

@@ -131,7 +131,7 @@ A second OS adds a second native crate. Nothing above the traits changes.
 
 ## Win32 behaviour
 
-Unchanged from the V implementation, whose notes in behaviour/02 remain the reference:
+As behaviour/02 notes it (first written for the V implementation):
 
 - Per-monitor DPI awareness v2; a scale change resizes the window as the OS suggests.
 - The modal move and resize loop: frames keep being drawn while the user drags a border, and

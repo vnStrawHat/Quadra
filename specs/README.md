@@ -7,9 +7,10 @@ headless testability first.
 Status: **design drafted 2026-11-11** (`docs/progress.md` is the source of truth for what is
 built).
 
-This is a redesign of the framework first written in V, not a translation: every subsystem was
-designed from its goals, and what survives from the V implementation survives on merit (00,
-"What carries over").
+Quadra began as a redesign of a framework first written in V, not a translation: every
+subsystem was designed from its goals. Since 2026-11-16 it stands on its own (the user's
+decision): it is no port, and nothing is kept to match the V implementation. These specs, the
+tests and Quadra's own measurements (`docs/benchmarks.md`) are the reference.
 
 | File | Contents |
 |---|---|
@@ -39,9 +40,10 @@ Reading order: 00, 01, 02, 03, 04, 05, then the rest.
 
 ## Behaviour specs
 
-`behaviour/` holds specs carried from the V repository, under their old numbers. They say what
-the framework and its components do and look like. Where they describe code (V APIs, modules,
-the old frame pipeline) they are superseded by the files above.
+`behaviour/` holds the specs of what the framework and its components do and look like, under
+the numbers they had when they were first written, for the V implementation. Where they
+describe code (V APIs, modules, the old frame pipeline) that text is history, superseded by the
+files above.
 
 | File | Still the reference for | Superseded by |
 |---|---|---|
@@ -60,4 +62,4 @@ the old frame pipeline) they are superseded by the files above.
 | [21-markdown-app](behaviour/21-markdown-app.md) | Markdown rendering rules, math, diagrams | 13 |
 
 Not carried: the V specs of the old architecture (00, 01, 03, 06, 07, 11, 12, 14), the gap
-analysis (20), and the apps (22–27): 1Term (19) reads OneTerm's there where its design is silent.
+analysis (20), and the apps (22–27): 1Term (19) follows the user's own terminal app where its design is silent.

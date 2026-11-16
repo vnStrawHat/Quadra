@@ -4,8 +4,8 @@ What a real application needs beyond widgets and windows: its settings and the s
 windows, its language and the time where the user is, a log and a report of a crash, pages
 it goes back and forth between, and how it starts and ends. All of it is in `quadra-app`, in
 plain Rust over `quadra-platform`; what needs the OS beyond windowing is in `quadra-shell`
-(16). The behaviour carried from the V framework is behaviour/10; its code sections are
-superseded by this file.
+(16). behaviour/10 says what these services do; its code sections are history, superseded
+by this file.
 
 ## Where files go
 

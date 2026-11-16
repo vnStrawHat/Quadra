@@ -3,9 +3,9 @@
 1Term is a terminal app for local shells, and later SSH and SFTP, in `apps/oneterm` (package
 `oneterm`, binary `1term`). Started 2026-11-15 by the user's decision, before the other apps.
 Its look is the user's design (the canvas "1Term": main window, horizontal tabs variant, the `+`
-menu, settings, the lock screen, SFTP), drawn with `quadra-design` in the kit's language; the V
-specs of OneTerm (V repository, specs 22-27) are the reference for behaviour the design leaves
-open. The terminal is `quadra-term` (18).
+menu, settings, the lock screen, SFTP), drawn with `quadra-design` in the kit's language; the
+user's own terminal app OneTerm (a clone to read in `.cache/vendor/oneterm-app`) is the
+reference for behaviour and settings the design leaves open. The terminal is `quadra-term` (18).
 
 ## Phases
 

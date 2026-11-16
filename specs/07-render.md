@@ -42,7 +42,7 @@ too. A test of pixels holds its width, its ink and its joints. The links of a di
 the strokes of a formula are drawn so (13).
 
 Colours are straight alpha in the instance and blended premultiplied, in the encoded (sRGB)
-space, as design tools and the V renderer do. The V pixel snapshots are the reference.
+space, as design tools do. Quadra's own pixel snapshots are the reference (12, "Snapshots").
 
 **A gradient** fills a box with colours at stops along it (`quadra_prim::Gradient`): along a
 line at an angle (`linear`, 0 degrees from left to right, 90 from top to bottom), out from the

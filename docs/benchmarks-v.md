@@ -1,5 +1,8 @@
 # Comparison benchmarks
 
+> History: the V implementation's numbers, frozen. Since 2026-11-16 Quadra is no port of it, and
+> its baseline is its own numbers in benchmarks.md. The method below is still the bench's.
+
 Four small apps that other GPU UI frameworks publish numbers for, written for Quadra with the
 same text (the same word generator and cell values), window sizes and frame recording
 (`bench/compare`). A runner starts each app and measures the whole process from outside,

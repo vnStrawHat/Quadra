@@ -1,6 +1,8 @@
 # Progress
 
-Status per phase of specs/00-migration.md. Run everything with `tools/check.sh`.
+Status per phase of specs/00-migration.md. Run everything with `tools/check.sh`. Since
+2026-11-16 Quadra stands on its own (no port of the V implementation): where an entry below
+compares with the V build, its suite or its pictures, that is the history of the phases.
 
 | Phase | Status | Evidence |
 |---|---|---|

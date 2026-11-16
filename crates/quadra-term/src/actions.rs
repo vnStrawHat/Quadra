@@ -5,6 +5,7 @@ use std::time::Instant;
 
 use oneterm_vt::{ResizePolicy, Size};
 
+use crate::input::Input;
 use crate::session::{Link, Session};
 
 /// How a terminal view takes the pointer and the wheel. The default is what a view does
@@ -65,15 +66,10 @@ impl Session {
         self.engine().term.selection_text()
     }
 
-    /// Pastes text into the program, bracketed when it asked, and shows the bottom again.
+    /// Pastes text into the program, bracketed when it asked, and shows the bottom again;
+    /// the input hook is told (`on_input`).
     pub fn paste(&self, text: &str) {
-        let bytes = {
-            let mut engine = self.engine();
-            engine.term.scroll_viewport(i32::MAX);
-            engine.term.encode_paste(text)
-        };
-        self.repaint();
-        self.write(&bytes);
+        self.send(&Input::Paste(text));
     }
 
     /// Selects everything, the history with the screen.

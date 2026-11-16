@@ -13,6 +13,7 @@ use quadra_tree::{NodeId, Style, Tree};
 use quadra_view::{MountCx, View};
 
 use crate::actions::TermSettings;
+use crate::input::{Input, sent};
 use crate::keys::{TERMINAL_CONTEXT, TermCommand, key_event};
 use crate::link::TermLink;
 use crate::look::TermLook;
@@ -177,14 +178,14 @@ impl View for Terminal {
             let Some(bytes) = s.engine().term.encode_key_event(&event) else { return };
             e.stop();
             let s = s.clone();
-            writer.with(move |tree| send(tree, id, &s, &bytes));
+            writer.with(move |tree| sent(tree, id, &s, &bytes, Input::Keys(&bytes)));
         });
         let (writer, s) = (cx.handle.clone(), session.clone());
         cx.tree.on_text(id, move |typed| {
             let event = KeyEvent::new(KeySpec::Character(typed.to_string()), KeyMods::default());
             let bytes = s.engine().term.encode_key_event(&event).unwrap_or_else(|| typed.as_bytes().to_vec());
-            let s = s.clone();
-            writer.with(move |tree| send(tree, id, &s, &bytes));
+            let (s, typed) = (s.clone(), typed.to_string());
+            writer.with(move |tree| sent(tree, id, &s, &bytes, Input::Text(&typed)));
         });
         let clipboard = use_context::<Rc<dyn Clipboard>>();
         let (writer, s) = (cx.handle.clone(), session.clone());
@@ -205,14 +206,15 @@ impl View for Terminal {
                     }
                     return;
                 }
+                // After the keys before it, as they are written.
                 (TermCommand::Paste, Some(clipboard)) => {
-                    let text = clipboard.read_text().unwrap_or_default();
-                    s.engine().term.encode_paste(&text)
+                    let (s, text) = (s.clone(), clipboard.read_text().unwrap_or_default());
+                    return writer.with(move |_| s.paste(&text));
                 }
                 _ => return,
             };
             let s = s.clone();
-            writer.with(move |tree| send(tree, id, &s, &bytes));
+            writer.with(move |tree| sent(tree, id, &s, &bytes, Input::Keys(&bytes)));
         });
         focus(cx, id, &session);
         if autofocus {

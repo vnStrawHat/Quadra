@@ -76,6 +76,8 @@ pub(crate) struct Shared {
     /// What waits for a view to size the grid; `None` once one has.
     pub sized: RefCell<Option<Waiting>>,
     pub find: crate::find::Finding,
+    /// Told what the user sends (`Session::on_input`).
+    pub input: RefCell<Option<Rc<crate::input::InputFn>>>,
 }
 
 impl Session {
@@ -129,6 +131,7 @@ impl Session {
             line: crate::line::Follow::new(),
             sized: RefCell::new(Some(Vec::new())),
             find: crate::find::Finding::new(),
+            input: RefCell::new(None),
         });
         let (took, ended) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
         events

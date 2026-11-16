@@ -163,6 +163,16 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   wheel), `alternate_scroll` (on the alternate screen the wheel sends arrows even when the
   program did not ask). A right press the program does not take is left to what is around the
   view: the app's context menu (`quadra_design::context_menu` around the terminal).
+- What the user sends, for an app that repeats it elsewhere (input channels, specs/19):
+  `Session::on_input(f)` (one hook; another replaces it) is told each `Input` after it is
+  written: `Keys(bytes)` as the view encoded a key, typed text or Tab, `Text(text)` typed or
+  committed by an input method, `Paste(text)` from the view's paste or `Session::paste`;
+  `Session::send(&input)` writes what an app types for the user (an accepted completion) and
+  tells it too. The
+  mouse, focus reports, replies, the wheel's arrows and what `deliver` writes are not told.
+  `Session::deliver(&input)` writes one to another session as its own: keys as they are, text
+  and a paste encoded by its engine (a paste bracketed only when its program asked), and the
+  view back at the bottom; its hook is not told, so two sessions never echo each other.
 - What a menu does: `Session::selection_text`, `paste(text)`, `select_all`, `clear_history`
   (the scrollback, as ED 3 would).
 - OSC 52: a program's text for the clipboard (`c`) is written to it, always; a program that asks

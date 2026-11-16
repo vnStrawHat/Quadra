@@ -32,6 +32,6 @@ mod tree;
 
 pub use grid::{GridStyle, Track, TrackSize};
 pub use incremental::{RootSize, Stats};
-pub use solve::{Known, Measure, NoMeasure};
+pub use solve::{Holds, Known, Measure, NoMeasure};
 pub use style::{Align, AutoMargins, Direction, Display, Insets, Justify, Length, Overflow, Position, Style};
 pub use tree::{LayoutId, LayoutTree, RectChange};

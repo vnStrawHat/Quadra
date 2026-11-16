@@ -118,7 +118,10 @@ impl LayoutTree {
             return false;
         }
         for entry in old.measures() {
-            if self.layout_node(m, id, entry.req, false) != entry.out {
+            // The parent may have been given the old answer for any request it held for.
+            let out = self.layout_node(m, id, entry.req, false);
+            let span = self.nodes[id.index()].answers.span(&entry.req);
+            if out != entry.out || !span.is_some_and(|s| s.covers(&entry.span)) {
                 return false;
             }
         }

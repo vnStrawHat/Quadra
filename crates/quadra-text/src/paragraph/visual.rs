@@ -6,6 +6,14 @@ use super::{Kind, Paragraph};
 use crate::bidi::visual_order;
 
 impl Paragraph {
+    /// The widths at which [`Paragraph::wrap`] gives the lines it gave last, both ends
+    /// included: from the widest line up to the width they were broken at, or any width up
+    /// when no line broke for width.
+    pub fn kept_widths(&self) -> (f32, f32) {
+        let up = if self.width_breaks { self.wrapped_at.unwrap_or(0.0) } else { f32::INFINITY };
+        (self.size.width, up)
+    }
+
     /// Places the glyphs of each line again, its tokens in visual order.
     pub(super) fn place_visually(&mut self) {
         let Paragraph { bidi, glyphs, visual, tokens, lines, .. } = self;

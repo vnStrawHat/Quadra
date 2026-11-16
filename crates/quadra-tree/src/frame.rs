@@ -3,7 +3,7 @@
 
 use std::time::{Duration, Instant};
 
-use quadra_layout::{Known, LayoutId, Measure, RootSize};
+use quadra_layout::{Holds, Known, LayoutId, Measure, RootSize};
 use quadra_prim::Size;
 use quadra_reactive::batch;
 use quadra_text::TextSystem;
@@ -67,6 +67,10 @@ impl Measure for Measurer<'_> {
         refresh(self.nodes, index, self.text_at);
         let mut cx = MeasureCx { text: self.text };
         self.nodes[index].widget.as_mut().map_or(Size::ZERO, |w| w.measure(&mut cx, known, avail))
+    }
+
+    fn holds(&mut self, node: LayoutId) -> Option<Holds> {
+        self.nodes[self.owners[node.index()] as usize].widget.as_ref()?.holds()
     }
 }
 

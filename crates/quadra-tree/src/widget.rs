@@ -3,7 +3,7 @@
 use std::any::Any;
 
 use quadra_a11y::Semantics;
-use quadra_layout::Known;
+use quadra_layout::{Holds, Known};
 use quadra_prim::{Edges, Rect, Size};
 use quadra_render::{Clip, Instance, Quad, Shadow, push_quad};
 use quadra_text::TextSystem;
@@ -24,6 +24,12 @@ pub trait Widget: Any {
     /// space left on each axis (infinite: no limit).
     fn measure(&mut self, _cx: &mut MeasureCx, _known: Known, _avail: Size) -> Size {
         Size::ZERO
+    }
+
+    /// For which available space the size of the last measure stays the answer (specs/06,
+    /// "Measuring leaves"): `None`, the default, for only the space it was asked at.
+    fn holds(&self) -> Option<Holds> {
+        None
     }
 
     /// Emits the node's own instances, on top of the background the tree painted.

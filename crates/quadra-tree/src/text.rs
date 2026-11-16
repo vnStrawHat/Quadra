@@ -2,7 +2,7 @@
 //! not its own: it is laid out and painted with the text values that hold at its node.
 
 use quadra_a11y::{Role, Semantics};
-use quadra_layout::Known;
+use quadra_layout::{Holds, Known};
 use quadra_prim::{Color, Corners, Point, Rect, Size};
 use quadra_render::{Kind, Quad, Sprite};
 use quadra_text::{EditBuffer, FaceId, GlyphFormat, Paragraph, TextStyle, Word};
@@ -29,6 +29,8 @@ pub struct Text {
     tiles: Vec<GlyphTile>,
     /// One line, cut where its box ends with an ellipsis, shaped at measure.
     pub ellipsis: Option<Option<std::rc::Rc<Word>>>,
+    /// The available widths the last measure's size holds for; the height it never reads.
+    holds: Option<(f32, f32)>,
 }
 
 impl Text {
@@ -36,7 +38,8 @@ impl Text {
         let (text, style, color) = (text.into(), TextStyle::default(), Color::BLACK);
         let (selected, selection) = ((0, 0), Color::TRANSPARENT);
         let (tiles, ellipsis) = (Vec::new(), None);
-        Text { text, style, color, selection, paragraph: None, stale: false, selected, tiles, ellipsis }
+        let (paragraph, stale, holds) = (None, false, None);
+        Text { text, style, color, selection, paragraph, stale, selected, tiles, ellipsis, holds }
     }
 
     /// The offset in the text nearest a point from the node's corner.
@@ -108,12 +111,23 @@ impl Widget for Text {
             }
         };
         let width = known.width.unwrap_or(avail.width);
-        let Some(dots) = &mut self.ellipsis else { return paragraph.wrap(cx.text, width) };
+        // A known width is the only one read.
+        let any = known.width.map(|_| (0.0, f32::INFINITY));
+        let Some(dots) = &mut self.ellipsis else {
+            let size = paragraph.wrap(cx.text, width);
+            self.holds = any.or(Some(paragraph.kept_widths()));
+            return size;
+        };
         // One line, as wide as the box lets it be: what is past its end is cut.
         let face = cx.text.face_for(&self.style);
         *dots = Some(cx.text.word("\u{2026}", face, self.style.size));
         let whole = paragraph.wrap(cx.text, f32::INFINITY);
+        self.holds = any.or((whole.width <= width).then_some((whole.width, f32::INFINITY)));
         Size::new(whole.width.min(width), whole.height)
+    }
+
+    fn holds(&self) -> Option<Holds> {
+        self.holds.map(|width| Holds { width, any_height: true })
     }
 
     fn paint(&mut self, cx: &mut PaintCx) {

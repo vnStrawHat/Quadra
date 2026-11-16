@@ -106,8 +106,10 @@ fn the_clock_says_the_date_and_the_time_and_only_its_text_is_painted_again_each_
     a.h.advance(Duration::from_secs(1));
     let (stats, _) = a.h.frame_if_needed().expect("the clock changed");
     assert!(a.h.has_text("2026-11-16 20:45:08"));
-    // The clock's text alone is painted again.
+    // The clock's text alone is painted again, and laid out: asked again its four requests, it
+    // answers the same size, so nothing above it runs (specs/06, "Measuring leaves").
     assert_eq!((stats.bindings_run, stats.nodes_styled, stats.nodes_painted), (1, 0, 1), "{stats:?}");
+    assert_eq!((stats.nodes_laid_out, stats.nodes_measured), (4, 4), "{stats:?}");
 }
 
 #[test]
@@ -135,4 +137,21 @@ fn ram_is_the_private_working_set_and_the_card_has_the_details() {
     let card = a.h.tree.window_rect(a.h.tree.overlays().next().expect("the card"));
     // The status bar is the window's last 30 px.
     assert!(card.bottom() <= 700.0 - 30.0, "over the status bar: {card:?}");
+}
+
+#[test]
+fn a_reading_as_wide_as_the_last_lays_out_only_its_text() {
+    let mut a = app(true);
+    let mut reading = usage(0, 10);
+    reading.memory = 183 * MB;
+    a.shell.set_usage(reading);
+    a.h.advance(Duration::from_secs(2));
+    let (stats, _) = a.h.frame_if_needed().expect("the reading changed");
+    assert!(a.h.has_text("183 MB"));
+    assert_eq!((stats.nodes_laid_out, stats.nodes_measured), (4, 4), "{stats:?}");
+    // A wider one moves what follows it.
+    reading.memory = 1830 * MB;
+    a.shell.set_usage(reading);
+    a.wait(2000);
+    assert!(a.h.has_text("1830 MB"));
 }

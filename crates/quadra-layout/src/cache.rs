@@ -25,10 +25,38 @@ impl Request {
     }
 }
 
+/// The requests an answer also holds for, beside its own (specs/06, "Measuring leaves"): the
+/// available widths in `aw`, both ends included, and with `any_h` any available height.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct Span {
+    pub aw: (f32, f32),
+    pub any_h: bool,
+}
+
+impl Span {
+    /// Only the request itself: no width is in an empty range.
+    pub const EXACT: Span = Span { aw: (f32::INFINITY, f32::NEG_INFINITY), any_h: false };
+
+    /// Holds for every request `old` held for.
+    pub fn covers(&self, old: &Span) -> bool {
+        let width = old.aw.0 > old.aw.1 || (self.aw.0 <= old.aw.0 && old.aw.1 <= self.aw.1);
+        width && (self.any_h || !old.any_h)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub(crate) struct Entry {
     pub req: Request,
     pub out: Size,
+    pub span: Span,
+}
+
+impl Entry {
+    fn answers(&self, r: &Request) -> bool {
+        let (e, span) = (&self.req, &self.span);
+        let aw = e.aw == r.aw || (span.aw.0 <= r.aw && r.aw <= span.aw.1);
+        e.kw == r.kw && e.kh == r.kh && aw && (e.ah == r.ah || span.any_h)
+    }
 }
 
 /// What a node told its parent: its cached results and its last perform (the request at which
@@ -63,9 +91,14 @@ impl Answers {
 
     /// The answer to a measure, if it is known.
     pub fn cached(&mut self, req: &Request) -> Option<Size> {
-        let i = (0..SLOTS).find(|&i| self.has(i) && self.cache[i].req == *req)?;
+        let i = (0..SLOTS).find(|&i| self.has(i) && self.cache[i].answers(req))?;
         self.measured |= 1 << i;
         Some(self.cache[i].out)
+    }
+
+    /// What the known answer to a measure holds for: the entry `cached` answers it from.
+    pub fn span(&self, req: &Request) -> Option<Span> {
+        (0..SLOTS).find(|&i| self.has(i) && self.cache[i].answers(req)).map(|i| self.cache[i].span)
     }
 
     /// The result of the last perform if it was at this request and nothing measured the node
@@ -76,7 +109,7 @@ impl Answers {
     }
 
     /// Records a result. A perform's entry is never the one replaced.
-    pub fn store(&mut self, req: Request, out: Size, perform: bool) {
+    pub fn store(&mut self, req: Request, out: Size, perform: bool, span: Span) {
         self.probed = !perform;
         let known = (0..SLOTS).find(|&i| self.has(i) && self.cache[i].req == req);
         if perform
@@ -88,6 +121,7 @@ impl Answers {
         }
         if perform && let Some(i) = known {
             self.cache[i].out = out;
+            self.cache[i].span = span;
             self.pslot = i as u8;
             self.done = true;
             return;
@@ -99,7 +133,7 @@ impl Answers {
         if self.has(i) {
             self.lost = true;
         }
-        self.cache[i] = Entry { req, out };
+        self.cache[i] = Entry { req, out, span };
         self.valid |= 1 << i;
         self.measured = if perform { self.measured & !(1 << i) } else { self.measured | 1 << i };
         self.next = (self.next + 1) % SLOTS as u8;
@@ -140,13 +174,13 @@ mod tests {
     fn the_perform_entry_survives_and_a_lost_answer_is_noticed() {
         let mut a = Answers::default();
         assert!(a.is_empty());
-        a.store(req(1.0), Size::new(1.0, 1.0), true);
+        a.store(req(1.0), Size::new(1.0, 1.0), true, Span::EXACT);
         assert_eq!(a.performed(&req(1.0)), Some(Size::new(1.0, 1.0)));
         for w in 2..=4 {
-            a.store(req(w as f32), Size::new(w as f32, 1.0), false);
+            a.store(req(w as f32), Size::new(w as f32, 1.0), false, Span::EXACT);
         }
         assert!(!a.lost && a.performed(&req(1.0)).is_none()); // measured since: perform again
-        a.store(req(5.0), Size::ZERO, false); // a fifth answer replaces a measure, not the perform
+        a.store(req(5.0), Size::ZERO, false, Span::EXACT); // a fifth answer replaces a measure, not the perform
         assert!(a.lost && a.cached(&req(1.0)).is_some() && a.cached(&req(2.0)).is_none());
         assert_eq!(a.perform().map(|e| e.req), Some(req(1.0)));
         assert_eq!(a.measures().count(), 3);

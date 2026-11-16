@@ -3,7 +3,7 @@
 
 use quadra_prim::Size;
 
-use crate::cache::Request;
+use crate::cache::{Request, Span};
 use crate::style::{Display, Length, Style, finite};
 use crate::tree::{LayoutId, LayoutTree};
 
@@ -12,6 +12,23 @@ pub trait Measure {
     /// `known` is the content size already fixed per axis; `avail` the space left for the
     /// content on each axis (infinite: no limit).
     fn measure(&mut self, node: LayoutId, known: Known, avail: Size) -> Size;
+
+    /// For which available space the size `measure` just returned for `node` stays its answer
+    /// (specs/06, "Measuring leaves"). `None`, the default: only the space it was asked at.
+    fn holds(&mut self, _node: LayoutId) -> Option<Holds> {
+        None
+    }
+}
+
+/// The available space a leaf's size holds for: requests that differ from the one asked only
+/// within it are answered with that size, not measured again.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Holds {
+    /// The available content widths, both ends included (a text: from its widest line up to
+    /// the width it was broken at).
+    pub width: (f32, f32),
+    /// The available height played no part.
+    pub any_height: bool,
 }
 
 /// A size of which each axis may be fixed.
@@ -78,16 +95,17 @@ impl LayoutTree {
             let limit = finite(req.ah);
             known.height = Some(clamp_axis(h, s.min_height.resolve(limit), s.max_height.resolve(limit)));
         }
-        let out = if leaf {
+        let (out, span) = if leaf {
             self.measure_leaf(m, id, s, known, req)
         } else {
-            match s.display {
+            let out = match s.display {
                 Display::Flex => self.layout_flex(m, id, s, known, req, perform),
                 Display::Grid => self.layout_grid(m, id, s, known, req, perform),
                 Display::None => Size::ZERO,
-            }
+            };
+            (out, Span::EXACT)
         };
-        self.nodes[id.index()].answers.store(req, out, perform);
+        self.nodes[id.index()].answers.store(req, out, perform, span);
         out
     }
 
@@ -98,7 +116,7 @@ impl LayoutTree {
         s: &Style,
         known: Known,
         req: Request,
-    ) -> Size {
+    ) -> (Size, Span) {
         let f = s.frame();
         self.stats.measured += 1;
         let inner = Known {
@@ -115,6 +133,13 @@ impl LayoutTree {
         let h = known.height.unwrap_or_else(|| {
             clamp_axis(content.height + f.vertical(), s.min_height.resolve(ah), s.max_height.resolve(ah))
         });
-        Size::new(w, h)
+        // A minimum or maximum in percent reads the available space whatever the content.
+        let fixed = |l: Length| matches!(l, Length::Auto | Length::Px(_));
+        let limits = [s.min_width, s.max_width, s.min_height, s.max_height];
+        let span = m.holds(id).filter(|_| limits.into_iter().all(fixed)).map_or(Span::EXACT, |h| Span {
+            aw: (h.width.0 + f.horizontal(), h.width.1 + f.horizontal()),
+            any_h: h.any_height,
+        });
+        (Size::new(w, h), span)
     }
 }

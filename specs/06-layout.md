@@ -36,7 +36,8 @@ min-content, max-content, unbounded); and whether to **measure** (report a size)
 
 - A node keeps its last four answers with their requests, and which one was its last perform.
   A flex container asks a child for its base size, then its cross size at the final main size,
-  then performs it; nested containers repeat that, hence four.
+  then performs it; nested containers repeat that, hence four. Four covers a leaf only when
+  requests that differ in available space it ignores are one request ("Measuring leaves").
 - A node's layout depends only on its own style and its children's answers. So a node whose
   style and whose children's answers did not change leaves its parent's layout as it was.
 
@@ -48,7 +49,9 @@ A node flagged `LAYOUT` (a layout style value, its children, or a leaf's content
 forgets its answers. The layout pass then, for each flagged node, deepest first:
 
 1. Asks the node again the requests it had answered, in the order they were asked and the
-   perform last, and stops at the first answer that differs.
+   perform last, and stops at the first answer that differs. An answer that held for more
+   than its request ("Measuring leaves") is the same only if the new one holds for all of
+   that too: the parent may have been given it for any of those requests.
 2. **The answers are the same**: stop. Only the node's subtree was laid out, and the node keeps
    its rect. Nothing above it runs.
 3. **An answer differs**: the parent forgets its own answers and is asked its old requests
@@ -89,6 +92,16 @@ because every render built new nodes. Here nodes persist, and a change is a flag
 - A text node measures from its retained paragraph (08): shaping is reused, wrapping at a new
   width uses cached advances.
 - A leaf whose content did not change and whose request is in its cache is never measured.
+- **What an answer holds for**: with its size a leaf may say for which available widths that
+  size stays its answer, and that the available height played no part. A text says both: the
+  same lines come out from its widest line up to the width it was broken at (any width up,
+  when no line broke for width), and it never reads the height. A request that differs from a
+  cached one only there is answered from it. Without that, each auto-sized ancestor adds its
+  own available sizes (a bar's height, a group's padding, the window's width) to the requests
+  a leaf deep in a status bar is asked, the four answers are overwritten in one layout, and a
+  clock whose text changes every second climbs to the window although its size never
+  changes. Saying nothing (the default) keeps the exact request: a leaf that fills its space,
+  or one whose minimum or maximum is a percentage of it, does.
 
 ## Scrolling
 

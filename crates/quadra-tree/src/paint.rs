@@ -151,8 +151,8 @@ impl Painter<'_> {
         if shown && (self.all || self.nodes[i].flags != 0) {
             self.todo.push(id);
         }
-        if shown && force {
-            self.moved.push(id); // something above it moved: its place in this layer changed
+        if shown && (force || !was) {
+            self.moved.push(id); // something above it moved, or moved while it was hidden
         }
     }
 

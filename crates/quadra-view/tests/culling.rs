@@ -111,3 +111,25 @@ fn a_box_shown_again_outside_the_band_keeps_what_it_holds_in_place() {
     hidden.set(false);
     h.frame();
 }
+
+#[test]
+fn a_layer_shown_again_stands_where_moves_left_it() {
+    // A layer in a row of no height is hidden; the box above it grows while the window shows
+    // the end of the page; it shows again where it now is.
+    let (above, hidden, y) = (signal(30.0f32), signal(false), signal(0.0f32));
+    let mut h = Harness::new();
+    let shown = move || if hidden.get() { Display::None } else { Display::Flex };
+    let layer = row().cut_to_parent().display(shown).child(text(""));
+    let rows = (0..200).map(|i| div().height(40.0).child(text(format!("{i}"))));
+    let page = column().child(div().height(above)).child(div().height(0.0).child(layer)).children(rows);
+    mount_root(&mut h.tree, scroll(y, page));
+    h.frame();
+    hidden.set(true);
+    h.frame();
+    y.set(4000.0);
+    h.frame();
+    above.set(100.0);
+    h.frame();
+    hidden.set(false);
+    h.frame(); // the harness checks the layer's place against a paint from scratch
+}

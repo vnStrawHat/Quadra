@@ -11,17 +11,17 @@ use quadra_view::{Div, NodeRef, Place, by_text, column, div, row, scroll, text};
 
 use super::MenuItem;
 use crate::icon::icon;
-use crate::popup::{EDGE, popup};
+use crate::popup::{EDGE, listing, popup};
 use crate::{icons, size, token};
 
 /// The height of a row, and the most of a menu that shows before it scrolls.
-const ROW: f32 = 23.0;
+const ROW: f32 = 28.0;
 const MOST: f32 = 450.0;
 
-/// A row that is chosen: 23 px high, 4 px in from the menu's edge, 6 px beside what it holds
-/// and between its parts, the shortcut at the right and 16 px from the label at least.
+/// A row that is chosen: 28 px high, 4 px in from the menu's edge, 8 px beside what it holds,
+/// 6 px between its parts, the shortcut at the right and 16 px from the label at least.
 fn face(item: &MenuItem, marks: bool) -> Div {
-    let face = row().height(by_text(ROW)).grow(1.0).padding_x(6.0).gap(6.0).radius(token::RADIUS_MD);
+    let face = row().height(by_text(ROW)).grow(1.0).padding_x(8.0).gap(6.0).radius(token::RADIUS_SM);
     let face = face.align_items(Align::Center);
     let face = face.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
     let face = if item.danger { face.text_color(token::ERROR) } else { face };
@@ -78,9 +78,9 @@ pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
     let mut height = 8.0;
     for item in items {
         if item.separator {
-            let rule = div().height(13.0).padding_y(6.0).child(div().grow(1.0).bg(token::LINE));
+            let rule = div().height(9.0).padding_y(4.0).child(div().grow(1.0).bg(token::LINE_STRONG));
             lines.push(Line::Part(Box::new(rule)));
-            height += 13.0;
+            height += 9.0;
             continue;
         }
         if item.heading {
@@ -100,7 +100,7 @@ pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
             line.inner = Some(Rc::new(move |at: &NodeRef, shown, ends| {
                 let place = Place::Beside(at.clone(), Side::Right, Along::Start, -2.0);
                 let inside = inside.clone();
-                popup(shown, (place, 1), Some(at.clone()), move || rows(inside.clone(), ends.clone()))
+                popup(shown, listing(place), Some(at.clone()), move || rows(inside.clone(), ends.clone()))
             }));
         }
         lines.push(Line::Row(Box::new(line)));

@@ -183,12 +183,15 @@ diff tints) and the terminal's 16 ANSI colors.
 
 ### Elevation
 
-Overlays are `overlay_bg` with a 1 px `line_strong` border and `radius_xl`. On a dark plane
-a light shadow does not show, so dark themes cast deeper ones.
+Overlays are `overlay_bg` with a 1 px `line_strong` border and `radius_xl`. Lists to choose
+from (menus, context menus, selects, combobox lists, the command palette) are the menu plane
+instead: `panel` with a 1 px `line` border and `radius_sm`, at level 1, the look of a
+terminal's context menu. On a dark plane a light shadow does not show, so dark themes cast
+deeper ones.
 
 | Level | Used by | Shadows (x, y, blur, black alpha), light | dark |
 |---|---|---|---|
-| 1 | menus, tooltips, popovers, combobox lists | 0 2 3 .12; 0 1 0 .06 | 0 6 16 .34; 0 1 3 .26 |
+| 1 | menus, tooltips, popovers, combobox lists, the command palette | 0 2 3 .12; 0 1 0 .06 | 0 6 16 .34; 0 1 3 .26 |
 | 2 | pickers, dialogs, notifications, toasts | 0 2 3 .12; 0 3 6 .08; 0 6 12 .04; 0 1 0 .12 | 0 18 44 .44; 0 4 10 .30 |
 
 Pickers and dialogs hang 80 px from the window top, centered, with no backdrop; a click
@@ -300,12 +303,12 @@ same rule: no backdrop, an outside click closes them.
   as its text), a 32 wide `+` button.
   The buttons are ghost with a 16 icon in `text`, hover `line` at 40 %, press at 60 %,
   only their outer corners rounded. Arrow keys step too.
-- **Menu:** level 1 overlay, min width 200, 4 vertical padding. Rows are 23 tall, inset 4
-  from the edge with 6 inner padding (text 10 from the edge), radius 4; hover
+- **Menu:** the menu plane, min width 200, 4 vertical padding. Rows are 28 tall, inset 4
+  from the edge with 8 inner padding (text 12 from the edge), radius 4; hover
   `panel_hover`, keyboard highlight `press`. Icons 14 in `text_2`, only when some item has
   one; in their place a 10 px square of a colour, radius 2 (`swatch`: a tag the user gave). Shortcut
-  right-aligned, 12 px `text_2` (`mono`: in the mono face, as an address), 16 from the label. Separator: 1 px `line`, 6 above
-  and below, edge to edge. Section header: 20 tall, 12 px `text_2`. Check marks
+  right-aligned, 12 px `text_2` (`mono`: in the mono face, as an address), 16 from the label. Separator: 1 px `line_strong`, 4
+  above and below, edge to edge. Section header: 20 tall, 12 px `text_2`. Check marks
   `accent_text`, 14 px in the icon column (`checked` on a `MenuItem`). A submenu (`items` on a
   `MenuItem`): a 12 px `chevron_right` at the row's right end; it opens on hover, click or
   right arrow, left arrow closes it; submenus overlap their row by 2 px. A long menu is capped
@@ -330,9 +333,9 @@ same rule: no backdrop, an outside click closes them.
   hover fill; the active tab has a 2 px `accent` line along its top. Panel tabs (`tabs`)
   mark the chosen one with a 2 px `accent` line along its bottom. The dirty mark is a 6 px
   `accent` dot, always shown; the close button (18, 14 icon, in `text`) shows on hover.
-- **Picker / command palette:** 544 wide (palette 608), at most 384 tall, level 2. Query
-  row 36 tall with 10 padding over a 1 px `line`; rows as list rows, the chosen one with
-  the 2 px `accent` bar; matches `accent_text`; shortcuts muted on the right; an optional
+- **Picker / command palette:** 544 wide (palette 608), at most 384 tall, the menu plane.
+  Query row 36 tall with 12 padding over a 1 px `line`; rows as the menu's (28 tall, text 12
+  from the edge), the chosen one with the 2 px `accent` bar; matches `accent_text`; shortcuts muted on the right; an optional
   footer with a top `line`.
 - **Table:** a 1 px `line` grid; the selected row is `accent` at 10 % with a 2 px `accent`
   bar along its left edge.

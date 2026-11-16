@@ -10,7 +10,7 @@ use quadra_view::{AnyView, NodeRef, Place, View, by_text, column, div, dynamic, 
 
 use super::{Ends, MenuItem, rows};
 use crate::icon::icon;
-use crate::popup::popup;
+use crate::popup::{listing, popup};
 use crate::{icons, token};
 
 /// The width of a searched menu.
@@ -32,7 +32,7 @@ where
     let (items, ask) = (Rc::new(items), ask.to_string());
     let ends = move || Ends { done: Rc::new(move || open.set(false)), leave: None };
     let place = Place::Beside(opener.clone(), side, Along::Start, 4.0);
-    popup(open, (place, 1), Some(opener.clone()), move || {
+    popup(open, listing(place), Some(opener.clone()), move || {
         let query = signal(String::new());
         let (listed, first) = (items.clone(), items.clone());
         let field = text_input(query).placeholder(&ask).on_submit(move |typed: &str| {
@@ -68,7 +68,7 @@ where
 {
     let ends = move || Ends { done: Rc::new(move || open.set(false)), leave: None };
     let place = Place::Beside(opener.clone(), side, Along::Start, gap);
-    popup(open, (place, 1), Some(opener.clone()), move || rows(items(), ends()))
+    popup(open, listing(place), Some(opener.clone()), move || rows(items(), ends()))
 }
 
 /// A ghost button that is only an icon and opens a searched menu under itself.

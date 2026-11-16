@@ -15,7 +15,7 @@ use quadra_view::{AnyView, Div, MountCx, NodeRef, Place, View, by_text, div, row
 pub(crate) use self::rows::rows;
 pub use self::search::{menu_beside, searched_icon_button, searched_menu};
 use crate::button::{Button, Size, Variant, button, icon_button};
-use crate::popup::{open_now, popover};
+use crate::popup::{below, listing, open_now, popover, popup};
 use crate::token;
 pub(crate) use quadra_headless::menu::Ends;
 
@@ -139,7 +139,7 @@ where
     F: Fn() -> Vec<MenuItem> + 'static,
 {
     let ends = move || Ends { done: Rc::new(move || open.set(false)), leave: None };
-    popover(open, opener, move || rows(items(), ends()))
+    popup(open, listing(below(opener)), Some(opener.clone()), move || rows(items(), ends()))
 }
 
 pub struct ContextMenu<V, F> {

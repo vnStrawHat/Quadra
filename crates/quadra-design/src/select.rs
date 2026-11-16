@@ -14,7 +14,7 @@ use quadra_view::{IntoProp, MountCx, NodeRef, Prop, View, by_text, column, div, 
 
 use crate::icon::icon;
 use crate::menu::{Ends, MenuItem, rows};
-use crate::popup::{EDGE, popover};
+use crate::popup::{EDGE, below, listing, popup};
 use crate::{icons, size, token};
 
 pub struct Select {
@@ -102,7 +102,7 @@ impl View for Select {
         let (options, width) = (self.options, self.width);
         if let Some(ask) = self.search {
             let wide = width.max(220.0) - EDGE;
-            let list = popover(open, &opener, move || {
+            let list = popup(open, listing(below(&opener)), Some(opener.clone()), move || {
                 search::searched(options.clone(), chosen, open, wide, ask.clone())
             });
             return column().child(face).child(list).mount(cx);
@@ -118,7 +118,9 @@ impl View for Select {
         };
         let ends = move || Ends { done: Rc::new(move || open.set(false)), leave: None };
         // As wide as the field at least.
-        let list = popover(open, &opener, move || rows(items(), ends()).min_width(width - EDGE));
+        let list = popup(open, listing(below(&opener)), Some(opener.clone()), move || {
+            rows(items(), ends()).min_width(width - EDGE)
+        });
         column().child(face).child(list).mount(cx)
     }
 }

@@ -13,11 +13,11 @@ use quadra_tree::{NodeId, State};
 use quadra_view::{Div, MountCx, Place, View, by_text, column, div, row, scroll, text, text_input};
 
 use crate::display::key_label;
-use crate::popup::{EDGE, popup};
+use crate::popup::{EDGE, listing, popup};
 use crate::token;
 
 /// The height of a row, and the most of the list that shows.
-const ROW: f32 = 32.0;
+const ROW: f32 = 28.0;
 const MOST: f32 = 347.0;
 
 /// Something the app can do: what it is called, the keys that do it too, and the doing.
@@ -106,7 +106,7 @@ fn palette<F>(open: Signal<bool>, commands: F, ask: String, none: Rc<str>) -> im
 where
     F: Fn() -> Vec<Command> + 'static,
 {
-    popup(open, (Place::Top(80.0), 2), None, move || {
+    popup(open, listing(Place::Top(80.0)), None, move || {
         let (all, query) = (Rc::new(commands()), signal(String::new()));
         // The commands that match, the best first; the order they were given in decides ties.
         let known = all.clone();
@@ -126,7 +126,7 @@ where
             let command = &all[i];
             let hits = fuzzy_hits(&query.get_untracked(), &command.title).unwrap_or_default();
             let line =
-                row().align_items(Align::Center).gap(8.0).grow(1.0).height(by_text(ROW)).padding_x(6.0);
+                row().align_items(Align::Center).gap(8.0).grow(1.0).height(by_text(ROW)).padding_x(8.0);
             let line = line.radius(4.0).label(command.title.clone());
             let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
             let line =
@@ -138,7 +138,9 @@ where
             };
             let line = line.child(div().grow(1.0));
             match &command.keys {
-                Some(keys) => line.child(text(key_label(keys)).color(token::TEXT_2)),
+                Some(keys) => {
+                    line.child(text(key_label(keys)).color(token::TEXT_2).size(crate::size::TEXT_SM.size))
+                }
                 None => line,
             }
         };
@@ -149,7 +151,7 @@ where
             empty: Some(Rc::new({
                 let none = none.clone();
                 move || {
-                    div().padding_x(10.0).padding_y(4.0).child(text(none.to_string()).color(token::TEXT_2))
+                    div().padding_x(12.0).padding_y(4.0).child(text(none.to_string()).color(token::TEXT_2))
                 }
             })),
         };
@@ -157,7 +159,7 @@ where
         let rows = found.rows(parts, |_| 0, run.clone());
         let (enter, submit, matches) = (run.clone(), run, found.matches);
         let field = text_input(query).placeholder(&ask).on_submit(move |_| submit(on.get_untracked()));
-        let ask = row().align_items(Align::Center).height(by_text(37.0)).padding_x(10.0);
+        let ask = row().align_items(Align::Center).height(by_text(37.0)).padding_x(12.0);
         let ask = ask.border_bottom(1.0).border_color(token::LINE).child(div().grow(1.0).child(field));
         let row_px = by_text(ROW);
         let tall = move || Length::Px((matches.get().len().max(1) as f32 * row_px() + 8.0).min(MOST));

@@ -20,6 +20,13 @@ pub(crate) fn surface(level: u8) -> Div {
     plane.radius(token::RADIUS_XL).elevation(level)
 }
 
+/// The plane of a list to choose from (menus, selects, the command palette): the panel's fill,
+/// a quiet border and small corners.
+pub(crate) fn menu_surface() -> Div {
+    let plane = column().bg(token::PANEL).border(1.0).border_color(token::LINE);
+    plane.radius(token::RADIUS_SM).elevation(1)
+}
+
 /// What the border of the plane adds to the width of what it holds: a popup that is so wide
 /// asks for that less for its content.
 pub(crate) const EDGE: f32 = 2.0;
@@ -31,18 +38,29 @@ pub(crate) struct Stand {
     place: Place,
     level: u8,
     along: Option<Edge>,
+    menu: bool,
 }
 
 impl From<(Place, u8)> for Stand {
     fn from((place, level): (Place, u8)) -> Stand {
-        Stand { place, level, along: None }
+        Stand { place, level, along: None, menu: false }
     }
 }
 
 impl From<Edge> for Stand {
     fn from(edge: Edge) -> Stand {
-        Stand { place: base::Stand::from(edge).place, level: 2, along: Some(edge) }
+        Stand { place: base::Stand::from(edge).place, level: 2, along: Some(edge), menu: false }
     }
+}
+
+/// A list to choose from at `place`, on the menu plane.
+pub(crate) fn listing(place: Place) -> Stand {
+    Stand { place, level: 1, along: None, menu: true }
+}
+
+/// Below `opener`, 4 px off it.
+pub(crate) fn below(opener: &NodeRef) -> Place {
+    Place::Beside(opener.clone(), Side::Below, Along::Start, 4.0)
 }
 
 /// Shows what `content` builds, in a popup below `opener`, while `open` is true. `content`
@@ -52,12 +70,7 @@ where
     V: View + 'static,
     F: Fn() -> V + 'static,
 {
-    popup(
-        open,
-        (Place::Beside(opener.clone(), Side::Below, Along::Start, 4.0), 1),
-        Some(opener.clone()),
-        content,
-    )
+    popup(open, (below(opener), 1), Some(opener.clone()), content)
 }
 
 /// A popup at a place of the caller's choosing (beside a node on another side, at a point,
@@ -72,8 +85,12 @@ where
     V: View + 'static,
     F: Fn() -> V + 'static,
 {
-    let Stand { place, level, along } = stand.into();
-    let plane = move || if along.is_some() { surface(level).radius(0.0) } else { surface(level) };
+    let Stand { place, level, along, menu } = stand.into();
+    let plane = move || match (menu, along) {
+        (true, _) => menu_surface(),
+        (_, Some(_)) => surface(level).radius(0.0),
+        _ => surface(level),
+    };
     base::popup(open, base::Stand { place, along }, opener, plane, content)
 }
 
@@ -85,5 +102,5 @@ pub(crate) fn open_now<V: View + 'static>(
     place: Place,
     content: impl FnOnce(Rc<dyn Fn()>) -> V,
 ) {
-    base::open_now(tree, owner, place, || surface(1), content)
+    base::open_now(tree, owner, place, menu_surface, content)
 }

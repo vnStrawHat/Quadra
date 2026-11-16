@@ -10,7 +10,7 @@ use quadra::{
     Align, AnyView, Clipboard, MountCx, NodeId, View, by_text, column, div, dynamic, effect, row, signal,
     text, untrack, use_context,
 };
-use quadra_design::{MenuItem, context_menu, fonts, icons, token};
+use quadra_design::{MenuItem, context_menu, fonts, token};
 use quadra_term::{Link, Session};
 
 use crate::links::Links;
@@ -198,15 +198,11 @@ fn menu_of(
         let (copies, pastes, (all, clears)) = (clipboard.clone(), clipboard.clone(), (s.clone(), s.clone()));
         let (pasted, closes) = (s.clone(), model.clone());
         let items = vec![
-            MenuItem::new("Copy")
-                .icon(icons::COPY)
-                .keys("Ctrl+Shift+C")
-                .disabled(chosen.is_none())
-                .on_select(move || {
-                    if let (Some(clipboard), Some(text)) = (&copies, &chosen) {
-                        clipboard.write_text(text);
-                    }
-                }),
+            MenuItem::new("Copy").keys("Ctrl+Shift+C").disabled(chosen.is_none()).on_select(move || {
+                if let (Some(clipboard), Some(text)) = (&copies, &chosen) {
+                    clipboard.write_text(text);
+                }
+            }),
             MenuItem::new("Paste").keys("Ctrl+Shift+V").on_select(move || {
                 if let Some(clipboard) = &pastes {
                     pasted.paste(&clipboard.read_text().unwrap_or_default());
@@ -221,7 +217,9 @@ fn menu_of(
             split(&model, "Split left", Some(Side::Left), "Ctrl+Shift+Left"),
             split(&model, "Split up", Some(Side::Up), "Ctrl+Shift+Up"),
             split(&model, "Split down", Some(Side::Down), "Ctrl+Shift+Down"),
+            MenuItem::separator(),
             crate::channels::menu(model.tabs(), &space),
+            MenuItem::separator(),
             MenuItem::new("Close space").keys("Ctrl+W").danger().on_select(move || {
                 _ = closes.close_space(id);
             }),
@@ -233,11 +231,10 @@ fn menu_of(
 /// A row that splits the space to a side, or as Split space does.
 fn split(model: &Model, name: &str, side: Option<Side>, keys: &str) -> MenuItem {
     let model = model.clone();
-    let item = MenuItem::new(name).keys(keys).on_select(move || match side {
+    MenuItem::new(name).keys(keys).on_select(move || match side {
         Some(side) => model.split_to(side),
         None => model.split(),
-    });
-    if side.is_none() { item.icon(icons::COLUMNS_2) } else { item }
+    })
 }
 
 /// Start logging, or Stop logging while a log is open.

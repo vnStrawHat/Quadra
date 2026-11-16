@@ -125,8 +125,8 @@ space), `Ctrl+Alt+Left/Right` moves the focus; a press anywhere in a space makes
 `[process exited N]` and closes on a key. The other button opens a space's menu (when the
 setting has it, the default): Open link and Copy link first when the press was on a link, Copy
 (with a selection), Paste, Select all, Clear scrollback, then Split space, Split right, Split
-left, Split up, Split down, Input channel, and Close space; a program that reports the mouse takes the press
-instead.
+left, Split up, Split down, Input channel, and Close space, the groups split by lines, no
+icons; a program that reports the mouse takes the press instead.
 
 Input channels (broadcast typing): five, A to E. A space that joined one sends what is typed in
 it to the other members of that channel, in any tab: keys as its view encoded them, typed text

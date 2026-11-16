@@ -132,6 +132,14 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### The menu plane (2026-11-16)
+
+Menus, context menus, selects, combobox lists and the command palette on the menu plane
+(specs/behaviour/15, "Elevation", "Menu", "Picker / command palette"): `panel` with a `line`
+border and `radius_sm`, rows of 28 px with the text 12 px from the edge, separators of
+`line_strong` 4 px off their rows, the palette's keys in 12 px (`popup::menu_surface`,
+`popup::listing`). 1Term's space menu without icons, its groups split by lines (specs/19).
+
 ### 1Term after the revised canvas (2026-11-16)
 
 The user's canvas "1Term" revised in the Quadra design language (specs/19, "Window", "Rail",

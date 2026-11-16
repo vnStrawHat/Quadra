@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use quadra::{Clipboard, Signal, View, div, signal, text, use_context};
-use quadra_design::{MenuItem, Notice, Tone, Variant, dialog, icons};
+use quadra_design::{MenuItem, Notice, Tone, Variant, dialog};
 use quadra_shell::Opener;
 use quadra_term::TermLink;
 
@@ -137,7 +137,7 @@ impl Links {
         let (follows, url, clipboard) = (self.clone(), link.url.clone(), self.clipboard.clone());
         vec![
             MenuItem::new("Open link").on_select(move || follows.follow(link.clone())),
-            MenuItem::new("Copy link").icon(icons::COPY).on_select(move || {
+            MenuItem::new("Copy link").on_select(move || {
                 if let Some(clipboard) = &clipboard {
                     clipboard.write_text(&url);
                 }

@@ -9,6 +9,7 @@ seconds="${1:-15}"
 tools/cargo.sh build --release -p quadra-bench-doomfire 2>&1 | grep -E "^(error|warning)" -A12 || true
 tools/cargo.sh build --release -p oneterm --example doomfire 2>&1 | grep -E "^(error|warning)" -A12 || true
 mkdir -p .tmp/1term-bench
+rm -rf .tmp/1term-bench/defaults # a window of the default settings, whatever a run before changed
 tools/conpty.sh > /dev/null
 target/release/doomfire-feed.exe --seconds 5 --size 200x50
 target/release/doomfire-conpty.exe --seconds 8 --size 147x40

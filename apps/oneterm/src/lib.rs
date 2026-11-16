@@ -38,7 +38,7 @@ use quadra_term::Session;
 pub use hosts::Host;
 pub use local::local_shell;
 pub use model::{Command, Model, Space, Tab};
-pub use prefs::{Prefs, theme};
+pub use prefs::{KIT_THEME, Prefs, theme};
 pub use remote::{remote_shell, remote_shell_with};
 pub use shells::{Launch, Remote, Shell};
 pub use signals::{percent, state_word};
@@ -110,7 +110,11 @@ impl OneTerm {
             .grow(1.0)
             .min_height(0.0)
             .child(body.container(column().grow(1.0).display(locked::shown(shows(false)))))
-            .child(page::page(&model).display(locked::shown(shows(true))))
+            // Mounted only while open: its fields are built when they are seen.
+            .child(quadra::show(shows(true), {
+                let model = model.clone();
+                move || page::page(&model)
+            }))
             .child(locked::Card(model.clone()));
         // The cards stand at the workspace's top right: clear of the dock while it shows.
         let (notices, dock) = (self.model.notices(), self.model.ui().dock);

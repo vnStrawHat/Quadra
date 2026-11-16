@@ -21,31 +21,39 @@ pub fn local_shell(launch: Launch) -> Session {
     if let Some(start) = &start {
         session.cwd().set(start.display().to_string());
     }
-    let size = session.size();
+    // The console starts at the grid's size, once the view has sized it: a program that reads
+    // its size only at start reads the real one. ponytail: the closure holds the session until
+    // then, so a space never shown keeps its session alive with it.
     let program = launch.shell.map(|shell| (shell.program.display().to_string(), shell.args));
-    let options = PtyOptions {
-        program,
-        cwd: start,
-        env: vec![("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into())],
-        rows: size.rows,
-        cols: size.cols,
-    };
-    let (feeder, ended) = (session.feeder(), session.feeder());
-    let spawned =
-        Pty::spawn(options, move |bytes| feeder.feed(bytes, Instant::now()), move |code| ended.exited(code));
-    match spawned {
-        Ok(pty) => {
-            let pty = Rc::new(pty);
-            let (resizes, closes) = (pty.clone(), pty.clone());
-            let link = Link::new(move |bytes| pty.write(bytes))
-                .on_resize(move |size| resizes.resize(size.rows, size.cols))
-                .on_close(move || closes.close());
-            session.connect(link);
+    let starts = session.clone();
+    session.when_sized(move |size| {
+        let options = PtyOptions {
+            program,
+            cwd: start,
+            env: vec![("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into())],
+            rows: size.rows,
+            cols: size.cols,
+        };
+        let (feeder, ended) = (starts.feeder(), starts.feeder());
+        let spawned = Pty::spawn(
+            options,
+            move |bytes| feeder.feed(bytes, Instant::now()),
+            move |code| ended.exited(code),
+        );
+        match spawned {
+            Ok(pty) => {
+                let pty = Rc::new(pty);
+                let (resizes, closes) = (pty.clone(), pty.clone());
+                let link = Link::new(move |bytes| pty.write(bytes))
+                    .on_resize(move |size| resizes.resize(size.rows, size.cols))
+                    .on_close(move || closes.close());
+                starts.connect(link);
+            }
+            Err(e) => {
+                let said = format!("1Term: the shell did not start: {e}\r\n");
+                starts.feeder().feed(said.as_bytes(), Instant::now());
+            }
         }
-        Err(e) => {
-            let said = format!("1Term: the shell did not start: {e}\r\n");
-            session.feeder().feed(said.as_bytes(), Instant::now());
-        }
-    }
+    });
     session
 }

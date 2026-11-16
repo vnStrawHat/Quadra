@@ -24,6 +24,7 @@ the writer sees it. Release builds.
 | The console host 1.25.260930003 beside the binary (`tools/conpty.sh`), alone | 147x40 | 627 to 634 | 109 | 68 |
 | The console host 1.25 alone | 200x50 | 434 | 155 | 66 |
 | **1Term with the console host 1.25** | 147x40 | **592 to 593** | 109 | 64 |
+| 1Term on 2026-11-16: ligatures, semantic highlighting and a minimum contrast on (its defaults), padding 0/5/0/10 | 143x39 | **591** | 105 | 64 |
 
 With the system's console host 1Term is at that host's ceiling: what it passes on is all
 1Term gets, and 1Term takes it as fast as nothing at all would (a read buffer of 256 KB in
@@ -32,6 +33,11 @@ host, beside the binary (the user's choice; specs/01, R15), passes nearly twice 
 1Term takes 93 % of it: 592 fps, "great" in the demo's bands (100 or more). The rest is not
 the lock (53 µs 60 times a second) and the machine has 12 threads; most likely the host and
 the parsing thread share cores.
+
+Since 2026-11-16 the bench's window runs on settings of its own, removed before each run
+(`.tmp/1term-bench/defaults`): its numbers are those of 1Term's defaults. The shell starts
+once the view has sized the grid (`Session::when_sized`), so the demo reads the window's size;
+before, it could read the 80 by 24 the session starts at.
 
 ## 2026-11-15 — a new band of a long page (on 57c15af plus this commit)
 

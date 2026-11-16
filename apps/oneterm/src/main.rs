@@ -20,7 +20,7 @@ fn main() -> quadra::Result<()> {
     }
     // The theme the settings name, the system's by default.
     let chosen = app.settings().value("appearance.theme", "System".to_string());
-    let named = app.settings().value("appearance.colour_theme", String::new());
+    let named = app.settings().value("appearance.colour_theme", oneterm::KIT_THEME.to_string());
     let first = quadra_design::system_theme(&app.appearance());
     let app =
         quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), &named.get(), seen));

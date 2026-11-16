@@ -27,9 +27,9 @@ fn main() -> quadra::Result<()> {
         std::thread::sleep(Duration::from_millis(200));
         std::process::exit(0);
     });
-    let mut app = quadra::app()?.dirs(AppDirs::under(std::path::Path::new(".tmp/1term-bench")));
+    let mut app = quadra::app()?.dirs(AppDirs::under(std::path::Path::new(".tmp/1term-bench/defaults")));
     let chosen = app.settings().value("appearance.theme", "Dark".to_string());
-    let named = app.settings().value("appearance.colour_theme", String::new());
+    let named = app.settings().value("appearance.colour_theme", oneterm::KIT_THEME.to_string());
     let first = quadra_design::system_theme(&app.appearance());
     app = quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), &named.get(), seen));
     let args = vec!["--seconds".into(), seconds, "--out".into(), out.display().to_string()];

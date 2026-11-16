@@ -16,7 +16,11 @@ fn vietnamese_is_composed_at_the_caret_and_committed_into_the_value() {
     h.mount(move || column().child(div().size(200.0, 20.0).child(text_input(name).size(10.0))));
     h.frame();
     let field = h.tree.children(h.tree.children(h.tree.root().unwrap())[0])[0];
-    let painted = |h: &mut Harness| h.tree.scene().layer(h.tree.scene().roots()[0]).instances().len();
+    // What draws something: a text keeps room to grow, empty instances (specs/07).
+    let painted = |h: &mut Harness| {
+        let scene = h.tree.scene();
+        scene.layer(scene.roots()[0]).instances().iter().filter(|i| i.rect().width > 0.0).count()
+    };
     assert_eq!(h.tree.text_caret(), None); // nothing that takes text has the focus
 
     h.click(26.0, 10.0); // between the two spaces: 4 characters, 6 px each

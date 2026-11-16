@@ -108,7 +108,8 @@ impl Painter<'_> {
                 paint_own(self.nodes, i, self.layout, rect, how, self.fonts, self.scratch);
                 self.stats.nodes_painted += 1;
             }
-            let to = self.scratch.len() as u32;
+            let to = from + room(self.nodes[i].own, self.scratch.len() as u32 - from, culled);
+            self.scratch.resize(to as usize, Instance::default()); // a default instance draws nothing
             self.nodes[i].fresh = (from, to);
             self.stats.instances_written += to - from;
             self.same &= to - from == self.nodes[i].own;
@@ -210,6 +211,12 @@ impl Painter<'_> {
         (self.nodes[i].flags, self.nodes[i].fresh) = (0, NOT_PAINTED);
         (next.len() - start) as u32
     }
+}
+
+/// The instances a node keeps in its layer when it paints `count` and kept `own` before
+/// (specs/07, "A node keeps its room"): never fewer than before, but outside the band none.
+fn room(own: u32, count: u32, culled: bool) -> u32 {
+    if culled { count } else { count.max(own) }
 }
 
 impl Tree {

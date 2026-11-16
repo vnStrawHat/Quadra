@@ -190,6 +190,7 @@ fn a_level_above_the_window_casts_its_shadows_under_the_box() {
         uploaded.push(drawn.instances_uploaded);
     }
     // The layer is the two boxes, and under the first: two shadows at a menu's level, four
-    // at a dialog's, none on the ground.
-    assert_eq!(uploaded, [4, 6, 2]);
+    // at a dialog's, none on the ground, where the box keeps its room (specs/07): its range
+    // of five, one box and four empty, is overwritten in place.
+    assert_eq!(uploaded, [4, 6, 5]);
 }

@@ -90,6 +90,8 @@ impl Tree {
                 let theme = self.theme_at(id).clone();
                 let how = (self.scale, band, self.text_at(), &*theme);
                 paint_own(&mut self.nodes, i, &self.layout, rect, how, fonts, out);
+                // The room the node keeps holds empty instances after what it painted.
+                out.resize(out.len().max(start + self.nodes[i].own as usize), Instance::default());
             }
             own = out.len() - start;
             if shown {

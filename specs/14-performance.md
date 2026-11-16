@@ -164,7 +164,7 @@ gate builds and tests in plain release, which builds far faster; `tools/bench.sh
 | Layout | Results kept on nodes; boundaries stop propagation; caches skip clean subtrees (06) |
 | Text | Paragraphs kept on nodes; a width change breaks lines without shaping (08) |
 | Emitting instances | Per node, on change; clean subtrees copied or untouched (07) |
-| Uploads | A node's range when the count is unchanged; one layer otherwise |
+| Uploads | A node's range while its count fits the room it keeps; one layer otherwise |
 | Draw calls | One per layer run; no split on atlas pages |
 | Scrolling and transform animation | A layer constant |
 | Allocation per frame | None in steady state: no view description, recycled rows, reused scratch buffers |

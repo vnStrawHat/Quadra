@@ -43,8 +43,10 @@ impl NumberInput {
         self
     }
 
+    /// The step of the chevrons and the arrows; the field shows at least its digits.
     pub fn step(mut self, step: f64) -> Self {
-        self.step = step;
+        let digits = format!("{step}").split_once('.').map_or(0, |(_, after)| after.len());
+        (self.step, self.decimals) = (step, self.decimals.max(digits));
         self
     }
 

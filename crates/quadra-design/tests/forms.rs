@@ -79,6 +79,19 @@ fn numbers(stepper: bool) -> (Harness, Signal<f64>) {
 }
 
 #[test]
+fn a_number_input_never_writes_back_what_it_shows() {
+    let (whole, tenths) = (signal(1.5f64), signal(1.5f64));
+    let mut h = mount(move || {
+        let tenths = number_input(tenths).range(1.0, 2.5).step(0.1).test_id("tenths");
+        column().child(number_input(whole).test_id("whole")).child(tenths)
+    });
+    settle(&mut h);
+    assert_eq!((whole.get_untracked(), tenths.get_untracked()), (1.5, 1.5));
+    assert!(h.semantics().contains("TextInput = \"2\" #whole"), "{}", h.semantics());
+    assert!(h.semantics().contains("TextInput = \"1.5\" #tenths"), "{}", h.semantics());
+}
+
+#[test]
 fn a_number_input_holds_a_number_typed_or_stepped() {
     let (mut h, count) = numbers(false);
     assert!(h.semantics().contains("TextInput = \"3\" #count"), "{}", h.semantics());

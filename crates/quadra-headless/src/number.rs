@@ -37,7 +37,11 @@ pub fn number(value: Signal<f64>, ends: (f64, f64), step: f64, digits: usize) ->
         }
     });
     effect(move || {
-        if let Some(v) = parse(&words.get()).filter(|v| *v != value.get_untracked()) {
+        let (typed, now) = (words.get(), value.get_untracked());
+        // What the field shows of the value is not typed: 1.5 shown as "2" stays 1.5.
+        if typed != show(now)
+            && let Some(v) = parse(&typed).filter(|v| *v != now)
+        {
             value.set(v);
         }
     });

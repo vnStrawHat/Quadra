@@ -327,7 +327,9 @@ As built so far:
   `text_input(..).fit()`: as wide as its text), a plus. The up and down arrows step
   it too (key context `action::NUMBER`). A number typed, with a point or a comma, is the
   value; what is no number changes nothing and shows as not accepted; a value written from
-  elsewhere is what the field says.
+  elsewhere is what the field says. What the field shows of a value is never written back
+  (1.5 shown with no digits is "2", and stays 1.5), and a step shows its own digits
+  (`.step(0.1)` shows one).
 - **`key_input(value)`** records a keystroke into `value` (`quadra_headless::keys`): the
   keys as `key_label` writes them, "Press keys…" while it records, "Not bound" while
   `value` is empty. `.label(..)` names it to a reader, `.width(..)` (160 px). Escape gives up;

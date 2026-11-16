@@ -87,9 +87,40 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
   `specs/01` the architecture decisions, `specs/behaviour/` what components do and look like
   (first written for the V implementation: their sections on its code are history, superseded
   by the numbered specs).
-- `crates/quadra-*`: the framework (specs/02, Crates); `crates/quadra` is the facade apps
-  depend on. `bench/compare`: the comparison bench's four scenes. `examples/`, `assets/`
-  appear with the phases that need them.
-- `docs/tour.md`: a tour of what exists, by crate and phase, to find names in.
+- `docs/tour.md`: a long tour of what exists, by crate and phase, to find names in.
 - `docs/progress.md`: status per phase. `docs/benchmarks.md`: Quadra's measurements, the
   baseline of specs/14. `docs/benchmarks-v.md`: the V implementation's, frozen, history only.
+
+| Crate | What it is |
+|---|---|
+| `quadra` | The facade apps depend on (`quadra::app()`) |
+| `quadra-prim` | Shared values: points, rects, edges, colours, transforms |
+| `quadra-reactive` | Signals, memos, effects, scopes, context |
+| `quadra-layout` | Flex and grid, incremental |
+| `quadra-text` | Paragraphs, wrapping, the shaping cache, `TextBackend` |
+| `quadra-vector` | Paths, the SVG of icons, coverage |
+| `quadra-render` | Instances, layers, display lists, `Renderer` |
+| `quadra-platform` | The OS boundary: `Platform`, windows, events, the headless platform |
+| `quadra-tree` | The retained node tree, widgets and the passes of a frame |
+| `quadra-view` | Views built once, properties bound to signals |
+| `quadra-async` | Timers, tasks, the background pool, inboxes |
+| `quadra-a11y` | The semantic tree, for assistive technology and tests |
+| `quadra-app` | Windows, the frame loop, settings, the log, time, language |
+| `quadra-native-win` | Windows: D3D11, DirectWrite, Win32, UI Automation (`unsafe` allowed) |
+| `quadra-shell` | OS services: dialogs, opener, tray, one instance, crash reports (`unsafe` allowed) |
+| `quadra-testing` | The test harness: no OS, no GPU, fixed text |
+| `quadra-headless` | Components without a look: state, keys, focus, semantics |
+| `quadra-design` | The kit: the design language, themes, the components' look |
+| `quadra-viz` | Charts: sparkline, line and bar |
+| `quadra-data` | JSON and YAML values as a tree, the log view |
+| `quadra-md` | Markdown: parser, outline, view, formulas, diagrams |
+| `quadra-code` | The code editor: buffer, tokenizers, highlighter, find |
+| `quadra-term` | The terminal view over `oneterm-vt`: grid, input, find, links |
+| `apps/oneterm` | 1Term, the terminal app (specs/19) |
+| `apps/oneterm-ssh` | 1Term's SSH and SFTP over `russh` |
+| `apps/oneterm-complete` | 1Term's command completion (specs/20) |
+| `examples/gallery` | Every kit component on a page: the kit's acceptance test |
+| `examples/plain` | A second kit over the headless components |
+| `bench/compare` | The comparison bench's four scenes |
+| `bench/doomfire` | Terminal throughput by the fire demo |
+| `bench/shots`, `bench/oneterm-shots` | The gallery's and 1Term's screens drawn to pictures |

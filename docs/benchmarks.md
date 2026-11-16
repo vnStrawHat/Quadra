@@ -5,8 +5,9 @@ baseline of specs/14, a change measured against the last of them. The V implemen
 numbers are in [benchmarks-v.md](benchmarks-v.md), kept as history (since 2026-11-16 Quadra is
 no port of it).
 
-Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
-defaults until phase R1 fixes it.
+Machine: the development machine (the one of benchmarks-v.md). Until 2026-11-16 the numbers are
+of the release profile at cargo's defaults; from then, of the dist profile (release with fat
+LTO and one codegen unit, specs/14, "Shipped builds").
 
 ## Method
 
@@ -24,7 +25,7 @@ driver threads included (`bench/runner`).
 
 ```sh
 tools/bench.sh compare [runs]   # both release binaries, then the runner: .tmp/bench/compare.json
-target/release/run.exe -runs 3 -out .tmp/bench/compare.json quadra=target/release/compare.exe [other=app.exe ...]
+target/dist/run.exe -runs 3 -out .tmp/bench/compare.json quadra=target/dist/compare.exe [other=app.exe ...]
 ```
 
 Each scene runs `-runs` times (5 by default, 3 from `tools/bench.sh`), the apps taking turns,

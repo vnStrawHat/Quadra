@@ -147,6 +147,15 @@ Means: no procedural macros; views boxed where placed; thin generic shims over n
 functions; crates split along the layers of 02; few dependencies, each with only the features
 used (01, R15); build output shared between checkouts by the build tool (00).
 
+## Shipped builds
+
+What ships and what is measured is the `dist` profile: release with fat LTO and one codegen
+unit, so the kit, the tree and the text system are optimized as one program and the hot
+paths inline across crates. Measured 2026-11-16 against plain release: document 0.725 to
+0.648 ms a frame, grid 1.195 to 1.135, the binary 2.84 to 2.77 MB (docs/benchmarks.md). The
+gate builds and tests in plain release, which builds far faster; `tools/bench.sh`,
+`tools/doomfire.sh` and `tools/package.sh` build in `dist`.
+
 ## Costs and their answers
 
 | Cost | Answer |

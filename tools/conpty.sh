@@ -2,7 +2,7 @@
 # tools/conpty.sh [folder...]: Microsoft's console host for 1Term (specs/01, R15; specs/19,
 # "The console host"). Fetches the pinned NuGet package into .cache/conpty once, checks its
 # SHA-256, and copies conpty.dll and OpenConsole.exe into each folder given, or into
-# target/debug, target/release and target/release/examples.
+# target/debug, target/release, target/dist and target/dist/examples.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 version=1.25.260930003
@@ -22,7 +22,7 @@ if [ ! -f "$unpacked/runtimes/win-x64/native/conpty.dll" ]; then
 	unzip -q -o "$package" -d "$unpacked"
 fi
 folders=("$@")
-[ ${#folders[@]} -gt 0 ] || folders=(target/debug target/release target/release/examples)
+[ ${#folders[@]} -gt 0 ] || folders=(target/debug target/release target/dist target/dist/examples)
 for folder in "${folders[@]}"; do
 	mkdir -p "$folder"
 	cp "$unpacked/runtimes/win-x64/native/conpty.dll" "$unpacked/build/native/runtimes/x64/OpenConsole.exe" "$folder/"

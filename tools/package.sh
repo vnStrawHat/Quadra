@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools/package.sh <example|oneterm>: the release binary of examples/<example> (the package
+# tools/package.sh <example|oneterm>: the shipped binary (the dist profile) of examples/<example> (the package
 # quadra-<example>, whose binary is <example>), or of 1Term (apps/oneterm, binary 1term),
 # with tools/app.manifest embedded by the linker, put in target/package/<name>/ (specs/16,
 # "Packaging"). Fonts and images are in the binary (specs/15, "Assets"); 1Term's folder also
@@ -18,12 +18,12 @@ oneterm) crate=oneterm bin=1term ;;
 esac
 manifest=$(cygpath -w "$PWD/tools/app.manifest")
 # Only the final crate is linked again with these arguments; its dependencies are built once.
-tools/cargo.sh rustc --release --quiet -p "$crate" --bin "$bin" -- \
+tools/cargo.sh rustc --profile dist --quiet -p "$crate" --bin "$bin" -- \
 	-C link-arg=/MANIFEST:EMBED -C "link-arg=/MANIFESTINPUT:$manifest"
 out="target/package/$name"
 rm -rf "$out"
 mkdir -p "$out"
-cp "target/release/$bin.exe" "$out/"
+cp "target/dist/$bin.exe" "$out/"
 grep -q PerMonitorV2 "$out/$bin.exe" || { echo "package: the manifest is not in $out/$bin.exe" >&2; exit 1; }
 if [ "$name" = oneterm ]; then
 	tools/conpty.sh "$out" > /dev/null

@@ -116,9 +116,10 @@ impl Input {
     pub(crate) fn build(self) -> Div {
         let field = text_input(self.value).placeholder(&self.placeholder);
         let field = if self.password { field.password() } else { field };
-        let field = match self.label {
-            Some(name) => field.label(name),
-            None => field,
+        // Read only, there is no field: the frame is a group a reader knows by the label.
+        let (field, group) = match (self.label, self.readonly) {
+            (Some(name), false) => (field.label(name), None),
+            (name, _) => (field, name),
         };
         let field = match self.submit {
             Some(submit) => field.on_submit(submit),
@@ -145,9 +146,12 @@ impl Input {
             (None, None) => frame,
         };
         let value = self.value;
-        let frame = match self.readonly {
-            true => frame.child(text(move || value.get()).selectable()),
-            false => frame.child(field),
+        let frame = match (self.readonly, group) {
+            (true, Some(name)) => {
+                frame.role(Role::Group).label(name).child(text(move || value.get()).selectable())
+            }
+            (true, None) => frame.child(text(move || value.get()).selectable()),
+            (false, _) => frame.child(field),
         };
         if !self.clears {
             return frame;

@@ -198,7 +198,7 @@ As built so far:
   `range_slider`, `radio_group` and `segmented` (the group), `button` (beside its visible
   label). The label of a `checkbox` or a `switch` is its visible words, and its name. A control that is named by what it shows (`select` by its option,
   `date_picker` by its date, `time_input` by its time) keeps those words as its value when
-  a label names it.
+  a label names it. A read-only `input` has no field: its frame is a group the label names.
 - **`color_input(value)`** is an input, 120 px, for a colour written `#rrggbb` (or `#rrggbbaa`,
   `Color::parse_hex`) in `value`, a `String`: a swatch of 14 px before the text, filled with the
   colour typed, or while the field is empty with `.fallback(paint)` (the colour that stands when

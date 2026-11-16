@@ -113,7 +113,8 @@ fn a_label_names_a_field_to_a_reader_and_follows_its_words() {
             .child(color_input(accent).placeholder("#rrggbb").label("Accent colour"))
             .child(number_input(count).label("Copies"))
             .child(number_input(count).stepper().label(move || format!("Copies of {}", name.get())))
-            .child(combobox(["Hanoi", "Hue"], city).placeholder("City").label("Home city"));
+            .child(combobox(["Hanoi", "Hue"], city).placeholder("City").label("Home city"))
+            .child(input(notes).readonly().label("Shown notes"));
         quadra_design::root().child(fields)
     });
     h.frame();
@@ -123,6 +124,8 @@ fn a_label_names_a_field_to_a_reader_and_follows_its_words() {
     for name in ["Find notes", "Notes", "Accent colour", "Copies", "Copies of Find notes", "Home city"] {
         assert_eq!(named(&h, name), 1, "{name}:\n{}", h.semantics());
     }
+    // Read only, the frame is a group known by the label.
+    assert_eq!(h.query(|n| n.semantics.role == Role::Group && n.semantics.name == "Shown notes").len(), 1);
     // The placeholder is no name while a label is given; words that change are followed.
     assert_eq!(named(&h, "Search") + named(&h, "Write here") + named(&h, "City"), 0);
     name.set("Find files".to_string());

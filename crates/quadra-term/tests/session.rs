@@ -79,6 +79,25 @@ fn replies_come_back_in_order_and_the_status_query_is_answered() {
 }
 
 #[test]
+fn what_waits_for_the_grid_runs_once_a_view_sized_it() {
+    let mut h = Harness::new();
+    let (slot, heard) = (Rc::new(RefCell::new(None)), Rc::new(RefCell::new(Vec::new())));
+    let (out, told) = (slot.clone(), heard.clone());
+    h.mount(move || {
+        let s = Session::new(ResizePolicy::BottomAnchor);
+        s.when_sized(move |size| told.borrow_mut().push(size));
+        *out.borrow_mut() = Some(s.clone());
+        column().size(400.0, 140.0).child(terminal(&s).font(10.0, 14.0))
+    });
+    assert!(heard.borrow().is_empty(), "not before layout");
+    h.settle();
+    assert_eq!(*heard.borrow(), [Size { rows: 8, cols: 64 }]);
+    let (s, told) = (slot.borrow_mut().take().unwrap(), heard.clone());
+    s.when_sized(move |size| told.borrow_mut().push(size)); // sized already: at once
+    assert_eq!(heard.borrow().len(), 2);
+}
+
+#[test]
 fn the_box_sizes_the_engine_and_then_the_link() {
     let mut t = term(false);
     assert_eq!(t.s.size(), Size { rows: 8, cols: 64 });

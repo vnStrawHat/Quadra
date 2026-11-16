@@ -224,6 +224,7 @@ pub(crate) fn regrid(tree: &mut Tree, id: NodeId, s: &Session) {
     let Some(w) = tree.widget_mut::<TerminalWidget>(id) else { return };
     let (rows, cols) = w.grid_for(size);
     s.resize(rows, cols);
+    s.sized();
     crate::widget::repaint(tree, id);
 }
 

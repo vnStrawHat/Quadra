@@ -3,7 +3,7 @@
 
 use std::time::Instant;
 
-use oneterm_vt::ResizePolicy;
+use oneterm_vt::{ResizePolicy, Size};
 
 use crate::session::{Link, Session};
 
@@ -36,6 +36,23 @@ impl Default for TermSettings {
 }
 
 impl Session {
+    /// Runs `f` once with the grid's size when a view has sized it, at once if one has
+    /// (specs/18, "The view").
+    pub fn when_sized(&self, f: impl FnOnce(Size) + 'static) {
+        if let Some(waiting) = &mut *self.0.sized.borrow_mut() {
+            waiting.push(Box::new(f));
+            return;
+        }
+        f(self.size());
+    }
+
+    /// The grid was sized by a view: what waited for it runs.
+    pub(crate) fn sized(&self) {
+        let Some(waiting) = self.0.sized.borrow_mut().take() else { return };
+        let size = self.size();
+        waiting.into_iter().for_each(|f| f(size));
+    }
+
     /// The text selected, if any.
     pub fn selection_text(&self) -> Option<String> {
         self.engine().term.selection_text()

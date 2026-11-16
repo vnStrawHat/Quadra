@@ -17,6 +17,7 @@ use crate::status::{ProgramState, Statuses};
 
 type WriteFn = dyn FnMut(&[u8]);
 type NoticeFn = dyn Fn(&Notice);
+type Waiting = Vec<Box<dyn FnOnce(Size)>>;
 
 /// What a transport gives a session: where the keys go, and what a resize and the end do.
 pub struct Link {
@@ -70,8 +71,9 @@ pub(crate) struct Shared {
     /// The view's clipboard and settings, for OSC 52.
     pub clipboard: RefCell<Option<Rc<dyn quadra_platform::Clipboard>>>,
     pub settings: Cell<Option<Signal<crate::TermSettings>>>,
-    /// The command line, once something follows it.
     pub line: crate::line::Follow,
+    /// What waits for a view to size the grid; `None` once one has.
+    pub sized: RefCell<Option<Waiting>>,
 }
 
 impl Session {
@@ -122,6 +124,7 @@ impl Session {
             clipboard: RefCell::new(None),
             settings: Cell::new(None),
             line: crate::line::Follow::new(),
+            sized: RefCell::new(Some(Vec::new())),
         });
         let (took, ended) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
         events

@@ -52,6 +52,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - Its size sets the grid: `cols = (width - left - right) / cell`, `rows = (height - top - bottom)
   / line`, at least 1 by 1.
   A change resizes the engine and then the link with the same size, after layout, once a frame.
+  `Session::when_sized(f)` runs `f` once with the grid's size when a view has sized it (at
+  once if one has): a transport that tells its program the size only at start (a pseudo
+  console) starts there, so a program that reads its size once reads the real one.
 - Per row: one quad per run of equal background; a glyph per cell at its column (a wide cell
   spans two), from the mono face (bold and italic faces for those attributes); underline and
   strike as quads; inverse swaps, faint is the foreground at 60 %, hidden draws no glyph.

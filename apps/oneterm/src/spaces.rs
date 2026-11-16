@@ -28,8 +28,19 @@ pub(crate) fn workspace(model: &Model) -> impl View + use<> {
 }
 
 /// The tab's pane tree, a space a leaf: a space is built once, and moves as the tree does.
+/// While the tab arranges itself it is arranged again when the tabs move between the rail and
+/// the strip, and a seam dragged makes the layout the user's.
 fn columns(model: &Model, tab: Tab) -> impl View + use<> {
     let model = model.clone();
+    let vertical = model.vertical();
+    effect(move || {
+        vertical.get();
+        untrack(|| tab.arrange());
+    });
+    effect(move || {
+        tab.layout.with(|_| ());
+        untrack(|| tab.follow_layout());
+    });
     let leaf = move |group: &str| {
         let space =
             tab.spaces.with_untracked(|spaces| spaces.iter().find(|it| it.id.to_string() == group).cloned());
@@ -204,10 +215,11 @@ fn menu_of(
             MenuItem::new("Clear scrollback").on_select(move || clears.clear_history()),
             logging(&model, &s, &name, folder.clone()),
             MenuItem::separator(),
-            split(&model, "Split right", Side::Right, "Ctrl+D"),
-            split(&model, "Split left", Side::Left, "Ctrl+Shift+Left"),
-            split(&model, "Split up", Side::Up, "Ctrl+Shift+Up"),
-            split(&model, "Split down", Side::Down, "Ctrl+Shift+Down"),
+            split(&model, "Split space", None, "Ctrl+D"),
+            split(&model, "Split right", Some(Side::Right), "Ctrl+Shift+Right"),
+            split(&model, "Split left", Some(Side::Left), "Ctrl+Shift+Left"),
+            split(&model, "Split up", Some(Side::Up), "Ctrl+Shift+Up"),
+            split(&model, "Split down", Some(Side::Down), "Ctrl+Shift+Down"),
             crate::channels::menu(model.tabs(), &space),
             MenuItem::new("Close space").keys("Ctrl+W").danger().on_select(move || {
                 _ = closes.close_space(id);
@@ -217,11 +229,14 @@ fn menu_of(
     })
 }
 
-/// A row that splits the space to a side.
-fn split(model: &Model, name: &str, side: Side, keys: &str) -> MenuItem {
+/// A row that splits the space to a side, or as Split space does.
+fn split(model: &Model, name: &str, side: Option<Side>, keys: &str) -> MenuItem {
     let model = model.clone();
-    let item = MenuItem::new(name).keys(keys).on_select(move || model.split_to(side));
-    if side == Side::Right { item.icon(icons::COLUMNS_2) } else { item }
+    let item = MenuItem::new(name).keys(keys).on_select(move || match side {
+        Some(side) => model.split_to(side),
+        None => model.split(),
+    });
+    if side.is_none() { item.icon(icons::COLUMNS_2) } else { item }
 }
 
 /// Start logging, or Stop logging while a log is open.

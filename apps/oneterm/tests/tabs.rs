@@ -99,7 +99,7 @@ fn the_rail_chooses_a_tab_and_the_middle_button_closes_one() {
 }
 
 #[test]
-fn three_spaces_in_a_row_keep_their_shells() {
+fn three_spaces_stack_beside_the_first_and_keep_their_shells() {
     let mut a = app();
     a.key(Key::D, Mods::CTRL);
     a.key(Key::D, Mods::CTRL);
@@ -109,12 +109,12 @@ fn three_spaces_in_a_row_keep_their_shells() {
     a.key(Key::Left, Mods::CTRL | Mods::ALT);
     a.key(Key::Left, Mods::CTRL | Mods::ALT);
     a.typed("a");
-    assert_eq!(a.screen(0), "a", "the focus goes across the row");
+    assert_eq!(a.screen(0), "a", "the focus goes across the stack");
     a.key(Key::Right, Mods::CTRL | Mods::ALT);
     a.typed("b");
     assert_eq!(a.screen(1), "b");
 
-    // Back to two columns and to three again: the shells live on.
+    // Back to two columns and to a stack again: the shells live on.
     a.key(Key::W, Mods::CTRL);
     assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
     a.key(Key::D, Mods::CTRL);
@@ -122,7 +122,7 @@ fn three_spaces_in_a_row_keep_their_shells() {
     assert_eq!(a.screen(3), "d");
     assert_eq!((a.screen(0), a.screen(2)), ("a".to_string(), "c".to_string()));
 
-    // A second tab comes and goes; the three show again.
+    // A second tab comes and goes; the stack shows again.
     a.key(Key::T, Mods::CTRL);
     a.key(Key::W, Mods::CTRL);
     assert!(a.h.has_text("3 local \u{B7} 3 spaces"));
@@ -137,7 +137,7 @@ fn a_click_in_a_space_gives_it_the_keys() {
         for _ in 1..spaces {
             a.key(Key::D, Mods::CTRL);
         }
-        // Each space's terminal: the second, then the first.
+        // Each space's terminal: the second column's top, then the first.
         let at = |a: &App, n: usize| {
             let ids = a.h.query(|n| n.semantics.role == Role::TextInput && n.semantics.name == "Terminal");
             a.h.tree.window_rect(ids[n]).center()

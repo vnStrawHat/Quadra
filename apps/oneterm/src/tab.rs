@@ -29,6 +29,8 @@ pub struct Tab {
     pub id: u64,
     /// Where the spaces stand: a leaf a space, its group the space's id.
     pub layout: Signal<quadra_design::work::Pane>,
+    /// Whether the tab arranges its spaces by itself: false once the layout is the user's.
+    pub auto: Signal<bool>,
     /// In the layout's reading order.
     pub spaces: Signal<Vec<Space>>,
     pub focus: Signal<usize>,
@@ -91,7 +93,8 @@ fn paths_of_programs_are_shortened() {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Command {
     NewTab,
-    /// To the right.
+    /// Split space: after the focused one, the tab arranged again (to the right of it in a
+    /// layout of the user's).
     Split,
     SplitTo(Side),
     CloseSpace,

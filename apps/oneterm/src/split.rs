@@ -1,10 +1,60 @@
 //! Splitting and closing spaces (specs/19, "Spaces"): a tab's spaces are the leaves of a
 //! pane tree, its groups their ids; the list of spaces is kept in the tree's reading order.
+//! A tab arranges its spaces by itself until a split to a side or a seam dragged makes the
+//! tree the user's.
 
-use quadra_design::work::Axis;
+use quadra_design::work::{Axis, Pane};
 
-use crate::model::{Model, Side, Space};
+use crate::model::{Model, Side, Space, Tab};
 use crate::shells::Launch;
+
+/// The tree a tab arranges its spaces in: a row of equal columns; beside the rail, from three
+/// on, the first on the left and the others stacked at its right.
+pub(crate) fn arranged(ids: &[String], rail: bool) -> Pane {
+    fn run(ids: &[String], axis: Axis) -> Pane {
+        match ids {
+            [] => Pane::leaf(""),
+            [one] => Pane::leaf(one.as_str()),
+            [first, rest @ ..] => Pane::Split {
+                axis,
+                ratio: 1.0 / ids.len() as f32,
+                first: Box::new(Pane::leaf(first.as_str())),
+                second: Box::new(run(rest, axis)),
+            },
+        }
+    }
+    match ids {
+        [first, rest @ ..] if rail && rest.len() >= 2 => {
+            Pane::row(Pane::leaf(first.as_str()), run(rest, Axis::Column), 0.5)
+        }
+        _ => run(ids, Axis::Row),
+    }
+}
+
+impl Tab {
+    fn ids(&self) -> Vec<String> {
+        self.spaces.with_untracked(|spaces| spaces.iter().map(|it| it.id.to_string()).collect())
+    }
+
+    /// The tree by the rule, for the spaces as they are and where the tabs are.
+    fn by_rule(&self) -> Pane {
+        arranged(&self.ids(), self.prefs.vertical.get_untracked())
+    }
+
+    /// Builds the tree again by the rule, while the tab arranges itself.
+    pub(crate) fn arrange(&self) {
+        if self.auto.get_untracked() {
+            self.layout.set(self.by_rule());
+        }
+    }
+
+    /// After the tree changed: one that is not the rule's (a seam dragged) is the user's now.
+    pub(crate) fn follow_layout(&self) {
+        if self.auto.get_untracked() && self.layout.with_untracked(|tree| *tree != self.by_rule()) {
+            self.auto.set(false);
+        }
+    }
+}
 
 impl Side {
     fn axis(self) -> Axis {
@@ -20,9 +70,9 @@ impl Side {
 }
 
 impl Model {
-    /// A new space to the right of the focused one of the active tab, with the focus.
+    /// A new space after the focused one of the active tab, with the focus (Split space).
     pub fn split(&self) {
-        self.split_to(Side::Right);
+        self.split_with(Launch { cwd: self.focused_cwd(), ..self.launch(None) });
     }
 
     /// A new local shell in the focused space's cwd on a side of it, with the focus.
@@ -30,23 +80,35 @@ impl Model {
         self.split_to_with(side, Launch { cwd: self.focused_cwd(), ..self.launch(None) });
     }
 
-    /// A new space running a launch to the right of the focused one, with the focus.
+    /// A new space running a launch after the focused one, with the focus: the tab arranged
+    /// again, or in a layout of the user's to the right of it.
     pub fn split_with(&self, launch: Launch) {
-        self.split_to_with(Side::Right, launch);
+        let Some(tab) = self.active_tab() else { return };
+        self.add(tab, (!tab.auto.get_untracked()).then_some(Side::Right), launch);
     }
 
     /// A new space running a launch on a side of the focused one of the active tab, in half
     /// of its room (a run of splits along one axis shared evenly), with the focus.
     pub fn split_to_with(&self, side: Side, launch: Launch) {
         let Some(tab) = self.active_tab() else { return };
+        tab.auto.set(false);
+        self.add(tab, Some(side), launch);
+    }
+
+    /// A new space in a tab beside its focused one: on a side of it, or by the rule.
+    fn add(&self, tab: Tab, side: Option<Side>, launch: Launch) {
         let Some(focused) = quadra::untrack(|| tab.focused()) else { return };
         let space = self.space(launch);
-        let (new, at) = (space.id.to_string(), tab.focus.get_untracked() + usize::from(!side.before()));
+        let after = side.is_none_or(|side| !side.before());
+        let (new, at) = (space.id.to_string(), tab.focus.get_untracked() + usize::from(after));
         tab.spaces.update(|spaces| spaces.insert(at.min(spaces.len()), space));
-        tab.layout.update(|tree| {
-            tree.split(&focused.id.to_string(), side.axis(), &new, side.before());
-            tree.even(&new);
-        });
+        match side {
+            Some(side) => tab.layout.update(|tree| {
+                tree.split(&focused.id.to_string(), side.axis(), &new, side.before());
+                tree.even(&new);
+            }),
+            None => tab.arrange(),
+        }
         tab.focus.set(at);
     }
 
@@ -76,10 +138,18 @@ impl Model {
             let focus = tab.focus.get_untracked();
             let focus = if focus > at { focus - 1 } else { focus.min(left - 1) };
             let next = tab.spaces.with_untracked(|spaces| spaces[focus].id.to_string());
-            tab.layout.update(|tree| {
-                tree.remove(&id.to_string());
-                tree.even(&next);
-            });
+            // Back at one space, the tab arranges itself again.
+            if left == 1 {
+                tab.auto.set(true);
+            }
+            if tab.auto.get_untracked() {
+                tab.arrange();
+            } else {
+                tab.layout.update(|tree| {
+                    tree.remove(&id.to_string());
+                    tree.even(&next);
+                });
+            }
             tab.focus.set(focus);
             true
         };

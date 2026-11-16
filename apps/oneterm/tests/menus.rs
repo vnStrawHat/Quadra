@@ -57,6 +57,7 @@ fn the_menu_pastes_splits_and_closes() {
         "Paste",
         "Select all",
         "Clear scrollback",
+        "Split space",
         "Split right",
         "Split down",
         "Input channel",
@@ -79,7 +80,7 @@ fn the_menu_pastes_splits_and_closes() {
     assert!(a.h.clipboard.read_text().unwrap_or_default().starts_with("ls"));
 
     a.other_click();
-    a.choose("Split right");
+    a.choose("Split space");
     assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
     a.other_click();
     a.choose("Close space");

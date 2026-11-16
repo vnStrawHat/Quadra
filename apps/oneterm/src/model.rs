@@ -212,6 +212,7 @@ impl Model {
         let tab = self.0.owner.run(|| Tab {
             id: self.id(),
             layout: signal(layout),
+            auto: signal(true),
             spaces: signal(vec![space]),
             focus: signal(0),
             name: signal(None),

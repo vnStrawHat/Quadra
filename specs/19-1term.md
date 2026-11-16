@@ -80,23 +80,31 @@ panel of 248 px at the left.
 A tab holds one or more spaces laid out by a pane tree (the kit's `work::Pane`, `panes`):
 splits in two, nested, side by side or one over the other, with the kit's seams between (a
 1 px line in a strip of 6 px that is dragged to give a side more room; a double click makes the
-sides even). A split puts a new local shell in the focused space's cwd beside it, on the side it
-names, in half of its room, and the focus goes to it; splits along one axis that hold one another
-share their room evenly again (three side by side are thirds), and so they do after a close.
-The order of the spaces (the focus keys, the status bar) is the tree's reading order. The layout
-is not saved. Each space has an 18 px header in mono 11 px on the panel colour: where it is on the left
+sides even). A tab arranges its spaces by itself until the user lays them out: arranged, its
+spaces stand side by side (a row of equal columns); beside the rail, three or more stand as the
+first on the left (half the width) and the others stacked at its right in equal heights. The
+tree is built again by that rule whenever a space is added (Split space, after the focused one)
+or closed, and when the tabs move between the rail and the strip. A split to a side, or a seam
+dragged to another place, makes the layout the user's: the tree stays as it is, and is changed
+only by what is done to it. A split to a side puts a new local shell in the focused space's cwd
+beside it, on the side it names, in half of its room, and the focus goes to it; splits along one
+axis that hold one another share their room evenly again (three side by side are thirds), and so
+they do after a close. Split space in a layout of the user's is a split to the right. A tab back
+at one space arranges itself again. The order of the spaces (the focus keys, the status bar) is
+the tree's reading order (in an arranged tab, each added space comes after the focused one). The
+layout is not saved. Each space has an 18 px header in mono 11 px on the panel colour: where it is on the left
 (the cwd, after `user@host:` for a remote space; in the text colour while focused), its signal
 on the right (a progress percentage; the state on a 12 px disc and its word in the state's
 colour, then the latency; with no state a green dot and the latency, else the program's title).
 The terminal has 10 px of room above and below and 12 at its sides. The focused space has a
 1 px accent ring, its own border (nothing lies over the terminal for the pointer). Notification cards stand at the workspace's top right, clear of the dock. `Ctrl+D` splits
-the active space to the right (Split space), `Ctrl+Shift+Right`, `Left`, `Up`, `Down` split it
-to that side, `Ctrl+W` closes it (the tab with its last
+the active space (Split space: a new local shell in its cwd, after it, with the focus),
+`Ctrl+Shift+Right`, `Left`, `Up`, `Down` split it to that side, `Ctrl+W` closes it (the tab with its last
 space), `Ctrl+Alt+Left/Right` moves the focus; a press anywhere in a space makes it the focused one. A space whose program ended shows
 `[process exited N]` and closes on a key. The other button opens a space's menu (when the
 setting has it, the default): Open link and Copy link first when the press was on a link, Copy
-(with a selection), Paste, Select all, Clear scrollback, then Split right, Split left, Split
-up, Split down, Input channel, and Close space; a program that reports the mouse takes the press
+(with a selection), Paste, Select all, Clear scrollback, then Split space, Split right, Split
+left, Split up, Split down, Input channel, and Close space; a program that reports the mouse takes the press
 instead.
 
 Input channels (broadcast typing): five, A to E. A space that joined one sends what is typed in
@@ -185,7 +193,7 @@ Seen clears: selecting the tab clears its bell dot and a "done" seen state.
 Under "New terminal" (and `+` of the strip): a search field ("Search hosts, or type
 user@host…"; at the rail's right, 360 wide), Local shell (the default shell, its name after it,
 `Ctrl+T`), the other local shells found (Command Prompt, Windows PowerShell, PowerShell 7, Git
-Bash, WSL), Split current space (`Ctrl+D`, to the right); from P2 Quick connect (`ssh user@host`), Recent and
+Bash, WSL), Split current space (`Ctrl+D`, Split space); from P2 Quick connect (`ssh user@host`), Recent and
 the saved hosts by group, Add SSH host. Rows have icons; a host has a dot (green while a space is
 connected to it) and its address at the right (Recent: the host and how long ago).
 
@@ -226,7 +234,7 @@ Security & lock (Lock now while a password is set; and whether programs may read
 Logging (log new local shells, log new SSH spaces, both off; the folder, typed or chosen in the
 system's dialog, empty for `session-logs` in the app's data folder; the formats shown, fixed; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
-logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D (to the right), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset (and Reset all at the top), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
+logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D ("Split the space", Split space), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset (and Reset all at the top), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Every setting of a page but Keybindings (which has its own) has the
 kit's Reset (specs/13, `settings`), back to the default the app reads it with (`Prefs::load`; the
@@ -425,5 +433,5 @@ license's notice. Without them every space still runs, on the system's host.
 The app's tests drive it through the semantic tree on the headless platform with `echo()`
 sessions: tabs and spaces made, split, closed, moved; the signals on the rail, headers and
 status bar from bytes fed to a session; the menu; completion (`tests/complete.rs`: prompts
-marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); find (`tests/find.rs`: Ctrl+F opens the bar, the count, Enter and Shift+Enter, Escape gives the focus back); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); splits (`tests/splits.rs`: each side, nesting, the order, a seam dragged, a close); input channels (`tests/channels.rs`: join, what a member and a non-member get, a paste bracketed by each, leave, close, an ended program); settings written; lock and unlock. Real
+marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); find (`tests/find.rs`: Ctrl+F opens the bar, the count, Enter and Shift+Enter, Escape gives the focus back); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); splits (`tests/splits.rs`: a tab arranged in the rail and the strip, each side, nesting, the order, a seam dragged, a close, Split space in a layout of the user's); input channels (`tests/channels.rs`: join, what a member and a non-member get, a paste bracketed by each, leave, close, an ended program); settings written; lock and unlock. Real
 shells only in `quadra-shell`'s pseudo console test.

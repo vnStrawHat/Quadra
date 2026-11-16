@@ -277,7 +277,8 @@ locale at the window root; a subtree can provide its own.
 - A component takes its inputs as arguments or a small builder struct. Inputs that can change
   are passed as signals or closures, not as values.
 - Two-way controls take a signal: `text_input(value: Signal<String>)`. The control writes it;
-  whoever else reads it updates.
+  whoever else reads it updates. A text longer than the input scrolls sideways to keep the
+  caret in view while the input has the focus, and shows its start when it has not.
 - `text_input(value).password()` shows a dot for each character (a grapheme cluster): the
   caret, the selection and a click are placed on the dots as they would be on the
   characters; copy and cut do nothing; assistive technology is told the dots.

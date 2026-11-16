@@ -136,6 +136,12 @@ fn the_caret_and_the_selection_are_painted_and_long_text_scrolls_with_the_caret(
     f.keys(&[(Key::Home, Mods::NONE)]);
     let field = f.h.tree.widget_mut::<TextField>(f.field).unwrap();
     assert_eq!(field.index_at(quadra_prim::Point::ZERO), 0); // back at the start
+    // Without the focus, the text shows its start wherever the caret was.
+    f.keys(&[(Key::End, Mods::NONE)]);
+    f.keys(&[(Key::Tab, Mods::NONE)]);
+    f.h.frame();
+    let field = f.h.tree.widget_mut::<TextField>(f.field).unwrap();
+    assert_eq!((field.buffer.head(), field.index_at(quadra_prim::Point::ZERO)), (33, 0));
 }
 
 #[test]

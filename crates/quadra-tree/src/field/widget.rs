@@ -42,8 +42,8 @@ impl Widget for TextField {
         let room = (rect.width - 1.0).max(0.0);
         self.scroll_x = self.scroll_x.clamp((caret - room).max(0.0), caret);
         self.scroll_x = self.scroll_x.min((paragraph.size().width - room).max(0.0));
-        if self.multiline {
-            self.scroll_x = 0.0;
+        if self.multiline || !self.focused {
+            self.scroll_x = 0.0; // without the focus, a long text shows its start
         }
         let left = rect.x - self.scroll_x;
         let (outer, inner) = (cx.clip, cx.clip.then(cx.device(rect), 0.0));

@@ -68,9 +68,10 @@ pub(crate) struct Shared {
     notices: RefCell<Vec<Rc<NoticeFn>>>,
     /// What the app keeps with the session.
     kept: RefCell<Vec<Rc<dyn std::any::Any>>>,
-    /// The view's clipboard and settings, for OSC 52.
+    /// The view's clipboard and settings, for OSC 52; the link under the other button's press.
     pub clipboard: RefCell<Option<Rc<dyn quadra_platform::Clipboard>>>,
     pub settings: Cell<Option<Signal<crate::TermSettings>>>,
+    pub pressed: RefCell<Option<crate::TermLink>>,
     pub line: crate::line::Follow,
     /// What waits for a view to size the grid; `None` once one has.
     pub sized: RefCell<Option<Waiting>>,
@@ -123,6 +124,7 @@ impl Session {
             kept: RefCell::new(Vec::new()),
             clipboard: RefCell::new(None),
             settings: Cell::new(None),
+            pressed: RefCell::new(None),
             line: crate::line::Follow::new(),
             sized: RefCell::new(Some(Vec::new())),
         });
@@ -146,9 +148,8 @@ impl Session {
         self.0.feeder.clone()
     }
 
-    /// Where the session writes keys and replies, and tells a resize and the end.
-    /// The link is told the grid's size at once: a transport started before layout sized
-    /// the grid hears it.
+    /// Where the session writes keys and replies, and tells a resize and the end. The link is
+    /// told the grid's size at once: a transport started before layout sized the grid hears it.
     pub fn connect(&self, link: Link) {
         let size = self.size();
         self.0.linked.set(self.0.linked.get() + 1);
@@ -204,8 +205,7 @@ impl Session {
     /// The text of the rows that show, each with its trailing blanks cut.
     pub fn screen_text(&self) -> Vec<String> {
         let engine = lock(&self.0.engine);
-        let top = engine.term.viewport().top;
-        let rows = engine.term.size().rows as u64;
+        let (top, rows) = (engine.term.viewport().top, engine.term.size().rows as u64);
         (0..rows).map(|i| engine.term.row_text(oneterm_vt::RowId(top.0 + i)).trim_end().to_string()).collect()
     }
 

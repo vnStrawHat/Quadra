@@ -14,6 +14,7 @@ use quadra_view::{MountCx, View};
 
 use crate::actions::TermSettings;
 use crate::keys::{TERMINAL_CONTEXT, TermCommand, key_event};
+use crate::link::TermLink;
 use crate::look::TermLook;
 use crate::session::Session;
 use crate::widget::TerminalWidget;
@@ -27,6 +28,7 @@ pub struct Terminal {
     autofocus: bool,
     settings: Option<Signal<TermSettings>>,
     first: Option<Rc<KeyFirst>>,
+    link: Option<Rc<dyn Fn(TermLink)>>,
 }
 
 type KeyFirst = dyn Fn(Key, Mods) -> bool;
@@ -41,6 +43,7 @@ pub fn terminal(session: &Session) -> Terminal {
         autofocus: false,
         settings: None,
         first: None,
+        link: None,
     }
 }
 
@@ -71,6 +74,14 @@ impl Terminal {
         self
     }
 
+    /// Calls `f` with the link a Ctrl+click is on (an OSC 8 hyperlink or a URL in the text),
+    /// which selects nothing then; while Ctrl is held, the link under the pointer is underlined.
+    /// What opens it, and whether it asks first, is the app's.
+    pub fn on_link(mut self, f: impl Fn(TermLink) + 'static) -> Self {
+        self.link = Some(Rc::new(f));
+        self
+    }
+
     /// Takes the focus once it is mounted.
     pub fn autofocus(mut self) -> Self {
         self.autofocus = true;
@@ -96,7 +107,7 @@ pub(crate) fn send(tree: &mut Tree, id: NodeId, session: &Session, bytes: &[u8])
 
 impl View for Terminal {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let Terminal { session, font: (size, line), look, autofocus, settings, first } = self;
+        let Terminal { session, font: (size, line), look, autofocus, settings, first, link } = self;
         let look = look
             .unwrap_or_else(|| signal(TermLook { size, line_height: line / size, ..TermLook::default() }));
         let mut style = Style { text: look.get_untracked().text(), ..Style::default() };
@@ -207,7 +218,7 @@ impl View for Terminal {
         if autofocus {
             cx.handle.with(move |tree| tree.focus(id));
         }
-        crate::pointer::pointer(cx, id, &session, settings);
+        crate::pointer::pointer(cx, id, &session, settings, link);
         id
     }
 }

@@ -168,6 +168,20 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - OSC 52: a program's text for the clipboard (`c`) is written to it, always; a program that asks
   for it (`?`) is answered (`52;c;<base64>` and BEL) only when `TermSettings::clipboard_read`
   says so, off by default. The view gives the session its clipboard and settings as it mounts.
+- Links: an OSC 8 hyperlink (the engine's id on each cell, its target from the snapshot) or a
+  URL in the text (`quadra_text::find_urls` over the logical line, so a URL that wraps is one
+  link), looked for in the snapshot the view drew last. An OSC 8 link runs over the cells of its
+  id along the logical line. With `Terminal::on_link(f)`, a press of the left button with Ctrl
+  on a link calls `f(TermLink { url, text })` and does nothing else: no selection, and neither
+  the press nor its release goes to a program that reports the mouse. `url` is an OSC 8 target
+  as the program gave it (no scheme is filtered here: what opens, what asks first and what is
+  refused is the app's); `text` is an OSC 8 link's visible text when it is not its target.
+  While Ctrl is held over a link (the pointer moving, or Ctrl pressed or released with the view
+  focused), its cells are underlined and the pointer is a hand. The link is looked for only
+  while Ctrl is held, and again only when the cell or Ctrl changed; a change paints the view
+  (it has no paint of its own by row) without taking a new snapshot. Without `on_link` the
+  pointer behaves as before. `Session::link_pressed()` is the link under the last press of the
+  other button (none after a press of another), for the app's menu.
 
 ## The command line
 
@@ -234,6 +248,10 @@ done, idle. OSC 133 A (a new prompt) drops working, blocked and idle. `?` is ans
 - `tests/input.rs`: keys in normal and application cursor mode, Ctrl and Alt; paste bracketed;
   a drag selects and copy gives its text (the harness's clipboard); the wheel scrolls history,
   and goes to a program that reports the mouse.
+- `tests/links.rs`: an OSC 8 link (its visible text when it differs) and a plain URL, one that
+  wraps, Ctrl+click calls the handler and selects nothing nor reaches a program that reports the
+  mouse, a click without Ctrl selects as before, the hand and the underline while Ctrl is held,
+  the link under a press of the other button.
 - `src/status.rs` unit tests: OSC 7501 parsing, records, the summary, the prompt rule, the query.
 - `quadra-shell` `tests/pty.rs`: `cmd /c echo` through the pseudo console, its output and its
   exit; skipped when no console can be made.

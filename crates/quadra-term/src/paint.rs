@@ -151,13 +151,14 @@ fn text(
     let on_row = |c: Option<Cell>| c.filter(|c| c.0 == row.id).map(|c| usize::from(c.1));
     let (stop, split) = (on_row(cursor.0), on_row(cursor.1));
     let (mut buf, mut token_to) = (String::new(), 0);
+    let hovered = w.hover.iter().find(|it| it.0 == row.id).map(|it| it.1.clone()).unwrap_or_default();
     for (col, cell) in row.cells.iter().enumerate() {
         if cell.width.is_spacer() {
             continue;
         }
         let style = row.style_of(cell);
         let meant = class(col).filter(|_| plain(style)).and_then(Highlight::of);
-        let underlined = meant.is_some_and(Highlight::underlined);
+        let underlined = meant.is_some_and(Highlight::underlined) || hovered.contains(&(col as u16));
         let blank = matches!(cell.content, SnapshotContent::Scalar(' '));
         if blank && !underlined && !style.attrs.intersects(Attrs::ALL_UNDERLINES | Attrs::STRIKEOUT) {
             continue; // nothing to draw, so no colour to work out

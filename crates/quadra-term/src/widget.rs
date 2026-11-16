@@ -57,6 +57,10 @@ pub struct TerminalWidget {
     pub(crate) marks: Marks,
     pub(crate) status: Option<i32>,
     pub(crate) shaping: crate::shape::Scratch,
+    /// The cells of the link Ctrl is held over, and the cell it was looked for at (`None`
+    /// inside: Ctrl not held, or off the grid); a new snapshot has it looked for again.
+    pub(crate) hover: crate::link::Cells,
+    pub(crate) hovered_at: Option<Option<(usize, usize)>>,
 }
 
 pub(crate) fn color(rgb: Rgb) -> Color {
@@ -101,6 +105,8 @@ impl TerminalWidget {
             marks: Marks::default(),
             status: None,
             shaping: Default::default(),
+            hover: Vec::new(),
+            hovered_at: None,
         }
     }
 
@@ -127,7 +133,7 @@ impl TerminalWidget {
     pub(crate) fn refresh(&mut self) -> bool {
         let mut engine = self.session.engine();
         let Engine { term, stamps, status, .. } = &mut *engine;
-        self.status = *status;
+        (self.status, self.hovered_at) = (*status, None);
         // ponytail: a `?2026` block held past its deadline waits for the next output or key
         // to be shown; a timer at `sync().deadline()` when a program leaves one open.
         term.snapshot_update(&mut self.state, Instant::now());

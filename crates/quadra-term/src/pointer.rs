@@ -19,12 +19,13 @@ use quadra_tree::{NodeId, PointerEvent, PointerKind, Tree};
 use quadra_view::MountCx;
 
 use crate::actions::TermSettings;
+use crate::link::TermLink;
 use crate::session::Session;
 use crate::view::send;
 use crate::widget::TerminalWidget;
 
 /// Where a point of the node is in the grid: a row and a column, as fractions.
-fn grid_at(tree: &mut Tree, id: NodeId, at: Point) -> Option<(f32, f32)> {
+pub(crate) fn grid_at(tree: &mut Tree, id: NodeId, at: Point) -> Option<(f32, f32)> {
     let w = tree.widget_mut::<TerminalWidget>(id)?;
     Some(((at.y - w.pad.top) / w.line, (at.x - w.gutter_width() - w.pad.left) / w.cell))
 }
@@ -43,22 +44,38 @@ pub(crate) fn pointer(
     id: NodeId,
     session: &Session,
     settings: Option<Signal<TermSettings>>,
+    link: Option<Rc<dyn Fn(TermLink)>>,
 ) {
     let settings = move || settings.map(|it| it.get_untracked()).unwrap_or_default();
     let clipboard = use_context::<Rc<dyn Clipboard>>();
-    // The button held while the program reports, and whether a selection is being dragged.
+    // The button held while the program reports, whether a selection is being dragged, and
+    // whether the press followed a link (its moves and release are then nothing).
     let reported: Rc<Cell<Option<TerminalMouseButton>>> = Rc::new(Cell::new(None));
-    let selecting = Rc::new(Cell::new(false));
+    let (selecting, linked) = (Rc::new(Cell::new(false)), Rc::new(Cell::new(false)));
+    let hovering = link.is_some().then(|| crate::link::follow_ctrl(cx, id));
     for kind in [PointerKind::Down, PointerKind::Move, PointerKind::Up] {
         let (writer, s, clipboard) = (cx.handle.clone(), session.clone(), clipboard.clone());
-        let (reported, selecting) = (reported.clone(), selecting.clone());
+        let (reported, selecting, linked) = (reported.clone(), selecting.clone(), linked.clone());
+        let (link, hovering) = (link.clone(), hovering.clone());
         cx.tree.on_pointer(id, kind, move |e: &mut PointerEvent| {
             let (at, mods, clicks, pressed) = (e.local, e.mods, e.clicks, button(e.button));
             let reports = s.engine().term.mouse_reporting().is_some() && !mods.contains(Mods::SHIFT);
+            match (kind, &hovering) {
+                (PointerKind::Move, Some(hovering)) => {
+                    hovering.moved(&writer, id, Some(at), mods.contains(Mods::CTRL))
+                }
+                (PointerKind::Down, _) => _ = s.0.pressed.take(),
+                _ => {}
+            }
             match kind {
                 PointerKind::Down if pressed.is_none() => return,
-                // Not the program's: the right button is the app's menu's, the middle pastes.
-                PointerKind::Down if !reports && pressed == Some(TerminalMouseButton::Right) => return,
+                // Not the program's: the right button is the app's menu's (told the link under
+                // it), the middle pastes.
+                PointerKind::Down if !reports && pressed == Some(TerminalMouseButton::Right) => {
+                    let s = s.clone();
+                    return writer
+                        .with(move |tree| *s.0.pressed.borrow_mut() = crate::link::under(tree, id, at));
+                }
                 PointerKind::Down if !reports && pressed == Some(TerminalMouseButton::Middle) => {
                     if let (true, Some(clipboard)) = (settings().middle_paste, &clipboard) {
                         e.stop();
@@ -83,8 +100,25 @@ pub(crate) fn pointer(
             let copies = (kind == PointerKind::Up && selects && settings().copy_on_select)
                 .then(|| clipboard.clone())
                 .flatten();
-            let s = s.clone();
+            let follows = kind == PointerKind::Down
+                && pressed == Some(TerminalMouseButton::Left)
+                && mods.contains(Mods::CTRL)
+                && link.is_some();
+            let (s, reported, selecting, linked, link) =
+                (s.clone(), reported.clone(), selecting.clone(), linked.clone(), link.clone());
             writer.with(move |tree| {
+                // Ctrl+click on a link follows it, and the press is nothing else.
+                if follows && let (Some(f), Some(found)) = (&link, crate::link::under(tree, id, at)) {
+                    reported.set(None);
+                    selecting.set(false);
+                    linked.set(true);
+                    return f(found);
+                }
+                if kind == PointerKind::Down {
+                    linked.set(false);
+                } else if linked.get() {
+                    return linked.set(kind != PointerKind::Up);
+                }
                 let Some((row, col)) = grid_at(tree, id, at) else { return };
                 let cell = (row.max(0.0) as usize, col.max(0.0) as usize);
                 let modes = s.engine().term.mode_snapshot();

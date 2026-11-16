@@ -153,9 +153,18 @@ impl Tree {
         self.add_handler(root, Handler::OutsidePress(Box::new(f)));
     }
 
-    /// Tells the overlays a press missed: the top one first.
+    /// Tells the overlays a press missed: the top one first. A press in an overlay that stands
+    /// beside a node of another (a submenu beside its row) is inside that one too.
     pub(crate) fn press_outside(&mut self, path: &[NodeId]) {
-        let missed: Vec<NodeId> = self.overlays().rev().filter(|root| !path.contains(root)).collect();
+        let mut hit: Vec<NodeId> = self.overlays().filter(|root| path.contains(root)).collect();
+        for o in self.overlays.iter().rev() {
+            let Anchor::Beside { node, .. } = o.anchor else { continue };
+            if hit.contains(&o.root) && self.is_alive(node) {
+                let holders = self.path(node);
+                hit.extend(self.overlays().filter(|root| holders.contains(root)));
+            }
+        }
+        let missed: Vec<NodeId> = self.overlays().rev().filter(|root| !hit.contains(root)).collect();
         for root in missed {
             if !self.is_alive(root) {
                 continue; // closed by what an overlay above it did

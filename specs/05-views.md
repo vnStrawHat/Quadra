@@ -264,7 +264,10 @@ A box is taken out of the flow of the box around it with `.absolute()`, and plac
 that box by `.left(..)`, `.top(..)`, `.right(..)` and `.bottom(..)`, each a constant or
 reactive: the knob of a slider. It is laid out alone when one of them changes. Pointer events reach the top overlay first; an
 overlay is told of a press that lands outside it (`on_outside_press`), which is how a menu
-closes; a focus scope in it keeps Tab inside.
+closes; a press in an overlay that stands beside a node of another (a submenu beside its row)
+is inside that other one too, so a choice in a submenu reaches it; a focus scope in it keeps
+Tab inside. A field given the focus back after its view is gone (popups closing in turn) takes
+it and starts nothing.
 
 ## Context in views
 

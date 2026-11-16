@@ -178,7 +178,8 @@ impl View for TextInput {
             if let Some(ended) = session.take() {
                 ended.dispose();
             }
-            if gained && blinks {
+            // A field whose view is gone may still be given the focus back as popups close.
+            if gained && blinks && owner.is_alive() {
                 let scope = owner.run(Scope::child);
                 let writer = writer.clone();
                 scope.run(|| {

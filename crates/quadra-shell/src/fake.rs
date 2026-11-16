@@ -10,7 +10,9 @@ use quadra_reactive::provide;
 
 use quadra_async::Sender;
 
-use crate::{Answer, Dialogs, FileDialog, Message, Opener, Tray, TrayEvent, TrayIcon, TrayImage};
+use crate::{
+    Answer, Dialogs, FileDialog, Message, Meter, Opener, Tray, TrayEvent, TrayIcon, TrayImage, Usage,
+};
 
 #[derive(Default)]
 pub struct FakeShell {
@@ -18,6 +20,7 @@ pub struct FakeShell {
     answers: RefCell<VecDeque<Answer>>,
     asked: Rc<RefCell<Vec<String>>>,
     tray: RefCell<Option<Sender<TrayEvent>>>,
+    usage: std::cell::Cell<Option<Usage>>,
 }
 
 impl FakeShell {
@@ -25,11 +28,18 @@ impl FakeShell {
         Rc::new(FakeShell::default())
     }
 
-    /// Gives the views mounted in the current scope this shell as their dialogs and opener.
+    /// Gives the views mounted in the current scope this shell as their dialogs, opener, tray
+    /// and meter.
     pub fn provide(self: &Rc<Self>) {
         provide::<Rc<dyn Dialogs>>(self.clone());
         provide::<Rc<dyn Opener>>(self.clone());
         provide::<Rc<dyn Tray>>(self.clone());
+        provide::<Rc<dyn Meter>>(self.clone());
+    }
+
+    /// What the meter reads from now on.
+    pub fn set_usage(&self, usage: Usage) {
+        self.usage.set(Some(usage));
     }
 
     /// The user does something to the icon the app last put in the tray.
@@ -102,6 +112,12 @@ impl Opener for FakeShell {
         let line: Vec<String> = line.chain([file.display().to_string()]).collect();
         self.ask("open with", &line.join(" "));
         true
+    }
+}
+
+impl Meter for FakeShell {
+    fn usage(&self) -> Option<Usage> {
+        self.usage.get()
     }
 }
 

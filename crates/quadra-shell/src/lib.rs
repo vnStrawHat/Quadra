@@ -22,11 +22,25 @@ use quadra_render::Renderer;
 pub use fake::FakeShell;
 
 /// What the app's process has used (specs/16, "Process usage"): processor time since it
-/// started, and its working set in bytes.
+/// started, its memory in bytes, its threads.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Usage {
+    /// The processor time of all its threads.
     pub cpu: std::time::Duration,
+    /// Since the process was created.
+    pub uptime: std::time::Duration,
+    /// The private working set: what the task manager shows as its memory.
     pub memory: u64,
+    pub working_set: u64,
+    pub peak_working_set: u64,
+    /// The commit: memory the process alone may use, in RAM or not.
+    pub private_bytes: u64,
+    pub threads: u32,
+}
+
+/// Reads what the app's process uses: the OS's ([`install`]) or a test's ([`FakeShell`]).
+pub trait Meter {
+    fn usage(&self) -> Option<Usage>;
 }
 pub use pty::{Pty, PtyOptions};
 #[cfg(windows)]
@@ -180,13 +194,13 @@ pub enum Instance {
     Second,
 }
 
-/// Gives the app's views the OS's dialogs, opener and tray ([`dialogs`], [`opener`],
-/// [`tray`]).
+/// Gives the app's views the OS's dialogs, opener, tray and meter ([`dialogs`], [`opener`],
+/// [`tray`], `Rc<dyn Meter>`).
 #[cfg(windows)]
 pub fn install<R: Renderer>(app: App<R>) -> App<R> {
     let shell = Rc::new(WinShell);
     let app = app.provide::<Rc<dyn Dialogs>>(shell.clone()).provide::<Rc<dyn Opener>>(shell.clone());
-    app.provide::<Rc<dyn Tray>>(shell)
+    app.provide::<Rc<dyn Tray>>(shell.clone()).provide::<Rc<dyn Meter>>(shell)
 }
 
 /// The app's tray. Call it while a view is built.

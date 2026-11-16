@@ -74,10 +74,19 @@ of the app; the process then ends as it would have.
 ## Process usage
 
 `process_usage() -> Option<Usage>`: what the app's own process has used, `Usage { cpu,
-memory }`: the processor time of all its threads since it started and its working set in
-bytes (`GetProcessTimes`, `GetProcessMemoryInfo`); `None` where the OS has no reading. A
-status bar takes two readings and divides the time between them by the wall time and the
-count of processors.
+uptime, memory, working_set, peak_working_set, private_bytes, threads }`: the processor time
+of all its threads since it started and the time since it was created (`GetProcessTimes`);
+its private working set (`memory`, what the task manager shows as its memory), working set,
+peak working set and private bytes (the commit) in bytes (`GetProcessMemoryInfo` with
+`PROCESS_MEMORY_COUNTERS_EX2`); and its count of threads (the process's entry in a Toolhelp
+snapshot of the processes, `CreateToolhelp32Snapshot`, closed at once; 0 when not found).
+`None` where the OS has no reading. A status bar takes two readings and divides the processor
+time between them by the uptime between them and the count of processors.
+
+The trait `Meter { fn usage(&self) -> Option<Usage> }` is how views reach it: `install`
+provides the Windows one (`process_usage`), and `FakeShell::provide` the fake's, which
+answers what `FakeShell::set_usage` gave it last (`None` before), so a test sets the numbers
+and moves them on.
 
 For the comparison bench's runner, which measures another process from outside
 (`bench/runner`, docs/benchmarks.md, "Method"): `process_cycles(&Child)`, the cycle count of

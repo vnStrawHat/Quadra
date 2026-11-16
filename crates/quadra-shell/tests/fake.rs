@@ -99,3 +99,16 @@ fn the_tray_tells_the_app_what_the_user_did() {
     platform.step(&mut app);
     assert_eq!(*seen.borrow(), [TrayEvent::Item(1)]);
 }
+
+#[test]
+fn the_meter_reads_what_the_test_set() {
+    let shell = FakeShell::new();
+    let meter = quadra_reactive::Scope::child().run(|| {
+        shell.provide();
+        quadra_reactive::expect::<Rc<dyn quadra_shell::Meter>>()
+    });
+    assert_eq!(meter.usage(), None);
+    let usage = quadra_shell::Usage { memory: 64 << 20, threads: 9, ..Default::default() };
+    shell.set_usage(usage);
+    assert_eq!(meter.usage(), Some(usage));
+}

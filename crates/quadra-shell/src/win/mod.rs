@@ -35,7 +35,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use windows::core::{HSTRING, Interface, PCWSTR, w};
 
 use crate::{
-    Answer, Dialogs, FileDialog, Message, MessageKind, Opener, Tray, TrayEvent, TrayIcon, TrayImage,
+    Answer, Dialogs, FileDialog, Message, MessageKind, Meter, Opener, Tray, TrayEvent, TrayIcon, TrayImage,
+    Usage,
 };
 use tray::WinTray;
 
@@ -186,6 +187,12 @@ impl Opener for WinShell {
         let mut command = std::process::Command::new(program);
         command.args(args).arg(file).creation_flags(CREATE_NO_WINDOW);
         command.spawn().is_ok()
+    }
+}
+
+impl Meter for WinShell {
+    fn usage(&self) -> Option<Usage> {
+        process_usage()
     }
 }
 

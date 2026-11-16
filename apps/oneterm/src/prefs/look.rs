@@ -80,10 +80,10 @@ impl LookPrefs {
     /// The settings of `s`.
     pub fn of(s: &Settings) -> LookPrefs {
         LookPrefs {
-            font_size: s.value("terminal.font_size", 13.0),
+            font_size: s.value("terminal.font_size", 15.0),
             font_family: s.value("terminal.font_family", String::new()),
             fallbacks: s.value("terminal.font_fallbacks", FALLBACKS.to_string()),
-            line_height: s.value("terminal.line_height", 1.5),
+            line_height: s.value("terminal.line_height", 1.2),
             weight: crate::prefs::choice(s, "terminal.font_weight", &WEIGHTS),
             cell_width: s.value("terminal.cell_width", 0.0),
             padding: PADDING.map(|(key, _, default)| s.value(key, default)),

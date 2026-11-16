@@ -84,7 +84,7 @@ fn a_new_look_keeps_the_screen_and_sizes_the_grid_again() {
     a.feed(0, b"kept");
     let s = a.made.borrow()[0].1.clone();
     let rows = s.size().rows;
-    a.settings.value("terminal.font_size", 13.0).set(26.0);
+    a.settings.value("terminal.font_size", 15.0).set(26.0);
     a.settings.value("terminal.colors.foreground", String::new()).set("#efefef".into());
     a.h.settle();
     assert!(s.size().rows < rows, "fewer rows of larger text: {} then {}", rows, s.size().rows);

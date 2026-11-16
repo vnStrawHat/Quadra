@@ -273,7 +273,7 @@ password, the saved hosts and the recent targets are data, not settings, and hav
 it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/themes`, made by
 `.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
 chosen from the families of the machine in a select with a search, the first "The kit's mono" for none; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
-Nerd Font"; size; weight, Normal and Thin to Black; line height, 1.5; the cell's width, 0 for the advance of `0`, up to
+Nerd Font"; size, 15; weight, Normal and Thin to Black; line height, 1.2; the cell's width, 0 for the advance of `0`, up to
 48 px; the padding a side, top 0, right 5, bottom 0, left 10, each 0 to 64 px; ligatures, on; semantic
 highlighting, on: text in the default colour coloured by what it means, in the colour theme's ANSI colours;
 the reference's Auto and On do the same, so it is a switch) and colours over the theme's

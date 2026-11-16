@@ -115,8 +115,10 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   list is the one it has. Setting them empties the shaping cache; the view shapes its cells as it
   paints, so its repaint shows the new faces. The last list set wins over `App::font_fallbacks`.
 - The gutter (`TermLook::gutter`, off by default): a column at the left of the grid with, per
-  row that shows, the time the row was first written and its line number, `[HH:MM:SS] 12345`,
-  in the mono face. Its width is whole cells, `11 + digits` of them, and 8 px (4 each side);
+  row that shows, the time the row was first written and its line number, `[HH:MM:SS] 12`,
+  in the mono face: one cell between them and the number left-aligned, so the cells kept for
+  longer numbers stay empty between it and the grid. Its width is whole cells, `11 + digits`
+  of them, and 8 px (4 each side);
   `digits` is at least 5 and only grows, when a line number needs more, so the grid is sized
   again only then. The grid, the pointer's cells and the caret start after it. Colours
   (`TermColors`): `gutter_fg` (else the foreground mixed half with the background), `gutter_bg`

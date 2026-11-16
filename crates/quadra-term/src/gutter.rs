@@ -100,16 +100,17 @@ impl Stamps {
     }
 }
 
-/// Writes the label of a row: `[HH:MM:SS]`, a space, the line number right-aligned in
-/// `digits`; `--:--:--` with no time. Returns the length of the clock's part.
-pub(crate) fn label(out: &mut String, line: u64, seconds_of_day: Option<u32>, digits: usize) -> usize {
+/// Writes the label of a row: `[HH:MM:SS]`, a space, the line number (left-aligned: the
+/// cells `digits` keeps for longer numbers stay empty after it, by the grid);
+/// `--:--:--` with no time. Returns the length of the clock's part.
+pub(crate) fn label(out: &mut String, line: u64, seconds_of_day: Option<u32>) -> usize {
     out.clear();
     match seconds_of_day {
         Some(t) => _ = write!(out, "[{:02}:{:02}:{:02}]", t / 3600 % 24, t / 60 % 60, t % 60),
         None => out.push_str("[--:--:--]"),
     }
     let clock = out.len();
-    _ = write!(out, " {line:>digits$}");
+    _ = write!(out, " {line}");
     clock
 }
 
@@ -159,7 +160,7 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx, top: f32) {
     let mut text = std::mem::take(&mut w.label);
     for r in 0..w.gutter_rows.len() {
         let Some((line, written)) = w.gutter_rows[r] else { continue };
-        let clock = label(&mut text, line, written.map(|t| w.seconds_of_day(t)), w.digits);
+        let clock = label(&mut text, line, written.map(|t| w.seconds_of_day(t)));
         let y = top + r as f32 * w.line;
         let baseline = ((y + (w.line - ascent - descent) / 2.0 + ascent) * scale).round();
         // A glyph a cell, in the middle of it, as the grid draws them; the label is ASCII.
@@ -181,12 +182,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_label_is_the_clock_and_the_number_right_aligned() {
+    fn a_label_is_the_clock_a_space_and_the_number() {
         let mut out = String::new();
-        assert_eq!(label(&mut out, 42, Some(13 * 3600 + 5 * 60 + 9), 5), 10);
-        assert_eq!(out, "[13:05:09]    42");
-        label(&mut out, 7, None, 2);
-        assert_eq!(out, "[--:--:--]  7");
+        assert_eq!(label(&mut out, 42, Some(13 * 3600 + 5 * 60 + 9)), 10);
+        assert_eq!(out, "[13:05:09] 42");
+        label(&mut out, 7, None);
+        assert_eq!(out, "[--:--:--] 7");
         assert_eq!((digits_of(0), digits_of(9), digits_of(10), digits_of(99_999)), (1, 1, 2, 5));
     }
 }

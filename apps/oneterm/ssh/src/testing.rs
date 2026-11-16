@@ -218,7 +218,7 @@ pub struct Client {
 
 /// A folder of its own under `.tmp/ssh-tests`, emptied.
 pub fn folder(name: &str) -> PathBuf {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.tmp/ssh-tests").join(name);
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../.tmp/ssh-tests").join(name);
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir

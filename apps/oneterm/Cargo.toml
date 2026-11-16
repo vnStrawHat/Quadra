@@ -17,13 +17,13 @@ path = "src/main.rs"
 [dependencies]
 quadra = { path = "../../crates/quadra" }
 quadra-design = { path = "../../crates/quadra-design" }
-oneterm-complete = { path = "../oneterm-complete" }
-oneterm-ssh = { path = "../oneterm-ssh" }
+oneterm-complete = { path = "complete" }
+oneterm-ssh = { path = "ssh" }
 quadra-shell = { path = "../../crates/quadra-shell" }
 quadra-term = { path = "../../crates/quadra-term" }
 
 [dev-dependencies]
-oneterm-ssh = { path = "../oneterm-ssh", features = ["testing"] }
+oneterm-ssh = { path = "ssh", features = ["testing"] }
 quadra-render = { path = "../../crates/quadra-render" }
 quadra-testing = { path = "../../crates/quadra-testing" }
 quadra-tree = { path = "../../crates/quadra-tree" }

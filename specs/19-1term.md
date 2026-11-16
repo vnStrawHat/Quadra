@@ -29,7 +29,7 @@ P2 milestones:
 
 | Id | Contents |
 |---|---|
-| M7 | the SSH engine (`apps/oneterm-ssh`): connect, host keys, authentication, the shell; quick connect from the `+` menu |
+| M7 | the SSH engine (`apps/oneterm/ssh`): connect, host keys, authentication, the shell; quick connect from the `+` menu |
 | M8 | saved hosts: the rail's SSH hosts with a filter, the menu's search, Recent and groups, Add SSH host; the host and its latency in the status bar and the space's header; `n ssh · n local` |
 | M9 | the SFTP dock (300 px) and its expanded view: listing, moving about, upload and download, transfers |
 | M10 | jump hosts and port forwards |
@@ -292,7 +292,7 @@ sessions are still running", the field labelled Password, Unlock across the card
 
 ## SSH (P2)
 
-The engine is the crate `oneterm-ssh` (`apps/oneterm-ssh`), the one place `russh` and `tokio`
+The engine is the crate `oneterm-ssh` (`apps/oneterm/ssh`), the one place `russh` and `tokio`
 are named: a runtime of two worker threads, made when the first connection starts, behind a
 blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output, exited)`,
 `write`, `resize`, `close`. The UI thread never waits on the network.

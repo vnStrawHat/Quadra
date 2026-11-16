@@ -11,4 +11,4 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
-quadra-data = { path = "../../crates/quadra-data" }
+quadra-data = { path = "../../../crates/quadra-data" }

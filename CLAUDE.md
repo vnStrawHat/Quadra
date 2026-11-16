@@ -117,8 +117,8 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-code` | The code editor: buffer, tokenizers, highlighter, find |
 | `quadra-term` | The terminal view over `oneterm-vt`: grid, input, find, links |
 | `apps/oneterm` | 1Term, the terminal app (specs/19) |
-| `apps/oneterm-ssh` | 1Term's SSH and SFTP over `russh` |
-| `apps/oneterm-complete` | 1Term's command completion (specs/20) |
+| `apps/oneterm/ssh` | 1Term's SSH and SFTP over `russh` |
+| `apps/oneterm/complete` | 1Term's command completion (specs/20) |
 | `examples/gallery` | Every kit component on a page: the kit's acceptance test |
 | `examples/plain` | A second kit over the headless components |
 | `bench/compare` | The comparison bench's four scenes |

@@ -3,6 +3,7 @@
 //! veil over a pane.
 
 mod dock;
+mod even;
 mod pane;
 mod panes;
 mod tabs;

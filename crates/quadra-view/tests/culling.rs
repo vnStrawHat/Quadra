@@ -3,6 +3,7 @@
 //! and leaving the band paints a new band once. Every frame is checked against a paint from
 //! scratch by the harness.
 
+use quadra_layout::Display;
 use quadra_prim::Color;
 use quadra_reactive::signal;
 use quadra_testing::Harness;
@@ -90,4 +91,23 @@ fn what_a_box_holds_is_painted_when_the_box_grows_into_the_band() {
         });
         assert_eq!(painted, to == 200.0, "held painted at {to}");
     }
+}
+
+#[test]
+fn a_box_shown_again_outside_the_band_keeps_what_it_holds_in_place() {
+    // A box at the top holds many glyphs, then an empty box. Hidden, then scrolled out of the
+    // band, then shown: the empty box is not painted, and the layer is rebuilt without it.
+    let (hidden, y) = (signal(false), signal(0.0f32));
+    let mut h = Harness::new();
+    let shown = move || if hidden.get() { Display::None } else { Display::Flex };
+    let held = column().display(shown).child(text("x".repeat(400))).child(div().width(10.0));
+    let rows = (0..200).map(|i| div().height(40.0).child(text(format!("{i}"))));
+    mount_root(&mut h.tree, scroll(y, column().child(held).children(rows)));
+    h.frame();
+    hidden.set(true);
+    h.frame();
+    y.set(4000.0);
+    h.frame();
+    hidden.set(false);
+    h.frame();
 }

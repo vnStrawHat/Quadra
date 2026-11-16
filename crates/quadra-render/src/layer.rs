@@ -188,10 +188,14 @@ impl Rebuild<'_> {
     }
 
     /// Copies a range of the current list (a clean subtree) and returns where it starts now.
+    /// An empty range copies nothing wherever it says it starts: a node that emitted nothing
+    /// may keep a start from a list before this one (under a box that was hidden).
     pub fn copy(&mut self, old: Range<usize>) -> usize {
         let Layer { instances, spare, .. } = &mut *self.layer;
         let at = spare.len();
-        spare.extend_from_slice(&instances[old]);
+        if !old.is_empty() {
+            spare.extend_from_slice(&instances[old]);
+        }
         at
     }
 

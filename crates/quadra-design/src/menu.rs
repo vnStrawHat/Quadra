@@ -27,7 +27,7 @@ pub struct MenuItem {
     /// A dot of this colour in the place of an icon: a host that is connected.
     dot: Option<quadra_tree::Token>,
     /// A square of this colour in the place of an icon: a host's colour tag.
-    swatch: Option<quadra_tree::Token>,
+    swatch: Option<quadra_tree::Paint>,
     /// A few words after the label, in the second text colour.
     detail: Option<String>,
     keys: Option<String>,
@@ -79,9 +79,10 @@ impl MenuItem {
         self
     }
 
-    /// A square of 10 px of a colour in the place of an icon: a tag the user gave the row.
-    pub fn swatch(mut self, color: quadra_tree::Token) -> Self {
-        self.swatch = Some(color);
+    /// A square of 10 px of a colour or a role in the place of an icon: a tag the user gave
+    /// the row.
+    pub fn swatch(mut self, color: impl Into<quadra_tree::Paint>) -> Self {
+        self.swatch = Some(color.into());
         self
     }
 

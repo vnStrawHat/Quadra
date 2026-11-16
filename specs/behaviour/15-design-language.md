@@ -320,7 +320,7 @@ same rule: no backdrop, an outside click closes them.
 - **Menu:** the menu plane, min width 200, 4 vertical padding. Rows are 28 tall, inset 4
   from the edge with 8 inner padding (text 12 from the edge), radius 4; hover
   `panel_hover`, keyboard highlight `press`. Icons 14 in `text_2`, only when some item has
-  one; in their place a 10 px square of a colour, radius 2 (`swatch`: a tag the user gave). Shortcut
+  one; in their place a 10 px square of a colour or a role, radius 2 (`swatch`: a tag the user gave). Shortcut
   right-aligned, 12 px `text_2` (`mono`: in the mono face, as an address), 16 from the label. Separator: 1 px `line_strong`, 4
   above and below, edge to edge. Section header: 20 tall, 12 px `text_2`. Check marks
   `accent_text`, 14 px in the icon column (`checked` on a `MenuItem`). A submenu (`items` on a

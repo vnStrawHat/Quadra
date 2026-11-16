@@ -193,9 +193,11 @@ fn a_host_has_a_colour_tag_its_group_s_until_one_is_chosen_and_kept() {
     {
         a.h.get_by_test_id(id).set_value(value);
     }
+    // The group typed, the picker is made again with its colour for the default.
+    a.h.settle();
     a.h.get_by_test_id("host-tag").click();
     a.h.settle();
-    a.h.get_by_role(Role::MenuItem, "Purple").click();
+    a.h.get_by_role(Role::Button, "Purple").click();
     a.h.settle();
     a.h.get_by_role(Role::Button, "Save").click();
     a.h.settle();
@@ -215,4 +217,28 @@ fn a_host_has_a_colour_tag_its_group_s_until_one_is_chosen_and_kept() {
     a.h.get_by_role(Role::Button, "Save").click();
     a.h.settle();
     assert_eq!(a.rows()[1][2..], ["ops@10.20.0.3", "Auto", "", "", "", "purple"]);
+}
+
+#[test]
+fn a_colour_tag_is_any_colour_and_a_tag_saved_by_name_still_reads() {
+    let mut a = app();
+    let row = |name: &str, target: &str, tag: &str| {
+        [name, "", target, "Auto", "", "", "", tag].map(String::from).to_vec()
+    };
+    let rows = vec![row("old", "u@10.0.0.1", "yellow"), row("odd", "u@10.0.0.2", "mauve")];
+    a.settings.value("ssh.hosts", Vec::<Vec<String>>::new()).set(rows);
+    a.h.settle();
+    assert!(a.h.has_text("Colour tag: yellow"));
+    assert!(!a.h.has_text("Colour tag: mauve"), "a word that is no colour is the group's");
+    a.h.get_by_role(Role::Button, "Add SSH host").click();
+    a.h.settle();
+    a.h.get_by_test_id("host-target").set_value("ops@10.20.0.2");
+    a.h.get_by_test_id("host-tag").click();
+    a.h.settle();
+    a.h.get_by_role(Role::TextInput, "Hex").type_text("#336699");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.settle();
+    assert_eq!(a.rows()[2][7], "#336699");
+    assert!(a.h.has_text("Colour tag: #336699"));
 }

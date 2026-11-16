@@ -11,13 +11,12 @@ use quadra_design::{
     token, tooltip,
 };
 
+use crate::hosts::tag::{picked, tag_picker, word_of};
 use crate::hosts::{Host, auth_of};
 use crate::model::Model;
 use crate::shells::Remote;
 
 const AUTHS: [&str; 4] = ["Auto", "ssh-agent", "Key file", "Password"];
-/// The colour tags a dialog offers: the group's, then each of [`crate::hosts::TAGS`].
-const TAG_NAMES: [&str; 8] = ["By group", "Red", "Orange", "Yellow", "Green", "Cyan", "Blue", "Purple"];
 
 /// The heading with its Add button, the filter, the groups (a chevron, the name, the count;
 /// folded by a click) and their hosts under a line.
@@ -161,7 +160,8 @@ struct Form {
     key: Signal<String>,
     jump: Signal<usize>,
     forwards: Signal<String>,
-    tag: Signal<usize>,
+    /// What the colour picker holds: `#rrggbb`, or empty for the group's.
+    tag: Signal<String>,
 }
 
 /// The dialogs that save a host: a new one, or one saved before, filled in.
@@ -176,7 +176,7 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
         key: s(),
         jump: signal(0),
         forwards: s(),
-        tag: signal(0),
+        tag: s(),
     };
     let (saves, changes, lists, fills) = (model.clone(), model.clone(), model.clone(), model.clone());
     // Asked to edit a host, the form says what it is; closed, it is no longer being edited.
@@ -214,7 +214,7 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
                         "Group",
                         input(form.group).placeholder("Group").test_id("host-group").width(190.0),
                     ))
-                    .child(field("Colour tag", select(TAG_NAMES, form.tag).width(190.0).test_id("host-tag"))),
+                    .child(field("Colour tag", tag_picker(form.tag, form.group))),
             )
             .child(field("Target", text_field(form.target, "user@host or host:port", "host-target")))
             .child(how)
@@ -250,7 +250,7 @@ fn fill(model: &Model, form: Form, host: &Host) {
     form.key.set(key);
     form.forwards.set(forwards.join(" "));
     form.jump.set(jump.unwrap_or(0));
-    form.tag.set(model.saved_tag(&host.name).map_or(0, |at| at + 1));
+    form.tag.set(model.saved_tag(&host.name).map_or_else(String::new, |(word, _)| picked(&word)));
 }
 
 /// Saves the form as a host, in place of `was` (the one edited) when it had another name.
@@ -276,17 +276,16 @@ fn save(model: &Model, form: Form, was: Option<String>) {
     if let Some(was) = was.filter(|it| *it != name) {
         model.remove_host(&was);
     }
-    let tag = form.tag.get_untracked().checked_sub(1).map(|at| crate::hosts::TAGS[at].0);
+    let tag = form.tag.with_untracked(|it| word_of(it));
     model.save_host(Host {
         name: name.clone(),
         group: form.group.get_untracked().trim().into(),
         remote,
         jump,
     });
-    model.set_host_tag(&name, tag);
-    for field in [form.name, form.group, form.target, form.key, form.forwards] {
+    model.set_host_tag(&name, tag.as_deref());
+    for field in [form.name, form.group, form.target, form.key, form.forwards, form.tag] {
         field.set(String::new());
     }
     form.jump.set(0);
-    form.tag.set(0);
 }

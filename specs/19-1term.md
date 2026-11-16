@@ -81,7 +81,7 @@ its end. A tab with a progress has a
 more row: in it, 4 px from its seams and 6 from its sides, a box of a dashed 1 px strong line
 (radius 6, the hover fill inside it) with a `+` 14 px from the rail's edge and `Ctrl-T` at its end; it opens the `+` menu at the rail's right. From P2 the SSH hosts follow: a heading "SSH hosts"
 with Add SSH host, the filter ("Filter hosts", 28 px), then groups (a chevron, the name, the
-count in mono at the right) of rows of 26 px (radius 6) under a line from the chevron: a 10 px square in the host's colour tag (`Colour tag: red`), the
+count in mono at the right) of rows of 26 px (radius 6) under a line from the chevron: a 10 px square in the host's colour tag (`Colour tag: red`, `Colour tag: #e06c75`), the
 name, the address in mono at the right. The switch to horizontal tabs is in the settings.
 
 Collapsed (Collapse tabs to icons, in the heading or the status bar, or the setting) the rail is
@@ -379,9 +379,10 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
 
 - **Hosts** are the setting `ssh.hosts`, a list of `[name, group, target, auth, key file, jump
   host, forwards, colour tag]` (target as `Target::label` writes it; auth `Auto`, `Agent`,
-  `Key`, `Password`; the tag `red`, `orange`, `yellow`, `green`, `cyan`, `blue` or `purple`,
-  else none: a colour by the group's name, the same for its hosts; saving a host keeps its
-  tag), so the file reads as the page does; `ssh.recent` holds the last 5 targets connected to, newest
+  `Key`, `Password`; the tag is one of the seven named hues, `red`, `orange`, `yellow`,
+  `green`, `cyan`, `blue` or `purple`, kept by its name so it follows the theme, or any other
+  colour as `#rrggbb`; empty or a word that is neither, none: a colour by the group's name, the
+  same for its hosts; saving a host keeps its tag), so the file reads as the page does; `ssh.recent` holds the last 5 targets connected to, newest
   first, with the time in seconds.
 - **The rail**, under "New terminal": "SSH hosts" with an Add SSH host button at its right, a
   filter (on the name and the target, whatever the case), then the hosts by group in the order
@@ -390,7 +391,9 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   connected to it; its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
   filled, titled Edit SSH host; a new name takes the old one's place), Remove. The Add dialog
   takes the name (the host when empty), the group, the target,
-  the colour tag (By group, or one of the seven), the auth and the key file. Quick connect has
+  the colour tag (the kit's `color_picker`, "By group" while empty: its presets are the
+  seven hues as the dark theme has them, its "Default" swatch the group's colour, and a colour
+  chosen that is a preset's is saved by the preset's name), the auth and the key file. Quick connect has
   "Save as host".
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
   Quick connect, and Add SSH host. Its field is the title bar's Search's.

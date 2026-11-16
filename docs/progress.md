@@ -150,8 +150,15 @@ whose every cell changes every frame, costs what the V build's costs.
   line under each space's header; the terminal's padding 0 on every side and no other inset;
   numbers in steppers, colours in the colour picker, the Keybindings page with the kit's Reset.
   Tests: `apps/oneterm/tests/bars.rs`, the others brought along.
-- Open: a status bar value that changes lays out most of the window (168 requests a tick of the
-  clock), paint stays one node; the host colour tags in the colour picker.
+- A host's colour tag is chosen in the colour picker: any `#rrggbb`, the seven hues kept
+  by name; `MenuItem::swatch` takes any paint. Tests: `apps/oneterm/tests/hosts.rs`.
+- **A text keeps its answer over a range of widths** (specs/06, "Requests and answers"): a
+  leaf says for which available widths its size holds (`Holds`, `Widget::holds`; the text widget
+  from its widest line to where it broke), so the requests of nested auto-sized boxes hit its
+  cache. A tick of 1Term's clock lays out 4 nodes, not 168. Tests:
+  `quadra-layout/tests/status_bar.rs`, `quadra-view/tests/text_widths.rs`, `oneterm/tests/bars.rs`.
+- Open: rich text and other widgets keep exact requests; a squeezed bar whose texts wrap still
+  climbs.
 
 ### The menu plane (2026-11-16)
 

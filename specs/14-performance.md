@@ -171,6 +171,20 @@ gate builds and tests in plain release, which builds far faster; `tools/bench.sh
 | Memory | Counted glyph tiles and images under budgets; scopes free everything they own |
 | Start-up | Precompiled shaders, software device first, lazy font fallback, embedded assets |
 
+## What a change costs
+
+The point of the design, measured: the bench's `cells` scene fills the window with N numbers,
+every one on screen, each in a box of its own colour. A frame changes **one** of them (the one
+in the middle, as a clock in a dashboard), **all**
+of them, or **rebuilds** the whole grid (`dynamic`: the region is removed and mounted again,
+which is what a UI without a retained tree and incremental layout redoes every frame).
+`tools/bench.sh incremental` runs N = 600, 2,400 and 9,600 in each mode, without a window, and
+prints what a frame laid out, painted and wrote, and the passes' time.
+
+The budget: changing one number costs the same at every N, within the noise: a few nodes laid
+out, one painted, a handful of instances, microseconds. Changing all of them grows with N, as
+it must; rebuilding grows with N and costs many times more than changing all of them.
+
 ## Tooling
 
 - `FrameStats` and pass timings in every build; the frame HUD in debug builds (12).

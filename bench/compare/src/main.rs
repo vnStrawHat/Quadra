@@ -8,8 +8,10 @@
 //!   document  800x600  40 paragraphs (~20,000 chars) wrapped to a width changing every frame
 //!
 //! and the editor's (`editor.rs`): `editor` types a letter and takes it out every frame at
-//! the middle of 100,000 lines of code, `editor-scroll` scrolls them 8 px a frame.
+//! the middle of 100,000 lines of code, `editor-scroll` scrolls them 8 px a frame; and
+//! `cells` (`cells.rs`), what a change costs against the size of the UI.
 
+mod cells;
 mod editor;
 mod recorder;
 
@@ -41,11 +43,11 @@ fn words(seed: u32, n: usize) -> String {
     (0..n).map(|_| next()).collect::<Vec<_>>().join(" ")
 }
 
-fn cell_value(cell: usize, frame: u32) -> f64 {
+pub(crate) fn cell_value(cell: usize, frame: u32) -> f64 {
     ((cell * 7919 + frame as usize * 31) % 100_000) as f64 / 100.0
 }
 
-fn cell_color(value: f64) -> Color {
+pub(crate) fn cell_color(value: f64) -> Color {
     Color::rgb(if value < 333.0 {
         0xf6c9c4
     } else if value < 666.0 {
@@ -135,6 +137,7 @@ fn main() -> quadra::Result<()> {
         "document" => (document, (800.0, 600.0)),
         "editor" => (editor::typing, (800.0, 600.0)),
         "editor-scroll" => (editor::scrolling, (800.0, 600.0)),
+        "cells" => (cells::cells, (800.0, 600.0)),
         _ => {
             eprintln!("no scene {scene}");
             std::process::exit(2);

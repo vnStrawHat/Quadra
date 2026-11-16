@@ -20,6 +20,7 @@ driver threads included (`bench/runner`).
 |---|---|---|
 | `counter` | 360×260 | A number and three buttons, then nothing: startup, memory and CPU at rest |
 | `list` | 800×600 | A virtual list of 100 000 rows of three texts, scrolling 8 px a frame |
+| `cells` | 800×600 | `BENCH_CELLS` numbers (600) all on screen; `BENCH_CHANGE` says what a frame changes: `one`, `all`, or `rebuild` the grid (specs/14, "What a change costs"); headless only, by `tools/bench.sh incremental` |
 | `grid` | 800×600 | 600 cells, each with its own background and a number changing every frame |
 | `document` | 800×600 | 40 paragraphs (about 20 000 characters) wrapped to a width changing every frame |
 

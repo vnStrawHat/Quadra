@@ -26,6 +26,25 @@ pub struct Entry {
     pub modified: u64,
 }
 
+/// A remote path's properties.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Stat {
+    pub dir: bool,
+    /// A symbolic link; the rest is what it points to, when that is there.
+    pub link: bool,
+    pub size: u64,
+    /// The kind's bits and the permission bits; 0 when the server does not say.
+    pub mode: u32,
+    pub uid: Option<u32>,
+    pub gid: Option<u32>,
+    /// The names of the ids, from the server's `/etc/passwd` and `/etc/group` if it lets them be read.
+    pub owner: Option<String>,
+    pub group: Option<String>,
+    /// Seconds since 1970; 0 when the server does not say.
+    pub modified: u64,
+    pub accessed: u64,
+}
+
 /// SFTP on a connection; a copy is the same session.
 #[derive(Clone)]
 pub struct Files {
@@ -67,6 +86,49 @@ impl Files {
             b.dir.cmp(&a.dir).then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
         });
         Ok(entries)
+    }
+
+    /// A path's properties, through a link to what it points to.
+    pub fn stat(&self, path: &str) -> Result<Stat, String> {
+        runtime().block_on(async {
+            let own = self.sftp.symlink_metadata(path).await.map_err(said)?;
+            let link = own.is_symlink();
+            let meta = if link { self.sftp.metadata(path).await.unwrap_or(own) } else { own };
+            let (uid, gid) = (meta.uid, meta.gid);
+            let owner = match uid {
+                Some(id) => name_in(&self.table("/etc/passwd").await, id),
+                None => None,
+            };
+            let group = match gid {
+                Some(id) => name_in(&self.table("/etc/group").await, id),
+                None => None,
+            };
+            Ok(Stat {
+                dir: meta.is_dir(),
+                link,
+                size: meta.len(),
+                mode: meta.permissions.unwrap_or(0),
+                uid,
+                gid,
+                owner,
+                group,
+                modified: meta.mtime.unwrap_or(0).into(),
+                accessed: meta.atime.unwrap_or(0).into(),
+            })
+        })
+    }
+
+    /// A table of names on the server, 1 MB at most; empty when it cannot be read.
+    async fn table(&self, path: &str) -> String {
+        let Ok(mut file) = self.sftp.open(path).await else { return String::new() };
+        let mut data = Vec::new();
+        let _ = (&mut file).take(1 << 20).read_to_end(&mut data).await;
+        let _ = file.shutdown().await;
+        // A table cut at the limit loses its last line, which may be cut short.
+        if data.len() == 1 << 20 {
+            data.truncate(data.iter().rposition(|&b| b == b'\n').unwrap_or(0));
+        }
+        String::from_utf8_lossy(&data).into_owned()
     }
 
     pub fn mkdir(&self, path: &str) -> Result<(), String> {
@@ -165,6 +227,15 @@ fn file_name(path: &Path) -> Result<String, String> {
     path.file_name().map(|it| it.to_string_lossy().into_owned()).ok_or_else(|| "no file name".into())
 }
 
+/// The name of `id` in a table such as `/etc/passwd` or `/etc/group`: `name:x:id:..`.
+fn name_in(table: &str, id: u32) -> Option<String> {
+    table.lines().find_map(|line| {
+        let mut fields = line.split(':');
+        let name = fields.next()?;
+        (fields.nth(1)?.parse::<u32>().ok()? == id && !name.is_empty()).then(|| name.to_string())
+    })
+}
+
 /// Whether a remote name can be a local file's name: no separator, drive, `..` or control.
 pub fn safe_name(name: &str) -> bool {
     !name.is_empty()
@@ -193,5 +264,9 @@ mod tests {
         }
         assert_eq!(join("/", "etc"), "/etc");
         assert_eq!(join("/home/t/", "a"), "/home/t/a");
+        let table = "root:x:0:0:root:/root:/bin/sh\n# x\nwww:x:33:33::/var/www:\n";
+        assert_eq!(name_in(table, 33).as_deref(), Some("www"));
+        assert_eq!(name_in(table, 0).as_deref(), Some("root"));
+        assert_eq!(name_in(table, 7), None);
     }
 }

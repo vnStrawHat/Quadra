@@ -1,6 +1,6 @@
 //! The engine's files over SFTP (specs/19, "M9 in detail") against the test server, whose
 //! files are a folder of `.tmp`: home, listing in order, download and upload through a part
-//! file, a cancelled transfer leaving nothing, a folder made and removed.
+//! file, a cancelled transfer leaving nothing, a folder made and removed, a path's properties.
 
 use std::sync::atomic::AtomicBool;
 
@@ -76,4 +76,21 @@ fn a_cancelled_transfer_leaves_no_part() {
     assert_eq!(files.upload(&local, "/home/up.txt", |_, _| {}, &cancel), Err("cancelled".into()));
     assert!(!served.join("home/up.txt").exists() && !served.join("home/up.txt.part").exists());
     assert!(files.list("/nowhere").is_err());
+}
+
+#[test]
+fn a_path_s_properties_name_its_owner_where_the_server_tells() {
+    let (_c, files, served) = files("sftp-stat");
+    std::fs::create_dir_all(served.join("etc")).unwrap();
+    std::fs::write(served.join("etc/passwd"), "root:x:0:0::/root:/bin/sh\ntester:x:1000:1000::/home:\n")
+        .unwrap();
+    let stat = files.stat("/home/config.yaml").unwrap();
+    assert!(!stat.dir && !stat.link && stat.size == 200_000 && stat.mode == 0o100644, "{stat:?}");
+    assert_eq!((stat.uid, stat.gid), (Some(1000), Some(1000)));
+    // No group table: the id alone.
+    assert_eq!((stat.owner.as_deref(), stat.group.as_deref()), (Some("tester"), None));
+    assert!(stat.modified > 0 && stat.accessed > 0, "{stat:?}");
+    let dir = files.stat("/home/src").unwrap();
+    assert!(dir.dir && dir.mode == 0o040755, "{dir:?}");
+    assert!(files.stat("/home/nowhere").is_err());
 }

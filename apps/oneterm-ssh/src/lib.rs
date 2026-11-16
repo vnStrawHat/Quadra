@@ -19,7 +19,7 @@ use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 
-pub use files::{Entry, Files, join, safe_name};
+pub use files::{Entry, Files, Stat, join, safe_name};
 use prompt::Cmd;
 pub use target::Target;
 

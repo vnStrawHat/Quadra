@@ -42,6 +42,9 @@ fn attrs(meta: &std::fs::Metadata) -> FileAttributes {
     attrs.size = Some(meta.len());
     let since = meta.modified().ok().and_then(|it| it.duration_since(std::time::UNIX_EPOCH).ok());
     attrs.mtime = since.map(|it| it.as_secs() as u32);
+    let read = meta.accessed().ok().and_then(|it| it.duration_since(std::time::UNIX_EPOCH).ok());
+    attrs.atime = read.map(|it| it.as_secs() as u32);
+    (attrs.uid, attrs.gid) = (Some(1000), Some(1000));
     attrs.permissions = Some(if meta.is_dir() { 0o040755 } else { 0o100644 });
     attrs
 }

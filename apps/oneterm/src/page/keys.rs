@@ -9,7 +9,7 @@ use quadra::{Align, Keymap, KeymapError, Keystroke, Role, Settings, Signal, effe
 use quadra_design::{SettingsGroup, Variant, button, key_input, token};
 use quadra_term::{TERMINAL_CONTEXT, TermCommand};
 
-use crate::model::Command;
+use crate::model::{Command, Side};
 
 /// Binds keys to an action, in its context.
 type Bind = fn(&mut Keymap, &str) -> Result<(), KeymapError>;
@@ -27,9 +27,15 @@ const fn binding(id: &'static str, name: &'static str, keys: &'static str, bind:
 }
 
 /// The actions, in the order of the page.
-pub(crate) const BINDINGS: [Binding; 16] = [
+pub(crate) const BINDINGS: [Binding; 20] = [
     binding("new_tab", "New tab", "ctrl-t", |k, s| k.bind(s, Command::NewTab)),
     binding("split", "Split the space", "ctrl-d", |k, s| k.bind(s, Command::Split)),
+    binding("split_right", "Split right", "ctrl-shift-right", |k, s| {
+        k.bind(s, Command::SplitTo(Side::Right))
+    }),
+    binding("split_left", "Split left", "ctrl-shift-left", |k, s| k.bind(s, Command::SplitTo(Side::Left))),
+    binding("split_up", "Split up", "ctrl-shift-up", |k, s| k.bind(s, Command::SplitTo(Side::Up))),
+    binding("split_down", "Split down", "ctrl-shift-down", |k, s| k.bind(s, Command::SplitTo(Side::Down))),
     binding("close_space", "Close the space", "ctrl-w", |k, s| k.bind(s, Command::CloseSpace)),
     binding("focus_next", "Next space", "ctrl-alt-right", |k, s| k.bind(s, Command::FocusNext(true))),
     binding("focus_previous", "Previous space", "ctrl-alt-left", |k, s| k.bind(s, Command::FocusNext(false))),

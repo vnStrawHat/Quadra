@@ -254,3 +254,34 @@ fn a_file_is_edited_and_sent_back_when_it_is_saved() {
     let served = a.served.join("home/config.yaml");
     a.wait(|_| std::fs::read(&served).is_ok_and(|it| it == b"edited"), "sent back");
 }
+
+#[test]
+fn an_entry_s_properties_show_in_both_views_and_a_failure_is_a_card() {
+    let mut a = app("dock-props");
+    a.wait(|a| a.entry("config.yaml"), "the home folder");
+    a.menu("config.yaml", "Properties\u{2026}");
+    a.wait(|a| a.h.has_text("-rw-r--r-- (0644)"), "the dialog");
+    for shown in ["File", "2.4 KB (2458 bytes)", "1000", "/home/config.yaml"] {
+        assert!(a.h.has_text(shown), "{shown}\n{}", a.h.semantics());
+    }
+    close(&mut a);
+    assert!(!a.h.has_text("-rw-r--r-- (0644)"), "closed");
+
+    a.h.get_by_role(Role::Button, "Expand SFTP").click();
+    a.h.settle();
+    a.menu("src", "Properties\u{2026}");
+    a.wait(|a| a.h.has_text("drwxr-xr-x (0755)") && a.h.has_text("Folder"), "a folder's");
+    close(&mut a);
+
+    std::fs::remove_file(a.served.join("home/config.yaml")).unwrap();
+    a.menu("config.yaml", "Properties\u{2026}");
+    let card = |a: &App| a.h.semantics().contains("No properties of /home/config.yaml: ");
+    a.wait(card, "the card");
+}
+
+/// The dialog's Close: the last of the buttons of that name (the window's and the cross before it).
+fn close(a: &mut App) {
+    let all = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Close");
+    assert!(a.h.tree.act(*all.last().unwrap(), &quadra_tree::SemanticAction::Click));
+    a.h.settle();
+}

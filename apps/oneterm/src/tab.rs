@@ -13,6 +13,8 @@ pub struct Space {
     pub(crate) scope: Scope,
     /// The host it connected to, if it is remote.
     pub remote: Option<crate::shells::Remote>,
+    /// The input channel it is in, 0 to 4 (A to E): what is typed in it goes to the others.
+    pub channel: Signal<Option<u8>>,
 }
 
 impl PartialEq for Space {
@@ -25,6 +27,9 @@ impl PartialEq for Space {
 #[derive(Clone, Copy)]
 pub struct Tab {
     pub id: u64,
+    /// Where the spaces stand: a leaf a space, its group the space's id.
+    pub layout: Signal<quadra_design::work::Pane>,
+    /// In the layout's reading order.
     pub spaces: Signal<Vec<Space>>,
     pub focus: Signal<usize>,
     pub name: Signal<Option<String>>,
@@ -86,7 +91,9 @@ fn paths_of_programs_are_shortened() {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Command {
     NewTab,
+    /// To the right.
     Split,
+    SplitTo(Side),
     CloseSpace,
     /// The space to the right, or to the left.
     FocusNext(bool),
@@ -105,6 +112,15 @@ pub enum Command {
     Duplicate,
     /// The window closed.
     Quit,
+}
+
+/// Where a split puts the new space, beside the focused one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Side {
+    Right,
+    Left,
+    Up,
+    Down,
 }
 
 impl Action for Command {

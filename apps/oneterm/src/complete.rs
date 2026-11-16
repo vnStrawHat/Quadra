@@ -199,7 +199,7 @@ fn accept(shown: Shown, s: &Session, at: usize) {
     let (erase, text) = item.edit(&typed);
     let mut bytes = vec![0x7f; erase];
     bytes.extend_from_slice(text.as_bytes());
-    s.write(&bytes);
+    s.send(&quadra_term::Input::Keys(&bytes)); // typed for the user: its channel gets it
 }
 
 /// Keeps a line run at a prompt (the engine redacts it), never one of the alternate screen.

@@ -1,9 +1,10 @@
 //! The SFTP menus for the other button (specs/19, "M9 in detail"), shared by the dock and the
-//! expanded view, and the dialogs they open: a new folder's name, a new name, a delete asked.
+//! expanded view, and the dialogs they open: a new folder's name, a new name, a delete asked,
+//! an entry's properties.
 
 use std::rc::Rc;
 
-use oneterm_ssh::{Entry, join};
+use oneterm_ssh::{Entry, Stat, join};
 use quadra::{Clipboard, Signal, View, column, div, signal, text, use_context};
 use quadra_design::{MenuItem, Variant, dialog, field, icons, input};
 
@@ -22,13 +23,26 @@ pub(crate) struct Ask {
     /// The entry renamed or deleted, and the name typed.
     pub entry: Signal<Option<Entry>>,
     pub name: Signal<String>,
+    /// The properties shown, and the path they are of.
+    pub properties: Signal<bool>,
+    pub stat: Signal<Option<(String, Stat)>>,
 }
 
 impl Ask {
     pub fn new() -> Ask {
         let no = || signal(false);
         let name = signal(String::new());
-        Ask { folder: no(), rename: no(), delete: no(), large: no(), entry: signal(None), name }
+        let (properties, stat) = (no(), signal(None));
+        Ask {
+            folder: no(),
+            rename: no(),
+            delete: no(),
+            large: no(),
+            entry: signal(None),
+            name,
+            properties,
+            stat,
+        }
     }
 
     pub fn folder(&self) {
@@ -50,12 +64,13 @@ fn copies(path: String) -> impl Fn() + 'static {
     }
 }
 
-/// A remote entry's menu: open or download it, rename, copy its path, delete.
+/// A remote entry's menu: open or download it, rename, copy its path, its properties, delete.
 pub(crate) fn remote(model: &Model, d: Dock, entry: &Entry) -> impl Fn() -> Vec<MenuItem> + use<> {
     let (model, entry, copy, editing) = (model.clone(), entry.clone(), clipboard(), Editing::here());
     move || {
         let path = join(&d.dir.get_untracked(), &entry.name);
         let (opens, (a, b, c)) = (model.clone(), (entry.clone(), entry.clone(), entry.clone()));
+        let (stats, shown) = (model.clone(), entry.clone());
         let first = match entry.dir {
             true => MenuItem::new("Open").icon(icons::FOLDER).on_select({
                 let path = path.clone();
@@ -90,6 +105,9 @@ pub(crate) fn remote(model: &Model, d: Dock, entry: &Entry) -> impl Fn() -> Vec<
                     clipboard.write_text(&path);
                 }
             }),
+            MenuItem::new("Properties\u{2026}")
+                .icon(icons::INFO)
+                .on_select(move || d.properties(&stats, &shown)),
             MenuItem::separator(),
             MenuItem::new("Delete\u{2026}").danger().on_select(move || {
                 d.ask.entry.set(Some(c.clone()));
@@ -206,5 +224,6 @@ pub(crate) fn dialogs(model: &Model, d: Dock) -> impl View + use<> {
                     d.edit(&edits, &entry, &editing);
                 }
             });
-    div().child(folder).child(rename).child(delete).child(large)
+    let properties = crate::sftp::properties::properties(d);
+    div().child(folder).child(rename).child(delete).child(large).child(properties)
 }

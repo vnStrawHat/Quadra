@@ -2,6 +2,7 @@
 //! the status bar. Where a session's program comes from is the caller's: a local shell in the
 //! app ([`local_shell`]), `quadra_term::echo` in tests.
 
+mod channels;
 mod chrome;
 mod complete;
 mod connect;
@@ -27,6 +28,7 @@ mod sftp;
 mod shells;
 mod signals;
 mod spaces;
+mod split;
 mod statusbar;
 mod strip;
 mod tab;
@@ -39,7 +41,7 @@ use quadra_term::Session;
 
 pub use hosts::Host;
 pub use local::local_shell;
-pub use model::{Command, Model, Space, Tab};
+pub use model::{Command, Model, Side, Space, Tab};
 pub use prefs::{KIT_THEME, Prefs, theme};
 pub use remote::{remote_shell, remote_shell_with};
 pub use shells::{Launch, Remote, Shell};
@@ -167,6 +169,7 @@ fn run(model: &Model, command: Command, windows: Option<&quadra::Windows>) -> bo
     match command {
         Command::NewTab => model.new_tab(),
         Command::Split => model.split(),
+        Command::SplitTo(side) => model.split_to(side),
         Command::CloseSpace => return model.close_focused(),
         Command::FocusNext(forward) => model.focus_next(forward),
         Command::Lock => model.lock().lock_now(),

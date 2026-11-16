@@ -12,7 +12,8 @@ use crate::NewSession;
 use crate::lock::Lock;
 use crate::prefs::Prefs;
 use crate::shells::Launch;
-pub use crate::tab::{Command, Space, Tab};
+use crate::split::end;
+pub use crate::tab::{Command, Side, Space, Tab};
 
 /// What is open over the window: the settings page (it takes the body), the quick connect
 /// dialog, the dialog that adds a host.
@@ -137,9 +138,10 @@ impl Model {
     }
 
     /// A space of its own scope under the model's, its session made in it.
-    fn space(&self, launch: Launch) -> Space {
+    pub(crate) fn space(&self, launch: Launch) -> Space {
         let scope = self.0.owner.run(Scope::child);
-        let (id, remote) = (self.id(), launch.ssh.clone());
+        let (id, remote, tabs) = (self.id(), launch.ssh.clone(), self.0.tabs);
+        let channel = scope.run(|| quadra::signal(None));
         let session = scope.run(|| {
             let p = self.0.prefs;
             let (logged, name) = match &launch.ssh {
@@ -153,11 +155,12 @@ impl Model {
                 self.start_log(&session, &name, crate::logs::folder(&p));
             }
             self.watch(id, &session);
+            crate::channels::follow(tabs, id, channel, &session);
             let (rows, kept) = (self.0.prefs.scrollback, session.clone());
             quadra::effect(move || kept.set_scrollback(rows.get().clamp(0.0, 1.0e6) as u32));
             session
         });
-        Space { id, session, scope, remote }
+        Space { id, session, scope, remote, channel }
     }
 
     /// A tab with a new local shell, after the others, shown.
@@ -205,8 +208,10 @@ impl Model {
 
     fn insert_tab(&self, at: usize, launch: Launch) {
         let space = self.space(launch);
+        let layout = quadra_design::work::Pane::leaf(space.id.to_string());
         let tab = self.0.owner.run(|| Tab {
             id: self.id(),
+            layout: signal(layout),
             spaces: signal(vec![space]),
             focus: signal(0),
             name: signal(None),
@@ -214,50 +219,6 @@ impl Model {
         });
         self.0.tabs.update(|tabs| tabs.insert(at.min(tabs.len()), tab));
         self.0.active.set(tab.id);
-    }
-
-    /// A new space beside the focused one of the active tab, with the focus.
-    pub fn split(&self) {
-        self.split_with(Launch { cwd: self.focused_cwd(), ..self.launch(None) });
-    }
-
-    /// A new space running a launch beside the focused one of the active tab, with the focus.
-    pub fn split_with(&self, launch: Launch) {
-        let Some(tab) = self.active_tab() else { return };
-        let space = self.space(launch);
-        let at = tab.focus.get_untracked() + 1;
-        tab.spaces.update(|spaces| spaces.insert(at.min(spaces.len()), space));
-        tab.focus.set(at);
-    }
-
-    /// Closes the focused space of the active tab, and the tab with its last space. False
-    /// when no tab is left.
-    pub fn close_focused(&self) -> bool {
-        match self.active_tab().and_then(|tab| tab.focused()) {
-            Some(space) => self.close_space(space.id),
-            None => false,
-        }
-    }
-
-    /// Closes a space, and its tab when it was the last. False when no tab is left.
-    pub fn close_space(&self, id: u64) -> bool {
-        let tabs = self.0.tabs.get_untracked();
-        let found = tabs.iter().find_map(|tab| {
-            tab.spaces.with_untracked(|spaces| spaces.iter().position(|it| it.id == id)).map(|at| (*tab, at))
-        });
-        let Some((tab, at)) = found else { return !tabs.is_empty() };
-        let mut gone = None;
-        tab.spaces.update(|spaces| gone = Some(spaces.remove(at)));
-        if let Some(space) = gone {
-            end(space);
-        }
-        let left = tab.spaces.with_untracked(Vec::len);
-        if left == 0 {
-            return self.close_tab(tab.id);
-        }
-        let focus = tab.focus.get_untracked();
-        tab.focus.set(if focus > at { focus - 1 } else { focus.min(left - 1) });
-        true
     }
 
     /// Closes a tab and its spaces; the one after it shows, or the one before. False when
@@ -283,18 +244,4 @@ impl Model {
         }
         left > 0
     }
-
-    /// Moves the focus to the next space of the active tab, or the one before.
-    pub fn focus_next(&self, forward: bool) {
-        let Some(tab) = self.active_tab() else { return };
-        let count = tab.spaces.with_untracked(Vec::len);
-        let at = tab.focus.get_untracked();
-        tab.focus.set(if forward { (at + 1).min(count - 1) } else { at.saturating_sub(1) });
-    }
-}
-
-/// Ends a space: its program, then its scope.
-fn end(space: Space) {
-    space.session.close();
-    space.scope.dispose();
 }

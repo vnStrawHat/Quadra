@@ -14,6 +14,7 @@ use quadra::{Scope, Signal, background, interval, signal, spawn, untrack};
 use crate::model::Model;
 
 mod edit;
+pub(crate) mod properties;
 use crate::panes::{Local, free_name};
 pub(crate) use edit::{EDITORS, Editing};
 

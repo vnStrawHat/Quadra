@@ -52,7 +52,16 @@ impl App {
 fn the_menu_pastes_splits_and_closes() {
     let mut a = app();
     a.other_click();
-    for name in ["Copy", "Paste", "Select all", "Clear scrollback", "Split space", "Close space"] {
+    for name in [
+        "Copy",
+        "Paste",
+        "Select all",
+        "Clear scrollback",
+        "Split right",
+        "Split down",
+        "Input channel",
+        "Close space",
+    ] {
         assert!(
             a.h.query(|n| n.semantics.role == Role::MenuItem && n.semantics.name == name).len() == 1,
             "{name}"
@@ -70,7 +79,7 @@ fn the_menu_pastes_splits_and_closes() {
     assert!(a.h.clipboard.read_text().unwrap_or_default().starts_with("ls"));
 
     a.other_click();
-    a.choose("Split space");
+    a.choose("Split right");
     assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
     a.other_click();
     a.choose("Close space");

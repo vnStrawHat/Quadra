@@ -1,21 +1,20 @@
-//! The workspace (specs/19, "Spaces"): the spaces of the tab that shows, side by side in
-//! equal columns with lines between (beside the rail, from three on, the first on the left
-//! and the others stacked at its right), each with its header of 18 px; the focused one has
-//! an accent ring. A space whose program ended says so, and a key then closes it.
+//! The workspace (specs/19, "Spaces"): the spaces of the tab that shows, where its pane tree
+//! puts them, each with its header of 18 px; the focused one has an accent ring (in the colour
+//! of its input channel). A space whose program ended says so, and a key then closes it.
 
 use std::time::Instant;
 
 use std::rc::Rc;
 
 use quadra::{
-    Align, AnyView, Clipboard, MountCx, NodeId, Signal, View, by_text, column, div, dynamic, each, effect,
-    row, signal, text, untrack, use_context,
+    Align, AnyView, Clipboard, MountCx, NodeId, View, by_text, column, div, dynamic, effect, row, signal,
+    text, untrack, use_context,
 };
 use quadra_design::{MenuItem, context_menu, fonts, icons, token};
 use quadra_term::{Link, Session};
 
 use crate::links::Links;
-use crate::model::{Model, Space, Tab};
+use crate::model::{Model, Side, Space, Tab};
 
 pub(crate) fn workspace(model: &Model) -> impl View + use<> {
     let shown = model.clone();
@@ -28,35 +27,18 @@ pub(crate) fn workspace(model: &Model) -> impl View + use<> {
     tab.container(row().grow(1.0).bg(token::CANVAS).display(crate::locked::shown(move || !expanded.get())))
 }
 
+/// The tab's pane tree, a space a leaf: a space is built once, and moves as the tree does.
 fn columns(model: &Model, tab: Tab) -> impl View + use<> {
-    let (model, vertical) = (model.clone(), model.vertical());
-    let stacked = quadra::memo(move || vertical.get() && tab.spaces.with(Vec::len) >= 3);
-    dynamic(move || {
-        let list = |part: fn(&[Space]) -> Vec<Space>, across: bool| {
-            let model = model.clone();
-            each(
-                move || tab.spaces.with(|spaces| part(spaces)),
-                |space| space.id,
-                move |space: Signal<Space>| SpaceView {
-                    model: model.clone(),
-                    tab,
-                    space: space.get_untracked(),
-                    across,
-                },
-            )
-        };
-        if !stacked.get() {
-            return AnyView::new(
-                list(<[Space]>::to_vec, true).container(row().grow(1.0).gap(1.0).bg(token::LINE)),
-            );
+    let model = model.clone();
+    let leaf = move |group: &str| {
+        let space =
+            tab.spaces.with_untracked(|spaces| spaces.iter().find(|it| it.id.to_string() == group).cloned());
+        match space {
+            Some(space) => AnyView::new(SpaceView { model: model.clone(), tab, space }),
+            None => AnyView::new(div()),
         }
-        let first = list(|spaces| spaces.iter().take(1).cloned().collect(), true)
-            .container(row().grow(1.0).width(0.0));
-        let rest = list(|spaces| spaces.iter().skip(1).cloned().collect(), false)
-            .container(column().grow(1.0).width(0.0).gap(1.0));
-        AnyView::new(row().grow(1.0).gap(1.0).bg(token::LINE).child(first).child(rest))
-    })
-    .container(row().grow(1.0).min_width(0.0))
+    };
+    row().grow(1.0).min_width(0.0).child(quadra_design::work::panes(tab.layout, leaf))
 }
 
 /// Whether the space is its tab's focused one.
@@ -68,23 +50,30 @@ struct SpaceView {
     model: Model,
     tab: Tab,
     space: Space,
-    /// In a row (equal widths), or in a stack (equal heights).
-    across: bool,
 }
 
 impl View for SpaceView {
     /// The header, the terminal and the ring; the terminal takes the focus whenever the
     /// space is the tab's focused one.
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let SpaceView { model, tab, space, across } = self;
+        let SpaceView { model, tab, space } = self;
         let shows = focused(tab, space.id);
-        let view = space_view(&model, tab, space);
-        let id = if across { view.width(0.0) } else { view.height(0.0) }.mount(cx);
+        let id = space_view(&model, tab, space).mount(cx);
         let (handle, locked) = (cx.handle.clone(), model.lock().locked);
         effect(move || {
-            // Opened again, the focus comes back to the focused space.
+            // Opened again, the focus comes back to the focused space; one pressed keeps what
+            // the press focused in it.
             if shows() && !locked.get() {
-                handle.with(move |tree| _ = tree.focus_first(id));
+                handle.with(move |tree| {
+                    let mut at = tree.focused();
+                    while let Some(node) = at {
+                        if node == id {
+                            return;
+                        }
+                        at = tree.parent(node);
+                    }
+                    tree.focus_first(id);
+                });
             }
         });
         id
@@ -138,10 +127,17 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
                 .text_color(move || if on() { token::TEXT } else { token::TEXT_2 })
                 .child(text(place).ellipsis()),
         )
+        .child(crate::channels::chip(space.channel))
         .child(crate::marks::header_signal(&s, model.prefs(), title))
         .child(text(move || exited.get().map(|code| format!("exited {code}")).unwrap_or_default()));
     // The focused space's ring is its border, so nothing lies over the terminal for the pointer.
-    let ring = move || if on() && tab.spaces.with(Vec::len) > 1 { token::ACCENT } else { token::CANVAS };
+    let channel = space.channel;
+    // A closed space's signals may go before its view does.
+    let ring = move || match (on() && tab.spaces.with(Vec::len) > 1, channel.try_get().flatten()) {
+        (true, Some(c)) => crate::channels::colour(c),
+        (true, None) => token::ACCENT,
+        (false, _) => token::CANVAS,
+    };
     column()
         .grow(1.0)
         .min_width(0.0)
@@ -149,10 +145,10 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
         .bg(token::CANVAS)
         .border(1.0)
         .border_color(ring)
-        .on_focus(move |gained| {
-            if gained {
-                tab.focus.set(index());
-            }
+        // A press anywhere in it makes it the tab's focused space (the focus is the
+        // terminal's, a node inside: its own focus handlers do not reach this box).
+        .on_mount(move |tree, id| {
+            tree.on_pointer_capture(id, quadra::PointerKind::Down, move |_| tab.focus.set(index()))
         })
         .child(header)
         .child(column().grow(1.0).min_height(0.0).padding_x(12.0).padding_y(10.0).child(crate::find::around(
@@ -177,7 +173,8 @@ fn menu_of(
     effect(move || settings.set(p.term()));
     // A new look is followed by the terminal as it is: its screen stays.
     effect(move || look.set(p.look()));
-    let (s, model, clipboard) = (s.clone(), model.clone(), use_context::<Rc<dyn Clipboard>>());
+    let (s, model, clipboard, space) =
+        (s.clone(), model.clone(), use_context::<Rc<dyn Clipboard>>(), space.clone());
     let (follows, links) = (links.clone(), links.clone());
     let view = view.settings(settings).look(look).on_link(move |link| follows.follow(link));
     context_menu(view, move || {
@@ -187,7 +184,7 @@ fn menu_of(
         let on_link = s.link_pressed().map(|link| links.menu(link)).unwrap_or_default();
         let chosen = s.selection_text();
         let (copies, pastes, (all, clears)) = (clipboard.clone(), clipboard.clone(), (s.clone(), s.clone()));
-        let (pasted, (splits, closes)) = (s.clone(), (model.clone(), model.clone()));
+        let (pasted, closes) = (s.clone(), model.clone());
         let items = vec![
             MenuItem::new("Copy")
                 .icon(icons::COPY)
@@ -207,16 +204,24 @@ fn menu_of(
             MenuItem::new("Clear scrollback").on_select(move || clears.clear_history()),
             logging(&model, &s, &name, folder.clone()),
             MenuItem::separator(),
-            MenuItem::new("Split space")
-                .icon(icons::COLUMNS_2)
-                .keys("Ctrl+D")
-                .on_select(move || splits.split()),
+            split(&model, "Split right", Side::Right, "Ctrl+D"),
+            split(&model, "Split left", Side::Left, "Ctrl+Shift+Left"),
+            split(&model, "Split up", Side::Up, "Ctrl+Shift+Up"),
+            split(&model, "Split down", Side::Down, "Ctrl+Shift+Down"),
+            crate::channels::menu(model.tabs(), &space),
             MenuItem::new("Close space").keys("Ctrl+W").danger().on_select(move || {
                 _ = closes.close_space(id);
             }),
         ];
         on_link.into_iter().chain(items).collect()
     })
+}
+
+/// A row that splits the space to a side.
+fn split(model: &Model, name: &str, side: Side, keys: &str) -> MenuItem {
+    let model = model.clone();
+    let item = MenuItem::new(name).keys(keys).on_select(move || model.split_to(side));
+    if side == Side::Right { item.icon(icons::COLUMNS_2) } else { item }
 }
 
 /// Start logging, or Stop logging while a log is open.

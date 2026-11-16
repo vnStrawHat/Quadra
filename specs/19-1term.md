@@ -77,20 +77,41 @@ panel of 248 px at the left.
 
 ## Spaces
 
-A tab holds one or more spaces side by side (a row of equal columns, 1 px lines between);
-beside the rail, three or more stand as the first on the left and the others stacked at its
-right. Each space has an 18 px header in mono 11 px on the panel colour: where it is on the left
+A tab holds one or more spaces laid out by a pane tree (the kit's `work::Pane`, `panes`):
+splits in two, nested, side by side or one over the other, with the kit's seams between (a
+1 px line in a strip of 6 px that is dragged to give a side more room; a double click makes the
+sides even). A split puts a new local shell in the focused space's cwd beside it, on the side it
+names, in half of its room, and the focus goes to it; splits along one axis that hold one another
+share their room evenly again (three side by side are thirds), and so they do after a close.
+The order of the spaces (the focus keys, the status bar) is the tree's reading order. The layout
+is not saved. Each space has an 18 px header in mono 11 px on the panel colour: where it is on the left
 (the cwd, after `user@host:` for a remote space; in the text colour while focused), its signal
 on the right (a progress percentage; the state on a 12 px disc and its word in the state's
 colour, then the latency; with no state a green dot and the latency, else the program's title).
 The terminal has 10 px of room above and below and 12 at its sides. The focused space has a
 1 px accent ring, its own border (nothing lies over the terminal for the pointer). Notification cards stand at the workspace's top right, clear of the dock. `Ctrl+D` splits
-the active space (a new local shell in its cwd), `Ctrl+W` closes it (the tab with its last
-space), `Ctrl+Alt+Left/Right` moves the focus. A space whose program ended shows
+the active space to the right (Split space), `Ctrl+Shift+Right`, `Left`, `Up`, `Down` split it
+to that side, `Ctrl+W` closes it (the tab with its last
+space), `Ctrl+Alt+Left/Right` moves the focus; a press anywhere in a space makes it the focused one. A space whose program ended shows
 `[process exited N]` and closes on a key. The other button opens a space's menu (when the
 setting has it, the default): Open link and Copy link first when the press was on a link, Copy
-(with a selection), Paste, Select all, Clear scrollback, then Split space and Close space; a
-program that reports the mouse takes the press instead.
+(with a selection), Paste, Select all, Clear scrollback, then Split right, Split left, Split
+up, Split down, Input channel, and Close space; a program that reports the mouse takes the press
+instead.
+
+Input channels (broadcast typing): five, A to E. A space that joined one sends what is typed in
+it to the other members of that channel, in any tab: keys as its view encoded them, typed text
+and pastes as each member's own program asked (bracketed or not), through
+`Session::on_input` and `Session::deliver` (specs/18, "Input"); mouse reports, focus reports and
+replies are not sent. The space's menu has Input channel, a submenu: Channel A to E (the
+space's own checked; choosing one joins it, leaving any other), then while a member Leave
+channel and Close channel X (every member leaves), then in a tab of more than one space Join
+all spaces in tab to X (while a member) and Leave with all spaces in tab (while one is a member).
+It is disabled once the space's program ended. A member's header has a chip before its signal:
+a 14 px square, radius 3, its bold letter in 10 px on the channel's colour (the kit's
+`token::SERIES`, 1 to 5), read as "Channel A"; while it is the focused one of several, its ring
+takes that colour. A space made by a split or a duplicate is in no channel; a space leaves its
+channel when its program ends or it closes. Membership is not saved.
 
 Links (specs/18, "Input") open on Ctrl+click, or Open link in the menu, through the app's policy,
 a pure function of the target and the visible text: `https` opens through the shell's `Opener`;
@@ -164,7 +185,7 @@ Seen clears: selecting the tab clears its bell dot and a "done" seen state.
 Under "New terminal" (and `+` of the strip): a search field ("Search hosts, or type
 user@host…"; at the rail's right, 360 wide), Local shell (the default shell, its name after it,
 `Ctrl+T`), the other local shells found (Command Prompt, Windows PowerShell, PowerShell 7, Git
-Bash, WSL), Split current space (`Ctrl+D`); from P2 Quick connect (`ssh user@host`), Recent and
+Bash, WSL), Split current space (`Ctrl+D`, to the right); from P2 Quick connect (`ssh user@host`), Recent and
 the saved hosts by group, Add SSH host. Rows have icons; a host has a dot (green while a space is
 connected to it) and its address at the right (Recent: the host and how long ago).
 
@@ -205,7 +226,7 @@ Security & lock (Lock now while a password is set; and whether programs may read
 Logging (log new local shells, log new SSH spaces, both off; the folder, typed or chosen in the
 system's dialog, empty for `session-logs` in the app's data folder; the formats shown, fixed; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
-logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset (and Reset all at the top), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
+logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D (to the right), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset (and Reset all at the top), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Every setting of a page but Keybindings (which has its own) has the
 kit's Reset (specs/13, `settings`), back to the default the app reads it with (`Prefs::load`; the
@@ -327,7 +348,9 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   connection once the shell is open, and gives `Files`, whose calls block (an app makes them
   on its pool): `home`, `list` (folders first, then names whatever the case; no `.` or `..`;
   at most 100,000 entries), `download(remote, local, progress, cancel)`, `upload(local,
-  remote, progress, cancel)`, `mkdir`, `remove`. A transfer writes `<name>.part` beside its
+  remote, progress, cancel)`, `mkdir`, `remove`, `stat` (a path's properties: folder or file,
+  whether it is a symbolic link, the rest of what it points to, size, mode, uid and gid with their
+  names read from the server's `/etc/passwd` and `/etc/group` where it lets them be read, times). A transfer writes `<name>.part` beside its
   target and renames it once whole, so a target is never half written; a cancelled or failed
   one removes its part. A remote name that would leave its folder as a local path (`/`, `\`,
   `:`, `..`, a control character) is refused.
@@ -342,10 +365,16 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   a remote row's menu (Open or Download; for a file Edit…: downloaded to `sftp-edit` in the app's data
   folder, opened in the system's app for it or the program the settings name with its arguments
   (`Opener::open_with`), sent back each time it is saved, a card saying so; above the size set, 1 MB,
-  asked first; Rename…, Copy path, Delete…) and, where no row is, the
+  asked first; Rename…, Copy path, Properties…, Delete…) and, where no row is, the
   list's (New folder…, Refresh), in the dock and the expanded view's Remote pane alike; a local
   row's menu there has Open or Upload, Copy path, Refresh. New folder and Rename ask the name in a
   dialog (not empty, `.`, `..` or with a `/`); Delete asks first (a folder only when empty).
+  Properties… asks the server for the entry again and shows a dialog, Properties, with a
+  description list: Name, Type (`Folder` or `File`, `(symlink)` after a link), Size (`2.4 KB (2458
+  bytes)`, `-` for a folder), Modified, Accessed (`2026-10-28 10:52` where the user is), Permissions
+  in mono (`-rw-r--r-- (0644)`: the kind, rwx with `s`/`S` and `t`/`T` for the special bits, the
+  octal), Owner and Group (`name (id)`, the id alone without a name, `-` without either), Path (in
+  mono, with a copy button), and Close. It shows; it does not change the mode. A failed ask is a card.
   Files dropped from the OS upload to the folder shown. Transfers show
   under the list: an arrow, `name → remote` or `name ← local`, its state (`48%`, `done`), a
   cross that cancels, and a bar of 3 px; a failed one says why. Names that start with `.` show only while `.hidden` is on (both views).
@@ -396,5 +425,5 @@ license's notice. Without them every space still runs, on the system's host.
 The app's tests drive it through the semantic tree on the headless platform with `echo()`
 sessions: tabs and spaces made, split, closed, moved; the signals on the rail, headers and
 status bar from bytes fed to a session; the menu; completion (`tests/complete.rs`: prompts
-marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); find (`tests/find.rs`: Ctrl+F opens the bar, the count, Enter and Shift+Enter, Escape gives the focus back); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); settings written; lock and unlock. Real
+marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); find (`tests/find.rs`: Ctrl+F opens the bar, the count, Enter and Shift+Enter, Escape gives the focus back); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); splits (`tests/splits.rs`: each side, nesting, the order, a seam dragged, a close); input channels (`tests/channels.rs`: join, what a member and a non-member get, a paste bracketed by each, leave, close, an ended program); settings written; lock and unlock. Real
 shells only in `quadra-shell`'s pseudo console test.

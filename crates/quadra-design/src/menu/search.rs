@@ -54,6 +54,23 @@ where
     })
 }
 
+/// A menu on the `side` of `opener` while `open` is true, `gap` px from it (less than 0: over
+/// it), its start along the opener's start: the menu of a row, beside it.
+pub fn menu_beside<F>(
+    open: Signal<bool>,
+    opener: &NodeRef,
+    side: Side,
+    gap: f32,
+    items: F,
+) -> impl View + use<F>
+where
+    F: Fn() -> Vec<MenuItem> + 'static,
+{
+    let ends = move || Ends { done: Rc::new(move || open.set(false)), leave: None };
+    let place = Place::Beside(opener.clone(), side, Along::Start, gap);
+    popup(open, (place, 1), Some(opener.clone()), move || rows(items(), ends()))
+}
+
 /// A ghost button that is only an icon and opens a searched menu under itself.
 pub fn searched_icon_button(
     body: &'static str,

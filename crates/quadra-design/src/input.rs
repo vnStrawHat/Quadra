@@ -1,14 +1,15 @@
 //! The text input of the kit (specs/behaviour/15, "Text input"): the field of `quadra-view` in
 //! a frame. The frame's border says where the focus is and whether the value is accepted.
 
-use quadra_layout::Align;
+use quadra_layout::{Align, Length};
 use quadra_platform::Cursor;
-use quadra_reactive::Signal;
+use quadra_reactive::{Signal, effect, signal, untrack};
 use quadra_tree::{NodeId, Role, State};
-use quadra_view::{AnyView, Div, IntoProp, MountCx, Prop, View, row, show, text, text_input};
+use quadra_view::{AnyView, Div, IntoProp, MountCx, Prop, View, by_text, row, show, text, text_input};
 
+use crate::button::icon_button;
 use crate::icon::icon;
-use crate::{icons, token};
+use crate::{fonts, icons, size, token};
 
 pub struct Input {
     value: Signal<String>,
@@ -23,6 +24,13 @@ pub struct Input {
     pub(crate) before: Option<AnyView>,
     clears: bool,
     readonly: bool,
+    /// The mono face, 12 px text, a fixed height, the room left in the row, an eye that shows
+    /// a password.
+    mono: bool,
+    small: bool,
+    height: Option<f32>,
+    fill: bool,
+    reveal: bool,
     test_id: Option<&'static str>,
     submit: Option<Submit>,
 }
@@ -44,6 +52,11 @@ pub fn input(value: Signal<String>) -> Input {
         before: None,
         clears: false,
         readonly: false,
+        mono: false,
+        small: false,
+        height: None,
+        fill: false,
+        reveal: false,
         test_id: None,
         submit: None,
     }
@@ -90,6 +103,43 @@ impl Input {
         self
     }
 
+    /// Words before the text in the second colour: `ssh` before a target.
+    pub fn prefix(mut self, words: &str) -> Self {
+        self.before =
+            Some(AnyView::new(row().shrink(0.0).text_color(token::TEXT_2).child(text(words.to_string()))));
+        self
+    }
+
+    /// In the kit's mono face: paths, targets, numbers.
+    pub fn mono(mut self) -> Self {
+        self.mono = true;
+        self
+    }
+
+    /// Text of 12 px: a field in a panel's bar.
+    pub fn small(mut self) -> Self {
+        self.small = true;
+        self
+    }
+
+    /// A fixed height, the text centred in it (32 unless told; 28 and 22 in bars).
+    pub fn height(mut self, px: f32) -> Self {
+        self.height = Some(px);
+        self
+    }
+
+    /// As wide as the room left in the row it is in.
+    pub fn fill(mut self) -> Self {
+        self.fill = true;
+        self
+    }
+
+    /// A password with an eye at its end that shows and hides its characters.
+    pub fn reveal(mut self) -> Self {
+        self.reveal = true;
+        self
+    }
+
     /// The value shows, and can be selected and copied, and not typed over.
     pub fn readonly(mut self) -> Self {
         self.readonly = true;
@@ -115,7 +165,20 @@ impl Input {
 
     pub(crate) fn build(self) -> Div {
         let field = text_input(self.value).placeholder(&self.placeholder);
-        let field = if self.password { field.password() } else { field };
+        let (shown, value) = (signal(false), self.value);
+        // A password emptied (sent, or taken back) hides again.
+        if self.reveal {
+            effect(move || {
+                if value.with(String::is_empty) && untrack(|| shown.get()) {
+                    shown.set(false);
+                }
+            });
+        }
+        let field = match (self.password, self.reveal) {
+            (true, true) => field.password().reveal(shown),
+            (true, false) => field.password(),
+            _ => field,
+        };
         // Read only, there is no field: the frame is a group a reader knows by the label.
         let (field, group) = match (self.label, self.readonly) {
             (Some(name), false) => (field.label(name), None),
@@ -130,8 +193,18 @@ impl Input {
             Some(id) => field.test_id(id),
             None => field,
         };
-        let frame = row().align_items(Align::Center).gap(4.0).width(self.width).min_height(32.0);
-        let frame = frame.padding_x(8.0).padding_y(6.0).radius(token::RADIUS_LG).border(1.0);
+        let frame = row().align_items(Align::Center).gap(4.0).padding_x(8.0);
+        let frame = match self.fill {
+            true => frame.grow(1.0).width(0.0).min_width(Length::Px(0.0)),
+            false => frame.width(self.width),
+        };
+        let frame = match self.height {
+            Some(px) => frame.height(by_text(px)),
+            None => frame.min_height(32.0).padding_y(6.0),
+        };
+        let frame = if self.mono { frame.font_family(fonts::MONO) } else { frame };
+        let frame = if self.small { frame.text_size(size::TEXT_SM.size) } else { frame };
+        let frame = frame.radius(token::RADIUS_LG).border(1.0);
         let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG).cursor(Cursor::Text);
         let frame = frame.selection_color(token::SELECTION);
         // The border is where the focus shows; a value that is not accepted keeps the
@@ -152,6 +225,15 @@ impl Input {
             }
             (true, None) => frame.child(text(move || value.get()).selectable()),
             (false, _) => frame.child(field),
+        };
+        // The eye: pressed while the characters show.
+        let frame = match self.password && self.reveal {
+            true => frame.child(
+                icon_button(icons::EYE, "Show password")
+                    .toggled(move || shown.get())
+                    .on_click(move || shown.update(|on| *on = !*on)),
+            ),
+            false => frame,
         };
         if !self.clears {
             return frame;

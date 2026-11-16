@@ -32,9 +32,15 @@ fn face(item: &MenuItem, marks: bool) -> Div {
         (_, Some(true), _) => face.child(icon(icons::CHECK).color(token::ACCENT_TEXT)),
         (_, _, Some(body)) if item.disabled => face.child(icon(body)),
         (_, _, Some(body)) => face.child(icon(body).color(token::TEXT_2)),
-        _ => match item.dot {
-            Some(color) => face.child(row().width(14.0).justify(Justify::Center).child(dot(color))),
-            None => face.child(div().width(14.0)),
+        _ => match (item.dot, item.swatch) {
+            (Some(color), _) => face.child(row().width(14.0).justify(Justify::Center).child(dot(color))),
+            (_, Some(color)) => face.child(
+                row()
+                    .width(14.0)
+                    .justify(Justify::Center)
+                    .child(div().size(10.0, 10.0).radius(2.0).bg(color)),
+            ),
+            _ => face.child(div().width(14.0)),
         },
     };
     let face = face.child(text(item.label.clone()));
@@ -43,9 +49,13 @@ fn face(item: &MenuItem, marks: bool) -> Div {
         None => face,
     };
     let face = face.child(div().grow(1.0).min_width(16.0));
+    // The shortcut in 12 px; disabled, in the row's colour.
     let face = match &item.keys {
-        Some(keys) if item.disabled => face.child(text(keys.clone())),
-        Some(keys) => face.child(text(keys.clone()).color(token::TEXT_2)),
+        Some(keys) => {
+            let keys = div().text_size(size::TEXT_SM.size).child(text(keys.clone()));
+            let keys = if item.disabled { keys } else { keys.text_color(token::TEXT_2) };
+            face.child(if item.mono { keys.font_family(crate::fonts::MONO) } else { keys })
+        }
         None => face,
     };
     match item.items.is_empty() {
@@ -61,7 +71,9 @@ fn dot(color: quadra_tree::Token) -> Div {
 
 /// The rows of a menu as a view: the headless crate's (`quadra_headless::menu`) with the kit's faces.
 pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
-    let marks = items.iter().any(|item| item.icon.is_some() || item.dot.is_some() || item.checked.is_some());
+    let marks = items.iter().any(|item| {
+        item.icon.is_some() || item.dot.is_some() || item.swatch.is_some() || item.checked.is_some()
+    });
     let mut lines = Vec::new();
     let mut height = 8.0;
     for item in items {

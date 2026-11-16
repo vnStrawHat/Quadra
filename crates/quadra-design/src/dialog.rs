@@ -24,7 +24,7 @@ pub struct Dialog<F> {
     open: Signal<bool>,
     title: String,
     body: F,
-    actions: Vec<(String, Variant, Act)>,
+    actions: Vec<(String, Variant, Act, Option<&'static str>)>,
 }
 
 /// A dialog shown while `open` is true: a title over what `body` builds, each time it opens.
@@ -40,7 +40,15 @@ impl<F> Dialog<F> {
     /// A button at the foot of the dialog, from the left to the right in the order given.
     /// Pressing it runs `f` and closes the dialog.
     pub fn action(mut self, label: impl Into<String>, variant: Variant, f: impl Fn() + 'static) -> Self {
-        self.actions.push((label.into(), variant, Rc::new(f)));
+        self.actions.push((label.into(), variant, Rc::new(f), None));
+        self
+    }
+
+    /// The key that does what the last action does, shown after its label (`Enter`).
+    pub fn shortcut(mut self, key: &'static str) -> Self {
+        if let Some(last) = self.actions.last_mut() {
+            last.3 = Some(key);
+        }
         self
     }
 }
@@ -51,7 +59,7 @@ fn head(title: &str, open: Signal<bool>) -> Div {
     let cross = cross.radius(token::RADIUS_MD).hover(|s| s.bg(token::PANEL_HOVER));
     let cross = base::close(cross.cursor(Cursor::Pointer), open);
     let cross = cross.child(icon(icons::X).size(14.0).color(token::TEXT_2));
-    let headline = div().grow(1.0).child(text(title.to_string()).size(size::TEXT_LG.size));
+    let headline = div().grow(1.0).font_weight(600).child(text(title.to_string()).size(size::TEXT_LG.size));
     let head = row().align_items(Align::Center).gap(4.0).padding_x(12.0).padding_top(8.0);
     head.padding_bottom(4.0).child(headline).child(cross)
 }
@@ -141,9 +149,13 @@ where
             }
             let mut foot = row().gap(4.0).padding(8.0).justify(Justify::End);
             foot = foot.border_top(1.0).border_color(token::LINE);
-            for (label, variant, act) in actions.iter() {
+            for (label, variant, act, key) in actions.iter() {
                 let press = base::answer(open, act.clone());
-                foot = foot.child(button(label.clone()).variant(*variant).on_click(press));
+                let face = button(label.clone()).variant(*variant).on_click(press);
+                foot = foot.child(match key {
+                    Some(key) => face.shortcut(key),
+                    None => face,
+                });
             }
             page.child(foot)
         };

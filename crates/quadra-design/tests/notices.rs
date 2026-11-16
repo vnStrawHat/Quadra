@@ -46,14 +46,19 @@ fn cards_stack_at_the_bottom_right_until_closed_or_answered() {
 
     let retried = Rc::new(Cell::new(0));
     let again = retried.clone();
-    all.notify(Notice::new("Saved").body("All changes are on disk.").tone(Tone::Success));
+    let saved = Notice::new("Saved").body("All changes are on disk.").note("notes.md \u{B7} autosave");
+    all.notify(saved.tone(Tone::Success));
     let failed = Notice::new("Upload failed").tone(Tone::Danger).action("Dismiss", || {});
     all.notify(failed.primary("Retry", move || again.set(again.get() + 1)));
     settle(&mut h);
     let tree = h.semantics();
-    for line in
-        ["Group \"Saved\"", "Text \"All changes are on disk.\"", "Button \"Retry\"", "Button \"Close\""]
-    {
+    for line in [
+        "Group \"Saved\"",
+        "Text \"All changes are on disk.\"",
+        "Text \"notes.md \u{B7} autosave\"",
+        "Button \"Retry\"",
+        "Button \"Dismiss notification\"",
+    ] {
         assert!(tree.contains(line), "{line} is not in:\n{tree}");
     }
     // 448 px wide, 12 from the right edge and from the status bar; the newest
@@ -67,7 +72,7 @@ fn cards_stack_at_the_bottom_right_until_closed_or_answered() {
     settle(&mut h);
     assert_eq!((retried.get(), h.semantics().contains("Upload failed")), (1, false));
     assert_eq!(card(&mut h, "Saved").bottom(), 558.0); // it takes the place at the bottom
-    h.get_by_role(Role::Button, "Close").click();
+    h.get_by_role(Role::Button, "Dismiss notification").click();
     settle(&mut h);
     assert_eq!(h.tree.overlays().count(), 0);
 }

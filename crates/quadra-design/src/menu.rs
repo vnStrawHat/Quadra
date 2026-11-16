@@ -13,7 +13,7 @@ use quadra_tree::NodeId;
 use quadra_view::{AnyView, Div, MountCx, NodeRef, Place, View, by_text, div, row};
 
 pub(crate) use self::rows::rows;
-pub use self::search::{searched_icon_button, searched_menu};
+pub use self::search::{menu_beside, searched_icon_button, searched_menu};
 use crate::button::{Button, Size, Variant, button, icon_button};
 use crate::popup::{open_now, popover};
 use crate::token;
@@ -26,9 +26,13 @@ pub struct MenuItem {
     icon: Option<&'static str>,
     /// A dot of this colour in the place of an icon: a host that is connected.
     dot: Option<quadra_tree::Token>,
+    /// A square of this colour in the place of an icon: a host's colour tag.
+    swatch: Option<quadra_tree::Token>,
     /// A few words after the label, in the second text colour.
     detail: Option<String>,
     keys: Option<String>,
+    /// The keys' text is in the mono face: an address, a number.
+    mono: bool,
     checked: Option<bool>,
     disabled: bool,
     danger: bool,
@@ -72,6 +76,18 @@ impl MenuItem {
     /// A dot of a colour in the place of an icon: a state, as a host that is connected.
     pub fn dot(mut self, color: quadra_tree::Token) -> Self {
         self.dot = Some(color);
+        self
+    }
+
+    /// A square of 10 px of a colour in the place of an icon: a tag the user gave the row.
+    pub fn swatch(mut self, color: quadra_tree::Token) -> Self {
+        self.swatch = Some(color);
+        self
+    }
+
+    /// The text at the right end in the mono face: an address, a size.
+    pub fn mono(mut self) -> Self {
+        self.mono = true;
         self
     }
 
@@ -216,6 +232,12 @@ impl MenuButton {
     /// An icon before the label.
     pub fn icon(mut self, body: &'static str) -> Self {
         self.face = self.face.icon(body);
+        self
+    }
+
+    /// In the second text colour, as the icon buttons of a bar around it.
+    pub fn muted(mut self) -> Self {
+        self.face = self.face.muted();
         self
     }
 

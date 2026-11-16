@@ -138,3 +138,34 @@ fn a_label_names_a_field_to_a_reader_and_follows_its_words() {
     h.frame();
     assert_eq!(count.get_untracked(), 4.0);
 }
+
+#[test]
+fn a_password_shows_while_its_eye_is_pressed_and_a_key_follows_a_button_s_label() {
+    let secret = signal(String::new());
+    let mut h = Harness::new();
+    h.mount(move || {
+        let field = input(secret).password().reveal().prefix("pw").mono().height(28.0).test_id("secret");
+        let unlock = quadra_design::button("Unlock").shortcut("Enter");
+        quadra_design::root().child(column().child(field).child(unlock))
+    });
+    h.frame();
+    h.get_by_test_id("secret").type_text("ab");
+    h.frame();
+    assert!(h.has_text("\u{2022}\u{2022}") && !h.has_text("ab"));
+    h.get_by_role(Role::Button, "Show password").click();
+    h.frame();
+    assert!(h.has_text("ab"), "{}", h.semantics());
+    h.get_by_role(Role::Button, "Show password").click();
+    h.frame();
+    assert!(h.has_text("\u{2022}\u{2022}"));
+    // Shown, then emptied (a password sent): what is typed next is hidden again.
+    h.get_by_role(Role::Button, "Show password").click();
+    secret.set(String::new());
+    h.frame();
+    h.get_by_test_id("secret").type_text("cd");
+    h.frame();
+    assert!(h.has_text("\u{2022}\u{2022}") && !h.has_text("cd"));
+    // The button is called by its label alone; the key shows after it.
+    assert!(h.has_text("Enter"));
+    h.get_by_role(Role::Button, "Unlock");
+}

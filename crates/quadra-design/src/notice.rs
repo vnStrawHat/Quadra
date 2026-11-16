@@ -15,7 +15,7 @@ use crate::button::{Size, Variant, button, icon_button};
 use crate::display::Tone;
 use crate::icon::icon;
 use crate::popup::surface;
-use crate::{icons, token};
+use crate::{icons, size, token};
 
 type Act = Rc<dyn Fn()>;
 
@@ -24,6 +24,8 @@ type Act = Rc<dyn Fn()>;
 pub struct Notice {
     title: String,
     body: String,
+    /// Where it came from, in 12 px under the body: `staging-db-01 · OSC 9`.
+    note: String,
     tone: Tone,
     /// What its buttons say, whether each is the one to take, and what it does.
     actions: Vec<(String, bool, Act)>,
@@ -34,12 +36,18 @@ pub struct Notice {
 impl Notice {
     pub fn new(title: impl Into<String>) -> Notice {
         let (title, body, tone) = (title.into(), String::new(), Tone::Info);
-        Notice { title, body, tone, actions: Vec::new(), lasts: None, toast: false }
+        Notice { title, body, note: String::new(), tone, actions: Vec::new(), lasts: None, toast: false }
     }
 
     /// A line or two under the title.
     pub fn body(mut self, words: impl Into<String>) -> Self {
         self.body = words.into();
+        self
+    }
+
+    /// A line in 12 px under the body: where it came from.
+    pub fn note(mut self, words: impl Into<String>) -> Self {
+        self.note = words.into();
         self
     }
 
@@ -147,7 +155,11 @@ impl Notices {
             true => words,
             false => words.child(div().text_color(token::TEXT_2).child(text(notice.body))),
         };
-        let close = icon_button(icons::X, "Close").on_click(move || me.close(id));
+        let words = match notice.note.is_empty() {
+            true => words,
+            false => words.child(text(notice.note).size(size::TEXT_SM.size).color(token::TEXT_2)),
+        };
+        let close = icon_button(icons::X, "Dismiss notification").on_click(move || me.close(id));
         let top = row()
             .gap(8.0)
             .child(div().padding_top(3.0).child(mark(notice.tone, false)))

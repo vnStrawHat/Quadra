@@ -78,6 +78,19 @@ impl View for TextInput {
                 }
             });
         });
+        if let Some(shown) = self.revealed.filter(|_| masked) {
+            let writer = cx.handle.clone();
+            cx.handle.bind(move || {
+                let hidden = !shown.get();
+                writer.with(move |tree| {
+                    if let Some(field) = tree.widget_mut::<TextField>(id) {
+                        field.masked = hidden;
+                    }
+                    tree.mark_layout(id);
+                    tree.mark_paint(id);
+                });
+            });
+        }
 
         let writer = cx.handle.clone();
         cx.tree.on_text(id, move |typed| {

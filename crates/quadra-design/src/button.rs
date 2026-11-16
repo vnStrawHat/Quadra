@@ -6,7 +6,7 @@
 use quadra_layout::{Align, Display, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::memo;
-use quadra_tree::{NodeId, Paint, State};
+use quadra_tree::{NodeId, Paint, State, Token};
 use quadra_view::{Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
 
 use crate::icon::icon;
@@ -60,6 +60,7 @@ pub struct Button {
     muted: bool,
     loading: Option<Prop<bool>>,
     test_id: Option<&'static str>,
+    shortcut: Option<&'static str>,
     click: Option<Box<dyn FnMut()>>,
 }
 
@@ -83,6 +84,7 @@ pub fn button<M>(label: impl IntoProp<String, M>) -> Button {
         muted: false,
         loading: None,
         test_id: None,
+        shortcut: None,
         click: None,
     }
 }
@@ -92,23 +94,13 @@ pub fn button<M>(label: impl IntoProp<String, M>) -> Button {
 fn colors(variant: Variant) -> [Paint; 6] {
     use token::*;
     let none = Paint::default();
+    // A tinted one: its hover and pressed fills are one, its border its colour at 42 %.
+    let tinted = |fill: Token, hover: Token, line: Token, mark: Token| {
+        (fill.into(), TEXT, hover.into(), hover.into(), line.alpha(0.42), mark.into())
+    };
     let (fill, label, hover, press, border, mark) = match variant {
-        Variant::Primary => (
-            ACCENT_TINT.into(),
-            TEXT,
-            ACCENT_TINT_HOVER.into(),
-            ACCENT_TINT_HOVER.into(),
-            ACCENT.alpha(0.42),
-            ACCENT_TEXT.into(),
-        ),
-        Variant::Danger => (
-            ERROR_TINT.into(),
-            TEXT,
-            ERROR_TINT_HOVER.into(),
-            ERROR_TINT_HOVER.into(),
-            ERROR.alpha(0.42),
-            ERROR.into(),
-        ),
+        Variant::Primary => tinted(ACCENT_TINT, ACCENT_TINT_HOVER, ACCENT, ACCENT_TEXT),
+        Variant::Danger => tinted(ERROR_TINT, ERROR_TINT_HOVER, ERROR, ERROR),
         Variant::Secondary => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), LINE_STRONG.into(), none),
         Variant::Outline => (none, TEXT, PANEL_HOVER.into(), PANEL_HOVER.into(), LINE_STRONG.into(), none),
         Variant::Ghost => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), none, none),
@@ -170,6 +162,12 @@ impl Button {
     /// A name for tests and tools that does not change with the label.
     pub fn test_id(mut self, id: &'static str) -> Self {
         self.test_id = Some(id);
+        self
+    }
+
+    /// The key that does the same (`Enter`), after the label in 12 px and the second colour.
+    pub fn shortcut(mut self, key: &'static str) -> Self {
+        self.shortcut = Some(key);
         self
     }
 
@@ -254,9 +252,11 @@ impl Button {
             Some(click) => pressed.on_click(click).build(),
             None => pressed.build(),
         };
-        let face = match self.name {
-            Some(name) => face.label(name),
-            None => face,
+        // With a key after the label, the label alone names it.
+        let face = match (self.name, &self.label, self.shortcut) {
+            (Some(name), _, _) => face.label(name),
+            (None, Some(Prop::Value(words)), Some(_)) => face.label(words.clone()),
+            _ => face,
         };
         let face = match busy {
             Some(busy) => {
@@ -282,8 +282,12 @@ impl Button {
             }
             None => face,
         };
-        match self.label {
+        let face = match self.label {
             Some(label) => face.child(text(label)),
+            None => face,
+        };
+        match self.shortcut {
+            Some(key) => face.child(text(key).size(size::TEXT_SM.size).color(token::TEXT_2)),
             None => face,
         }
     }

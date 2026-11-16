@@ -100,7 +100,7 @@ impl View for Titlebar {
         let height = self.height.unwrap_or(if self.title_size.is_some() { 34.0 } else { 32.0 });
         let bar = row().align_items(Align::Center).shrink(0.0).height(by_text(height));
         let bar = bar.role(Role::Group).test_id("titlebar");
-        let bar = bar.bg(token::CHROME).border_bottom(1.0).border_color(token::LINE_STRONG);
+        let bar = bar.bg(token::CHROME).border_bottom(1.0).border_color(token::LINE);
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());
         let mut bar = bar.window_region(HitRegion::Caption);
         if let Some(items) = self.menu {

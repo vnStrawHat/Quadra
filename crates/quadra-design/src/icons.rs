@@ -5,6 +5,8 @@ pub const APP_WINDOW: &str = r#"<rect x="2" y="4" width="20" height="16" rx="2"/
 pub const ARROW_DOWN: &str = r#"<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>"#;
 pub const ARROW_LEFT: &str = r#"<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>"#;
 pub const ARROW_RIGHT: &str = r#"<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>"#;
+pub const ARROW_RIGHT_LEFT: &str =
+    r#"<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>"#;
 pub const ARROW_UP: &str = r#"<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>"#;
 pub const BELL: &str =
     r#"<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>"#;
@@ -21,6 +23,7 @@ pub const CHEVRONS_UP_DOWN: &str = r#"<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5
 pub const CIRCLE_ALERT: &str = r#"<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>"#;
 pub const CIRCLE_CHECK: &str = r#"<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>"#;
 pub const CIRCLE_DOT: &str = r#"<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>"#;
+pub const CIRCLE_HELP: &str = r#"<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>"#;
 pub const CIRCLE_X: &str = r#"<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>"#;
 pub const CLOCK: &str = r#"<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>"#;
 pub const CODE: &str = r#"<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>"#;
@@ -39,6 +42,7 @@ pub const FILE_TEXT: &str = r#"<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h1
 pub const FILTER: &str = r#"<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>"#;
 pub const FOLDER: &str = r#"<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>"#;
 pub const GAUGE: &str = r#"<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>"#;
+pub const GIT_BRANCH: &str = r#"<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>"#;
 pub const GRIP_VERTICAL: &str = r#"<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>"#;
 pub const HEADING: &str = r#"<path d="M6 12h12"/><path d="M6 20V4"/><path d="M18 20V4"/>"#;
 pub const HEART: &str = r#"<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>"#;
@@ -58,20 +62,31 @@ pub const LOCK: &str =
     r#"<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>"#;
 pub const LOG_OUT: &str = r#"<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>"#;
 pub const MAIL: &str = r#"<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>"#;
+pub const MAXIMIZE_2: &str =
+    r#"<path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/>"#;
 pub const MENU: &str = r#"<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>"#;
 pub const MESSAGE_SQUARE: &str =
     r#"<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>"#;
+pub const MINIMIZE_2: &str =
+    r#"<path d="m14 10 7-7"/><path d="M20 10h-6V4"/><path d="m3 21 7-7"/><path d="M4 14h6v6"/>"#;
 pub const MINUS: &str = r#"<path d="M5 12h14"/>"#;
 pub const MONITOR: &str = r#"<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>"#;
 pub const MOON: &str = r#"<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>"#;
+pub const NETWORK: &str = r#"<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>"#;
 pub const PALETTE: &str = r#"<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>"#;
 pub const PANEL_LEFT: &str = r#"<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>"#;
+pub const PANEL_LEFT_CLOSE: &str =
+    r#"<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/>"#;
+pub const PANEL_LEFT_OPEN: &str =
+    r#"<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/>"#;
+pub const PANEL_RIGHT: &str = r#"<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>"#;
 pub const PENCIL: &str = r#"<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>"#;
 pub const PLUS: &str = r#"<path d="M5 12h14"/><path d="M12 5v14"/>"#;
 pub const REFRESH_CW: &str = r#"<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>"#;
 pub const SAVE: &str = r#"<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>"#;
 pub const SEARCH: &str = r#"<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>"#;
 pub const SEPARATOR_HORIZONTAL: &str = r#"<line x1="3" x2="21" y1="12" y2="12"/><polyline points="8 8 12 4 16 8"/><polyline points="16 16 12 20 8 16"/>"#;
+pub const SERVER: &str = r#"<rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/>"#;
 pub const SETTINGS: &str = r#"<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>"#;
 pub const SIGMA: &str = r#"<path d="M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2"/>"#;
 pub const SLIDERS_HORIZONTAL: &str = r#"<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>"#;
@@ -102,12 +117,14 @@ pub const X: &str = r#"<path d="M18 6 6 18"/><path d="m6 6 12 12"/>"#;
 pub const WINDOW_MAXIMIZE: &str = r#"<rect width="14" height="14" x="5" y="5" rx="1"/>"#;
 pub const WINDOW_RESTORE: &str = r#"<rect width="12" height="12" x="4" y="8" rx="1"/><path d="M8 8V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-3"/>"#;
 
+pub const ZAP: &str = r#"<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>"#;
 /// Every icon, with the name it is known by: what a catalogue of them shows.
-pub const ALL: [(&str, &str); 90] = [
+pub const ALL: [(&str, &str); 101] = [
     ("app-window", APP_WINDOW),
     ("arrow-down", ARROW_DOWN),
     ("arrow-left", ARROW_LEFT),
     ("arrow-right", ARROW_RIGHT),
+    ("arrow-right-left", ARROW_RIGHT_LEFT),
     ("arrow-up", ARROW_UP),
     ("bell", BELL),
     ("bold", BOLD),
@@ -123,6 +140,7 @@ pub const ALL: [(&str, &str); 90] = [
     ("circle-alert", CIRCLE_ALERT),
     ("circle-check", CIRCLE_CHECK),
     ("circle-dot", CIRCLE_DOT),
+    ("circle-help", CIRCLE_HELP),
     ("circle-x", CIRCLE_X),
     ("clock", CLOCK),
     ("code", CODE),
@@ -139,6 +157,7 @@ pub const ALL: [(&str, &str); 90] = [
     ("filter", FILTER),
     ("folder", FOLDER),
     ("gauge", GAUGE),
+    ("git-branch", GIT_BRANCH),
     ("grip-vertical", GRIP_VERTICAL),
     ("heading", HEADING),
     ("heart", HEART),
@@ -157,19 +176,26 @@ pub const ALL: [(&str, &str); 90] = [
     ("lock", LOCK),
     ("log-out", LOG_OUT),
     ("mail", MAIL),
+    ("maximize-2", MAXIMIZE_2),
     ("menu", MENU),
     ("message-square", MESSAGE_SQUARE),
+    ("minimize-2", MINIMIZE_2),
     ("minus", MINUS),
     ("monitor", MONITOR),
     ("moon", MOON),
+    ("network", NETWORK),
     ("palette", PALETTE),
     ("panel-left", PANEL_LEFT),
+    ("panel-left-close", PANEL_LEFT_CLOSE),
+    ("panel-left-open", PANEL_LEFT_OPEN),
+    ("panel-right", PANEL_RIGHT),
     ("pencil", PENCIL),
     ("plus", PLUS),
     ("refresh-cw", REFRESH_CW),
     ("save", SAVE),
     ("search", SEARCH),
     ("separator-horizontal", SEPARATOR_HORIZONTAL),
+    ("server", SERVER),
     ("settings", SETTINGS),
     ("sigma", SIGMA),
     ("sliders-horizontal", SLIDERS_HORIZONTAL),
@@ -192,6 +218,7 @@ pub const ALL: [(&str, &str); 90] = [
     ("user", USER),
     ("workflow", WORKFLOW),
     ("x", X),
+    ("zap", ZAP),
     ("window-maximize", WINDOW_MAXIMIZE),
     ("window-restore", WINDOW_RESTORE),
 ];

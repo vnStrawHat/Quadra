@@ -19,6 +19,8 @@ pub struct TextInput {
     values: TextValues,
     color: Option<Paint>,
     masked: bool,
+    /// While true, a password shows its characters.
+    revealed: Option<Signal<bool>>,
     multiline: bool,
     fit: bool,
     placeholder: String,
@@ -39,7 +41,8 @@ pub fn text_input(value: Signal<String>) -> TextInput {
     let (masked, multiline) = (false, false);
     let fit = false;
     let (label, test_id, submit) = (None, None, None);
-    TextInput { value, values, color, masked, multiline, fit, placeholder, label, test_id, submit }
+    let revealed = None;
+    TextInput { value, values, color, masked, revealed, multiline, fit, placeholder, label, test_id, submit }
 }
 
 /// Text on as many lines as it takes at the width the area is given: Enter starts a line, and
@@ -83,6 +86,13 @@ impl TextInput {
     /// A password: a dot shows for each character, and copy and cut do nothing.
     pub fn password(mut self) -> Self {
         self.masked = true;
+        self
+    }
+
+    /// A password that shows its characters while `shown` is true; copy and cut still do
+    /// nothing.
+    pub fn reveal(mut self, shown: Signal<bool>) -> Self {
+        self.revealed = Some(shown);
         self
     }
 

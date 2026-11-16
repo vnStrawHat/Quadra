@@ -20,19 +20,19 @@ pub(super) fn completion(model: &Model) -> SettingsGroup {
         .row(
             "History kept",
             "Lines run this session, kept for each kind of shell; 0 keeps none.",
-            number_input(c.max_history).range(0.0, 5000.0).step(50.0).label("History kept"),
+            number_input(c.max_history).stepper().range(0.0, 5000.0).step(50.0).label("History kept"),
         )
         .back(c.max_history, d.max_history)
         .row(
             "Characters before suggesting",
             "Of a command, before its names are suggested.",
-            number_input(c.min_prefix).range(0.0, 10.0).label("Characters before suggesting"),
+            number_input(c.min_prefix).stepper().range(0.0, 10.0).label("Characters before suggesting"),
         )
         .back(c.min_prefix, d.min_prefix)
         .row(
             "Rows shown",
             "Before the list scrolls.",
-            number_input(c.max_visible).range(1.0, 20.0).label("Rows shown"),
+            number_input(c.max_visible).stepper().range(1.0, 20.0).label("Rows shown"),
         )
         .back(c.max_visible, d.max_visible)
         .row("From the history", "The commands run this session.", switch(c.memory))

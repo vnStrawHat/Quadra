@@ -188,7 +188,11 @@ fn the_look_page_sets_the_room_the_cells_the_contrast_the_ansi_colours_and_the_f
     a.h.get_by_test_id("cell-width").set_value("20");
     a.h.settle();
     assert!(s.size().cols < roomier / 2, "wider cells: {roomier} then {}", s.size().cols);
-    a.h.get_by_role(Role::TextInput, "Bright red").set_value("#400000");
+    a.h.get_by_role(Role::Button, "Bright red").click(); // the colour picker
+    a.h.settle();
+    a.h.get_by_role(Role::TextInput, "Hex").set_value("#400000");
+    a.h.key(Key::Escape, Mods::NONE);
+    a.h.settle();
     a.h.get_by_role(Role::TextInput, "Fallback fonts").set_value("Cascadia Code, Segoe UI Symbol");
     a.h.settle();
     assert_eq!(a.settings.value("terminal.colors.ansi.bright_red", String::new()).get(), "#400000");

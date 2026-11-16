@@ -128,6 +128,8 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
         .height(by_text(18.0))
         .shrink(0.0)
         .bg(token::PANEL)
+        .border_bottom(1.0) // inside the 18 px
+        .border_color(token::LINE)
         .text_size(12.0)
         .line_height(1.5)
         .text_color(token::TEXT_2)
@@ -163,7 +165,7 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
             tree.on_pointer_capture(id, quadra::PointerKind::Down, move |_| tab.focus.set(index()))
         })
         .child(header)
-        .child(column().grow(1.0).min_height(0.0).padding_x(12.0).padding_y(10.0).child(crate::find::around(
+        .child(column().grow(1.0).min_height(0.0).child(crate::find::around(
             &s,
             crate::complete::around(model, &space, |view| menu_of(model, &s, &space, view, &links)),
         )))

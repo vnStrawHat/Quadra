@@ -2,7 +2,7 @@
 //! Appearance and Terminal.
 
 use quadra::{MountCx, NodeId, Signal, View, effect, row, signal, untrack};
-use quadra_design::{SettingsGroup, color_input, input, number_input, segmented, select, switch, token};
+use quadra_design::{SettingsGroup, color_picker, input, number_input, segmented, select, switch, token};
 
 use super::Back;
 use crate::prefs::{self, Prefs};
@@ -20,7 +20,7 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .row(
             "Text size",
             "All of 1Term's text, the terminals' with it, in percent.",
-            number_input(p.ui_text).range(75.0, 200.0).step(5.0),
+            number_input(p.ui_text).stepper().range(75.0, 200.0).step(5.0),
         )
         .back(p.ui_text, d.ui_text);
     let (l, k) = (p.look, d.look);
@@ -33,16 +33,20 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
             input(l.fallbacks).placeholder("Fallback fonts").width(240.0),
         )
         .back(l.fallbacks, k.fallbacks)
-        .row("Font size", "In pixels.", number_input(l.font_size).range(8.0, 32.0))
+        .row("Font size", "In pixels.", number_input(l.font_size).stepper().range(8.0, 32.0))
         .back(l.font_size, k.font_size)
         .row("Weight", "Where the face has it.", select(prefs::WEIGHTS, l.weight).width(240.0))
         .back(l.weight, k.weight)
-        .row("Line height", "Times the size.", number_input(l.line_height).range(1.0, 2.5).step(0.1))
+        .row(
+            "Line height",
+            "Times the size.",
+            number_input(l.line_height).stepper().range(1.0, 2.5).step(0.1),
+        )
         .back(l.line_height, k.line_height)
         .row(
             "Cell width",
             "In pixels; 0, the width of the font's 0.",
-            number_input(l.cell_width).range(0.0, 48.0).step(0.5).test_id("cell-width"),
+            number_input(l.cell_width).stepper().range(0.0, 48.0).step(0.5).test_id("cell-width"),
         )
         .back(l.cell_width, k.cell_width)
         .row("Gutter", "When each line was written, and its number.", switch(l.show_gutter))
@@ -58,14 +62,14 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
     let sides = prefs::PADDING.iter().zip(l.padding.into_iter().zip(k.padding));
     let text = sides.fold(text, |group, (&(key, name, _), (side, default))| {
         let id = &key["terminal.".len()..];
-        let field = number_input(side).range(0.0, 64.0).test_id(id);
+        let field = number_input(side).stepper().range(0.0, 64.0).test_id(id);
         group.row(name, "Room around the grid, in pixels.", field).back(side, default)
     });
     let theirs = [token::EDITOR_FOREGROUND, token::CANVAS, token::EDITOR_CURSOR, token::EDITOR_SELECTION];
     let colors = prefs::COLORS.iter().zip(l.colors.into_iter().zip(k.colors)).enumerate().fold(
         SettingsGroup::new("Terminal colours"),
         |group, (n, ((_, name), (color, default)))| {
-            let field = color_input(color).placeholder(name);
+            let field = color_picker(color).label(name.to_string());
             let field = match theirs.get(n) {
                 Some(&role) => field.fallback(role),
                 None => field,
@@ -77,12 +81,11 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .row(
             "Minimum contrast",
             "Text is lightened or darkened to stand out this much from its background; 1 is off.",
-            number_input(l.min_contrast).range(1.0, 21.0).step(0.5).test_id("min-contrast"),
+            number_input(l.min_contrast).stepper().range(1.0, 21.0).step(0.5).test_id("min-contrast"),
         )
         .back(l.min_contrast, k.min_contrast);
     let ansi = (0..8).fold(SettingsGroup::new("ANSI colours"), |group, n| {
-        let field =
-            |at: usize| color_input(l.ansi[at]).placeholder(prefs::ANSI[at].1).fallback(token::ANSI[at]);
+        let field = |at: usize| color_picker(l.ansi[at]).label(prefs::ANSI[at].1).fallback(token::ANSI[at]);
         // A row of two colours, the normal and the bright: it differs while one does.
         let pair = [(l.ansi[n], k.ansi[n].get_untracked()), (l.ansi[n + 8], k.ansi[n + 8].get_untracked())];
         let back = pair.clone();
@@ -109,7 +112,7 @@ pub(super) fn terminal(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .row(
             "Scrollback lines",
             "The history each space keeps.",
-            number_input(p.scrollback).range(0.0, 100_000.0).step(1000.0),
+            number_input(p.scrollback).stepper().range(0.0, 100_000.0).step(1000.0),
         )
         .back(p.scrollback, d.scrollback);
     let mouse = SettingsGroup::new("Mouse & wheel")
@@ -122,7 +125,7 @@ pub(super) fn terminal(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .row(
             "Scroll speed",
             "Times the rows of the wheel.",
-            number_input(p.scroll_speed).range(0.1, 10.0).step(0.5),
+            number_input(p.scroll_speed).stepper().range(0.1, 10.0).step(0.5),
         )
         .back(p.scroll_speed, d.scroll_speed)
         .row(

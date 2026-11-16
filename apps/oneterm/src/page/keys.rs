@@ -6,7 +6,7 @@
 use std::rc::Rc;
 
 use quadra::{Align, Keymap, KeymapError, Keystroke, Role, Settings, Signal, effect, row, text, use_context};
-use quadra_design::{SettingsGroup, Variant, button, key_input, token};
+use quadra_design::{SettingsGroup, key_input, token};
 use quadra_term::{TERMINAL_CONTEXT, TermCommand};
 
 use crate::model::{Command, Side};
@@ -103,12 +103,7 @@ fn normal(keys: &str) -> Option<String> {
 /// The page's group: a row an action.
 pub(crate) fn group() -> SettingsGroup {
     let keys = Rc::new(settings());
-    let every = keys.clone();
-    let all = button("Reset all").variant(Variant::Secondary).on_click(move || {
-        every.iter().zip(&BINDINGS).for_each(|(keys, b)| keys.set(b.keys.to_string()));
-    });
-    let first = SettingsGroup::new("Keys").row("Every action", "Back to the keys 1Term starts with.", all);
-    BINDINGS.iter().enumerate().fold(first, |group, (at, b)| {
+    BINDINGS.iter().enumerate().fold(SettingsGroup::new("Keys"), |group, (at, b)| {
         let (mine, all, default) = (keys[at], keys.clone(), b.keys);
         // The others with the same keys, named.
         let clash = move || {
@@ -124,13 +119,7 @@ pub(crate) fn group() -> SettingsGroup {
             .role(Role::Group)
             .label(b.name.to_string())
             .child(text(clash).color(token::WARN))
-            .child(key_input(mine).label(format!("{} keys", b.name)))
-            .child(
-                button("Reset")
-                    .variant(Variant::Secondary)
-                    .label(format!("Reset {}", b.name))
-                    .on_click(move || mine.set(default.to_string())),
-            );
-        group.row(b.name, "", control)
+            .child(key_input(mine).label(format!("{} keys", b.name)));
+        group.row(b.name, "", control).resets(mine, default.to_string())
     })
 }

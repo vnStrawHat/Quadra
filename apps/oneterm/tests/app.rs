@@ -1,5 +1,6 @@
 //! 1Term on the headless platform with an `echo()` session (specs/19, "Tests"): the title
-//! bar, the terminal with the focus from the start, the status bar's directory and clock.
+//! bar, the terminal with the focus from the start, the status bar's directory (the clock:
+//! `tests/bars.rs`).
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -40,15 +41,4 @@ fn the_window_shows_a_terminal_that_has_the_focus_and_says_where_it_is() {
     assert!(h.has_text("/home/me/src"));
     h.get_by_role(quadra::Role::Button, "Working directory").click();
     assert_eq!(h.clipboard.read_text().as_deref(), Some("/home/me/src"));
-}
-
-#[test]
-fn the_clock_shows_the_time() {
-    let (h, _) = app();
-    // `16:09`: the hour and the minute.
-    let clock = |name: &str| {
-        let Some((hour, minute)) = name.split_once(':') else { return false };
-        hour.len() == 2 && minute.len() == 2 && hour.parse::<u8>().is_ok() && minute.parse::<u8>().is_ok()
-    };
-    assert_eq!(h.query(|n| clock(&n.semantics.name)).len(), 1);
 }

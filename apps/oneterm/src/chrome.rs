@@ -1,9 +1,10 @@
 //! The window's title bar (specs/19, "Window"): 38 px with the app's mark ("Locked" after it
-//! while locked), icon buttons of 22 px (Search, SSH hosts with the tabs in a strip, Lock,
-//! Settings), then the window's buttons; in the settings, Done.
+//! while locked), icon buttons of 22 px (Search, SSH hosts with the tabs in a strip, the bells
+//! and notices with their count, Lock, Settings), then the window's buttons; in the settings,
+//! Done.
 
-use quadra::{Align, NodeRef, Side, View, div, row, signal, text};
-use quadra_design::{button, icon, icon_button, icons, searched_menu, titlebar, token, tooltip};
+use quadra::{Align, NodeRef, Role, Side, View, div, row, signal, text};
+use quadra_design::{button, fonts, icon, icon_button, icons, searched_menu, titlebar, token, tooltip};
 
 use crate::locked::shown;
 use crate::model::Model;
@@ -56,6 +57,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .child(collapse)
         .child(search(&seen))
         .child(panel)
+        .child(bells(&seen))
         .child(locks)
         .child(gear);
     let done = div()
@@ -76,4 +78,31 @@ fn search(model: &Model) -> impl View + use<> {
             crate::rail::new_menu(&making, typed)
         }),
     )
+}
+
+/// The bells not heard and the notices not seen, one count after a bell, in the error colour
+/// while there are any; a click marks the notices seen.
+fn bells(model: &Model) -> impl View + use<> {
+    let (tabs, unread) = (model.tabs(), model.unread());
+    let count = move || crate::signals::all_bells(tabs) + unread.get();
+    let tone = move || if count() > 0 { token::ERROR } else { token::TEXT_2 };
+    let face = row()
+        .align_items(Align::Center)
+        .gap(4.0)
+        .padding_x(4.0)
+        .height(22.0)
+        .radius(4.0)
+        .hover(|s| s.bg(token::PANEL_HOVER))
+        .role(Role::Button)
+        .label(move || format!("{} bells and notices", count()))
+        .on_click(move |_| unread.set(0))
+        .child(div().text_color(tone).child(icon(icons::BELL).size(14.0)))
+        .child(
+            div()
+                .font_family(fonts::MONO)
+                .text_size(12.0)
+                .text_color(tone)
+                .child(text(move || count().to_string())),
+        );
+    tooltip("Bells and notices", face)
 }

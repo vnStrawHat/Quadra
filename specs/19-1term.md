@@ -44,21 +44,27 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
 
 - **Title bar** (the chrome plane, a line under it): the terminal glyph in the accent and
   "1Term" (13 px, semibold), 12 px from the left edge; then, right, icon buttons of 22 px with
-  14 px icons: Search tabs, hosts and commands (M4; the `+` menu under it), Lock 1Term now (M6),
-  Open settings (M5); in the horizontal variant SSH hosts before Lock. Then the window buttons,
-  36 px wide, 8 px after. No notifications button: their count is in the status bar. In the
-  settings only Done shows; locked, only "Locked" after the name, in the secondary colour.
+  14 px icons, in this order: Search tabs, hosts and commands (M4; the `+` menu under it), the
+  bells and notices (M3: a bell and one count of bells not heard and notices not seen in mono,
+  `3 bells and notices`, both in the error colour while the count is above 0, else the muted
+  colour; 22 px high, 4 px at its sides; a click marks the notices seen), Lock 1Term now (M6),
+  Open settings (M5); in the horizontal variant SSH hosts between Search and the bells, so the
+  bells, Lock and Settings stand where they do with the rail. Then the window buttons, 36 px
+  wide, 8 px after. In the settings only Done shows; locked, only "Locked" after the name, in
+  the secondary colour.
 - **Body**: the rail (248 px, vertical tabs), the workspace, and from P2 the SFTP dock (300 px)
   on the right.
 - **Status bar** (the chrome plane, a line over it, 12 px, groups split by 1×14 px lines):
   first Collapse tabs to icons (the rail's fold, an icon button in the accent); then the active
   space's cwd after a folder icon (a click copies it), git branch and changes after a branch
-  icon (M4: `main ↑2 M1`), the host and its latency after a server icon (P2; `local shell` for
-  a local space); then right the OSC 9;4 meter (M3: `build`, a 56 px line, the percentage), CPU
-  and memory (M4), one count of bells not heard and notices not seen after a bell, in the error
-  colour (M3; a click marks the notices seen), the lock's minutes after a lock icon (M6: `9m`),
-  the clock `16:09`, and last Toggle SFTP panel. Labels are the secondary colour, values the
-  text colour, numbers in mono.
+  icon (M4: `main ↑2 M1`), the host and its latency after a server icon (P2; `local shell` after
+  a terminal icon for a local space); then right the OSC 9;4 meter (M3: `build`, a 56 px line,
+  the percentage), CPU and memory (M4), the lock's minutes after a lock icon (M6: `9m`), the
+  clock `2026-11-16 20:45:07` (24 h, the local time, again each second; in mono, so only its
+  text is painted again), and last Toggle SFTP panel. Labels are the secondary colour, values
+  the text colour, numbers in mono. The icons have the kit's roles (the canvas leaves them in
+  the label colour): the folder `warn`, the branch `ok`, the server `info`, the terminal `cyan`,
+  the lock `hue_purple`.
 
 ## Rail (vertical tabs)
 
@@ -72,7 +78,8 @@ pixel wider (over the rail's line), its title semibold, an accent bar of 3 px on
 second line in 12 px and the secondary colour (`2 ssh · 1 local · 3 spaces`), and Close tab at
 its end. A tab with a progress has a
 2 px accent bar along the row's lower seam, as long as the progress. Then "New terminal" as one
-more row: a `+` and `Ctrl-T` at its end; it opens the `+` menu at the rail's right. From P2 the SSH hosts follow: a heading "SSH hosts"
+more row: in it, 4 px from its seams and 6 from its sides, a box of a dashed 1 px strong line
+(radius 6, the hover fill inside it) with a `+` 14 px from the rail's edge and `Ctrl-T` at its end; it opens the `+` menu at the rail's right. From P2 the SSH hosts follow: a heading "SSH hosts"
 with Add SSH host, the filter ("Filter hosts", 28 px), then groups (a chevron, the name, the
 count in mono at the right) of rows of 26 px (radius 6) under a line from the chevron: a 10 px square in the host's colour tag (`Colour tag: red`), the
 name, the address in mono at the right. The switch to horizontal tabs is in the settings.
@@ -112,7 +119,7 @@ axis that hold one another share their room evenly again (three side by side are
 they do after a close. Split space in a layout of the user's is a split to the right. A tab back
 at one space arranges itself again. The order of the spaces (the focus keys, the status bar) is
 the tree's reading order (in an arranged tab, each added space comes after the focused one). The
-layout is not saved. Each space has an 18 px header in 12 px on the panel colour: where it is on the left,
+layout is not saved. Each space has an 18 px header in 12 px on the panel colour, a 1 px line along its bottom (inside the 18 px): where it is on the left,
 in mono (the cwd, after `user@host:` for a remote space; in the text colour while focused), its
 signal on the right (a progress percentage in mono; the state's 12 px icon and a label in the
 state's colour, `deploy blocked`, then the latency in mono; with no state the latency, else the
@@ -200,12 +207,12 @@ all on but where it says. A change applies at once (`Engine::set_config`).
 
 ## Signals
 
-| Signal | Tab | Space header | Status bar | Else |
+| Signal | Tab | Space header | Bar | Else |
 |---|---|---|---|---|
 | OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else `idle` in the third text colour | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
 | OSC 9;4 progress | the percentage in mono and the accent at the end, a 2 px accent bar along the row's lower seam | the percentage | `build`, a 56 px line and the percentage | |
-| BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the count | |
-| OSC 9 notification | | | the count | a card at the window's bottom right above the status bar (the title, the text, the tab and `OSC 9`), 6 s or until dismissed (setting) |
+| BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the title bar's count | |
+| OSC 9 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and `OSC 9`), 6 s or until dismissed (setting) |
 
 Seen clears: selecting the tab clears its bell and a "done" seen state.
 
@@ -239,9 +246,15 @@ the icon's place. The title bar's Search opens the same menu under itself with a
   green) and the count of changed files (`M1`, yellow) from `git status --porcelain --branch`
   run on the pool with no window, again when the directory changes and every 10 s; nothing
   when there is no repository or no `git`.
-- **CPU and memory**: of 1Term's process (`quadra_shell::process_usage`, 16), read every 2 s
-  (`CPU 3%`, `RAM 182 MB`): the canvas's machine-wide memory and network rates wait for a
-  framework service that reads them.
+- **CPU and memory**: of 1Term's process (the `Meter` in the context, `quadra_shell::install`'s
+  or a test's `FakeShell`; with none, `process_usage`; 16), read every 2 s (`CPU 3%`, `RAM
+  182 MB`, the private working set): the processor time between two readings over the time the
+  process lived between them and the count of processors. The pointer resting on CPU and RAM
+  shows the kit's hover card (over the status bar, where there is room) of two columns split by
+  a line: "Memory" (Private working set, Working set, Commit (private bytes), Peak working set,
+  in MB with one decimal, `182.4 MB`) and "Processor" (CPU usage `3%`, CPU time and Uptime as
+  `h:mm:ss`, Threads), values in mono, following the readings while it shows. The canvas's
+  machine-wide memory and network rates wait for a framework service that reads them.
 - **The meter** shows the progress of the tab that shows, else of the first tab that reports
   one; its label is the OSC 7501 id of the space that reports it (`build`; none without one),
   120 px at most.
@@ -264,20 +277,20 @@ Security & lock (Lock now while a password is set; and whether programs may read
 Logging (log new local shells, log new SSH spaces, both off; the folder, typed or chosen in the
 system's dialog, empty for `session-logs` in the app's data folder; the formats shown, fixed; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
-logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D ("Split the space", Split space), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset (and Reset all at the top), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
+logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D ("Split the space", Split space), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and the kit's Reset as on the other pages (and the page's Reset all), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
-folder as they change (specs/15). Every setting of a page but Keybindings (which has its own) has the
-kit's Reset (specs/13, `settings`), back to the default the app reads it with (`Prefs::load`; the
+folder as they change (specs/15). Every setting of a page has the
+kit's Reset (specs/13, `settings`), its numbers in the kit's stepper (`number_input(..).stepper()`), back to the default the app reads it with (`Prefs::load`; the
 defaults are those of settings in memory, written once), and each page its Reset all; the master
 password, the saved hosts and the recent targets are data, not settings, and have none. Appearance: the theme (System, Dark, Light), and a colour theme over
 it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/themes`, made by
 `.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
 chosen from the families of the machine in a select with a search, the first "The kit's mono" for none; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
 Nerd Font"; size, 15; weight, Normal and Thin to Black; line height, 1.2; the cell's width, 0 for the advance of `0`, up to
-48 px; the padding a side, top 0, right 5, bottom 0, left 10, each 0 to 64 px; ligatures, on; semantic
+48 px; the padding a side, 0 on all four, each 0 to 64 px, the only room between the grid and the space's edges; ligatures, on; semantic
 highlighting, on: text in the default colour coloured by what it means, in the colour theme's ANSI colours;
 the reference's Auto and On do the same, so it is a switch) and colours over the theme's
-(foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_input`, its swatch the
+(foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_picker`, its swatch the
 theme's colour while it is empty but for the gutter's; the minimum contrast, 4.5, from 1, off, to 21; the sixteen ANSI colours, a row a
 colour with its normal and bright fields), the view's `TermLook` (specs/18). Keys: `terminal.font_fallbacks`,
 `terminal.cell_width`, `terminal.padding.top` (`right`, `bottom`, `left`), `terminal.colors.min_contrast`,
@@ -478,6 +491,9 @@ license's notice. Without them every space still runs, on the system's host.
 
 The app's tests drive it through the semantic tree on the headless platform with `echo()`
 sessions: tabs and spaces made, split, closed, moved; the signals on the rail, headers and
-status bar from bytes fed to a session; the menu; completion (`tests/complete.rs`: prompts
+status bar from bytes fed to a session; the bars (`tests/bars.rs`: the bells between Search and
+Lock in both variants and gone while locked and in the settings, the clock by a time the test
+sets with only its text painted again, the usage and its card from `FakeShell`'s meter); the
+menu; completion (`tests/complete.rs`: prompts
 marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); find (`tests/find.rs`: Ctrl+F opens the bar, the count, Enter and Shift+Enter, Escape gives the focus back); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); splits (`tests/splits.rs`: a tab arranged in the rail and the strip, each side, nesting, the order, a seam dragged, a close, Split space in a layout of the user's); input channels (`tests/channels.rs`: join, what a member and a non-member get, a paste bracketed by each, leave, close, an ended program); settings written; lock and unlock. Real
 shells only in `quadra-shell`'s pseudo console test.

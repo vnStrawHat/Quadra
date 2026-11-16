@@ -1,20 +1,19 @@
 //! The status bar (specs/19, "Window"): 30 px on the chrome plane, 12 px, its groups parted by
 //! rules of 1×14: the rail's fold; the focused space's directory (a click copies it), git, the
-//! host and its latency; at the right the progress, 1Term's processor and memory, the bells
-//! and notices, the lock's minutes, the clock and the SFTP panel. Locked, only a lock and
-//! "Locked, details hidden", the progress and the clock show.
+//! host and its latency; at the right the progress, 1Term's processor and memory (details in a
+//! card under the pointer), the lock's minutes, the clock and the SFTP panel. Locked, only a
+//! lock and "Locked, details hidden", the progress and the clock show.
 
 use std::rc::Rc;
 use std::time::Duration;
 
-use quadra::{
-    Align, Clipboard, Length, Role, Signal, View, by_text, div, interval, row, text, time, use_context,
-};
+use quadra::{Align, Clipboard, Length, Role, Signal, View, by_text, div, interval, row, text, use_context};
 use quadra_design::{Variant, fonts, icon, icon_button, icons, token};
 
 use crate::locked::shown;
 use crate::model::Model;
-use crate::signals::{all_bells, percent};
+use crate::signals::percent;
+use crate::usage::Clock;
 
 /// What shows when; a rule stands before a group that shows after one that shows.
 type When = Rc<dyn Fn() -> bool>;
@@ -46,9 +45,9 @@ fn when(f: impl Fn() -> bool + 'static) -> When {
     Rc::new(f)
 }
 
-pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + use<> {
-    tick(clock);
-    let (tabs, unread, prefs, lock) = (model.tabs(), model.unread(), model.prefs(), model.lock());
+pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> impl View + use<> {
+    tick(clock, now);
+    let (prefs, lock) = (model.prefs(), model.lock());
     let open = move || !lock.locked.get();
     let (vertical, folded) = (model.vertical(), prefs.rail_folded);
     let fold = icon_button(icons::PANEL_LEFT, "Collapse tabs to icons")
@@ -70,7 +69,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
                 clipboard.write_text(&quadra::untrack(&cwd));
             }
         })
-        .child(icon(icons::FOLDER).size(14.0))
+        .child(icon(icons::FOLDER).size(14.0).color(token::WARN))
         .child(value(said));
     let counts = move || repo.get().and_then(|it| it.changes).unwrap_or_default();
     let count = |color, sign: &'static str, n: fn((usize, usize)) -> usize| {
@@ -83,54 +82,33 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
     let git = part()
         .label("Git")
         .display(shown(move || prefs.show_git.get() && repo.with(Option::is_some)))
-        .child(icon(icons::GIT_BRANCH).size(14.0))
+        .child(icon(icons::GIT_BRANCH).size(14.0).color(token::OK))
         .child(value(move || repo.get().map(|it| it.branch).unwrap_or_default()))
         .child(count(token::HUE_GREEN, "\u{2191}", |it| it.0))
         .child(count(token::HUE_YELLOW, "M", |it| it.1));
-    let usage = usage();
-    let using = part()
+    let usage = crate::usage::follow();
+    let (cpu, ram) = (crate::usage::cpu(usage), crate::usage::ram(usage));
+    let meters = part()
         .gap(12.0)
-        .label("Usage")
-        .child(
-            part()
-                .display(shown(move || prefs.show_usage.get()))
-                .child(text("CPU"))
-                .child(value(move || usage.get().0)),
-        )
-        .child(
-            part()
-                .display(shown(move || prefs.show_usage.get()))
-                .child(text("RAM"))
-                .child(value(move || usage.get().1)),
-        )
-        .child(part().display(shown(move || prefs.show_fps.get())).child({
+        .display(shown(move || prefs.show_usage.get()))
+        .child(part().child(text("CPU")).child(value(cpu)))
+        .child(part().child(text("RAM")).child(value(ram)));
+    let using = part().gap(12.0).label("Usage").child(crate::usage::card(meters, usage)).child(
+        part().display(shown(move || prefs.show_fps.get())).child({
             let said = fps(prefs.show_fps);
             value(move || said.get())
-        }));
-    // Bells not heard and notices not seen, one count; a click marks the notices seen.
-    let count = move || all_bells(tabs) + unread.get();
-    let tone = move || if count() > 0 { token::ERROR } else { token::TEXT_2 };
-    let bells = part()
-        .padding_x(4.0)
-        .height(22.0)
-        .radius(4.0)
-        .hover(|s| s.bg(token::PANEL_HOVER))
-        .role(Role::Button)
-        .label(move || format!("{} bells and notices", count()))
-        .display(shown(open))
-        .on_click(move |_| unread.set(0))
-        .child(div().text_color(tone).child(icon(icons::BELL).size(14.0)))
-        .child(div().font_family(fonts::MONO).text_color(tone).child(text(move || count().to_string())));
+        }),
+    );
     let left = move || lock.left();
     let locks = part()
         .label("Lock")
         .display(shown(move || open() && left().is_some()))
-        .child(icon(icons::LOCK).size(14.0))
+        .child(icon(icons::LOCK).size(14.0).color(token::HUE_PURPLE))
         .child(div().font_family(fonts::MONO).child(text(move || format!("{}m", left().unwrap_or(0)))));
     let time = value(move || clock.get()).label("Clock").display(shown(move || prefs.show_clock.get()));
     let hidden = part()
         .display(shown(move || !open()))
-        .child(icon(icons::LOCK).size(14.0))
+        .child(icon(icons::LOCK).size(14.0).color(token::HUE_PURPLE))
         .child(text("Locked, details hidden"));
     let shows = move || prefs.show_usage.get() || prefs.show_fps.get();
     let (meter, metered) = meter(model);
@@ -148,8 +126,8 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
             (metered, meter),
             (when(move || open() && shows()), using),
             (
-                when(move || open() || prefs.show_clock.get()),
-                part().gap(12.0).child(bells).child(locks).child(time),
+                when(move || (open() && left().is_some()) || prefs.show_clock.get()),
+                part().gap(12.0).child(locks).child(time),
             ),
             (when(open), part().child(sftp(model))),
         ],
@@ -201,9 +179,15 @@ fn host(model: &Model) -> quadra::Div {
     };
     part()
         .label("Host")
-        .child(div().display(shown(move || is_remote().is_some())).child(icon(icons::SERVER).size(14.0)))
         .child(
-            div().display(shown(move || is_local().is_none())).child(icon(icons::SQUARE_TERMINAL).size(14.0)),
+            div()
+                .display(shown(move || is_remote().is_some()))
+                .child(icon(icons::SERVER).size(14.0).color(token::INFO)),
+        )
+        .child(
+            div()
+                .display(shown(move || is_local().is_none()))
+                .child(icon(icons::SQUARE_TERMINAL).size(14.0).color(token::CYAN)),
         )
         .child(text(name))
         .child(div().font_family(fonts::MONO).child(text(note)))
@@ -255,37 +239,9 @@ fn fps(shown: Signal<bool>) -> Signal<String> {
     said
 }
 
-/// The processor and memory 1Term uses, read every 2 s: `3%`, `182 MB`.
-fn usage() -> Signal<(String, String)> {
-    let said = quadra::signal((String::new(), String::new()));
-    let cores = std::thread::available_parallelism().map_or(1, |n| n.get()) as f64;
-    let last = std::cell::Cell::new(None::<(std::time::Instant, Duration)>);
-    let read = move || {
-        #[cfg(windows)]
-        if let Some(now) = quadra_shell::process_usage() {
-            let at = std::time::Instant::now();
-            let cpu = match last.replace(Some((at, now.cpu))) {
-                Some((then, was)) => {
-                    let wall = at.duration_since(then).as_secs_f64().max(1e-3);
-                    (now.cpu.saturating_sub(was).as_secs_f64() / wall / cores * 100.0).round()
-                }
-                None => 0.0,
-            };
-            said.set((format!("{cpu}%"), format!("{} MB", now.memory / (1024 * 1024))));
-        }
-    };
-    read();
-    let _ = interval(Duration::from_secs(2), read);
-    said
-}
-
-/// Keeps `clock` the local time, `16:09`.
-fn tick(clock: Signal<String>) {
-    let now = move || {
-        let at = time::local_now();
-        format!("{:02}:{:02}", at.time.hour, at.time.minute)
-    };
-    clock.set(now());
-    // A second at most late: the minute shows when it changes.
-    let _ = interval(Duration::from_secs(1), move || clock.set(now()));
+/// Keeps `clock` the local time, `2026-11-16 20:45:07`, by `now`: again each second.
+fn tick(clock: Signal<String>, now: Clock) {
+    let said = move || now().to_string();
+    clock.set(said());
+    let _ = interval(Duration::from_secs(1), move || clock.set(said()));
 }

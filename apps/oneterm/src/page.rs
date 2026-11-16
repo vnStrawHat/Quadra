@@ -94,7 +94,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .row(
             "Rail width",
             "The vertical tabs' width, from 140 to 400 px.",
-            number_input(p.rail_width).range(140.0, 400.0).step(10.0).label("Rail width"),
+            number_input(p.rail_width).stepper().range(140.0, 400.0).step(10.0).label("Rail width"),
         )
         .back(p.rail_width, d.rail_width)
         .row("Fold the rail", "Only the tabs' icons, in 44 px.", switch(p.rail_folded))
@@ -147,13 +147,13 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                 .row(
                     "Every",
                     "Seconds between two, from 5 to 3600.",
-                    number_input(p.keepalive_secs).range(5.0, 3600.0).step(5.0).label("Every"),
+                    number_input(p.keepalive_secs).stepper().range(5.0, 3600.0).step(5.0).label("Every"),
                 )
                 .back(p.keepalive_secs, d.keepalive_secs)
                 .row(
                     "Unanswered",
                     "How many go unanswered before the connection is given up.",
-                    number_input(p.keepalive_max).range(1.0, 20.0).label("Unanswered"),
+                    number_input(p.keepalive_max).stepper().range(1.0, 20.0).label("Unanswered"),
                 )
                 .back(p.keepalive_max, d.keepalive_max),
         ],
@@ -187,7 +187,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                 .row(
                     "Asked above",
                     "A file larger, in KB, is edited only when asked; 0, any.",
-                    number_input(p.edit_limit_kb).range(0.0, 1_048_576.0).step(256.0).label("Asked above"),
+                    number_input(p.edit_limit_kb).stepper().range(0.0, 1_048_576.0).step(256.0).label("Asked above"),
                 )
                 .back(p.edit_limit_kb, d.edit_limit_kb),
         ],

@@ -96,13 +96,13 @@ fn new_tab_is_rebound_unbound_and_reset() {
     a.key(Key::T, Mods::CTRL);
     assert_eq!(a.sessions(), 2);
 
-    // Reset: Ctrl+T again. Each row's Reset is named by its action.
+    // Reset: Ctrl+T again. The kit's Reset shows on the row that differs, named by its action.
     let resets = a.h.query(|n| {
         n.semantics.role == Role::Button
             && n.semantics.name.starts_with("Reset ")
             && n.semantics.name != "Reset all"
     });
-    assert_eq!(resets.len(), 20, "a Reset a row");
+    assert_eq!(resets.len(), 1, "a Reset on the changed row only");
     a.h.get_by_role(Role::Button, "Reset New tab").click();
     a.settle();
     assert_eq!(a.setting("new_tab").get_untracked(), "ctrl-t");

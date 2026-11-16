@@ -4,7 +4,8 @@
 //!
 //!     tools/cargo.sh run -p quadra-bench-oneterm-shots -- [out dir] [scene ..]
 //!
-//! Scenes: main, collapsed, horizontal, menu, connect, add, settings, lock, sftp.
+//! Scenes: main, collapsed, horizontal, menu, connect, add, settings, lock, sftp, gutter (main
+//! with the terminals' gutter on), usage (the pointer resting on RAM: its card).
 
 #[path = "../../shots/src/png.rs"]
 mod png;
@@ -27,8 +28,19 @@ use quadra_term::{Session, echo};
 
 type Shots = App<D3d11Renderer>;
 
-const SCENES: [&str; 9] =
-    ["main", "collapsed", "horizontal", "menu", "connect", "add", "settings", "lock", "sftp"];
+const SCENES: [&str; 11] = [
+    "main",
+    "collapsed",
+    "horizontal",
+    "menu",
+    "connect",
+    "add",
+    "settings",
+    "lock",
+    "sftp",
+    "gutter",
+    "usage",
+];
 
 fn pass(platform: &HeadlessPlatform, app: &mut Shots, ms: u64) {
     for _ in 0..ms.div_ceil(75) {
@@ -40,12 +52,22 @@ fn pass(platform: &HeadlessPlatform, app: &mut Shots, ms: u64) {
 }
 
 fn click(platform: &HeadlessPlatform, app: &Shots, window: WindowId, name: &str) {
+    point(platform, app, window, name, false);
+}
+
+/// Presses what is named; with `only_move`, the pointer only comes to rest on it.
+fn point(platform: &HeadlessPlatform, app: &Shots, window: WindowId, name: &str, only_move: bool) {
     let Some(tree) = app.tree(window) else { return };
     let nodes = tree.semantic_tree().nodes;
     let Some(found) = nodes.iter().find(|n| n.semantics.name == name) else { return };
     let Some(node) = tree.node_of(found.id) else { return };
     let at = tree.window_rect(node).center();
-    for kind in [PointerKind::Move, PointerKind::Down, PointerKind::Up] {
+    let kinds: &[PointerKind] = if only_move {
+        &[PointerKind::Move]
+    } else {
+        &[PointerKind::Move, PointerKind::Down, PointerKind::Up]
+    };
+    for &kind in kinds {
         let button = if kind == PointerKind::Move { MouseButton::None } else { MouseButton::Left };
         platform.push(
             window,
@@ -133,6 +155,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let settings = Settings::memory();
             settings.value("ssh.hosts", Vec::<Vec<String>>::new()).set(hosts());
             settings.value("tabs.vertical", true).set(vertical);
+            settings.value("terminal.show_gutter", false).set(*scene == "gutter");
             // The local pane lists a folder of the project, not the user's Downloads.
             let local = std::path::absolute(".tmp/shots/1term-local").unwrap_or_default();
             let _ = std::fs::create_dir_all(local.join("deploy"));
@@ -176,6 +199,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             "lock" => model.lock().lock_now(),
             "sftp" => model.ui().expanded.set(true),
             "collapsed" => model.prefs().rail_folded.set(true),
+            // Once what was fed has moved the bar's groups to their places.
+            "usage" => {
+                pass(&platform, &mut app, 150);
+                point(&platform, &app, window, "RAM", true);
+            }
             _ => {}
         }
         pass(&platform, &mut app, 900);

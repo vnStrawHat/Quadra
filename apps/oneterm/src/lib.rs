@@ -33,6 +33,7 @@ mod statusbar;
 mod strip;
 mod tab;
 mod themes;
+mod usage;
 
 use std::rc::Rc;
 
@@ -46,6 +47,7 @@ pub use prefs::{KIT_THEME, Prefs, theme};
 pub use remote::{remote_shell, remote_shell_with};
 pub use shells::{Launch, Remote, Shell};
 pub use signals::{percent, state_word};
+pub use usage::Clock;
 
 /// Makes the session of a new space: it is called in the scope the space lives in.
 pub type NewSession = Rc<dyn Fn(Launch) -> Session>;
@@ -66,12 +68,16 @@ pub struct OneTerm {
     pub model: Model,
     /// The time of the status bar, kept by a timer.
     pub clock: Signal<String>,
+    /// Where that time comes from: the system's clock at the platform's offset, unless a test
+    /// sets another before `view`.
+    pub now: Clock,
 }
 
 impl OneTerm {
     /// The window's model, with one tab of one space: made where the window's view is built.
     pub fn new(new_session: NewSession) -> OneTerm {
-        OneTerm { model: Model::new(new_session, Prefs::load()), clock: signal(String::new()) }
+        let now: Clock = Rc::new(quadra::time::local_now);
+        OneTerm { model: Model::new(new_session, Prefs::load()), clock: signal(String::new()), now }
     }
 
     pub fn view(&self) -> impl View + use<> {
@@ -135,7 +141,7 @@ impl OneTerm {
             })
             .child(chrome::title_bar(&self.model))
             .child(body)
-            .child(statusbar::status_bar(&self.model, self.clock))
+            .child(statusbar::status_bar(&self.model, self.clock, self.now.clone()))
             .child(cards)
             .child(connect::dialog(&self.model))
             .child(hostlist::add_dialog(&self.model))

@@ -132,6 +132,27 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### Pickers, one overlay plane, 1Term's bars (2026-11-16)
+
+- **Kit** (specs/13, behaviour/15): `color_picker` (saturation and brightness, hue, hex, presets;
+  empty is the default with its fallback swatch), `file_picker` / `folder_picker` (a path field and
+  Browse, the dialog given as a callback; tests on `FakeShell`), gallery pages for them. Every
+  overlay is the menu plane (`overlay_bg`, a `line` border, `radius_sm`); `overlay_bg` is `panel`
+  in the kit's two themes. A submenu stands beside its menu's edge, on the left when the right
+  has no room. The rows of `settings(..).cards()` are as wide as their column. Tests:
+  `quadra-design/tests/pickers.rs`, `menus.rs`, `settings.rs`.
+- **Shell** (specs/16): `Usage` with the private working set, the working set, its peak, private
+  bytes, threads and uptime; the `Meter` trait, faked by `FakeShell::set_usage`.
+- **Term** (specs/18): the gutter's time and line number one cell apart.
+- **1Term** (specs/19): the bell in the title bar (Search, Bell, Lock, Settings); the clock
+  `yyyy-mm-dd hh:mm:ss` from `OneTerm::now`; the status bar's icons in colours; RAM the private
+  working set, a card of the process's usage on hover; the New terminal row in a dashed box; a
+  line under each space's header; the terminal's padding 0 on every side and no other inset;
+  numbers in steppers, colours in the colour picker, the Keybindings page with the kit's Reset.
+  Tests: `apps/oneterm/tests/bars.rs`, the others brought along.
+- Open: a status bar value that changes lays out most of the window (168 requests a tick of the
+  clock), paint stays one node; the host colour tags in the colour picker.
+
 ### The menu plane (2026-11-16)
 
 Menus, context menus, selects, combobox lists and the command palette on the menu plane

@@ -41,9 +41,9 @@ pub const ANSI: [(&str, &str); 16] = [
 /// The room around the grid: each side's key, name and default.
 pub const PADDING: [(&str, &str, f64); 4] = [
     ("terminal.padding.top", "Padding top", 0.0),
-    ("terminal.padding.right", "Padding right", 5.0),
+    ("terminal.padding.right", "Padding right", 0.0),
     ("terminal.padding.bottom", "Padding bottom", 0.0),
-    ("terminal.padding.left", "Padding left", 10.0),
+    ("terminal.padding.left", "Padding left", 0.0),
 ];
 /// The fallback families at first: the symbols of patched fonts, which prompts draw with.
 pub const FALLBACKS: &str = "Symbols Nerd Font Mono, Symbols Nerd Font";

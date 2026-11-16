@@ -45,23 +45,34 @@ fn full(model: &Model, folded: Signal<bool>) -> impl View + use<> {
     let rows =
         each(move || tabs.get(), |tab| tab.id, move |tab: Signal<Tab>| tab_row(&shown, tab.get_untracked()));
     let (open, opener, making) = (signal(false), NodeRef::new(), model.clone());
-    let new = row()
-        .height(by_text(36.0))
+    // A box of a dashed line in the row, 4 px from its seams and 6 from its sides; the `+`
+    // stays 14 px from the rail's edge.
+    let dashed = row()
+        .grow(1.0)
         .align_items(Align::Center)
         .gap(10.0)
-        .padding_left(14.0)
-        .padding_right(10.0)
+        .padding_left(7.0)
+        .padding_right(3.0)
+        .radius(6.0)
+        .border(1.0)
+        .border_style(quadra::BorderStyle::Dashed)
+        .border_color(token::LINE_STRONG)
+        .hover(|s| s.bg(token::PANEL_HOVER))
+        .child(icon(icons::PLUS).size(14.0))
+        .child(div().grow(1.0).child(text("New terminal")))
+        .child(div().text_size(12.0).text_color(token::TEXT_3).child(text("Ctrl-T")));
+    let new = row()
+        .height(by_text(36.0))
+        .padding_x(6.0)
+        .padding_y(4.0)
         .border_bottom(1.0)
         .border_color(token::LINE_STRONG)
         .text_color(token::TEXT_2)
-        .hover(|s| s.bg(token::PANEL_HOVER))
         .role(Role::Button)
         .label("New terminal")
         .node_ref(&opener)
         .on_click(move |_| open.update(|open| *open = !*open))
-        .child(icon(icons::PLUS).size(14.0))
-        .child(div().grow(1.0).child(text("New terminal")))
-        .child(div().text_size(12.0).text_color(token::TEXT_3).child(text("Ctrl-T")));
+        .child(dashed);
     // The menu stands at the rail's right, over its edge as a popup of the row.
     let menu = menu_beside(open, &opener, Side::Right, -8.0, move || new_menu(&making, ""));
     let strip = column()

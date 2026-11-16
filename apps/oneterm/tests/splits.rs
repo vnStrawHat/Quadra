@@ -210,7 +210,7 @@ fn the_menu_splits_down_and_the_keys_are_on_the_page() {
     a.h.get_by_role(Role::TreeItem, "Keybindings").click();
     a.h.settle();
     for name in ["Split right", "Split left", "Split up", "Split down"] {
-        a.h.get_by_role(Role::Button, &format!("Reset {name}"));
+        a.h.get_by_role(Role::Button, &format!("{name} keys"));
     }
 }
 

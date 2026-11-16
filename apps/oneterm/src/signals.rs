@@ -139,7 +139,7 @@ pub(crate) fn seen(session: &Session) {
     }
 }
 
-/// The count of what is not seen yet, for the status bar: bells everywhere.
+/// The count of what is not seen yet, for the title bar: bells everywhere.
 pub fn all_bells(tabs: Signal<Vec<Tab>>) -> u32 {
     tabs.with(|tabs| tabs.iter().map(Tab::bells).sum())
 }

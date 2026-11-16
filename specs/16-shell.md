@@ -79,6 +79,18 @@ bytes (`GetProcessTimes`, `GetProcessMemoryInfo`); `None` where the OS has no re
 status bar takes two readings and divides the time between them by the wall time and the
 count of processors.
 
+For the comparison bench's runner, which measures another process from outside
+(`bench/runner`, docs/benchmarks.md, "Method"): `process_cycles(&Child)`, the cycle count of
+all the child's threads (`QueryProcessCycleTime`: exact, where the times of `GetProcessTimes`
+count whole clock ticks of 15.6 ms); `cycles_per_second()`, the rate of the cycle counter,
+measured once by spinning the calling thread for 200 ms against the wall clock (the counter
+runs at a constant rate) and kept, so the runner asks for it before it measures anything;
+`private_memory(&Child)`, the child's private working set in bytes
+(`PROCESS_MEMORY_COUNTERS_EX2`), what the task manager shows as a process's memory;
+`window_shown(&Child)`, whether a window of the child is visible and not minimized. Each is
+`None` (`false`) where the OS has no reading. They borrow the child's own handle, so the
+child outlives every reading.
+
 ## Passwords
 
 `hash_password(password) -> Option<String>` and `verify_password(password, stored) -> bool`:

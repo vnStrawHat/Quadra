@@ -166,7 +166,8 @@ used (01, R15); build output shared between checkouts by the build tool (00).
 
 - `FrameStats` and pass timings in every build; the frame HUD in debug builds (12).
 - Micro-benches per crate (reactive propagation, layout, paragraph, display-list repaint).
-- The comparison bench with its outside-the-process runner, unchanged in method so numbers stay
-  comparable over time and across the frameworks it measures.
+- The comparison bench (`bench/compare`) with its outside-the-process runner (`bench/runner`),
+  unchanged in method so numbers stay comparable over time and across the frameworks it
+  measures (docs/benchmarks.md, "Method").
 - A memory probe that reports arena sizes, atlas use and layer buffers.
 - Bench results are recorded in `docs/benchmarks.md` with the date and the commit.

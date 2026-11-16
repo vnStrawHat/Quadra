@@ -33,6 +33,8 @@ pub use pty::{Pty, PtyOptions};
 pub use win::console;
 #[cfg(windows)]
 pub use win::{WinShell, crash_reports, hash_password, process_usage, single_instance, verify_password};
+#[cfg(windows)]
+pub use win::{cycles_per_second, private_memory, process_cycles, window_shown};
 
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,
 /// `("Images", "*.png;*.jpg")`), whether several may be chosen, and where it starts.

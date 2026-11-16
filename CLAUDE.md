@@ -72,7 +72,7 @@ implementation is its reference. Its specs, its tests and its own measurements
 | Gate | `tools/check.sh` |
 | Release gate | `tools/check.sh prod`; run both before saying done |
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
-| The bench app | `tools/bench.sh` builds `target/release/compare.exe`; with scene names it runs them headless with pass timings (docs/benchmarks.md has the runner's command) |
+| The bench app | `tools/bench.sh` builds `target/release/compare.exe`; with scene names it runs them headless with pass timings; `tools/bench.sh compare [runs]` measures the four scenes' real windows from outside (`target/release/run.exe`) into `.tmp/bench/compare.json` |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
 | Terminal throughput | `tools/doomfire.sh [seconds]`: the fire demo (`bench/doomfire`) fed to the engine, through the console host alone, and in a real 1Term window (specs/14) |
 | 1Term's console host | `tools/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (specs/19); 1Term uses the system's without them |
@@ -123,5 +123,6 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `examples/gallery` | Every kit component on a page: the kit's acceptance test |
 | `examples/plain` | A second kit over the headless components |
 | `bench/compare` | The comparison bench's four scenes |
+| `bench/runner` | The comparison bench's runner: measures an app from outside |
 | `bench/doomfire` | Terminal throughput by the fire demo |
 | `bench/shots`, `bench/oneterm-shots` | The gallery's and 1Term's screens drawn to pictures |

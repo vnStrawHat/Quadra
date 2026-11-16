@@ -1,41 +1,11 @@
 # Comparison benchmarks
 
 > History: the V implementation's numbers, frozen. Since 2026-11-16 Quadra is no port of it, and
-> its baseline is its own numbers in benchmarks.md. The method below is still the bench's.
+> its baseline is its own numbers in benchmarks.md. The method is in benchmarks.md.
 
-Four small apps that other GPU UI frameworks publish numbers for, written for Quadra with the
-same text (the same word generator and cell values), window sizes and frame recording
-(`bench/compare`). A runner starts each app and measures the whole process from outside,
-driver threads included (`bench/compare/run`).
-
-| Scene | Window | What it does |
-|---|---|---|
-| `counter` | 360×260 | A number and three buttons, then nothing: startup, memory and CPU at rest |
-| `list` | 800×600 | A virtual list of 100 000 rows of three texts, scrolling 8 px a frame |
-| `grid` | 800×600 | 600 cells, each with its own background and a number changing every frame |
-| `document` | 800×600 | 40 paragraphs (about 20 000 characters) wrapped to a width changing every frame |
-
-```sh
-tools/v.sh -cc clang -prod -o .tmp/cmp.exe bench/compare
-tools/v.sh -cc clang -prod -o .tmp/cmprun.exe bench/compare/run
-.tmp/cmprun.exe -runs 5 -out .tmp/cmp5.json quadra=.tmp/cmp.exe [other=app.exe ...]
-```
-
-Each scene runs 5 times and results are medians. The first 120 frames are not measured,
-then 600 are. Measured:
-- **CPU per frame**: the process's cycle count over the measured frames, converted to time
-  with the cycle counter's rate (GetProcessTimes counts whole 15.6 ms ticks, too coarse).
-  GPU work is not included.
-- **Peak memory**: the highest private working set, sampled every 10 ms (Task Manager's
-  "Memory" column).
-- **Idle memory and CPU** of the counter, 5 to 10 seconds after its first frame.
-- **Startup**: from starting the process until its first frame is presented and its window
-  is visible, whichever comes last.
-- **Frame intervals** (p50, p99), from the app.
-
-Other apps can be measured on the same machine by passing them to the runner; each takes
-the scene as its first argument and prints `ready`, `start` and `done {...}` like
-`bench/compare/recorder.v`.
+The four scenes and the method are in [benchmarks.md](benchmarks.md), "Method". The numbers
+below were taken by the V build of the scenes and its runner (`bench/compare/run` in the V
+repository); Quadra's runner (`bench/runner`) follows that method unchanged.
 
 ## Results (2026-11-08)
 

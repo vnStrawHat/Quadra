@@ -1,0 +1,19 @@
+[package]
+name = "quadra-bench-runner"
+description = "The comparison bench's runner: starts each app with a scene and measures its process from outside (docs/benchmarks.md, Method)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "run"
+path = "src/main.rs"
+
+[dependencies]
+quadra-app = { path = "../../crates/quadra-app" }
+quadra-shell = { path = "../../crates/quadra-shell" }

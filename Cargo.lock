@@ -1339,6 +1339,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-bench-runner"
+version = "0.1.0"
+dependencies = [
+ "quadra-app",
+ "quadra-shell",
+]
+
+[[package]]
 name = "quadra-bench-shots"
 version = "0.1.0"
 dependencies = [

@@ -8,6 +8,48 @@ no port of it).
 Machine: the development machine (the one of benchmarks-v.md). Release profile at cargo's
 defaults until phase R1 fixes it.
 
+## Method
+
+Four small apps that other GPU UI frameworks publish numbers for, written for Quadra with the
+same text (the same word generator and cell values), window sizes and frame recording
+(`bench/compare`). A runner starts each app and measures the whole process from outside,
+driver threads included (`bench/runner`).
+
+| Scene | Window | What it does |
+|---|---|---|
+| `counter` | 360×260 | A number and three buttons, then nothing: startup, memory and CPU at rest |
+| `list` | 800×600 | A virtual list of 100 000 rows of three texts, scrolling 8 px a frame |
+| `grid` | 800×600 | 600 cells, each with its own background and a number changing every frame |
+| `document` | 800×600 | 40 paragraphs (about 20 000 characters) wrapped to a width changing every frame |
+
+```sh
+tools/bench.sh compare [runs]   # both release binaries, then the runner: .tmp/bench/compare.json
+target/release/run.exe -runs 3 -out .tmp/bench/compare.json quadra=target/release/compare.exe [other=app.exe ...]
+```
+
+Each scene runs `-runs` times (5 by default, 3 from `tools/bench.sh`), the apps taking turns,
+and results are medians (the JSON has the lowest and highest too). Before the rounds each app
+starts the counter once, unmeasured, so the first measured start is no cold read of the disk.
+The first 120 frames are not measured, then 600 are. Measured:
+- **CPU per frame**: the process's cycle count over the measured frames
+  (`QueryProcessCycleTime`), converted to time with the cycle counter's rate, which the runner
+  measures once at start against the wall clock (GetProcessTimes counts whole 15.6 ms ticks,
+  too coarse). GPU work is not included. While it waits for the app's lines the runner spins on
+  one core, as the first runner did: that holds the processor's clock up, and a blocking wait
+  roughly doubles every scene's cycles, so it stays.
+- **Peak memory**: the highest private working set, sampled every 10 ms (Task Manager's
+  "Memory" column).
+- **Idle memory and CPU** of the counter, 5 to 10 seconds after its first frame.
+- **Startup**: from starting the process until its first frame is presented and its window
+  is visible, whichever comes last.
+- **Frame intervals** (p50, p99), from the app.
+
+Other apps can be measured on the same machine by passing them to the runner; each takes
+the scene as its first argument and prints `ready` (the counter's first frame), `start` and
+`done {...}` like `bench/compare/src/recorder.rs`. The runner prints each round's measures to
+standard error and a table of the medians to standard output. `tools/bench.sh <scene>..`
+runs scenes without a window instead and prints what a frame did and each pass's time.
+
 ## 2026-11-15 — terminal throughput, the fire demo (on dbe175a plus this commit)
 
 The fire demo written again in Rust (`bench/doomfire`, specs/14 "Terminal throughput"): a

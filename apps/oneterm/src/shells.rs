@@ -7,6 +7,9 @@ use quadra_term::vt::{CursorShape, CursorStyle};
 
 use crate::model::Model;
 
+/// The default shell's name when it is a program the settings type.
+pub const CUSTOM: &str = "A program";
+
 /// A program a space can run.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Shell {
@@ -84,7 +87,13 @@ impl Model {
     pub fn launch(&self, shell: Option<Shell>) -> Launch {
         let p = self.prefs();
         let named = p.shell.get_untracked();
-        let shell = shell.or_else(|| found().into_iter().find(|it| it.name == named));
+        let program = p.shell_program.get_untracked();
+        let typed = (named == CUSTOM && !program.trim().is_empty()).then(|| Shell {
+            name: CUSTOM,
+            program: program.trim().into(),
+            args: p.shell_args.get_untracked().split_whitespace().map(Into::into).collect(),
+        });
+        let shell = shell.or(typed).or_else(|| found().into_iter().find(|it| it.name == named));
         let cwd = match p.start.get_untracked() {
             0 => self.focused_cwd(),
             _ => std::env::var_os("USERPROFILE").map(Into::into),

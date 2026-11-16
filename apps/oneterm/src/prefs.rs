@@ -38,8 +38,11 @@ pub struct Prefs {
     pub middle_paste: Signal<bool>,
     pub scroll_speed: Signal<f64>,
     pub alternate_scroll: Signal<bool>,
-    /// The name of the shell Ctrl+T and New terminal start; empty: the OS's.
+    /// The name of the shell Ctrl+T and New terminal start; empty: the OS's; `CUSTOM`: the
+    /// program typed, with its arguments.
     pub shell: Signal<String>,
+    pub shell_program: Signal<String>,
+    pub shell_args: Signal<String>,
     pub start: Signal<usize>,
     pub vertical: Signal<bool>,
     /// The rail's width, and whether it is folded to its icons.
@@ -105,6 +108,8 @@ impl Prefs {
             scroll_speed: s.value("scroll.multiplier", 1.0),
             alternate_scroll: s.value("scroll.alternate", true),
             shell: s.value("terminal.shell", String::new()),
+            shell_program: s.value("terminal.shell_program", String::new()),
+            shell_args: s.value("terminal.shell_args", String::new()),
             start: choice(s, "terminal.start_in", &STARTS),
             vertical: s.value("tabs.vertical", true),
             rail_width: s.value("tabs.rail_width", 248.0),

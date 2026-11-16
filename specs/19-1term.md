@@ -88,8 +88,17 @@ The terminal has 10 px of room above and below and 12 at its sides. The focused 
 the active space (a new local shell in its cwd), `Ctrl+W` closes it (the tab with its last
 space), `Ctrl+Alt+Left/Right` moves the focus. A space whose program ended shows
 `[process exited N]` and closes on a key. The other button opens a space's menu (when the
-setting has it, the default): Copy (with a selection), Paste, Select all, Clear scrollback, then
-Split space and Close space; a program that reports the mouse takes the press instead.
+setting has it, the default): Open link and Copy link first when the press was on a link, Copy
+(with a selection), Paste, Select all, Clear scrollback, then Split space and Close space; a
+program that reports the mouse takes the press instead.
+
+Links (specs/18, "Input") open on Ctrl+click, or Open link in the menu, through the app's policy,
+a pure function of the target and the visible text: `https` opens through the shell's `Opener`;
+`http`, a port that is not the scheme's own, or an OSC 8 link whose visible text looks like an
+address of another host (a word like "click here" is no address) first asks, in a dialog that
+shows the target (and the text when they differ), Open or Cancel; any other scheme, an address
+with no host after `//`, a control, space or direction character, a user or password in the
+address, or a target over 256 KiB is refused, with a card saying why.
 
 ## Completion
 
@@ -146,8 +155,8 @@ connected to it) and its address at the right (Recent: the host and how long ago
 ## M4 in detail
 
 - **Shells found**: Command Prompt (`%SystemRoot%\System32\cmd.exe`), Windows PowerShell
-  (`%SystemRoot%\System32\WindowsPowerShell1.0\powershell.exe`), PowerShell 7
-  (`%ProgramFiles%\PowerShell\pwsh.exe`), Git Bash (`%ProgramFiles%\Gitinash.exe`
+  (`%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`), PowerShell 7
+  (`%ProgramFiles%\PowerShell\7\pwsh.exe`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe`
   `--login -i`), WSL (`%SystemRoot%\System32\wsl.exe`), each where its file is. The default
   shell is Command Prompt until settings (M5) name another. A split starts in the focused
   space's directory.
@@ -180,12 +189,12 @@ Security & lock (Lock now while a password is set; and whether programs may read
 Logging (log new local shells, log new SSH spaces, both off; the folder, typed or chosen in the
 system's dialog, empty for `session-logs` in the app's data folder; the formats shown, fixed; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
-logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset, and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
+logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and Reset (and Reset all at the top), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Appearance: the theme (System, Dark, Light), and a colour theme over
 it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/themes`, made by
 `.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
-empty for the kit's mono face; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
+chosen from the families of the machine in a select with a search, the first "The kit's mono" for none; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
 Nerd Font"; size; weight, Normal and Thin to Black; line height, 1.5; the cell's width, 0 for the advance of `0`, up to
 48 px; the padding a side, top 0, right 5, bottom 0, left 10, each 0 to 64 px; ligatures, on; semantic
 highlighting, on: text in the default colour coloured by what it means, in the colour theme's ANSI colours;
@@ -197,7 +206,8 @@ colour with its normal and bright fields), the view's `TermLook` (specs/18). Key
 `terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`), `terminal.ligatures`,
 `terminal.semantic_highlighting`:
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
-blink, scrollback lines, the default local shell, where new spaces start (active space's cwd,
+blink, scrollback lines, the default local shell (the OS's, a shell found, or "A program": the
+program and its arguments typed, `terminal.shell_program`, `terminal.shell_args`), where new spaces start (active space's cwd,
 home, last used); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
 the view's `TermSettings` (specs/18). Not yet: "last used", a bell's
@@ -367,5 +377,5 @@ license's notice. Without them every space still runs, on the system's host.
 The app's tests drive it through the semantic tree on the headless platform with `echo()`
 sessions: tabs and spaces made, split, closed, moved; the signals on the rail, headers and
 status bar from bytes fed to a session; the menu; completion (`tests/complete.rs`: prompts
-marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); settings written; lock and unlock. Real
+marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); settings written; lock and unlock. Real
 shells only in `quadra-shell`'s pseudo console test.

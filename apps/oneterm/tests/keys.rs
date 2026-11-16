@@ -97,8 +97,12 @@ fn new_tab_is_rebound_unbound_and_reset() {
     assert_eq!(a.sessions(), 2);
 
     // Reset: Ctrl+T again. Each row's Reset is named by its action.
-    let resets = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name.starts_with("Reset "));
-    assert_eq!(resets.len(), 9, "a Reset a row");
+    let resets = a.h.query(|n| {
+        n.semantics.role == Role::Button
+            && n.semantics.name.starts_with("Reset ")
+            && n.semantics.name != "Reset all"
+    });
+    assert_eq!(resets.len(), 15, "a Reset a row");
     a.h.get_by_role(Role::Button, "Reset New tab").click();
     a.settle();
     assert_eq!(a.setting("new_tab").get_untracked(), "ctrl-t");
@@ -119,8 +123,8 @@ fn keys_kept_in_the_settings_hold_from_the_start_and_a_clash_is_said() {
     a.settle();
     assert!(a.h.has_text("Also New tab") && a.h.has_text("Also Split the space"));
     // Written another way, the same keystroke clashes too.
-    a.setting("split").set("ctrl-,".into());
-    a.setting("lock").set("ctrl-comma".into());
+    a.setting("split").set("alt-,".into());
+    a.setting("lock").set("alt-comma".into());
     a.settle();
     assert!(a.h.has_text("Also Lock") && !a.h.has_text("Also New tab"));
 }
@@ -141,4 +145,26 @@ fn a_lock_while_a_field_records_takes_the_keys_from_it() {
     assert_ne!(a.h.tree.focused(), Some(field), "the focus went to the password");
     a.key(Key::P, Mods::NONE);
     assert_eq!(a.setting("new_tab").get_untracked(), "ctrl-t", "the password's keys are not recorded");
+}
+
+#[test]
+fn the_app_s_other_actions_have_keys() {
+    let mut a = app(|_| {});
+    let docks = |a: &App| a.h.query(|n| n.semantics.name == "SFTP").len();
+    let closed = docks(&a);
+    a.key(Key::B, Mods::CTRL | Mods::SHIFT);
+    assert!(docks(&a) > closed, "the dock shows");
+    a.key(Key::B, Mods::CTRL | Mods::SHIFT);
+    assert_eq!(docks(&a), closed);
+    a.key(Key::Comma, Mods::CTRL);
+    assert!(a.h.has_text("Appearance"), "the settings, in the window where no other opens");
+    a.key(Key::Comma, Mods::CTRL);
+    a.setting("duplicate").set("ctrl-shift-d".into());
+    a.settle();
+    a.key(Key::D, Mods::CTRL | Mods::SHIFT);
+    assert_eq!(a.sessions(), 2, "the tab again");
+    a.open_page();
+    a.h.get_by_role(Role::Button, "Reset all").click();
+    a.settle();
+    assert_eq!(a.setting("duplicate").get_untracked(), "", "back to unbound");
 }

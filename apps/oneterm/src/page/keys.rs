@@ -27,7 +27,7 @@ const fn binding(id: &'static str, name: &'static str, keys: &'static str, bind:
 }
 
 /// The actions, in the order of the page.
-pub(crate) const BINDINGS: [Binding; 9] = [
+pub(crate) const BINDINGS: [Binding; 15] = [
     binding("new_tab", "New tab", "ctrl-t", |k, s| k.bind(s, Command::NewTab)),
     binding("split", "Split the space", "ctrl-d", |k, s| k.bind(s, Command::Split)),
     binding("close_space", "Close the space", "ctrl-w", |k, s| k.bind(s, Command::CloseSpace)),
@@ -35,6 +35,12 @@ pub(crate) const BINDINGS: [Binding; 9] = [
     binding("focus_previous", "Previous space", "ctrl-alt-left", |k, s| k.bind(s, Command::FocusNext(false))),
     binding("lock", "Lock", "ctrl-shift-l", |k, s| k.bind(s, Command::Lock)),
     binding("quick_connect", "Quick connect", "ctrl-shift-k", |k, s| k.bind(s, Command::QuickConnect)),
+    binding("settings", "Settings", "ctrl-,", |k, s| k.bind(s, Command::Settings)),
+    binding("dock", "SFTP dock", "ctrl-shift-b", |k, s| k.bind(s, Command::Dock)),
+    binding("select_all", "Select all", "ctrl-shift-a", |k, s| k.bind(s, Command::SelectAll)),
+    binding("clear", "Clear the scrollback", "", |k, s| k.bind(s, Command::Clear)),
+    binding("duplicate", "Duplicate the tab", "", |k, s| k.bind(s, Command::Duplicate)),
+    binding("quit", "Quit", "ctrl-shift-q", |k, s| k.bind(s, Command::Quit)),
     binding("copy", "Copy", "ctrl-shift-c", |k, s| k.bind_in(TERMINAL_CONTEXT, s, TermCommand::Copy)),
     binding("paste", "Paste", "ctrl-shift-v", |k, s| k.bind_in(TERMINAL_CONTEXT, s, TermCommand::Paste)),
 ];
@@ -90,7 +96,12 @@ fn normal(keys: &str) -> Option<String> {
 /// The page's group: a row an action.
 pub(crate) fn group() -> SettingsGroup {
     let keys = Rc::new(settings());
-    BINDINGS.iter().enumerate().fold(SettingsGroup::new("Keys"), |group, (at, b)| {
+    let every = keys.clone();
+    let all = button("Reset all").variant(Variant::Secondary).on_click(move || {
+        every.iter().zip(&BINDINGS).for_each(|(keys, b)| keys.set(b.keys.to_string()));
+    });
+    let first = SettingsGroup::new("Keys").row("Every action", "Back to the keys 1Term starts with.", all);
+    BINDINGS.iter().enumerate().fold(first, |group, (at, b)| {
         let (mine, all, default) = (keys[at], keys.clone(), b.keys);
         // The others with the same keys, named.
         let clash = move || {

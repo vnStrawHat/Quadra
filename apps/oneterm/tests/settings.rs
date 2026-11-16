@@ -104,6 +104,35 @@ fn new_spaces_take_the_cursor_and_the_history_set() {
 }
 
 #[test]
+fn the_default_shell_can_be_a_program_typed() {
+    let mut a = app();
+    a.settings.value("terminal.shell", String::new()).set("A program".into());
+    a.settings.value("terminal.shell_program", String::new()).set("D:\\tools\\nu.exe".into());
+    a.settings.value("terminal.shell_args", String::new()).set("--login  -i".into());
+    a.h.settle();
+    a.key(Key::T, Mods::CTRL);
+    let made = a.made.borrow();
+    let shell = made.last().and_then(|(launch, _)| launch.shell.clone()).expect("the program typed");
+    assert_eq!(
+        (shell.program, shell.args),
+        ("D:\\tools\\nu.exe".into(), vec!["--login".into(), "-i".into()])
+    );
+}
+
+#[test]
+fn the_font_family_is_chosen_from_the_machines_with_a_search() {
+    let mut a = app();
+    a.h.get_by_role(Role::Button, "Settings").click();
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Font family").click();
+    a.h.settle();
+    a.h.type_text("fake");
+    a.h.settle();
+    a.key(Key::Enter, Mods::NONE);
+    assert_eq!(a.settings.value("terminal.font_family", String::new()).get(), "Fake Sans");
+}
+
+#[test]
 fn silent_notifications_and_ignored_bells_count_nothing() {
     let mut a = app();
     a.settings.value("signals.notifications", String::new()).set("Silent".into());
@@ -168,7 +197,7 @@ fn the_look_page_sets_the_room_the_cells_the_contrast_the_ansi_colours_and_the_f
 
     let families = a.h.tree.fonts().borrow().text.fallbacks().to_vec();
     assert_eq!(families, ["Cascadia Code", "Segoe UI Symbol"]);
-    a.feed(0, b"[91mX");
+    a.feed(0, b"\x1b[91mX");
     // A dark red on the dark canvas: lightened to the contrast of 4.5, then as it is with 1.
     let dark_red = quadra::Color::rgb(0x400000).to_array();
     assert!(!painted(&mut a.h, dark_red), "moved to the contrast");

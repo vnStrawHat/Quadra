@@ -1,7 +1,7 @@
 //! The settings of how terminals look and behave (specs/19, "Settings"): the pages
 //! Appearance and Terminal.
 
-use quadra::{Signal, View, effect, row, signal, untrack};
+use quadra::{MountCx, NodeId, Signal, View, effect, row, signal, untrack};
 use quadra_design::{SettingsGroup, color_input, input, number_input, segmented, select, switch, token};
 
 use crate::prefs::{self, Prefs};
@@ -21,11 +21,7 @@ pub(super) fn appearance(p: Prefs) -> Vec<SettingsGroup> {
         );
     let l = p.look;
     let text = SettingsGroup::new("Terminal text")
-        .row(
-            "Font family",
-            "A family of this machine; empty, the kit's mono face.",
-            input(l.font_family).placeholder("Mono").width(240.0),
-        )
+        .row("Font family", "A family of this machine; empty, the kit's mono face.", Families(l.font_family))
         .row(
             "Fallback fonts",
             "Families tried in order, separated by commas, for what the font lacks (icons of patched fonts).",
@@ -105,6 +101,16 @@ pub(super) fn terminal(p: Prefs) -> Vec<SettingsGroup> {
     let shell = SettingsGroup::new("Shell")
         .row("Default shell", "What Ctrl+T and New tab start.", shell_choice(p.shell))
         .row(
+            "Program",
+            "The shell's program when the default is A program.",
+            input(p.shell_program).placeholder("C:\\path\\to\\shell.exe").label("Program").width(240.0),
+        )
+        .row(
+            "Arguments",
+            "Separated by spaces.",
+            input(p.shell_args).placeholder("--login").label("Arguments").width(240.0),
+        )
+        .row(
             "New spaces start in",
             "Where a new tab's shell starts.",
             select(prefs::STARTS, p.start).width(240.0),
@@ -113,19 +119,36 @@ pub(super) fn terminal(p: Prefs) -> Vec<SettingsGroup> {
 }
 
 /// The default shell as a choice of the shells found, written as its name; the first is
-/// the OS's own.
-fn shell_choice(shell: Signal<String>) -> impl View {
-    let names: Vec<String> = std::iter::once("The OS's".to_string())
-        .chain(crate::shells::found().into_iter().map(|it| it.name.into()))
-        .collect();
-    let at = untrack(|| names.iter().position(|it| *it == shell.get()).unwrap_or(0));
+/// the OS's own, the last a program typed.
+fn shell_choice(shell: Signal<String>) -> quadra_design::Select {
+    let found = crate::shells::found().into_iter().map(|it| it.name.to_string());
+    let names = std::iter::once("The OS's".to_string()).chain(found).chain([crate::shells::CUSTOM.into()]);
+    named_choice(names.collect(), shell)
+}
+
+/// A select of `names` that writes the name chosen to `value`; the first stands for none
+/// (an empty value), and a value no name has shows as the first.
+fn named_choice(names: Vec<String>, value: Signal<String>) -> quadra_design::Select {
+    let at = untrack(|| names.iter().position(|it| *it == value.get()).unwrap_or(0));
     let chosen = signal(at);
     let words = names.clone();
     effect(move || {
         let name = if chosen.get() == 0 { String::new() } else { words[chosen.get()].clone() };
-        if untrack(|| shell.get()) != name {
-            shell.set(name);
+        if untrack(|| value.get()) != name {
+            value.set(name);
         }
     });
     select(names, chosen).width(240.0)
+}
+
+/// The terminal's family, chosen from the machine's in a select with a search; the first
+/// is the kit's mono face.
+struct Families(Signal<String>);
+
+impl View for Families {
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        let families = cx.tree.fonts().borrow_mut().text.backend().families();
+        let names = std::iter::once("The kit's mono".to_string()).chain(families).collect();
+        named_choice(names, self.0).searchable("Find a family\u{2026}").label("Font family").mount(cx)
+    }
 }

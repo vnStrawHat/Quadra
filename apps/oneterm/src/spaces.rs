@@ -14,6 +14,7 @@ use quadra::{
 use quadra_design::{MenuItem, context_menu, fonts, icons, token};
 use quadra_term::{Link, Session};
 
+use crate::links::Links;
 use crate::model::{Model, Space, Tab};
 
 pub(crate) fn workspace(model: &Model) -> impl View + use<> {
@@ -119,6 +120,7 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
             None => dir,
         }
     };
+    let links = Links::here(model);
     let header = row()
         .align_items(Align::Center)
         .gap(8.0)
@@ -154,18 +156,22 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
         })
         .child(header)
         .child(
-            column()
-                .grow(1.0)
-                .min_height(0.0)
-                .padding_x(12.0)
-                .padding_y(10.0)
-                .child(crate::complete::around(model, &space, |view| menu_of(model, &s, &space, view))),
+            column().grow(1.0).min_height(0.0).padding_x(12.0).padding_y(10.0).child(
+                crate::complete::around(model, &space, |view| menu_of(model, &s, &space, view, &links)),
+            ),
         )
+        .child(links.dialog())
 }
 
 /// The space's menu for the other button (specs/19, "Spaces"), when the settings have it; the
 /// terminal follows the settings of the pointer and the wheel.
-fn menu_of(model: &Model, s: &Session, space: &Space, view: quadra_term::Terminal) -> impl View + use<> {
+fn menu_of(
+    model: &Model,
+    s: &Session,
+    space: &Space,
+    view: quadra_term::Terminal,
+    links: &Links,
+) -> impl View + use<> {
     let (p, id, folder) = (model.prefs(), space.id, crate::logs::folder(&model.prefs()));
     let name = space.remote.as_ref().map_or_else(|| "local".to_string(), |it| it.target.host.clone());
     let (settings, look) = (signal(untrack(|| p.term())), signal(untrack(|| p.look())));
@@ -173,14 +179,17 @@ fn menu_of(model: &Model, s: &Session, space: &Space, view: quadra_term::Termina
     // A new look is followed by the terminal as it is: its screen stays.
     effect(move || look.set(p.look()));
     let (s, model, clipboard) = (s.clone(), model.clone(), use_context::<Rc<dyn Clipboard>>());
-    context_menu(view.settings(settings).look(look), move || {
+    let (follows, links) = (links.clone(), links.clone());
+    let view = view.settings(settings).look(look).on_link(move |link| follows.follow(link));
+    context_menu(view, move || {
         if !p.context_menu.get_untracked() {
             return Vec::new();
         }
+        let on_link = s.link_pressed().map(|link| links.menu(link)).unwrap_or_default();
         let chosen = s.selection_text();
         let (copies, pastes, (all, clears)) = (clipboard.clone(), clipboard.clone(), (s.clone(), s.clone()));
         let (pasted, (splits, closes)) = (s.clone(), (model.clone(), model.clone()));
-        vec![
+        let items = vec![
             MenuItem::new("Copy")
                 .icon(icons::COPY)
                 .keys("Ctrl+Shift+C")
@@ -206,7 +215,8 @@ fn menu_of(model: &Model, s: &Session, space: &Space, view: quadra_term::Termina
             MenuItem::new("Close space").keys("Ctrl+W").danger().on_select(move || {
                 _ = closes.close_space(id);
             }),
-        ]
+        ];
+        on_link.into_iter().chain(items).collect()
     })
 }
 

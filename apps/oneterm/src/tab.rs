@@ -94,6 +94,17 @@ pub enum Command {
     Lock,
     /// The quick connect dialog.
     QuickConnect,
+    /// The Settings window (the page, where no window opens).
+    Settings,
+    /// The SFTP dock shown or hidden.
+    Dock,
+    /// The focused space's text all selected; its scrollback cleared.
+    SelectAll,
+    Clear,
+    /// The active tab again, after it.
+    Duplicate,
+    /// The window closed.
+    Quit,
 }
 
 impl Action for Command {

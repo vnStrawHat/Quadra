@@ -10,6 +10,7 @@ mod expanded;
 mod git;
 mod hostlist;
 mod hosts;
+mod links;
 mod local;
 mod lock;
 mod locked;
@@ -124,12 +125,13 @@ impl OneTerm {
         let top = move || if vertical.get() { 38.0 + 16.0 } else { 38.0 + 36.0 + 16.0 };
         let cards = dynamic(move || AnyView::new(notices.right(right()).below(top()).host()))
             .container(div().display(locked::shown(move || !lock.locked.get())));
+        let windows = use_context::<quadra::Windows>();
         locked::watches(quadra_design::root(), lock)
             .on_action::<Command>(move |&command| {
-                if !run(&model, command)
+                if !run(&model, command, windows.as_ref())
                     && let Some(window) = &window
                 {
-                    window.close_now(); // the last tab went
+                    window.close_now(); // the last tab went, or Quit
                 }
             })
             .child(chrome::title_bar(&self.model))
@@ -156,7 +158,7 @@ fn hosts_panel(model: &Model) -> impl View + use<> {
 }
 
 /// Does a command; false when no tab is left. Locked, only locking does anything.
-fn run(model: &Model, command: Command) -> bool {
+fn run(model: &Model, command: Command, windows: Option<&quadra::Windows>) -> bool {
     model.lock().active();
     if model.lock().locked.get_untracked() {
         return true;
@@ -168,6 +170,21 @@ fn run(model: &Model, command: Command) -> bool {
         Command::FocusNext(forward) => model.focus_next(forward),
         Command::Lock => model.lock().lock_now(),
         Command::QuickConnect => model.ui().connecting.set(true),
+        Command::Settings => match windows {
+            Some(windows) => page::open_window(windows, model),
+            None => model.ui().settings.update(|on| *on = !*on),
+        },
+        Command::Dock => model.ui().dock.update(|on| *on = !*on),
+        Command::SelectAll | Command::Clear => {
+            let space = quadra::untrack(|| model.active_tab().and_then(|tab| tab.focused()));
+            match (space, command) {
+                (Some(space), Command::SelectAll) => space.session.select_all(),
+                (Some(space), _) => space.session.clear_history(),
+                (None, _) => {}
+            }
+        }
+        Command::Duplicate => model.duplicate(model.active().get_untracked()),
+        Command::Quit => return false,
     }
     true
 }

@@ -53,6 +53,13 @@ impl Session {
         waiting.into_iter().for_each(|f| f(size));
     }
 
+    /// The text of the rows that show, each with its trailing blanks cut.
+    pub fn screen_text(&self) -> Vec<String> {
+        let engine = self.engine();
+        let (top, rows) = (engine.term.viewport().top, engine.term.size().rows as u64);
+        (0..rows).map(|i| engine.term.row_text(oneterm_vt::RowId(top.0 + i)).trim_end().to_string()).collect()
+    }
+
     /// The text selected, if any.
     pub fn selection_text(&self) -> Option<String> {
         self.engine().term.selection_text()
@@ -81,7 +88,7 @@ impl Session {
     }
 
     /// Paints the view of the session again, if one shows it.
-    fn repaint(&self) {
+    pub(crate) fn repaint(&self) {
         let handle = self.0.handle.borrow().clone();
         if let (Some(id), Some(handle)) = (self.0.view.get(), handle) {
             handle.with(move |tree| crate::widget::repaint(tree, id));

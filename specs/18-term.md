@@ -202,6 +202,29 @@ What any completion needs, with no knowledge of commands (specs/20 is 1Term's):
   text is not asked; it goes to the program as before. An overlay of suggestions takes Up, Down,
   Tab, Enter and Escape this way while it is open.
 
+## Find
+
+- `Session::find(&FindQuery { text, case, word })` looks for `text` in the active screen, its
+  history with it, through the engine's matcher (`vt::search`: a copy of the text taken under
+  the lock, matched after it; a literal, lower-cased unless `case`, and only whole words with
+  `word`; a match never crosses a hard line end, a wrapped line is one). No regular
+  expressions: the engine's are behind a feature with a dependency of its own. An empty text
+  ends finding. The current match is the first at or below the top of the view, else the last
+  one; `find_next(back)` steps to the next (or, `back`, the one before), wrapping. The view
+  scrolls to the current match when it is out of view, so that it stands in the middle (as
+  near as the history allows); a match in view does not move it.
+- `Session::found()` is a signal of `(current, count)`, the current counted from 1; `(0, 0)`
+  when nothing is found or nothing is looked for. At most the engine's `MAX_MATCHES`.
+  `find_query()` is what is looked for.
+- Cost: matches name rows by id, so scrolling and output that only scrolls keep them right
+  with no new search. The text is matched again on a new query, after a resize (a reflow
+  renumbers rows), and after output, at most once in 150 ms (a timer started by the first burst
+  while one is looked for); never in a paint. A search again keeps the current match where it
+  still is, and does not scroll.
+- Painting: each match is a quad of the theme's `editor_find_match` over the cells it covers
+  (on each row of a match that wraps), the current one `editor_find_current`, above the cells'
+  backgrounds and under the selection and the text. A row finds its matches by a binary search.
+
 ## Logging
 
 - `Session::start_log(path, append, stamp)` logs the output from then on: the folder is made,
@@ -252,6 +275,10 @@ done, idle. OSC 133 A (a new prompt) drops working, blocked and idle. `?` is ans
   wraps, Ctrl+click calls the handler and selects nothing nor reaches a program that reports the
   mouse, a click without Ctrl selects as before, the hand and the underline while Ctrl is held,
   the link under a press of the other button.
+- `tests/find.rs`: matches in history and on screen, case and whole words, the count, next and
+  previous wrapping, the view scrolled to a match in history and left alone for one in view,
+  output found again after the wait with the current match kept, the quads painted, an empty
+  text ending it.
 - `src/status.rs` unit tests: OSC 7501 parsing, records, the summary, the prompt rule, the query.
 - `quadra-shell` `tests/pty.rs`: `cmd /c echo` through the pseudo console, its output and its
   exit; skipped when no console can be made.

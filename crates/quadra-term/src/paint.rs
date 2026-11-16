@@ -68,11 +68,11 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx) {
 }
 
 /// The cell box of `cols` columns from `col` in the row at `y`.
-fn cells(w: &TerminalWidget, (left, y): (f32, f32), col: usize, cols: usize) -> Rect {
+pub(crate) fn cells(w: &TerminalWidget, (left, y): (f32, f32), col: usize, cols: usize) -> Rect {
     Rect::new(left + col as f32 * w.cell, y, cols as f32 * w.cell, w.line)
 }
 
-/// Backgrounds that are not the terminal's, the selection, and the cursor.
+/// Backgrounds that are not the terminal's, the matches found, the selection, and the cursor.
 fn under(
     w: &TerminalWidget,
     cx: &mut PaintCx,
@@ -89,6 +89,7 @@ fn under(
             cx.quad(Quad { bounds: cells(w, at, from, to - from), background: bg, ..Quad::default() });
         }
     }
+    crate::find::paint(w, cx, row, at);
     if let Some(selection) = state.selection() {
         let chosen = |col: usize| selection.contains(Pos { row: row.id, col: col as u16 });
         let mut col = 0;

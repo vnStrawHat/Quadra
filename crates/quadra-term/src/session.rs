@@ -75,6 +75,7 @@ pub(crate) struct Shared {
     pub line: crate::line::Follow,
     /// What waits for a view to size the grid; `None` once one has.
     pub sized: RefCell<Option<Waiting>>,
+    pub find: crate::find::Finding,
 }
 
 impl Session {
@@ -127,6 +128,7 @@ impl Session {
             pressed: RefCell::new(None),
             line: crate::line::Follow::new(),
             sized: RefCell::new(Some(Vec::new())),
+            find: crate::find::Finding::new(),
         });
         let (took, ended) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
         events
@@ -189,6 +191,7 @@ impl Session {
             }
             engine.term.resize(size, self.0.policy);
         }
+        self.refind(); // a reflow gives the rows new ids
         self.with_link(|link| (link.resize)(size));
     }
 
@@ -200,13 +203,6 @@ impl Session {
     /// The grid's size.
     pub fn size(&self) -> Size {
         lock(&self.0.engine).term.size()
-    }
-
-    /// The text of the rows that show, each with its trailing blanks cut.
-    pub fn screen_text(&self) -> Vec<String> {
-        let engine = lock(&self.0.engine);
-        let (top, rows) = (engine.term.viewport().top, engine.term.size().rows as u64);
-        (0..rows).map(|i| engine.term.row_text(oneterm_vt::RowId(top.0 + i)).trim_end().to_string()).collect()
     }
 
     /// The program's title (OSC 0 and 2); empty until it sets one.
@@ -273,6 +269,7 @@ impl Session {
             match event {
                 Event::Output => {
                     self.0.feeder.pending.store(false, Ordering::Release);
+                    self.refind_later();
                     if let (Some(id), Some(handle)) = (self.0.view.get(), self.0.handle.borrow().clone()) {
                         handle.with(move |tree| {
                             crate::widget::repaint(tree, id);

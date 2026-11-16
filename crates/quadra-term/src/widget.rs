@@ -32,6 +32,8 @@ pub struct TerminalWidget {
     pub(crate) line: f32,
     pub(crate) scale: f32,
     pub(crate) selection: Color,
+    /// The theme's colours of a match found and of the current one.
+    pub(crate) find: (Color, Color),
     /// Room around the grid, in logical pixels.
     pub(crate) pad: Edges,
     /// The look's minimum contrast, with the colours it gave; the fallbacks it set last.
@@ -87,6 +89,7 @@ impl TerminalWidget {
             line: 16.0,
             scale: 1.0,
             selection: Color::TRANSPARENT,
+            find: (Color::TRANSPARENT, Color::TRANSPARENT),
             pad: Edges::all(8.0),
             contrast: Contrast::default(),
             fallbacks: Vec::new(),
@@ -219,6 +222,7 @@ impl Widget for TerminalWidget {
         palette.background = rgb(theme.color(token::CANVAS));
         palette.cursor = rgb(theme.color(token::EDITOR_CURSOR));
         self.base = (palette, theme.color(token::EDITOR_SELECTION));
+        self.find = (theme.color(token::EDITOR_FIND), theme.color(token::EDITOR_FIND_CURRENT));
         self.paint_colors();
         true
     }

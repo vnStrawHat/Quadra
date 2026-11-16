@@ -54,7 +54,7 @@ impl App {
 #[test]
 fn a_host_added_is_saved_listed_and_connects_on_a_click() {
     let mut a = app();
-    assert!(a.h.has_text("local"), "the status bar names a local space");
+    assert!(a.h.has_text("local shell"), "the status bar names a local space");
     a.add("prod-api-01", "Production", "trung@10.20.1.14");
     a.add("", "Staging", "trung@10.30.2.8:2222");
     assert_eq!(a.rows()[0], ["prod-api-01", "Production", "trung@10.20.1.14", "Auto", "", "", ""]);
@@ -104,7 +104,7 @@ fn the_new_menu_searches_hosts_and_connects_to_a_typed_target() {
     a.add("prod-api-01", "Production", "trung@10.20.1.14");
     a.add("home-nas", "Personal", "admin@nas.local");
     let open = |a: &mut App| {
-        a.h.get_by_role(Role::Button, "New terminal").click();
+        a.h.get_by_role(Role::Button, "Search tabs, hosts and commands").click();
         a.h.settle();
         let field = a.h.get_by_role(Role::TextInput, "Search hosts, or type user@host…").node();
         assert_eq!(a.h.tree.focused(), Some(field), "the focus is in the field");
@@ -176,4 +176,43 @@ fn quick_connect_can_save_the_host() {
     a.h.get_by_role(Role::Button, "Connect").click();
     a.h.settle();
     assert_eq!(a.rows()[0][..3], ["10.20.0.2", "", "ops@10.20.0.2"]);
+}
+
+#[test]
+fn a_host_has_a_colour_tag_its_group_s_until_one_is_chosen_and_kept() {
+    let mut a = app();
+    a.add("prod-api-01", "Production", "trung@10.20.1.14");
+    let tags = |a: &App| {
+        a.h.query(|n| n.semantics.role == Role::Image && n.semantics.name.starts_with("Colour tag"))
+    };
+    assert_eq!(tags(&a).len(), 1, "a tag by its group");
+    a.h.get_by_role(Role::Button, "Add SSH host").click();
+    a.h.settle();
+    for (id, value) in
+        [("host-name", "prod-lb"), ("host-group", "Production"), ("host-target", "ops@10.20.0.2")]
+    {
+        a.h.get_by_test_id(id).set_value(value);
+    }
+    a.h.get_by_test_id("host-tag").click();
+    a.h.settle();
+    a.h.get_by_role(Role::MenuItem, "Purple").click();
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.settle();
+    assert_eq!(a.rows()[1][7], "purple");
+    assert!(a.h.has_text("Colour tag: purple"));
+    // Edited, the host keeps its tag.
+    let node = a.h.get_by_role(Role::Button, "prod-lb").node();
+    let at = a.h.tree.window_rect(node).center();
+    for input in [quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up] {
+        a.h.tree.pointer(input, quadra::MouseButton::Right, at, Mods::NONE, a.h.now());
+    }
+    a.h.settle();
+    a.h.get_by_role(Role::MenuItem, "Edit\u{2026}").click();
+    a.h.settle();
+    a.h.get_by_test_id("host-target").set_value("ops@10.20.0.3");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.settle();
+    assert_eq!(a.rows()[1][2..], ["ops@10.20.0.3", "Auto", "", "", "", "purple"]);
 }

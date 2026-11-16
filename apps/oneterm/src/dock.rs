@@ -1,15 +1,13 @@
 //! The SFTP dock (specs/19, "M9 in detail"): 300 px at the workspace's right, the folder of
-//! the focused space's connection, its entries, the transfers; files dropped on it upload.
+//! the focused space's connection in a field, its entries, the transfers; files dropped on it
+//! upload.
 
 use oneterm_ssh::Entry;
 use quadra::{
-    Align, AnyView, DroppedFiles, Length, Role, View, by_text, column, div, dynamic, effect, memo, row,
-    signal, text,
+    Align, AnyView, DroppedFiles, Length, Paint, Role, State, View, by_text, column, div, dynamic, effect,
+    memo, row, signal, text,
 };
-use quadra_design::{
-    MenuItem, Variant, button, context_menu, fonts, icon, icon_button, icons, menu_icon_button, token,
-    tooltip,
-};
+use quadra_design::{Variant, button, context_menu, icon, icon_button, icons, input, token, tooltip};
 
 use crate::locked::shown;
 use crate::model::Model;
@@ -84,44 +82,28 @@ fn panel(model: &Model, d: Dock) -> impl View + use<> {
         let remote = space.and_then(|it| it.remote);
         remote.map(|it| host_of.host_name(&it)).unwrap_or_else(|| "local space \u{B7} n/a".into())
     };
-    let (refreshes, drops) = (model.clone(), model.clone());
-    // Refresh and New folder wait in a menu: the header has the design's two buttons.
-    let more = menu_icon_button(icons::ELLIPSIS, "More", move || {
-        let refreshes = refreshes.clone();
-        vec![
-            MenuItem::new("Refresh").on_select(move || d.refresh(&refreshes)),
-            MenuItem::new("New folder\u{2026}").on_select(move || d.ask.folder()),
-        ]
-    })
-    .size(quadra_design::Size::Sm);
-    let expand = icon_button(icons::WINDOW_MAXIMIZE, "Expand SFTP")
-        .variant(Variant::Secondary)
-        .size(quadra_design::Size::Sm)
-        .on_click(move || d.expanded.set(true));
-    let close =
-        icon_button(icons::X, "Close SFTP").size(quadra_design::Size::Sm).on_click(move || open.set(false));
+    let zoom = icon_button(icons::MAXIMIZE_2, "Zoom SFTP").on_click(move || d.expanded.set(true));
     let head = row()
         .align_items(Align::Center)
-        .gap(8.0)
+        .gap(6.0)
         .padding_left(12.0)
-        .padding_right(8.0)
-        .height(by_text(42.0))
+        .padding_right(6.0)
+        .height(by_text(28.0))
         .shrink(0.0)
-        .border_bottom(1.0)
-        .border_color(token::LINE)
-        .child(icon(icons::FOLDER).size(14.0).color(token::ACCENT))
-        .child(div().font_weight(600).text_size(12.0).child(text("SFTP")))
+        .text_size(12.0)
+        .font_weight(600)
+        .text_color(token::TEXT_2)
+        .child(text("SFTP"))
         .child(
             div()
                 .grow(1.0)
                 .min_width(Length::Px(0.0))
-                .text_size(11.0)
-                .text_color(token::TEXT_2)
+                .font_weight(400)
+                .text_color(token::TEXT_3)
                 .child(text(host).ellipsis()),
         )
-        .child(more)
-        .child(tooltip("Expand: local and remote side by side", expand))
-        .child(tooltip("Hide SFTP panel", close));
+        .child(tooltip("Zoom SFTP: local and remote side by side", zoom));
+    let drops = model.clone();
     column()
         .width(300.0)
         .shrink(0.0)
@@ -132,54 +114,37 @@ fn panel(model: &Model, d: Dock) -> impl View + use<> {
         .on_drop(move |files: &DroppedFiles, _| d.upload(&drops, files.0.clone()))
         .drop_target(|s| s.bg(token::ACCENT_TINT))
         .child(head)
-        .child(crumbs(model, d))
+        .child(path(model, d))
         .child(entries(model, d))
         .child(transfers(d))
 }
 
-/// The folder as parts, each going there: `/ home / trung / apps`.
-fn crumbs(model: &Model, d: Dock) -> impl View + use<> {
-    let model = model.clone();
-    let parts = dynamic(move || {
+/// The folder in a field: Enter or the arrow goes to what is typed.
+fn path(model: &Model, d: Dock) -> impl View + use<> {
+    let typed = signal(String::new());
+    effect(move || {
         let dir = d.dir.get();
-        if dir.is_empty() {
-            return AnyView::new(div());
+        if quadra::untrack(|| typed.get()) != dir {
+            typed.set(dir);
         }
-        let mut line = row()
-            .gap(4.0)
-            .padding_x(12.0)
-            .padding_y(6.0)
-            .border_bottom(1.0)
-            .border_color(token::LINE)
-            .font_family(fonts::MONO)
-            .text_size(11.0)
-            .text_color(token::TEXT_2)
-            .cut_to_parent();
-        let names: Vec<&str> = dir.split('/').filter(|it| !it.is_empty()).collect();
-        let mut at = "/".to_string();
-        if names.is_empty() {
-            line = line.child(text("/"));
-        }
-        // `/home / trung / apps`, the last in the text colour.
-        for (i, name) in names.iter().enumerate() {
-            at = oneterm_ssh::join(&at, name);
-            let (goes, path) = (model.clone(), at.clone());
-            let last = i + 1 == names.len();
-            let part = div()
-                .text_color(if last { token::TEXT } else { token::TEXT_2 })
-                .hover(|s| s.text_color(token::TEXT))
-                .role(Role::Link)
-                .label(path.clone())
-                .on_click(move |_| d.load(&goes, Some(path.clone())));
-            if i > 0 {
-                line = line.child(text("/"));
-            }
-            let name = if i == 0 { format!("/{name}") } else { name.to_string() };
-            line = line.child(part.child(text(name)));
-        }
-        AnyView::new(line)
     });
-    parts.container(div())
+    let go = move |model: &Model| {
+        let to = typed.get_untracked().trim().to_string();
+        if !to.is_empty() {
+            d.load(model, Some(to));
+        }
+    };
+    let (submits, goes) = (model.clone(), model.clone());
+    let field = input(typed).mono().small().height(28.0).fill().label("Remote path").test_id("sftp-path");
+    row()
+        .align_items(Align::Center)
+        .gap(4.0)
+        .padding_left(8.0)
+        .padding_right(6.0)
+        .padding_bottom(6.0)
+        .display(shown(move || !d.dir.with(String::is_empty)))
+        .child(field.on_submit(move |_| go(&submits)))
+        .child(icon_button(icons::ARROW_RIGHT, "Go to the typed path").on_click(move || go(&goes)))
 }
 
 fn entries(model: &Model, d: Dock) -> impl View + use<> {
@@ -193,13 +158,14 @@ fn entries(model: &Model, d: Dock) -> impl View + use<> {
             return AnyView::new(div().padding(10.0).text_color(token::TEXT_2).child(text(said)));
         }
         let all = crate::panes::visible(&d.entries.get(), d.hidden.get());
-        let mut list = column().width(Length::Fill).padding_x(6.0).padding_y(4.0);
+        let mut list = column().width(Length::Fill);
         let dir = d.dir.get_untracked();
         if dir != "/" && !dir.is_empty() {
             let (up, goes) = (dir.rsplit_once('/').map_or("/", |it| it.0).to_string(), model.clone());
             let up = if up.is_empty() { "/".to_string() } else { up };
             let entry = Entry { name: "..".into(), dir: true, size: 0, modified: 0 };
-            list = list.child(line(&entry).on_click(move |_| d.load(&goes, Some(up.clone()))));
+            let line = line(&entry, d).label("Parent folder");
+            list = list.child(line.on_click(move |_| d.load(&goes, Some(up.clone()))));
         }
         for entry in all.iter().take(SHOWN) {
             list = list.child(entry_row(&model, d, entry.clone()));
@@ -218,22 +184,41 @@ fn entries(model: &Model, d: Dock) -> impl View + use<> {
     context_menu(quadra::scroll(signal(0.0), list).container(area), menus::remote_area(&model_of, d))
 }
 
-/// A row: its icon, its name, its size.
-fn line(entry: &Entry) -> quadra::Div {
+/// A row of 26 px: its icon, its name, its size; a file chosen has the press fill, a bar of
+/// the accent at its left and its icon in the accent.
+fn line(entry: &Entry, d: Dock) -> quadra::Div {
+    let (file, named) = (!entry.dir, entry.name.clone());
+    let picked = move || file && d.selected.with(|it| it.as_deref() == Some(named.as_str()));
+    let (tints, quiets) = (picked.clone(), picked.clone());
+    let tint = move || -> Paint {
+        match (file, tints()) {
+            (false, _) => token::HUE_BLUE.into(),
+            (true, true) => token::ACCENT.into(),
+            (true, false) => token::TEXT_2.into(),
+        }
+    };
+    let quiet = move || -> Paint { if quiets() { token::TEXT_2.into() } else { token::TEXT_3.into() } };
     let shape = if entry.dir { icons::FOLDER } else { icons::FILE };
-    let size = if entry.dir { "\u{2014}".to_string() } else { size(entry.size) };
+    let size = if file { size(entry.size) } else { String::new() };
     row()
         .align_items(Align::Center)
         .gap(8.0)
-        .padding_x(8.0)
-        .height(by_text(27.0))
-        .radius(5.0)
+        .padding_left(10.0)
+        .padding_right(12.0)
+        .height(by_text(26.0))
+        .shrink(0.0)
+        .border_left(2.0)
+        .border_color(token::ACCENT.alpha(0.0))
         .hover(|s| s.bg(token::PANEL_HOVER))
+        .selected(picked)
+        .when(State::SELECTED, |s| s.bg(token::PRESS).border_color(token::ACCENT))
         .role(Role::Button)
         .label(entry.name.clone())
-        .child(icon(shape).size(14.0).color(if entry.dir { token::ACCENT } else { token::TEXT_2 }))
+        .child(div().text_color(tint).child(icon(shape).size(14.0)))
         .child(div().grow(1.0).min_width(Length::Px(0.0)).child(text(entry.name.clone()).ellipsis()))
-        .child(div().text_size(11.0).text_color(token::TEXT_2).child(text(size)))
+        .child(
+            div().font_family(quadra_design::fonts::MONO).text_size(12.0).text_color(quiet).child(text(size)),
+        )
 }
 
 /// What the dock shows for a local space: why it is empty, and a button that shows the
@@ -262,12 +247,13 @@ fn local(model: &Model) -> impl View + use<> {
     view
 }
 
+/// A click opens a folder and chooses a file; two download a file.
 fn entry_row(model: &Model, d: Dock, entry: Entry) -> impl View + use<> {
     let (opens, kept) = (model.clone(), entry.clone());
-    let face = line(&entry).on_click(move |e| match (kept.dir, e.clicks) {
+    let face = line(&entry, d).on_click(move |e| match (kept.dir, e.clicks) {
         (true, _) => d.load(&opens, Some(oneterm_ssh::join(&d.dir.get_untracked(), &kept.name))),
         (false, 2) => d.download(&opens, &kept),
-        _ => {}
+        (false, _) => d.selected.set(Some(kept.name.clone())),
     });
     context_menu(face, menus::remote(model, d, &entry))
 }

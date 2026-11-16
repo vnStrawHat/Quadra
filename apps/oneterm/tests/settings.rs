@@ -139,7 +139,7 @@ fn silent_notifications_and_ignored_bells_count_nothing() {
     a.settings.value("signals.bell", String::new()).set("Ignored".into());
     a.h.settle();
     a.feed(0, b"\x1b]9;tests passed\x07");
-    assert!(!a.says("OSC 9"));
+    assert!(!a.says("tests passed"));
     assert!(a.says("0 bells and notices"));
     a.key(Key::D, Mods::CTRL);
     a.feed(0, b"\x07");

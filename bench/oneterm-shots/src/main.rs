@@ -4,7 +4,7 @@
 //!
 //!     tools/cargo.sh run -p quadra-bench-oneterm-shots -- [out dir] [scene ..]
 //!
-//! Scenes: main, horizontal, menu, connect, add, settings, lock, sftp.
+//! Scenes: main, collapsed, horizontal, menu, connect, add, settings, lock, sftp.
 
 #[path = "../../shots/src/png.rs"]
 mod png;
@@ -27,7 +27,8 @@ use quadra_term::{Session, echo};
 
 type Shots = App<D3d11Renderer>;
 
-const SCENES: [&str; 8] = ["main", "horizontal", "menu", "connect", "add", "settings", "lock", "sftp"];
+const SCENES: [&str; 9] =
+    ["main", "collapsed", "horizontal", "menu", "connect", "add", "settings", "lock", "sftp"];
 
 fn pass(platform: &HeadlessPlatform, app: &mut Shots, ms: u64) {
     for _ in 0..ms.div_ceil(75) {
@@ -53,18 +54,18 @@ fn click(platform: &HeadlessPlatform, app: &Shots, window: WindowId, name: &str)
     }
 }
 
-/// The canvas's saved hosts, as rows of the settings.
+/// The canvas's saved hosts, as rows of the settings, with their colour tags.
 fn hosts() -> Vec<Vec<String>> {
-    let host = |name: &str, group: &str, target: &str, jump: &str| {
-        [name, group, target, "Auto", "", jump, ""].map(String::from).to_vec()
+    let host = |name: &str, group: &str, target: &str, jump: &str, tag: &str| {
+        [name, group, target, "Auto", "", jump, "", tag].map(String::from).to_vec()
     };
     vec![
-        host("prod-api-01", "Production", "trung@10.20.1.14", ""),
-        host("prod-api-02", "Production", "trung@10.20.1.15", ""),
-        host("prod-lb", "Production", "ops@10.20.0.2", "prod-api-01"),
-        host("staging-db-01", "Staging", "trung@10.30.2.8", ""),
-        host("staging-web", "Staging", "trung@10.30.2.20", ""),
-        host("home-nas", "Personal", "admin@nas.local", ""),
+        host("prod-api-01", "Production", "trung@10.20.1.14", "", "red"),
+        host("prod-api-02", "Production", "trung@10.20.1.15", "", "red"),
+        host("prod-lb", "Production", "ops@10.20.0.2", "prod-api-01", "purple"),
+        host("staging-db-01", "Staging", "trung@10.30.2.8", "", "yellow"),
+        host("staging-web", "Staging", "trung@10.30.2.20", "", "yellow"),
+        host("home-nas", "Personal", "admin@nas.local", "", "blue"),
     ]
 }
 
@@ -158,20 +159,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         for _ in 0..4 {
             model.new_tab();
         }
-        model.active().set(model.tabs().get_untracked()[0].id);
+        let first = model.tabs().get_untracked()[0];
+        model.active().set(first.id);
+        // The canvas's focused space is the deploy on prod-api-01.
+        first.focus.set(1);
         pass(&platform, &mut app, 150);
         fill(&model, &made.borrow());
         model.ui().dock.set(*scene != "connect");
+        // A master password, as the canvas has: Lock 1Term now shows.
+        model.prefs().password.set("set".into());
         match *scene {
             "menu" => click(&platform, &app, window, "New terminal"),
             "connect" => model.ui().connecting.set(true),
             "add" => model.ui().adding.set(true),
             "settings" => model.ui().settings.set(true),
-            "lock" => {
-                model.prefs().password.set("set".into());
-                model.lock().lock_now();
-            }
+            "lock" => model.lock().lock_now(),
             "sftp" => model.ui().expanded.set(true),
+            "collapsed" => model.prefs().rail_folded.set(true),
             _ => {}
         }
         pass(&platform, &mut app, 900);

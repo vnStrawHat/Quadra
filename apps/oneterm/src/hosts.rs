@@ -14,6 +14,25 @@ const AUTHS: [&str; 4] = ["Auto", "Agent", "Key", "Password"];
 const RECENT: usize = 5;
 /// The most jump hosts on a way, as the engine takes.
 const HOPS: usize = 4;
+/// The colour tags a host can have, by the word its row ends with (the eighth).
+pub(crate) const TAGS: [(&str, quadra::Token); 7] = {
+    use quadra_design::token::*;
+    [
+        ("red", HUE_RED),
+        ("orange", HUE_ORANGE),
+        ("yellow", HUE_YELLOW),
+        ("green", HUE_GREEN),
+        ("cyan", HUE_CYAN),
+        ("blue", HUE_BLUE),
+        ("purple", HUE_PURPLE),
+    ]
+};
+
+/// The tag of a host with none: one by its group, the same for each host of the group.
+fn tag_of_group(group: &str) -> (&'static str, quadra::Token) {
+    let hash = group.bytes().fold(2_166_136_261u32, |h, b| (h ^ u32::from(b)).wrapping_mul(16_777_619));
+    TAGS[hash as usize % TAGS.len()]
+}
 
 /// A host the user saved.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -58,14 +77,6 @@ impl Host {
     pub fn address(&self) -> String {
         self.remote.target.label()
     }
-
-    /// The address, and `· jump` for a host reached through another.
-    pub fn detail(&self) -> String {
-        match self.jump.is_empty() {
-            true => self.address(),
-            false => format!("{} \u{B7} jump", self.address()),
-        }
-    }
 }
 
 /// The way to a host through the saved host `name` and the ones it is reached through; a
@@ -103,9 +114,7 @@ impl Model {
 
     /// The choices of a jump host select: none, then the saved hosts.
     pub(crate) fn jump_choices(&self) -> Vec<String> {
-        std::iter::once("No jump host".to_string())
-            .chain(self.hosts().into_iter().map(|it| it.name))
-            .collect()
+        std::iter::once("None".to_string()).chain(self.hosts().into_iter().map(|it| it.name)).collect()
     }
 
     /// The host chosen in a jump host select.
@@ -113,12 +122,45 @@ impl Model {
         chosen.checked_sub(1).and_then(|at| self.hosts().into_iter().nth(at))
     }
 
-    /// Saves a host, in place of one of the same name.
+    /// Saves a host, in place of one of the same name, whose colour tag it keeps.
     pub fn save_host(&self, host: Host) {
-        let row = host.row();
+        let mut row = host.row();
         self.prefs().hosts.update(|rows| match rows.iter().position(|it| it.first() == Some(&host.name)) {
-            Some(at) => rows[at] = row,
+            Some(at) => {
+                row.extend(rows[at].get(7).cloned());
+                rows[at] = row;
+            }
             None => rows.push(row),
+        });
+    }
+
+    /// A host's colour tag, its word and colour: the one saved with it, else its group's.
+    pub(crate) fn host_tag(&self, host: &Host) -> (&'static str, quadra::Token) {
+        self.saved_tag(&host.name).map_or_else(|| tag_of_group(&host.group), |at| TAGS[at])
+    }
+
+    /// Which of [`TAGS`] was saved with the host of this name, if one was.
+    pub(crate) fn saved_tag(&self, name: &str) -> Option<usize> {
+        self.prefs().hosts.with(|rows| {
+            let word = rows.iter().find(|it| it.first().map(String::as_str) == Some(name))?.get(7)?;
+            TAGS.iter().position(|(it, _)| it == word)
+        })
+    }
+
+    /// The colour tag of the host reached at a target, else the tag of no group.
+    pub(crate) fn target_tag(&self, target: &Target) -> quadra::Token {
+        let host = self.hosts().into_iter().find(|it| it.remote.target == *target);
+        host.map_or(tag_of_group("").1, |it| self.host_tag(&it).1)
+    }
+
+    /// Gives a saved host a colour tag (one of [`TAGS`]), or none: its group's.
+    pub(crate) fn set_host_tag(&self, name: &str, tag: Option<&str>) {
+        self.prefs().hosts.update(|rows| {
+            if let Some(row) = rows.iter_mut().find(|it| it.first().map(String::as_str) == Some(name)) {
+                row.resize(row.len().max(7), String::new());
+                row.truncate(7);
+                row.extend(tag.map(str::to_string));
+            }
         });
     }
 
@@ -219,6 +261,7 @@ mod tests {
         assert_eq!(Host::of(&old).unwrap().jump, "");
         assert_eq!(Host::of(&["a".into(), "b".into(), "-x".into(), "Auto".into(), String::new()]), None);
         assert!(ago(0).ends_with("d ago"));
+        assert_eq!(tag_of_group("Production"), tag_of_group("Production"));
     }
 
     #[test]

@@ -1,6 +1,7 @@
 //! The status bar's git (specs/19, "M4 in detail"): the branch of the repository the focused
-//! space is in, read from its `.git`, and how many files changed, from `git status`
-//! run on the pool with no window. Read again when the directory changes and every 10 s.
+//! space is in, read from its `.git`, and the commits ahead of its upstream and how many files
+//! changed, from `git status` run on the pool with no window. Read again when the directory
+//! changes and every 10 s.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -11,8 +12,8 @@ use quadra::{Scope, Signal, background, effect, interval, signal, spawn};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Repo {
     pub branch: String,
-    /// None when `git` could not say.
-    pub changes: Option<usize>,
+    /// The commits ahead of the upstream and the files changed; None when `git` could not say.
+    pub changes: Option<(usize, usize)>,
 }
 
 /// Keeps a signal the repository of the directory `cwd` gives.
@@ -55,10 +56,10 @@ fn read(dir: &Path) -> Option<Repo> {
     Some(Repo { branch, changes: changes(dir) })
 }
 
-/// The count of the lines `git status --porcelain` gives.
-fn changes(dir: &Path) -> Option<usize> {
+/// What `git status --porcelain --branch` says: the commits ahead, the files changed.
+fn changes(dir: &Path) -> Option<(usize, usize)> {
     let mut git = std::process::Command::new("git");
-    git.args(["status", "--porcelain"]).current_dir(dir);
+    git.args(["status", "--porcelain", "--branch"]).current_dir(dir);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -66,7 +67,20 @@ fn changes(dir: &Path) -> Option<usize> {
         git.creation_flags(CREATE_NO_WINDOW);
     }
     let out = git.output().ok().filter(|out| out.status.success())?;
-    Some(out.stdout.split(|&b| b == b'\n').filter(|line| !line.is_empty()).count())
+    Some(counts(&String::from_utf8_lossy(&out.stdout)))
+}
+
+/// The commits ahead, from the first line (`## main...origin/main [ahead 2, behind 1]`), and
+/// the lines after it, a file each.
+fn counts(said: &str) -> (usize, usize) {
+    let mut lines = said.lines().filter(|line| !line.is_empty()).peekable();
+    let head = lines.next_if(|line| line.starts_with("## "));
+    let ahead = head
+        .and_then(|line| line.split("[ahead ").nth(1))
+        .and_then(|rest| rest.split([',', ']']).next())
+        .and_then(|n| n.trim().parse().ok())
+        .unwrap_or(0);
+    (ahead, lines.count())
 }
 
 #[cfg(test)]
@@ -77,6 +91,14 @@ mod tests {
     fn a_folder_outside_a_repository_has_none() {
         assert_eq!(read(Path::new("")), None);
         assert_eq!(read(Path::new("Z:/no/such/place")), None);
+    }
+
+    #[test]
+    fn ahead_and_changes_are_counted() {
+        assert_eq!(counts("## main...origin/main [ahead 2, behind 1]\n M a.rs\n?? b\n"), (2, 2));
+        assert_eq!(counts("## main...origin/main [ahead 12]\n"), (12, 0));
+        assert_eq!(counts("## main\n M a.rs\n"), (0, 1));
+        assert_eq!(counts(""), (0, 0));
     }
 
     #[test]

@@ -38,42 +38,62 @@ P2 milestones:
 
 Custom frame (`WindowOptions::custom_frame`), 1440×900 at most 85 % of the display, centred,
 at least 720×480, its place remembered. Top to bottom: the title bar (38 px), the body, the
-status bar (26 px). Colours are the kit's roles; the accent is the theme's.
+status bar (30 px). Colours are the kit's roles; the accent is the theme's. The look follows
+the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: the UI face at
+14 px on 23 px lines, labels 12 px on 19, the kit's mono face for paths, numbers and keys).
 
-- **Title bar**: the terminal glyph in the accent and "1Term", 12 px from the left edge (the
-  user chose no chip of what shows); then, right, icon buttons Search sessions and hosts (M4; the `+` menu under it), SFTP (P2),
-  Notifications with an unread badge (M3), Lock (M6), Settings (M5); the window buttons. In the
-  settings only Done shows; locked, only "Locked".
+- **Title bar** (the chrome plane, a line under it): the terminal glyph in the accent and
+  "1Term" (13 px, semibold), 12 px from the left edge; then, right, icon buttons of 22 px with
+  14 px icons: Search tabs, hosts and commands (M4; the `+` menu under it), Lock 1Term now (M6),
+  Open settings (M5); in the horizontal variant SSH hosts before Lock. Then the window buttons,
+  36 px wide, 8 px after. No notifications button: their count is in the status bar. In the
+  settings only Done shows; locked, only "Locked" after the name, in the secondary colour.
 - **Body**: the rail (248 px, vertical tabs), the workspace, and from P2 the SFTP dock (300 px)
   on the right.
-- **Status bar**: in mono 11 px, items split by 1 px lines: the active space's cwd (a click
-  copies it), git branch and changes (M4), the host and its latency (P2), then right the
-  OSC 9;4 meter (M3), CPU and memory of 1Term (M4), one count of bells not heard and notices
-  not seen (M3; a click marks the notices seen), `lock in Nm` (M6), the clock `We 28 Oct · 11:00`
-  (the app's locale). Labels are the secondary colour, values the text colour.
+- **Status bar** (the chrome plane, a line over it, 12 px, groups split by 1×14 px lines):
+  first Collapse tabs to icons (the rail's fold, an icon button in the accent); then the active
+  space's cwd after a folder icon (a click copies it), git branch and changes after a branch
+  icon (M4: `main ↑2 M1`), the host and its latency after a server icon (P2; `local shell` for
+  a local space); then right the OSC 9;4 meter (M3: `build`, a 56 px line, the percentage), CPU
+  and memory (M4), one count of bells not heard and notices not seen after a bell, in the error
+  colour (M3; a click marks the notices seen), the lock's minutes after a lock icon (M6: `9m`),
+  the clock `16:09`, and last Toggle SFTP panel. Labels are the secondary colour, values the
+  text colour, numbers in mono.
 
 ## Rail (vertical tabs)
 
-248 px on the panel colour (the setting, 140 to 400), a line on its right. Folded (the heading's
-Fold the tabs, or the setting) it is 44 px: a box of 32 px a tab with its icon, filled with an accent
-bar while it shows, its title as a tooltip that follows it, then a `+` that opens a tab; Unfold the
-tabs at the top. A heading "Tabs" with the count and Fold the tabs at its right,
-then a row per tab: an icon (a terminal, or a window when a space is remote; in the accent while
-it shows), the title, and at the end the tab's signal (below). The active row is filled, has an
-accent bar on its left and a second line in the secondary colour (`2 ssh · 1 local · 3 spaces`).
-A tab with a progress has a bar of 3 px under its row. Then "New terminal" with `Ctrl+T`, its
-border dashed. From P2 the SSH hosts follow, under a filter. The switch to horizontal tabs is in
-the settings.
+248 px on the panel colour (the setting, 140 to 400), a line on its right. A heading of 28 px
+("Tabs", 12 px semibold, the secondary colour) with the count (mono, regular, the third text
+colour) and Collapse tabs to icons at its right; then, under a strong line, the tabs as the kit's tab rules turned on their side: a row of 36 px a tab, the full
+width, a strong line under each, 14 px from the left: an icon (a terminal, or a server when a space is
+remote; the third text colour unless active), the title, and at the end the tab's signal
+(below). The active row is 52 px, the editor colour pressed (`press` over `canvas`) and one
+pixel wider (over the rail's line), its title semibold, an accent bar of 3 px on its left, a
+second line in 12 px and the secondary colour (`2 ssh · 1 local · 3 spaces`), and Close tab at
+its end. A tab with a progress has a
+2 px accent bar along the row's lower seam, as long as the progress. Then "New terminal" as one
+more row: a `+` and `Ctrl-T` at its end; it opens the `+` menu at the rail's right. From P2 the SSH hosts follow: a heading "SSH hosts"
+with Add SSH host, the filter ("Filter hosts", 28 px), then groups (a chevron, the name, the
+count in mono at the right) of rows of 26 px (radius 6) under a line from the chevron: a 10 px square in the host's colour tag (`Colour tag: red`), the
+name, the address in mono at the right. The switch to horizontal tabs is in the settings.
+
+Collapsed (Collapse tabs to icons, in the heading or the status bar, or the setting) the rail is
+48 px: Expand tabs at the top, then a box of 40 px a tab with its icon and its signal as a badge
+at the box's top right (the state's icon or a bell, 12 px; the progress is the seam bar), a
+strong line under each, the active one on the pressed editor colour with the accent bar, the title and signal as its name and tooltip
+(`neo-gateway deploy, blocked, needs permission`), then New terminal (`+`, the `+` menu at its
+right).
 
 Click selects; middle closes; double-click renames; the right button opens the tab menu (Rename,
 Duplicate, Close, Close others). Rows drag to reorder.
 
-**Horizontal variant** (setting "Tabs: vertical | horizontal"): no rail; a 36 px strip under the
-title bar, one tab per button (icon, title, then a state on a disc, else the progress in the
-accent with a bar along the tab's bottom, else a bell, else for the active one its space count),
-the active one on the editor colour with an accent line under it, `+` after the last, "Vertical"
-(Switch to vertical tabs) at the end. The title bar's Hosts button opens the rail's hosts as a
-panel of 248 px at the left.
+**Horizontal variant** (setting "Tabs: vertical | horizontal"): no rail; a strip of 32 px and a
+strong line under the title bar, one tab per button split by strong lines (icon, title, then its signal: the state's icon,
+else the progress in mono in the accent with a 2 px bar along the tab's bottom, else a bell, else
+`idle`), the active one on the pressed editor colour, semibold, an accent line of 3 px along
+its top and Close tab at its end; New terminal (`+`, the `+` menu under it) after the last, "Vertical tabs" (Switch to vertical tabs, a
+panel icon and the word) at the end. The title bar's SSH hosts button opens the rail's hosts as
+a panel of 248 px at the left.
 
 ## Spaces
 
@@ -92,12 +112,13 @@ axis that hold one another share their room evenly again (three side by side are
 they do after a close. Split space in a layout of the user's is a split to the right. A tab back
 at one space arranges itself again. The order of the spaces (the focus keys, the status bar) is
 the tree's reading order (in an arranged tab, each added space comes after the focused one). The
-layout is not saved. Each space has an 18 px header in mono 11 px on the panel colour: where it is on the left
-(the cwd, after `user@host:` for a remote space; in the text colour while focused), its signal
-on the right (a progress percentage; the state on a 12 px disc and its word in the state's
-colour, then the latency; with no state a green dot and the latency, else the program's title).
+layout is not saved. Each space has an 18 px header in 12 px on the panel colour: where it is on the left,
+in mono (the cwd, after `user@host:` for a remote space; in the text colour while focused), its
+signal on the right (a progress percentage in mono; the state's 12 px icon and a label in the
+state's colour, `deploy blocked`, then the latency in mono; with no state the latency, else the
+program's title, `zsh · pnpm dev`).
 The terminal has 10 px of room above and below and 12 at its sides. The focused space has a
-1 px accent ring, its own border (nothing lies over the terminal for the pointer). Notification cards stand at the workspace's top right, clear of the dock. `Ctrl+D` splits
+1 px accent ring, its own border (nothing lies over the terminal for the pointer). Notification cards stand at the window's bottom right, above the status bar, 448 px wide and 12 px from the edges (over the dock): on the panel plane with a strong line, radius 10 and the second elevation, an info icon, the title, the text in the secondary colour, then `staging-db-01 · OSC 9` in 12 px, and Dismiss notification. `Ctrl+D` splits
 the active space (Split space: a new local shell in its cwd, after it, with the focus),
 `Ctrl+Shift+Right`, `Left`, `Up`, `Down` split it to that side, `Ctrl+W` closes it (the tab with its last
 space), `Ctrl+Alt+Left/Right` moves the focus; a press anywhere in a space makes it the focused one. A space whose program ended shows
@@ -181,21 +202,24 @@ all on but where it says. A change applies at once (`Engine::set_config`).
 
 | Signal | Tab | Space header | Status bar | Else |
 |---|---|---|---|---|
-| OSC 7501 status | a mark at the end: blocked a `?` on a warn disc (18 px), done a check on an ok disc (16 px), error a cross on an error disc, working its word; else `idle` | a chip with the state word | | blocked and error raise a toast (setting) |
-| OSC 9;4 progress | the percentage in mono and the accent at the end, a 3 px bar under the row | the percentage | a 56 px meter and percentage | |
-| BEL in an unfocused space | a red dot on the icon and a bell in the error colour | | the count | |
-| OSC 9 notification | | | the count | a toast at the workspace's top right (title "OSC 9", the tab, "now", the text), 6 s or until dismissed (setting) |
+| OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else `idle` in the third text colour | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
+| OSC 9;4 progress | the percentage in mono and the accent at the end, a 2 px accent bar along the row's lower seam | the percentage | `build`, a 56 px line and the percentage | |
+| BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the count | |
+| OSC 9 notification | | | the count | a card at the window's bottom right above the status bar (the title, the text, the tab and `OSC 9`), 6 s or until dismissed (setting) |
 
-Seen clears: selecting the tab clears its bell dot and a "done" seen state.
+Seen clears: selecting the tab clears its bell and a "done" seen state.
 
 ## The `+` menu
 
-Under "New terminal" (and `+` of the strip): a search field ("Search hosts, or type
-user@host…"; at the rail's right, 360 wide), Local shell (the default shell, its name after it,
-`Ctrl+T`), the other local shells found (Command Prompt, Windows PowerShell, PowerShell 7, Git
-Bash, WSL), Split current space (`Ctrl+D`, Split space); from P2 Quick connect (`ssh user@host`), Recent and
-the saved hosts by group, Add SSH host. Rows have icons; a host has a dot (green while a space is
-connected to it) and its address at the right (Recent: the host and how long ago).
+At the right of "New terminal" (over the rail's edge by 8 px; under the strip's `+`), the kit's
+menu: Local shell (`Ctrl-T`), Other shells (a submenu of the local shells found: Command Prompt,
+Windows PowerShell, PowerShell 7, Git Bash, WSL; the canvas shows one shell), from P2
+Quick connect… (a bolt, `Ctrl-Shift-K`), Split current space (`Ctrl-D`, Split space); a line,
+Recent (up to 3, how long ago: `2 min ago`, `yesterday`), the saved hosts under their groups'
+headings (the address in mono: the host, its port when not 22, `· jump` for a host reached
+through another); a line, Add SSH host…. A host's row has the 10 px square of its colour tag in
+the icon's place. The title bar's Search opens the same menu under itself with a field over it
+("Search hosts, or type user@host…", 360 wide; M4 in detail).
 
 ## M4 in detail
 
@@ -205,16 +229,22 @@ connected to it) and its address at the right (Recent: the host and how long ago
   `--login -i`), WSL (`%SystemRoot%\System32\wsl.exe`), each where its file is. The default
   shell is Command Prompt until settings (M5) name another. A split starts in the focused
   space's directory.
-- **The `+` menu** in P1 has no search field: it searches hosts, which come with P2. With
-  them (`searched_menu`), what is typed keeps the shells, recent targets and hosts whose
+- **The `+` menu** has no search field; the title bar's Search shows it with one
+  (`searched_menu`): what is typed keeps the shells, recent targets and hosts whose
   names or addresses hold it (whatever the case), and a typed target (`Target::parse`) is a
   row `Connect to user@host`: first when it names a user (`@`), else after the hosts found.
   Enter takes the first row.
 - **Git**: the branch from the `.git` folder found up from the focused space's directory
-  (`HEAD`; a detached head shows its short hash), and the count of changed files from
-  `git status --porcelain` run on the pool with no window, again when the directory changes
-  and every 10 s; nothing when there is no repository or no `git`.
-- **CPU and memory**: of 1Term's process (`quadra_shell::process_usage`, 16), read every 2 s.
+  (`HEAD`; a detached head shows its short hash), and the commits ahead of its upstream (`↑2`,
+  green) and the count of changed files (`M1`, yellow) from `git status --porcelain --branch`
+  run on the pool with no window, again when the directory changes and every 10 s; nothing
+  when there is no repository or no `git`.
+- **CPU and memory**: of 1Term's process (`quadra_shell::process_usage`, 16), read every 2 s
+  (`CPU 3%`, `RAM 182 MB`): the canvas's machine-wide memory and network rates wait for a
+  framework service that reads them.
+- **The meter** shows the progress of the tab that shows, else of the first tab that reports
+  one; its label is the OSC 7501 id of the space that reports it (`build`; none without one),
+  120 px at most.
 
 ## Settings
 
@@ -268,12 +298,14 @@ ignore; OSC 9: toast 6 s / until dismissed / silent.
 Only with a master password (Security & lock: set, change, remove; kept as a salted PBKDF2
 hash from the OS's crypto, never the password). Locks after the idle time (10 min default, 1-480)
 or at once with `Ctrl+Shift+L` and the title bar's button. Locked: the workspace blurred and
-dimmed behind, the title bar usable and saying "Locked", a card in the middle (380 wide on the
-panel colour, radius 12: the lock in a box of 48 px, "1Term is locked", "Locked after N min idle ·
-sessions are still running", the field labelled Password, Unlock across the card, a rule, then
-`n sessions connected` with a green dot and `n new while locked`), a status bar that shows only
-"Locked · details hidden", the progress meter and the clock. Five wrong tries start a back-off
-(2, 4, 8, 16, 30 s). Sessions keep running.
+dimmed behind, the title bar usable and saying "Locked", a card where dialogs hang (the
+dialog's look: level 2, 440 wide, 80 px from the window top, centred): a 16 px lock in the
+accent and "1Term is locked" (16 px), "Locked after N minutes idle. Your sessions are still
+running." in the secondary colour, the field labelled Password (32 px) with Show password at
+its end, then in 12 px `n sessions connected` after a green dot and `n new while locked` after
+a bell in the error colour; a footer over a line with Unlock (primary, `Enter` after it) at the
+right. The status bar shows only a lock and "Locked, details hidden", the progress meter and
+the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep running.
 
 ### M6 in detail
 
@@ -287,8 +319,9 @@ sessions are still running", the field labelled Password, Unlock across the card
   accessibility, so blurred tab titles and terminal text would still be readable there. The
   rail, the spaces, the settings page and the notification cards are hidden; the title bar
   keeps its window buttons and says "Locked"; the app's keys do nothing but `Ctrl+Shift+L`;
-  the card is a focus scope with the focus in the password field. Unlocking gives the focus
-  back to the focused space.
+  the card is a focus scope with the focus in the password field, and neither Escape nor a
+  press outside closes it. Unlocking gives the focus back to the focused space. The design's
+  "Use Windows Hello" waits until the framework can ask the OS for it.
 
 ## SSH (P2)
 
@@ -318,36 +351,40 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   resize is a window change; the channel's exit status is the space's `[process exited N]`,
   and a connection that drops is `[connection closed: reason]` and exit status 255.
   Keepalive every 30 s, given up after 3 unanswered. Connecting gives up after 20 s.
-- **Quick connect**: the `+` menu's item (`Ctrl+Shift+K`) opens a dialog: a note "Not saved to
-  hosts unless you tick it", the target after `ssh` with what it accepts under it, Auth (Auto,
-  Agent, Key file, Password) and Jump host side by side, then Open SFTP alongside (on), Save as
-  host, "In current tab (new space)"; Connect starts a tab (or a space) whose header says
-  `user@host`, and opens the dock when asked.
+- **Quick connect**: the `+` menu's item (`Ctrl+Shift+K`) opens a dialog (the kit's): "Open a
+  one-off SSH session. It is not added to your hosts unless you tick Save as host.", Target (a
+  mono field with `ssh` inside it before the text) with what it accepts under it, Auth (Auto,
+  ssh-agent, Key file, Password) and Jump host side by side, then one under the other Open SFTP
+  alongside (on), Save as host, Open in the current tab as a new space; Cancel and Connect
+  (`Enter` after it). Connect starts a tab (or a space) whose header says `user@host`, and opens
+  the dock when asked.
 - **Tests**: a `russh` server in the test process on 127.0.0.1 (no other host, ever):
   password and key authentication, unknown, known and changed host keys, typing, resize, the
   exit status, a connection dropped.
 
 ### M8 in detail
 
-- **Hosts** are the setting `ssh.hosts`, a list of `[name, group, target, auth, key file]`
-  (target as `Target::label` writes it; auth `Auto`, `Agent`, `Key`, `Password`), so the
-  file reads as the page does; `ssh.recent` holds the last 5 targets connected to, newest
+- **Hosts** are the setting `ssh.hosts`, a list of `[name, group, target, auth, key file, jump
+  host, forwards, colour tag]` (target as `Target::label` writes it; auth `Auto`, `Agent`,
+  `Key`, `Password`; the tag `red`, `orange`, `yellow`, `green`, `cyan`, `blue` or `purple`,
+  else none: a colour by the group's name, the same for its hosts; saving a host keeps its
+  tag), so the file reads as the page does; `ssh.recent` holds the last 5 targets connected to, newest
   first, with the time in seconds.
 - **The rail**, under "New terminal": "SSH hosts" with an Add SSH host button at its right, a
   filter (on the name and the target, whatever the case), then the hosts by group in the order
-  first met (a click on a group's heading folds it), each a row of a dot
-  (in `OK` while a space is connected to it), its name and its address. A click opens a tab
+  first met (a click on a group's heading folds it), each a row of the square of its colour
+  tag, its name and its address. A click opens a tab
   connected to it; its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
   filled, titled Edit SSH host; a new name takes the old one's place), Remove. The Add dialog
   takes the name (the host when empty), the group, the target,
-  the auth and the key file. Quick connect has "Save as host".
+  the colour tag (By group, or one of the seven), the auth and the key file. Quick connect has
+  "Save as host".
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
-  Quick connect, and Add SSH host. It has no search field: the rail's filter and Quick
-  connect take what one types.
+  Quick connect, and Add SSH host. Its field is the title bar's Search's.
 - **Latency**: the engine pings the server (an SSH ping, a request that wants a reply) every
   5 s once the shell is open and keeps the last time it took; the app reads it every 2 s into
   the session's `link_note` (`124 ms`). The space's header shows it at its right, the status
-  bar shows the focused space's host (its name, else `user@host`) and it, or `local`.
+  bar shows the focused space's host (its name, else `user@host`) and it, or `local shell`.
 - **A tab's second line** counts its spaces by kind: `2 ssh · 1 local · 3 spaces`.
 
 ### M9 in detail
@@ -362,13 +399,16 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   target and renames it once whole, so a target is never half written; a cancelled or failed
   one removes its part. A remote name that would leave its folder as a local path (`/`, `\`,
   `:`, `..`, a control character) is refused.
-- **The dock**: 300 px at the workspace's right, opened and closed by the title bar's SFTP
-  button; it follows the focused space's connection. A local space: the header says
-  `local space · n/a`, the body why it is empty and a button that shows the first tab with a
-  remote space (`Show prod-api-01`). Its header: a folder icon, `SFTP`, the host, a More menu
-  (Refresh, New folder…), Expand (a bordered button) and Hide; the path is a breadcrumb in mono
-  whose parts go there (the last in the text colour); then `..` and the entries, a folder or file icon, the name,
-  the size (`—` for a folder). A click on a folder opens it; two on a file downloads it to
+- **The dock**: 300 px at the workspace's right on the panel plane, opened and closed by the
+  status bar's Toggle SFTP panel; it follows the focused space's connection. A local space: the
+  header says `local space · n/a`, the body why it is empty and a button that shows the first
+  tab with a remote space (`Show prod-api-01`). Its header (28 px, 12 px semibold in the
+  secondary colour): `SFTP`, the host in the third colour, and Zoom SFTP (an icon button: the
+  expanded view). Under it the folder in a mono field of 28 px (12 px) with Go to the typed path
+  after it (Enter goes too); then `..` and the entries as rows of 26 px: a folder icon (blue) or a
+  file icon, the name, the size in mono 12 px in the third colour (none for a folder). A click on
+  a folder opens it, on a file selects it (the press fill and a 2 px accent bar at its left, its
+  icon in the accent); two on a file download it to
   the user's Downloads folder (`name (1).ext` when the name is taken). The other button gives
   a remote row's menu (Open or Download; for a file Edit…: downloaded to `sftp-edit` in the app's data
   folder, opened in the system's app for it or the program the settings name with its arguments
@@ -384,21 +424,27 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   octal), Owner and Group (`name (id)`, the id alone without a name, `-` without either), Path (in
   mono, with a copy button), and Close. It shows; it does not change the mode. A failed ask is a card.
   Files dropped from the OS upload to the folder shown. Transfers show
-  under the list: an arrow, `name → remote` or `name ← local`, its state (`48%`, `done`), a
-  cross that cancels, and a bar of 3 px; a failed one says why. Names that start with `.` show only while `.hidden` is on (both views).
-- **The expanded view**: the dock's Expand button (and the title bar's Collapse SFTP, back)
+  under the list over a line, 12 px: an arrow, `Uploading name` or `Downloading name`, its state
+  in mono (`48%`, `done`), a cross that cancels, and a bar of 2 px; a failed one says why. Names
+  that start with `.` show only while Show hidden files is on (both views).
+- **The expanded view**: the dock's Zoom SFTP (and the title bar's Collapse SFTP, back)
   gives SFTP the workspace; the spaces stay mounted and running, not displayed, and the
-  title bar's chip adds `SFTP expanded`. Its header: `SFTP`, the host and `ssh session keeps
-  running`, Sync cwd with terminal (the remote pane goes to the focused space's directory
-  when it is a remote path), `.hidden`, Collapse. Two panes, Local at the left and Remote at
-  the right, each with its label, its path in mono, Up and Refresh, a header row (Name, Size
-  80 px, Modified 120 px) and its rows; a click selects a row, two open a folder. The Local
-  pane starts in the downloads folder (the setting or Downloads). Between them a column of
-  56 px: Upload selected, Download selected (into the Local pane's folder, a free name), and
-  Compare, which marks a remote file whose local namesake is newer `older` and one that is
-  newer `newer`. The transfers under both: `Transfers`, `n active · n done`, a row each with
-  `name → folder`, a bar of 200 px, its percentage and the cross. The kit draws all of it
-  (tokens, `progress`, `checkbox`, icon buttons); the canvas gives the layout only.
+  title bar's chip adds `SFTP expanded`. Its header (28 px on the panel plane, 12 px): `SFTP`,
+  the host, `ssh session keeps running` in the third colour, Sync cwd with terminal (the remote
+  pane goes to the focused space's directory when it is a remote path), Show hidden files (an
+  eye, toggled), and Zoom out (in the accent). Two panes, Local at the left and Remote at the
+  right, each with a bar of 28 px: its label, its path in a mono field of 22 px, Go to the typed
+  path and Refresh; a header row (Name, Size 80 px, Modified 124 px, the last two at the right)
+  and rows of 26 px with a line under each: `..`, then the entries, size and time in mono 12 px
+  (`Nov 16 10:52`); a click selects a row (the accent at 10 % and a 2 px accent bar), two open a
+  folder. The Local pane starts in the downloads folder (the setting or Downloads). Between them
+  a column of 48 px on the panel plane: bordered square buttons of 28 px, Upload selected,
+  Download selected (into the Local pane's folder, a free name), and Compare, which marks a
+  remote file whose local namesake is newer `older` and one that is newer `newer` (12 px, in
+  yellow). The transfers under both: `Transfers`, `n active · n done`, the rate of those running
+  in mono at the right; a row each with an arrow, `name to folder` (the folder in mono), a bar
+  of 200 px, its percentage and the cross. The kit draws all of it (tokens, `checkbox`, inputs,
+  icon buttons); the canvas gives the layout only.
   `Entry::modified` is the server's mtime (seconds; 0 when it has none).
 - **Sessions keep app data**: `Session::keep(Rc<dyn Any>)` and `kept::<T>()` (specs/18), how
   the app finds a remote space's `Ssh`.

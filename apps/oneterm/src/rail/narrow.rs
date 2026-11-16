@@ -1,65 +1,80 @@
-//! The rail folded (specs/19, "Rail"): 44 px of the tabs' icons, the one that shows marked,
-//! New terminal as a `+`, and what opens the rail again.
+//! The rail collapsed (specs/19, "Rail"): 48 px, Expand tabs, a box of 40 px a tab (its icon,
+//! its signal as a badge, the one that shows on the editor colour with the accent bar), then
+//! New terminal as a `+`.
 
-use quadra::{Align, Display, Role, Signal, View, column, div, each, row};
-use quadra_design::{icon_button, icons, token, tooltip};
+use quadra::{Align, NodeRef, Role, Side, Signal, View, by_text, column, each, row, signal};
+use quadra_design::{icon, icon_button, icons, menu_beside, token, tooltip};
 
 use crate::marks;
 use crate::model::{Model, Tab};
 
 pub(crate) fn narrow(model: &Model, folded: Signal<bool>) -> impl View + use<> {
-    let (tabs, shown, adds) = (model.tabs(), model.clone(), model.clone());
+    let (tabs, shown) = (model.tabs(), model.clone());
     let rows =
         each(move || tabs.get(), |tab| tab.id, move |tab: Signal<Tab>| face(&shown, tab.get_untracked()));
-    column()
-        .width(44.0)
+    let expand =
+        icon_button(icons::PANEL_LEFT_OPEN, "Expand tabs").muted().on_click(move || folded.set(false));
+    let top = row()
+        .height(by_text(28.0))
         .shrink(0.0)
         .align_items(Align::Center)
-        .gap(6.0)
-        .padding_y(8.0)
+        .justify(quadra::Justify::Center)
+        .child(tooltip("Expand tabs", expand));
+    let (open, opener, making) = (signal(false), NodeRef::new(), model.clone());
+    let new = tooltip(
+        "New terminal  Ctrl-T",
+        boxed()
+            .text_color(token::TEXT_3)
+            .hover(|s| s.bg(token::PANEL_HOVER))
+            .role(Role::Button)
+            .label("New terminal")
+            .node_ref(&opener)
+            .on_click(move |_| open.update(|open| *open = !*open))
+            .child(icon(icons::PLUS).size(16.0)),
+    );
+    column()
+        .width(48.0)
+        .shrink(0.0)
         .bg(token::PANEL)
         .border_right(1.0)
         .border_color(token::LINE)
-        .child(tooltip(
-            "Unfold the tabs",
-            icon_button(icons::PANEL_LEFT, "Unfold the tabs").on_click(move || folded.set(false)),
-        ))
-        .child(rows.container(column().gap(4.0).role(Role::TabList).label("Tabs")))
-        .child(tooltip(
-            "New terminal",
-            icon_button(icons::PLUS, "New terminal").on_click(move || adds.new_tab()),
-        ))
+        .child(top)
+        .child(
+            column()
+                .border_top(1.0)
+                .border_color(token::LINE_STRONG)
+                .child(rows.container(column().role(Role::TabList).label("Tabs")))
+                .child(new),
+        )
+        .child(menu_beside(open, &opener, Side::Right, 4.0, move || crate::rail::new_menu(&making, "")))
 }
 
-/// A tab as its icon in a box of 32 px, filled while it shows, its title told to a reader.
+/// A box of 40 px the rail's width, a line under it, what it holds in its middle.
+fn boxed() -> quadra::Div {
+    row()
+        .height(40.0)
+        .shrink(0.0)
+        .align_items(Align::Center)
+        .justify(quadra::Justify::Center)
+        .border_bottom(1.0)
+        .border_color(token::LINE_STRONG)
+}
+
+/// A tab as its icon in a box of 40 px with its signal as a badge, the one that shows on the
+/// pressed editor colour with the accent bar; its title and signal are its name and tooltip.
 fn face(model: &Model, tab: Tab) -> impl View + use<> {
     let (active, shows) = (model.active(), model.clone());
     let on = move || active.get() == tab.id;
-    let bar = div()
-        .absolute()
-        .left(-6.0)
-        .top(8.0)
-        .bottom(8.0)
-        .width(2.0)
-        .radius(1.0)
-        .bg(token::ACCENT)
-        .display(move || if on() { Display::Flex } else { Display::None });
-    let mark =
-        row().align_items(Align::Center).justify(quadra::Justify::Center).child(marks::tab_icon(tab, on));
     tooltip(
-        move || tab.title(),
-        div()
-            .size(32.0, 32.0)
-            .radius(6.0)
-            .align_items(Align::Center)
-            .justify(quadra::Justify::Center)
-            .bg(move || if on() { token::RAISED } else { token::PANEL })
-            .hover(|s| s.bg(token::PANEL_HOVER))
+        move || marks::tab_said(tab),
+        boxed()
             .role(Role::Tab)
-            .label(move || tab.title())
+            .label(move || marks::tab_said(tab))
             .selected(on)
             .on_click(move |_| shows.show(tab.id))
-            .child(bar)
-            .child(mark),
+            .child(crate::rail::active_fill(on, 1.0, false))
+            .child(marks::tab_icon(tab, 16.0, on))
+            .child(marks::tab_badge(tab))
+            .child(marks::progress_bar(tab, -1.0)),
     )
 }

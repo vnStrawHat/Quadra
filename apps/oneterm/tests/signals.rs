@@ -53,15 +53,16 @@ impl App {
 fn a_status_shows_on_the_tab_and_the_header_and_done_is_seen_when_the_tab_shows() {
     let mut a = app();
     a.feed(0, b"\x1b]7501;state=working:id=build\x07");
-    assert_eq!(a.h.query(|n| n.semantics.name == "working").len(), 2, "the tab's line and the header's chip");
+    assert_eq!(a.h.query(|n| n.semantics.name == "Working").len(), 2, "the tab's spinner and the header's");
+    assert!(a.says("build working"), "the header's label: the record's id and its state");
     a.feed(0, b"\x1b]7501;state=done:id=build\x07");
-    assert!(a.says("done"));
+    assert!(a.says("Done, result not yet seen"));
     a.key(Key::T, Mods::CTRL);
     a.feed(1, b"\x1b]0;other\x07");
-    assert!(a.says("done"), "a tab that does not show keeps its done");
+    assert!(a.says("Done, result not yet seen"), "a tab that does not show keeps its done");
     a.h.get_by_role(Role::Tab, "Terminal").click();
     a.h.settle();
-    assert!(!a.says("done"), "seen once the tab shows");
+    assert!(!a.says("Done, result not yet seen"), "seen once the tab shows");
 }
 
 #[test]
@@ -97,9 +98,10 @@ fn a_bell_counts_where_it_is_not_seen_and_is_seen_with_the_focus() {
 fn a_notification_is_a_card_and_counts_until_looked_at() {
     let mut a = app();
     a.feed(0, b"\x1b]9;tests passed\x07");
-    assert!(a.says("OSC 9"));
+    assert!(a.says("tests passed"), "the card says it");
     assert!(a.says("1 bells and notices"));
-    a.h.get_by_role(Role::Button, "Notifications").click();
+    // The status bar's count marks them seen (no button of notifications in the title bar).
+    a.h.get_by_role(Role::Button, "1 bells and notices").click();
     a.h.settle();
     assert!(a.says("0 bells and notices"));
 }

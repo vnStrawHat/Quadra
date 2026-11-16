@@ -96,8 +96,12 @@ impl Model {
                 1 => None,
                 _ => return, // silent
             };
-            let words = if n.title.is_empty() { n.body.clone() } else { format!("{}: {}", n.title, n.body) };
-            let card = Notice::new("OSC 9").body(format!("{} \u{B7} now\n{words}", tells.tab_name(id)));
+            // The title, else the text in its place; then where it came from.
+            let (title, words) = match n.title.is_empty() {
+                true => (n.body.clone(), String::new()),
+                false => (n.title.clone(), n.body.clone()),
+            };
+            let card = Notice::new(title).body(words).note(format!("{} \u{B7} OSC 9", tells.tab_name(id)));
             tells.notify(match kept {
                 Some(time) => card.lasts(time),
                 None => card,

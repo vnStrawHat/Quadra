@@ -3,13 +3,13 @@
 //! whether it opens a tab or a space beside the focused one.
 
 use oneterm_ssh::Target;
-use quadra::{Align, Display, Signal, View, column, div, row, signal, text};
-use quadra_design::{Notice, Tone, Variant, checkbox, field, input, select, token};
+use quadra::{Display, Signal, View, column, div, row, signal, text};
+use quadra_design::{Notice, Tone, Variant, checkbox, field, input, select};
 
 use crate::model::Model;
 use crate::shells::Remote;
 
-const AUTHS: [&str; 4] = ["Auto", "Agent (ssh-agent)", "Key file", "Password"];
+const AUTHS: [&str; 4] = ["Auto", "ssh-agent", "Key file", "Password"];
 
 #[derive(Clone, Copy)]
 struct Form {
@@ -38,37 +38,33 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
     let body = move || {
         let submits = submits.clone();
         let typed = input(form.target)
+            .prefix("ssh")
+            .mono()
             .placeholder("user@host, host:port, or an ssh command line")
             .test_id("connect-target")
-            .width(370.0)
+            .width(414.0)
             .on_submit(move |_| {
                 if go(&submits, form) {
                     open.set(false);
                 }
             });
-        let key = input(form.key).placeholder("Path of the key file").test_id("connect-key").width(416.0);
-        let note = div()
-            .text_size(11.0)
-            .text_color(token::TEXT_2)
-            .child(text("Not saved to hosts unless you tick it"));
-        let target = field("Target", row_of(text("ssh"), typed))
-            .help("Accepts user@host, host:port, or a full ssh command line.");
-        let how = row().gap(12.0).child(field("Auth", select(AUTHS, form.auth).width(202.0))).child(field(
+        let key = input(form.key).placeholder("Path of the key file").test_id("connect-key").width(414.0);
+        let target = field("Target", typed).help("Accepts user@host, host:port, or a full ssh command line.");
+        let how = row().gap(12.0).child(field("Auth", select(AUTHS, form.auth).width(201.0))).child(field(
             "Jump host",
-            select(lists.jump_choices(), form.jump).width(202.0).test_id("connect-jump"),
+            select(lists.jump_choices(), form.jump).width(201.0).test_id("connect-jump"),
         ));
-        let boxes = row()
-            .gap(16.0)
-            .align_items(Align::Center)
+        let boxes = column()
+            .gap(4.0)
             .child(checkbox(form.sftp).label("Open SFTP alongside"))
-            .child(checkbox(form.save).label("Save as host"));
-        let boxes =
-            column().gap(10.0).child(boxes).child(checkbox(form.here).label("In current tab (new space)"));
+            .child(checkbox(form.save).label("Save as host"))
+            .child(checkbox(form.here).label("Open in the current tab as a new space"));
         column()
-            .gap(14.0)
-            .padding_x(12.0)
-            .width(416.0)
-            .child(note)
+            .gap(12.0)
+            .width(414.0)
+            .child(text(
+                "Open a one-off SSH session. It is not added to your hosts unless you tick Save as host.",
+            ))
             .child(target)
             .child(how)
             .child(
@@ -78,16 +74,10 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
             )
             .child(boxes)
     };
-    quadra_design::dialog(open, "Quick connect", body).action("Cancel", Variant::Secondary, || {}).action(
-        "Connect",
-        Variant::Primary,
-        move || _ = go(&goes, form),
-    )
-}
-
-fn row_of(lead: impl View + 'static, field: impl View + 'static) -> quadra::Div {
-    let lead = div().text_color(token::TEXT_2).font_family(quadra_design::fonts::MONO).child(lead);
-    quadra::row().gap(8.0).align_items(quadra::Align::Center).child(lead).child(div().grow(1.0).child(field))
+    quadra_design::dialog(open, "Quick connect", body)
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Connect", Variant::Primary, move || _ = go(&goes, form))
+        .shortcut("Enter")
 }
 
 /// Connects as the form says; false (and a card) when the target does not read.

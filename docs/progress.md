@@ -132,6 +132,21 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### 1Term after the revised canvas (2026-11-16)
+
+The user's canvas "1Term" revised in the Quadra design language (specs/19, "Window", "Rail",
+"Signals", "Lock", M7, M9): the title bar's three icon buttons; tabs as 36 px rows, collapsed to
+48 px (Collapse tabs to icons) with each tab's signal as a badge; the strip with its accent line
+on top; each state its own outlined icon, the header's label from the record's id
+(`Session::status_name`); hosts with colour tags; the `+` menu; the status bar of 30 px with
+the rail's and the dock's toggles; notification cards at the bottom right; the dock's path field
+and rows; the expanded view's panes, columns and transfers; Quick connect; the lock card. Kit:
+`Input::prefix/mono/small/height/fill/reveal`, `Button::shortcut`, `Dialog::shortcut`,
+`Notice::note`, `MenuItem::swatch/mono`, `menu_beside`, `TextInput::reveal`. Pictures:
+`bench/oneterm-shots` (scene `collapsed` added). Tests: `apps/oneterm/tests/rail.rs`, the
+others brought to the new names. Open: Windows Hello, the machine's RAM and network rates (no
+framework service yet), a transfer queue, selects in the input's look.
+
 ### Performance (2026-11-16)
 
 - **The comparison bench's runner in Rust** (`bench/runner`, `tools/bench.sh compare`), over

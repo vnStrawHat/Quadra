@@ -2,74 +2,88 @@
 //! left and Remote at the right, the transfer buttons between, the transfers under both. The
 //! canvas gives the layout; the kit's tokens and parts draw it.
 
+use std::path::PathBuf;
+
+use oneterm_ssh::Entry;
 use quadra::{
     Align, AnyView, Length, Role, Signal, View, by_text, column, div, dynamic, effect, row, signal, text,
 };
-use quadra_design::{button, checkbox, context_menu, fonts, icon, icon_button, icons, token, tooltip};
+use quadra_design::{Variant, checkbox, context_menu, icon_button, icons, token, tooltip};
 
 use crate::model::Model;
 use crate::panes::{compared, visible};
 use crate::sftp::Dock;
 
+mod pane;
 mod rows;
+use pane::{LOCAL, REMOTE, pane};
 use rows::{line, transfers};
 
 const SIZE: f32 = 80.0;
-const MODIFIED: f32 = 120.0;
+const MODIFIED: f32 = 124.0;
+
+/// The parent of a folder as a row, `..`, when it has one.
+fn parent() -> Entry {
+    Entry { name: "..".into(), dir: true, size: 0, modified: 0 }
+}
+
+/// What stands for a list that cannot show: why.
+fn said_row(said: String) -> AnyView {
+    AnyView::new(column().padding(4.0).child(div().padding(8.0).text_color(token::TEXT_2).child(text(said))))
+}
 
 pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
     let (follow, compare) = (signal(false), signal(false));
     follow_cwd(model, d, follow);
-    let (host_of, refreshes, ups, gets, collapse) =
+    let (host_of, refreshes, goes, gets, collapse) =
         (model.clone(), model.clone(), model.clone(), model.clone(), d.expanded);
     let host = move || {
         let space = host_of.active_tab().and_then(|tab| tab.focused());
-        let name = space.and_then(|it| it.remote).map(|it| host_of.host_name(&it)).unwrap_or_default();
-        format!("{name} \u{B7} ssh session keeps running")
+        space.and_then(|it| it.remote).map(|it| host_of.host_name(&it)).unwrap_or_default()
     };
+    let hidden = icon_button(icons::EYE, "Show hidden files")
+        .toggled(move || d.hidden.get())
+        .on_click(move || d.hidden.update(|on| *on = !*on));
+    let out = icon_button(icons::MINIMIZE_2, "Zoom out")
+        .variant(Variant::Link)
+        .on_click(move || collapse.set(false));
     let head = row()
         .align_items(Align::Center)
         .gap(8.0)
-        .padding_x(12.0)
-        .height(by_text(42.0))
+        .padding_left(12.0)
+        .padding_right(8.0)
+        .height(by_text(28.0))
+        .shrink(0.0)
+        .bg(token::PANEL)
         .border_bottom(1.0)
         .border_color(token::LINE)
-        .child(icon(icons::FOLDER).size(14.0).color(token::ACCENT))
+        .text_size(12.0)
+        .text_color(token::TEXT_2)
         .child(div().font_weight(600).child(text("SFTP")))
+        .child(text(host))
         .child(
             div()
                 .grow(1.0)
                 .min_width(Length::Px(0.0))
-                .text_size(11.0)
-                .text_color(token::TEXT_2)
-                .child(text(host).ellipsis()),
+                .text_color(token::TEXT_3)
+                .child(text("ssh session keeps running").ellipsis()),
         )
-        .child(checkbox(follow).label("Sync cwd with terminal"))
-        .child(tooltip(
-            "Show hidden files",
-            button(".hidden")
-                .toggled(move || d.hidden.get())
-                .on_click(move || d.hidden.update(|on| *on = !*on)),
-        ))
-        .child(tooltip(
-            "Collapse SFTP",
-            icon_button(icons::WINDOW_RESTORE, "Collapse SFTP to side panel")
-                .on_click(move || collapse.set(false)),
-        ));
+        .child(div().text_color(token::TEXT).child(checkbox(follow).label("Sync cwd with terminal")))
+        .child(tooltip("Show hidden files", hidden))
+        .child(tooltip("Zoom out: back to the SFTP side panel", out));
     let (local, locals_of) = (d.local, model.clone());
     let local_rows = dynamic(move || {
         let (all, said) = (visible(&local.entries.get(), d.hidden.get()), local.said.get());
-        let mut list = column().width(Length::Fill).padding(4.0);
         if !said.is_empty() {
-            return AnyView::new(
-                list.child(
-                    div().width(Length::Fill).padding(8.0).text_color(token::TEXT_2).child(text(said)),
-                ),
-            );
+            return said_row(said);
+        }
+        let mut list = column().width(Length::Fill);
+        if local.dir.with(|it| it.parent().is_some()) {
+            list = list.child(line(&parent(), None, || false).on_click(move |_| local.up()));
         }
         for entry in all {
             let (name, picks, opens) = (entry.name.clone(), entry.name.clone(), entry.clone());
-            let line = line(&entry, None).selected(move || local.selected.get().as_deref() == Some(&name));
+            let line = line(&entry, None, move || local.selected.with(|it| it.as_deref() == Some(&name)));
             let line = line.on_click(move |e| match (opens.dir, e.clicks) {
                 (true, 2) => local.load(local.dir.get_untracked().join(&opens.name)),
                 _ => local.selected.set(Some(picks.clone())),
@@ -79,91 +93,94 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         AnyView::new(list)
     });
     let remotes = model.clone();
-    let remote_rows =
-        dynamic(move || {
-            let (all, said) = (visible(&d.entries.get(), d.hidden.get()), d.said.get());
-            let mut list = column().width(Length::Fill).padding(4.0);
-            if !said.is_empty() {
-                return AnyView::new(list.child(
-                    div().width(Length::Fill).padding(8.0).text_color(token::TEXT_2).child(text(said)),
-                ));
-            }
-            let locals = if compare.get() { local.entries.get() } else { Vec::new() };
-            for entry in all {
-                let (name, picks, opens, goes) =
-                    (entry.name.clone(), entry.name.clone(), entry.clone(), remotes.clone());
-                let line = line(&entry, compared(&entry, &locals))
-                    .selected(move || d.selected.get().as_deref() == Some(&name));
-                let line = line.on_click(move |e| match (opens.dir, e.clicks) {
-                    (true, 2) => d.load(&goes, Some(oneterm_ssh::join(&d.dir.get_untracked(), &opens.name))),
-                    _ => d.selected.set(Some(picks.clone())),
-                });
-                list = list.child(context_menu(line, crate::dock::remote_menu(&remotes, d, &entry)));
-            }
-            AnyView::new(list)
-        });
+    let remote_rows = dynamic(move || {
+        let (all, said) = (visible(&d.entries.get(), d.hidden.get()), d.said.get());
+        if !said.is_empty() {
+            return said_row(said);
+        }
+        let mut list = column().width(Length::Fill);
+        let dir = d.dir.get_untracked();
+        if dir != "/" && !dir.is_empty() {
+            let (ups, up) = (remotes.clone(), dir.rsplit_once('/').map_or("/", |it| it.0).to_string());
+            let up = if up.is_empty() { "/".to_string() } else { up };
+            list =
+                list.child(line(&parent(), None, || false).on_click(move |_| d.load(&ups, Some(up.clone()))));
+        }
+        let locals = if compare.get() { local.entries.get() } else { Vec::new() };
+        for entry in all {
+            let (name, picks, opens, goes) =
+                (entry.name.clone(), entry.name.clone(), entry.clone(), remotes.clone());
+            let chosen = move || d.selected.with(|it| it.as_deref() == Some(&name));
+            let line = line(&entry, compared(&entry, &locals), chosen);
+            let line = line.on_click(move |e| match (opens.dir, e.clicks) {
+                (true, 2) => d.load(&goes, Some(oneterm_ssh::join(&d.dir.get_untracked(), &opens.name))),
+                _ => d.selected.set(Some(picks.clone())),
+            });
+            list = list.child(context_menu(line, crate::dock::remote_menu(&remotes, d, &entry)));
+        }
+        AnyView::new(list)
+    });
     let local_pane = pane(
-        "Local",
+        LOCAL,
         move || local.dir.get().display().to_string(),
-        move || local.up(),
+        move |to: String| {
+            if !to.is_empty() {
+                local.load(PathBuf::from(to));
+            }
+        },
         move || local.refresh(),
         local_rows,
     );
     let remote_pane = pane(
-        "Remote",
+        REMOTE,
         move || d.dir.get(),
-        move || {
-            let dir = d.dir.get_untracked();
-            let up = dir.rsplit_once('/').map_or("/", |it| it.0);
-            d.load(&ups, Some(if up.is_empty() { "/".into() } else { up.into() }));
+        move |to: String| {
+            if !to.is_empty() {
+                d.load(&goes, Some(to));
+            }
         },
         move || d.refresh(&refreshes),
         context_menu(remote_rows, crate::dock::remote_area(model, d)),
     );
     let sends = model.clone();
-    let mid =
-        |shape, name: &'static str, f: Box<dyn FnMut()>| tooltip(name, icon_button(shape, name).on_click(f));
+    let square = |shape, name: &'static str| {
+        icon_button(shape, name).variant(Variant::Secondary).size(quadra_design::Size::Md)
+    };
+    let upload = square(icons::ARROW_RIGHT, "Upload selected").on_click(move || {
+        if let Some(name) = local.selected.get_untracked() {
+            d.upload(&sends, vec![local.dir.get_untracked().join(name)]);
+        }
+    });
+    let download = square(icons::ARROW_LEFT, "Download selected").on_click(move || {
+        let name = d.selected.get_untracked();
+        let entry =
+            d.entries.with_untracked(|all| all.iter().find(|it| Some(&it.name) == name.as_ref()).cloned());
+        if let Some(entry) = entry.filter(|it| !it.dir) {
+            d.download(&gets, &entry);
+        }
+    });
+    let compares = square(icons::ARROW_RIGHT_LEFT, "Compare")
+        .toggled(move || compare.get())
+        .on_click(move || compare.update(|on| *on = !*on));
     let middle = column()
-        .width(56.0)
+        .width(49.0)
         .shrink(0.0)
         .align_items(Align::Center)
         .justify(quadra::Justify::Center)
         .gap(8.0)
+        .bg(token::PANEL)
         .border_left(1.0)
         .border_right(1.0)
         .border_color(token::LINE)
-        .child(mid(
-            icons::ARROW_RIGHT,
-            "Upload selected",
-            Box::new(move || {
-                if let Some(name) = local.selected.get_untracked() {
-                    d.upload(&sends, vec![local.dir.get_untracked().join(name)]);
-                }
-            }),
-        ))
-        .child(mid(
-            icons::ARROW_LEFT,
-            "Download selected",
-            Box::new(move || {
-                let name = d.selected.get_untracked();
-                let entry = d
-                    .entries
-                    .with_untracked(|all| all.iter().find(|it| Some(&it.name) == name.as_ref()).cloned());
-                if let Some(entry) = entry.filter(|it| !it.dir) {
-                    d.download(&gets, &entry);
-                }
-            }),
-        ))
-        .child(tooltip(
-            "Compare",
-            icon_button(icons::COLUMNS_2, "Compare")
-                .toggled(move || compare.get())
-                .on_click(move || compare.update(|on| *on = !*on)),
-        ));
+        .child(tooltip("Upload selected to remote", upload))
+        .child(tooltip("Download selected to local", download))
+        .child(tooltip("Compare local and remote", compares));
     column()
         .grow(1.0)
         .min_width(Length::Px(0.0))
-        .bg(token::PANEL)
+        .bg(token::CANVAS)
+        .border(1.0)
+        .border_color(token::ACCENT)
         .role(Role::Group)
         .label("SFTP")
         .child(head)
@@ -189,67 +206,4 @@ fn follow_cwd(model: &Model, d: Dock, follow: Signal<bool>) {
             quadra::untrack(move || d.load(&model, Some(path)));
         }
     });
-}
-
-/// A pane: its label, its path, Up and Refresh, the header row and the rows.
-fn pane(
-    label: &'static str,
-    path: impl Fn() -> String + 'static,
-    up: impl FnMut() + 'static,
-    again: impl FnMut() + 'static,
-    rows: impl View + 'static,
-) -> impl View {
-    let quiet = |shape, name: &'static str| icon_button(shape, name).size(quadra_design::Size::Xs);
-    let (up_name, again_name) = match label {
-        "Local" => ("Up (local)", "Refresh local"),
-        _ => ("Up (remote)", "Refresh remote"),
-    };
-    let bar = row()
-        .align_items(Align::Center)
-        .gap(8.0)
-        .padding_x(12.0)
-        .height(by_text(36.0))
-        .border_bottom(1.0)
-        .border_color(token::LINE)
-        .child(
-            div()
-                .text_size(11.0)
-                .font_weight(600)
-                .text_color(token::TEXT_2)
-                .child(text(label.to_uppercase())),
-        )
-        .child(
-            div()
-                .grow(1.0)
-                .min_width(Length::Px(0.0))
-                .font_family(fonts::MONO)
-                .text_size(11.0)
-                .text_color(token::TEXT_2)
-                .child(text(path).ellipsis()),
-        )
-        .child(quiet(icons::ARROW_UP, up_name).on_click(up))
-        .child(quiet(icons::REFRESH_CW, again_name).on_click(again));
-    let header = row()
-        .gap(12.0)
-        .padding_x(16.0)
-        .height(by_text(26.0))
-        .align_items(Align::Center)
-        .text_size(11.0)
-        .text_color(token::TEXT_2)
-        .border_bottom(1.0)
-        .border_color(token::LINE)
-        .child(div().grow(1.0).child(text("Name")))
-        .child(div().width(SIZE).child(text("Size")))
-        .child(div().width(MODIFIED).child(text("Modified")));
-    let rows = column().width(Length::Fill).child(rows);
-    let list = quadra::scroll(signal(0.0), rows).container(column().grow(1.0).min_height(0.0));
-    column()
-        .grow(1.0)
-        .width(0.0)
-        .min_width(Length::Px(0.0))
-        .role(Role::Group)
-        .label(label)
-        .child(bar)
-        .child(header)
-        .child(list)
 }

@@ -128,13 +128,14 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
         .height(by_text(18.0))
         .shrink(0.0)
         .bg(token::PANEL)
-        .font_family(fonts::MONO)
-        .text_size(11.0)
+        .text_size(12.0)
+        .line_height(1.5)
         .text_color(token::TEXT_2)
         .child(
             div()
                 .grow(1.0)
                 .cut_to_parent()
+                .font_family(fonts::MONO)
                 .text_color(move || if on() { token::TEXT } else { token::TEXT_2 })
                 .child(text(place).ellipsis()),
         )

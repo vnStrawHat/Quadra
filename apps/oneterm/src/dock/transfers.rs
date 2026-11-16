@@ -1,5 +1,5 @@
-//! The dock's transfers (specs/19, "M9 in detail"): each with its arrow, what goes where,
-//! its state, a cross and a bar of 3 px.
+//! The dock's transfers (specs/19, "M9 in detail"): each with its arrow, `Uploading name` or
+//! `Downloading name`, its state, a cross and a bar of 2 px.
 
 use std::rc::Rc;
 
@@ -13,7 +13,7 @@ use crate::sftp::{Dock, Transfer};
 pub(super) fn transfers(d: Dock) -> impl View + use<> {
     let list = dynamic(move || {
         let mut list =
-            column().gap(8.0).padding_x(12.0).padding_top(8.0).padding_bottom(10.0).text_size(11.0);
+            column().gap(8.0).padding_x(12.0).padding_top(6.0).padding_bottom(10.0).text_size(12.0);
         for transfer in d.transfers.get() {
             list = list.child(transfer_row(d, transfer));
         }
@@ -21,10 +21,19 @@ pub(super) fn transfers(d: Dock) -> impl View + use<> {
     });
     list.container(
         div()
+            .shrink(0.0)
             .border_top(1.0)
             .border_color(token::LINE)
             .display(shown(move || d.transfers.with(|it| !it.is_empty()))),
     )
+}
+
+/// What a transfer does: `Uploading name`, or why it failed.
+fn what(transfer: &Transfer) -> String {
+    match transfer.end.get() {
+        Some(Err(_)) => transfer.said(),
+        _ => format!("{} {}", if transfer.up { "Uploading" } else { "Downloading" }, transfer.name),
+    }
 }
 
 fn transfer_row(d: Dock, transfer: Rc<Transfer>) -> impl View {
@@ -43,26 +52,20 @@ fn transfer_row(d: Dock, transfer: Rc<Transfer>) -> impl View {
         .text_color(token::TEXT_2)
         .child(icon(arrow).size(12.0))
         .child(
-            div().grow(1.0).min_width(Length::Px(0.0)).text_color(token::TEXT).child(
-                text(move || match said.end.get() {
-                    Some(Err(_)) => said.said(),
-                    _ => format!(
-                        "{} {}",
-                        said.name,
-                        if said.up { "\u{2192} remote" } else { "\u{2190} local" }
-                    ),
-                })
-                .ellipsis(),
-            ),
+            div()
+                .grow(1.0)
+                .min_width(Length::Px(0.0))
+                .text_color(token::TEXT)
+                .child(text(move || what(&said)).ellipsis()),
         )
         .child(div().font_family(fonts::MONO).child(text(move || {
             d.tick.get();
             state.state()
         })))
         .child(cross);
-    let fill = div().height(3.0).bg(token::ACCENT).width(move || {
+    let fill = div().height(2.0).bg(token::ACCENT).width(move || {
         d.tick.get();
         Length::Pct(part.part() * 100.0)
     });
-    column().gap(6.0).child(line).child(div().height(3.0).radius(2.0).bg(token::LINE).child(fill))
+    column().gap(6.0).child(line).child(div().height(2.0).bg(token::LINE_STRONG).child(fill))
 }

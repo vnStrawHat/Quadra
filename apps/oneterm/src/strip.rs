@@ -1,13 +1,13 @@
-//! The horizontal variant of the tabs (specs/19, "Rail"): a strip of 36 px under the title
-//! bar, a button a tab (the one that shows on the editor colour with an accent line under
-//! it; a progress is a bar along its bottom), `+` after the last, and "Vertical" at the end
-//! to go back to the rail.
+//! The horizontal variant of the tabs (specs/19, "Rail"): a strip of 32 px and its line under
+//! the title bar, a tab a button split by lines (the one that shows on the pressed editor
+//! colour, semibold, an accent line along its top and Close tab; a progress is a bar along
+//! its bottom), New terminal after the last, and "Vertical tabs" at the end.
 
-use quadra::{Align, Display, MouseButton, PointerKind, Role, Signal, View, by_text, div, each, row, text};
-use quadra_design::{context_menu, icon, icons, searched_icon_button, token};
+use quadra::{Align, MouseButton, PointerKind, Role, Signal, State, View, by_text, div, each, row, text};
+use quadra_design::{context_menu, icon, icons, menu_icon_button, token, tooltip};
 
 use crate::model::{Model, Tab};
-use crate::rail::{ASK, Dragged, new_menu, tab_menu, title};
+use crate::rail::{Dragged, active_fill, close_button, new_menu, tab_menu, title};
 
 pub(crate) fn strip(model: &Model) -> impl View + use<> {
     let (tabs, vertical, making) = (model.tabs(), model.vertical(), model.clone());
@@ -17,39 +17,34 @@ pub(crate) fn strip(model: &Model) -> impl View + use<> {
         |tab| tab.id,
         move |tab: Signal<Tab>| tab_button(&shown, tab.get_untracked()),
     );
+    let new = menu_icon_button(icons::PLUS, "New terminal", move || new_menu(&making, "")).muted();
     row()
-        .align_items(Align::Center)
-        .height(by_text(36.0))
+        .align_items(Align::Stretch)
+        .height(by_text(33.0))
         .shrink(0.0)
-        .bg(token::TAB_BG)
+        .bg(token::PANEL)
         .border_bottom(1.0)
-        .border_color(token::LINE)
+        .border_color(token::LINE_STRONG)
         .role(Role::TabList)
         .label("Tabs")
         .child(buttons.container(row().align_items(Align::Stretch).min_width(0.0)))
-        .child(div().padding_x(4.0).child(searched_icon_button(
-            icons::PLUS,
-            "New terminal",
-            ASK,
-            move |typed: &str| new_menu(&making, typed),
-        )))
+        .child(row().align_items(Align::Center).padding_x(5.0).child(tooltip("New terminal", new)))
         .child(div().grow(1.0))
         .child(
             row()
                 .align_items(Align::Center)
-                .height(by_text(35.0))
                 .gap(6.0)
-                .padding_x(12.0)
+                .padding_x(10.0)
                 .border_left(1.0)
-                .border_color(token::LINE)
-                .text_size(11.0)
+                .border_color(token::LINE_STRONG)
+                .text_size(12.0)
                 .text_color(token::TEXT_2)
                 .hover(|s| s.bg(token::PANEL_HOVER).text_color(token::TEXT))
                 .role(Role::Button)
                 .label("Switch to vertical tabs")
                 .on_click(move |_| vertical.set(true))
                 .child(icon(icons::PANEL_LEFT).size(14.0))
-                .child(text("Vertical")),
+                .child(text("Vertical tabs")),
         )
 }
 
@@ -57,25 +52,16 @@ fn tab_button(model: &Model, tab: Tab) -> impl View + use<> {
     let active = model.active();
     let on = move || active.get() == tab.id;
     let (shows, closes, moves, menu) = (model.clone(), model.clone(), model.clone(), model.clone());
-    let line = div()
-        .absolute()
-        .left(0.0)
-        .right(0.0)
-        .bottom(0.0)
-        .height(2.0)
-        .bg(token::ACCENT)
-        .display(move || if on() { Display::Flex } else { Display::None });
     let face = row()
         .align_items(Align::Center)
         .gap(8.0)
         .padding_x(12.0)
-        .max_width(220.0)
+        .max_width(240.0)
         .min_width(0.0)
-        .bg(move || if on() { token::CANVAS } else { token::TAB_BG })
-        .text_color(move || if on() { token::TAB_ACTIVE_FG } else { token::TAB_FG })
+        .text_color(move || if on() { token::TEXT } else { token::TEXT_2 })
+        .when(State::SELECTED, |s| s.font_weight(600))
         .border_right(1.0)
-        .border_color(token::LINE)
-        .hover(|s| s.bg(token::PANEL_HOVER))
+        .border_color(token::LINE_STRONG)
         .drop_target(|s| s.bg(token::ACCENT_TINT))
         .role(Role::Tab)
         .label(move || tab.title())
@@ -96,10 +82,11 @@ fn tab_button(model: &Model, tab: Tab) -> impl View + use<> {
             let to = moves.tabs().with_untracked(|tabs| tabs.iter().position(|it| it.id == tab.id));
             moves.move_tab(dragged.0, to.unwrap_or(usize::MAX));
         })
-        .child(crate::marks::tab_icon(tab, on))
+        .child(active_fill(on, 0.0, true))
+        .child(crate::marks::tab_icon(tab, 14.0, on))
         .child(div().min_width(0.0).child(title(model, tab)))
-        .child(crate::marks::strip_mark(tab, on))
-        .child(div().absolute().left(0.0).right(0.0).bottom(0.0).child(crate::marks::progress_bar(tab)))
-        .child(line);
+        .child(crate::marks::tab_mark(tab))
+        .child(close_button(model, tab, on))
+        .child(crate::marks::progress_bar(tab, 0.0));
     context_menu(face, move || tab_menu(&menu, tab.id))
 }

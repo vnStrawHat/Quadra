@@ -1,47 +1,63 @@
-//! The status bar (specs/19, "Window"): 26 px in mono 11 px, its parts parted by rules of
-//! 14 px: the working directory (a click copies it), git, the host and its latency; at the
-//! right the progress, 1Term's processor and memory, the bells and notices, the lock's time
-//! and the clock. Locked, only the progress and the clock show.
+//! The status bar (specs/19, "Window"): 30 px on the chrome plane, 12 px, its groups parted by
+//! rules of 1×14: the rail's fold; the focused space's directory (a click copies it), git, the
+//! host and its latency; at the right the progress, 1Term's processor and memory, the bells
+//! and notices, the lock's minutes, the clock and the SFTP panel. Locked, only a lock and
+//! "Locked, details hidden", the progress and the clock show.
 
 use std::rc::Rc;
 use std::time::Duration;
 
 use quadra::{
-    Align, Clipboard, Display, Length, Role, Signal, View, by_text, div, interval, row, text, time,
-    use_context,
+    Align, Clipboard, Length, Role, Signal, View, by_text, div, interval, row, text, time, use_context,
 };
-use quadra_design::{fonts, icon, icons, token};
+use quadra_design::{Variant, fonts, icon, icon_button, icons, token};
 
 use crate::locked::shown;
 use crate::model::Model;
 use crate::signals::{all_bells, percent};
 
-/// A part of the bar: what it holds 8 px in from its sides.
+/// What shows when; a rule stands before a group that shows after one that shows.
+type When = Rc<dyn Fn() -> bool>;
+
+/// A part of a group: its icon or label and its value, 6 px apart.
 fn part() -> quadra::Div {
-    row().align_items(Align::Center).gap(5.0).padding_x(8.0)
+    row().align_items(Align::Center).gap(6.0)
 }
 
-/// A rule before a part, shown with it.
-fn ruled(when: impl Fn() -> bool + 'static, part: impl View + 'static) -> impl View {
-    row()
-        .align_items(Align::Center)
-        .display(shown(when))
-        .child(div().width(1.0).height(14.0).bg(token::LINE))
-        .child(part)
+/// A value: mono, in the text colour.
+fn value(words: impl Fn() -> String + 'static) -> quadra::Div {
+    div().font_family(fonts::MONO).text_color(token::TEXT).child(text(words))
 }
 
-fn bright(words: impl Fn() -> String + 'static) -> quadra::Div {
-    div().text_color(token::TEXT).child(text(words))
+/// Groups in a row, a rule before each that shows after one that showed.
+fn groups(row_of: quadra::Div, all: Vec<(When, quadra::Div)>) -> quadra::Div {
+    let whens: Vec<When> = all.iter().map(|(it, _)| it.clone()).collect();
+    let mut line = row_of;
+    for (i, (when, group)) in all.into_iter().enumerate() {
+        let (before, me, ruled) = (whens[..i].to_vec(), when.clone(), when);
+        let rule = div().width(1.0).height(14.0).shrink(0.0).bg(token::LINE_STRONG);
+        line = line.child(rule.display(shown(move || ruled() && before.iter().any(|it| it()))));
+        line = line.child(group.display(shown(move || me())));
+    }
+    line
+}
+
+fn when(f: impl Fn() -> bool + 'static) -> When {
+    Rc::new(f)
 }
 
 pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + use<> {
     tick(clock);
-    let (tabs, unread, shows, prefs) = (model.tabs(), model.unread(), model.clone(), model.prefs());
-    let lock = model.lock();
+    let (tabs, unread, prefs, lock) = (model.tabs(), model.unread(), model.prefs(), model.lock());
     let open = move || !lock.locked.get();
-    let model = model.clone();
+    let (vertical, folded) = (model.vertical(), prefs.rail_folded);
+    let fold = icon_button(icons::PANEL_LEFT, "Collapse tabs to icons")
+        .variant(Variant::Link)
+        .label(move || if folded.get() { "Expand tabs" } else { "Collapse tabs to icons" }.to_string())
+        .on_click(move || folded.update(|on| *on = !*on));
+    let cwd_of = model.clone();
     let cwd = move || {
-        let space = model.active_tab().and_then(|tab| tab.focused());
+        let space = cwd_of.active_tab().and_then(|tab| tab.focused());
         space.map(|space| space.session.cwd().get()).unwrap_or_default()
     };
     let (clipboard, said, repo_of) = (use_context::<Rc<dyn Clipboard>>(), cwd.clone(), cwd.clone());
@@ -49,119 +65,180 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>) -> impl View + us
     let place = part()
         .role(Role::Button)
         .label("Working directory")
-        .display(shown(open))
         .on_click(move |_| {
             if let Some(clipboard) = &clipboard {
                 clipboard.write_text(&quadra::untrack(&cwd));
             }
         })
-        .child(icon(icons::FOLDER).size(12.0).color(token::TEXT_2))
-        .child(bright(said));
-    let changes = move || repo.get().and_then(|it| it.changes).filter(|n| *n > 0);
+        .child(icon(icons::FOLDER).size(14.0))
+        .child(value(said));
+    let counts = move || repo.get().and_then(|it| it.changes).unwrap_or_default();
+    let count = |color, sign: &'static str, n: fn((usize, usize)) -> usize| {
+        div()
+            .font_family(fonts::MONO)
+            .text_color(color)
+            .display(shown(move || n(counts()) > 0))
+            .child(text(move || format!("{sign}{}", n(counts()))))
+    };
     let git = part()
         .label("Git")
-        .child(icon(icons::WORKFLOW).size(12.0).color(token::TEXT_2))
-        .child(bright(move || repo.get().map(|it| it.branch).unwrap_or_default()))
-        .child(
-            div()
-                .text_color(token::WARN)
-                .display(shown(move || changes().is_some()))
-                .child(text(move || format!("~{}", changes().unwrap_or(0)))),
-        );
+        .display(shown(move || prefs.show_git.get() && repo.with(Option::is_some)))
+        .child(icon(icons::GIT_BRANCH).size(14.0))
+        .child(value(move || repo.get().map(|it| it.branch).unwrap_or_default()))
+        .child(count(token::HUE_GREEN, "\u{2191}", |it| it.0))
+        .child(count(token::HUE_YELLOW, "M", |it| it.1));
     let usage = usage();
-    let (cpu, memory) = (move || usage.get().0, move || usage.get().1);
-    let using =
-        part().label("Usage").child(text("CPU")).child(bright(cpu)).child(text("RAM")).child(bright(memory));
+    let using = part()
+        .gap(12.0)
+        .label("Usage")
+        .child(
+            part()
+                .display(shown(move || prefs.show_usage.get()))
+                .child(text("CPU"))
+                .child(value(move || usage.get().0)),
+        )
+        .child(
+            part()
+                .display(shown(move || prefs.show_usage.get()))
+                .child(text("RAM"))
+                .child(value(move || usage.get().1)),
+        )
+        .child(part().display(shown(move || prefs.show_fps.get())).child({
+            let said = fps(prefs.show_fps);
+            value(move || said.get())
+        }));
     // Bells not heard and notices not seen, one count; a click marks the notices seen.
     let count = move || all_bells(tabs) + unread.get();
+    let tone = move || if count() > 0 { token::ERROR } else { token::TEXT_2 };
     let bells = part()
+        .padding_x(4.0)
+        .height(22.0)
+        .radius(4.0)
+        .hover(|s| s.bg(token::PANEL_HOVER))
         .role(Role::Button)
         .label(move || format!("{} bells and notices", count()))
+        .display(shown(open))
         .on_click(move |_| unread.set(0))
-        .child(icon(icons::BELL).size(12.0).color(token::TEXT_2))
-        .child(bright(move || count().to_string()));
+        .child(div().text_color(tone).child(icon(icons::BELL).size(14.0)))
+        .child(div().font_family(fonts::MONO).text_color(tone).child(text(move || count().to_string())));
     let left = move || lock.left();
     let locks = part()
         .label("Lock")
-        .child(icon(icons::LOCK).size(12.0).color(token::TEXT_2))
-        .child(text(move || format!("lock in {}m", left().unwrap_or(0))));
+        .display(shown(move || open() && left().is_some()))
+        .child(icon(icons::LOCK).size(14.0))
+        .child(div().font_family(fonts::MONO).child(text(move || format!("{}m", left().unwrap_or(0)))));
+    let time = value(move || clock.get()).label("Clock").display(shown(move || prefs.show_clock.get()));
     let hidden = part()
         .display(shown(move || !open()))
-        .child(icon(icons::LOCK).size(12.0).color(token::TEXT_2))
-        .child(text("Locked \u{B7} details hidden"));
+        .child(icon(icons::LOCK).size(14.0))
+        .child(text("Locked, details hidden"));
+    let shows = move || prefs.show_usage.get() || prefs.show_fps.get();
+    let (meter, metered) = meter(model);
+    let left_side = groups(
+        part().gap(12.0),
+        vec![
+            (when(move || open() && vertical.get()), part().child(fold)),
+            (when(open), part().gap(12.0).child(place).child(git)),
+            (when(open), host(model)),
+        ],
+    );
+    let right_side = groups(
+        part().gap(12.0),
+        vec![
+            (metered, meter),
+            (when(move || open() && shows()), using),
+            (
+                when(move || open() || prefs.show_clock.get()),
+                part().gap(12.0).child(bells).child(locks).child(time),
+            ),
+            (when(open), part().child(sftp(model))),
+        ],
+    );
     row()
         .align_items(Align::Center)
-        .gap(2.0)
+        .gap(12.0)
         .padding_x(8.0)
-        .height(by_text(26.0))
+        .height(by_text(30.0))
         .shrink(0.0)
         .bg(token::STATUS_BG)
         .border_top(1.0)
         .border_color(token::LINE)
-        .font_family(fonts::MONO)
-        .text_size(11.0)
+        .text_size(12.0)
         .text_color(token::TEXT_2)
         .test_id("status")
-        .child(place)
         .child(hidden)
-        .child(ruled(move || open() && prefs.show_git.get() && repo.with(Option::is_some), git))
-        .child(ruled(open, host(&shows)))
+        .child(left_side)
         .child(div().grow(1.0))
-        .child(meter(&shows))
-        .child(ruled(move || open() && prefs.show_usage.get(), using))
-        .child(ruled(move || open() && prefs.show_fps.get(), {
-            let said = fps(prefs.show_fps);
-            bright(move || said.get())
-        }))
-        .child(ruled(open, bells))
-        .child(ruled(move || open() && left().is_some(), locks))
-        .child(
-            part()
-                .label("Clock")
-                .display(shown(move || prefs.show_clock.get()))
-                .child(bright(move || clock.get())),
-        )
+        .child(right_side)
 }
 
-/// The focused space's host and its latency, `● prod-api-01 · 124 ms`, or `local`.
-fn host(model: &Model) -> impl View + use<> {
-    let model = model.clone();
-    let remote = {
-        let model = model.clone();
-        move || model.active_tab().and_then(|tab| tab.focused()).and_then(|space| space.remote).is_some()
-    };
-    let said = move || {
-        let space = model.active_tab().and_then(|tab| tab.focused());
-        match space.and_then(|space| space.remote.clone().map(|it| (it, space.session.link_note().get()))) {
-            Some((remote, note)) if note.is_empty() => model.host_name(&remote),
-            Some((remote, note)) => format!("{} \u{B7} {note}", model.host_name(&remote)),
-            None => "local".into(),
-        }
-    };
-    let dot = div().size(6.0, 6.0).radius(3.0).bg(token::OK).display(shown(remote));
-    part().label("Host").child(dot).child(text(said))
+/// Toggle SFTP panel, in the accent while the dock shows; zoomed in, it zooms out.
+fn sftp(model: &Model) -> impl View + use<> {
+    let (dock, expanded) = (model.ui().dock, model.ui().expanded);
+    icon_button(icons::PANEL_RIGHT, "Toggle SFTP panel")
+        .label(move || {
+            if expanded.get() { "SFTP is zoomed in; zoom out" } else { "Toggle SFTP panel" }.to_string()
+        })
+        .toggled(move || dock.get())
+        .on_click(move || match expanded.get_untracked() {
+            true => expanded.set(false),
+            false => dock.update(|on| *on = !*on),
+        })
 }
 
-/// The progress of the tab that shows: a meter of 56 px and its percentage.
-fn meter(model: &Model) -> impl View + use<> {
-    let (model, shows) = (model.clone(), model.prefs().progress_bar);
-    let part_of = quadra::memo(move || model.active_tab().and_then(|tab| tab.progress()).and_then(percent));
-    let fill = div()
-        .height(4.0)
-        .radius(2.0)
-        .bg(token::ACCENT)
-        .width(move || Length::Pct(f32::from(part_of.get().unwrap_or(0))));
-    let track = div().width(56.0).height(4.0).radius(2.0).bg(token::LINE_STRONG).child(fill);
+/// The focused space's host and its latency, `prod-api-01 124 ms`, or `local shell`.
+fn host(model: &Model) -> quadra::Div {
+    let (model, of) = (model.clone(), model.clone());
+    let remote = move || of.active_tab().and_then(|tab| tab.focused()).and_then(|space| space.remote);
+    let (link, is_remote, is_local) = (model.clone(), remote.clone(), remote.clone());
+    let name = move || match remote() {
+        Some(remote) => model.host_name(&remote),
+        None => "local shell".into(),
+    };
+    let note = move || {
+        let space = link.active_tab().and_then(|tab| tab.focused());
+        space.filter(|it| it.remote.is_some()).map(|it| it.session.link_note().get()).unwrap_or_default()
+    };
     part()
-        .gap(6.0)
-        .label("Progress")
-        .display(move || if shows.get() && part_of.get().is_some() { Display::Flex } else { Display::None })
-        .child(track)
+        .label("Host")
+        .child(div().display(shown(move || is_remote().is_some())).child(icon(icons::SERVER).size(14.0)))
         .child(
-            div()
-                .text_color(token::ACCENT)
-                .child(text(move || part_of.get().map(|n| format!("{n}%")).unwrap_or_default())),
+            div().display(shown(move || is_local().is_none())).child(icon(icons::SQUARE_TERMINAL).size(14.0)),
         )
+        .child(text(name))
+        .child(div().font_family(fonts::MONO).child(text(note)))
+}
+
+/// The progress of the tab that shows, else of the first that reports one: the id of what
+/// reports it (`build`), a line of 56 px and the percentage; and whether it shows.
+fn meter(model: &Model) -> (quadra::Div, When) {
+    let (model, shows) = (model.clone(), model.prefs().progress_bar);
+    // The first space that reports a part done, and the id of what it runs (OSC 7501).
+    let found = quadra::memo(move || {
+        let tabs = model.tabs().get();
+        let mut first = model.active_tab().into_iter().chain(tabs);
+        first.find_map(|tab| {
+            tab.spaces.with(|all| {
+                all.iter().find_map(|it| {
+                    let n = it.session.progress().get().and_then(percent)?;
+                    Some((n, it.session.status_name().get()))
+                })
+            })
+        })
+    });
+    let fill = div()
+        .height(2.0)
+        .bg(token::ACCENT)
+        .width(move || Length::Pct(f32::from(found.with(|it| it.as_ref().map_or(0, |it| it.0)))));
+    let name = move || found.with(|it| it.as_ref().map(|it| it.1.clone()).unwrap_or_default());
+    let meter = part()
+        .label("Progress")
+        .child(div().max_width(Length::Px(120.0)).child(text(name).ellipsis()))
+        .child(div().width(56.0).height(2.0).bg(token::LINE_STRONG).child(fill))
+        .child(value(move || {
+            found.with(|it| it.as_ref().map(|it| format!("{}%", it.0)).unwrap_or_default())
+        }));
+    (meter, when(move || shows.get() && found.with(Option::is_some)))
 }
 
 /// The frames the window made in the last second, `60 fps`, counted while shown.
@@ -202,13 +279,11 @@ fn usage() -> Signal<(String, String)> {
     said
 }
 
-/// Keeps `clock` the local time: `We 28 Oct · 11:00`, the day and month in the app's language.
+/// Keeps `clock` the local time, `16:09`.
 fn tick(clock: Signal<String>) {
     let now = move || {
-        let (locale, at) = (quadra::language().locale(), time::local_now());
-        let short: String = locale.month(at.date.month).chars().take(3).collect();
-        let day = locale.day(at.date.weekday());
-        format!("{day} {} {short} \u{B7} {:02}:{:02}", at.date.day, at.time.hour, at.time.minute)
+        let at = time::local_now();
+        format!("{:02}:{:02}", at.time.hour, at.time.minute)
     };
     clock.set(now());
     // A second at most late: the minute shows when it changes.

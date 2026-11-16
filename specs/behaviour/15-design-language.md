@@ -214,7 +214,8 @@ same rule: no backdrop, an outside click closes them.
   `secondary` (outlined: `line_strong` border, transparent fill), `outline` (outlined
   ghost), `primary` (tinted: `accent_tint` fill, an `accent` border at 42 %, `text` label,
   `accent_text` icon), `danger` (`error_tint` fill, an `error` border at 42 %, `error`
-  icon), `link` (accent text). Icon buttons are square at size sm (22) with a 14 icon.
+  icon), `link` (accent text). Icon buttons are square at size sm (22) with a 14 icon. A key
+  hint (`.shortcut("Enter")`) follows the label in 12 `text_2`; the label alone names the button.
   Toggled: the label and icon turn `accent_text`; labelled toggles (filter chips, scope
   tabs) also take the `press` fill, icon toggles do not. A dropdown trigger (`.caret()`)
   ends in a 16 chevron-down in its label color at 75 %, with gap 8, and takes the
@@ -285,7 +286,10 @@ same rule: no backdrop, an outside click closes them.
   editor foreground (`code.editor.foreground`: `#ACB2BE` / `#242529`), placeholder
   `text_3`; focused: `border_focused`; invalid: an `error` border, focused or not, and
   the form field shows the message under it in 12 px `error`. No hover style. `height`
-  fixes a single-line input's height (the cards settings use 32).
+  fixes a single-line input's height (the cards settings use 32; bars 28 and 22). `.prefix(words)`
+  puts words in `text_2` before the text (`ssh`), `.mono()` the mono face, `.small()` 12 px text,
+  `.fill()` the room left in a row; `.reveal()` gives a password a 22 eye at its end (Show password,
+  pressed while the characters show; emptied, it hides again; copy and cut still do nothing).
 - **Key input:** the frame of a text input, 160 wide and 32 high (by text), a pointer
   cursor; the keys in `text`, centred; "Not bound" in `text_3`; "Press keys…" in `text_2`
   while it records; focused: `border_focused`.
@@ -299,7 +303,8 @@ same rule: no backdrop, an outside click closes them.
 - **Menu:** level 1 overlay, min width 200, 4 vertical padding. Rows are 23 tall, inset 4
   from the edge with 6 inner padding (text 10 from the edge), radius 4; hover
   `panel_hover`, keyboard highlight `press`. Icons 14 in `text_2`, only when some item has
-  one. Shortcut right-aligned, `text_2`, 16 from the label. Separator: 1 px `line`, 6 above
+  one; in their place a 10 px square of a colour, radius 2 (`swatch`: a tag the user gave). Shortcut
+  right-aligned, 12 px `text_2` (`mono`: in the mono face, as an address), 16 from the label. Separator: 1 px `line`, 6 above
   and below, edge to edge. Section header: 20 tall, 12 px `text_2`. Check marks
   `accent_text`, 14 px in the icon column (`checked` on a `MenuItem`). A submenu (`items` on a
   `MenuItem`): a 12 px `chevron_right` at the row's right end; it opens on hover, click or
@@ -331,11 +336,12 @@ same rule: no backdrop, an outside click closes them.
   footer with a top `line`.
 - **Table:** a 1 px `line` grid; the selected row is `accent` at 10 % with a 2 px `accent`
   bar along its left edge.
-- **Dialog:** level 2, 440 wide, header padding 12 / 8 / 4, headline 16, body 14
+- **Dialog:** level 2, 440 wide, header padding 12 / 8 / 4, headline 16 semibold, body 14
   `text_2`, footer padding 8 with a top `line`, buttons right-aligned, gap 4.
 - **Notifications:** stacked at the bottom right above the status bar, 12 from the edges,
   newest at the bottom, gap 8; each 448 wide, level 2 on `panel`, padding 12: a 16 status
-  icon, the title over a `text_2` body, a 22 close button, optional action buttons (sm,
+  icon, the title over a `text_2` body and an optional 12 px `text_2` note (where it came from,
+  `staging-db-01 · OSC 9`), a 22 close button (Dismiss notification), optional action buttons (sm,
   right-aligned, gap 4; the primary one tinted) whose click also closes the card. They stay
   until closed unless given a timeout.
   Toasts: bottom center, padding 6 / 10, a status icon, auto-hide after 10 s.
@@ -345,7 +351,7 @@ same rule: no backdrop, an outside click closes them.
   hidden until the pointer moves over the container, the wheel scrolls it or its content
   moves any other way (keys, the app), stays 1 s after the last such activity, then fades
   out over 400 ms. A shown thumb can be dragged; its 14 px track is the grip.
-- **Title bar:** 32, `chrome`; left a 22 ghost icon button (hamburger) that opens the app
+- **Title bar:** 32, `chrome`, a 1 px `line` under it; left a 22 ghost icon button (hamburger) that opens the app
   menu, then the document or project name in 12 px; app controls; caption buttons 36 wide
   with 10 px glyphs from Segoe Fluent Icons (Windows 11) or Segoe MDL2 Assets (Windows
   10), close hovers `#E81120`. `.title_size(16)` makes the title a window caption at body

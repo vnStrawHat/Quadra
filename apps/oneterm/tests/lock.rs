@@ -96,8 +96,8 @@ fn a_password_set_on_the_page_locks_and_opens_the_window() {
     a.h.get_by_role(Role::Button, "Lock").click();
     a.h.settle();
     assert!(a.locked());
-    assert!(a.says("Locked \u{B7} sessions are still running"));
-    assert!(a.says("Locked \u{B7} details hidden"));
+    assert!(a.says("Locked. Your sessions are still running."));
+    assert!(a.says("Locked, details hidden"));
     assert!(a.says("1 sessions connected \u{B7} 0 notices"));
     assert_eq!(a.tabs(), 0, "the rail is not displayed, so readers do not get it");
     assert!(a.h.query(|n| n.semantics.name == "Terminal").is_empty());
@@ -121,7 +121,7 @@ fn a_locked_window_refuses_the_app_keys_and_hides_cards() {
     let s = a.first.borrow().clone().expect("the first space");
     s.feeder().feed(b"\x1b]9;secret result\x07", Instant::now());
     a.h.settle();
-    assert!(!a.says("OSC 9"), "a card would show what a program said");
+    assert!(!a.says("secret result"), "a card would show what a program said");
     assert!(a.says("1 sessions connected \u{B7} 1 notices"));
     a.unlock_with("pw");
     assert_eq!(a.tabs(), 1, "Ctrl+T did nothing while locked");
@@ -140,7 +140,7 @@ fn it_locks_after_the_time_idle_and_activity_starts_it_again() {
     a.h.advance(Duration::from_secs(20));
     a.h.settle();
     assert!(a.locked());
-    assert!(a.says("Locked after 1 min idle \u{B7} sessions are still running"));
+    assert!(a.says("Locked after 1 minute idle. Your sessions are still running."));
 }
 
 #[test]

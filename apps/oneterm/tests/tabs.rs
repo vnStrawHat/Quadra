@@ -237,7 +237,7 @@ fn the_tabs_go_into_a_strip_and_back_into_the_rail() {
     a.h.tree.act(switch, &quadra::SemanticAction::Click);
     a.h.get_by_role(Role::Button, "Done").click();
     a.h.settle();
-    assert!(!a.h.has_text("TABS"), "the rail is gone");
+    assert!(!a.h.has_text("Collapse tabs to icons"), "the rail is gone");
     assert_eq!(a.tabs(), 1);
     a.typed("still");
     a.h.get_by_role(Role::Button, "Switch to vertical tabs").click();
@@ -265,18 +265,25 @@ fn the_plus_menu_makes_a_tab_or_splits_the_space() {
 fn the_rail_folds_to_its_icons_and_unfolds() {
     let mut a = app();
     a.key(Key::T, Mods::CTRL);
-    a.h.get_by_role(Role::Button, "Fold the tabs").click();
+    // The rail's heading has the button, and so may the status bar, after it.
+    let button =
+        |a: &App, name: &str| a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == name);
+    let folds = button(&a, "Collapse tabs to icons");
+    a.h.tree.act(folds[0], &quadra::SemanticAction::Click);
     a.h.settle();
-    assert!(!a.h.has_text("TABS"), "no heading folded");
+    assert!(button(&a, "Collapse tabs to icons").len() < folds.len(), "no heading folded");
     assert_eq!(a.tabs(), 2);
     let first = a.h.query(|n| n.semantics.role == Role::Tab)[0];
     a.h.tree.act(first, &quadra::SemanticAction::Click);
     a.h.settle();
     assert!(a.h.query(|n| n.semantics.role == Role::Tab && n.semantics.selected).contains(&first));
+    assert!(a.h.has_text("Terminal, idle"), "a tab's name says its signal");
     a.h.get_by_role(Role::Button, "New terminal").click();
     a.h.settle();
-    assert_eq!(a.tabs(), 3);
-    a.h.get_by_role(Role::Button, "Unfold the tabs").click();
+    a.h.get_by_role(Role::MenuItem, "Local shell").click();
     a.h.settle();
-    assert!(a.h.has_text("TABS"));
+    assert_eq!(a.tabs(), 3);
+    a.h.tree.act(button(&a, "Expand tabs")[0], &quadra::SemanticAction::Click);
+    a.h.settle();
+    assert_eq!(button(&a, "Collapse tabs to icons").len(), folds.len());
 }

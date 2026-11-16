@@ -43,13 +43,12 @@ fn the_window_shows_a_terminal_that_has_the_focus_and_says_where_it_is() {
 }
 
 #[test]
-fn the_clock_shows_the_day_and_the_time() {
+fn the_clock_shows_the_time() {
     let (h, _) = app();
-    // `Su 15 Nov · 6:31 AM`: a day, its number, a month, the time in the locale's way.
+    // `16:09`: the hour and the minute.
     let clock = |name: &str| {
-        let Some((date, time)) = name.split_once(" \u{B7} ") else { return false };
-        let date: Vec<&str> = date.split(' ').collect();
-        date.len() == 3 && date[1].parse::<u8>().is_ok() && time.contains(':')
+        let Some((hour, minute)) = name.split_once(':') else { return false };
+        hour.len() == 2 && minute.len() == 2 && hour.parse::<u8>().is_ok() && minute.parse::<u8>().is_ok()
     };
     assert_eq!(h.query(|n| clock(&n.semantics.name)).len(), 1);
 }

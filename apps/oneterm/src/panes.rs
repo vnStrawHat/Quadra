@@ -112,6 +112,16 @@ pub(crate) fn when(seconds: u64) -> String {
     format!("{} {:02}:{:02}", at.date, at.time.hour, at.time.minute)
 }
 
+/// `Nov 16 10:52` where the user is, the month in the app's language; nothing for no time.
+pub(crate) fn day(seconds: u64) -> String {
+    if seconds == 0 {
+        return String::new();
+    }
+    let at = quadra::time::DateTime::from_unix(seconds as i64, quadra::time::utc_offset());
+    let month: String = quadra::language().locale().month(at.date.month).chars().take(3).collect();
+    format!("{month} {:02} {:02}:{:02}", at.date.day, at.time.hour, at.time.minute)
+}
+
 /// `name`, or `name (1).ext` and on when that is taken.
 pub(crate) fn free_name(folder: &Path, name: &str) -> PathBuf {
     let (stem, ext) = match name.rsplit_once('.') {

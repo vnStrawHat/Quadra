@@ -63,7 +63,7 @@ fn in_the_current_tab_it_is_a_new_space() {
     let (mut h, made) = app();
     h.key(Key::K, Mods::CTRL | Mods::SHIFT);
     h.settle();
-    h.get_by_role(Role::Checkbox, "In current tab (new space)").click();
+    h.get_by_role(Role::Checkbox, "Open in the current tab as a new space").click();
     h.get_by_test_id("connect-target").set_value("a@h");
     h.settle();
     h.get_by_role(Role::Button, "Connect").click();

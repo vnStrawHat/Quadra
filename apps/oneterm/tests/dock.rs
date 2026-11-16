@@ -105,8 +105,10 @@ fn the_dock_lists_moves_about_and_downloads() {
     a.wait(|a| a.entry("config.yaml") && a.entry("src"), "the home folder");
     assert!(a.h.has_text("2.4 KB"));
     a.h.get_by_role(Role::Button, "src").click();
-    a.wait(|a| a.entry("..") && !a.entry("config.yaml"), "the folder src");
-    a.h.get_by_role(Role::Link, "/home").click();
+    a.wait(|a| a.entry("Parent folder") && !a.entry("config.yaml"), "the folder src");
+    a.h.get_by_test_id("sftp-path").set_value("/home");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Go to the typed path").click();
     a.wait(|a| a.entry("config.yaml"), "home again");
 
     let row = a.h.get_by_role(Role::Button, "config.yaml").node();
@@ -118,7 +120,7 @@ fn the_dock_lists_moves_about_and_downloads() {
     }
     let got = a.downloads.join("config.yaml");
     a.wait(|_| got.is_file(), "the download");
-    a.wait(|a| a.h.has_text("config.yaml \u{2190} local") && a.h.has_text("done"), "the transfer done");
+    a.wait(|a| a.h.has_text("Downloading config.yaml") && a.h.has_text("done"), "the transfer done");
     assert_eq!(std::fs::read(&got).unwrap().len(), 2458);
 }
 
@@ -132,7 +134,14 @@ fn dropped_files_upload_and_a_folder_is_made() {
     let up = a.served.join("home/notes.md");
     a.wait(|a| up.is_file() && a.entry("notes.md"), "the upload listed");
 
-    a.h.get_by_role(Role::Button, "More").click();
+    // The list's menu, where no entry is.
+    let list = a.h.get_by_role(Role::Button, "notes.md").node();
+    let below = a.h.tree.window_rect(list);
+    let at = quadra::Point::new(below.center().x, below.bottom() + 200.0);
+    for input in [quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up] {
+        let now = a.h.now();
+        a.h.tree.pointer(input, quadra::MouseButton::Right, at, quadra::Mods::NONE, now);
+    }
     a.h.settle();
     a.h.get_by_role(Role::MenuItem, "New folder\u{2026}").click();
     a.h.settle();
@@ -168,9 +177,8 @@ fn the_expanded_view_moves_files_between_its_panes_and_compares() {
     let mut a = app("dock-wide");
     a.wait(|a| a.entry("config.yaml"), "the home folder");
     std::fs::write(a.downloads.join("notes.md"), b"# notes").unwrap();
-    a.h.get_by_role(Role::Button, "Expand SFTP").click();
+    a.h.get_by_role(Role::Button, "Zoom SFTP").click();
     a.h.settle();
-    assert!(!a.h.query(|n| n.semantics.name == "Collapse SFTP").is_empty(), "the title bar can collapse it");
     assert!(
         a.pane("Local") && a.pane("Remote"),
         "two panes
@@ -208,7 +216,7 @@ fn the_expanded_view_moves_files_between_its_panes_and_compares() {
     a.h.get_by_role(Role::Button, "Compare").click();
     a.wait(|a| a.h.has_text("older"), "the comparison");
 
-    a.h.get_by_role(Role::Button, "Collapse SFTP").click();
+    a.h.get_by_role(Role::Button, "Zoom out").click();
     a.h.settle();
     assert!(!a.pane("Local") && !a.h.semantics().contains("SFTP expanded"), "the dock again");
     assert!(a.entry("config.yaml"), "the dock again");
@@ -228,7 +236,7 @@ fn a_local_space_is_not_an_ssh_space() {
     let sessions: NewSession = Rc::new(|_| echo());
     h.mount(move || OneTerm::new(sessions).view());
     h.settle();
-    h.get_by_role(Role::Button, "SFTP").click();
+    h.get_by_role(Role::Button, "Toggle SFTP panel").click();
     h.settle();
     assert!(h.has_text("local space \u{B7} n/a"));
 }
@@ -267,7 +275,7 @@ fn an_entry_s_properties_show_in_both_views_and_a_failure_is_a_card() {
     close(&mut a);
     assert!(!a.h.has_text("-rw-r--r-- (0644)"), "closed");
 
-    a.h.get_by_role(Role::Button, "Expand SFTP").click();
+    a.h.get_by_role(Role::Button, "Zoom SFTP").click();
     a.h.settle();
     a.menu("src", "Properties\u{2026}");
     a.wait(|a| a.h.has_text("drwxr-xr-x (0755)") && a.h.has_text("Folder"), "a folder's");

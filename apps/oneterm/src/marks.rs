@@ -1,8 +1,7 @@
-//! How signals look (specs/19, "Signals"): a tab's mark at the end of its row, the dot of
-//! its bell on its icon, the bar of its progress, the second line of its row, the chip of a
-//! space's header.
+//! How signals look (specs/19, "Signals"): a tab's signal at the end of its row, its icon, the
+//! seam bar of its progress, the second line of its row, a space header's signal.
 
-use quadra::{Align, AnyView, Display, Justify, Length, Role, View, div, dynamic, row, text};
+use quadra::{Align, AnyView, Display, Length, Role, View, div, dynamic, row, text};
 use quadra_design::{fonts, icon, icons, token};
 use quadra_term::ProgramState;
 use quadra_term::vt::Progress;
@@ -10,19 +9,30 @@ use quadra_term::vt::Progress;
 use crate::model::Tab;
 use crate::signals::{percent, state_word};
 
-/// A filled circle of `size` px holding `inside`, read as `word` (unless empty: what follows
-/// says it).
-fn disc(size: f32, fill: quadra::Token, word: &'static str, inside: impl View + 'static) -> quadra::Div {
-    let face = row()
-        .size(size, size)
-        .radius(size / 2.0)
+/// A state's icon, outlined in its colour, and what a reader hears of it; none for idle.
+fn state_look(state: ProgramState) -> Option<(&'static str, quadra::Token, &'static str)> {
+    match state {
+        ProgramState::Blocked => Some((icons::CIRCLE_HELP, token::WARN, "Blocked, needs permission")),
+        ProgramState::Done => Some((icons::CIRCLE_CHECK, token::OK, "Done, result not yet seen")),
+        ProgramState::Error => Some((icons::CIRCLE_X, token::ERROR, "Error")),
+        ProgramState::Working => Some((icons::LOADER_CIRCLE, token::ACCENT, "Working")),
+        ProgramState::Idle => None,
+    }
+}
+
+/// The state's icon of `px`, named for a reader.
+pub(crate) fn state_icon(state: ProgramState, px: f32) -> Option<quadra::Div> {
+    let (body, color, said) = state_look(state)?;
+    Some(div().shrink(0.0).role(Role::Image).label(said).child(icon(body).size(px).color(color)))
+}
+
+/// The bell that rang unseen, in the error colour.
+fn bell(px: f32) -> quadra::Div {
+    div()
         .shrink(0.0)
-        .align_items(Align::Center)
-        .justify(Justify::Center)
-        .bg(fill)
-        .text_color(token::TEXT_ON_STATUS)
-        .child(inside);
-    if word.is_empty() { face } else { face.role(Role::Image).label(word) }
+        .role(Role::Image)
+        .label("Bell rang")
+        .child(icon(icons::BELL).size(px).color(token::ERROR))
 }
 
 /// The part done of a tab's progress, when the settings show it on tabs.
@@ -30,117 +40,65 @@ fn part_of(tab: Tab) -> Option<u8> {
     tab.progress().filter(|_| tab.prefs.progress_tab.get()).and_then(percent)
 }
 
-/// The state of a tab's programs: blocked asks, done is checked, error crossed, working says
-/// so with its progress; else a bell when one rang unseen, else `idle`.
+/// What a tab says at its end: blocked, error and done as their icons, else its progress in
+/// the accent, else working's spinner, else a bell when one rang unseen, else `idle`.
 pub(crate) fn tab_mark(tab: Tab) -> impl View {
     dynamic(move || {
-        let word = state_word(tab.status()).unwrap_or("idle");
-        let small = || div().text_size(11.0).text_color(token::TEXT_2);
-        match tab.status() {
-            ProgramState::Blocked => AnyView::new(disc(
-                18.0,
-                token::WARN,
-                word,
-                div().text_size(11.0).font_weight(700).child(text("?")),
-            )),
-            ProgramState::Done => AnyView::new(disc(
-                16.0,
-                token::OK,
-                word,
-                icon(icons::CHECK).size(10.0).color(token::TEXT_ON_STATUS),
-            )),
-            ProgramState::Error => AnyView::new(disc(
-                16.0,
-                token::ERROR,
-                word,
-                icon(icons::X).size(10.0).color(token::TEXT_ON_STATUS),
-            )),
-            state if state == ProgramState::Working || part_of(tab).is_some() => {
-                let words = small().text_size(10.0).display(move || match tab.status() {
-                    ProgramState::Working => Display::Flex,
-                    _ => Display::None,
-                });
-                let part = div().font_family(fonts::MONO).text_size(11.0).text_color(token::ACCENT);
-                AnyView::new(
-                    row().align_items(Align::Center).gap(6.0).child(words.child(text("working"))).child(
-                        part.child(text(move || part_of(tab).map(|n| format!("{n}%")).unwrap_or_default())),
-                    ),
-                )
-            }
-            _ if tab.bells() > 0 => AnyView::new(
+        let state = tab.status();
+        let shown = !matches!(state, ProgramState::Working | ProgramState::Idle);
+        match state_icon(state, 14.0).filter(|_| shown) {
+            Some(face) => AnyView::new(face),
+            None if part_of(tab).is_some() => AnyView::new(
                 div()
-                    .role(Role::Image)
-                    .label("Bell rang")
-                    .child(icon(icons::BELL).size(14.0).color(token::ERROR)),
-            ),
-            _ => AnyView::new(small().child(text("idle"))),
-        }
-    })
-}
-
-/// What a tab of the strip says after its title: a state on a disc, else its progress, else
-/// a bell, else (while it shows) how many spaces it has.
-pub(crate) fn strip_mark(tab: Tab, on: impl Fn() -> bool + 'static) -> impl View {
-    dynamic(move || {
-        let word = state_word(tab.status()).unwrap_or("");
-        let small = || div().font_family(fonts::MONO).text_size(10.0);
-        match tab.status() {
-            ProgramState::Blocked => AnyView::new(disc(
-                14.0,
-                token::WARN,
-                word,
-                div().text_size(9.0).font_weight(700).child(text("?")),
-            )),
-            ProgramState::Done => AnyView::new(disc(
-                14.0,
-                token::OK,
-                word,
-                icon(icons::CHECK).size(9.0).color(token::TEXT_ON_STATUS),
-            )),
-            ProgramState::Error => AnyView::new(disc(
-                14.0,
-                token::ERROR,
-                word,
-                icon(icons::X).size(9.0).color(token::TEXT_ON_STATUS),
-            )),
-            _ if part_of(tab).is_some() => AnyView::new(
-                small()
+                    .font_family(fonts::MONO)
+                    .text_size(12.0)
                     .text_color(token::ACCENT)
                     .child(text(move || part_of(tab).map(|n| format!("{n}%")).unwrap_or_default())),
             ),
-            _ if tab.bells() > 0 => AnyView::new(
-                div()
-                    .role(Role::Image)
-                    .label("Bell rang")
-                    .child(icon(icons::BELL).size(12.0).color(token::ERROR)),
-            ),
-            _ if on() => AnyView::new(
-                small().text_color(token::TEXT_2).child(text(tab.spaces.with(Vec::len).to_string())),
-            ),
-            _ => AnyView::new(div()),
+            None => match state_icon(state, 14.0) {
+                Some(face) => AnyView::new(face),
+                None if tab.bells() > 0 => AnyView::new(bell(14.0)),
+                None => AnyView::new(div().text_size(12.0).text_color(token::TEXT_3).child(text("idle"))),
+            },
         }
     })
 }
 
-/// The tab's icon: a window for a tab with a remote space, a terminal else; in the accent
-/// while it shows, with a red dot while a bell rang unseen.
-pub(crate) fn tab_icon(tab: Tab, on: impl Fn() -> bool + 'static) -> impl View {
-    let dot = div()
-        .absolute()
-        .top(-3.0)
-        .right(-3.0)
-        .size(8.0, 8.0)
-        .radius(4.0)
-        .border(2.0)
-        .border_color(token::PANEL)
-        .bg(token::ERROR)
-        .display(move || if tab.bells() > 0 { Display::Flex } else { Display::None });
-    let face = dynamic(move || {
-        let remote = tab.spaces.with(|spaces| spaces.iter().any(|it| it.remote.is_some()));
-        let body = if remote { icons::APP_WINDOW } else { icons::SQUARE_TERMINAL };
-        AnyView::new(icon(body).size(16.0).color(if on() { token::ACCENT } else { token::TEXT_2 }))
+/// The badge of a tab's icon in the folded rail: its state's icon or a bell, at the box's top
+/// right; a progress is the seam bar, idle nothing.
+pub(crate) fn tab_badge(tab: Tab) -> impl View {
+    let face = dynamic(move || match state_icon(tab.status(), 12.0) {
+        Some(_) if tab.status() == ProgramState::Working && part_of(tab).is_some() => AnyView::new(div()),
+        Some(face) => AnyView::new(face),
+        None if tab.bells() > 0 => AnyView::new(bell(12.0)),
+        None => AnyView::new(div()),
     });
-    div().shrink(0.0).child(face).child(dot)
+    div().absolute().top(5.0).right(7.0).child(face)
+}
+
+/// What a reader hears of a tab in the folded rail: its title, then its signal.
+pub(crate) fn tab_said(tab: Tab) -> String {
+    let state = tab.status();
+    let signal = match state_look(state) {
+        Some((.., said)) if state != ProgramState::Working => said.to_lowercase(),
+        _ => match (part_of(tab), state, tab.bells()) {
+            (Some(n), ..) => format!("working, {n} percent"),
+            (_, ProgramState::Working, _) => "working".into(),
+            (_, _, 1..) => "bell rang".into(),
+            _ => "idle".into(),
+        },
+    };
+    format!("{}, {signal}", tab.title())
+}
+
+/// The tab's icon of `px`: a server for a tab with a remote space, a terminal else; in the
+/// accent while it shows, the third text colour else.
+pub(crate) fn tab_icon(tab: Tab, px: f32, on: impl Fn() -> bool + 'static) -> impl View {
+    dynamic(move || {
+        let remote = tab.spaces.with(|spaces| spaces.iter().any(|it| it.remote.is_some()));
+        let body = if remote { icons::SERVER } else { icons::SQUARE_TERMINAL };
+        AnyView::new(icon(body).size(px).color(if on() { token::ACCENT } else { token::TEXT_3 }))
+    })
 }
 
 /// What a tab's second line says, while it shows: the kinds of its spaces and their count.
@@ -156,66 +114,57 @@ pub(crate) fn tab_line(tab: Tab) -> String {
     format!("{kinds} \u{B7} {n} {}", if n == 1 { "space" } else { "spaces" })
 }
 
-/// A bar of 3 px under a tab's row, its fill as long as its progress.
-pub(crate) fn progress_bar(tab: Tab) -> impl View {
+/// A bar of 2 px along a tab's lower seam, `bottom` px from its bottom edge (-1: over the
+/// line under it), its fill as long as its progress.
+pub(crate) fn progress_bar(tab: Tab, bottom: f32) -> impl View {
     let fill =
-        div().height(3.0).width(move || Length::Pct(f32::from(part_of(tab).unwrap_or(0)))).bg(move || {
+        div().height(2.0).width(move || Length::Pct(f32::from(part_of(tab).unwrap_or(0)))).bg(move || {
             if matches!(tab.progress(), Some(Progress::Error(_))) { token::ERROR } else { token::ACCENT }
         });
     div()
-        .width(Length::Fill)
-        .height(3.0)
-        .radius(2.0)
-        .bg(token::LINE)
+        .absolute()
+        .left(0.0)
+        .right(0.0)
+        .bottom(bottom)
+        .height(2.0)
+        .bg(token::LINE_STRONG)
         .display(move || if part_of(tab).is_some() { Display::Flex } else { Display::None })
         .child(fill)
 }
 
-/// What a space's header says at its right: its progress, then its state on a disc in the
-/// state's colour and the link's note (a remote one's latency); with no state, a green dot
-/// and the note, else the program's title.
+/// What a space's header says at its right: its progress in the accent, its state's icon and
+/// label in the state's colour (`deploy blocked`), then the link's note (a remote one's
+/// latency); with no state and no note, the program's title.
 pub(crate) fn header_signal(
     s: &quadra_term::Session,
     prefs: crate::prefs::Prefs,
     title: quadra::Signal<String>,
 ) -> impl View + use<> {
-    let (status, progress, note) = (s.status(), s.progress(), s.link_note());
+    let (status, progress, note, name) = (s.status(), s.progress(), s.link_note(), s.status_name());
     // The settings say whether the header shows states.
     let status =
         quadra::memo(move || if prefs.status_shown.get() == 0 { status.get() } else { ProgramState::Idle });
     let mark = dynamic(move || {
-        let Some(word) = state_word(status.get()) else {
-            return AnyView::new(div().size(6.0, 6.0).radius(3.0).bg(token::OK));
+        let (Some(face), Some(word)) = (state_icon(status.get(), 12.0), state_word(status.get())) else {
+            return AnyView::new(div());
         };
-        let (fill, inside) = match status.get() {
-            ProgramState::Blocked => {
-                (token::WARN, AnyView::new(div().text_size(9.0).font_weight(700).child(text("?"))))
-            }
-            ProgramState::Done => {
-                (token::OK, AnyView::new(icon(icons::CHECK).size(8.0).color(token::TEXT_ON_STATUS)))
-            }
-            ProgramState::Error => {
-                (token::ERROR, AnyView::new(icon(icons::X).size(8.0).color(token::TEXT_ON_STATUS)))
-            }
-            _ => (token::ACCENT, AnyView::new(div())),
+        let color = state_look(status.get()).map_or(token::TEXT_2, |it| it.1);
+        let label = move || match name.get() {
+            name if name.is_empty() => word.to_string(),
+            name => format!("{name} {word}"),
         };
         AnyView::new(
-            row()
-                .align_items(Align::Center)
-                .gap(6.0)
-                .child(disc(12.0, fill, "", inside))
-                .child(div().text_color(fill).child(text(word))),
+            row().align_items(Align::Center).gap(4.0).text_color(color).child(face).child(text(label)),
         )
     });
-    let said = text(move || {
-        let note = note.get();
-        match (state_word(status.get()).is_some(), note.is_empty()) {
-            (true, true) => String::new(),
-            (true, false) => format!("\u{B7} {note}"),
-            (false, true) => title.get(),
-            (false, false) => note,
-        }
-    });
-    let part = text(move || progress.get().and_then(percent).map(|n| format!("{n}%")).unwrap_or_default());
-    row().align_items(Align::Center).gap(6.0).shrink(0.0).child(part).child(mark).child(said)
+    let named = div().child(text(move || {
+        let quiet = state_word(status.get()).is_none() && note.with(String::is_empty);
+        if quiet { title.get() } else { String::new() }
+    }));
+    let note = div().font_family(fonts::MONO).child(text(move || note.get()));
+    let part = div()
+        .font_family(fonts::MONO)
+        .text_color(token::ACCENT)
+        .child(text(move || progress.get().and_then(percent).map(|n| format!("{n}%")).unwrap_or_default()));
+    row().align_items(Align::Center).gap(8.0).shrink(0.0).child(part).child(mark).child(note).child(named)
 }

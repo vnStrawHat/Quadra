@@ -1,4 +1,4 @@
-//! How the lock looks (specs/19, "Lock"): the card in the middle of the window, what the
+//! How the lock looks (specs/19, "Lock"): the card where dialogs hang, what the
 //! window counts as being used, and the Security & lock page of the settings.
 
 use quadra::{
@@ -48,8 +48,9 @@ impl View for Card {
 fn card(model: &Model) -> Div {
     let (lock, tabs, unread) = (model.lock(), model.tabs(), model.unread());
     let why = move || match lock.after.get() {
-        0 => "Locked \u{B7} sessions are still running".to_string(),
-        n => format!("Locked after {n} min idle \u{B7} sessions are still running"),
+        0 => "Locked. Your sessions are still running.".to_string(),
+        1 => "Locked after 1 minute idle. Your sessions are still running.".to_string(),
+        n => format!("Locked after {n} minutes idle. Your sessions are still running."),
     };
     let running = move || {
         let n = tabs.with(|tabs| {
@@ -63,57 +64,47 @@ fn card(model: &Model) -> Div {
     };
     let field = input(lock.typed)
         .password()
+        .reveal()
         .placeholder("Master password")
         .test_id("unlock")
-        .width(322.0)
+        .width(414.0)
+        .height(32.0)
         .on_submit(move |_| lock.unlock());
-    let mark = row()
-        .size(48.0, 48.0)
-        .radius(12.0)
+    let head = row()
         .align_items(Align::Center)
-        .justify(Justify::Center)
-        .bg(token::RAISED)
-        .border(1.0)
-        .border_color(token::LINE_STRONG)
-        .child(icon(icons::LOCK).size(22.0).color(token::ACCENT));
-    let head = column()
-        .gap(12.0)
-        .align_items(Align::Center)
-        .child(mark)
-        .child(div().font_weight(600).text_size(17.0).child(text("1Term is locked")))
-        .child(div().text_size(12.0).text_color(token::TEXT_2).child(text(why)));
+        .gap(8.0)
+        .padding_x(12.0)
+        .padding_top(12.0)
+        .padding_bottom(4.0)
+        .child(icon(icons::LOCK).size(16.0).color(token::ACCENT))
+        .child(div().font_weight(600).text_size(16.0).child(text("1Term is locked")));
     // What runs behind, and what came while locked.
     let foot = row()
-        .justify(Justify::Between)
-        .text_size(11.0)
-        .text_color(token::TEXT_2)
+        .align_items(Align::Center)
+        .gap(12.0)
+        .text_size(12.0)
         .label(move || format!("{} \u{B7} {} notices", running(), unread.get()))
         .role(quadra::Role::Group)
         .child(
             row()
                 .align_items(Align::Center)
                 .gap(6.0)
-                .child(div().size(6.0, 6.0).radius(3.0).bg(token::OK))
+                .child(div().size(8.0, 8.0).radius(4.0).bg(token::OK))
                 .child(text(running)),
         )
         .child(
             row()
                 .align_items(Align::Center)
                 .gap(6.0)
-                .child(icon(icons::BELL).size(12.0))
+                .child(icon(icons::BELL).size(14.0).color(token::ERROR))
                 .child(text(move || format!("{} new while locked", unread.get()))),
         );
-    let card = column()
-        .width(380.0)
-        .padding(28.0)
-        .gap(16.0)
-        .radius(12.0)
-        .bg(token::PANEL)
-        .border(1.0)
-        .border_color(token::LINE_STRONG)
-        .elevation(2)
-        .focus_scope()
-        .child(head)
+    let body = column()
+        .gap(12.0)
+        .padding_x(12.0)
+        .padding_bottom(12.0)
+        .text_color(token::TEXT_2)
+        .child(text(why))
         .child(quadra_design::field("Password", field))
         .child(
             div()
@@ -121,20 +112,32 @@ fn card(model: &Model) -> Div {
                 .display(shown(move || !lock.said.with(String::is_empty)))
                 .child(text(move || lock.said.get())),
         )
-        .child(
-            button("Unlock")
-                .variant(Variant::Primary)
-                .full()
-                .disabled(move || lock.wait.get() > 0)
-                .on_click(move || lock.unlock()),
-        )
-        .child(div().height(1.0).bg(token::LINE))
         .child(foot);
+    let unlock = button("Unlock")
+        .variant(Variant::Primary)
+        .shortcut("Enter")
+        .disabled(move || lock.wait.get() > 0)
+        .on_click(move || lock.unlock());
+    // Where dialogs hang, with their look; neither Escape nor a press outside closes it.
+    let card = column()
+        .width(440.0)
+        .radius(10.0)
+        .bg(token::OVERLAY_BG)
+        .border(1.0)
+        .border_color(token::LINE_STRONG)
+        .elevation(2)
+        .focus_scope()
+        .child(head)
+        .child(body)
+        .child(
+            row().justify(Justify::End).padding(8.0).border_top(1.0).border_color(token::LINE).child(unlock),
+        );
     column()
         .grow(1.0)
         .align_items(Align::Center)
-        .justify(Justify::Center)
-        .bg(token::CANVAS)
+        .padding_top(42.0)
+        .padding_x(16.0)
+        .bg(token::PANEL)
         .display(shown(move || lock.locked.get()))
         .child(card)
 }

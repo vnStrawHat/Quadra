@@ -15,21 +15,21 @@ use crate::hosts::{Host, auth_of};
 use crate::model::Model;
 use crate::shells::Remote;
 
-const AUTHS: [&str; 4] = ["Auto", "Agent (ssh-agent)", "Key file", "Password"];
+const AUTHS: [&str; 4] = ["Auto", "ssh-agent", "Key file", "Password"];
+/// The colour tags a dialog offers: the group's, then each of [`crate::hosts::TAGS`].
+const TAG_NAMES: [&str; 8] = ["By group", "Red", "Orange", "Yellow", "Green", "Cyan", "Blue", "Purple"];
 
-/// The heading with its Add button, the filter, the groups (folded by a click on their
-/// heading) and their hosts.
+/// The heading with its Add button, the filter, the groups (a chevron, the name, the count;
+/// folded by a click) and their hosts under a line.
 pub(crate) fn hosts(model: &Model) -> impl View + use<> {
     let (filter, folded) = (signal(String::new()), signal(Vec::<String>::new()));
     let (shown, adds) = (model.clone(), model.ui().adding);
-    let add =
-        tooltip("Add SSH host", icon_button(icons::PLUS, "Add SSH host").on_click(move || adds.set(true)));
-    let heading = crate::rail::heading("SSH HOSTS", 18.0).child(add);
-    let field = input(filter)
-        .placeholder("Filter hosts\u{2026}")
-        .icon(icons::SEARCH)
-        .width(232.0)
-        .test_id("host-filter");
+    let add = tooltip(
+        "Add SSH host",
+        icon_button(icons::PLUS, "Add SSH host").muted().on_click(move || adds.set(true)),
+    );
+    let heading = crate::rail::heading("SSH hosts").child(add);
+    let field = input(filter).placeholder("Filter hosts").height(28.0).width(232.0).test_id("host-filter");
     let list = dynamic(move || {
         let words = filter.get().to_lowercase();
         let hosts: Vec<Host> = (shown.hosts().into_iter())
@@ -43,9 +43,10 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
                 groups.push(host.group.clone());
             }
         }
-        let mut list = column().gap(2.0).width(Length::Fill);
-        for (n, group) in groups.into_iter().enumerate() {
+        let mut list = column().gap(1.0).width(Length::Fill);
+        for group in groups {
             let closed = folded.with(|it| it.contains(&group));
+            let count = hosts.iter().filter(|it| it.group == group).count();
             if !group.is_empty() {
                 let name = group.clone();
                 let fold = move |_: &mut quadra::PointerEvent| {
@@ -56,25 +57,26 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
                 };
                 let chevron = if closed { icons::CHEVRON_RIGHT } else { icons::CHEVRON_DOWN };
                 list = list.child(
-                    row()
-                        .align_items(Align::Center)
-                        .gap(4.0)
-                        .padding_x(6.0)
-                        .padding_top(if n == 0 { 6.0 } else { 10.0 })
-                        .padding_bottom(2.0)
-                        .text_size(11.0)
-                        .text_color(token::TEXT_2)
+                    line()
                         .role(Role::Button)
                         .label(group.clone())
                         .expanded(!closed)
                         .on_click(fold)
-                        .child(icon(chevron).size(12.0))
-                        .child(text(group.clone())),
+                        .child(icon(chevron).size(14.0).color(token::TEXT_2))
+                        .child(div().grow(1.0).min_width(0.0).child(text(group.clone()).ellipsis()))
+                        .child(address(count.to_string())),
                 );
             }
-            for host in hosts.iter().filter(|it| it.group == group && !closed) {
-                list = list.child(host_row(&shown, host.clone()));
+            // A group's hosts stand under a line from its chevron; those of no group do not.
+            let mut under = column().gap(1.0).width(Length::Fill);
+            if !group.is_empty() {
+                under = under.padding_left(5.0).border_left(1.0).border_color(token::LINE);
             }
+            for host in hosts.iter().filter(|it| it.group == group && !closed) {
+                under = under.child(host_row(&shown, host.clone()));
+            }
+            let inset = if group.is_empty() { 0.0 } else { 14.0 };
+            list = list.child(div().width(Length::Fill).padding_left(inset).child(under));
         }
         AnyView::new(list)
     });
@@ -83,46 +85,54 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
         .min_height(0.0)
         .child(heading)
         .child(div().padding_x(8.0).padding_bottom(6.0).child(field))
-        .child(quadra::scroll(signal(0.0), list).container(column().grow(1.0).min_height(0.0).padding_x(8.0)))
+        .child(
+            quadra::scroll(signal(0.0), list)
+                .container(column().grow(1.0).min_height(0.0).padding_x(6.0).padding_bottom(8.0)),
+        )
 }
 
-/// A host: a dot while a space is connected to it, its name, its address.
-fn host_row(model: &Model, host: Host) -> impl View + use<> {
-    let (on, opens, menu) = (model.clone(), model.clone(), model.clone());
-    let target = host.remote.target.clone();
-    let dot = div()
-        .size(7.0, 7.0)
-        .radius(3.5)
-        .shrink(0.0)
-        .bg(move || if on.connected_to(&target) { token::OK } else { token::LINE_STRONG });
-    let remote = host.remote.clone();
-    let face = row()
+/// A row of the list: 26 px, radius 6, 8 px in, its parts 8 px apart.
+fn line() -> quadra::Div {
+    row()
         .width(Length::Fill)
+        .height(by_text(26.0))
         .align_items(Align::Center)
         .gap(8.0)
-        .padding_left(22.0)
-        .padding_right(8.0)
-        .height(by_text(30.0))
+        .padding_x(8.0)
         .radius(6.0)
         .text_color(token::TEXT)
         .hover(|s| s.bg(token::PANEL_HOVER))
+}
+
+/// The words at a row's right: in mono, 12 px, the third text colour.
+fn address(words: String) -> quadra::Div {
+    div().font_family(fonts::MONO).text_size(12.0).text_color(token::TEXT_3).child(text(words))
+}
+
+/// A host: the square of its colour tag, its name, its address.
+fn host_row(model: &Model, host: Host) -> impl View + use<> {
+    let (opens, menu) = (model.clone(), model.clone());
+    let (tag, color) = model.host_tag(&host);
+    let square = div()
+        .size(10.0, 10.0)
+        .radius(2.0)
+        .shrink(0.0)
+        .bg(color)
+        .role(Role::Image)
+        .label(format!("Colour tag: {tag}"));
+    let remote = host.remote.clone();
+    let face = line()
         .role(Role::Button)
         .label(host.name.clone())
         .on_click(move |_| opens.connect_to(remote.clone(), false))
-        .child(dot)
+        .child(square)
         .child(div().grow(1.0).min_width(Length::Px(0.0)).child(text(host.name.clone()).ellipsis()))
-        .child(
-            div()
-                .font_family(fonts::MONO)
-                .text_size(11.0)
-                .text_color(token::TEXT_2)
-                .child(text(short(&host.remote.target))),
-        );
+        .child(address(short(&host.remote.target)));
     context_menu(face, move || host_menu(&menu, &host))
 }
 
 /// The host and its port when it is not 22, as the rail shows it.
-fn short(target: &Target) -> String {
+pub(crate) fn short(target: &Target) -> String {
     match target.port {
         22 => target.host.clone(),
         port => format!("{}:{port}", target.host),
@@ -151,6 +161,7 @@ struct Form {
     key: Signal<String>,
     jump: Signal<usize>,
     forwards: Signal<String>,
+    tag: Signal<usize>,
 }
 
 /// The dialogs that save a host: a new one, or one saved before, filled in.
@@ -165,6 +176,7 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
         key: s(),
         jump: signal(0),
         forwards: s(),
+        tag: signal(0),
     };
     let (saves, changes, lists, fills) = (model.clone(), model.clone(), model.clone(), model.clone());
     // Asked to edit a host, the form says what it is; closed, it is no longer being edited.
@@ -195,7 +207,15 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
             .padding_x(12.0)
             .width(416.0)
             .child(field("Name", text_field(form.name, "The host when empty", "host-name")))
-            .child(field("Group", text_field(form.group, "Group", "host-group")))
+            .child(
+                quadra::row()
+                    .gap(12.0)
+                    .child(field(
+                        "Group",
+                        input(form.group).placeholder("Group").test_id("host-group").width(190.0),
+                    ))
+                    .child(field("Colour tag", select(TAG_NAMES, form.tag).width(190.0).test_id("host-tag"))),
+            )
             .child(field("Target", text_field(form.target, "user@host or host:port", "host-target")))
             .child(how)
             .child(div().display(crate::locked::shown(move || form.auth.get() == 2)).child(key))
@@ -230,6 +250,7 @@ fn fill(model: &Model, form: Form, host: &Host) {
     form.key.set(key);
     form.forwards.set(forwards.join(" "));
     form.jump.set(jump.unwrap_or(0));
+    form.tag.set(model.saved_tag(&host.name).map_or(0, |at| at + 1));
 }
 
 /// Saves the form as a host, in place of `was` (the one edited) when it had another name.
@@ -255,9 +276,17 @@ fn save(model: &Model, form: Form, was: Option<String>) {
     if let Some(was) = was.filter(|it| *it != name) {
         model.remove_host(&was);
     }
-    model.save_host(Host { name, group: form.group.get_untracked().trim().into(), remote, jump });
+    let tag = form.tag.get_untracked().checked_sub(1).map(|at| crate::hosts::TAGS[at].0);
+    model.save_host(Host {
+        name: name.clone(),
+        group: form.group.get_untracked().trim().into(),
+        remote,
+        jump,
+    });
+    model.set_host_tag(&name, tag);
     for field in [form.name, form.group, form.target, form.key, form.forwards] {
         field.set(String::new());
     }
     form.jump.set(0);
+    form.tag.set(0);
 }

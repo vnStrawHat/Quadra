@@ -15,6 +15,8 @@ use quadra_tree::{Handle, NodeId};
 use crate::feed::{Engine, Event, Feeder, Notice, lock};
 use crate::status::{ProgramState, Statuses};
 
+mod signals;
+
 type WriteFn = dyn FnMut(&[u8]);
 type NoticeFn = dyn Fn(&Notice);
 type Waiting = Vec<Box<dyn FnOnce(Size)>>;
@@ -63,6 +65,7 @@ pub(crate) struct Shared {
     bells: Signal<u32>,
     progress: Signal<Option<Progress>>,
     status: Signal<ProgramState>,
+    status_name: Signal<String>,
     exited: Signal<Option<i32>>,
     link_note: Signal<String>,
     notices: RefCell<Vec<Rc<NoticeFn>>>,
@@ -121,6 +124,7 @@ impl Session {
             bells: signal(0),
             progress: signal(None),
             status: signal(ProgramState::Idle),
+            status_name: signal(String::new()),
             exited: signal(None),
             link_note: signal(String::new()),
             notices: RefCell::new(Vec::new()),
@@ -208,37 +212,6 @@ impl Session {
         lock(&self.0.engine).term.size()
     }
 
-    /// The program's title (OSC 0 and 2); empty until it sets one.
-    pub fn title(&self) -> Signal<String> {
-        self.0.title
-    }
-
-    /// The working directory the shell says (OSC 7).
-    pub fn cwd(&self) -> Signal<String> {
-        self.0.cwd
-    }
-
-    /// How many bells rang; the app sets it back to 0 when they were seen.
-    pub fn bells(&self) -> Signal<u32> {
-        self.0.bells
-    }
-
-    /// OSC 9;4: none, or the program's progress.
-    pub fn progress(&self) -> Signal<Option<Progress>> {
-        self.0.progress
-    }
-
-    /// OSC 7501: the strongest state the program reported.
-    pub fn status(&self) -> Signal<ProgramState> {
-        self.0.status
-    }
-
-    /// What the link says of itself in a few words (a remote one's latency); written by
-    /// whoever made the link, empty for a local program.
-    pub fn link_note(&self) -> Signal<String> {
-        self.0.link_note
-    }
-
     /// Keeps a value of the app's with the session, for as long as the session lives: a
     /// remote space's connection, for one.
     pub fn keep(&self, value: Rc<dyn std::any::Any>) {
@@ -291,7 +264,10 @@ impl Session {
                 }
                 Event::Progress(Progress::Remove) => self.0.progress.set(None),
                 Event::Progress(p) => self.0.progress.set(Some(p)),
-                Event::Status(state) => self.0.status.set(state),
+                Event::Status(state, name) => {
+                    self.0.status_name.set(name);
+                    self.0.status.set(state);
+                }
                 Event::ClipStore(text) => self.clip_store(&text),
                 Event::ClipLoad => self.clip_load(),
             }

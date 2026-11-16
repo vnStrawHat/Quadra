@@ -101,6 +101,13 @@ impl Statuses {
     pub fn summary(&self) -> ProgramState {
         self.records.iter().map(|(_, st, _)| *st).max().unwrap_or_default()
     }
+
+    /// The id of the record the summary is, the latest of the strongest: what it is about
+    /// (`deploy`); empty when it has none.
+    pub fn named(&self) -> String {
+        let strongest = self.records.iter().max_by_key(|(_, st, tick)| (*st, *tick));
+        strongest.map_or_else(String::new, |(id, ..)| id.clone())
+    }
 }
 
 /// Up to 8 segments split by `/`, each 1 to 32 of letters, digits and `_.+-`; 128 bytes.
@@ -159,7 +166,9 @@ mod tests {
         let mut s = Statuses::default();
         assert_eq!(s.report(b"state=working:id=build"), Report::Changed(ProgramState::Working));
         assert_eq!(s.report(b"state=blocked:id=deploy/push"), Report::Changed(ProgramState::Blocked));
+        assert_eq!(s.named(), "deploy/push");
         assert_eq!(s.report(b"state=done:id=deploy/push"), Report::Changed(ProgramState::Working));
+        assert_eq!(s.named(), "build");
         // `clear` of an id takes what is under it too; of none, everything.
         assert_eq!(s.report(b"state=clear:id=deploy"), Report::Changed(ProgramState::Working));
         assert_eq!(s.report(b"state=clear"), Report::Changed(ProgramState::Idle));

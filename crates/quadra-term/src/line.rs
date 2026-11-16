@@ -62,7 +62,8 @@ impl Session {
 pub(crate) fn follow_line(tree: &mut Tree, id: NodeId) {
     let Some(w) = tree.widget_mut::<TerminalWidget>(id) else { return };
     let s = w.session.clone();
-    if !s.0.line.on.get() {
+    // A widget whose view was disposed (its tab closed) may still be told of a focus change.
+    if !s.0.line.on.get() || !s.0.line.line.is_alive() {
         return;
     }
     let caret = w.caret();

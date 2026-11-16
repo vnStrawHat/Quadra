@@ -32,7 +32,8 @@ pub(crate) enum Event {
     Bell,
     Notice(Notice),
     Progress(Progress),
-    Status(ProgramState),
+    /// The summary of the records, and the id of the one it is.
+    Status(ProgramState, String),
     ClipStore(String),
     ClipLoad,
 }
@@ -96,7 +97,7 @@ impl Feeder {
                     VtEvent::ShellMark(ShellMark::PromptEnd) => *marked = true,
                     VtEvent::ShellMark(ShellMark::OutputEnd { exit_code }) => *status = exit_code,
                     VtEvent::ShellMark(ShellMark::PromptStart) if statuses.prompt() => {
-                        events.push(Event::Status(statuses.summary()))
+                        events.push(Event::Status(statuses.summary(), statuses.named()))
                     }
                     VtEvent::Osc { code: 7501, params, terminator, truncated: false } => {
                         let body = batch.params(params).skip(1).collect::<Vec<_>>().join(&b';');
@@ -108,7 +109,7 @@ impl Feeder {
                                     StringTerm::St => b"\x1b\\",
                                 });
                             }
-                            Report::Changed(state) => events.push(Event::Status(state)),
+                            Report::Changed(state) => events.push(Event::Status(state, statuses.named())),
                             Report::Dropped => {}
                         }
                     }

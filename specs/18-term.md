@@ -247,7 +247,8 @@ What any completion needs, with no knowledge of commands (specs/20 is 1Term's):
 ## Signals an app reads
 
 `title`, `cwd`, `bells` (a count), `progress` (OSC 9;4: none, a part, indeterminate, error,
-paused), `status` (OSC 7501), `exited` (the code once the program ended), and each OSC 9
+paused), `status` (OSC 7501) and `status_name` (the id of the record the summary is, the latest
+of the strongest: `deploy`), `exited` (the code once the program ended), and each OSC 9
 notification as an event (`on_notification`). `link_note` is what the link says of itself in
 a few words, written by whoever made the link (a remote one's latency, `124 ms`); empty for a
 local program. An app keeps its own data with a session (`keep`, `kept::<T>()`): a remote

@@ -251,7 +251,8 @@ impl Renderer for D3d11Renderer {
             None => Device::new(software)?,
         });
         self.layers.clear();
-        (self.coverage, self.color, self.timing, self.backdrop) = (None, None, Timing::default(), None);
+        (self.coverage, self.color, self.backdrop) = (None, None, None);
+        self.timing.reset();
         for made_for in made_for {
             let surface = made_for.map(|(target, size)| self.make_surface(target, size)).transpose()?;
             self.surfaces.push(surface);
@@ -265,5 +266,9 @@ impl Renderer for D3d11Renderer {
 
     fn stats(&self) -> RenderStats {
         self.stats
+    }
+
+    fn measure_gpu(&mut self, on: bool) {
+        self.timing.on = on;
     }
 }

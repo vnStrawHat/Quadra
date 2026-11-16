@@ -224,6 +224,10 @@ fn what_a_frame_cost_the_gpu_comes_back_without_waiting() {
     let root = scene.add_layer();
     scene.set_roots(&[root]);
     scene.layer_mut(root).set(&[quad(0.0, 0.0, 64.0, 64.0, RED)]);
+    draw(&mut r, &mut scene);
+    draw(&mut r, &mut scene);
+    assert_eq!(r.stats().gpu, None); // not measured until asked
+    r.measure_gpu(true);
     draw(&mut r, &mut scene); // reading the pixels waits for the GPU to finish the frame
     assert_eq!(r.stats().gpu, None); // asked for when the next frame starts
     draw(&mut r, &mut scene);

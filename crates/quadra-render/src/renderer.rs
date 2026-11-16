@@ -107,4 +107,8 @@ pub trait Renderer {
     }
 
     fn stats(&self) -> RenderStats;
+
+    /// Whether to measure what each frame costs the GPU, into `RenderStats::gpu` (specs/07):
+    /// off until asked, as measuring costs the CPU a little every frame.
+    fn measure_gpu(&mut self, _on: bool) {}
 }

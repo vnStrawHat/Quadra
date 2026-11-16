@@ -158,7 +158,9 @@ fn run<R: Renderer>(
     view: fn() -> AnyView,
     mut said: bool,
 ) -> quadra::Result<()> {
-    let phases = SharedPhases::default();
+    let (phases, mut app) = (SharedPhases::default(), app);
+    // What the GPU takes is measured only when asked: the queries cost the CPU a little.
+    app.renderer.measure_gpu(std::env::var_os("BENCH_GPU").is_some());
     let seen = phases.clone();
     let app = app.on_presented(move |report| {
         seen.borrow_mut().add(report);

@@ -24,6 +24,8 @@ struct Set {
 
 #[derive(Default)]
 pub(crate) struct Timing {
+    /// Measuring at all: asked for by `Renderer::measure_gpu`.
+    pub on: bool,
     sets: Vec<Set>,
     measuring: Option<usize>,
     frame: u64,
@@ -56,8 +58,16 @@ fn answer<T: Default>(context: &ID3D11DeviceContext, query: &ID3D11Query) -> Opt
 }
 
 impl Timing {
+    /// Forgets the queries of a lost device, and keeps measuring if it was.
+    pub fn reset(&mut self) {
+        *self = Timing { on: self.on, ..Timing::default() };
+    }
+
     /// Before a frame's draw: takes in what came back, and starts measuring if a set is free.
     pub fn begin(&mut self, device: &ID3D11Device, context: &ID3D11DeviceContext) {
+        if !self.on {
+            return;
+        }
         self.frame += 1;
         self.take_answers(context);
         if self.sets.len() < RING

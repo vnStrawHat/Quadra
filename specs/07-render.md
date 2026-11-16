@@ -208,13 +208,15 @@ whose scissor leaves nothing on screen is skipped with everything inside it.
 The frame is presented with a flip-model swap chain and a frame-latency waitable. Dirty
 rectangles at present are not used in the first release.
 
-**What a frame costs the GPU is measured** before anything is made faster for it: the D3D11
-renderer puts two timestamps around each frame's draw (in a disjoint query, which says the
+**What a frame costs the GPU is measured** before anything is made faster for it, when it is
+asked to (`Renderer::measure_gpu(true)`; off by default, since the queries cost the CPU some
+15 to 30 µs a frame): the D3D11 renderer puts two timestamps around each frame's draw (in a disjoint query, which says the
 clock's rate and whether it held steady) and reads them back without waiting, a few frames
 later, from a ring of four. `RenderStats::gpu` is the latest frame's time that came back:
 none until one does, and none on a backend that cannot measure. Present is not in it. The
-bench prints it with the passes (`gpu` in `tools/bench.sh`'s line, the mean of the frames
-that had one).
+bench turns it on with `BENCH_GPU=1` and prints it with the passes (`gpu` in
+`tools/bench.sh`'s line, the mean of the frames that had one); the runner's numbers are taken
+without it.
 
 ## Atlases
 

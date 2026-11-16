@@ -9,7 +9,8 @@
 #
 # tools/bench.sh incremental: what a change costs against the size of the UI (specs/14, "What a
 # change costs"): the cells scene at 600, 2,400 and 9,600 numbers, changing one, all, or
-# rebuilding the grid each frame, without a window.
+# rebuilding the grid each frame, without a window, after 1,200 frames that let the middle
+# number reach its longest.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if [ "${1:-}" = incremental ]; then
@@ -17,7 +18,7 @@ if [ "${1:-}" = incremental ]; then
 	printf '%-6s %-8s %9s %8s %10s %9s %9s\n' cells change "laid out" painted instances uploaded "us/frame"
 	for n in 600 2400 9600; do
 		for change in one all rebuild; do
-			line=$(BENCH_CELLS=$n BENCH_CHANGE=$change BENCH_HEADLESS=1 BENCH_PHASES=1 BENCH_FRAMES="${BENCH_FRAMES:-600}" \
+			line=$(BENCH_CELLS=$n BENCH_CHANGE=$change BENCH_HEADLESS=1 BENCH_PHASES=1 BENCH_WARMUP="${BENCH_WARMUP:-1200}" BENCH_FRAMES="${BENCH_FRAMES:-600}" \
 				target/dist/compare.exe cells | grep phases)
 			us=$(($(echo "$line" | sed -E 's/.*update ([0-9]+) layout ([0-9]+) paint ([0-9]+) compose ([0-9]+) draw ([0-9]+).*/\1+\2+\3+\4+\5/')))
 			count() { echo "$line" | grep -oE "[0-9]+ $1" | cut -d' ' -f1; }

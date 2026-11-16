@@ -183,7 +183,8 @@ prints what a frame laid out, painted and wrote, and the passes' time.
 
 The budget: changing one number costs the same at every N, within the noise: a few nodes laid
 out, one painted, a handful of instances, microseconds. Changing all of them grows with N, as
-it must; rebuilding grows with N and costs many times more than changing all of them.
+it must; rebuilding grows with N and costs two to three times what changing all of them
+does.
 
 ## Tooling
 

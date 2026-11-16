@@ -72,7 +72,7 @@ implementation is its reference. Its specs, its tests and its own measurements
 | Gate | `tools/check.sh` |
 | Release gate | `tools/check.sh prod`; run both before saying done |
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
-| The bench app | `tools/bench.sh` builds `target/dist/compare.exe` (the dist profile: release with fat LTO, what ships and is measured); with scene names it runs them headless with pass timings; `tools/bench.sh compare [runs]` measures the four scenes' real windows from outside (`target/dist/run.exe`) into `.tmp/bench/compare.json` |
+| The bench app | `tools/bench.sh` builds `target/dist/compare.exe` (the dist profile: release with fat LTO, what ships and is measured); with scene names it runs them headless with pass timings; `tools/bench.sh compare [runs]` measures the four scenes' real windows from outside (`target/dist/run.exe`) into `.tmp/bench/compare.json`; `tools/bench.sh incremental` prints what a change costs against the size of the UI; `BENCH_GPU=1` adds the GPU's time to a windowed scene's passes |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
 | Terminal throughput | `tools/doomfire.sh [seconds]`: the fire demo (`bench/doomfire`) fed to the engine, through the console host alone, and in a real 1Term window (specs/14) |
 | 1Term's console host | `tools/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (specs/19); 1Term uses the system's without them |

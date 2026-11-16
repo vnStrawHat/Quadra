@@ -21,7 +21,7 @@ tools/cargo.sh test   # any cargo command, run from the project root
 
 ## Performance
 
-Measured on 2026-11-16 (commit ba217dc, the `dist` profile): i5-12400F, RTX 3050, Windows 11,
+Measured on 2026-11-16 (the `dist` profile): i5-12400F, RTX 3050, Windows 11,
 a 75 Hz display. Every number, its method and its history are in
 [docs/benchmarks.md](docs/benchmarks.md).
 
@@ -30,21 +30,22 @@ a 75 Hz display. Every number, its method and its history are in
 A retained tree, signals bound to the properties they change, incremental layout and display
 lists patched in place: a frame lays out, paints and uploads what changed, whatever the size
 of the UI. The window below is filled with numbers, every one of them on screen, each in a
-box of its own colour (`tools/bench.sh incremental`, one frame, without a window):
+box of its own colour; "one number" is the one in the middle, changing every frame, like a
+clock on a dashboard (`tools/bench.sh incremental`, one frame, without a window):
 
 | Numbers on screen | A frame changes | Laid out | Painted | Instances to the GPU | Time |
 |---|---|---|---|---|---|
 | 600 | one number | 3 | 1 | 6 | 2 µs |
-| 2,400 | one number | 3 | 1 | 6 | 5 µs |
+| 2,400 | one number | 3 | 1 | 6 | 2 µs |
 | 9,600 | one number | 3 | 1 | 6 | 3 µs |
-| 600 | every number | 1,800 | 600 | 4,192 | 0.49 ms |
-| 9,600 | every number | 28,808 | 9,608 | 67,096 | 11.7 ms |
-| 600 | the whole grid, rebuilt | 2,464 | 1,232 | 4,136 | 1.52 ms |
-| 9,600 | the whole grid, rebuilt | 38,644 | 19,322 | 66,145 | 25.9 ms |
+| 600 | every number | 1,800 | 600 | 4,199 | 0.49 ms |
+| 9,600 | every number | 28,808 | 9,608 | 67,199 | 11.3 ms |
+| 600 | the whole grid, mounted again | 2,464 | 1,232 | 4,136 | 1.34 ms |
+| 9,600 | the whole grid, mounted again | 38,644 | 19,322 | 66,146 | 25.3 ms |
 
-Changing one number costs the same with 600 or 9,600 on screen. "Rebuilt" is what a UI that
-describes itself again every frame does: here, sixteen times the numbers cost 17 times the
-time, and two to three times what changing every number costs.
+Changing one number costs the same with 600 or 9,600 on screen. The last rows are the same
+grid removed and mounted again in Quadra every frame: sixteen times the numbers cost 19
+times the time, and two to three times what changing every number costs.
 
 The same holds in the other scenes (counted by the frame loop):
 
@@ -71,5 +72,5 @@ rest. The binary is 2.81 MB. The GPU takes 42 to 151 µs a frame in these scenes
 ### A terminal
 
 1Term (`tools/doomfire.sh`): a fire demo that rewrites the whole screen every frame runs at
-576 fps in a 143×39 window, 62 MB/s through the Windows console host, which alone carries
-71 MB/s.
+576 to 627 fps in a 143×39 window (six runs), 62 to 68 MB/s through the Windows console host,
+which alone carries 71 MB/s.

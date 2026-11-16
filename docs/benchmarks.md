@@ -52,7 +52,7 @@ the scene as its first argument and prints `ready` (the counter's first frame), 
 standard error and a table of the medians to standard output. `tools/bench.sh <scene>..`
 runs scenes without a window instead and prints what a frame did and each pass's time.
 
-## 2026-11-16 — document and list slower, found; what a change costs (on ba217dc)
+## 2026-11-16 — document and list slower, found; what a change costs (on 8e8f2a2 and after)
 
 **Where document's and list's time went.** The 2026-11-11 build (4244cf9) and today's, in
 the same rounds of the runner: list 0.359 / 0.375 ms, document 0.679 / 0.725. The passes
@@ -69,51 +69,61 @@ at a dozen commits between (a release build each, the best of three windowed run
 | 313fab4, the GPU's time by timestamp queries | 201 | 98 | 21 | 25 |
 | today | 203 | 89 | 21 | 25 |
 
-No one change: steps of 10 to 25 µs across features, in a window only (between two frames
-13 ms of other work leave the caches cold; without a window the frames follow each other).
-Two answers:
+No one change: steps of 10 to 25 µs across features, in a window only. A guess, not tested:
+between two frames 13 ms of other work leave the caches cold, where without a window the
+frames follow each other. Two answers, document and list a frame in the runner at each step
+(the old build in the same rounds each time: 0.679 to 0.681 and 0.359 to 0.364):
+
+| State | Document | List |
+|---|---|---|
+| Before (release) | 0.776 ms | 0.389 ms |
+| The GPU's time measured only when asked | 0.721 | 0.376 |
+| The dist profile | 0.648 | 0.373 |
 
 - **The GPU's time is measured only when asked** (`Renderer::measure_gpu`, specs/07): the
-  queries cost every app 15 to 30 µs of draw a frame. Document 0.725 to 0.721 ms in the runner
-  and draw 99 to 79 µs; the bench asks with `BENCH_GPU=1`.
+  queries cost every app 15 to 30 µs of draw a frame (document's draw 99 to 79 µs); the bench
+  asks with `BENCH_GPU=1`.
 - **A dist profile** (fat LTO, one codegen unit, specs/14, "Shipped builds") for what ships
-  and is measured: the kit, the tree and the text system optimized as one program. In the
-  same rounds: document 0.679 (old) / 0.725 (release) / 0.648 (dist), grid 1.287 / 1.195 /
-  1.135, list 0.359 / 0.375 / 0.373; the binary 2.84 to 2.77 MB. Without a window document
-  paints in 88 µs, not 149. Inlining the glyph path by hand (`#[inline]`) had done nothing.
+  and is measured: the kit, the tree and the text system optimized as one program. Grid went
+  1.195 to 1.135 with it, the binary 2.84 to 2.77 MB; without a window document paints in
+  88 µs, not 149. Inlining the glyph path by hand (`#[inline]`) had done nothing.
 
 List stays 4 % over the old build: its update in a window is 7 µs more since hover follows a
 list that scrolls under the pointer (0b9d555), which it must.
 
 **What a change costs** (`tools/bench.sh incremental`, the `cells` scene, specs/14): N numbers
-on screen, a frame changing the middle one, all of them, or rebuilding the grid.
+on screen, a frame changing the middle one, all of them, or mounting the grid again
+(`dynamic`), after 1,200 frames that let the middle number reach its longest.
 
 | Cells | Change | Laid out | Painted | Instances written | Uploaded | µs a frame |
 |---|---|---|---|---|---|---|
 | 600 | one | 3 | 1 | 6 | 6 | 2 |
-| 600 | all | 1,800 | 600 | 3,593 | 4,192 | 487 |
-| 600 | rebuild | 2,464 | 1,232 | 4,135 | 4,136 | 1,522 |
-| 2,400 | one | 3 | 1 | 5 | 33 | 6 |
-| 2,400 | all | 7,202 | 2,402 | 14,376 | 16,773 | 2,280 |
-| 2,400 | rebuild | 9,724 | 4,862 | 16,536 | 16,537 | 5,986 |
+| 600 | all | 1,800 | 600 | 3,600 | 4,199 | 486 |
+| 600 | rebuild | 2,464 | 1,232 | 4,135 | 4,136 | 1,340 |
+| 2,400 | one | 3 | 1 | 6 | 6 | 2 |
+| 2,400 | all | 7,202 | 2,402 | 14,402 | 16,799 | 2,141 |
+| 2,400 | rebuild | 9,724 | 4,862 | 16,537 | 16,538 | 5,568 |
 | 9,600 | one | 3 | 1 | 6 | 6 | 3 |
-| 9,600 | all | 28,808 | 9,608 | 57,505 | 67,096 | 11,650 |
-| 9,600 | rebuild | 38,644 | 19,322 | 66,144 | 66,145 | 25,893 |
+| 9,600 | all | 28,808 | 9,608 | 57,608 | 67,199 | 11,253 |
+| 9,600 | rebuild | 38,644 | 19,322 | 66,145 | 66,146 | 25,306 |
 
 The first run of it found what was not proportional: a number whose digits come and go
 changed its node's count of instances, which rebuilt the whole layer and uploaded it (one
-number of 9,600: 103 µs, 12,351 instances uploaded). **A node keeps its room** now (specs/07):
-fewer instances than it holds are padded with empty ones, so the layer is rebuilt only when a
-node first reaches its longest. At 2,400 the middle number reached a new longest once in the
-run: 33 uploaded is that one rebuild over 600 frames.
+number of 9,600, a different one each frame: 103 µs, 12,351 instances uploaded). **A node
+keeps its room** now (specs/07): fewer instances than it holds are padded with empty ones, so
+the layer is rebuilt only when a node first reaches its longest; a hidden or culled node keeps
+none. A different number each frame still rebuilds each time one first grows: the room is
+per node. 1Term's fire demo, which repaints every row every frame, is unchanged by it (six
+runs on each side, 576 to 627 fps against 583 to 621).
 
 **The rest, measured again** (the dist profile): the runner, three rounds: list / grid /
 document 0.375 / 1.103 / 0.654 ms a frame, p99 13.45 / 13.45 / 13.44 ms, peaks 23.9 / 29.5 /
 26.6 MB; the counter starts in 34 ms and holds 11.5 MB; the binary is 2.81 MB. Without a
 window: grid 200 / 127 / 145 µs (update / layout / paint), document 2 / 39 / 91, the editor
-typing 9 / 0 / 444, scrolling 1 / 0 / 9. The GPU: 42 / 151 / 112 µs. The fire demo: the engine
-alone 1,129 fps at 200×50 (180 MB/s), the console host alone 640 at 147×40 (71.4 MB/s), a
-1Term window 576 at 143×39 (62.1 MB/s).
+typing 9 / 0 / 444 (still over the 367 of 2026-11-14: open), scrolling 1 / 0 / 9. The GPU:
+42 / 151 / 112 µs. The fire demo: the engine alone 1,129 fps at 200×50 (180 MB/s), the
+console host alone 637 to 641 at 147×40 (71.4 MB/s), a 1Term window 576 to 627 at 143×39
+(62 to 68 MB/s).
 
 ## 2026-11-16 — every bench again, with the runner in Rust (on fef3e5c)
 

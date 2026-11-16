@@ -132,6 +132,23 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### Performance (2026-11-16)
+
+- **The comparison bench's runner in Rust** (`bench/runner`, `tools/bench.sh compare`), over
+  quadra-shell's `process_cycles`, `cycles_per_second`, `private_memory`, `window_shown`.
+  Test: `quadra-shell/tests/measure.rs`.
+- **The GPU's time only when asked**: `Renderer::measure_gpu` (specs/07); the bench with
+  `BENCH_GPU=1`. Test: `quadra-native-win/tests/pixels.rs`.
+- **The dist profile**: fat LTO for what ships and is measured (specs/14, "Shipped builds");
+  `tools/bench.sh`, `tools/doomfire.sh` and `tools/package.sh` build in it.
+- **A node keeps its room** (specs/07): a count of instances that shrinks is padded, so the
+  layer is patched in place. Tests: `quadra-view/tests/room.rs`, the empty instance in
+  `quadra-native-win/tests/pixels.rs`.
+- **What a change costs**: the `cells` scene, `tools/bench.sh incremental` (specs/14), in the
+  README with the rest (docs/benchmarks.md, 2026-11-16).
+- Open: the editor's paint (444 µs typing, 367 on 2026-11-14); list 4 % over the build of
+  2026-11-11 (hover follows a list that scrolls under the pointer).
+
 ### After the phases (2026-11-14)
 
 The user's list of what the apps will need, and of what the components lack.

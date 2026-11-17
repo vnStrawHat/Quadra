@@ -110,6 +110,12 @@ grow later. Verifying reads the rounds and salt from what is stored and compares
 time that does not depend on where they differ. Both take a noticeable part of a second: an
 app runs them on the pool. `None` where the OS has no random bytes.
 
+Sealing, for a secret an app keeps (a saved password): `derive_key(password, salt, rounds)`
+is that PBKDF2 key of 32 bytes, `random_bytes::<N>()` the OS's random bytes, and
+`seal(key, plain)` / `open(key, sealed)` AES-256-GCM through the OS's crypto (the AES-GCM
+pseudo handle): a fresh random nonce of 12 bytes, then the ciphertext, then the tag of 16.
+`open` gives `None` for a wrong key or bytes changed. Nothing here writes a key anywhere.
+
 ## Console
 
 For a program of the bench that writes to the console it runs in (`bench/doomfire`):

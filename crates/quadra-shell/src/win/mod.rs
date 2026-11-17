@@ -6,6 +6,7 @@ pub mod console;
 mod crash;
 mod instance;
 mod measure;
+mod seal;
 mod secret;
 mod tray;
 mod usage;
@@ -13,7 +14,8 @@ mod usage;
 pub use crash::crash_reports;
 pub use instance::single_instance;
 pub use measure::{cycles_per_second, private_memory, process_cycles, window_shown};
-pub use secret::{hash_password, verify_password};
+pub use seal::{open, random_bytes, seal};
+pub use secret::{derive_key, hash_password, verify_password};
 pub use usage::process_usage;
 
 use std::path::{Path, PathBuf};

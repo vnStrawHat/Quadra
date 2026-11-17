@@ -452,7 +452,8 @@ thread never waits on the network.
   5 s once the shell is open and keeps the last time it took; the app reads it every 2 s into
   the session's `link_note` (`124 ms`). The space's header shows it at its right, the status
   bar shows the focused space's host (its name, else `user@host`) and it, or `local shell`.
-- **A tab's second line** counts its spaces by kind: `2 ssh · 1 local · 3 spaces`.
+- **A tab's second line** counts its spaces by kind: `2 ssh · 1 local · 3 spaces`; an
+  editor's space is not counted.
 
 ### M9 in detail
 
@@ -528,7 +529,8 @@ thread never waits on the network.
   coloured by its type: the file's name (`config.yaml`, `Dockerfile`), else the program a first
   line of `#!` names (after `env`: `python3`), else plain; the gutter marks the lines changed
   against the base, the text as it was opened or last saved. Its 18 px header, as a terminal's:
-  `user@host:/full/path` in mono on the left, then the type (`yaml`, `python`, `text`) in the
+  `user@host:/full/path` in mono on the left (too long, its folder is cut with an ellipsis and
+  the file's name stays whole: `test@vm:/home/te…/config.yaml`), then the type (`yaml`, `python`, `text`) in the
   third colour, `● Modified` in the warning colour while the text is not the base (`Saving…`
   while it is sent), Diff (toggled: the kit's `diff` of the base and the text, three lines of
   context, in the editor's place, the editor kept with its undo; `No changes.` when there are
@@ -537,7 +539,10 @@ thread never waits on the network.
   file had, and uploads it on the connection the file came from; a card says it was saved or
   why not, and once saved the text is the base. Closing it with changes (Ctrl+W, Close space)
   asks in a dialog, Save changes?: Cancel, Don't save (it closes), Save (it closes once the
-  file is on the server; a failure leaves it open). Closing its tab or the window does not ask.
+  file is on the server; a failure leaves it open). Closing its tab, Close others, Quit or the
+  window's close ask the same, one editor with changes at a time, its tab shown and the space
+  focused; once it is answered the closing goes on and the next one asks; Cancel stops it, and
+  every Don't save of that closing is taken back.
   Its session is never connected and keeps the connection of the file, so the dock follows it
   and shows the dock of the space the file came from; it is no session connected on the lock
   card, and the tab's title is the file's name.

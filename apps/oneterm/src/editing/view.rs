@@ -49,7 +49,7 @@ impl View for EditView {
         let id = body(&model, tab, &space, &edit).mount(cx);
         let found = widget(cx.tree, id);
         if let Some(w) = found {
-            let _ = edit.widget.set((cx.handle.clone(), w));
+            *edit.widget.borrow_mut() = Some((cx.handle.clone(), w));
         }
         let (shows, handle, locked) = (focused(tab, space.id), cx.handle.clone(), model.lock().locked);
         effect(move || {
@@ -103,7 +103,7 @@ fn body(model: &Model, tab: Tab, space: &Space, edit: &Rc<FileEdit>) -> quadra::
         })
         .child(header(model, edit, on))
         .child(main)
-        .child(ask(model, edit, id))
+        .child(ask(model, edit))
 }
 
 fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -> quadra::Div {
@@ -130,14 +130,7 @@ fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -
         .text_size(12.0)
         .line_height(1.5)
         .text_color(token::TEXT_2)
-        .child(
-            div()
-                .grow(1.0)
-                .cut_to_parent()
-                .font_family(fonts::MONO)
-                .text_color(move || if on() { token::TEXT } else { token::TEXT_2 })
-                .child(text(edit.place.clone()).ellipsis()),
-        )
+        .child(place(&edit.place, on))
         .child(div().text_color(token::TEXT_3).child(text(kind)))
         .child(div().text_color(token::WARN).child(text(state)));
     if matches!(edit.content, Content::Binary(_)) {
@@ -152,6 +145,22 @@ fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -
     )
 }
 
+/// `user@host:/full/path`: too long, its folder is cut and the file's name stays whole.
+fn place(place: &str, on: impl Fn() -> bool + 'static) -> quadra::Div {
+    let at = place.rfind('/').map_or(0, |it| it + 1);
+    let (folder, name) = place.split_at(at);
+    row()
+        .grow(1.0)
+        .min_width(0.0)
+        .cut_to_parent()
+        .font_family(fonts::MONO)
+        .text_color(move || if on() { token::TEXT } else { token::TEXT_2 })
+        .role(quadra::Role::Text)
+        .label(place.to_string())
+        .child(div().min_width(0.0).child(text(folder.to_string()).ellipsis()))
+        .child(div().shrink(0.0).child(text(name.to_string())))
+}
+
 /// The editor, coloured by the file's type, its gutter marking the changes against the base;
 /// while the diff shows, the diff in its place (the editor stays, with its undo).
 fn editing(edit: &Rc<FileEdit>, source: &str) -> quadra::Div {
@@ -160,7 +169,8 @@ fn editing(edit: &Rc<FileEdit>, source: &str) -> quadra::Div {
         .path(edit.kind.clone())
         .font(13.0, 20.0)
         .base(edit.base.get_untracked())
-        .changed(edit.modified);
+        .changed(edit.modified)
+        .keep(edit.doc.clone());
     let edit = edit.clone();
     let compared = move || {
         let (old, new) = (edit.base.get_untracked(), edit.now.get_untracked());
@@ -189,20 +199,14 @@ fn binary(size: u64) -> quadra::Div {
 }
 
 /// Closing with changes: Save (then it closes), Don't save, or Cancel.
-fn ask(model: &Model, edit: &Rc<FileEdit>, id: u64) -> impl View + use<> {
+fn ask(model: &Model, edit: &Rc<FileEdit>) -> impl View + use<> {
     let said = format!("{} has changes that are not on the server.", edit.name);
-    let (drops, saves, (model, closes)) = (edit.clone(), edit.clone(), (model.clone(), model.clone()));
+    let (drops, saves, (model, keeps)) = (edit.clone(), edit.clone(), (model.clone(), model.clone()));
     dialog(edit.asking, "Save changes?", move || text(said.clone()))
-        .action("Cancel", Variant::Secondary, || {})
-        .action("Don't save", Variant::Danger, move || {
-            drops.let_go();
-            closes.close_space(id);
-        })
+        .action("Cancel", Variant::Secondary, move || keeps.keep_edits())
+        .action("Don't save", Variant::Danger, move || drops.let_go())
         .action("Save", Variant::Primary, move || {
-            let (after, model) = (saves.clone(), model.clone());
-            saves.save(&model.clone(), move || {
-                after.let_go();
-                model.close_space(id);
-            });
+            let after = saves.clone();
+            saves.save(&model, move || after.let_go());
         })
 }

@@ -103,8 +103,11 @@ pub(crate) fn tab_icon(tab: Tab, px: f32, on: impl Fn() -> bool + 'static) -> im
 
 /// What a tab's second line says, while it shows: the kinds of its spaces and their count.
 pub(crate) fn tab_line(tab: Tab) -> String {
-    let (n, ssh) =
-        tab.spaces.with(|spaces| (spaces.len(), spaces.iter().filter(|it| it.remote.is_some()).count()));
+    // An editor's space is not counted.
+    let (n, ssh) = tab.spaces.with(|spaces| {
+        let terminals = || spaces.iter().filter(|it| it.edit.is_none());
+        (terminals().count(), terminals().filter(|it| it.remote.is_some()).count())
+    });
     let local = n - ssh;
     let kinds = match (ssh, local) {
         (0, _) => format!("{local} local"),

@@ -134,7 +134,9 @@ impl Model {
         });
         let Some((tab, at)) = found else { return !tabs.is_empty() };
         // An editor with changes asks first.
-        if tab.spaces.with_untracked(|all| all[at].edit.as_ref().is_some_and(|it| it.holds())) {
+        let me = self.clone();
+        let then: crate::editing::Then = std::rc::Rc::new(move || _ = me.close_space(id));
+        if tab.spaces.with_untracked(|all| all[at].edit.as_ref().is_some_and(|it| it.holds(then))) {
             return true;
         }
         let mut gone = None;

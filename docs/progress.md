@@ -140,7 +140,12 @@ whose every cell changes every frame, costs what the V build's costs.
   remote path, the type, `● Modified`, Diff (the kit's diff against the text opened or last
   saved) and Save (Ctrl+S, uploaded on the file's own connection); closing with changes asks.
   `quadra-code`: `Editor::changed`, `EditorWidget::set_base` (specs/13). Tests:
-  `apps/oneterm/tests/editing.rs`. Closing a tab or the window does not ask yet.
+  `apps/oneterm/tests/editing.rs`.
+- **Closing with changes asks everywhere**: a tab's close, Close others, Quit and the window's
+  close ask each editor with changes in turn, its tab shown; Cancel stops and takes back the
+  Don't saves. The editor's document (text, cursors, undo) outlives its view when its tab is
+  left (`Editor::keep`, specs/13): before, coming back to the tab lost the edits. The header
+  cuts the folder and keeps the file's name; a tab's second line leaves editors uncounted.
 - **The dock**: each space keeps its folder, entries, choice and transfers; two clicks open a
   folder; its left edge is dragged (220 to 800 px, `sftp.dock_width`); a transfer takes the
   whole width. Tests: `tests/dock.rs`, `tests/dock_tabs.rs`.

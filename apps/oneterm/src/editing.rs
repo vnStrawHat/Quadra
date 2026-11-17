@@ -2,13 +2,16 @@
 //! terminals that holds the file in the kit's code editor, coloured by its type, with a diff
 //! of the changes; Ctrl+S sends it back. A binary file says so and is not edited.
 
+mod closing;
 mod kind;
 mod view;
+
+pub(crate) use closing::Then;
 
 pub(crate) use kind::{Content, kind, label};
 pub(crate) use view::view;
 
-use std::cell::{Cell, OnceCell};
+use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -82,10 +85,14 @@ pub(crate) struct FileEdit {
     /// Closing with changes asks first; Don't save lets it go.
     pub asking: Signal<bool>,
     let_go: Cell<bool>,
+    /// The closing that asked, to go on once it is answered.
+    then: RefCell<Option<Then>>,
     /// The space the file came from: the dock it shows is that space's.
     pub from: u64,
-    /// The editor's widget, once it is mounted.
-    widget: OnceCell<(Handle, NodeId)>,
+    /// The editor's widget, while it is mounted, and its document while it is not (its tab
+    /// does not show).
+    widget: RefCell<Option<(Handle, NodeId)>>,
+    pub doc: quadra_code::KeptDoc,
     owner: Scope,
 }
 
@@ -132,8 +139,10 @@ pub(crate) fn open(model: &Model, from: Source, local: PathBuf, remote: String, 
             now: signal(String::new()),
             asking: signal(false),
             let_go: Cell::new(false),
+            then: RefCell::new(None),
             from: source,
-            widget: OnceCell::new(),
+            widget: RefCell::new(None),
+            doc: Rc::default(),
             owner: Scope::current(),
         })
     });
@@ -153,24 +162,34 @@ fn card(model: &Model, body: String, tone: Tone) {
 
 impl FileEdit {
     /// Whether closing waits for an answer: there are changes, and Don't save was not chosen.
-    /// It asks.
-    pub fn holds(&self) -> bool {
+    /// It asks, and `then` goes on with the closing once it is answered.
+    pub fn holds(&self, then: Then) -> bool {
         let holds = self.modified.get_untracked() && !self.let_go.get();
         if holds {
+            *self.then.borrow_mut() = Some(then);
             self.asking.set(true);
         }
         holds
     }
 
-    /// The space closes without its changes.
+    /// The space closes without its changes: the closing goes on.
     pub fn let_go(&self) {
         self.let_go.set(true);
+        if let Some(then) = self.then.take() {
+            then();
+        }
+    }
+
+    /// Its changes hold the closing again (Cancel).
+    fn keep(&self) {
+        self.let_go.set(false);
+        self.then.take();
     }
 
     /// Calls `f` with the editor's text (as edited, and as its file has it) in the tree's
     /// next pass.
     fn text(&self, f: impl FnOnce(String, String) + 'static) {
-        let Some((handle, id)) = self.widget.get().cloned() else { return };
+        let Some((handle, id)) = self.widget.borrow().clone() else { return };
         handle.with(move |tree| {
             if let Some(w) = tree.widget_mut::<EditorWidget>(id) {
                 f(w.doc.text(), w.doc.buffer.file_text());
@@ -183,7 +202,7 @@ impl FileEdit {
         if self.diff.get_untracked() {
             self.diff.set(false);
             // The editor again, with the focus.
-            if let Some((handle, id)) = self.widget.get().cloned() {
+            if let Some((handle, id)) = self.widget.borrow().clone() {
                 handle.with(move |tree| tree.focus(id));
             }
             return;
@@ -232,7 +251,7 @@ impl FileEdit {
     /// The text saved is the base of the diff and of the gutter's marks.
     fn rebase(&self, text: String) {
         self.base.set(text.clone());
-        let Some((handle, id)) = self.widget.get().cloned() else { return };
+        let Some((handle, id)) = self.widget.borrow().clone() else { return };
         handle.with(move |tree| {
             if let Some(w) = tree.widget_mut::<EditorWidget>(id) {
                 w.set_base(&text);

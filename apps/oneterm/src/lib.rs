@@ -133,12 +133,20 @@ impl OneTerm {
             .display(locked::shown(move || !lock.locked.get()))
             .child(self.model.notices().above(30.0).host());
         let windows = use_context::<quadra::Windows>();
+        let closing = (self.model.clone(), window.clone());
         locked::watches(quadra_design::root(), lock)
             .on_action::<Command>(move |&command| {
                 if !run(&model, command, windows.as_ref())
                     && let Some(window) = &window
                 {
-                    window.close_now(); // the last tab went, or Quit
+                    window.close(); // the last tab went, or Quit: as the close button does
+                }
+            })
+            .on_close({
+                let (model, window) = closing;
+                move || {
+                    let window = window.clone();
+                    !model.asks_all(Rc::new(move || window.iter().for_each(Window::close)))
                 }
             })
             .child(chrome::title_bar(&self.model))

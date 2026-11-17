@@ -217,6 +217,10 @@ impl Model {
     pub fn close_others(&self, id: u64) {
         let others: Vec<u64> =
             self.0.tabs.get_untracked().iter().map(|tab| tab.id).filter(|&it| it != id).collect();
+        let me = self.clone();
+        if self.asks(&others, Rc::new(move || me.close_others(id))) {
+            return;
+        }
         self.0.active.set(id);
         for other in others {
             self.close_tab(other);
@@ -242,6 +246,10 @@ impl Model {
     /// Closes a tab and its spaces; the one after it shows, or the one before. False when
     /// no tab is left.
     pub fn close_tab(&self, id: u64) -> bool {
+        let me = self.clone();
+        if self.asks(&[id], Rc::new(move || _ = me.close_tab(id))) {
+            return true;
+        }
         let mut gone = None;
         let mut left = 0;
         self.0.tabs.update(|tabs| {

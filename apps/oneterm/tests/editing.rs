@@ -218,3 +218,45 @@ fn a_file_edited_from_an_editor_space_keeps_the_dock_where_it_was() {
     assert!(a.button("main.rs") && !a.button("config.yaml"), "{}", a.h.semantics());
     assert!(a.shows("/home/src/main.rs"), "both open");
 }
+
+#[test]
+fn closing_a_tab_or_the_window_with_changes_asks_first() {
+    let mut a = app("edit-tab", "In 1Term");
+    a.edit("config.yaml");
+    a.wait(|a| a.shows("/home/config.yaml"), "the editor");
+    assert!(a.h.has_text("1 ssh \u{B7} 1 space"), "an editor is not counted\n{}", a.h.semantics());
+    a.h.type_text("x");
+    a.h.settle();
+    a.h.key(Key::T, Mods::CTRL);
+    a.h.settle();
+    assert!(!a.shows("/home/config.yaml"), "another tab shows");
+
+    // Its tab's close: the tab shows again with the edit, and the editor asks.
+    a.h.get_by_role(Role::Tab, "config.yaml").click();
+    a.h.settle();
+    assert!(
+        a.editor().is_some_and(|it| it.starts_with("xname")),
+        "the edit kept
+{}",
+        a.h.semantics()
+    );
+    let tabs = a.h.query(|n| n.semantics.role == Role::Tab).len();
+    a.h.get_by_role(Role::Button, "Close tab").click();
+    a.h.settle();
+    assert!(a.h.has_text("Save changes?"), "{}", a.h.semantics());
+    a.h.get_by_role(Role::Button, "Cancel").click();
+    a.h.settle();
+    a.h.key(Key::T, Mods::CTRL);
+    a.h.settle();
+
+    // The window's close asks the same; Don't save closes the window.
+    assert!(!a.h.tree.may_close());
+    a.h.settle();
+    assert!(a.h.has_text("Save changes?") && a.shows("/home/config.yaml"), "{}", a.h.semantics());
+    assert!(a.h.tree.take_window_requests().is_empty());
+    a.h.get_by_role(Role::Button, "Don't save").click();
+    a.h.settle();
+    assert_eq!(a.h.tree.take_window_requests(), [quadra_tree::WindowRequest::Close]);
+    assert!(a.h.tree.may_close(), "nothing left to ask");
+    assert_eq!(a.h.query(|n| n.semantics.role == Role::Tab).len(), tabs + 1);
+}

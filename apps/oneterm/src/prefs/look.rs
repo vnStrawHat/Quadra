@@ -19,6 +19,11 @@ pub const COLORS: [(&str, &str); 8] = [
     ("terminal.colors.clock_fg", "Gutter clock"),
     ("terminal.colors.line_number_fg", "Gutter line number"),
 ];
+/// What a colour of [`COLORS`] is at first: empty, the theme's, but the gutter's line number.
+pub fn color_default(key: &str) -> &'static str {
+    if key == "terminal.colors.line_number_fg" { "#2b7f99" } else { "" }
+}
+
 /// The sixteen ANSI colours: their keys and names, the normal eight then the bright.
 pub const ANSI: [(&str, &str); 16] = [
     ("terminal.colors.ansi.black", "Black"),
@@ -87,7 +92,7 @@ impl LookPrefs {
             weight: crate::prefs::choice(s, "terminal.font_weight", &WEIGHTS),
             cell_width: s.value("terminal.cell_width", 0.0),
             padding: PADDING.map(|(key, _, default)| s.value(key, default)),
-            colors: COLORS.map(|(key, _)| s.value(key, String::new())),
+            colors: COLORS.map(|(key, _)| s.value(key, color_default(key).to_string())),
             ansi: ANSI.map(|(key, _)| s.value(key, String::new())),
             min_contrast: s.value("terminal.colors.min_contrast", 4.5),
             show_gutter: s.value("terminal.show_gutter", false),

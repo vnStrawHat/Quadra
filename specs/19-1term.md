@@ -291,8 +291,9 @@ Nerd Font"; size, 15; weight, Normal and Thin to Black; line height, 1.2; the ce
 48 px; the padding a side, 0 on all four, each 0 to 64 px, the only room between the grid and the space's edges; ligatures, on; semantic
 highlighting, on: text in the default colour coloured by what it means, in the colour theme's ANSI colours;
 the reference's Auto and On do the same, so it is a switch) and colours over the theme's
-(foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_picker`, its swatch the
-theme's colour while it is empty but for the gutter's; the minimum contrast, 4.5, from 1, off, to 21; the sixteen ANSI colours, a row a
+(foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_picker`, its swatch and
+code the theme's colour while it is empty: the gutter's text and clock the foreground mixed half with the
+background, its background the background, its line number `#2b7f99` by default; the minimum contrast, 4.5, from 1, off, to 21; the sixteen ANSI colours, a row a
 colour with its normal and bright fields), the view's `TermLook` (specs/18). Keys: `terminal.font_fallbacks`,
 `terminal.cell_width`, `terminal.padding.top` (`right`, `bottom`, `left`), `terminal.colors.min_contrast`,
 `terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`), `terminal.ligatures`,

@@ -273,3 +273,10 @@ fn ligatures_and_semantic_highlighting_are_on_and_follow_the_page() {
     let inks = terminal_inks(&mut a.h);
     assert_eq!(inks[0], inks[5], "off: both in the foreground");
 }
+
+#[test]
+fn the_gutter_s_line_number_is_teal_until_set() {
+    let look = oneterm::Prefs::defaults().look();
+    assert_eq!(look.colors.line_number_fg, quadra::Color::parse_hex("#2b7f99"));
+    assert_eq!(look.colors.gutter_fg, None, "the rest of the gutter follows the theme");
+}

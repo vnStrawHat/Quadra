@@ -1,7 +1,11 @@
 //! The settings of how terminals look and behave (specs/19, "Settings"): the pages
 //! Appearance and Terminal.
 
-use quadra::{MountCx, NodeId, Signal, View, effect, row, signal, untrack};
+use std::rc::Rc;
+
+use quadra::{
+    AnyView, MountCx, NodeId, Signal, Theme, View, dynamic, effect, row, signal, untrack, use_context,
+};
 use quadra_design::{SettingsGroup, color_picker, input, number_input, segmented, select, switch, token};
 
 use super::Back;
@@ -65,14 +69,30 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         let field = number_input(side).stepper().range(0.0, 64.0).test_id(id);
         group.row(name, "Room around the grid, in pixels.", field).back(side, default)
     });
-    let theirs = [token::EDITOR_FOREGROUND, token::CANVAS, token::EDITOR_CURSOR, token::EDITOR_SELECTION];
+    let theirs = [
+        token::EDITOR_FOREGROUND,
+        token::CANVAS,
+        token::EDITOR_CURSOR,
+        token::EDITOR_SELECTION,
+        token::CANVAS,
+    ];
+    // The gutter's text, clock and line number, unset: the foreground mixed half with the
+    // background, as the terminal draws them, in the window's theme.
+    let window = use_context::<Signal<Rc<Theme>>>();
+    let half = move || {
+        window.map(|it| it.with(|t| t.color(token::EDITOR_FOREGROUND).lerp(t.color(token::CANVAS), 0.5)))
+    };
     let colors = prefs::COLORS.iter().zip(l.colors.into_iter().zip(k.colors)).enumerate().fold(
         SettingsGroup::new("Terminal colours"),
         |group, (n, ((_, name), (color, default)))| {
-            let field = color_picker(color).label(name.to_string());
-            let field = match theirs.get(n) {
-                Some(&role) => field.fallback(role),
-                None => field,
+            let field = move || color_picker(color).label(name.to_string());
+            let field = match n {
+                0..=3 => AnyView::new(field().fallback(theirs[n])),
+                5 => AnyView::new(field().fallback(theirs[4])),
+                _ => AnyView::new(dynamic(move || match half() {
+                    Some(mixed) => AnyView::new(field().fallback(mixed)),
+                    None => AnyView::new(field()),
+                })),
             };
             group.row(name, "#rrggbb over the theme's; empty, the theme's.", field).back(color, default)
         },

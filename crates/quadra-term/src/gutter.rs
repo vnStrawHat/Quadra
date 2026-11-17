@@ -17,8 +17,8 @@ use crate::widget::{TerminalWidget, color};
 pub(crate) const GAP: f32 = 8.0;
 /// Cells of `[HH:MM:SS] `.
 const CLOCK_CELLS: usize = 11;
-/// The fewest digits a line number has room for.
-pub(crate) const DIGITS: usize = 3;
+/// The digits a line number has room for at first: none are kept ahead.
+pub(crate) const DIGITS: usize = 1;
 
 /// The stamps of the primary screen's rows: `times[j]` is the row `front + j`, in seconds
 /// after `origin`.

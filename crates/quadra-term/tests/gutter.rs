@@ -58,16 +58,31 @@ fn the_grid_is_narrower_by_the_gutter() {
     assert_eq!(t.row(0), None, "no gutter, no labels");
     t.look.update(|it| it.gutter = true);
     t.h.settle();
-    // `[HH:MM:SS] ` and 3 digits, and 4 px each side: (11 + 3) * 6 + 8.
-    assert_eq!(t.h.tree.widget_mut::<TerminalWidget>(t.id).unwrap().gutter_width(), 92.0);
-    assert_eq!(t.s.size().cols, 48, "(400 - 92 - 16) / 6");
+    // `[HH:MM:SS] ` and the one digit of the lines shown, and 4 px each side: (11 + 1) * 6 + 8.
+    let width = |t: &mut Term| t.h.tree.widget_mut::<TerminalWidget>(t.id).unwrap().gutter_width();
+    assert_eq!(width(&mut t), 80.0);
+    assert_eq!(t.s.size().cols, 50, "(400 - 80 - 16) / 6");
+    // Line 10 needs a second digit: the gutter grows by a cell, and the grid is sized again.
+    let lines: Vec<String> = (1..=12).map(|n| format!("{n}")).collect();
+    t.feed(
+        lines
+            .join(
+                "
+",
+            )
+            .as_bytes(),
+        Instant::now(),
+    );
+    assert_eq!(width(&mut t), 86.0);
+    assert_eq!(t.s.size().cols, 49, "(400 - 86 - 16) / 6");
 }
 
 #[test]
 fn a_click_is_the_cell_after_the_gutter() {
     let mut t = term(true);
     t.feed(b"\x1b[?1000h\x1b[?1006h", Instant::now());
-    let at = Point::new(92.0 + 8.0 + 3.0 * 6.0 + 3.0, 8.0 + 14.0 + 5.0);
+    // Ten rows show: line 10 needs two digits, so the gutter is (11 + 2) * 6 + 8.
+    let at = Point::new(86.0 + 8.0 + 3.0 * 6.0 + 3.0, 8.0 + 14.0 + 5.0);
     t.h.tree.pointer(PointerInput::Down, MouseButton::Left, at, Mods::NONE, t.h.now());
     t.h.settle();
     assert_eq!(&*t.wrote.borrow(), b"\x1b[<0;4;2M");
@@ -100,7 +115,7 @@ fn numbers_count_from_the_first_row_and_survive_a_column_change() {
     // More room around the grid: other columns, so every row has a new id, and a row less.
     t.look.update(|it| it.padding = Edges::all(20.0));
     t.h.settle();
-    assert_eq!(t.s.size().cols, 44, "(400 - 92 - 40) / 6");
+    assert_eq!(t.s.size().cols, 45, "(400 - 86 - 40) / 6: two digits for line 20");
     let shown = t.s.screen_text();
     let last = shown.iter().position(|it| it == "line 20").unwrap();
     assert_eq!(t.row(last), Some((20, Some(t1))));

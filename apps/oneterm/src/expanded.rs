@@ -11,7 +11,7 @@ use quadra::{
 use quadra_design::{Variant, checkbox, context_menu, icon_button, icons, token, tooltip};
 
 use crate::model::Model;
-use crate::panes::{compared, visible};
+use crate::panes::{Sort, compared, sorted, visible};
 use crate::sftp::Dock;
 
 mod pane;
@@ -34,6 +34,8 @@ fn said_row(said: String) -> AnyView {
 
 pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
     let (follow, compare) = (signal(false), signal(false));
+    let (local_sort, remote_sort): (Signal<Sort>, Signal<Sort>) =
+        (signal(Sort::default()), signal(Sort::default()));
     follow_cwd(model, d, follow);
     let (host_of, refreshes, goes, gets, collapse) =
         (model.clone(), model.clone(), model.clone(), model.clone(), d.expanded);
@@ -74,6 +76,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
     let (local, locals_of) = (d.local, model.clone());
     let local_rows = dynamic(move || {
         let (all, said) = (visible(&local.entries.get(), d.hidden.get()), local.said.get());
+        let all = sorted(all, local_sort.get());
         if !said.is_empty() {
             return said_row(said);
         }
@@ -95,6 +98,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
     let remotes = model.clone();
     let remote_rows = dynamic(move || {
         let (all, said) = (visible(&d.entries.get(), d.hidden.get()), d.said.get());
+        let all = sorted(all, remote_sort.get());
         if !said.is_empty() {
             return said_row(said);
         }
@@ -129,6 +133,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
             }
         },
         move || local.refresh(),
+        local_sort,
         local_rows,
     );
     let remote_pane = pane(
@@ -140,6 +145,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
             }
         },
         move || d.refresh(&refreshes),
+        remote_sort,
         context_menu(remote_rows, crate::dock::remote_area(model, d)),
     );
     let sends = model.clone();
@@ -155,7 +161,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         let name = d.selected.get_untracked();
         let entry =
             d.entries.with_untracked(|all| all.iter().find(|it| Some(&it.name) == name.as_ref()).cloned());
-        if let Some(entry) = entry.filter(|it| !it.dir) {
+        if let Some(entry) = entry {
             d.download(&gets, &entry);
         }
     });

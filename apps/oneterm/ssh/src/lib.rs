@@ -4,6 +4,7 @@
 
 mod auth;
 mod files;
+mod folders;
 mod forward;
 mod hostkey;
 mod prompt;

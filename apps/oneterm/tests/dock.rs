@@ -212,3 +212,51 @@ fn close(a: &mut App) {
     assert!(a.h.tree.act(*all.last().unwrap(), &quadra_tree::SemanticAction::Click));
     a.h.settle();
 }
+
+#[test]
+fn transfers_wait_their_turn_folders_go_whole_and_panes_sort() {
+    let mut a = app("dock-queue");
+    std::fs::write(a.served.join("home/src/main.rs"), b"fn main() {}\n").unwrap();
+    a.wait(|a| a.entry("config.yaml"), "the home folder");
+    // Two dropped at once: the file runs, the folder waits its turn.
+    let (big, tree) = (a.downloads.join("big.bin"), a.downloads.join("tree"));
+    std::fs::write(&big, vec![0u8; 1 << 20]).unwrap();
+    std::fs::create_dir_all(tree.join("deep")).unwrap();
+    std::fs::write(tree.join("deep/note.txt"), b"note").unwrap();
+    let dock = a.h.query(|n| n.semantics.name == "SFTP" && n.semantics.role != Role::Button)[0];
+    let at = a.h.tree.window_rect(dock).center();
+    a.h.tree.os_drag_enter(Rc::new(DroppedFiles(vec![big.clone(), tree.clone()])), at);
+    a.h.tree.os_drop(at);
+    // One frame, before the pool has done anything: the first runs, the second waits.
+    a.h.frame();
+    assert!(a.h.has_text("queued"), "the folder waits");
+    let note = a.served.join("home/tree/deep/note.txt");
+    a.wait(|a| note.is_file() && a.entry("tree"), "the folder's tree uploaded after");
+    assert_eq!(std::fs::metadata(a.served.join("home/big.bin")).unwrap().len(), 1 << 20);
+
+    // A folder's Download takes its tree.
+    a.menu("src", "Download");
+    let got = a.downloads.join("src/main.rs");
+    a.wait(|_| got.is_file(), "the folder downloaded");
+
+    // The expanded view's Remote pane by name, then by size, then the other way.
+    a.h.get_by_role(Role::Button, "Zoom SFTP").click();
+    a.h.settle();
+    let above = |a: &App, first: &str, then: &str| {
+        let y = |name: &str| {
+            let all = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == name);
+            a.h.tree.window_rect(*all.last().unwrap()).y
+        };
+        y(first) < y(then)
+    };
+    a.wait(|a| above(a, "big.bin", "config.yaml"), "by name");
+    let by_size =
+        *a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Sort by Size")
+            .last()
+            .unwrap();
+    assert!(a.h.tree.act(by_size, &quadra_tree::SemanticAction::Click));
+    a.wait(|a| above(a, "config.yaml", "big.bin") && a.h.has_text("Size \u{2191}"), "by size");
+    assert!(a.h.tree.act(by_size, &quadra_tree::SemanticAction::Click));
+    a.wait(|a| above(a, "big.bin", "config.yaml") && a.h.has_text("Size \u{2193}"), "the other way");
+    assert!(above(&a, "tree", "big.bin"), "folders first");
+}

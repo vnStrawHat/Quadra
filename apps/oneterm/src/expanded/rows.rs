@@ -151,8 +151,7 @@ fn transfer_row(d: Dock, transfer: Rc<Transfer>) -> impl View {
     let (said, part, gone) = (transfer.clone(), transfer.clone(), transfer.clone());
     let arrow = if transfer.up { icons::ARROW_RIGHT } else { icons::ARROW_LEFT };
     let cross = icon_button(icons::X, "Cancel transfer").size(quadra_design::Size::Xs).on_click(move || {
-        gone.cancel.store(true, Ordering::Relaxed);
-        if gone.end.get_untracked().is_some() {
+        if gone.cross() {
             d.transfers.update(|all| all.retain(|it| !Rc::ptr_eq(it, &gone)));
         }
     });

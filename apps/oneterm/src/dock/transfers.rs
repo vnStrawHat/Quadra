@@ -39,8 +39,7 @@ fn what(transfer: &Transfer) -> String {
 fn transfer_row(d: Dock, transfer: Rc<Transfer>) -> impl View {
     let (said, gone) = (transfer.clone(), transfer.clone());
     let cross = icon_button(icons::X, "Cancel transfer").size(quadra_design::Size::Xs).on_click(move || {
-        gone.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
-        if gone.end.get_untracked().is_some() {
+        if gone.cross() {
             d.transfers.update(|all| all.retain(|it| !Rc::ptr_eq(it, &gone)));
         }
     });

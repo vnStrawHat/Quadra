@@ -494,7 +494,11 @@ thread never waits on the network.
   connection once the shell is open, and gives `Files`, whose calls block (an app makes them
   on its pool): `home`, `list` (folders first, then names whatever the case; no `.` or `..`;
   at most 100,000 entries), `download(remote, local, progress, cancel)`, `upload(local,
-  remote, progress, cancel)`, `mkdir`, `remove`, `stat` (a path's properties: folder or file,
+  remote, progress, cancel)`, `download_folder` and `upload_folder` (the same arguments: the
+  folder's tree, at most 32 deep, its folders made and its files copied one by one, the
+  progress over the bytes of all; a link is copied as what the listing says it is, so a
+  folder's link is never followed; a remote name that is not a safe local one fails the
+  transfer), `mkdir`, `remove`, `stat` (a path's properties: folder or file,
   whether it is a symbolic link, the rest of what it points to, size, mode, uid and gid with their
   names read from the server's `/etc/passwd` and `/etc/group` where it lets them be read, times). A transfer writes `<name>.part` beside its
   target and renames it once whole, so a target is never half written; a cancelled or failed
@@ -531,7 +535,10 @@ thread never waits on the network.
   in mono (`-rw-r--r-- (0644)`: the kind, rwx with `s`/`S` and `t`/`T` for the special bits, the
   octal), Owner and Group (`name (id)`, the id alone without a name, `-` without either), Path (in
   mono, with a copy button), and Close. It shows; it does not change the mode. A failed ask is a card.
-  Files dropped from the OS upload to the folder shown. Transfers show
+  Files and folders dropped from the OS upload to the folder shown; a folder's Download and a
+  local folder's Upload carry the whole tree. Transfers wait their turn: one runs at a time
+  in each space's dock, in the order asked; one waiting says `queued`, and its cross takes it
+  off. Transfers show
   under the list over a line, 12 px, each the dock's whole width: an arrow, `Uploading name` or `Downloading name`, its state
   in mono (`48%`, `done`), a cross that cancels, and a bar of 2 px; a failed one says why. Names
   that start with `.` show only while Show hidden files is on (both views).
@@ -542,7 +549,9 @@ thread never waits on the network.
   pane goes to the focused space's directory when it is a remote path), Show hidden files (an
   eye, toggled), and Zoom out (in the accent). Two panes, Local at the left and Remote at the
   right, each with a bar of 28 px: its label, its path in a mono field of 22 px, Go to the typed
-  path and Refresh; a header row (Name, Size 80 px, Modified 124 px, the last two at the right)
+  path and Refresh; a header row (Name, Size 80 px, Modified 124 px, the last two at the right;
+  a click sorts the pane by it, again the other way, its label marked `↑` or `↓`; folders stay
+  first; each pane by name at first)
   and rows of 26 px with a line under each: `..`, then the entries, size and time in mono 12 px
   (`Nov 16 10:52`); a click selects a row (the accent at 10 % and a 2 px accent bar), two open a
   folder. The Local pane starts in the downloads folder (the setting or Downloads). Between them

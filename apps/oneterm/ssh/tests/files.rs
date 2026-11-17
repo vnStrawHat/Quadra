@@ -94,3 +94,24 @@ fn a_path_s_properties_name_its_owner_where_the_server_tells() {
     assert!(dir.dir && dir.mode == 0o040755, "{dir:?}");
     assert!(files.stat("/home/nowhere").is_err());
 }
+
+#[test]
+fn a_folder_s_tree_goes_both_ways_with_the_progress_over_all_of_it() {
+    let (_c, files, served) = files("sftp-tree");
+    std::fs::create_dir_all(served.join("home/src/deep")).unwrap();
+    std::fs::write(served.join("home/src/a.rs"), b"fn main() {}\n").unwrap();
+    std::fs::write(served.join("home/src/deep/b.txt"), vec![b'b'; 70_000]).unwrap();
+    let local = folder("sftp-tree-local").join("src");
+    let last = std::sync::Mutex::new((0, 0));
+    let tell = |d, w| *last.lock().unwrap() = (d, w);
+    files.download_folder("/home/src", &local, tell, &AtomicBool::new(false)).unwrap();
+    assert_eq!(std::fs::read(local.join("a.rs")).unwrap(), b"fn main() {}\n");
+    assert_eq!(std::fs::read(local.join("deep/b.txt")).unwrap().len(), 70_000);
+    assert_eq!(*last.lock().unwrap(), (70_013, 70_013));
+
+    files.upload_folder(&local, "/home/copy", |_, _| {}, &AtomicBool::new(false)).unwrap();
+    assert_eq!(std::fs::read(served.join("home/copy/deep/b.txt")).unwrap().len(), 70_000);
+    // Again, into the folder there now.
+    files.upload_folder(&local, "/home/copy", |_, _| {}, &AtomicBool::new(false)).unwrap();
+    assert_eq!(std::fs::read(served.join("home/copy/a.rs")).unwrap(), b"fn main() {}\n");
+}

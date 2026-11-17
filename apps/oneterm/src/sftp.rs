@@ -94,8 +94,10 @@ impl Dock {
             // A remote space whose shell is not open yet is asked again; a local one says so.
             let remote = untrack(|| model.active_tab().and_then(|tab| tab.focused()))
                 .is_some_and(|it| it.remote.is_some());
-            self.said.set(if remote { oneterm_ssh::NOT_YET.into() } else { LOCAL.into() });
+            let why: String = if remote { oneterm_ssh::NOT_YET.into() } else { LOCAL.into() };
+            self.said.set(why.clone());
             self.entries.set(Vec::new());
+            then(*self, Err(why));
             return;
         };
         let dock = *self;
@@ -176,8 +178,8 @@ impl Dock {
         }
     }
 
-    /// Downloads a file under a name not taken: to the Local pane's folder in the expanded
-    /// view, else to the downloads folder.
+    /// Downloads a file or a folder's tree under a name not taken: to the Local pane's folder
+    /// in the expanded view, else to the downloads folder.
     pub fn download(&self, model: &Model, entry: &Entry) {
         if !safe_name(&entry.name) {
             self.said.set(format!("Not a name for a local file: {}", entry.name));
@@ -186,41 +188,81 @@ impl Dock {
         let remote = join(&self.dir.get_untracked(), &entry.name);
         let folder =
             if self.expanded.get_untracked() { self.local.dir.get_untracked() } else { downloads(model) };
-        let local = free_name(&folder, &entry.name);
+        let (local, dir) = (free_name(&folder, &entry.name), entry.dir);
         let transfer = self.start(&entry.name, false, folder.display().to_string());
         let (done, whole, cancel) = (transfer.done.clone(), transfer.whole.clone(), transfer.cancel.clone());
-        self.with_files(
-            model,
-            move |files| files.download(&remote, &local, |d, w| store(&done, &whole, d, w), &cancel),
-            move |dock, got| {
-                if got.is_ok() && dock.local.dir.get_untracked() == folder {
-                    dock.local.refresh();
-                }
-                transfer.end.set(Some(got));
-            },
-        );
+        let (model, ran) = (model.clone(), transfer.clone());
+        self.queue(&transfer, move |dock| {
+            dock.with_files(
+                &model,
+                move |files| {
+                    let tell = |d, w| store(&done, &whole, d, w);
+                    match dir {
+                        true => files.download_folder(&remote, &local, tell, &cancel),
+                        false => files.download(&remote, &local, tell, &cancel),
+                    }
+                },
+                move |dock, got| {
+                    if got.is_ok() && dock.local.dir.get_untracked() == folder {
+                        dock.local.refresh();
+                    }
+                    dock.finish(&ran, got);
+                },
+            )
+        });
     }
 
-    /// Uploads local files to the folder shown.
+    /// Uploads local files and folders' trees to the folder shown.
     pub fn upload(&self, model: &Model, paths: Vec<PathBuf>) {
-        for path in paths.into_iter().filter(|it| it.is_file()) {
+        for path in paths.into_iter().filter(|it| it.is_file() || it.is_dir()) {
             let name = path.file_name().map(|it| it.to_string_lossy().into_owned()).unwrap_or_default();
             let remote = join(&self.dir.get_untracked(), &name);
             let transfer = self.start(&name, true, self.dir.get_untracked());
             let (done, whole, cancel) =
                 (transfer.done.clone(), transfer.whole.clone(), transfer.cancel.clone());
-            let again = model.clone();
-            self.with_files(
-                model,
-                move |files| files.upload(&path, &remote, |d, w| store(&done, &whole, d, w), &cancel),
-                move |dock, got| {
-                    if got.is_ok() {
-                        dock.refresh(&again);
-                    }
-                    transfer.end.set(Some(got));
-                },
-            );
+            let (model, ran) = (model.clone(), transfer.clone());
+            self.queue(&transfer, move |dock| {
+                let again = model.clone();
+                dock.with_files(
+                    &model,
+                    move |files| {
+                        let tell = |d, w| store(&done, &whole, d, w);
+                        match path.is_dir() {
+                            true => files.upload_folder(&path, &remote, tell, &cancel),
+                            false => files.upload(&path, &remote, tell, &cancel),
+                        }
+                    },
+                    move |dock, got| {
+                        if got.is_ok() {
+                            dock.refresh(&again);
+                        }
+                        dock.finish(&ran, got);
+                    },
+                )
+            });
         }
+    }
+
+    /// A transfer waits its turn: one runs at a time, in the order asked.
+    fn queue(&self, transfer: &Transfer, job: impl FnOnce(Dock) + 'static) {
+        *transfer.job.borrow_mut() = Some(Box::new(job));
+        self.next();
+    }
+
+    /// Starts the first transfer waiting, when none runs.
+    fn next(&self) {
+        let all = self.transfers.get_untracked();
+        if all.iter().any(|it| it.running()) {
+            return;
+        }
+        if let Some(job) = all.iter().find_map(|it| it.job.borrow_mut().take()) {
+            job(*self);
+        }
+    }
+
+    fn finish(&self, transfer: &Transfer, got: Result<(), String>) {
+        transfer.end.set(Some(got));
+        self.next();
     }
 
     fn start(&self, name: &str, up: bool, to: String) -> Rc<Transfer> {
@@ -232,6 +274,7 @@ impl Dock {
             whole: Arc::default(),
             cancel: Arc::default(),
             end: signal(None),
+            job: Default::default(),
         });
         self.transfers.update(|all| all.push(transfer.clone()));
         transfer

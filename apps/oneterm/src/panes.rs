@@ -86,6 +86,32 @@ fn list(dir: &Path) -> Result<Vec<Entry>, String> {
     Ok(entries)
 }
 
+/// A column a pane is sorted by.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum By {
+    #[default]
+    Name,
+    Size,
+    Modified,
+}
+
+/// A pane's order: its column, and whether the other way.
+pub(crate) type Sort = (By, bool);
+
+/// Entries in a pane's order, folders first.
+pub(crate) fn sorted(mut entries: Vec<Entry>, (by, back): Sort) -> Vec<Entry> {
+    entries.sort_by(|a, b| {
+        let named = || a.name.to_lowercase().cmp(&b.name.to_lowercase());
+        let order = match by {
+            By::Name => named(),
+            By::Size => a.size.cmp(&b.size).then_with(named),
+            By::Modified => a.modified.cmp(&b.modified).then_with(named),
+        };
+        b.dir.cmp(&a.dir).then(if back { order.reverse() } else { order })
+    });
+    entries
+}
+
 /// The entries shown: those whose names start with `.` only when hidden ones show.
 pub(crate) fn visible(entries: &[Entry], hidden: bool) -> Vec<Entry> {
     entries.iter().filter(|it| hidden || !it.name.starts_with('.')).cloned().collect()
@@ -173,6 +199,17 @@ mod tests {
         assert_eq!(free_name(&dir, ".bashrc"), dir.join(".bashrc"));
         let names: Vec<String> = list(&dir).unwrap().into_iter().map(|it| it.name).collect();
         assert_eq!(names, ["a.txt"]);
+    }
+
+    #[test]
+    fn panes_sort_by_a_column_with_folders_first() {
+        let e = |name: &str, dir, size, modified| Entry { name: name.into(), dir, size, modified };
+        let all = vec![e("b", false, 1, 30), e("A", false, 9, 10), e("z", true, 0, 20), e("c", false, 5, 20)];
+        let names = |sort| sorted(all.clone(), sort).into_iter().map(|it| it.name).collect::<Vec<_>>();
+        assert_eq!(names((By::Name, false)), ["z", "A", "b", "c"]);
+        assert_eq!(names((By::Name, true)), ["z", "c", "b", "A"]);
+        assert_eq!(names((By::Size, true)), ["z", "A", "c", "b"]);
+        assert_eq!(names((By::Modified, false)), ["z", "A", "c", "b"]);
     }
 
     #[test]

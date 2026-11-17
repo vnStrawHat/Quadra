@@ -6,6 +6,7 @@ use quadra_design::{icon_button, icons, input, token};
 
 use super::rows::cell;
 use super::{MODIFIED, SIZE};
+use crate::panes::{By, Sort};
 
 /// What a pane is told: its label, its folder, where to go, how to list it again.
 pub(super) struct Side {
@@ -25,6 +26,7 @@ pub(super) fn pane(
     path: impl Fn() -> String + 'static,
     go: impl Fn(String) + Clone + 'static,
     again: impl FnMut() + 'static,
+    sort: Signal<Sort>,
     rows: impl View + 'static,
 ) -> impl View {
     let typed: Signal<String> = signal(String::new());
@@ -70,9 +72,9 @@ pub(super) fn pane(
         .text_color(token::TEXT_2)
         .border_bottom(1.0)
         .border_color(token::LINE)
-        .child(div().grow(1.0).child(text("Name")))
-        .child(cell("Size", SIZE))
-        .child(cell("Modified", MODIFIED));
+        .child(heading(div().grow(1.0), "Name", By::Name, sort))
+        .child(heading(cell(String::new(), SIZE), "Size", By::Size, sort))
+        .child(heading(cell(String::new(), MODIFIED), "Modified", By::Modified, sort));
     let rows = column().width(Length::Fill).child(rows);
     let list = quadra::scroll(signal(0.0), rows).container(column().grow(1.0).min_height(0.0));
     column()
@@ -84,4 +86,16 @@ pub(super) fn pane(
         .child(bar)
         .child(header)
         .child(list)
+}
+
+/// A column's label: a click sorts by it, again the other way; the column sorted by is marked.
+fn heading(cell: quadra::Div, label: &'static str, by: By, sort: Signal<Sort>) -> quadra::Div {
+    cell.role(Role::Button)
+        .label(format!("Sort by {label}"))
+        .child(text(move || match sort.get() {
+            (it, false) if it == by => format!("{label} \u{2191}"),
+            (it, true) if it == by => format!("{label} \u{2193}"),
+            _ => label.to_string(),
+        }))
+        .on_click(move |_| sort.update(|(it, back)| (*it, *back) = (by, *it == by && !*back)))
 }

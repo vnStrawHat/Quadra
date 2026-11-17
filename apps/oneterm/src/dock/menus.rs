@@ -91,8 +91,14 @@ pub(crate) fn remote(model: &Model, d: Dock, entry: &Entry) -> impl Fn() -> Vec<
             }
         });
         let mut items = vec![first];
-        if !entry.dir {
-            items.push(edit);
+        let (gets, whole) = (model.clone(), entry.clone());
+        match entry.dir {
+            true => items.push(
+                MenuItem::new("Download")
+                    .icon(icons::ARROW_DOWN)
+                    .on_select(move || d.download(&gets, &whole)),
+            ),
+            false => items.push(edit),
         }
         items.extend([
             MenuItem::new("Rename\u{2026}").on_select(move || {
@@ -143,11 +149,20 @@ pub(crate) fn local(model: &Model, d: Dock, entry: &Entry) -> impl Fn() -> Vec<M
                 .on_select(move || d.upload(&sends, vec![at.clone()])),
         };
         let copy = copies(path.display().to_string());
-        vec![
-            first,
-            MenuItem::new("Copy path").icon(icons::COPY).on_select(copy),
-            MenuItem::new("Refresh").on_select(move || local.refresh()),
-        ]
+        let (sends, at) = (model.clone(), path.clone());
+        let folder = entry.dir.then(|| {
+            MenuItem::new("Upload")
+                .icon(icons::ARROW_UP)
+                .on_select(move || d.upload(&sends, vec![at.clone()]))
+        });
+        vec![first]
+            .into_iter()
+            .chain(folder)
+            .chain([
+                MenuItem::new("Copy path").icon(icons::COPY).on_select(copy),
+                MenuItem::new("Refresh").on_select(move || local.refresh()),
+            ])
+            .collect()
     }
 }
 

@@ -439,13 +439,32 @@ thread never waits on the network.
   tag, its name and its address. A double click opens a tab connected to it, the Connect
   dialogs following the connection (M7 in detail; one click does
   nothing; a reader connects by its menu's Connect); its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
-  filled, titled Edit SSH host; a new name takes the old one's place), Remove. The Add dialog
+  filled, titled Edit SSH host; a new name takes the old one's place), Forget password (with
+  one saved), Remove. A group's heading has a menu, Connect all (n): a tab for each of its
+  hosts, in their order, the last one shown. The Add dialog
   takes the name (the host when empty), the group, the target,
   the colour tag (the kit's `color_picker`, "By group" while empty: its presets are the
   seven hues as the dark theme has them, its "Default" swatch the group's colour, and a colour
-  chosen that is a preset's is saved by the preset's name), the auth and the key file; its
+  chosen that is a preset's is saved by the preset's name), the auth and the key file, and for
+  the auths Password and Key file the password or the key's passphrase to save (a password
+  field, Password or passphrase; editing, empty keeps the one saved, `Saved` its placeholder). A secret is saved only
+  sealed with the master password (below, "Saved passwords"); with none set the field is
+  disabled and says to set one in Security & lock; with one set but not typed since 1Term
+  started, a Master password field shows under it. Its
   fields, pickers and selects are all 28 px high. Quick connect has
   "Save as host".
+- **Saved passwords**: a vault in `ssh.vault`,
+  `v1$<rounds>$<salt hex>$<sealed key hex>`: a random data key of 32 bytes sealed
+  (`quadra_shell::seal`, specs/16) under a key derived from the master password (PBKDF2, its
+  own salt, 600,000 rounds); a host's secret is sealed under the data key, `sv1:<hex>`, in
+  `ssh.secrets` (rows of the host's name and that). The data key is in memory only, from the
+  first time the master password is typed (setting it, unlocking, a Master password field);
+  setting the first password makes the vault, changing it seals the data key again, removing
+  it forgets the vault and every saved secret. Connecting to a saved host with a secret: with
+  the data key, the space's first question of a password or a passphrase is answered with it
+  (a wrong one asks in the Sign in dialog as before); without it, a dialog Unlock saved
+  passwords asks the master password first (Cancel connects without). Connect all asks once.
+  A secret is never written plain, logged or shown.
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
   Quick connect, and Add SSH host. Its field is the title bar's Search's.
 - **Latency**: the engine pings the server (an SSH ping, a request that wants a reply) every
@@ -537,7 +556,10 @@ thread never waits on the network.
   none) and Save (disabled with no changes), ghost buttons of 18 px. Ctrl+S (the context
   `file_edit`) or Save writes the text to the copy in the data folder, with the line ends the
   file had, and uploads it on the connection the file came from; a card says it was saved or
-  why not, and once saved the text is the base. Closing it with changes (Ctrl+W, Close space)
+  why not, and once saved the text is the base. A right click opens its menu (while the
+  settings show menus): Copy, Paste and Find, the editor's own commands as its keys do them
+  (Ctrl+C, Ctrl+V, Ctrl+F), then Close (Ctrl+W, asking as below); a binary file's, or one
+  while the diff shows, has Close alone. Closing it with changes (Ctrl+W, Close space)
   asks in a dialog, Save changes?: Cancel, Don't save (it closes), Save (it closes once the
   file is on the server; a failure leaves it open). Closing its tab, Close others, Quit or the
   window's close ask the same, one editor with changes at a time, its tab shown and the space

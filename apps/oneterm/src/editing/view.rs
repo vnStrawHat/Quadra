@@ -5,8 +5,8 @@
 use std::rc::Rc;
 
 use quadra::{Align, AnyView, MountCx, NodeId, View, by_text, column, div, effect, row, show, text};
-use quadra_code::{EditorWidget, editor, line_colours};
-use quadra_design::{Size, Variant, button, dialog, diff, fonts, token};
+use quadra_code::{EditorCommand, EditorWidget, editor, line_colours};
+use quadra_design::{MenuItem, Size, Variant, button, context_menu, dialog, diff, fonts, token};
 use quadra_tree::Tree;
 
 use super::{CONTEXT, Content, FileEdit, Save, label};
@@ -101,6 +101,7 @@ fn body(model: &Model, tab: Tab, space: &Space, edit: &Rc<FileEdit>) -> quadra::
         Content::Binary(size) => AnyView::new(binary(*size)),
         Content::Text(text) => AnyView::new(editing(edit, text)),
     };
+    let main = context_menu(main, menu(model, edit, id));
     let (saves, model_) = (edit.clone(), model.clone());
     column()
         .grow(1.0)
@@ -198,6 +199,44 @@ fn editing(edit: &Rc<FileEdit>, source: &str) -> quadra::Div {
         .min_height(0.0)
         .child(column().grow(1.0).min_height(0.0).display(shown(move || !shows.get())).child(code))
         .child(show(move || shows.get(), compared))
+}
+
+/// The menu of a right click: Copy, Paste and Find run the editor's own commands, as its keys
+/// do (the window's clipboard, its find bar), then Close; a binary file's, or one while the
+/// diff shows, has Close alone.
+fn menu(model: &Model, edit: &Rc<FileEdit>, id: u64) -> impl Fn() -> Vec<MenuItem> + 'static {
+    let (model, edit) = (model.clone(), edit.clone());
+    move || {
+        if !model.prefs().context_menu.get_untracked() {
+            return Vec::new();
+        }
+        let closes = model.clone();
+        let close = MenuItem::new("Close").keys("Ctrl+W").danger().on_select(move || {
+            _ = closes.close_space(id);
+        });
+        if matches!(edit.content, Content::Binary(_)) || edit.diff.get_untracked() {
+            return vec![close];
+        }
+        let at = edit.widget.borrow().clone();
+        let command = |label: &str, keys: &str, command: EditorCommand| {
+            let at = at.clone();
+            MenuItem::new(label).keys(keys).on_select(move || {
+                if let Some((handle, w)) = at.clone() {
+                    handle.with(move |tree| {
+                        tree.focus(w);
+                        tree.dispatch(&command);
+                    });
+                }
+            })
+        };
+        vec![
+            command("Copy", "Ctrl+C", EditorCommand::Copy),
+            command("Paste", "Ctrl+V", EditorCommand::Paste),
+            command("Find", "Ctrl+F", EditorCommand::Find),
+            MenuItem::separator(),
+            close,
+        ]
+    }
 }
 
 /// What stands for a binary file.

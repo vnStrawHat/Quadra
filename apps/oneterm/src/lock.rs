@@ -24,6 +24,8 @@ pub struct Lock {
     pub said: Signal<String>,
     /// Seconds left before another try.
     pub wait: Signal<u32>,
+    /// The saved passwords' data key, once the master password was typed (`vault.rs`).
+    pub key: Signal<Option<[u8; 32]>>,
     tries: Signal<u32>,
     idle: Signal<u32>,
     prefs: Prefs,
@@ -39,6 +41,7 @@ impl Lock {
             typed: signal(String::new()),
             said: signal(String::new()),
             wait: signal(0),
+            key: signal(None),
             tries: signal(0),
             idle: signal(0),
             prefs,
@@ -100,27 +103,41 @@ impl Lock {
         if self.wait.get_untracked() > 0 {
             return;
         }
-        let (lock, typed) = (*self, self.typed.get_untracked());
-        let stored = self.prefs.password.get_untracked();
+        let lock = *self;
+        self.open(self.typed.get_untracked(), move |right| {
+            lock.typed.set(String::new());
+            if right {
+                lock.tries.set(0);
+                lock.said.set(String::new());
+                lock.idle.set(0);
+                lock.locked.set(false);
+                return;
+            }
+            let tries = lock.tries.get_untracked() + 1;
+            lock.tries.set(tries);
+            let wait = tries.checked_sub(5).map(|n| BACK_OFF[(n as usize).min(4)]);
+            lock.wait.set(wait.unwrap_or(0));
+            lock.said.set(match wait {
+                Some(s) => format!("Wrong password \u{B7} try again in {s} s"),
+                None => "Wrong password".into(),
+            });
+        });
+    }
+
+    /// Tries the master password on the pool: right, the saved passwords' data key is in
+    /// memory (a new vault's when there was none). `done` is told whether it was right.
+    pub fn open(&self, typed: String, done: impl FnOnce(bool) + 'static) {
+        let (key, vault) = (self.key, self.prefs.vault);
+        let (stored, sealed) = (self.prefs.password.get_untracked(), vault.get_untracked());
         self.owner.run(|| {
             spawn(async move {
-                let right = background(move || verify(&typed, &stored)).await.unwrap_or(false);
-                lock.typed.set(String::new());
-                if right {
-                    lock.tries.set(0);
-                    lock.said.set(String::new());
-                    lock.idle.set(0);
-                    lock.locked.set(false);
-                    return;
+                let opened = background(move || crate::vault::open_with(&typed, &stored, &sealed)).await;
+                let Ok(Some((data, made))) = opened else { return done(false) };
+                key.set(Some(data));
+                if let Some(made) = made {
+                    vault.set(made);
                 }
-                let tries = lock.tries.get_untracked() + 1;
-                lock.tries.set(tries);
-                let wait = tries.checked_sub(5).map(|n| BACK_OFF[(n as usize).min(4)]);
-                lock.wait.set(wait.unwrap_or(0));
-                lock.said.set(match wait {
-                    Some(s) => format!("Wrong password \u{B7} try again in {s} s"),
-                    None => "Wrong password".into(),
-                });
+                done(true);
             })
             .detach()
         });
@@ -130,6 +147,8 @@ impl Lock {
     /// one set, if any. `done` is told what came of it.
     pub fn set_password(&self, current: String, new: String, done: impl Fn(&str) + 'static) {
         let (stored, password) = (self.prefs.password.get_untracked(), self.prefs.password);
+        let (sealed, (vault, secrets, key)) =
+            (self.prefs.vault.get_untracked(), (self.prefs.vault, self.prefs.secrets, self.key));
         self.owner.run(|| {
             spawn(async move {
                 let made = background(move || {
@@ -137,15 +156,26 @@ impl Lock {
                         return Err("The current password is wrong");
                     }
                     if new.is_empty() {
-                        return Ok(String::new());
+                        return Ok((String::new(), String::new(), None));
                     }
-                    hash(&new).ok_or("The OS gave no random bytes")
+                    let hash = hash(&new).ok_or("The OS gave no random bytes")?;
+                    // The vault's data key, sealed again under the new password.
+                    let opened = crate::vault::open_with(&current, &stored, &sealed).map(|it| it.0);
+                    let data = opened.or_else(crate::vault::new_key).ok_or("The OS gave no random bytes")?;
+                    let vault = crate::vault::reseal(&data, &new).ok_or("Sealing failed")?;
+                    Ok((hash, vault, Some(data)))
                 })
                 .await;
                 match made {
-                    Ok(Ok(hash)) => {
+                    Ok(Ok((hash, sealed, data))) => {
                         let removed = hash.is_empty();
                         password.set(hash);
+                        vault.set(sealed);
+                        key.set(data);
+                        // Removed, the saved secrets go with it.
+                        if removed {
+                            secrets.set(Vec::new());
+                        }
                         done(if removed { "Password removed" } else { "Password set" });
                     }
                     Ok(Err(why)) => done(why),

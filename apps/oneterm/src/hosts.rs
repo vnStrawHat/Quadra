@@ -118,12 +118,18 @@ impl Model {
 
     pub fn remove_host(&self, name: &str) {
         self.prefs().hosts.update(|rows| rows.retain(|it| it.first().map(String::as_str) != Some(name)));
+        self.set_sealed(name, None);
     }
 
     /// Opens a tab connected to a host, or a space beside the focused one; it is recent.
     pub fn connect_to(&self, remote: Remote, here: bool) {
+        self.connect_all(vec![remote], here);
+    }
+
+    /// As `connect_to`, the engine answered with a secret the first time it asks for it.
+    pub(crate) fn connect_with(&self, remote: Remote, here: bool, secret: Option<crate::vault::Secret>) {
         let label = remote.target.label();
-        let launch = Launch { ssh: Some(remote), ..self.launch(None) };
+        let launch = Launch { ssh: Some(remote), secret, ..self.launch(None) };
         if here {
             self.split_with(launch)
         } else {

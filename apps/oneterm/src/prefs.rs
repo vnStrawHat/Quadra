@@ -81,6 +81,9 @@ pub struct Prefs {
     /// Saved hosts and recent targets, rows of words (`hosts.rs`).
     pub hosts: Signal<Vec<Vec<String>>>,
     pub recent: Signal<Vec<Vec<String>>>,
+    /// The saved passwords' vault, and each host's sealed secret (`vault.rs`).
+    pub vault: Signal<String>,
+    pub secrets: Signal<Vec<Vec<String>>>,
     /// Where downloads go; empty: the user's Downloads folder.
     pub downloads: Signal<String>,
     /// What edits a remote file: the system's app for it, or a program with arguments; and
@@ -149,6 +152,8 @@ impl Prefs {
             clipboard_read: s.value("security.allow_clipboard_read", false),
             hosts: s.value("ssh.hosts", Vec::new()),
             recent: s.value("ssh.recent", Vec::new()),
+            vault: s.value("ssh.vault", String::new()),
+            secrets: s.value("ssh.secrets", Vec::new()),
             downloads: s.value("sftp.downloads", String::new()),
             editor: choice(s, "sftp.editor", &crate::sftp::EDITORS),
             editor_program: s.value("sftp.editor_program", String::new()),

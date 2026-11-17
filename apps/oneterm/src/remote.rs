@@ -44,6 +44,34 @@ impl Conn {
     }
 }
 
+/// A host's saved secret and the question it answers: the target's password, or its key
+/// file's passphrase.
+struct Saved {
+    secret: Option<String>,
+    target: String,
+    key: Option<std::path::PathBuf>,
+}
+
+impl Saved {
+    fn of(remote: &crate::shells::Remote, secret: Option<crate::vault::Secret>) -> Saved {
+        let key = match &remote.auth {
+            oneterm_ssh::Auth::Key(path) => Some(path.clone()),
+            _ => None,
+        };
+        Saved { secret: secret.map(|it| it.0), target: remote.target.label(), key }
+    }
+
+    /// The secret, the first time its question is asked.
+    fn answer(&mut self, ask: &Ask) -> Option<String> {
+        let ours = match ask {
+            Ask::Password { target, again: false } => *target == self.target,
+            Ask::Passphrase { file, again: false } => self.key.as_ref() == Some(file),
+            _ => false,
+        };
+        if ours { self.secret.take() } else { None }
+    }
+}
+
 /// A session running a host's shell; called with a launch that names one. The user's own
 /// SSH files and agent are used.
 pub fn remote_shell(launch: Launch) -> Session {
@@ -59,6 +87,7 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     let session = Session::configured(ResizePolicy::KeepViewportTop, config);
     let Some(remote) = launch.ssh else { return session };
     session.title().set(remote.target.label());
+    let saved = Saved::of(&remote, launch.secret);
     let size = session.size();
     let (phase, label) = (signal(Phase::Connecting), signal(remote.target.label()));
     let mut options = options(remote.target);
@@ -70,15 +99,6 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     // The engine tells from its threads; the dialogs follow on the UI's.
     let events = quadra::inbox::<Event>();
     let told = events.sender();
-    events.on_data(move |burst| {
-        for event in burst.drain(..) {
-            let _ = match event {
-                Event::Connecting(to) => label.try_set(to) && phase.try_set(Phase::Connecting),
-                Event::Ask(ask) => phase.try_set(Phase::Ask(ask)),
-                Event::Open => phase.try_set(Phase::Done),
-            };
-        }
-    });
     let (feeder, ended) = (Arc::new(Mutex::new(session.feeder())), session.feeder());
     let ssh = Ssh::connect(
         options,
@@ -92,6 +112,24 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     );
     // Kept with the session, where the SFTP dock and the dialogs find it.
     let ssh = Arc::new(ssh);
+    let answers = ssh.clone();
+    let saved = std::cell::RefCell::new(saved);
+    events.on_data(move |burst| {
+        for event in burst.drain(..) {
+            let _ = match event {
+                Event::Connecting(to) => label.try_set(to) && phase.try_set(Phase::Connecting),
+                // The saved secret answers its question once; refused, the dialog asks.
+                Event::Ask(ask) => match saved.borrow_mut().answer(&ask) {
+                    Some(secret) => {
+                        answers.answer(Some(secret));
+                        true
+                    }
+                    None => phase.try_set(Phase::Ask(ask)),
+                },
+                Event::Open => phase.try_set(Phase::Done),
+            };
+        }
+    });
     session.keep(std::rc::Rc::new(ssh.clone()));
     session.keep(std::rc::Rc::new(Conn { phase, label, ssh: ssh.clone() }));
     // The latency the engine measured, read every 2 s.

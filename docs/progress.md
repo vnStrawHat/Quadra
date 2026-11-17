@@ -132,6 +132,20 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### Saved passwords, Connect all, the editor's menu (2026-11-17)
+
+- **Saved passwords** (specs/19, "Saved passwords"): a host's password or key passphrase is
+  saved sealed (AES-256-GCM, `quadra_shell::seal`, specs/16) under a data key that the master
+  password seals (`ssh.vault`, `ssh.secrets`); the key is in memory once the master password
+  is typed (set, unlock, or the Unlock saved passwords dialog that connecting asks first). The
+  engine's first question of that password or passphrase is answered with it. Changing the
+  master password seals the key again; removing it forgets every secret. Forget password in a
+  host's menu. Tests: `apps/oneterm/tests/vault.rs`, the vault's and the seal's unit tests.
+- **Connect all (n)** in a group heading's menu: a tab for each host, one master password
+  asked for all.
+- **The editor's menu**: Copy, Paste, Find, Close (Close only for a binary file or while the
+  diff shows). Test: `apps/oneterm/tests/editing_menu.rs`.
+
 ### Editing in 1Term, each space's dock (2026-11-17)
 
 - **An editor space** (specs/19, "Editing in 1Term"): Edit… on a remote file opens it in a

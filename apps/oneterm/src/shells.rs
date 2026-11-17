@@ -46,6 +46,9 @@ pub struct Launch {
     pub ssh: Option<Remote>,
     /// The SSH keepalive: how often (`None`: never) and how many may go unanswered.
     pub keepalive: (Option<std::time::Duration>, usize),
+    /// The saved password or passphrase of the host, opened: the first time the engine asks
+    /// for it, the answer.
+    pub secret: Option<crate::vault::Secret>,
 }
 
 /// A host and how to sign in to it.
@@ -123,6 +126,7 @@ impl Model {
             scrollback: p.scrollback.get_untracked().clamp(0.0, 1.0e6) as u32,
             ssh: None,
             keepalive: p.keepalive(),
+            secret: None,
         }
     }
 

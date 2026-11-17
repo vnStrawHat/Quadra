@@ -32,6 +32,9 @@ pub struct Ui {
     pub dock: Signal<bool>,
     /// SFTP in the workspace's place.
     pub expanded: Signal<bool>,
+    /// Connections waiting for the master password to open their saved secrets, and whether
+    /// in a space here.
+    pub unlocking: Signal<Option<(Vec<crate::shells::Remote>, bool)>>,
     /// Command completion: its settings and the app's one engine.
     pub complete: crate::complete::Completion,
 }
@@ -79,6 +82,7 @@ impl Model {
                 editing: signal(None),
                 dock: signal(false),
                 expanded: signal(false),
+                unlocking: signal(None),
                 complete: crate::complete::Completion::new(),
             },
             lock: Lock::new(prefs),

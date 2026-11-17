@@ -36,6 +36,7 @@ mod strip;
 mod tab;
 mod themes;
 mod usage;
+mod vault;
 
 use std::rc::Rc;
 
@@ -156,6 +157,7 @@ impl OneTerm {
             .child(connect::dialog(&self.model))
             .child(asking::dialogs(&self.model))
             .child(hostlist::add_dialog(&self.model))
+            .child(vault::dialog(&self.model))
     }
 }
 

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use oneterm_vt::{GraphicData, GraphicId, SnapshotState};
+use oneterm_vt::{GraphicData, GraphicId, SnapshotPlacement, SnapshotState};
 use quadra_platform::Decoded;
 use quadra_prim::Rect;
 use quadra_tree::{GlyphTile, Image, PaintCx, paint_image};
@@ -47,21 +47,33 @@ impl Arrivals {
     }
 }
 
-/// The images a session shows, on the UI thread, and the atlas tiles its last paint holds.
+/// The images a session shows, on the UI thread, the placements of the frame shown, and the
+/// atlas tiles its last paint holds.
 /// An image keeps its pixels while it lives: the engine hands them out once, so a piece the
 /// atlas loses is made again from them (the engine's limit of live pixels bounds them).
 #[derive(Default)]
 pub(crate) struct Images {
     shown: HashMap<GraphicId, Rc<Image>>,
+    /// Lower layers first, oldest first within a layer.
+    placements: Vec<SnapshotPlacement>,
     tiles: Vec<GlyphTile>,
 }
 
 impl Images {
-    /// Takes what arrived and drops what was let go of: in a refresh, under the lock.
-    pub fn take(&mut self, from: &mut Arrivals) {
+    /// Takes what arrived, the snapshot's placements, and drops what was let go of: in a
+    /// refresh, under the lock. While the snapshot is `held` (synchronized output) the frame
+    /// shown keeps its placements and their images (the engine lists the new placements before
+    /// it holds the rows).
+    pub fn take(&mut self, from: &mut Arrivals, state: &SnapshotState, held: bool) {
         for (id, pixels) in from.new.drain(..) {
             self.shown.insert(id, Image::new(pixels));
         }
+        if held {
+            return;
+        }
+        self.placements.clear();
+        self.placements.extend_from_slice(state.placements());
+        self.placements.sort_by_key(|p| p.z_index); // stable
         for id in from.released.drain(..) {
             self.shown.remove(&id);
         }
@@ -81,7 +93,7 @@ impl Session {
 pub(crate) fn paint(w: &TerminalWidget, cx: &mut PaintCx, state: &SnapshotState, (left, top): (f32, f32)) {
     let mut images = w.session.0.images.borrow_mut();
     let rows = state.rows();
-    let Some(first) = rows.first().filter(|_| !state.placements().is_empty()) else {
+    let Some(first) = rows.first().filter(|_| !images.placements.is_empty()) else {
         images.tiles.clear();
         return;
     };
@@ -90,9 +102,8 @@ pub(crate) fn paint(w: &TerminalWidget, cx: &mut PaintCx, state: &SnapshotState,
     let grid = cx.device(Rect::new(left, top, cols * w.cell, n as f32 * w.line));
     let clip = cx.clip.then(grid, 0.0);
     let mut tiles = Vec::new();
-    let mut placements: Vec<_> = state.placements().iter().collect();
-    placements.sort_by_key(|p| p.z_index); // stable: oldest first within a layer
-    for p in placements {
+    let placements = std::mem::take(&mut images.placements);
+    for p in &placements {
         // The other screen's rows are 2^63 away: they never meet the viewport.
         let (start, end) = (p.row.0, p.row.0.saturating_add(u64::from(p.rows)));
         if end <= first || start >= first.saturating_add(n) {
@@ -110,5 +121,5 @@ pub(crate) fn paint(w: &TerminalWidget, cx: &mut PaintCx, state: &SnapshotState,
         let dest = Rect::new(x - ox, y - oy, image.width as f32 * sx, image.height as f32 * sy);
         paint_image(cx, &image, dest, &clip.then(shown, 0.0), &mut tiles);
     }
-    images.tiles = tiles; // the old ones are let go after the new are held
+    (images.tiles, images.placements) = (tiles, placements); // old tiles go after new are held
 }

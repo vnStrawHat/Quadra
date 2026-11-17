@@ -184,6 +184,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   app's first: the view is a focus scope's leaf, and bindings run before it.
 - Paste: `Terminal::encode_paste(text)` (bracketed when asked, controls dropped). Copy: the
   selection's text. Both through the clipboard the app provides (specs/09); never the real one
+  While synchronized output (`?2026`) holds the snapshot, the frame shown keeps its
+  placements and their images (releases wait): a program that swaps images a frame (a
+  video, a frame's data over many reads) never shows an empty one.
   in a test.
 - Pointer: with mouse reporting on and Shift not held, presses, releases, drags and the wheel
   go to the program (`encode_mouse_*`); otherwise a press and drag select (double-click a word,

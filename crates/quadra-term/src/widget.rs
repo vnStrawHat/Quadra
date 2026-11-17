@@ -139,7 +139,6 @@ impl TerminalWidget {
     pub(crate) fn refresh(&mut self) -> bool {
         let mut engine = self.session.engine();
         let Engine { term, stamps, status, images, .. } = &mut *engine;
-        self.session.0.images.borrow_mut().take(images);
         let px = |v: f32| (v * self.scale).round() as u16;
         term.set_cell_pixels(px(self.cell), px(self.line)); // a store: images are sized by it
         (self.status, self.hovered_at) = (*status, None);
@@ -149,6 +148,8 @@ impl TerminalWidget {
         self.palette = term.palette();
         self.cursor_style = term.cursor_style();
         self.modes = term.mode_snapshot();
+        // A frame `?2026` holds keeps showing the images it places.
+        self.session.0.images.borrow_mut().take(images, &self.state, term.sync().is_set());
         self.gutter_rows.clear();
         if !self.gutter {
             return false;

@@ -135,3 +135,20 @@ fn a_lower_kitty_layer_is_drawn_first() {
     let widths: Vec<f32> = sprites(&mut h).iter().map(|it| it.0[2]).collect();
     assert_eq!(widths, [12.0, 6.0], "z=-1 (two cells) under z=1 (one)");
 }
+
+#[test]
+fn a_frame_held_by_synchronized_output_keeps_the_image_it_shows() {
+    let (mut h, s) = term();
+    let red = b"f=24,s=1,v=1,c=2,r=1;/wAA\x1b\\";
+    feed(&mut h, &s, &[b"\x1b_Ga=T,q=2,C=1,i=1,".as_slice(), red].concat());
+    assert_eq!(sprites(&mut h).len(), 1);
+    // The next frame: the old image deleted and another placed, inside ?2026.
+    // The next frame, inside ?2026, in two reads: the old image deleted, then another placed.
+    feed(&mut h, &s, b"\x1b[?2026h\x1b_Ga=d,d=I,i=1,q=2\x1b\\");
+    assert_eq!(sprites(&mut h).len(), 1, "the held frame still shows its image");
+    feed(&mut h, &s, &[b"\x1b_Ga=T,q=2,C=1,i=2,".as_slice(), red].concat());
+    assert_eq!(sprites(&mut h).len(), 1, "and not the next one's yet");
+    feed(&mut h, &s, b"\x1b[?2026l");
+    assert_eq!(sprites(&mut h).len(), 1, "then the new one");
+    assert_eq!(s.images().len(), 1, "and the old one is gone");
+}

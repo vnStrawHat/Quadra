@@ -64,6 +64,9 @@ implementation is its reference. Its specs, its tests and its own measurements
 
 ## Commands (Git Bash, from the project root)
 
+From cmd.exe each `tools/<name>.sh` runs as `tools\<name>.cmd` with the same arguments (it
+starts Git Bash; `GIT_BASH` names another `bash.exe`).
+
 | What | Command |
 |---|---|
 | Fresh machine | `tools/setup.sh` (checks; installs nothing) |

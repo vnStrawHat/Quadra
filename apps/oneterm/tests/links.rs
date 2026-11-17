@@ -1,6 +1,7 @@
 //! Links in a space (specs/19, "Spaces"), the shell faked: an https link Ctrl+clicked opens, an
 //! http one asks and opens on Open, a `javascript:` one is refused with a card; the menu of
-//! the other button opens and copies a link.
+//! the other button opens and copies a link. And the card of a crash, whose Show report
+//! reveals the report through the same shell.
 
 use std::rc::Rc;
 use std::time::Instant;
@@ -95,4 +96,29 @@ fn the_menu_opens_and_copies_the_link_it_was_opened_on() {
     a.h.get_by_role(Role::MenuItem, "Open link").click();
     a.h.settle();
     assert_eq!(a.opened(), ["open: https://example.com/y"]);
+}
+
+#[test]
+fn a_crash_of_the_last_run_is_a_card_that_shows_its_report() {
+    let mut h = Harness::new();
+    h.size = quadra::Size::new(1200.0, 700.0);
+    let shell = FakeShell::new();
+    let given = shell.clone();
+    let sessions: NewSession = Rc::new(|_| echo());
+    h.mount(move || {
+        given.provide();
+        let term = OneTerm::new(sessions);
+        term.crashed(std::path::Path::new("crashes/2026-11-17-10-52-00.txt"));
+        term.view()
+    });
+    h.settle();
+    assert!(
+        h.has_text("1Term closed unexpectedly")
+            && h.has_text("A report was written: 2026-11-17-10-52-00.txt")
+    );
+    h.get_by_role(Role::Button, "Show report").click();
+    h.settle();
+    assert!(
+        shell.asked().iter().any(|it| it.starts_with("reveal: ") && it.ends_with("2026-11-17-10-52-00.txt"))
+    );
 }

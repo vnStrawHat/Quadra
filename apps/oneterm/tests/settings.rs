@@ -92,6 +92,19 @@ fn a_new_look_keeps_the_screen_and_sizes_the_grid_again() {
 }
 
 #[test]
+fn the_zoom_keys_size_the_terminals_text() {
+    let mut a = app();
+    let size = a.settings.value("terminal.font_size", 15.0);
+    a.key(Key::Equal, Mods::CTRL);
+    a.key(Key::Equal, Mods::CTRL);
+    assert_eq!(size.get(), 17.0);
+    a.key(Key::Minus, Mods::CTRL);
+    assert_eq!(size.get(), 16.0);
+    a.key(Key::Digit0, Mods::CTRL);
+    assert_eq!(size.get(), 15.0);
+}
+
+#[test]
 fn new_spaces_take_the_cursor_and_the_history_set() {
     let mut a = app();
     a.settings.value("terminal.cursor", String::new()).set("Bar".into());

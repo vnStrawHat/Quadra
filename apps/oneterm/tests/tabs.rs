@@ -188,7 +188,7 @@ impl App {
 }
 
 #[test]
-fn two_clicks_rename_a_tab_and_its_menu_closes_the_others() {
+fn two_clicks_rename_a_tab_and_its_menu_closes_to_the_right_and_the_others() {
     let mut a = app();
     let at = a.tab_at("Terminal");
     a.press(MouseButton::Left, at.x, at.y);
@@ -200,6 +200,16 @@ fn two_clicks_rename_a_tab_and_its_menu_closes_the_others() {
     a.key(Key::T, Mods::CTRL);
     a.key(Key::T, Mods::CTRL);
     assert_eq!(a.tabs(), 3);
+    // The middle one named, then the tabs after it closed.
+    let middle = a.h.query(|n| n.semantics.role == Role::Tab)[1];
+    let at = a.h.tree.window_rect(middle).center();
+    (0..2).for_each(|_| a.press(MouseButton::Left, at.x, at.y));
+    a.h.get_by_role(Role::TextInput, "").set_value("mid");
+    a.key(Key::Enter, Mods::NONE);
+    a.press(MouseButton::Right, at.x, at.y);
+    a.h.get_by_role(Role::MenuItem, "Close to the right").click();
+    a.h.settle();
+    assert_eq!(a.names(), ["logs", "mid"]);
     let at = a.tab_at("logs");
     a.press(MouseButton::Right, at.x, at.y);
     a.h.get_by_role(Role::MenuItem, "Close others").click();

@@ -231,6 +231,19 @@ impl Model {
         }
     }
 
+    /// Closes the tabs after one.
+    pub fn close_right(&self, id: u64) {
+        let Some(at) = self.index_of(id) else { return };
+        let after: Vec<u64> = self.0.tabs.get_untracked().iter().skip(at + 1).map(|tab| tab.id).collect();
+        let me = self.clone();
+        if self.asks(&after, Rc::new(move || me.close_right(id))) {
+            return;
+        }
+        for tab in after {
+            self.close_tab(tab);
+        }
+    }
+
     fn insert_tab(&self, at: usize, launch: Launch) {
         let space = self.space(launch);
         let layout = quadra_design::work::Pane::leaf(space.id.to_string());

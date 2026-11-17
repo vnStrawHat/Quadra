@@ -115,15 +115,17 @@ pub(crate) fn heading(words: &'static str) -> quadra::Div {
         .child(div().grow(1.0).child(text(words)))
 }
 
-/// The menu of a tab: Rename, Duplicate, Close, Close others.
+/// The menu of a tab: Rename, Duplicate, Close, Close others, Close to the right.
 pub(crate) fn tab_menu(model: &Model, id: u64) -> Vec<MenuItem> {
     let (renames, copies, closes, keeps) = (model.renaming(), model.clone(), model.clone(), model.clone());
+    let rights = model.clone();
     vec![
         MenuItem::new("Rename").on_select(move || renames.set(Some(id))),
         MenuItem::new("Duplicate").on_select(move || copies.duplicate(id)),
         MenuItem::separator(),
         MenuItem::new("Close").on_select(move || _ = closes.close_tab(id)),
         MenuItem::new("Close others").on_select(move || keeps.close_others(id)),
+        MenuItem::new("Close to the right").on_select(move || rights.close_right(id)),
     ]
 }
 

@@ -159,6 +159,7 @@ whose every cell changes every frame, costs what the V build's costs.
   the grid and scrolling with their rows, freed on `GraphicReleased`; the cell's device
   pixels told to the engine. Test: `crates/quadra-term/tests/images.rs`.
 - **The vault at start and secrets bound to their target**: with a vault the window opens locked, and the password that opens it opens the data key (`tests/lock.rs`); a secret is `sv2:`, sealed with the host's target as AES-GCM's associated data (`quadra_shell::seal(key, plain, bound)`), so one copied into another row, or a host whose target was edited, does not open it (an edited target seals it again while the key is in memory, else forgets it with a card); `sv1:` rows still open.
+- **Close to the right, text zoom, crash reports**: a tab's menu closes the tabs after it (asked first as any close; `Model::close_right`); `zoom_in` Ctrl+=, `zoom_out` Ctrl+- and `zoom_reset` Ctrl+0 (`Command::Zoom`) step the terminals' text size; 1Term installs `quadra_shell::crash_reports` and shows the last run's report as a card with Show report (`OneTerm::crashed`). Tests: `tests/tabs.rs`, `tests/settings.rs`, `tests/links.rs`.
 - **An input method's composition in the terminal view** (specs/18, "Input"): drawn at the
   cursor over its cells (wide characters on two, clipped at the row's end), underlined, the
   clause thicker, the cursor hidden; nothing sent until it is committed; an empty composition,

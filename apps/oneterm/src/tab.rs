@@ -119,6 +119,8 @@ pub enum Command {
     Clear,
     /// The active tab again, after it.
     Duplicate,
+    /// The terminals' text a point larger (1), smaller (-1), or back to its default (0).
+    Zoom(i8),
     /// The window closed.
     Quit,
 }

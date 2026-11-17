@@ -83,6 +83,22 @@ impl OneTerm {
         OneTerm { model: Model::new(new_session, Prefs::load()), clock: signal(String::new()), now }
     }
 
+    /// Says the last run crashed (specs/19, "Window"): a card whose Show report shows the
+    /// report in the file manager.
+    pub fn crashed(&self, report: &std::path::Path) {
+        let opener = use_context::<Rc<dyn quadra_shell::Opener>>();
+        let (shown, name) = (report.to_path_buf(), report.file_name().unwrap_or_default().to_string_lossy());
+        let notice = quadra_design::Notice::new("1Term closed unexpectedly")
+            .body(format!("A report was written: {name}"))
+            .tone(quadra_design::Tone::Warning)
+            .action("Show report", move || {
+                if let Some(opener) = &opener {
+                    opener.reveal(&shown);
+                }
+            });
+        self.model.notify(notice);
+    }
+
     pub fn view(&self) -> impl View + use<> {
         let (model, window) = (self.model.clone(), use_context::<Window>());
         page::keys::follow(); // the keys the settings say
@@ -203,6 +219,11 @@ fn run(model: &Model, command: Command, windows: Option<&quadra::Windows>) -> bo
             }
         }
         Command::Duplicate => model.duplicate(model.active().get_untracked()),
+        Command::Zoom(step) => {
+            model.prefs().look.font_size.update(|size| {
+                *size = if step == 0 { 15.0 } else { (*size + f64::from(step)).clamp(6.0, 48.0) }
+            })
+        }
         Command::Quit => return false,
     }
     true

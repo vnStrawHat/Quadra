@@ -27,7 +27,7 @@ const fn binding(id: &'static str, name: &'static str, keys: &'static str, bind:
 }
 
 /// The actions, in the order of the page.
-pub(crate) const BINDINGS: [Binding; 20] = [
+pub(crate) const BINDINGS: [Binding; 23] = [
     binding("new_tab", "New tab", "ctrl-t", |k, s| k.bind(s, Command::NewTab)),
     binding("split", "Split the space", "ctrl-d", |k, s| k.bind(s, Command::Split)),
     binding("split_right", "Split right", "ctrl-shift-right", |k, s| {
@@ -47,6 +47,9 @@ pub(crate) const BINDINGS: [Binding; 20] = [
     binding("find", "Find", "ctrl-f", |k, s| k.bind(s, crate::find::Find)),
     binding("clear", "Clear the scrollback", "", |k, s| k.bind(s, Command::Clear)),
     binding("duplicate", "Duplicate the tab", "", |k, s| k.bind(s, Command::Duplicate)),
+    binding("zoom_in", "Larger text", "ctrl-=", |k, s| k.bind(s, Command::Zoom(1))),
+    binding("zoom_out", "Smaller text", "ctrl-minus", |k, s| k.bind(s, Command::Zoom(-1))),
+    binding("zoom_reset", "Text size back", "ctrl-0", |k, s| k.bind(s, Command::Zoom(0))),
     binding("quit", "Quit", "ctrl-shift-q", |k, s| k.bind(s, Command::Quit)),
     binding("copy", "Copy", "ctrl-shift-c", |k, s| k.bind_in(TERMINAL_CONTEXT, s, TermCommand::Copy)),
     binding("paste", "Paste", "ctrl-shift-v", |k, s| k.bind_in(TERMINAL_CONTEXT, s, TermCommand::Paste)),

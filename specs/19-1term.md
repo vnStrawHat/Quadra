@@ -36,6 +36,12 @@ P2 milestones:
 
 ## Window
 
+Crashes: with its folders 1Term writes a report of a panic (specs/15) and, through
+`quadra_shell::crash_reports` (specs/16), of a crash that is no panic (a minidump and the log's
+last lines) to `crashes` in its data folder. The next start shows a warning card, `1Term closed
+unexpectedly` with the report's name, whose Show report shows the report in the file manager
+(`Opener::reveal`); each report is told once (`App::last_crash`). Nothing is sent anywhere.
+
 Custom frame (`WindowOptions::custom_frame`), 1440×900 at most 85 % of the display, centred,
 at least 720×480, its place remembered. Top to bottom: the title bar (38 px), the body, the
 status bar (30 px). Colours are the kit's roles; the accent is the theme's. The look follows
@@ -92,7 +98,8 @@ strong line under each, the active one on the pressed editor colour with the acc
 right).
 
 Click selects; middle closes; double-click renames; the right button opens the tab menu (Rename,
-Duplicate, Close, Close others). Rows drag to reorder.
+Duplicate, Close, Close others, Close to the right: the tabs after it, asked first as a close
+is when one has edits). Rows drag to reorder.
 
 **Horizontal variant** (setting "Tabs: vertical | horizontal"): no rail; a strip of 32 px and a
 strong line under the title bar, one tab per button split by strong lines (icon, title, then its signal: the state's icon,
@@ -281,7 +288,9 @@ Security & lock (Lock now while a password is set; and whether programs may read
 Logging (log new local shells, log new SSH spaces, both off; the folder, typed or chosen in the
 system's dialog, empty for `session-logs` in the app's data folder; the formats shown, fixed; append or overwrite; a file `<name>_YYYY-MM-DD_HH-MM-SS.log` a space,
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
-logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D ("Split the space", Split space), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `quit` Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and the kit's Reset as on the other pages (and the page's Reset all), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
+logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D ("Split the space", Split space), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `zoom_in` Ctrl+=, `zoom_out` Ctrl+- and `zoom_reset` Ctrl+0
+(the terminal's text size, Appearance's, a point a step within 6 to 48, back to 15), `quit`
+Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and the kit's Reset as on the other pages (and the page's Reset all), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Every setting of a page has the
 kit's Reset (specs/13, `settings`), its numbers in the kit's stepper (`number_input(..).stepper()`), back to the default the app reads it with (`Prefs::load`; the

@@ -221,6 +221,7 @@ impl View for Terminal {
             cx.handle.with(move |tree| tree.focus(id));
         }
         crate::pointer::pointer(cx, id, &session, settings, link);
+        crate::ime::compose(cx, id);
         id
     }
 }
@@ -284,7 +285,7 @@ fn focus(cx: &mut MountCx, id: NodeId, session: &Session) {
         }
         writer.with(move |tree| {
             if let Some(w) = tree.widget_mut::<TerminalWidget>(id) {
-                (w.focused, w.caret_on) = (gained, true);
+                (w.focused, w.caret_on, w.preedit) = (gained, true, None);
                 crate::widget::repaint(tree, id);
             }
         });

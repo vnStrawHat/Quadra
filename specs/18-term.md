@@ -185,6 +185,16 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   arrows on the alternate screen when the program asked for alternate scroll.
 - Typing scrolls back to the bottom. Focus in and out is told to the program when it asked
   (`encode_focus`).
+- Input methods (`Tree::on_composition`): while one composes, its text is drawn at the cursor
+  over the cells it covers: the background of the cursor's cell behind it, the text in the
+  terminal's foreground, underlined, the clause being converted underlined twice as thick. A
+  character is as wide as the engine measures it (`scalar_width`: a wide one two cells, one of
+  no width with the character before it); what does not fit before the row's end is not
+  drawn. The cursor is hidden meanwhile. Nothing is sent to the program until the text is
+  committed, which arrives as typed text (as above) and ends the composition; so do an empty
+  composition and the focus leaving. The input method's window opens at the cursor's cell
+  (`Widget::caret`). A change paints the view (it has no paint of its own by row) without
+  taking a new snapshot.
 - Settings (`TermSettings`, a signal the app gives with `Terminal::settings`, read as events
   come): `copy_on_select` (a selection is copied when the button is released), `middle_paste`
   (the middle button pastes, unless the program takes it), `scroll` (times the rows of the

@@ -63,6 +63,8 @@ pub struct TerminalWidget {
     /// inside: Ctrl not held, or off the grid); a new snapshot has it looked for again.
     pub(crate) hover: crate::link::Cells,
     pub(crate) hovered_at: Option<Option<(usize, usize)>>,
+    /// What an input method is composing, and the clause of it being converted (bytes).
+    pub(crate) preedit: Option<(String, std::ops::Range<usize>)>,
 }
 
 pub(crate) fn color(rgb: Rgb) -> Color {
@@ -110,6 +112,7 @@ impl TerminalWidget {
             shaping: Default::default(),
             hover: Vec::new(),
             hovered_at: None,
+            preedit: None,
         }
     }
 

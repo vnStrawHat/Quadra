@@ -15,7 +15,7 @@ use crate::shape::Scratch;
 use crate::widget::{TerminalWidget, color};
 
 /// The colours a cell's style paints with: inverse swaps them.
-fn colors(w: &TerminalWidget, style: &Style) -> (Color, Color) {
+pub(crate) fn colors(w: &TerminalWidget, style: &Style) -> (Color, Color) {
     let (fg, bg) = (color(w.palette.resolve(style.fg)), color(w.palette.resolve(style.bg)));
     if style.attrs.contains(Attrs::INVERSE) { (bg, fg) } else { (fg, bg) }
 }
@@ -66,6 +66,7 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx) {
         };
         text(w, cx, row, (left, y), cursor, &class);
     }
+    crate::ime::paint(w, cx, &rows, (left, top));
     w.marks = marks;
     w.state = rows;
 }
@@ -109,7 +110,10 @@ fn under(
         }
     }
     let cursor = state.cursor();
-    let shown = cursor.visible && cursor.row == Some(r as u16) && (w.caret_on || !w.cursor_style.blinking);
+    let shown = w.preedit.is_none()
+        && cursor.visible
+        && cursor.row == Some(r as u16)
+        && (w.caret_on || !w.cursor_style.blinking);
     if !shown {
         return;
     }
@@ -276,7 +280,10 @@ impl TerminalWidget {
     /// The cell a filled block cursor covers, when one shows.
     fn cursor_block(&self) -> Option<(oneterm_vt::RowId, u16)> {
         let cursor = self.state.cursor();
-        let on = self.focused && cursor.visible && (self.caret_on || !self.cursor_style.blinking);
+        let on = self.focused
+            && self.preedit.is_none()
+            && cursor.visible
+            && (self.caret_on || !self.cursor_style.blinking);
         (on && cursor.row.is_some() && self.cursor_style.shape == CursorShape::Block)
             .then_some((cursor.id, cursor.col))
     }

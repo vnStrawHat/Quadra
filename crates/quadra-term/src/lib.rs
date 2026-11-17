@@ -10,6 +10,7 @@ mod find;
 mod gutter;
 mod highlight;
 mod images;
+mod ime;
 mod input;
 mod keys;
 mod line;

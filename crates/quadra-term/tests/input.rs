@@ -159,3 +159,19 @@ fn shift_selects_over_a_program_that_reports_the_mouse() {
     press(&mut t, PointerInput::Down, x0, Mods::NONE);
     assert_eq!(t.taken(), b"\x1b[<0;1;1M");
 }
+
+#[test]
+fn an_alt_drag_selects_a_block() {
+    let mut t = term();
+    t.feed(b"abcdef\r\nghijkl");
+    let ((x0, y0), (x1, y1)) = (Term::cell(0, 1), Term::cell(1, 3));
+    for (input, x, y) in
+        [(PointerInput::Down, x0 - 2.0, y0), (PointerInput::Move, x1, y1), (PointerInput::Up, x1 + 2.0, y1)]
+    {
+        let now = t.h.now();
+        t.h.tree.pointer(input, MouseButton::Left, Point::new(x, y), Mods::ALT, now);
+        t.h.settle();
+    }
+    let text = t.s.selection_text().unwrap();
+    assert_eq!(text.lines().collect::<Vec<_>>(), ["bcd", "hij"], "the same columns of each row");
+}

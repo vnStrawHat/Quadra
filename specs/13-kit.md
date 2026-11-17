@@ -209,8 +209,9 @@ As built so far:
   `String` as in `color_input`: `#rrggbb`, or empty for "the default" (the theme's colour of a
   setting, the tag of a host's group). The opener is a field of 120 px (`.width(..)`) the
   look of the date picker's: a 14 px swatch of the colour and its text, or while empty the
-  swatch of `.fallback(paint)` and the placeholder in `text_3` (`.placeholder(..)`,
-  "Default" unless told). A button to a reader, named by `.label(..)` with the colour as its
+  swatch of `.fallback(paint)` and that colour's `#rrggbb` in `text_3`, as the window's
+  theme (the app's `Signal<Rc<Theme>>`) gives it; with no fallback or no theme, the
+  placeholder (`.placeholder(..)`, "Default" unless told). A button to a reader, named by `.label(..)` with the colour as its
   value, or by the colour (the placeholder while empty); `.test_id(..)`. A click opens the
   popover, its focus in the area; opening and closing write nothing. In it, 208 px wide:
   - the area of saturation (left to right) and brightness (top to bottom) at the hue, a

@@ -159,8 +159,14 @@ impl View for ColorPicker {
         let face = face.border_color(token::LINE_STRONG).cursor(Cursor::Pointer);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
+        // Empty, the code of the colour that stands instead, as the window's theme has it.
+        let theme = quadra_reactive::use_context::<Signal<std::rc::Rc<quadra_tree::Theme>>>();
         let words = placeholder.clone();
-        let said = move || if empty() { words.clone() } else { value.get() };
+        let said = move || match (empty(), fallback.zip(theme)) {
+            (false, _) => value.get(),
+            (true, Some((paint, theme))) => hex(theme.with(|it| it.resolve(paint))),
+            (true, None) => words.clone(),
+        };
         let face = match self.label {
             Some(name) => face.label(name).value(move || value.get()),
             None => face.label(said.clone()),

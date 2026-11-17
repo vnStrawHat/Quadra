@@ -136,3 +136,27 @@ fn browse_asks_the_dialog_and_a_choice_is_the_path() {
     settle(&mut h);
     assert_eq!(folder.get_untracked(), "D:\\logs");
 }
+
+#[test]
+fn an_empty_picker_shows_the_code_of_the_colour_that_stands_instead() {
+    let (value, theme) = (signal(String::new()), Rc::new(dark().theme()));
+    let red = theme.color(token::ANSI[1]);
+    let mut h = Harness::new();
+    h.tree.set_theme(theme.clone());
+    h.mount(move || {
+        // What an app gives its views: the window's theme.
+        quadra_reactive::provide(signal(theme));
+        quadra_design::root().child(color_picker(value).label("Tag").fallback(token::ANSI[1]))
+    });
+    settle(&mut h);
+    let code = format!(
+        "#{:02x}{:02x}{:02x}",
+        (red.r * 255.0).round() as u8,
+        (red.g * 255.0).round() as u8,
+        (red.b * 255.0).round() as u8
+    );
+    assert!(h.has_text(&code), "{code}");
+    value.set("#336699".into());
+    settle(&mut h);
+    assert!(h.has_text("#336699") && !h.has_text(&code));
+}

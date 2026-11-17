@@ -2,6 +2,7 @@
 //! connecting on a click, and the dialog that adds one.
 
 mod form;
+mod secret;
 
 pub(crate) use form::add_dialog;
 

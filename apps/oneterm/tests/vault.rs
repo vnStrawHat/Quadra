@@ -20,6 +20,7 @@ struct App {
     settings: Rc<Settings>,
     port: u16,
     dir: std::path::PathBuf,
+    shell: Rc<quadra_shell::FakeShell>,
 }
 
 fn app(name: &str) -> App {
@@ -41,16 +42,18 @@ fn app(name: &str) -> App {
     h.size = quadra::Size::new(1400.0, 800.0);
     h.tree.set_keymap(Rc::new(keymap()));
     let (given, kept) = (settings.clone(), Rc::new(std::cell::RefCell::new(None)));
-    let made = kept.clone();
+    let (made, shell) = (kept.clone(), quadra_shell::FakeShell::new());
+    let fake = shell.clone();
     h.mount(move || {
         provide(given.clone());
+        fake.provide();
         let app = OneTerm::new(sessions);
         *made.borrow_mut() = Some(app.model.clone());
         app.view()
     });
     h.settle();
     let model = kept.borrow().clone().unwrap();
-    App { h, model, settings, port, dir }
+    App { h, model, settings, port, dir, shell }
 }
 
 impl App {
@@ -177,6 +180,7 @@ fn a_passphrase_is_saved_by_the_master_password_typed_in_the_dialog() {
     let edit = |a: &mut App, master: &str| {
         a.menu("keyed", "Edit\u{2026}");
         a.h.get_by_test_id("host-secret").set_value("open sesame");
+        a.h.settle(); // the master password's field shows once a secret is typed
         a.h.get_by_test_id("host-master").set_value(master);
         a.h.settle();
         a.h.get_by_role(Role::Button, "Save").click();
@@ -227,4 +231,31 @@ fn a_startup_command_is_written_once_the_shell_opens() {
     a.menu("tmuxed", "Connect");
     a.wait(|a| tabs(a) == 4 && a.welcomed() == 1, "connected without it");
     assert_eq!(said(&a, "echo:"), 0);
+}
+
+#[test]
+fn without_a_master_password_the_dialog_sets_one_and_a_key_file_is_chosen() {
+    let mut a = app("vault-new-master");
+    let file = a.dir.join("id");
+    write_locked_user_key(&file, "open sesame");
+    a.host_with("keyed", "", Auth::Key(std::path::PathBuf::from("typed")));
+    a.menu("keyed", "Edit\u{2026}");
+    // The key file chosen in the system's dialog (the fake one).
+    a.shell.choose(&[file.to_str().unwrap()]);
+    a.h.get_by_role(Role::Button, "Choose\u{2026}").click();
+    a.h.settle();
+    a.h.get_by_test_id("host-secret").set_value("open sesame");
+    a.h.settle();
+    assert!(a.h.has_text("New master password") && a.h.has_text("Repeat it"), "{}", a.h.semantics());
+    a.h.get_by_test_id("host-new-master").set_value("master");
+    a.h.get_by_test_id("host-master-again").set_value("master");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.settle();
+    a.wait(|a| a.secrets().len() == 1, "the passphrase saved, the master password set");
+    assert!(a.model.lock().can_lock());
+    let saved = a.model.hosts().into_iter().find(|it| it.name == "keyed").unwrap();
+    assert_eq!(saved.remote.auth, Auth::Key(file.clone()), "the key file chosen");
+    a.menu("keyed", "Connect");
+    a.wait(|a| a.welcomed() == 1, "signed in by the saved passphrase");
 }

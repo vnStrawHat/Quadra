@@ -144,6 +144,8 @@ whose every cell changes every frame, costs what the V build's costs.
   host's menu. Tests: `apps/oneterm/tests/vault.rs`, the vault's and the seal's unit tests.
 - **Connect all (n)** in a group heading's menu: a tab for each host, one master password
   asked for all.
+- **The host dialog**: the password field is always enabled; with no master password it sets
+  one there (New master password, Repeat it); the key file has Choose… (the system's dialog).
 - **A startup command** per saved host (`ssh.startup`), written once the shell opens (a Retry
   and Duplicate too). Test: `tests/vault.rs`.
 - **Shift over a program that reports the mouse** selects, nothing reported: a test now holds

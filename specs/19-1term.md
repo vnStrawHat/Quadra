@@ -445,12 +445,14 @@ thread never waits on the network.
   takes the name (the host when empty), the group, the target,
   the colour tag (the kit's `color_picker`, "By group" while empty: its presets are the
   seven hues as the dark theme has them, its "Default" swatch the group's colour, and a colour
-  chosen that is a preset's is saved by the preset's name), the auth and the key file, and for
+  chosen that is a preset's is saved by the preset's name), the auth and the key file (typed,
+  or Choose… in the system's dialog of files, from `~/.ssh` when there is one), and for
   the auths Password and Key file the password or the key's passphrase to save (a password
   field, Password or passphrase; editing, empty keeps the one saved, `Saved` its placeholder). A secret is saved only
-  sealed with the master password (below, "Saved passwords"); with none set the field is
-  disabled and says to set one in Security & lock; with one set but not typed since 1Term
-  started, a Master password field shows under it. Then the startup command (Startup
+  sealed with the master password (below, "Saved passwords"): once one is typed, with a master
+  password set but not typed since 1Term started a Master password field shows under it, and
+  with none set New master password and Repeat it, which set it as Security & lock does (it
+  also locks the window). A wrong or missing one saves nothing and a card says why. Then the startup command (Startup
   command, `tmux attach -t main || tmux new -s main`): kept in `ssh.startup` (rows of the
   host's name and it), it is written with a carriage return once the shell is open, each time
   it opens (a Retry too), for a saved host's tab, Connect all and Duplicate; Quick connect

@@ -2,7 +2,7 @@
 //! with the password or passphrase saved sealed (`vault.rs`).
 
 use oneterm_ssh::Target;
-use quadra::{Signal, View, column, div, effect, signal, untrack};
+use quadra::{Signal, View, column, div, effect, row, signal, untrack};
 use quadra_design::{Notice, Tone, Variant, field, input, select};
 
 use super::AUTHS;
@@ -12,11 +12,11 @@ use crate::model::Model;
 use crate::shells::Remote;
 
 #[derive(Clone, Copy)]
-struct Form {
+pub(super) struct Form {
     name: Signal<String>,
     group: Signal<String>,
     target: Signal<String>,
-    auth: Signal<usize>,
+    pub(super) auth: Signal<usize>,
     key: Signal<String>,
     jump: Signal<usize>,
     forwards: Signal<String>,
@@ -24,9 +24,10 @@ struct Form {
     /// What the colour picker holds: `#rrggbb`, or empty for the group's.
     tag: Signal<String>,
     /// The password or passphrase to save, and the master password that seals it while the
-    /// data key is not in memory.
-    secret: Signal<String>,
-    master: Signal<String>,
+    /// data key is not in memory (or the new one, and again, while there is none).
+    pub(super) secret: Signal<String>,
+    pub(super) master: Signal<String>,
+    pub(super) again: Signal<String>,
 }
 
 /// The dialogs that save a host: a new one, or one saved before, filled in.
@@ -45,6 +46,7 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
         startup: s(),
         secret: s(),
         master: s(),
+        again: s(),
     };
     let (saves, changes, lists, fills) = (model.clone(), model.clone(), model.clone(), model.clone());
     let secrets = model.clone();
@@ -70,7 +72,7 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
         let text_field = |value, hint: &str, id: &'static str| {
             input(value).placeholder(hint).test_id(id).width(392.0).height(H)
         };
-        let key = text_field(form.key, "Path of the key file", "host-key");
+        let key = key_field(form.key);
         let how = quadra::row().gap(12.0).child(field("Auth", select(AUTHS, form.auth).width(190.0))).child(
             field("Jump host", select(lists.jump_choices(), form.jump).width(190.0).test_id("host-jump")),
         );
@@ -91,7 +93,7 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
             .child(field("Target", text_field(form.target, "user@host or host:port", "host-target")))
             .child(how)
             .child(div().display(crate::locked::shown(move || form.auth.get() == 2)).child(key))
-            .child(secret_fields(&secrets, form, editing.get_untracked()))
+            .child(super::secret::fields(&secrets, form, editing.get_untracked()))
             .child(field(
                 "Startup command",
                 text_field(form.startup, "Written once the shell is open", "host-startup"),
@@ -108,6 +110,23 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
         .action("Cancel", Variant::Secondary, || {})
         .action("Save", Variant::Primary, move || save(&changes, form, editing.get_untracked()));
     div().child(adds).child(edits)
+}
+
+/// The key file: typed, or chosen in the system's dialog (from `~/.ssh` when there is one).
+fn key_field(key: Signal<String>) -> quadra::Div {
+    let dialogs = quadra::use_context::<std::rc::Rc<dyn quadra_shell::Dialogs>>();
+    let choose = quadra_design::button("Choose\u{2026}").variant(Variant::Secondary).on_click(move || {
+        let mut asked = quadra_shell::FileDialog::new("Key file");
+        let ssh = std::env::var_os("USERPROFILE").map(|it| std::path::PathBuf::from(it).join(".ssh"));
+        if let Some(ssh) = ssh.filter(|it| it.is_dir()) {
+            asked = asked.folder(ssh);
+        }
+        if let Some(chosen) = dialogs.as_ref().and_then(|it| it.open_files(&asked).into_iter().next()) {
+            key.set(chosen.display().to_string());
+        }
+    });
+    let typed = input(key).placeholder("Path of the key file").test_id("host-key");
+    row().gap(8.0).child(typed.width(300.0).height(quadra_design::size::H_MD)).child(choose)
 }
 
 /// The form as a saved host says.
@@ -164,7 +183,7 @@ fn save(model: &Model, form: Form, was: Option<String>) {
         jump,
     });
     model.set_host_tag(&name, tag.as_deref());
-    save_secret(model, form, &name, kept);
+    super::secret::save(model, form, &name, kept);
     model.set_startup(&name, Some(form.startup.get_untracked()));
     for field in [
         form.name,
@@ -175,66 +194,10 @@ fn save(model: &Model, form: Form, was: Option<String>) {
         form.tag,
         form.secret,
         form.master,
+        form.again,
         form.startup,
     ] {
         field.set(String::new());
     }
     form.jump.set(0);
-}
-
-/// The password (auth Password) or the key's passphrase (Key file) to save, while that auth is
-/// chosen: disabled with no master password; with the master password's field under it while
-/// the data key is not in memory.
-fn secret_fields(model: &Model, form: Form, editing: Option<String>) -> quadra::Div {
-    let lock = model.lock();
-    let (can, key) = (lock.can_lock(), lock.key);
-    let saved = editing.and_then(|it| model.sealed(&it)).is_some();
-    let secret = input(form.secret)
-        .password()
-        .placeholder(if saved { "Saved" } else { "" })
-        .disabled(!can)
-        .test_id("host-secret")
-        .width(392.0)
-        .height(quadra_design::size::H_MD);
-    let master =
-        input(form.master).password().test_id("host-master").width(392.0).height(quadra_design::size::H_MD);
-    let note = match can {
-        true => "Saved sealed with the master password.",
-        false => "Set a master password in Settings, Security & lock, to save it.",
-    };
-    column()
-        .gap(12.0)
-        .display(crate::locked::shown(move || matches!(form.auth.get(), 2 | 3)))
-        .child(field("Password or passphrase", secret).help(note))
-        .child(
-            div()
-                .display(crate::locked::shown(move || can && key.get().is_none()))
-                .child(field("Master password", master)),
-        )
-}
-
-/// Saves the secret typed for a host, sealed; with none typed the one `kept` stays. Another
-/// auth than Password and Key file saves none.
-fn save_secret(model: &Model, form: Form, name: &str, kept: Option<String>) {
-    let typed = form.secret.get_untracked();
-    if !matches!(form.auth.get_untracked(), 2 | 3) {
-        return model.set_sealed(name, None);
-    }
-    if typed.is_empty() {
-        return model.set_sealed(name, kept);
-    }
-    let (model, name) = (model.clone(), name.to_string());
-    let sealing = move |model: &Model| match model.lock().key.get_untracked() {
-        Some(key) => model.set_sealed(&name, crate::vault::seal_secret(&key, &typed)),
-        None => model.notify(
-            Notice::new("Add SSH host")
-                .body("Wrong master password: the password was not saved.")
-                .tone(Tone::Warning),
-        ),
-    };
-    if model.lock().key.get_untracked().is_some() || !model.lock().can_lock() {
-        return sealing(&model);
-    }
-    let opens = model.clone();
-    model.lock().open(form.master.get_untracked(), move |_| sealing(&opens));
 }

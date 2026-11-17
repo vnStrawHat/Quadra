@@ -6,9 +6,11 @@
 //!
 //! Scenes: main, collapsed, horizontal, menu, connect, add, settings, lock, sftp, gutter (main
 //! with the terminals' gutter on), usage (the pointer resting on RAM: its card), and the
-//! Connect dialogs: ask-connecting, ask-host, ask-sign-in, ask-failed (`asks.rs`).
+//! Connect dialogs: ask-connecting, ask-host, ask-sign-in, ask-failed (`asks.rs`); the editor
+//! space: edit, edit-diff (`edits.rs`).
 
 mod asks;
+mod edits;
 #[path = "../../shots/src/png.rs"]
 mod png;
 
@@ -143,8 +145,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let out = PathBuf::from(args.next().unwrap_or_else(|| ".tmp/shots/1term".into()));
     let only: Vec<String> = args.collect();
     std::fs::create_dir_all(&out)?;
-    for scene in
-        SCENES.iter().chain(&asks::SCENES).filter(|it| only.is_empty() || only.iter().any(|o| o == *it))
+    for scene in SCENES
+        .iter()
+        .chain(&asks::SCENES)
+        .chain(&edits::SCENES)
+        .filter(|it| only.is_empty() || only.iter().any(|o| o == *it))
     {
         let platform = HeadlessPlatform::new();
         let text = DirectWrite::new().map_err(AppError::Text)?;
@@ -154,7 +159,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         let kept = made.clone();
         let sessions: NewSession = Rc::new(move |launch: oneterm::Launch| {
             let tested = launch.ssh.as_ref().is_some_and(|it| it.target.host == "127.0.0.1");
-            let s = if tested { asks::session(launch) } else { echo() };
+            let s = match tested {
+                true if scene.starts_with("edit") => edits::session(launch),
+                true => asks::session(launch),
+                false => echo(),
+            };
             kept.borrow_mut().push(s.clone());
             s
         });
@@ -177,6 +186,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             );
             settings.value("sftp.downloads", String::new()).set(local.display().to_string());
             provide(settings);
+            // The app's folders in the project, for a file edited: downloaded there.
+            if scene.starts_with("edit") {
+                let dirs =
+                    quadra::AppDirs::under(&std::path::absolute(".tmp/shots/1term-app").unwrap_or_default());
+                provide(Rc::new(dirs));
+            }
             let term = OneTerm::new(sessions.clone());
             *tell.borrow_mut() = Some(term.model.clone());
             term.view()
@@ -223,6 +238,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     std::thread::sleep(Duration::from_millis(20));
                 }
             }
+            edit if edit.starts_with("edit") => edits::start(&model, edit, &platform, &mut app, window),
             _ => {}
         }
         pass(&platform, &mut app, 900);

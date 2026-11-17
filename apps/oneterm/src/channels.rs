@@ -76,7 +76,7 @@ pub(crate) fn menu(tabs: Signal<Vec<Tab>>, space: &Space) -> MenuItem {
         let all = siblings.clone();
         items.push(MenuItem::new(format!("Join all spaces in tab to {}", letter(c))).on_select(move || {
             all.iter()
-                .filter(|it| it.session.exited().get_untracked().is_none())
+                .filter(|it| it.edit.is_none() && it.session.exited().get_untracked().is_none())
                 .for_each(|it| it.channel.set(Some(c)));
         }));
     }

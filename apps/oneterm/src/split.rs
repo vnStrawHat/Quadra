@@ -84,7 +84,7 @@ impl Model {
     /// again, or in a layout of the user's to the right of it.
     pub fn split_with(&self, launch: Launch) {
         let Some(tab) = self.active_tab() else { return };
-        self.add(tab, (!tab.auto.get_untracked()).then_some(Side::Right), launch);
+        self.add(tab, (!tab.auto.get_untracked()).then_some(Side::Right), self.space(launch));
     }
 
     /// A new space running a launch on a side of the focused one of the active tab, in half
@@ -92,13 +92,18 @@ impl Model {
     pub fn split_to_with(&self, side: Side, launch: Launch) {
         let Some(tab) = self.active_tab() else { return };
         tab.auto.set(false);
-        self.add(tab, Some(side), launch);
+        self.add(tab, Some(side), self.space(launch));
+    }
+
+    /// A space made elsewhere (an editor's) after the focused one of a tab, as Split space
+    /// puts one, with the focus.
+    pub(crate) fn open_space(&self, tab: Tab, space: Space) {
+        self.add(tab, (!tab.auto.get_untracked()).then_some(Side::Right), space);
     }
 
     /// A new space in a tab beside its focused one: on a side of it, or by the rule.
-    fn add(&self, tab: Tab, side: Option<Side>, launch: Launch) {
+    fn add(&self, tab: Tab, side: Option<Side>, space: Space) {
         let Some(focused) = quadra::untrack(|| tab.focused()) else { return };
-        let space = self.space(launch);
         let after = side.is_none_or(|side| !side.before());
         let (new, at) = (space.id.to_string(), tab.focus.get_untracked() + usize::from(after));
         tab.spaces.update(|spaces| spaces.insert(at.min(spaces.len()), space));
@@ -128,6 +133,10 @@ impl Model {
             tab.spaces.with_untracked(|spaces| spaces.iter().position(|it| it.id == id)).map(|at| (*tab, at))
         });
         let Some((tab, at)) = found else { return !tabs.is_empty() };
+        // An editor with changes asks first.
+        if tab.spaces.with_untracked(|all| all[at].edit.as_ref().is_some_and(|it| it.holds())) {
+            return true;
+        }
         let mut gone = None;
         tab.spaces.update(|spaces| gone = Some(spaces.remove(at)));
         // Its view goes before its scope does.

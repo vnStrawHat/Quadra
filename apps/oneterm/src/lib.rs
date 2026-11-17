@@ -8,6 +8,7 @@ mod chrome;
 mod complete;
 mod connect;
 mod dock;
+mod editing;
 mod expanded;
 mod find;
 mod git;

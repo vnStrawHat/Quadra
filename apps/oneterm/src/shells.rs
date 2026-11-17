@@ -10,6 +10,21 @@ use crate::model::Model;
 /// The default shell's name when it is a program the settings type.
 pub const CUSTOM: &str = "A program";
 
+/// The name of a local space's shell, kept with its session: what its header says until
+/// the program gives a title.
+pub(crate) struct ShellName(pub String);
+
+/// A shell's name: the found one's, a typed program's file name, or the OS's shell's.
+pub(crate) fn shell_name(shell: Option<&Shell>) -> String {
+    match shell {
+        Some(shell) if shell.name == CUSTOM => {
+            shell.program.file_name().map_or(CUSTOM.into(), |it| it.to_string_lossy().into_owned())
+        }
+        Some(shell) => shell.name.into(),
+        None => "Command Prompt".into(),
+    }
+}
+
 /// A program a space can run.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Shell {

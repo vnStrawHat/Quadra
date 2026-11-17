@@ -15,6 +15,9 @@ pub struct Space {
     pub remote: Option<crate::shells::Remote>,
     /// The input channel it is in, 0 to 4 (A to E): what is typed in it goes to the others.
     pub channel: Signal<Option<u8>>,
+    /// A remote file edited in 1Term: the space runs no program, its session is never
+    /// connected (it keeps the file's connection, for the dock).
+    pub(crate) edit: Option<std::rc::Rc<crate::editing::FileEdit>>,
 }
 
 impl PartialEq for Space {
@@ -59,6 +62,9 @@ impl Tab {
             return name;
         }
         let space = self.focused();
+        if let Some(edit) = space.as_ref().and_then(|it| it.edit.as_ref()) {
+            return edit.name.clone();
+        }
         let fixed = || match space.as_ref().and_then(|it| it.remote.as_ref()) {
             Some(remote) => remote.target.label(),
             None => "Terminal".into(),
@@ -72,7 +78,7 @@ impl Tab {
 }
 
 /// A path of a program, `C:\Windows\system32\cmd.exe - ping`, as `cmd.exe - ping`.
-fn short(title: &str) -> String {
+pub(crate) fn short(title: &str) -> String {
     let (program, rest) = title.split_once(" - ").map_or((title, None), |(a, b)| (a, Some(b)));
     let program = match program.rsplit_once('\\') {
         Some((_, name)) if !name.is_empty() => name,

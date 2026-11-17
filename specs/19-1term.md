@@ -120,11 +120,14 @@ axis that hold one another share their room evenly again (three side by side are
 they do after a close. Split space in a layout of the user's is a split to the right. A tab back
 at one space arranges itself again. The order of the spaces (the focus keys, the status bar) is
 the tree's reading order (in an arranged tab, each added space comes after the focused one). The
-layout is not saved. Each space has an 18 px header in 12 px on the panel colour, a 1 px line along its bottom (inside the 18 px): where it is on the left,
+layout is not saved. A space is a terminal, or the editor of a remote file (M9, "Editing in
+1Term"): that one runs no program and is in no input channel; it is not saved either. Each space has an 18 px header in 12 px on the panel colour, a 1 px line along its bottom (inside the 18 px): where it is on the left,
 in mono (the cwd, after `user@host:` for a remote space; in the text colour while focused), its
 signal on the right (a progress percentage in mono; the state's 12 px icon and a label in the
 state's colour, `deploy blocked`, then the latency in mono; with no state the latency, else the
-program's title, `zsh · pnpm dev`).
+program's title, a program's path shortened to its name as in a tab's title (`cmd.exe - ping
+x`); a local space whose program has given no title yet shows its shell's name from the start,
+`Command Prompt`, `PowerShell 7`, or a typed program's file name).
 The terminal has 10 px of room above and below and 12 at its sides. The focused space has a
 1 px accent ring, its own border (nothing lies over the terminal for the pointer). Notification cards stand at the window's bottom right, above the status bar, 448 px wide and 12 px from the edges (over the dock): on the panel plane with a strong line, radius 10 and the second elevation, an info icon, the title, the text in the secondary colour, then `staging-db-01 · OSC 9` in 12 px, and Dismiss notification. `Ctrl+D` splits
 the active space (Split space: a new local shell in its cwd, after it, with the focus),
@@ -463,19 +466,26 @@ thread never waits on the network.
   target and renames it once whole, so a target is never half written; a cancelled or failed
   one removes its part. A remote name that would leave its folder as a local path (`/`, `\`,
   `:`, `..`, a control character) is refused.
-- **The dock**: 300 px at the workspace's right on the panel plane, opened and closed by the
-  status bar's Toggle SFTP panel; it follows the focused space's connection. A local space: the
+- **The dock**: at the workspace's right on the panel plane, 300 px at first; its left edge is
+  a seam (a 1 px line under a 6 px strip with the resize cursor) dragged to make it 220 to 800
+  px wide, kept in the settings (`sftp.dock_width`). Opened and closed by the
+  status bar's Toggle SFTP panel; it follows the focused space's connection, and each space
+  keeps its own: the folder, its entries, the entry chosen and the transfers stay with the
+  space they were made in, and showing a space again (another tab, or another space of the
+  tab) shows its dock as it was left, without asking the server; a space first shown lists
+  its home folder. A local space: the
   header says `local space · n/a`, the body why it is empty and a button that shows the first
   tab with a remote space (`Show prod-api-01`). Its header (28 px, 12 px semibold in the
   secondary colour): `SFTP`, the host in the third colour, and Zoom SFTP (an icon button: the
   expanded view). Under it the folder in a mono field of 28 px (12 px) with Go to the typed path
   after it (Enter goes too); then `..` and the entries as rows of 26 px: a folder icon (blue) or a
-  file icon, the name, the size in mono 12 px in the third colour (none for a folder). A click on
-  a folder opens it, on a file selects it (the press fill and a 2 px accent bar at its left, its
-  icon in the accent); two on a file download it to
+  file icon, the name, the size in mono 12 px in the third colour (none for a folder). A click
+  selects a row (the press fill and a 2 px accent bar at its left, a file's icon in the
+  accent); two on a folder (or on `..`) open it, two on a file download it to
   the user's Downloads folder (`name (1).ext` when the name is taken). The other button gives
   a remote row's menu (Open or Download; for a file Edit…: downloaded to `sftp-edit` in the app's data
-  folder, opened in the system's app for it or the program the settings name with its arguments
+  folder, then as the setting Editor says: In 1Term (the default; "Editing in 1Term" below), or
+  opened in the system's app for it or the program the settings name with its arguments
   (`Opener::open_with`), sent back each time it is saved, a card saying so; above the size set, 1 MB,
   asked first; Rename…, Copy path, Properties…, Delete…) and, where no row is, the
   list's (New folder…, Refresh), in the dock and the expanded view's Remote pane alike; a local
@@ -488,7 +498,7 @@ thread never waits on the network.
   octal), Owner and Group (`name (id)`, the id alone without a name, `-` without either), Path (in
   mono, with a copy button), and Close. It shows; it does not change the mode. A failed ask is a card.
   Files dropped from the OS upload to the folder shown. Transfers show
-  under the list over a line, 12 px: an arrow, `Uploading name` or `Downloading name`, its state
+  under the list over a line, 12 px, each the dock's whole width: an arrow, `Uploading name` or `Downloading name`, its state
   in mono (`48%`, `done`), a cross that cancels, and a bar of 2 px; a failed one says why. Names
   that start with `.` show only while Show hidden files is on (both views).
 - **The expanded view**: the dock's Zoom SFTP (and the title bar's Collapse SFTP, back)
@@ -510,6 +520,27 @@ thread never waits on the network.
   of 200 px, its percentage and the cross. The kit draws all of it (tokens, `checkbox`, inputs,
   icon buttons); the canvas gives the layout only.
   `Entry::modified` is the server's mtime (seconds; 0 when it has none).
+- **Editing in 1Term**: Edit… opens the file in a space after the focused one of the tab it
+  was chosen in (as Split space puts one), with the focus; the same file open already takes the
+  focus instead. The file is read on the pool: a NUL in its first 8 KB, or bytes that are not
+  UTF-8, make it binary, and the space says `Binary file, 3 B: not shown, and not edited here.`
+  in the third colour. Text is in the kit's code editor (`quadra-code`, mono 13 px, lines of 20)
+  coloured by its type: the file's name (`config.yaml`, `Dockerfile`), else the program a first
+  line of `#!` names (after `env`: `python3`), else plain; the gutter marks the lines changed
+  against the base, the text as it was opened or last saved. Its 18 px header, as a terminal's:
+  `user@host:/full/path` in mono on the left, then the type (`yaml`, `python`, `text`) in the
+  third colour, `● Modified` in the warning colour while the text is not the base (`Saving…`
+  while it is sent), Diff (toggled: the kit's `diff` of the base and the text, three lines of
+  context, in the editor's place, the editor kept with its undo; `No changes.` when there are
+  none) and Save (disabled with no changes), ghost buttons of 18 px. Ctrl+S (the context
+  `file_edit`) or Save writes the text to the copy in the data folder, with the line ends the
+  file had, and uploads it on the connection the file came from; a card says it was saved or
+  why not, and once saved the text is the base. Closing it with changes (Ctrl+W, Close space)
+  asks in a dialog, Save changes?: Cancel, Don't save (it closes), Save (it closes once the
+  file is on the server; a failure leaves it open). Closing its tab or the window does not ask.
+  Its session is never connected and keeps the connection of the file, so the dock follows it
+  and shows the dock of the space the file came from; it is no session connected on the lock
+  card, and the tab's title is the file's name.
 - **Sessions keep app data**: `Session::keep(Rc<dyn Any>)` and `kept::<T>()` (specs/18), how
   the app finds a remote space's `Ssh`.
 

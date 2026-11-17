@@ -132,6 +132,20 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### Editing in 1Term, each space's dock (2026-11-17)
+
+- **An editor space** (specs/19, "Editing in 1Term"): Edit… on a remote file opens it in a
+  space of the tab by default (the external editor stays a setting): the type found by name or
+  `#!`, highlighted; a binary file shown as one and not edited; the header with the full
+  remote path, the type, `● Modified`, Diff (the kit's diff against the text opened or last
+  saved) and Save (Ctrl+S, uploaded on the file's own connection); closing with changes asks.
+  `quadra-code`: `Editor::changed`, `EditorWidget::set_base` (specs/13). Tests:
+  `apps/oneterm/tests/editing.rs`. Closing a tab or the window does not ask yet.
+- **The dock**: each space keeps its folder, entries, choice and transfers; two clicks open a
+  folder; its left edge is dragged (220 to 800 px, `sftp.dock_width`); a transfer takes the
+  whole width. Tests: `tests/dock.rs`, `tests/dock_tabs.rs`.
+- A header names the shell until the program gives a title, a title's path shortened.
+
 ### SSH asks in dialogs (2026-11-17)
 
 - **The engine asks the app** (specs/19, "M7 in detail"): `Ssh::connect(options, output,

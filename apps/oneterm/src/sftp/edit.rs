@@ -1,5 +1,6 @@
 //! Editing a remote file (specs/19, "M9 in detail"): it is downloaded to the app's data
-//! folder, opened in the editor the settings name, and sent back each time it is saved.
+//! folder, then opened in a space of 1Term (`crate::editing`), or in the editor the settings
+//! name and sent back each time it is saved.
 
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -11,9 +12,10 @@ use quadra_design::{Notice, Tone};
 use quadra_shell::Opener;
 
 use super::{Dock, store};
+use crate::editing::Content;
 use crate::model::Model;
 
-pub const EDITORS: [&str; 2] = ["The app the system opens it with", "A program"];
+pub const EDITORS: [&str; 3] = ["In 1Term", "The app the system opens it with", "A program"];
 
 /// What editing needs from where the view was built: the folder and the opener.
 #[derive(Clone)]
@@ -40,8 +42,14 @@ impl Dock {
         limit > 0 && entry.size > limit
     }
 
-    /// Downloads a file of the folder shown, opens it, and sends it back when it is saved.
+    /// Downloads a file of the folder shown and opens it: in a space of the tab, or in the
+    /// editor the settings name, sending it back when it is saved.
     pub fn edit(&self, model: &Model, entry: &Entry, editing: &Editing) {
+        // In 1Term: the space the dock shows is where it opens, and whose connection saves it.
+        let inside = match model.prefs().editor.get_untracked() {
+            0 => Some(crate::editing::source(model)),
+            _ => None,
+        };
         let Some(folder) = editing.folder.clone().filter(|_| safe_name(&entry.name)) else {
             return card(model, format!("{} cannot be edited here.", entry.name), Tone::Warning);
         };
@@ -49,20 +57,25 @@ impl Dock {
         let local = folder.join(format!("{:x}", hash(&remote))).join(&entry.name);
         let transfer = self.start(&entry.name, false, folder.display().to_string());
         let (done, whole, cancel) = (transfer.done.clone(), transfer.whole.clone(), transfer.cancel.clone());
-        let (into, editing, opens) = (local.clone(), editing.clone(), model.clone());
+        let (into, editing, opens, reads) = (local.clone(), editing.clone(), model.clone(), inside.is_some());
         self.with_files(
             model,
             move |files| {
                 std::fs::create_dir_all(into.parent().unwrap_or(Path::new(".")))
                     .map_err(|e| e.to_string())?;
                 files.download(&remote, &into, |d, w| store(&done, &whole, d, w), &cancel)?;
-                Ok(remote)
+                // Read here, on the pool: whether it is text is known before it shows.
+                let read = reads.then(|| std::fs::read(&into).map(Content::of).map_err(|e| e.to_string()));
+                Ok((remote, read.transpose()?))
             },
             move |dock, got| {
-                let ok = got.is_ok();
                 transfer.end.set(Some(got.as_ref().map(|_| ()).map_err(Clone::clone)));
-                if let (true, Ok(remote)) = (ok, got) {
-                    dock.open_and_watch(&opens, local, remote, &editing);
+                match (got, inside) {
+                    (Ok((remote, Some(content))), Some(Some(from))) => {
+                        crate::editing::open(&opens, from, local, remote, content)
+                    }
+                    (Ok((remote, _)), None) => dock.open_and_watch(&opens, local, remote, &editing),
+                    _ => {}
                 }
             },
         );
@@ -73,7 +86,7 @@ impl Dock {
         let program = p.editor_program.get_untracked();
         let opened = match (&editing.opener, p.editor.get_untracked(), program.trim()) {
             (None, ..) => false,
-            (Some(opener), 1, program) if !program.is_empty() => {
+            (Some(opener), 2, program) if !program.is_empty() => {
                 let args: Vec<String> =
                     p.editor_args.get_untracked().split_whitespace().map(Into::into).collect();
                 opener.open_with(Path::new(program), &args, &local)

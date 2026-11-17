@@ -135,11 +135,11 @@ pub(crate) fn progress_bar(tab: Tab, bottom: f32) -> impl View {
 /// What a space's header says at its right: its progress in the accent, its state's icon and
 /// label in the state's colour (`deploy blocked`), then the link's note (a remote one's
 /// latency); with no state and no note, the program's title.
-pub(crate) fn header_signal(
+pub(crate) fn header_signal<F: Fn() -> String + 'static>(
     s: &quadra_term::Session,
     prefs: crate::prefs::Prefs,
-    title: quadra::Signal<String>,
-) -> impl View + use<> {
+    title: F,
+) -> impl View + use<F> {
     let (status, progress, note, name) = (s.status(), s.progress(), s.link_note(), s.status_name());
     // The settings say whether the header shows states.
     let status =
@@ -159,7 +159,7 @@ pub(crate) fn header_signal(
     });
     let named = div().child(text(move || {
         let quiet = state_word(status.get()).is_none() && note.with(String::is_empty);
-        if quiet { title.get() } else { String::new() }
+        if quiet { title() } else { String::new() }
     }));
     let note = div().font_family(fonts::MONO).child(text(move || note.get()));
     let part = div()

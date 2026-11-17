@@ -150,7 +150,11 @@ impl Model {
                     (p.log_local.get_untracked(), launch.shell.as_ref().map_or("local", |it| it.name).into())
                 }
             };
+            let shell = launch.ssh.is_none().then(|| crate::shells::shell_name(launch.shell.as_ref()));
             let session = (self.0.new_session)(launch);
+            if let Some(shell) = shell {
+                session.keep(Rc::new(crate::shells::ShellName(shell)));
+            }
             if logged {
                 self.start_log(&session, &name, crate::logs::folder(&p));
             }
@@ -160,7 +164,20 @@ impl Model {
             quadra::effect(move || kept.set_scrollback(rows.get().clamp(0.0, 1.0e6) as u32));
             session
         });
-        Space { id, session, scope, remote, channel }
+        Space { id, session, scope, remote, channel, edit: None }
+    }
+
+    /// A space that runs no program, an editor's (specs/19, "Spaces"): its session is never
+    /// connected; `make` builds the file it edits in its scope.
+    pub(crate) fn editor_space(
+        &self,
+        remote: Option<crate::shells::Remote>,
+        make: impl FnOnce(&quadra_term::Session) -> Rc<crate::editing::FileEdit>,
+    ) -> Space {
+        let scope = self.0.owner.run(Scope::child);
+        let session = quadra_term::Session::new(quadra_term::vt::ResizePolicy::KeepViewportTop);
+        let (channel, edit) = scope.run(|| (signal(None), make(&session)));
+        Space { id: self.id(), session, scope, remote, channel, edit: Some(edit) }
     }
 
     /// A tab with a new local shell, after the others, shown.

@@ -56,7 +56,9 @@ fn card(model: &Model) -> Div {
         let n = tabs.with(|tabs| {
             tabs.iter()
                 .map(|tab| {
-                    tab.spaces.with(|s| s.iter().filter(|it| it.session.exited().get().is_none()).count())
+                    tab.spaces.with(|s| {
+                        s.iter().filter(|it| it.edit.is_none() && it.session.exited().get().is_none()).count()
+                    })
                 })
                 .sum::<usize>()
         });

@@ -105,3 +105,12 @@ fn a_notification_is_a_card_and_counts_until_looked_at() {
     a.h.settle();
     assert!(a.says("0 bells and notices"));
 }
+
+#[test]
+fn a_header_names_the_shell_until_the_program_gives_a_title() {
+    let mut a = app();
+    // A newer console host says no title at the start: the shell's name stands for it.
+    assert!(a.says("Command Prompt"), "{}", a.h.semantics());
+    a.feed(0, b"\x1b]0;C:\\WINDOWS\\System32\\cmd.exe - ls\x07");
+    assert!(a.says("cmd.exe - ls") && !a.says("Command Prompt"), "the title, its path shortened");
+}

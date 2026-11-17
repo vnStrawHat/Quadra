@@ -66,6 +66,9 @@ pub(crate) fn keymap(keys: impl Fn(&str) -> Option<String>) -> Keymap {
     for (stroke, command) in fixed {
         map.bind_in(TERMINAL_CONTEXT, stroke, command).expect("the terminal's bindings are well formed");
     }
+    // The editor of a file edited in 1Term, and its Ctrl+S.
+    quadra_code::bind_keys(&mut map);
+    map.bind_in(crate::editing::CONTEXT, "ctrl-s", crate::editing::Save).expect("ctrl-s is well formed");
     for b in &BINDINGS {
         let chosen = keys(b.id).unwrap_or_else(|| b.keys.to_string());
         if !chosen.is_empty() && (b.bind)(&mut map, &chosen).is_err() {

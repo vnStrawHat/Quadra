@@ -1,0 +1,208 @@
+//! The editor space (specs/19, "Spaces"): its header of 18 px (the full remote path, the type,
+//! whether it has changes, Diff and Save), the editor or the diff in its place, and the
+//! question when it closes with changes.
+
+use std::rc::Rc;
+
+use quadra::{Align, AnyView, MountCx, NodeId, View, by_text, column, div, effect, row, show, text};
+use quadra_code::{EditorWidget, editor, line_colours};
+use quadra_design::{Size, Variant, button, dialog, diff, fonts, token};
+use quadra_tree::Tree;
+
+use super::{CONTEXT, Content, FileEdit, Save, label};
+use crate::locked::shown;
+use crate::model::{Model, Space, Tab};
+
+/// The view of an editor space; the editor takes the focus whenever the space is the tab's
+/// focused one.
+pub(crate) fn view(model: &Model, tab: Tab, space: Space) -> impl View + use<> {
+    EditView { model: model.clone(), tab, space }
+}
+
+struct EditView {
+    model: Model,
+    tab: Tab,
+    space: Space,
+}
+
+/// Whether the space is its tab's focused one.
+fn focused(tab: Tab, id: u64) -> impl Fn() -> bool + Copy {
+    move || tab.spaces.with(|spaces| spaces.iter().position(|it| it.id == id)) == Some(tab.focus.get())
+}
+
+/// The editor's widget under a node.
+fn widget(tree: &mut Tree, at: NodeId) -> Option<NodeId> {
+    let mut stack = vec![at];
+    while let Some(id) = stack.pop() {
+        if tree.widget_mut::<EditorWidget>(id).is_some() {
+            return Some(id);
+        }
+        stack.extend_from_slice(tree.children(id));
+    }
+    None
+}
+
+impl View for EditView {
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        let EditView { model, tab, space } = self;
+        let Some(edit) = space.edit.clone() else { return div().mount(cx) };
+        let id = body(&model, tab, &space, &edit).mount(cx);
+        let found = widget(cx.tree, id);
+        if let Some(w) = found {
+            let _ = edit.widget.set((cx.handle.clone(), w));
+        }
+        let (shows, handle, locked) = (focused(tab, space.id), cx.handle.clone(), model.lock().locked);
+        effect(move || {
+            // As a terminal's space does: once the writes of this pass are done.
+            if shows() && !locked.get() {
+                let later = handle.clone();
+                handle.with(move |_| {
+                    later.with(move |tree| {
+                        let mut at = tree.focused();
+                        while let Some(node) = at {
+                            if node == id {
+                                return;
+                            }
+                            at = tree.parent(node);
+                        }
+                        match found {
+                            Some(w) => tree.focus(w),
+                            None => _ = tree.focus_first(id),
+                        }
+                    })
+                });
+            }
+        });
+        id
+    }
+}
+
+fn body(model: &Model, tab: Tab, space: &Space, edit: &Rc<FileEdit>) -> quadra::Div {
+    let (on, id) = (focused(tab, space.id), space.id);
+    let index = move || tab.spaces.with(|spaces| spaces.iter().position(|it| it.id == id).unwrap_or(0));
+    let ring = move || match on() && tab.spaces.with(Vec::len) > 1 {
+        true => token::ACCENT,
+        false => token::CANVAS,
+    };
+    let main = match &edit.content {
+        Content::Binary(size) => AnyView::new(binary(*size)),
+        Content::Text(text) => AnyView::new(editing(edit, text)),
+    };
+    let (saves, model_) = (edit.clone(), model.clone());
+    column()
+        .grow(1.0)
+        .min_width(0.0)
+        .min_height(0.0)
+        .bg(token::CANVAS)
+        .border(1.0)
+        .border_color(ring)
+        .key_context(CONTEXT)
+        .on_action::<Save>(move |_| saves.save(&model_, || {}))
+        .on_mount(move |tree, id| {
+            tree.on_pointer_capture(id, quadra::PointerKind::Down, move |_| tab.focus.set(index()))
+        })
+        .child(header(model, edit, on))
+        .child(main)
+        .child(ask(model, edit, id))
+}
+
+fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -> quadra::Div {
+    let (modified, saving) = (edit.modified, edit.saving);
+    // A closed space's signals may go before its view does.
+    let state = move || match (saving.try_get().unwrap_or(false), modified.try_get().unwrap_or(false)) {
+        (true, _) => "Saving\u{2026}",
+        (false, true) => "\u{25CF} Modified",
+        (false, false) => "",
+    };
+    let kind = match edit.content {
+        Content::Binary(_) => "binary",
+        Content::Text(_) => label(&edit.kind),
+    };
+    let head = row()
+        .align_items(Align::Center)
+        .gap(8.0)
+        .padding_x(8.0)
+        .height(by_text(18.0))
+        .shrink(0.0)
+        .bg(token::PANEL)
+        .border_bottom(1.0) // inside the 18 px
+        .border_color(token::LINE)
+        .text_size(12.0)
+        .line_height(1.5)
+        .text_color(token::TEXT_2)
+        .child(
+            div()
+                .grow(1.0)
+                .cut_to_parent()
+                .font_family(fonts::MONO)
+                .text_color(move || if on() { token::TEXT } else { token::TEXT_2 })
+                .child(text(edit.place.clone()).ellipsis()),
+        )
+        .child(div().text_color(token::TEXT_3).child(text(kind)))
+        .child(div().text_color(token::WARN).child(text(state)));
+    if matches!(edit.content, Content::Binary(_)) {
+        return head;
+    }
+    let (diffs, saves, model) = (edit.clone(), edit.clone(), model.clone());
+    let small = |b: quadra_design::Button| b.size(Size::Xs).variant(Variant::Ghost);
+    head.child(small(button("Diff")).toggled(edit.diff).on_click(move || diffs.toggle_diff())).child(
+        small(button("Save"))
+            .disabled(move || !modified.try_get().unwrap_or(false))
+            .on_click(move || saves.save(&model, || {})),
+    )
+}
+
+/// The editor, coloured by the file's type, its gutter marking the changes against the base;
+/// while the diff shows, the diff in its place (the editor stays, with its undo).
+fn editing(edit: &Rc<FileEdit>, source: &str) -> quadra::Div {
+    let shows = edit.diff;
+    let code = editor(source.to_string())
+        .path(edit.kind.clone())
+        .font(13.0, 20.0)
+        .base(edit.base.get_untracked())
+        .changed(edit.modified);
+    let edit = edit.clone();
+    let compared = move || {
+        let (old, new) = (edit.base.get_untracked(), edit.now.get_untracked());
+        let view = match old == new {
+            true => AnyView::new(div().padding(12.0).text_color(token::TEXT_3).child(text("No changes."))),
+            false => AnyView::new(diff(old, new).colours(line_colours(&edit.kind)).context(3)),
+        };
+        column().grow(1.0).min_height(0.0).child(view)
+    };
+    column()
+        .grow(1.0)
+        .min_height(0.0)
+        .child(column().grow(1.0).min_height(0.0).display(shown(move || !shows.get())).child(code))
+        .child(show(move || shows.get(), compared))
+}
+
+/// What stands for a binary file.
+fn binary(size: u64) -> quadra::Div {
+    let said = format!("Binary file, {}: not shown, and not edited here.", crate::panes::size(size));
+    column()
+        .grow(1.0)
+        .align_items(Align::Center)
+        .justify(quadra::Justify::Center)
+        .text_color(token::TEXT_3)
+        .child(text(said))
+}
+
+/// Closing with changes: Save (then it closes), Don't save, or Cancel.
+fn ask(model: &Model, edit: &Rc<FileEdit>, id: u64) -> impl View + use<> {
+    let said = format!("{} has changes that are not on the server.", edit.name);
+    let (drops, saves, (model, closes)) = (edit.clone(), edit.clone(), (model.clone(), model.clone()));
+    dialog(edit.asking, "Save changes?", move || text(said.clone()))
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Don't save", Variant::Danger, move || {
+            drops.let_go();
+            closes.close_space(id);
+        })
+        .action("Save", Variant::Primary, move || {
+            let (after, model) = (saves.clone(), model.clone());
+            saves.save(&model.clone(), move || {
+                after.let_go();
+                model.close_space(id);
+            });
+        })
+}

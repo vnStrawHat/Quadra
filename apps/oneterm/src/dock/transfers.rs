@@ -12,8 +12,8 @@ use crate::sftp::{Dock, Transfer};
 /// The transfers, newest last, each with a cross that cancels it or clears it.
 pub(super) fn transfers(d: Dock) -> impl View + use<> {
     let list = dynamic(move || {
-        let mut list =
-            column().gap(8.0).padding_x(12.0).padding_top(6.0).padding_bottom(10.0).text_size(12.0);
+        let list = column().width(Length::Fill).gap(8.0).padding_x(12.0);
+        let mut list = list.padding_top(6.0).padding_bottom(10.0).text_size(12.0);
         for transfer in d.transfers.get() {
             list = list.child(transfer_row(d, transfer));
         }

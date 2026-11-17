@@ -45,6 +45,7 @@ fn columns(model: &Model, tab: Tab) -> impl View + use<> {
         let space =
             tab.spaces.with_untracked(|spaces| spaces.iter().find(|it| it.id.to_string() == group).cloned());
         match space {
+            Some(space) if space.edit.is_some() => AnyView::new(crate::editing::view(&model, tab, space)),
             Some(space) => AnyView::new(SpaceView { model: model.clone(), tab, space }),
             None => AnyView::new(div()),
         }
@@ -99,13 +100,27 @@ impl View for SpaceView {
 
 /// Who a remote space is: `user@` its host's name, else `user@host`; the user the one the
 /// connection was answered with when none was given.
-fn who(model: &Model, remote: &crate::shells::Remote, conn: Option<&crate::remote::Conn>) -> String {
+pub(crate) fn who(
+    model: &Model,
+    remote: &crate::shells::Remote,
+    conn: Option<&crate::remote::Conn>,
+) -> String {
     let label = conn.map_or_else(|| remote.target.label(), |it| it.label.get());
     let name = model.host_name(remote);
     match label.split_once('@') {
         _ if name == remote.target.label() => label,
         Some((user, _)) => format!("{user}@{name}"),
         None => name,
+    }
+}
+
+/// What the header says of the program: its title shortened, or the shell's name before it
+/// gives one (a newer console host gives none at the start).
+fn program_name(s: &quadra_term::Session) -> impl Fn() -> String + 'static {
+    let (title, shell) = (s.title(), s.kept::<crate::shells::ShellName>());
+    move || match title.get() {
+        title if !title.is_empty() => crate::tab::short(&title),
+        _ => shell.as_ref().map(|it| it.0.clone()).unwrap_or_default(),
     }
 }
 
@@ -160,7 +175,7 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
                 .child(text(place).ellipsis()),
         )
         .child(crate::channels::chip(space.channel))
-        .child(crate::marks::header_signal(&s, model.prefs(), title))
+        .child(crate::marks::header_signal(&s, model.prefs(), program_name(&s)))
         .child(text(move || exited.get().map(|code| format!("exited {code}")).unwrap_or_default()));
     // The focused space's ring is its border, so nothing lies over the terminal for the pointer.
     let channel = space.channel;

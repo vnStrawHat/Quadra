@@ -5,122 +5,41 @@
 
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use oneterm::{NewSession, OneTerm, Remote, keymap, remote_shell_with};
-use oneterm_ssh::Auth;
-use oneterm_ssh::testing::{folder, options, serve_files, trust, write_user_key};
-use quadra::{DroppedFiles, Role, Settings, provide};
+use oneterm::{NewSession, OneTerm};
+use quadra::{DroppedFiles, Role};
 use quadra_term::echo;
 use quadra_testing::Harness;
 
-struct App {
-    h: Harness,
-    served: PathBuf,
-    downloads: PathBuf,
-    /// The app's folders, and what stands for the system's opener.
-    data: PathBuf,
-    shell: Rc<quadra_shell::FakeShell>,
-}
-
-/// The app with one tab connected to a test server by a key, its dock open as an SSH tab's is.
-fn app(name: &str) -> App {
-    let dir = folder(name);
-    let served = dir.join("served");
-    std::fs::create_dir_all(served.join("home/src")).unwrap();
-    std::fs::write(served.join("home/config.yaml"), vec![b'x'; 2458]).unwrap();
-    let (port, _) = serve_files(11, served.clone());
-    trust(port, 11, &dir.join("known_hosts"));
-    write_user_key(&dir.join("id"));
-    let downloads = dir.join("downloads");
-    std::fs::create_dir_all(&downloads).unwrap();
-
-    let settings = Settings::memory();
-    settings.value("sftp.downloads", String::new()).set(downloads.display().to_string());
-    let (base, key_file) = (dir.clone(), dir.join("id"));
-    let (home, shell) = (dir.join("app"), quadra_shell::FakeShell::new());
-    let (data, given) = (home.join("data"), shell.clone());
-    let sessions: NewSession = Rc::new(move |launch: oneterm::Launch| match launch.ssh {
-        Some(_) => remote_shell_with(launch, |_| options(port, &base, Auth::Auto)),
-        None => echo(),
-    });
-    let mut h = Harness::new();
-    h.size = quadra::Size::new(1400.0, 800.0);
-    h.tree.set_keymap(Rc::new(keymap()));
-    h.mount(move || {
-        provide(settings.clone());
-        provide(Rc::new(quadra::AppDirs::under(&home)));
-        given.provide();
-        let app = OneTerm::new(sessions);
-        let target = oneterm_ssh::Target { user: "tester".into(), host: "127.0.0.1".into(), port };
-        app.model.connect_to(Remote::new(target, Auth::Key(key_file.clone())), false);
-        app.view()
-    });
-    h.settle();
-    // An SSH tab shows its dock by itself.
-    App { h, served, downloads, data, shell }
-}
-
-impl App {
-    /// Settles until `done`, 20 s at most: the engine works on threads of its own.
-    fn wait(&mut self, done: impl Fn(&App) -> bool, what: &str) {
-        let end = Instant::now() + Duration::from_secs(20);
-        loop {
-            // The app's timers move with the harness's clock.
-            self.h.advance(Duration::from_millis(10));
-            self.h.settle();
-            if done(self) {
-                return;
-            }
-            assert!(Instant::now() < end, "never: {what}\n{}", self.h.semantics());
-            std::thread::sleep(Duration::from_millis(10));
-        }
-    }
-
-    fn pane(&self, name: &str) -> bool {
-        !self.h.query(|n| n.semantics.name == name && n.semantics.role != Role::Button).is_empty()
-    }
-
-    /// A click of the other button on an entry, then a row of its menu.
-    fn menu(&mut self, name: &str, row: &str) {
-        let node = self.h.get_by_role(Role::Button, name).node();
-        let at = self.h.tree.window_rect(node).center();
-        for input in [quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up] {
-            let now = self.h.now();
-            self.h.tree.pointer(input, quadra::MouseButton::Right, at, quadra::Mods::NONE, now);
-        }
-        self.h.settle();
-        self.h.get_by_role(Role::MenuItem, row).click();
-        self.h.settle();
-    }
-
-    fn entry(&self, name: &str) -> bool {
-        !self.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == name).is_empty()
-    }
-}
+#[path = "support/dock_app.rs"]
+mod support;
+use support::{App, app};
 
 #[test]
 fn the_dock_lists_moves_about_and_downloads() {
     let mut a = app("dock");
     a.wait(|a| a.entry("config.yaml") && a.entry("src"), "the home folder");
     assert!(a.h.has_text("2.4 KB"));
-    a.h.get_by_role(Role::Button, "src").click();
+    // One click chooses the folder; two open it.
+    a.clicks("src", 1);
+    assert!(a.entry("config.yaml"), "one click opens nothing");
+    a.clicks("src", 2);
     a.wait(|a| a.entry("Parent folder") && !a.entry("config.yaml"), "the folder src");
     a.h.get_by_test_id("sftp-path").set_value("/home");
     a.h.settle();
     a.h.get_by_role(Role::Button, "Go to the typed path").click();
     a.wait(|a| a.entry("config.yaml"), "home again");
 
-    let row = a.h.get_by_role(Role::Button, "config.yaml").node();
-    let at = a.h.tree.window_rect(row).center();
-    for _ in 0..2 {
-        for input in [quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up] {
-            a.h.pointer(input, at.x, at.y);
-        }
-    }
+    a.clicks("config.yaml", 2);
     let got = a.downloads.join("config.yaml");
     a.wait(|_| got.is_file(), "the download");
     a.wait(|a| a.h.has_text("Downloading config.yaml") && a.h.has_text("done"), "the transfer done");
+    // A transfer takes the dock's whole width: its cross ends 12 px before the dock's edge.
+    let (dock, cross) =
+        (a.h.get_by_test_id("sftp-dock").node(), a.h.get_by_role(Role::Button, "Cancel transfer").node());
+    let (dock, cross) = (a.h.tree.window_rect(dock), a.h.tree.window_rect(cross));
+    assert_eq!(cross.right(), dock.right() - 12.0);
     assert_eq!(std::fs::read(&got).unwrap().len(), 2458);
 }
 

@@ -14,6 +14,7 @@ use quadra_tree::{GlyphTile, Inherited, MeasureCx, NodeId, PaintCx, Theme, Tree,
 use crate::contrast::Contrast;
 use crate::feed::Engine;
 use crate::highlight::Marks;
+use crate::images::Shown;
 use crate::look::TermColors;
 use crate::session::Session;
 
@@ -134,23 +135,33 @@ impl TerminalWidget {
     pub(crate) fn fit_cell(&mut self) {
         let width = self.cell_width.map_or(self.advance, |(px, at)| px * self.style.size / at.max(1.0));
         self.cell = (width * self.scale).round().max(1.0) / self.scale;
-    }
         self.line = line(self.style.line_px() * self.scale, self.cell * self.scale) / self.scale;
+    }
 
     /// Takes the engine's snapshot (the first phase of drawing, under the lock): a paint
     /// reads it alone, so a paint from scratch draws what the last one did. True when the
     /// gutter needs more digits, so the grid is sized again.
     pub(crate) fn refresh(&mut self) -> bool {
         let mut engine = self.session.engine();
-        let Engine { term, stamps, status, images, .. } = &mut *engine;
+        let Engine { term, stamps, status, images, frame, framed, .. } = &mut *engine;
         let px = |v: f32| (v * self.scale).round() as u16;
         term.set_cell_pixels(px(self.cell), px(self.line)); // a store: images are sized by it
         (self.status, self.hovered_at) = (*status, None);
         // ponytail: a `?2026` block held past its deadline waits for the next output or key
         // to be shown; a timer at `sync().deadline()` when a program leaves one open.
         term.snapshot_update(&mut self.state, Instant::now());
-        // A frame `?2026` holds keeps showing the images it places.
-        self.session.0.images.borrow_mut().take(images, &self.state, term.sync().is_set());
+        // While `?2026` holds the latest frame, the last one a program closed shows if the
+        // reader copied one since (a program that draws without a pause leaves no gap between
+        // its frames to take one in), else the one shown.
+        let shown = match (term.sync().is_set(), std::mem::take(framed)) {
+            (false, _) => Shown::Live,
+            (true, false) => Shown::Held,
+            (true, true) => {
+                std::mem::swap(&mut self.state, frame); // each keeps what it copied
+                Shown::Closed
+            }
+        };
+        self.session.0.images.borrow_mut().take(images, &self.state, shown);
         self.palette = term.palette();
         self.cursor_style = term.cursor_style();
         self.modes = term.mode_snapshot();
@@ -198,16 +209,6 @@ pub(crate) fn repaint(tree: &mut Tree, id: NodeId) {
     crate::line::follow_line(tree, id);
 }
 
-impl Widget for TerminalWidget {
-    fn is_leaf(&self) -> bool {
-        true
-    }
-
-    /// The box it is given; cells from the advance of `0` and the line, snapped.
-    fn measure(&mut self, cx: &mut MeasureCx, known: Known, avail: Size) -> Size {
-        let face = cx.text.face_for(&self.style);
-        self.advance = cx.text.word("0", face, self.style.size).width;
-        self.fit_cell();
 /// A line's height in device pixels: whole, of the parity of the cell's width (`cell`, whole
 /// device pixels), the nearer to `ideal` (the larger on a tie), so drawn lines are as thick
 /// down as across and centred both ways (specs/18, "Drawn characters").
@@ -219,6 +220,16 @@ fn line(ideal: f32, cell: f32) -> f32 {
     if near > 1.0 && ideal < near { near - 1.0 } else { near + 1.0 }
 }
 
+impl Widget for TerminalWidget {
+    fn is_leaf(&self) -> bool {
+        true
+    }
+
+    /// The box it is given; cells from the advance of `0` and the line, snapped.
+    fn measure(&mut self, cx: &mut MeasureCx, known: Known, avail: Size) -> Size {
+        let face = cx.text.face_for(&self.style);
+        self.advance = cx.text.word("0", face, self.style.size).width;
+        self.fit_cell();
         let fill =
             |known: Option<f32>, avail: f32| known.unwrap_or(if avail.is_finite() { avail } else { 0.0 });
         Size::new(fill(known.width, avail.width), fill(known.height, avail.height))

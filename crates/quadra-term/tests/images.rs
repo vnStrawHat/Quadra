@@ -152,3 +152,29 @@ fn a_frame_held_by_synchronized_output_keeps_the_image_it_shows() {
     assert_eq!(sprites(&mut h).len(), 1, "then the new one");
     assert_eq!(s.images().len(), 1, "and the old one is gone");
 }
+
+/// The glyphs drawn.
+fn glyphs(h: &mut Harness) -> usize {
+    h.frame();
+    let scene = h.tree.scene();
+    let layers = h.renderer.steps().iter().filter_map(|step| match step {
+        Step::Layer { id, .. } => Some(scene.layer(*id).instances()),
+        _ => None,
+    });
+    layers.flatten().filter(|i| i.kind == Kind::Mono as u32).count()
+}
+
+#[test]
+fn a_frame_closed_in_a_read_shows_though_the_next_one_is_open() {
+    let (mut h, s) = term();
+    // A program that draws without a pause: each read closes a frame and opens the next.
+    feed(&mut h, &s, b"\x1b[?2026h\x1b[HONE\x1b[?2026l\x1b[?2026h\x1b[HFO");
+    assert_eq!(glyphs(&mut h), 3, "ONE, not the screen before it");
+    feed(&mut h, &s, b"UR\x1b[?2026l\x1b[?2026h\x1b[2;1HSEV");
+    assert_eq!(glyphs(&mut h), 4, "FOUR");
+    // A frame's image, deleted by the next frame in the same read, still shows with it.
+    let red = b"f=24,s=1,v=1,c=2,r=1;/wAA\x1b\\";
+    let image = [b"\x1b[?2026h\x1b_Ga=T,q=2,C=1,i=1,".as_slice(), red].concat();
+    feed(&mut h, &s, &[image.as_slice(), b"\x1b[?2026l\x1b[?2026h\x1b_Ga=d,d=I,i=1,q=2\x1b\\"].concat());
+    assert_eq!(sprites(&mut h).len(), 1);
+}

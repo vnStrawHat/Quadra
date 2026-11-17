@@ -20,6 +20,20 @@ use crate::widget::TerminalWidget;
 pub(crate) struct Arrivals {
     new: Vec<(GraphicId, Decoded)>,
     released: Vec<GraphicId>,
+    /// How many of `released` came before the last frame a program closed, while the UI
+    /// thread has not taken that frame: the rest are let go of after it shows.
+    framed: Option<usize>,
+}
+
+/// Which frame a refresh shows.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Shown {
+    /// The engine's latest.
+    Live,
+    /// The one shown before: synchronized output holds the latest.
+    Held,
+    /// The last one a program closed, copied then: the latest is held.
+    Closed,
 }
 
 impl Arrivals {
@@ -36,9 +50,18 @@ impl Arrivals {
         self.new.push((data.id, pixels));
     }
 
+    /// A program closed a frame, copied now: what is let go of from here waits for it.
+    pub fn mark(&mut self) {
+        self.framed = Some(self.released.len());
+    }
+
     /// An image the engine let go of (`GraphicReleased`): one not taken yet never reaches the
-    /// UI thread, so a session without a view holds no more than the engine keeps alive.
+    /// UI thread, so a session without a view holds no more than the engine keeps alive
+    /// (unless a closed frame not taken yet may show it).
     pub fn release(&mut self, id: GraphicId) {
+        if self.framed.is_some() {
+            return self.released.push(id);
+        }
         let before = self.new.len();
         self.new.retain(|it| it.0 != id);
         if self.new.len() == before {
@@ -60,21 +83,22 @@ pub(crate) struct Images {
 }
 
 impl Images {
-    /// Takes what arrived, the snapshot's placements, and drops what was let go of: in a
-    /// refresh, under the lock. While the snapshot is `held` (synchronized output) the frame
-    /// shown keeps its placements and their images (the engine lists the new placements before
-    /// it holds the rows).
-    pub fn take(&mut self, from: &mut Arrivals, state: &SnapshotState, held: bool) {
+    /// Takes what arrived, the placements of the frame shown, and drops what was let go of
+    /// before it: in a refresh, under the lock. A held frame keeps its placements and their
+    /// images (the engine lists the new placements before it holds the rows).
+    pub fn take(&mut self, from: &mut Arrivals, state: &SnapshotState, shown: Shown) {
         for (id, pixels) in from.new.drain(..) {
             self.shown.insert(id, Image::new(pixels));
         }
-        if held {
-            return;
-        }
+        let upto = match (shown, from.framed.take()) {
+            (Shown::Held, framed) => return from.framed = framed,
+            (Shown::Closed, Some(upto)) => upto,
+            _ => from.released.len(),
+        };
         self.placements.clear();
         self.placements.extend_from_slice(state.placements());
         self.placements.sort_by_key(|p| p.z_index); // stable
-        for id in from.released.drain(..) {
+        for id in from.released.drain(..upto) {
             self.shown.remove(&id);
         }
     }

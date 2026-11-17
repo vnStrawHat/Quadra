@@ -24,6 +24,12 @@ pub(crate) struct Engine {
     pub status: Option<i32>,
     /// The images decoded and let go of since the UI thread last took them.
     pub images: crate::images::Arrivals,
+    /// How much of a `CSI ? 2026 l` the end of the last read matched.
+    pub closing: usize,
+    /// The last frame a program closed, copied when it did; `framed` while the UI thread has
+    /// not taken it.
+    pub frame: oneterm_vt::SnapshotState,
+    pub framed: bool,
 }
 
 /// What the UI thread must hear from a feed.
@@ -64,73 +70,30 @@ pub(crate) fn lock(engine: &Mutex<Engine>) -> MutexGuard<'_, Engine> {
 
 impl Feeder {
     /// Feeds output to the engine; returns the replies the transport must write back, before
-    /// anything else it was given, in order.
+    /// anything else it was given, in order. A read is fed in parts that end where a
+    /// synchronized update ends, and the frame it closed is copied then (`frame`).
     pub fn feed(&self, bytes: &[u8], now: Instant) -> Vec<u8> {
         crate::log::Log::write(&self.log, bytes);
-        let (mut replies, mut events, mut repaint, mut cleared) = (Vec::new(), Vec::new(), false, false);
+        let mut heard = Heard::default();
         {
             let mut engine = lock(&self.engine);
-            let Engine { term, batch, statuses, stamps, marked, status, images } = &mut *engine;
-            term.feed(bytes, batch, now);
-            for image in term.take_graphics() {
-                images.arrive(image);
-                repaint = true;
-            }
-            for event in batch.iter() {
-                match *event {
-                    VtEvent::Repaint => repaint = true,
-                    VtEvent::GraphicReleased(id) => images.release(id),
-                    VtEvent::ScreenCleared => cleared = true,
-                    VtEvent::Reply(span) => replies.extend_from_slice(batch.bytes(span)),
-                    VtEvent::ColorQuery { key, terminator } => {
-                        replies.extend(term.color_reply(key, terminator).unwrap_or_default())
-                    }
-                    VtEvent::Title(text) => events.push(Event::Title(batch.str(text).to_string())),
-                    VtEvent::TitleReset => events.push(Event::Title(String::new())),
-                    VtEvent::Bell => events.push(Event::Bell),
-                    VtEvent::Cwd { path, .. } => events.push(Event::Cwd(batch.str(path).to_string())),
-                    VtEvent::Notification { title, body } => {
-                        let body = batch.str(body);
-                        // OSC 9;9 is a Windows shell's working directory, not a notice.
-                        events.push(match body.strip_prefix("9;") {
-                            Some(path) => Event::Cwd(path.trim_matches('"').to_string()),
-                            None => Event::Notice(Notice {
-                                title: batch.str(title).to_string(),
-                                body: body.to_string(),
-                            }),
-                        })
-                    }
-                    VtEvent::Progress(p) => events.push(Event::Progress(p)),
-                    VtEvent::ShellMark(ShellMark::PromptEnd) => *marked = true,
-                    VtEvent::ShellMark(ShellMark::OutputEnd { exit_code }) => *status = exit_code,
-                    VtEvent::ShellMark(ShellMark::PromptStart) if statuses.prompt() => {
-                        events.push(Event::Status(statuses.summary(), statuses.named()))
-                    }
-                    VtEvent::Osc { code: 7501, params, terminator, truncated: false } => {
-                        let body = batch.params(params).skip(1).collect::<Vec<_>>().join(&b';');
-                        match statuses.report(&body) {
-                            Report::Query => {
-                                replies.extend_from_slice(b"\x1b]7501;?");
-                                replies.extend_from_slice(match terminator {
-                                    StringTerm::Bel => b"\x07",
-                                    StringTerm::St => b"\x1b\\",
-                                });
-                            }
-                            Report::Changed(state) => events.push(Event::Status(state, statuses.named())),
-                            Report::Dropped => {}
-                        }
-                    }
-                    VtEvent::ClipboardStore { selection: ClipboardKind::Clipboard, text } => {
-                        events.push(Event::ClipStore(batch.str(text).to_string()))
-                    }
-                    VtEvent::ClipboardLoad { selection: ClipboardKind::Clipboard } => {
-                        events.push(Event::ClipLoad)
-                    }
-                    _ => {}
+            let mut rest = bytes;
+            while !rest.is_empty() {
+                let close = crate::frame::close_end(&mut engine.closing, rest);
+                let (part, after) = rest.split_at(close.unwrap_or(rest.len()));
+                apply(&mut engine, part, now, &mut heard);
+                if close.is_some() && !engine.term.sync().is_set() {
+                    let Engine { term, frame, framed, images, .. } = &mut *engine;
+                    term.snapshot_update(frame, now);
+                    *framed = true;
+                    images.mark();
                 }
+                rest = after;
             }
-            stamps.update(term, cleared, Some(now));
+            let Engine { term, stamps, .. } = &mut *engine;
+            stamps.update(term, heard.cleared, Some(now));
         }
+        let Heard { replies, mut events, repaint, .. } = heard;
         if repaint && !self.pending.swap(true, Ordering::AcqRel) {
             events.push(Event::Output);
         }
@@ -143,5 +106,78 @@ impl Feeder {
     /// The program ended with `code`: told after the output that came before.
     pub fn exited(&self, code: i32) {
         self.events.finish(code);
+    }
+}
+
+/// What feeding heard: the replies, what the UI thread must hear, and whether to paint.
+#[derive(Default)]
+struct Heard {
+    replies: Vec<u8>,
+    events: Vec<Event>,
+    repaint: bool,
+    cleared: bool,
+}
+
+/// Feeds a part of a read and takes what it made.
+fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) {
+    engine.term.feed(bytes, &mut engine.batch, now);
+    for image in engine.term.take_graphics() {
+        engine.images.arrive(image);
+        heard.repaint = true;
+    }
+    for event in engine.batch.iter() {
+        match *event {
+            VtEvent::Repaint => heard.repaint = true,
+            VtEvent::GraphicReleased(id) => engine.images.release(id),
+            VtEvent::ScreenCleared => heard.cleared = true,
+            VtEvent::Reply(span) => heard.replies.extend_from_slice(engine.batch.bytes(span)),
+            VtEvent::ColorQuery { key, terminator } => {
+                heard.replies.extend(engine.term.color_reply(key, terminator).unwrap_or_default())
+            }
+            VtEvent::Title(text) => heard.events.push(Event::Title(engine.batch.str(text).to_string())),
+            VtEvent::TitleReset => heard.events.push(Event::Title(String::new())),
+            VtEvent::Bell => heard.events.push(Event::Bell),
+            VtEvent::Cwd { path, .. } => heard.events.push(Event::Cwd(engine.batch.str(path).to_string())),
+            VtEvent::Notification { title, body } => {
+                let body = engine.batch.str(body);
+                // OSC 9;9 is a Windows shell's working directory, not a notice.
+                heard.events.push(match body.strip_prefix("9;") {
+                    Some(path) => Event::Cwd(path.trim_matches('"').to_string()),
+                    None => Event::Notice(Notice {
+                        title: engine.batch.str(title).to_string(),
+                        body: body.to_string(),
+                    }),
+                })
+            }
+            VtEvent::Progress(p) => heard.events.push(Event::Progress(p)),
+            VtEvent::ShellMark(ShellMark::PromptEnd) => engine.marked = true,
+            VtEvent::ShellMark(ShellMark::OutputEnd { exit_code }) => engine.status = exit_code,
+            VtEvent::ShellMark(ShellMark::PromptStart) if engine.statuses.prompt() => {
+                heard.events.push(Event::Status(engine.statuses.summary(), engine.statuses.named()))
+            }
+            VtEvent::Osc { code: 7501, params, terminator, truncated: false } => {
+                let body = engine.batch.params(params).skip(1).collect::<Vec<_>>().join(&b';');
+                match engine.statuses.report(&body) {
+                    Report::Query => {
+                        heard.replies.extend_from_slice(b"\x1b]7501;?");
+                        heard.replies.extend_from_slice(match terminator {
+                            StringTerm::Bel => b"\x07",
+                            StringTerm::St => b"\x1b\\",
+                        });
+                    }
+                    Report::Changed(state) => {
+                        heard.events.push(Event::Status(state, engine.statuses.named()))
+                    }
+                    Report::Dropped => {}
+                }
+            }
+            VtEvent::ClipboardStore { selection: ClipboardKind::Clipboard, text } => {
+                heard.events.push(Event::ClipStore(engine.batch.str(text).to_string()))
+            }
+            VtEvent::ClipboardLoad { selection: ClipboardKind::Clipboard } => {
+                heard.events.push(Event::ClipLoad)
+            }
+            _ => {}
+        }
     }
 }

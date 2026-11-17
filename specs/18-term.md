@@ -39,7 +39,12 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   view for paint.
 - The UI thread takes the lock for `snapshot_update` and `palette()` in the update (output,
   a resize, a key, the pointer, the theme), never in paint; drawing reads the snapshot alone (the engine's two-phase hand-off). Synchronized output (`?2026`) is the
-  engine's: a held frame is `Unchanged`.
+  engine's: a held frame is `Unchanged`. A program that draws without a pause opens its next
+  update in the read that closes one, so the UI thread, which takes its snapshot later, would
+  find every frame held: the feeder feeds a read in parts that end where an update ends
+  (`CSI ? 2026 l`, found across reads) and copies a second snapshot there, which the next
+  update shows while the latest is held (each keeps what it copied; images released after
+  that frame wait for it).
 
 ## The view
 

@@ -8,6 +8,7 @@ mod contrast;
 mod drawn;
 mod feed;
 mod find;
+mod frame;
 mod gutter;
 mod highlight;
 mod images;

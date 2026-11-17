@@ -260,3 +260,33 @@ fn closing_a_tab_or_the_window_with_changes_asks_first() {
     assert!(a.h.tree.may_close(), "nothing left to ask");
     assert_eq!(a.h.query(|n| n.semantics.role == Role::Tab).len(), tabs + 1);
 }
+
+#[test]
+fn a_closing_given_up_takes_back_its_don_t_saves() {
+    let mut a = app("edit-give-up", "In 1Term");
+    for name in ["config.yaml", "run"] {
+        a.edit(name);
+        a.wait(|a| a.shows(&format!("/home/{name}")), name);
+        a.h.type_text("x");
+        a.h.settle();
+    }
+    let asks = |a: &App, name: &str| a.h.has_text(&format!("{name} has changes that are not on the server."));
+    // Asked from the expanded SFTP view: the workspace shows again, with the question.
+    a.h.get_by_role(Role::Button, "Zoom SFTP").click();
+    a.h.settle();
+    assert!(!a.h.tree.may_close());
+    a.h.settle();
+    assert!(asks(&a, "config.yaml"), "{}", a.h.semantics());
+    a.h.get_by_role(Role::Button, "Don't save").click();
+    a.h.settle();
+    assert_eq!(a.h.tree.take_window_requests(), [quadra_tree::WindowRequest::Close]);
+    assert!(!a.h.tree.may_close());
+    a.h.settle();
+    assert!(asks(&a, "run"), "the next one");
+    a.h.key(Key::Escape, Mods::NONE);
+    a.h.settle();
+    assert!(!a.h.has_text("Save changes?"), "{}", a.h.semantics());
+    assert!(!a.h.tree.may_close());
+    a.h.settle();
+    assert!(asks(&a, "config.yaml"), "its Don't save taken back");
+}

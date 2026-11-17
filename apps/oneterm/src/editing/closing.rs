@@ -14,12 +14,16 @@ impl Model {
     pub(crate) fn asks(&self, ids: &[u64], then: Then) -> bool {
         let tabs = self.tabs().get_untracked();
         for tab in tabs.iter().filter(|it| ids.contains(&it.id)) {
-            let holds = |it: &crate::model::Space| it.edit.as_ref().is_some_and(|e| e.holds(then.clone()));
-            if let Some(at) = tab.spaces.with_untracked(|all| all.iter().position(holds)) {
-                self.active().set(tab.id);
-                tab.focus.set(at);
-                return true;
-            }
+            let holds = |it: &crate::model::Space| it.edit.as_ref().is_some_and(|e| e.unsaved());
+            let Some(at) = tab.spaces.with_untracked(|all| all.iter().position(holds)) else { continue };
+            // The workspace shows, where the question is; the space is focused before the
+            // dialog opens, which then keeps the focus.
+            self.ui().expanded.set(false);
+            self.ui().settings.set(false);
+            self.active().set(tab.id);
+            tab.focus.set(at);
+            let edit = tab.spaces.with_untracked(|all| all[at].edit.clone());
+            return edit.is_some_and(|it| it.holds(then));
         }
         false
     }
@@ -30,7 +34,8 @@ impl Model {
         self.asks(&ids, then)
     }
 
-    /// Cancel: every Don't save of the closing is taken back.
+    /// A closing stopped (Cancel, the dialog given up, a save failed): every Don't save of
+    /// it is taken back.
     pub(crate) fn keep_edits(&self) {
         for tab in self.tabs().get_untracked() {
             for space in tab.spaces.get_untracked() {

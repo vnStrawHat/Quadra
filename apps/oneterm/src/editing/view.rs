@@ -50,14 +50,27 @@ impl View for EditView {
         let found = widget(cx.tree, id);
         if let Some(w) = found {
             *edit.widget.borrow_mut() = Some((cx.handle.clone(), w));
+            // Gone with its tab: its id is no editor's any more.
+            let gone = edit.clone();
+            quadra::on_cleanup(move || {
+                let mut at = gone.widget.borrow_mut();
+                if at.as_ref().is_some_and(|it| it.1 == w) {
+                    *at = None;
+                }
+            });
         }
         let (shows, handle, locked) = (focused(tab, space.id), cx.handle.clone(), model.lock().locked);
+        let asking = edit.asking;
         effect(move || {
             // As a terminal's space does: once the writes of this pass are done.
             if shows() && !locked.get() {
                 let later = handle.clone();
                 handle.with(move |_| {
                     later.with(move |tree| {
+                        // Its question keeps the focus.
+                        if quadra::untrack(|| asking.try_get()).unwrap_or(false) {
+                            return;
+                        }
                         let mut at = tree.focused();
                         while let Some(node) = at {
                             if node == id {
@@ -147,7 +160,7 @@ fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -
 
 /// `user@host:/full/path`: too long, its folder is cut and the file's name stays whole.
 fn place(place: &str, on: impl Fn() -> bool + 'static) -> quadra::Div {
-    let at = place.rfind('/').map_or(0, |it| it + 1);
+    let at = place.rfind('/').unwrap_or(0);
     let (folder, name) = place.split_at(at);
     row()
         .grow(1.0)
@@ -201,12 +214,23 @@ fn binary(size: u64) -> quadra::Div {
 /// Closing with changes: Save (then it closes), Don't save, or Cancel.
 fn ask(model: &Model, edit: &Rc<FileEdit>) -> impl View + use<> {
     let said = format!("{} has changes that are not on the server.", edit.name);
-    let (drops, saves, (model, keeps)) = (edit.clone(), edit.clone(), (model.clone(), model.clone()));
+    let (drops, saves, watched, (model, keeps)) =
+        (edit.clone(), edit.clone(), edit.clone(), (model.clone(), model.clone()));
+    // Given up without an answer that goes on (Cancel, the cross, Escape): the closing stops.
+    effect(move || {
+        if !watched.asking.get() && watched.then.borrow().is_some() {
+            keeps.keep_edits();
+        }
+    });
     dialog(edit.asking, "Save changes?", move || text(said.clone()))
-        .action("Cancel", Variant::Secondary, move || keeps.keep_edits())
+        .action("Cancel", Variant::Secondary, || {})
         .action("Don't save", Variant::Danger, move || drops.let_go())
         .action("Save", Variant::Primary, move || {
-            let after = saves.clone();
-            saves.save(&model, move || after.let_go());
+            // The closing waits for the save, not for the dialog.
+            let (after, then) = (saves.clone(), saves.then.take());
+            saves.save(&model, move || {
+                *after.then.borrow_mut() = then;
+                after.let_go();
+            });
         })
 }

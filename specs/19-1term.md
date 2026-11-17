@@ -541,8 +541,9 @@ thread never waits on the network.
   asks in a dialog, Save changes?: Cancel, Don't save (it closes), Save (it closes once the
   file is on the server; a failure leaves it open). Closing its tab, Close others, Quit or the
   window's close ask the same, one editor with changes at a time, its tab shown and the space
-  focused; once it is answered the closing goes on and the next one asks; Cancel stops it, and
-  every Don't save of that closing is taken back.
+  focused (out of the expanded SFTP view and the settings); once it is answered the closing
+  goes on and the next one asks; Cancel, the cross, Escape or a save that fails stop it, and
+  every Don't save of that closing is taken back. Locked, the question waits for the unlock.
   Its session is never connected and keeps the connection of the file, so the dock follows it
   and shows the dock of the space the file came from; it is no session connected on the lock
   card, and the tab's title is the file's name.

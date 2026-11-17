@@ -164,12 +164,17 @@ impl FileEdit {
     /// Whether closing waits for an answer: there are changes, and Don't save was not chosen.
     /// It asks, and `then` goes on with the closing once it is answered.
     pub fn holds(&self, then: Then) -> bool {
-        let holds = self.modified.get_untracked() && !self.let_go.get();
+        let holds = self.unsaved();
         if holds {
             *self.then.borrow_mut() = Some(then);
             self.asking.set(true);
         }
         holds
+    }
+
+    /// Whether it has changes, and Don't save was not chosen.
+    fn unsaved(&self) -> bool {
+        self.modified.get_untracked() && !self.let_go.get()
     }
 
     /// The space closes without its changes: the closing goes on.
@@ -240,7 +245,10 @@ impl FileEdit {
                             me.rebase(text);
                             then();
                         }
-                        Err(why) => card(&model, format!("{} was not saved: {why}", me.name), Tone::Warning),
+                        Err(why) => {
+                            card(&model, format!("{} was not saved: {why}", me.name), Tone::Warning);
+                            model.keep_edits();
+                        }
                     }
                 })
                 .detach()

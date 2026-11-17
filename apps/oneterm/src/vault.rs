@@ -115,9 +115,15 @@ impl Model {
             return self.ui().unlocking.set(Some((remotes, here)));
         }
         for remote in remotes {
-            let secret = key.and_then(|key| open_secret(&key, &self.sealed_for(&remote)?));
-            self.connect_with(remote, here, secret.map(Secret));
+            let secret = self.saved_secret(&remote);
+            self.connect_with(remote, here, secret);
         }
+    }
+
+    /// The saved secret of the host a connection goes to, opened, if the data key is in memory.
+    pub(crate) fn saved_secret(&self, remote: &Remote) -> Option<Secret> {
+        let key = self.lock().key.get_untracked()?;
+        open_secret(&key, &self.sealed_for(remote)?).map(Secret)
     }
 }
 

@@ -200,7 +200,7 @@ impl Model {
         let ssh = tab.and_then(|tab| quadra::untrack(|| tab.focused())).and_then(|space| space.remote);
         self.insert_tab(
             self.index_of(id).map_or(usize::MAX, |at| at + 1),
-            Launch { ssh, ..self.launch(None) },
+            ssh.map_or_else(|| self.launch(None), |it| self.launch_to(it)),
         );
     }
 

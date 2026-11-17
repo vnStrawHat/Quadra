@@ -119,6 +119,33 @@ impl Model {
     pub fn remove_host(&self, name: &str) {
         self.prefs().hosts.update(|rows| rows.retain(|it| it.first().map(String::as_str) != Some(name)));
         self.set_sealed(name, None);
+        self.set_startup(name, None);
+    }
+
+    /// The startup command saved for a host.
+    pub(crate) fn startup(&self, name: &str) -> Option<String> {
+        let rows = self.prefs().startup;
+        rows.with_untracked(|rows| {
+            rows.iter().find(|it| it.first().map(String::as_str) == Some(name))?.get(1).cloned()
+        })
+    }
+
+    /// Saves a host's startup command, or forgets it (`None` or empty).
+    pub(crate) fn set_startup(&self, name: &str, command: Option<String>) {
+        let command = command.filter(|it| !it.trim().is_empty());
+        self.prefs().startup.update(|rows| {
+            rows.retain(|it| it.first().map(String::as_str) != Some(name));
+            rows.extend(command.map(|it| vec![name.to_string(), it]));
+        });
+    }
+
+    /// A space connected to `remote`: with the saved host's startup command, and its saved
+    /// secret when the data key is in memory.
+    pub(crate) fn launch_to(&self, remote: Remote) -> Launch {
+        let host = self.hosts().into_iter().find(|it| it.remote.target == remote.target);
+        let startup = host.and_then(|it| self.startup(&it.name));
+        let secret = self.saved_secret(&remote);
+        Launch { ssh: Some(remote), secret, startup, ..self.launch(None) }
     }
 
     /// Opens a tab connected to a host, or a space beside the focused one; it is recent.
@@ -129,7 +156,7 @@ impl Model {
     /// As `connect_to`, the engine answered with a secret the first time it asks for it.
     pub(crate) fn connect_with(&self, remote: Remote, here: bool, secret: Option<crate::vault::Secret>) {
         let label = remote.target.label();
-        let launch = Launch { ssh: Some(remote), secret, ..self.launch(None) };
+        let launch = Launch { secret, ..self.launch_to(remote) };
         if here {
             self.split_with(launch)
         } else {

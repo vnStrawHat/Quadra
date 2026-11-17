@@ -49,6 +49,8 @@ pub struct Launch {
     /// The saved password or passphrase of the host, opened: the first time the engine asks
     /// for it, the answer.
     pub secret: Option<crate::vault::Secret>,
+    /// What is written to the shell once it is open (a saved host's startup command).
+    pub startup: Option<String>,
 }
 
 /// A host and how to sign in to it.
@@ -127,6 +129,7 @@ impl Model {
             ssh: None,
             keepalive: p.keepalive(),
             secret: None,
+            startup: None,
         }
     }
 

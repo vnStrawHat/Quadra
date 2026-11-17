@@ -20,6 +20,7 @@ struct Form {
     key: Signal<String>,
     jump: Signal<usize>,
     forwards: Signal<String>,
+    startup: Signal<String>,
     /// What the colour picker holds: `#rrggbb`, or empty for the group's.
     tag: Signal<String>,
     /// The password or passphrase to save, and the master password that seals it while the
@@ -41,6 +42,7 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
         jump: signal(0),
         forwards: s(),
         tag: s(),
+        startup: s(),
         secret: s(),
         master: s(),
     };
@@ -91,6 +93,10 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
             .child(div().display(crate::locked::shown(move || form.auth.get() == 2)).child(key))
             .child(secret_fields(&secrets, form, editing.get_untracked()))
             .child(field(
+                "Startup command",
+                text_field(form.startup, "Written once the shell is open", "host-startup"),
+            ))
+            .child(field(
                 "Local forwards",
                 text_field(form.forwards, "8080:localhost:80 ...", "host-forwards"),
             ))
@@ -122,6 +128,7 @@ fn fill(model: &Model, form: Form, host: &Host) {
     form.forwards.set(forwards.join(" "));
     form.jump.set(jump.unwrap_or(0));
     form.tag.set(model.saved_tag(&host.name).map_or_else(String::new, |(word, _)| picked(&word)));
+    form.startup.set(model.startup(&host.name).unwrap_or_default());
 }
 
 /// Saves the form as a host, in place of `was` (the one edited) when it had another name.
@@ -158,9 +165,18 @@ fn save(model: &Model, form: Form, was: Option<String>) {
     });
     model.set_host_tag(&name, tag.as_deref());
     save_secret(model, form, &name, kept);
-    for field in
-        [form.name, form.group, form.target, form.key, form.forwards, form.tag, form.secret, form.master]
-    {
+    model.set_startup(&name, Some(form.startup.get_untracked()));
+    for field in [
+        form.name,
+        form.group,
+        form.target,
+        form.key,
+        form.forwards,
+        form.tag,
+        form.secret,
+        form.master,
+        form.startup,
+    ] {
         field.set(String::new());
     }
     form.jump.set(0);

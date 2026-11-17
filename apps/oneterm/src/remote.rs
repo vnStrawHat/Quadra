@@ -88,6 +88,7 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     let Some(remote) = launch.ssh else { return session };
     session.title().set(remote.target.label());
     let saved = Saved::of(&remote, launch.secret);
+    let startup = launch.startup.map(|it| format!("{it}\r"));
     let size = session.size();
     let (phase, label) = (signal(Phase::Connecting), signal(remote.target.label()));
     let mut options = options(remote.target);
@@ -112,7 +113,7 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     );
     // Kept with the session, where the SFTP dock and the dialogs find it.
     let ssh = Arc::new(ssh);
-    let answers = ssh.clone();
+    let (answers, starts) = (ssh.clone(), ssh.clone());
     events.on_data(move |burst| {
         for event in burst.drain(..) {
             let _ = match event {
@@ -125,7 +126,13 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
                     }
                     None => phase.try_set(Phase::Ask(ask)),
                 },
-                Event::Open => phase.try_set(Phase::Done),
+                Event::Open => {
+                    // Each time the shell opens, a Retry's too.
+                    if let Some(command) = &startup {
+                        starts.write(command.as_bytes());
+                    }
+                    phase.try_set(Phase::Done)
+                }
             };
         }
     });

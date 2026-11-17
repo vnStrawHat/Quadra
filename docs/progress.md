@@ -144,6 +144,10 @@ whose every cell changes every frame, costs what the V build's costs.
   host's menu. Tests: `apps/oneterm/tests/vault.rs`, the vault's and the seal's unit tests.
 - **Connect all (n)** in a group heading's menu: a tab for each host, one master password
   asked for all.
+- **A startup command** per saved host (`ssh.startup`), written once the shell opens (a Retry
+  and Duplicate too). Test: `tests/vault.rs`.
+- **Shift over a program that reports the mouse** selects, nothing reported: a test now holds
+  it (`crates/quadra-term/tests/input.rs`).
 - **The editor's menu**: Copy, Paste, Find, Close (Close only for a binary file or while the
   diff shows). Test: `apps/oneterm/tests/editing_menu.rs`.
 

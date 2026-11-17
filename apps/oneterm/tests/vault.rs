@@ -1,14 +1,15 @@
 //! Saved passwords and Connect all (specs/19, "Saved passwords", "M8 in detail") on real
 //! connections to the engine's test server on 127.0.0.1 (never another host): a password
 //! saved sealed signs in by itself, the master password opens the vault when its key is not
-//! in memory, a group connects all its hosts. Every file is under `.tmp`.
+//! in memory, a group connects all its hosts, a startup command is written once the shell
+//! opens. Every file is under `.tmp`.
 
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use oneterm::{Host, Model, NewSession, OneTerm, Remote, keymap, remote_shell_with};
 use oneterm_ssh::Auth;
-use oneterm_ssh::testing::{folder, options, serve, trust, write_locked_user_key};
+use oneterm_ssh::testing::{folder, options, serve, trust, write_locked_user_key, write_user_key};
 use quadra::{Role, Settings, provide};
 use quadra_term::echo;
 use quadra_testing::Harness;
@@ -189,4 +190,41 @@ fn a_passphrase_is_saved_by_the_master_password_typed_in_the_dialog() {
     a.menu("keyed", "Connect");
     a.wait(|a| a.welcomed() == 1, "signed in by the saved passphrase");
     assert!(!a.h.has_text("Sign in") && !a.h.has_text("Unlock saved passwords"));
+}
+
+#[test]
+fn a_startup_command_is_written_once_the_shell_opens() {
+    let mut a = app("vault-startup");
+    let file = a.dir.join("id");
+    write_user_key(&file);
+    a.host_with("tmuxed", "", Auth::Key(file.clone()));
+    a.menu("tmuxed", "Edit\u{2026}");
+    a.h.get_by_test_id("host-startup").set_value("tmux attach");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.settle();
+    let kept = a.settings.value("ssh.startup", Vec::<Vec<String>>::new()).get_untracked();
+    assert_eq!(kept, [["tmuxed", "tmux attach"]]);
+    a.menu("tmuxed", "Connect");
+    let said = |a: &App, words: &str| {
+        let holds = |n: &quadra_tree::SemanticNode| {
+            n.semantics.role == Role::TextInput
+                && n.semantics.value.as_deref().is_some_and(|it| it.contains(words))
+        };
+        a.h.query(holds).len()
+    };
+    let tabs = |a: &App| a.h.query(|n| n.semantics.role == Role::Tab).len();
+    a.wait(|a| said(a, "echo:tmux attach") == 1, "the command written");
+    // Duplicate writes it too; once the command is cleared, nothing is written.
+    a.model.duplicate(a.model.active().get_untracked());
+    a.wait(|a| tabs(a) == 3 && said(a, "echo:tmux attach") == 1, "the duplicate's");
+    a.menu("tmuxed", "Edit\u{2026}");
+    a.h.get_by_test_id("host-startup").set_value("");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.settle();
+    assert!(a.settings.value("ssh.startup", Vec::<Vec<String>>::new()).get_untracked().is_empty());
+    a.menu("tmuxed", "Connect");
+    a.wait(|a| tabs(a) == 4 && a.welcomed() == 1, "connected without it");
+    assert_eq!(said(&a, "echo:"), 0);
 }

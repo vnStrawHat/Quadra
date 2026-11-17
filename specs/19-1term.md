@@ -450,7 +450,11 @@ thread never waits on the network.
   field, Password or passphrase; editing, empty keeps the one saved, `Saved` its placeholder). A secret is saved only
   sealed with the master password (below, "Saved passwords"); with none set the field is
   disabled and says to set one in Security & lock; with one set but not typed since 1Term
-  started, a Master password field shows under it. Its
+  started, a Master password field shows under it. Then the startup command (Startup
+  command, `tmux attach -t main || tmux new -s main`): kept in `ssh.startup` (rows of the
+  host's name and it), it is written with a carriage return once the shell is open, each time
+  it opens (a Retry too), for a saved host's tab, Connect all and Duplicate; Quick connect
+  has none. Its
   fields, pickers and selects are all 28 px high. Quick connect has
   "Save as host".
 - **Saved passwords**: a vault in `ssh.vault`,

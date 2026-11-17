@@ -1,5 +1,6 @@
 //! Input to the program (specs/18, "Input"): keys in normal and application cursor mode, Ctrl
-//! and Alt, Tab kept from the focus, paste, a drag that selects and copy, the wheel. Cells are
+//! and Alt, Tab kept from the focus, paste, a drag that selects and copy (Shift over a program
+//! that reports the mouse), the wheel. Cells are
 //! 6 x 14 px from the box's corner and its padding of 8 px.
 
 use std::cell::RefCell;
@@ -135,4 +136,26 @@ fn the_wheel_scrolls_the_history_and_goes_to_a_program_that_reports_the_mouse() 
     assert_eq!(t.taken(), b"\x1b[<64;3;3M");
     t.h.tree.pointer(PointerInput::Down, MouseButton::Left, Point::new(x, y), Mods::NONE, t.h.now());
     assert_eq!(t.taken(), b"\x1b[<0;3;3M");
+}
+
+#[test]
+fn shift_selects_over_a_program_that_reports_the_mouse() {
+    let mut t = term();
+    t.feed(b"hello world\x1b[?1000h\x1b[?1006h");
+    let ((x0, y), (x1, _)) = (Term::cell(0, 0), Term::cell(0, 4));
+    let press = |t: &mut Term, input, x: f32, mods| {
+        let now = t.h.now();
+        t.h.tree.pointer(input, MouseButton::Left, Point::new(x, y), mods, now);
+        t.h.settle();
+    };
+    // Shift held: the terminal's selection, nothing reported.
+    press(&mut t, PointerInput::Down, x0 - 2.0, Mods::SHIFT);
+    press(&mut t, PointerInput::Move, x1, Mods::SHIFT);
+    press(&mut t, PointerInput::Up, x1, Mods::SHIFT);
+    assert!(t.taken().is_empty(), "nothing went to the program");
+    t.key(Key::C, Mods::CTRL | Mods::SHIFT);
+    assert_eq!(t.h.clipboard.read_text().as_deref(), Some("hello"));
+    // Without it the program has the mouse again.
+    press(&mut t, PointerInput::Down, x0, Mods::NONE);
+    assert_eq!(t.taken(), b"\x1b[<0;1;1M");
 }

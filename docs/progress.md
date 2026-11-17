@@ -132,6 +132,18 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### Fixes after a trial (2026-11-17)
+
+- A click in a submenu reaches it (`press_outside`: an overlay beside a node of another is
+  inside it); a field given the focus back after its view is gone starts nothing. Test:
+  `quadra-design/tests/submenus.rs`.
+- A seam of a pane tree takes one pixel, its grip over the panes' edges (specs/behaviour/16).
+- The gutter's line number right-aligned by the grid, 3 digits at first (specs/18); its colour
+  `#2b7f99` by default; an empty colour picker shows the code of its fallback (specs/13).
+- 1Term: a host connects on a double click; the host dialog's fields 28 px high.
+- Checked against a real server (a VM the user gave, by password, files under `.tmp/`): the
+  engine's shell and SFTP, and 1Term's Quick connect, password prompt, `ls` and dock.
+
 ### Pickers, one overlay plane, 1Term's bars (2026-11-16)
 
 - **Kit** (specs/13, behaviour/15): `color_picker` (saturation and brightness, hue, hex, presets;

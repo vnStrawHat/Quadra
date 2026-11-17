@@ -1,13 +1,11 @@
 //! Quick connect (specs/19, "M7 in detail"): the dialog makes the launch of a tab or a space,
-//! a target that does not read is said, and a remote session's
-//! glue reports a connection that failed. No host is ever reached: the sessions are
-//! `echo()`, and the one real engine connects to a port nobody listens on.
+//! and a target that does not read is said. No host is ever reached: the sessions are
+//! `echo()` (the Connect dialogs on real connections are `tests/asking.rs`).
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
 
-use oneterm::{Launch, NewSession, OneTerm, Remote, keymap, remote_shell};
+use oneterm::{Launch, NewSession, OneTerm, Remote, keymap};
 use oneterm_ssh::{Auth, Target};
 use quadra::{Key, Mods, Role};
 use quadra_term::echo;
@@ -71,32 +69,4 @@ fn in_the_current_tab_it_is_a_new_space() {
     assert_eq!(tabs(&h), 1);
     assert_eq!(h.query(|n| n.semantics.name == "Terminal" && n.semantics.role == Role::TextInput).len(), 2);
     assert!(made.borrow()[1].ssh.is_some());
-}
-
-#[test]
-fn a_remote_session_says_its_connection_failed() {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-    let port = listener.local_addr().unwrap().port();
-    drop(listener);
-    let target = Target { user: "nobody".into(), host: "127.0.0.1".into(), port };
-    let remote = Remote::new(target, Auth::Password);
-    let mut h = Harness::new();
-    let session = Rc::new(RefCell::new(None));
-    let kept = session.clone();
-    h.mount(move || {
-        let s = remote_shell(Launch { ssh: Some(remote.clone()), ..Launch::default() });
-        *kept.borrow_mut() = Some(s.clone());
-        quadra_term::terminal(&s)
-    });
-    let s = session.borrow().clone().unwrap();
-    assert_eq!(s.title().get_untracked(), format!("nobody@127.0.0.1:{port}"));
-    let end = Instant::now() + Duration::from_secs(20);
-    while s.exited().get_untracked().is_none() {
-        assert!(Instant::now() < end, "the engine never ended");
-        std::thread::sleep(Duration::from_millis(10));
-        h.settle();
-    }
-    assert_eq!(s.exited().get_untracked(), Some(255));
-    let said = s.screen_text().join("\n");
-    assert!(said.contains("[connection closed:"), "{said}");
 }

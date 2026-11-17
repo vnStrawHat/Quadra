@@ -1,9 +1,10 @@
 //! 1Term's SSH (specs/19, "SSH (P2)"): `russh` on a `tokio` runtime of its own, behind a
 //! blocking API of the shape of `quadra_shell::Pty`. What the engine asks (a host key, a
-//! password) is asked in the terminal, as the OpenSSH client does.
+//! password) it asks the app, which answers with [`Ssh::answer`].
 
 mod auth;
 mod files;
+mod hostkey;
 mod prompt;
 mod route;
 mod session;
@@ -21,7 +22,8 @@ use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 
 pub use files::{Entry, Files, Stat, join, safe_name};
 use prompt::Cmd;
-pub use target::Target;
+pub use prompt::{Ask, Event};
+pub use target::{Target, os_user};
 
 /// How to prove who the user is.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -126,23 +128,39 @@ pub(crate) struct Shared {
     /// The last ping's time in microseconds; 0 before the first.
     latency: AtomicU32,
     /// The connection, once the shell is open.
-    handle: Mutex<Option<Arc<russh::client::Handle<session::Checker>>>>,
+    handle: Mutex<Option<Arc<russh::client::Handle<hostkey::Checker>>>>,
     files: Mutex<Option<Files>>,
+    /// Gives up the connecting under way.
+    cancel: tokio::sync::Notify,
 }
 
 impl Ssh {
-    /// Starts connecting at once and returns: what the server (or the engine) says comes to
-    /// `output`, from the engine's threads; `exited` is told the shell's exit status, 255
-    /// when the connection failed or dropped.
+    /// Starts connecting at once and returns: what the server says comes to `output`, how
+    /// the connecting goes and what it asks to `told` (answered by [`Ssh::answer`]), both
+    /// from the engine's threads; `exited` is told the shell's exit status, 255 when the
+    /// connection was given up or dropped.
     pub fn connect(
         options: Options,
         output: impl Fn(&[u8]) + Send + Sync + 'static,
+        told: impl Fn(Event) + Send + Sync + 'static,
         exited: impl FnOnce(i32) + Send + 'static,
     ) -> Ssh {
         let (to, from) = unbounded_channel();
         let shared = Arc::new(Shared::default());
-        runtime().spawn(session::run(options, from, Arc::new(output), Box::new(exited), shared.clone()));
+        let (output, told) = (Arc::new(output), Arc::new(told));
+        runtime().spawn(session::run(options, from, output, told, Box::new(exited), shared.clone()));
         Ssh { to, shared }
+    }
+
+    /// The answer to the question asked last ([`Event::Ask`]); `None` gives it up.
+    pub fn answer(&self, answer: Option<String>) {
+        let _ = self.to.send(Cmd::Answer(answer));
+    }
+
+    /// Gives up the connecting under way, at once: it fails `cancelled` (and is asked
+    /// about as [`Ask::Failed`]). Nothing once the shell is open.
+    pub fn cancel(&self) {
+        self.shared.cancel.notify_one();
     }
 
     /// How long the last ping took, once the shell is open (every 5 s).
@@ -151,7 +169,7 @@ impl Ssh {
         (micros > 0).then(|| Duration::from_micros(micros.into()))
     }
 
-    /// Bytes typed: an answer while the engine asks, else the shell's input.
+    /// Bytes typed: the shell's input; dropped before the shell is open.
     pub fn write(&self, bytes: &[u8]) {
         let _ = self.to.send(Cmd::Input(bytes.to_vec()));
     }
@@ -175,6 +193,7 @@ impl Ssh {
 
     pub fn close(&self) {
         let _ = self.to.send(Cmd::Close);
+        self.cancel();
     }
 }
 

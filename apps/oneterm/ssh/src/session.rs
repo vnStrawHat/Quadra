@@ -1,18 +1,19 @@
 //! A connection from start to end (specs/19, "M7 in detail"): the socket, the host key, the
 //! authentication, the shell, and what the shell's channel says until it closes.
 
-use std::path::PathBuf;
+use std::future::{Future, poll_fn};
+use std::pin::pin;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
 
 use russh::ChannelMsg;
-use russh::client::Handler;
-use russh::keys::known_hosts::{check_known_hosts_path, learn_known_hosts_path};
-use russh::keys::{HashAlg, PublicKeyOrCertificate};
 use tokio::sync::mpsc::UnboundedReceiver;
 
-use crate::prompt::{Cmd, Out, Prompt};
+use crate::auth::CANCELLED;
+use crate::prompt::{Ask, Cmd, Event, Out, Prompt, Told};
+use crate::route::Link;
 use crate::{Options, Shared};
 
 const PING: Duration = Duration::from_secs(5);
@@ -21,28 +22,61 @@ pub(crate) async fn run(
     options: Options,
     input: UnboundedReceiver<Cmd>,
     out: Out,
+    told: Told,
     exited: Box<dyn FnOnce(i32) + Send>,
     shared: Arc<Shared>,
 ) {
-    let prompt = Arc::new(Prompt::new(out, input, options.rows, options.cols));
-    let code = match shell(&options, prompt.clone(), &shared).await {
-        Ok(code) => code,
-        Err(why) => {
+    let prompt = Arc::new(Prompt::new(out, told, input, options.rows, options.cols));
+    // A connection that fails before its shell is asked about: again, or given up.
+    let code = loop {
+        let why = match shell(&options, prompt.clone(), &shared).await {
+            Ok(code) => break code,
+            Err(why) => why,
+        };
+        if prompt.opened() || prompt.ask(Ask::Failed { reason: why.clone() }).await.is_none() {
             prompt.say(&format!("\n[connection closed: {why}]\n"));
-            255
+            break 255;
         }
+        // A cancel that came after the failure is not the new attempt's.
+        let mut stale = pin!(shared.cancel.notified());
+        let _ = stale.as_mut().poll(&mut Context::from_waker(Waker::noop()));
     };
     exited(code);
 }
 
+/// Reaches the target unless `Ssh::cancel` (or `close`) gives it up first.
+async fn reach(
+    options: &Options,
+    prompt: &Arc<Prompt>,
+    shared: &Shared,
+) -> Result<(Link, Vec<Link>), String> {
+    let mut reaching = pin!(crate::route::reach(options, prompt));
+    let mut cancelled = pin!(shared.cancel.notified());
+    poll_fn(|cx| match reaching.as_mut().poll(cx) {
+        Poll::Ready(done) => Poll::Ready(done),
+        Poll::Pending => cancelled.as_mut().poll(cx).map(|()| Err(CANCELLED.to_string())),
+    })
+    .await
+}
+
 async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> Result<i32, String> {
-    let (handle, jumps) = crate::route::reach(options, &prompt).await?;
+    let (handle, jumps) = reach(options, &prompt, shared).await?;
+    // What came while connecting: the last size is kept, typing is dropped.
+    {
+        let mut input = prompt.input.lock().await;
+        while let Ok(cmd) = input.try_recv() {
+            if !prompt.take(cmd) {
+                return Err("closed".into());
+            }
+        }
+    }
     let channel = handle.channel_open_session().await.map_err(|e| e.to_string())?;
     let (rows, cols) = prompt.size();
     let fail = |e: russh::Error| e.to_string();
     channel.request_pty(false, "xterm-256color", cols.into(), rows.into(), 0, 0, &[]).await.map_err(fail)?;
     channel.set_env(false, "COLORTERM", "truecolor").await.map_err(fail)?;
     channel.request_shell(false).await.map_err(fail)?;
+    prompt.tell(Event::Open);
     let (mut read, write) = channel.split();
     // A ping every 5 s: how long the server takes to answer.
     let handle = Arc::new(handle);
@@ -68,6 +102,7 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> 
             let sent = match cmd {
                 Cmd::Input(bytes) => write.data_bytes(bytes).await,
                 Cmd::Resize(rows, cols) => write.window_change(cols.into(), rows.into(), 0, 0).await,
+                Cmd::Answer(_) => Ok(()),
                 Cmd::Close => break,
             };
             if sent.is_err() {
@@ -99,63 +134,4 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> 
         let _ = jump.disconnect(russh::Disconnect::ByApplication, "", "").await;
     }
     code.ok_or_else(|| "the connection dropped".to_string())
-}
-
-/// Checks the server's key against the known hosts, asking about one it has never seen.
-pub(crate) struct Checker {
-    pub(crate) host: String,
-    pub(crate) port: u16,
-    pub(crate) file: PathBuf,
-    pub(crate) prompt: Arc<Prompt>,
-}
-
-impl Handler for Checker {
-    type Error = russh::Error;
-
-    async fn check_server_key(&mut self, key: &PublicKeyOrCertificate) -> Result<bool, Self::Error> {
-        let PublicKeyOrCertificate::PublicKey { key, .. } = key else {
-            self.prompt.say("The host gave a certificate; 1Term does not check those yet.\n");
-            return Ok(false);
-        };
-        let shown =
-            if self.port == 22 { self.host.clone() } else { format!("[{}]:{}", self.host, self.port) };
-        let print = key.fingerprint(HashAlg::Sha256);
-        match check_known_hosts_path(&self.host, self.port, key, &self.file) {
-            Ok(true) => Ok(true),
-            Ok(false) => {
-                let mut question = format!(
-                    "The authenticity of host '{shown}' can't be established.\n{} key fingerprint is {print}.\nAre you sure you want to continue connecting (yes/no)? ",
-                    key.algorithm()
-                );
-                loop {
-                    match self.prompt.ask(&question, true).await.as_deref() {
-                        Some("yes") => break,
-                        Some("no") | None => return Ok(false),
-                        Some(_) => question = "Please type 'yes' or 'no': ".into(),
-                    }
-                }
-                match learn_known_hosts_path(&self.host, self.port, key, &self.file) {
-                    Ok(()) => self
-                        .prompt
-                        .say(&format!("Warning: Permanently added '{shown}' to the list of known hosts.\n")),
-                    Err(e) => self
-                        .prompt
-                        .say(&format!("Warning: could not add the key to {}: {e}\n", self.file.display())),
-                }
-                Ok(true)
-            }
-            Err(russh::keys::Error::KeyChanged { line }) => {
-                self.prompt.say(&format!(
-                    "WARNING: THE HOST KEY OF '{shown}' HAS CHANGED!\nSomeone could be eavesdropping on you right now.\nThe {} key sent is {print}.\nThe key known is on line {line} of {}.\nRemove it there to trust the new one.\n",
-                    key.algorithm(),
-                    self.file.display()
-                ));
-                Ok(false)
-            }
-            Err(e) => {
-                self.prompt.say(&format!("Could not read {}: {e}\n", self.file.display()));
-                Ok(false)
-            }
-        }
-    }
 }

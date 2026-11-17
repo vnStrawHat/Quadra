@@ -24,3 +24,5 @@ quadra-native-win = { path = "../../crates/quadra-native-win" }
 quadra-platform = { path = "../../crates/quadra-platform" }
 quadra-prim = { path = "../../crates/quadra-prim" }
 quadra-term = { path = "../../crates/quadra-term" }
+# The test servers on 127.0.0.1 that the Connect dialogs' scenes connect to.
+oneterm-ssh = { path = "../../apps/oneterm/ssh", features = ["testing"] }

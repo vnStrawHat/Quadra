@@ -1,6 +1,6 @@
 //! Where to connect (specs/19, "M7 in detail"): read from what a user types.
 
-/// A user at a host and port.
+/// A user at a host and port; the user is empty when none was given (connecting asks).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Target {
     pub user: String,
@@ -10,7 +10,7 @@ pub struct Target {
 
 impl Target {
     /// `user@host`, `host:port`, `[user@]host -p port`, `-l user`, a leading `ssh`; no user is
-    /// the OS's, no port 22. None when there is no host or a part does not read.
+    /// empty, no port 22. None when there is no host or a part does not read.
     pub fn parse(text: &str) -> Option<Target> {
         let mut words = text.split_whitespace().peekable();
         if words.peek() == Some(&"ssh") {
@@ -42,17 +42,22 @@ impl Target {
         if host.is_empty() || user.as_deref() == Some("") {
             return None;
         }
-        let user = user.or_else(|| std::env::var("USERNAME").ok()).unwrap_or_else(|| "root".into());
-        Some(Target { user, host: host.to_string(), port: port.unwrap_or(22) })
+        Some(Target { user: user.unwrap_or_default(), host: host.to_string(), port: port.unwrap_or(22) })
     }
 
-    /// `user@host`, with `:port` when it is not 22.
+    /// `user@host` (`host` without a user), with `:port` when it is not 22.
     pub fn label(&self) -> String {
+        let at = if self.user.is_empty() { String::new() } else { format!("{}@", self.user) };
         match self.port {
-            22 => format!("{}@{}", self.user, self.host),
-            port => format!("{}@{}:{port}", self.user, self.host),
+            22 => format!("{at}{}", self.host),
+            port => format!("{at}{}:{port}", self.host),
         }
     }
+}
+
+/// The OS's user, what is filled in when none was given.
+pub fn os_user() -> String {
+    std::env::var("USERNAME").unwrap_or_else(|_| "root".into())
 }
 
 #[cfg(test)]
@@ -73,6 +78,8 @@ mod tests {
         assert_eq!(Target::parse("a@fe80::1"), t("a", "fe80::1", 22));
         assert_eq!(Target::parse("a@h").map(|it| it.label()), Some("a@h".into()));
         assert_eq!(Target::parse("a@h:99").map(|it| it.label()), Some("a@h:99".into()));
+        assert_eq!(Target::parse("h:99"), t("", "h", 99));
+        assert_eq!(Target::parse("h:99").map(|it| it.label()), Some("h:99".into()));
         for bad in ["", "ssh", "a@", "@h", "h -p", "h -p x", "h -x", "h extra"] {
             assert_eq!(Target::parse(bad), None, "{bad:?}");
         }

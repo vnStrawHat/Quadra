@@ -132,6 +132,19 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### SSH asks in dialogs (2026-11-17)
+
+- **The engine asks the app** (specs/19, "M7 in detail"): `Ssh::connect(options, output,
+  told, exited)`; `Event::Connecting`, `Ask` (the user, an unknown host key, the password, a
+  passphrase, a failure), `Open`; `Ssh::answer`, `Ssh::cancel`; a failure answered retries.
+  Nothing is asked in the terminal. A target without a user leaves it empty and asks it.
+- **1Term's Connect dialogs** (`asking.rs`): Connecting with Cancel, Unknown host with its
+  fingerprint (Trust and connect / Cancel, the focus on Cancel), Sign in, Could not connect
+  (Retry / Close); the focus back in the terminal when the shell opens. Tests:
+  `oneterm-ssh/tests/live.rs`, `apps/oneterm/tests/asking.rs`, all on 127.0.0.1; checked
+  against the user's VM by a probe under `.tmp/`. Shots: `ask-*` scenes.
+- The gutter keeps no digits ahead: it grows with the highest line number (specs/18).
+
 ### Fixes after a trial (2026-11-17)
 
 - A click in a submenu reaches it (`press_outside`: an overlay beside a node of another is

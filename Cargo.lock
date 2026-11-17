@@ -1328,6 +1328,7 @@ name = "quadra-bench-oneterm-shots"
 version = "0.1.0"
 dependencies = [
  "oneterm",
+ "oneterm-ssh",
  "quadra",
  "quadra-app",
  "quadra-async",

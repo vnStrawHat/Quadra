@@ -5,8 +5,10 @@
 //!     tools/cargo.sh run -p quadra-bench-oneterm-shots -- [out dir] [scene ..]
 //!
 //! Scenes: main, collapsed, horizontal, menu, connect, add, settings, lock, sftp, gutter (main
-//! with the terminals' gutter on), usage (the pointer resting on RAM: its card).
+//! with the terminals' gutter on), usage (the pointer resting on RAM: its card), and the
+//! Connect dialogs: ask-connecting, ask-host, ask-sign-in, ask-failed (`asks.rs`).
 
+mod asks;
 #[path = "../../shots/src/png.rs"]
 mod png;
 
@@ -76,6 +78,12 @@ fn point(platform: &HeadlessPlatform, app: &Shots, window: WindowId, name: &str,
     }
 }
 
+/// Whether a node of the window is named with `words` in it.
+fn shows(app: &Shots, window: WindowId, words: &str) -> bool {
+    let Some(tree) = app.tree(window) else { return false };
+    tree.semantic_tree().nodes.iter().any(|n| n.semantics.name.contains(words))
+}
+
 /// The canvas's saved hosts, as rows of the settings, with their colour tags.
 fn hosts() -> Vec<Vec<String>> {
     let host = |name: &str, group: &str, target: &str, jump: &str, tag: &str| {
@@ -135,15 +143,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let out = PathBuf::from(args.next().unwrap_or_else(|| ".tmp/shots/1term".into()));
     let only: Vec<String> = args.collect();
     std::fs::create_dir_all(&out)?;
-    for scene in SCENES.iter().filter(|it| only.is_empty() || only.iter().any(|o| o == *it)) {
+    for scene in
+        SCENES.iter().chain(&asks::SCENES).filter(|it| only.is_empty() || only.iter().any(|o| o == *it))
+    {
         let platform = HeadlessPlatform::new();
         let text = DirectWrite::new().map_err(AppError::Text)?;
         let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
         let mut app = quadra_design::install(app, &quadra_design::dark())?.keymap(keymap());
         let made: Rc<RefCell<Vec<Session>>> = Rc::default();
         let kept = made.clone();
-        let sessions: NewSession = Rc::new(move |_| {
-            let s = echo();
+        let sessions: NewSession = Rc::new(move |launch: oneterm::Launch| {
+            let tested = launch.ssh.as_ref().is_some_and(|it| it.target.host == "127.0.0.1");
+            let s = if tested { asks::session(launch) } else { echo() };
             kept.borrow_mut().push(s.clone());
             s
         });
@@ -188,7 +199,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         first.focus.set(1);
         pass(&platform, &mut app, 150);
         fill(&model, &made.borrow());
-        model.ui().dock.set(*scene != "connect");
+        model.ui().dock.set(*scene != "connect" && !scene.starts_with("ask-"));
         // A master password, as the canvas has: Lock 1Term now shows.
         model.prefs().password.set("set".into());
         match *scene {
@@ -203,6 +214,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             "usage" => {
                 pass(&platform, &mut app, 150);
                 point(&platform, &app, window, "RAM", true);
+            }
+            ask if ask.starts_with("ask-") => {
+                // The engine's threads go at their own pace: 10 s at most.
+                let (words, end) = (asks::start(&model, ask), Instant::now() + Duration::from_secs(10));
+                while !shows(&app, window, words) && Instant::now() < end {
+                    pass(&platform, &mut app, 75);
+                    std::thread::sleep(Duration::from_millis(20));
+                }
             }
             _ => {}
         }

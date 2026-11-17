@@ -42,10 +42,12 @@ fn a_jump_host_that_fails_is_named() {
     let mut o = options(port, &dir, Auth::Key(id.clone()));
     o.jumps = vec![hop(jump, &id)];
     let c = connect(o);
+    let why = c.failed();
+    let named =
+        format!("jump host tester@127.0.0.1:{jump}: the host key of '[127.0.0.1]:{jump}' has changed");
+    assert!(why.starts_with(&named), "{why}");
     assert_eq!(c.code(), 255);
-    let said =
-        format!("[connection closed: jump host tester@127.0.0.1:{jump}: host key verification failed]");
-    assert!(c.text().contains(&said), "{}", c.text());
+    assert!(c.text().contains(&format!("[connection closed: {named}")), "{}", c.text());
 }
 
 #[test]

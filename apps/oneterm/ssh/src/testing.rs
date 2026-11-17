@@ -2,15 +2,17 @@
 //! 127.0.0.1, with SFTP over a folder, and a client of the engine. Every file is under
 //! `.tmp/ssh-tests`; the user's agent, keys and known hosts are never used.
 
+mod client;
 mod fs;
+
+pub use client::{Client, connect};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use crate::{Auth, Options, Ssh, Target};
+use crate::{Auth, Options, Target};
 use russh::keys::ssh_key::private::Ed25519Keypair;
 use russh::keys::{PrivateKey, PublicKey};
 use russh::server::{self, Auth as Verdict, Msg, Session, VerifiedPublicKey};
@@ -210,12 +212,6 @@ pub fn serve_files(seed: u8, root: PathBuf) -> (u16, Arc<Mutex<Vec<String>>>) {
     (port, seen)
 }
 
-pub struct Client {
-    pub ssh: Ssh,
-    pub out: Arc<Mutex<Vec<u8>>>,
-    exited: Receiver<i32>,
-}
-
 /// A folder of its own under `.tmp/ssh-tests`, emptied.
 pub fn folder(name: &str) -> PathBuf {
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../.tmp/ssh-tests").join(name);
@@ -229,35 +225,4 @@ pub fn options(port: u16, dir: &std::path::Path, auth: Auth) -> Options {
     (options.auth, options.known_hosts, options.keys) = (auth, dir.join("known_hosts"), dir.join("keys"));
     options.agent = r"\\.\pipe\oneterm-tests-no-agent".into();
     options
-}
-
-pub fn connect(options: Options) -> Client {
-    let (out, (said, exited)) = (Arc::new(Mutex::new(Vec::new())), channel());
-    let into = out.clone();
-    let ssh = Ssh::connect(
-        options,
-        move |bytes| into.lock().unwrap().extend_from_slice(bytes),
-        move |code| {
-            let _ = said.send(code);
-        },
-    );
-    Client { ssh, out, exited }
-}
-
-impl Client {
-    pub fn text(&self) -> String {
-        String::from_utf8_lossy(&self.out.lock().unwrap()).into_owned()
-    }
-
-    pub fn wait_for(&self, words: &str) {
-        let end = Instant::now() + Duration::from_secs(20);
-        while !self.text().contains(words) {
-            assert!(Instant::now() < end, "never said {words:?}; said:\n{}", self.text());
-            std::thread::sleep(Duration::from_millis(5));
-        }
-    }
-
-    pub fn code(&self) -> i32 {
-        self.exited.recv_timeout(Duration::from_secs(20)).expect("the connection ended")
-    }
 }

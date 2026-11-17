@@ -18,8 +18,8 @@ fn files(name: &str) -> (oneterm_ssh::testing::Client, Files, std::path::PathBuf
     let (port, _) = serve_files(7, served.clone());
     learn_known_hosts_path("127.0.0.1", port, key(7).public_key(), dir.join("known_hosts")).unwrap();
     let c = connect(options(port, &dir, Auth::Password));
-    c.wait_for("password: ");
-    c.ssh.write(b"secret\r");
+    c.ask();
+    c.answer(Some("secret"));
     c.wait_for("welcome");
     let files = c.ssh.files().expect("SFTP opens");
     (c, files, served)

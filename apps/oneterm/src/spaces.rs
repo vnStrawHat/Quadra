@@ -69,25 +69,43 @@ impl View for SpaceView {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let SpaceView { model, tab, space } = self;
         let shows = focused(tab, space.id);
+        // A remote space's connection being made: the Connect dialogs have the focus.
+        let conn = space.session.kept::<crate::remote::Conn>();
+        let made = move || conn.as_ref().is_none_or(|it| it.phase.get() == crate::remote::Phase::Done);
         let id = space_view(&model, tab, space).mount(cx);
         let (handle, locked) = (cx.handle.clone(), model.lock().locked);
         effect(move || {
             // Opened again, the focus comes back to the focused space; one pressed keeps what
-            // the press focused in it.
-            if shows() && !locked.get() {
-                handle.with(move |tree| {
-                    let mut at = tree.focused();
-                    while let Some(node) = at {
-                        if node == id {
-                            return;
+            // the press focused in it. After the writes of this pass, which close a dialog.
+            if shows() && !locked.get() && made() {
+                let later = handle.clone();
+                handle.with(move |_| {
+                    later.with(move |tree| {
+                        let mut at = tree.focused();
+                        while let Some(node) = at {
+                            if node == id {
+                                return;
+                            }
+                            at = tree.parent(node);
                         }
-                        at = tree.parent(node);
-                    }
-                    tree.focus_first(id);
+                        tree.focus_first(id);
+                    })
                 });
             }
         });
         id
+    }
+}
+
+/// Who a remote space is: `user@` its host's name, else `user@host`; the user the one the
+/// connection was answered with when none was given.
+fn who(model: &Model, remote: &crate::shells::Remote, conn: Option<&crate::remote::Conn>) -> String {
+    let label = conn.map_or_else(|| remote.target.label(), |it| it.label.get());
+    let name = model.host_name(remote);
+    match label.split_once('@') {
+        _ if name == remote.target.label() => label,
+        Some((user, _)) => format!("{user}@{name}"),
+        None => name,
     }
 }
 
@@ -108,15 +126,15 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
     });
     // Where it is: the directory, after the user and host of a remote space; a shell that
     // says no directory, its title.
-    let (named, remote) = (model.clone(), space.remote.clone());
+    let (named, remote, conn) = (model.clone(), space.remote.clone(), s.kept::<crate::remote::Conn>());
     let place = move || {
         let dir = cwd.get();
         let dir = if dir.is_empty() { title.get() } else { dir };
         match &remote {
-            Some(remote) if cwd.with(String::is_empty) => {
-                format!("{}@{} {dir}", remote.target.user, named.host_name(remote))
+            Some(remote) => {
+                let who = who(&named, remote, conn.as_deref());
+                if cwd.with(String::is_empty) { format!("{who} {dir}") } else { format!("{who}:{dir}") }
             }
-            Some(remote) => format!("{}@{}:{dir}", remote.target.user, named.host_name(remote)),
             None => dir,
         }
     };

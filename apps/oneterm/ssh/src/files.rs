@@ -10,8 +10,8 @@ use russh::client::Handle;
 use russh_sftp::client::SftpSession;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+use crate::hostkey::Checker;
 use crate::runtime;
-use crate::session::Checker;
 
 const MOST: usize = 100_000;
 const CHUNK: usize = 64 * 1024;

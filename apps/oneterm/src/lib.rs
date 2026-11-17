@@ -2,6 +2,7 @@
 //! the status bar. Where a session's program comes from is the caller's: a local shell in the
 //! app ([`local_shell`]), `quadra_term::echo` in tests.
 
+mod asking;
 mod channels;
 mod chrome;
 mod complete;
@@ -144,6 +145,7 @@ impl OneTerm {
             .child(statusbar::status_bar(&self.model, self.clock, self.now.clone()))
             .child(cards)
             .child(connect::dialog(&self.model))
+            .child(asking::dialogs(&self.model))
             .child(hostlist::add_dialog(&self.model))
     }
 }

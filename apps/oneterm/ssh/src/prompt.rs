@@ -1,31 +1,76 @@
-//! The terminal as the engine's prompt (specs/19, "M7 in detail"): questions are written to
-//! the space, and what is typed there up to Enter is the answer.
+//! What the engine asks the app (specs/19, "M7 in detail"): an [`Ask`] told as an [`Event`]
+//! from the engine's threads, answered by `Ssh::answer`; and what it writes to the space.
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::{Arc, Mutex as Slot};
 
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedReceiver;
 
-/// What the space sends the engine.
+/// What the engine tells the app while it connects.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Event {
+    /// A hop is being reached: `user@host`.
+    Connecting(String),
+    /// A question, answered by `Ssh::answer`.
+    Ask(Ask),
+    /// The shell is open.
+    Open,
+}
+
+/// A question of the engine's. `Ssh::answer(None)` gives it up.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Ask {
+    /// No user was given for `host`; `user` is the OS's, to fill in.
+    User { host: String, user: String },
+    /// A host key not in the known hosts: any answer trusts it, and it is written there.
+    HostKey { host: String, kind: String, fingerprint: String },
+    /// `again`: the one before was refused.
+    Password { target: String, again: bool },
+    /// The passphrase of a key file; `again`: the one before did not open it.
+    Passphrase { file: PathBuf, again: bool },
+    /// The connection ended before its shell opened: any answer connects again from the
+    /// start, `None` gives up.
+    Failed { reason: String },
+}
+
+/// What the app sends the engine.
 pub(crate) enum Cmd {
     Input(Vec<u8>),
+    Answer(Option<String>),
     Resize(u16, u16),
     Close,
 }
 
 pub(crate) type Out = Arc<dyn Fn(&[u8]) + Send + Sync>;
+pub(crate) type Told = Arc<dyn Fn(Event) + Send + Sync>;
 
 pub(crate) struct Prompt {
     out: Out,
+    told: Told,
     pub(crate) input: Mutex<UnboundedReceiver<Cmd>>,
     /// Rows in the high half, columns in the low.
     size: AtomicU32,
+    /// The space was closed: every question is given up.
+    closed: AtomicBool,
+    /// The shell opened.
+    opened: AtomicBool,
+    /// Why a host key was refused, for the error the connection fails with.
+    pub(crate) why: Slot<Option<String>>,
 }
 
 impl Prompt {
-    pub(crate) fn new(out: Out, input: UnboundedReceiver<Cmd>, rows: u16, cols: u16) -> Prompt {
-        Prompt { out, input: Mutex::new(input), size: AtomicU32::new(pack(rows, cols)) }
+    pub(crate) fn new(out: Out, told: Told, input: UnboundedReceiver<Cmd>, rows: u16, cols: u16) -> Prompt {
+        Prompt {
+            out,
+            told,
+            input: Mutex::new(input),
+            size: AtomicU32::new(pack(rows, cols)),
+            closed: AtomicBool::new(false),
+            opened: AtomicBool::new(false),
+            why: Slot::new(None),
+        }
     }
 
     /// Writes to the space; a line feed is a new line.
@@ -37,8 +82,19 @@ impl Prompt {
         (self.out)(bytes);
     }
 
-    pub(crate) fn resized(&self, rows: u16, cols: u16) {
-        self.size.store(pack(rows, cols), Ordering::Relaxed);
+    pub(crate) fn tell(&self, event: Event) {
+        if event == Event::Open {
+            self.opened.store(true, Ordering::Relaxed);
+        }
+        (self.told)(event);
+    }
+
+    pub(crate) fn opened(&self) -> bool {
+        self.opened.load(Ordering::Relaxed)
+    }
+
+    pub(crate) fn closed(&self) -> bool {
+        self.closed.load(Ordering::Relaxed)
     }
 
     /// Rows and columns.
@@ -47,109 +103,44 @@ impl Prompt {
         ((both >> 16) as u16, both as u16)
     }
 
-    /// Asks a question; the line typed, or None when it was given up (Ctrl+C, Ctrl+D, the
-    /// space closed). `echo` false: what is typed is not shown (a password).
-    pub(crate) async fn ask(&self, question: &str, echo: bool) -> Option<String> {
-        self.say(question);
-        let mut line = Line::default();
+    /// Asks the app; its answer, or None when it gave up or the space was closed. What is
+    /// typed in the space meanwhile is dropped.
+    pub(crate) async fn ask(&self, ask: Ask) -> Option<String> {
+        if self.closed() {
+            return None;
+        }
+        // An answer sent twice to the question before is not this one's.
         let mut input = self.input.lock().await;
-        loop {
-            match input.recv().await? {
-                Cmd::Input(bytes) => {
-                    for &byte in &bytes {
-                        match line.take(byte) {
-                            Took::Done => {
-                                self.say("\n");
-                                return Some(String::from_utf8_lossy(&line.text).into_owned());
-                            }
-                            Took::GaveUp => {
-                                self.say("^C\n");
-                                return None;
-                            }
-                            Took::Typed if echo => self.write(&[byte]),
-                            Took::Erased if echo => self.write(b"\x08 \x08"),
-                            _ => {}
-                        }
-                    }
-                }
-                Cmd::Resize(rows, cols) => self.resized(rows, cols),
-                Cmd::Close => return None,
+        while let Ok(cmd) = input.try_recv() {
+            if !self.take(cmd) {
+                return None;
             }
         }
+        self.tell(Event::Ask(ask));
+        loop {
+            match input.recv().await? {
+                Cmd::Answer(answer) => return answer,
+                cmd => {
+                    if !self.take(cmd) {
+                        return None;
+                    }
+                }
+            }
+        }
+    }
+
+    /// Takes in what the app sent while no question is asked (a size; an answer late, or
+    /// typing, is dropped). False once the space is closed.
+    pub(crate) fn take(&self, cmd: Cmd) -> bool {
+        match cmd {
+            Cmd::Input(_) | Cmd::Answer(_) => {}
+            Cmd::Resize(rows, cols) => self.size.store(pack(rows, cols), Ordering::Relaxed),
+            Cmd::Close => self.closed.store(true, Ordering::Relaxed),
+        }
+        !self.closed()
     }
 }
 
 fn pack(rows: u16, cols: u16) -> u32 {
     u32::from(rows) << 16 | u32::from(cols)
-}
-
-/// A line being typed: its bytes, and whether an escape sequence is being skipped.
-#[derive(Default)]
-struct Line {
-    text: Vec<u8>,
-    escape: bool,
-}
-
-#[derive(Debug, PartialEq)]
-enum Took {
-    Typed,
-    Erased,
-    Done,
-    GaveUp,
-    Ignored,
-}
-
-impl Line {
-    fn take(&mut self, byte: u8) -> Took {
-        if self.escape {
-            // An arrow or the like: skipped up to its final byte.
-            self.escape = !(byte.is_ascii_alphabetic() || byte == b'~');
-            return Took::Ignored;
-        }
-        match byte {
-            b'\r' | b'\n' => Took::Done,
-            3 | 4 => Took::GaveUp,
-            0x1b => {
-                self.escape = true;
-                Took::Ignored
-            }
-            0x7f | 8 => {
-                // A whole character: its continuation bytes, then its first.
-                while self.text.pop().is_some_and(|b| b & 0xc0 == 0x80) {}
-                Took::Erased
-            }
-            0..0x20 => Took::Ignored,
-            _ => {
-                self.text.push(byte);
-                Took::Typed
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn typed(bytes: &[u8]) -> (String, Took) {
-        let mut line = Line::default();
-        let mut last = Took::Ignored;
-        for &b in bytes {
-            last = line.take(b);
-            if matches!(last, Took::Done | Took::GaveUp) {
-                break;
-            }
-        }
-        (String::from_utf8_lossy(&line.text).into_owned(), last)
-    }
-
-    #[test]
-    fn a_line_is_edited_as_typed() {
-        assert_eq!(typed(b"yes\r"), ("yes".into(), Took::Done));
-        assert_eq!(typed(b"yex\x7fs\r"), ("yes".into(), Took::Done));
-        assert_eq!(typed("mật\x7f\r".as_bytes()), ("mậ".into(), Took::Done));
-        assert_eq!(typed(b"a\x1b[Db\r"), ("ab".into(), Took::Done));
-        assert_eq!(typed(b"pw\x03"), ("pw".into(), Took::GaveUp));
-        assert_eq!(typed(b"\x7f\x7fok\n"), ("ok".into(), Took::Done));
-    }
 }

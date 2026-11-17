@@ -8,8 +8,9 @@ use russh::client::{self, Handle};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::JoinHandle;
 
-use crate::prompt::Prompt;
-use crate::session::Checker;
+use crate::auth::CANCELLED;
+use crate::hostkey::Checker;
+use crate::prompt::{Ask, Event, Prompt};
 use crate::{Forward, Hop, Options};
 
 const CONNECT: Duration = Duration::from_secs(20);
@@ -29,11 +30,20 @@ pub(crate) async fn reach(options: &Options, prompt: &Arc<Prompt>) -> Result<(Li
     hops.push(Hop { target: options.target.clone(), auth: options.auth.clone() });
     let last = hops.len() - 1;
     let mut through: Vec<Link> = Vec::new();
-    for (at, hop) in hops.iter().enumerate() {
+    for (at, hop) in hops.iter_mut().enumerate() {
+        // No user given: asked, the OS's filled in.
+        if hop.target.user.is_empty() {
+            let ask = Ask::User { host: hop.target.label(), user: crate::target::os_user() };
+            let user = prompt.ask(ask).await.ok_or(CANCELLED)?;
+            hop.target.user =
+                if user.trim().is_empty() { crate::target::os_user() } else { user.trim().into() };
+        }
+        let hop = &*hop;
         let named = |why: String| match at == last {
             true => why,
             false => format!("jump host {}: {why}", hop.target.label()),
         };
+        prompt.tell(Event::Connecting(hop.target.label()));
         let mut handle = open(hop, through.last(), options, prompt).await.map_err(named)?;
         crate::auth::authenticate(&mut handle, hop, options, prompt).await.map_err(named)?;
         through.push(handle);
@@ -58,7 +68,10 @@ async fn open(
     let checker =
         Checker { host: host.clone(), port, file: options.known_hosts.clone(), prompt: prompt.clone() };
     let refused = |e: russh::Error| match e {
-        russh::Error::UnknownKey => "host key verification failed".to_string(),
+        russh::Error::UnknownKey => {
+            let why = prompt.why.lock().unwrap_or_else(|e| e.into_inner()).take();
+            why.unwrap_or_else(|| "host key verification failed".into())
+        }
         e => e.to_string(),
     };
     match before {

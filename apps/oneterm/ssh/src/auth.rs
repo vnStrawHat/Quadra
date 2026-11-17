@@ -9,10 +9,13 @@ use russh::keys::agent::AgentIdentity;
 use russh::keys::agent::client::AgentClient;
 use russh::keys::{HashAlg, PrivateKeyWithHashAlg, load_secret_key};
 
-use crate::prompt::Prompt;
+use crate::prompt::{Ask, Prompt};
 use crate::{Auth, Hop, Options};
 
 const KEY_FILES: [&str; 3] = ["id_ed25519", "id_ecdsa", "id_rsa"];
+
+/// Why a connection ends when a question was given up.
+pub(crate) const CANCELLED: &str = "cancelled";
 
 pub(crate) async fn authenticate<H: Handler>(
     handle: &mut Handle<H>,
@@ -35,18 +38,20 @@ pub(crate) async fn authenticate<H: Handler>(
         _ => Vec::new(),
     };
     for file in files {
-        if key(handle, user, &file, rsa, prompt).await? {
-            return Ok(());
+        match key(handle, user, &file, rsa, prompt).await {
+            Ok(true) => return Ok(()),
+            // Of the usual files, one that does not open is passed over.
+            Err(why) if why == CANCELLED || matches!(auth, Auth::Key(_)) => return Err(why),
+            _ => {}
         }
     }
     if matches!(auth, Auth::Auto | Auth::Password) {
-        let question = format!("{user}@{}'s password: ", hop.target.host);
-        for _ in 0..3 {
-            let password = prompt.ask(&question, false).await.ok_or("cancelled")?;
+        for again in [false, true, true] {
+            let ask = Ask::Password { target: hop.target.label(), again };
+            let password = prompt.ask(ask).await.ok_or(CANCELLED)?;
             if handle.authenticate_password(user, password).await.map_err(|e| e.to_string())?.success() {
                 return Ok(());
             }
-            prompt.say("Permission denied, please try again.\n");
         }
     }
     Err("permission denied".into())
@@ -67,7 +72,8 @@ async fn agent<H: Handler>(handle: &mut Handle<H>, user: &str, pipe: &str, rsa: 
     false
 }
 
-/// A key file, its passphrase asked when it has one.
+/// A key file, its passphrase asked (three times) when it has one; an error when it does not
+/// open.
 async fn key<H: Handler>(
     handle: &mut Handle<H>,
     user: &str,
@@ -75,23 +81,24 @@ async fn key<H: Handler>(
     rsa: Option<HashAlg>,
     prompt: &Prompt,
 ) -> Result<bool, String> {
-    let key = match load_secret_key(file, None) {
-        Ok(key) => key,
-        Err(russh::keys::Error::KeyIsEncrypted) => {
-            let question = format!("Enter passphrase for key '{}': ", file.display());
-            let passphrase = prompt.ask(&question, false).await.ok_or("cancelled")?;
-            match load_secret_key(file, Some(&passphrase)) {
-                Ok(key) => key,
-                Err(e) => {
-                    prompt.say(&format!("Could not open {}: {e}\n", file.display()));
-                    return Ok(false);
-                }
+    let mut key = load_secret_key(file, None);
+    if matches!(key, Err(russh::keys::Error::KeyIsEncrypted)) {
+        for again in [false, true, true] {
+            let ask = Ask::Passphrase { file: file.to_path_buf(), again };
+            let passphrase = prompt.ask(ask).await.ok_or(CANCELLED)?;
+            // Whatever goes wrong with a passphrase given, it was the wrong one.
+            if let Ok(opened) = load_secret_key(file, Some(&passphrase)) {
+                key = Ok(opened);
+                break;
             }
         }
-        Err(e) => {
-            prompt.say(&format!("Could not read {}: {e}\n", file.display()));
-            return Ok(false);
+    }
+    let key = match key {
+        Ok(key) => key,
+        Err(russh::keys::Error::KeyIsEncrypted) => {
+            return Err(format!("wrong passphrase for {}", file.display()));
         }
+        Err(e) => return Err(format!("could not read {}: {e}", file.display())),
     };
     let key = PrivateKeyWithHashAlg::new(Arc::new(key), rsa);
     let said = handle.authenticate_publickey(user, key).await.map_err(|e| e.to_string())?;

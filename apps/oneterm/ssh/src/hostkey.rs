@@ -1,0 +1,59 @@
+//! The server's key against the known hosts (specs/19, "M7 in detail"): a known one goes on,
+//! one never seen is asked, a changed one is refused with where the key known is.
+
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use russh::client::Handler;
+use russh::keys::known_hosts::{check_known_hosts_path, learn_known_hosts_path};
+use russh::keys::{HashAlg, PublicKeyOrCertificate};
+
+use crate::auth::CANCELLED;
+use crate::prompt::{Ask, Prompt};
+
+pub(crate) struct Checker {
+    pub(crate) host: String,
+    pub(crate) port: u16,
+    pub(crate) file: PathBuf,
+    pub(crate) prompt: Arc<Prompt>,
+}
+
+impl Checker {
+    /// Refuses the key: `why` is the error the connection fails with.
+    fn refuse(&self, why: String) -> Result<bool, russh::Error> {
+        *self.prompt.why.lock().unwrap_or_else(|e| e.into_inner()) = Some(why);
+        Ok(false)
+    }
+}
+
+impl Handler for Checker {
+    type Error = russh::Error;
+
+    async fn check_server_key(&mut self, key: &PublicKeyOrCertificate) -> Result<bool, Self::Error> {
+        let PublicKeyOrCertificate::PublicKey { key, .. } = key else {
+            return self.refuse("the host gave a certificate, which 1Term does not check yet".into());
+        };
+        let shown =
+            if self.port == 22 { self.host.clone() } else { format!("[{}]:{}", self.host, self.port) };
+        let print = key.fingerprint(HashAlg::Sha256).to_string();
+        let kind = key.algorithm().to_string();
+        match check_known_hosts_path(&self.host, self.port, key, &self.file) {
+            Ok(true) => Ok(true),
+            Ok(false) => {
+                let ask = Ask::HostKey { host: shown, kind, fingerprint: print };
+                if self.prompt.ask(ask).await.is_none() {
+                    return self.refuse(CANCELLED.into());
+                }
+                if let Err(e) = learn_known_hosts_path(&self.host, self.port, key, &self.file) {
+                    self.prompt.say(&format!("[could not add the key to {}: {e}]\n", self.file.display()));
+                }
+                Ok(true)
+            }
+            Err(russh::keys::Error::KeyChanged { line }) => self.refuse(format!(
+                "the host key of '{shown}' has changed: someone could be eavesdropping on you right now. The {kind} key sent is {print}; the key known is on line {line} of {}. Remove it there to trust the new one.",
+                self.file.display()
+            )),
+            Err(e) => self.refuse(format!("could not read {}: {e}", self.file.display())),
+        }
+    }
+}

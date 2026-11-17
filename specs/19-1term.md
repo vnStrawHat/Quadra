@@ -342,26 +342,64 @@ the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep 
 
 The engine is the crate `oneterm-ssh` (`apps/oneterm/ssh`), the one place `russh` and `tokio`
 are named: a runtime of two worker threads, made when the first connection starts, behind a
-blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output, exited)`,
-`write`, `resize`, `close`. The UI thread never waits on the network.
+blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output, told,
+exited)`, `write`, `resize`, `close`, and `answer` and `cancel` for the Connect dialogs. The UI
+thread never waits on the network.
 
 ### M7 in detail
 
 - **Target**: `user@host`, `host:port`, `[user@]host -p port`, `-l user`, and a leading `ssh`
-  are read by `Target::parse`; no user is the OS's (`USERNAME`); no port is 22.
-- **Prompts are the terminal's**, as the OpenSSH client asks them: what the engine asks is
-  written to the space, and what is typed there, up to Enter, is the answer (a password is
-  not echoed; Backspace takes back a character; Ctrl+C or Ctrl+D gives up). So a remote
-  space is a session like a local one, and its link is the engine's.
+  are read by `Target::parse`; no port is 22; no user is an empty one, which `label` writes as
+  `host` (so a saved host or a recent row without a user stays without one): connecting asks
+  for it, the OS's (`USERNAME`) filled in. The user answered is that connection's only (its
+  space's header says it).
+- **The engine asks the app, never the terminal.** What it asks is an `Ask`, told with its
+  progress through `told` (an `Event`: `Connecting(user@host)` for each hop it starts,
+  `Ask(ask)`, `Open` once the shell is), from its threads; the app answers with
+  `Ssh::answer(Some(text))` or gives up with `answer(None)`. The asks: `User { host, user }`
+  (the user is the OS's, to fill in), `HostKey { host, kind, fingerprint }` (`Some` trusts),
+  `Password { target, again }`, `Passphrase { file, again }` (`again`: the one before was
+  wrong), and `Failed { reason }`, a connection that ended before its shell (`Some` connects
+  again from the start, `None` gives up: `[connection closed: reason]` in the space and exit
+  status 255). `Ssh::cancel` gives up the connecting under way at once (`cancelled`, then
+  `Failed`). What is typed in the space before the shell opens is dropped; the space's last
+  size is the PTY's. The terminal shows only what the server sends, the line of a forward
+  that cannot listen and `[connection closed: reason]`.
 - **Host keys**: `~/.ssh/known_hosts` (the path is an option). A known key goes on; an
-  unknown one asks `Are you sure you want to continue connecting (yes/no)?` with its SHA-256
-  fingerprint, and `yes` writes it to the file; a changed key is refused with a warning that
-  names the line, never asked.
+  unknown one is asked (`HostKey`, its SHA-256 fingerprint), and trusting it writes it to the
+  file; a changed key is never asked: it fails with `the host key of 'host' has changed`, the
+  key sent and its fingerprint, and the line and file of the key known, to remove there. A
+  certificate fails (`the host gave a certificate, which 1Term does not check yet`).
 - **Authentication**, by the option `Auth`: `Auto` (the default) tries the agent
   (`\\.\pipe\openssh-ssh-agent`, at most 6 keys), then `~/.ssh/id_ed25519`, `id_ecdsa`,
-  `id_rsa` where they are (a passphrase is asked), then the password, three times;
-  `Agent`, `Key(path)` and `Password` try only theirs. An RSA key signs with the hash the
-  server names in `server-sig-algs`.
+  `id_rsa` where they are (a passphrase is asked, three times; a file that does not open is
+  passed over), then the password, three times; `Agent`, `Key(path)` and `Password` try only
+  theirs (a key file that cannot be read or opened fails with why). After the third wrong
+  password: `permission denied`. An RSA key signs with the hash the server names in
+  `server-sig-algs`.
+- **The Connect dialogs** (the kit's dialog, `apps/oneterm/src/asking.rs`): a remote space
+  keeps its connection's phase (`Connecting`, a question, failed, done) with its session, and
+  the window shows the focused space's, one dialog for each phase, swapped as the phase moves;
+  a space whose connection is done or local shows none. Giving a dialog up (its cross, Escape,
+  a press outside) is its Cancel or Close. They start with the connection, whichever way it
+  is started: a double click on a saved host, its menu's Connect or Connect in a new space,
+  Quick connect, a host or a recent target in the `+` menu.
+  - **Connecting** (`Connecting to user@host…`): Cancel (`Ssh::cancel`). It closes by itself
+    when the shell opens, and the focus is the space's.
+  - **Unknown host**: `The authenticity of host 'host' can't be established.`, `ssh-ed25519
+    key fingerprint:` over the fingerprint in mono 12 px, `Trusting it adds the key to
+    known_hosts.`; Cancel and Trust and connect. The focus is on Cancel (the kit's first
+    button), so Enter never trusts a key.
+  - **Sign in**, one field 28 px high: User (`No user was given for host.`, the OS's user in
+    it), Password (`Password for user@host`, dots), Passphrase (`Passphrase for key file`,
+    dots); after a wrong one `Permission denied, please try again.` (or `Wrong passphrase,
+    please try again.`) in the error colour over it. Cancel and Connect (`Enter`, also in the
+    field). Nothing typed is kept: no password is stored.
+  - **Could not connect**: `Could not connect to user@host.` and the reason in the error
+    colour, its first letter upper case (the OS's words for a refused or unreachable host,
+    `timed out`, `permission denied`, `cancelled`, a changed key
+    with its line and file); Close (the focus; the space says `[connection closed: reason]`)
+    and Retry (connects again from the start).
 - **The shell**: a PTY of `xterm-256color` of the space's size, `COLORTERM=truecolor`; a
   resize is a window change; the channel's exit status is the space's `[process exited N]`,
   and a connection that drops is `[connection closed: reason]` and exit status 255.
@@ -373,9 +411,15 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
   alongside (on), Save as host, Open in the current tab as a new space; Cancel and Connect
   (`Enter` after it). Connect starts a tab (or a space) whose header says `user@host`, and opens
   the dock when asked.
-- **Tests**: a `russh` server in the test process on 127.0.0.1 (no other host, ever):
-  password and key authentication, unknown, known and changed host keys, typing, resize, the
-  exit status, a connection dropped.
+- **Tests**: a `russh` server in the test process on 127.0.0.1 (no other host, ever), its
+  answers given as the app gives them (`testing::Client::ask`, `answer`): password and key
+  authentication, unknown, known and changed host keys, typing, resize, the exit status, a
+  connection dropped, a cancel while connecting to a port that never speaks. The app's
+  (`tests/asking.rs`) drive the dialogs through the semantic tree against the same servers:
+  an unknown host trusted (its key written) or cancelled, a right and a wrong password and
+  Retry, a missing user asked, a changed key shown, Connecting closing by itself.
+  `bench/oneterm-shots` draws them (`ask-connecting`, `ask-host`, `ask-sign-in`,
+  `ask-failed`) against those servers.
 
 ### M8 in detail
 
@@ -389,7 +433,8 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
 - **The rail**, under "New terminal": "SSH hosts" with an Add SSH host button at its right, a
   filter (on the name and the target, whatever the case), then the hosts by group in the order
   first met (a click on a group's heading folds it), each a row of the square of its colour
-  tag, its name and its address. A double click opens a tab connected to it (one click does
+  tag, its name and its address. A double click opens a tab connected to it, the Connect
+  dialogs following the connection (M7 in detail; one click does
   nothing; a reader connects by its menu's Connect); its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
   filled, titled Edit SSH host; a new name takes the old one's place), Remove. The Add dialog
   takes the name (the host when empty), the group, the target,
@@ -481,8 +526,8 @@ license's notice. Without them every space still runs, on the system's host.
 
 - **Jump hosts**: `Options::jumps`, at most 4 hops, each a target and its auth. The engine
   connects to the first by TCP, and to each next one through a `direct-tcpip` channel of the
-  one before; every hop has its host key checked and its prompts asked in the space like
-  the target's. An error on a hop is said `jump host user@host: ...`; the hops close with
+  one before; every hop has its host key checked and its questions asked in the Connect
+  dialogs like the target's. An error on a hop is said `jump host user@host: ...`; the hops close with
   the shell, the target first. A saved host names another saved host as its jump host (a
   sixth word of its row; a host it names that is gone is no jump), shown in the menu as
   `· jump`; Quick connect and Add SSH host choose one among the saved hosts.
@@ -501,5 +546,5 @@ status bar from bytes fed to a session; the bars (`tests/bars.rs`: the bells bet
 Lock in both variants and gone while locked and in the settings, the clock by a time the test
 sets with only its text painted again, the usage and its card from `FakeShell`'s meter); the
 menu; completion (`tests/complete.rs`: prompts
-marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); find (`tests/find.rs`: Ctrl+F opens the bar, the count, Enter and Shift+Enter, Escape gives the focus back); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); splits (`tests/splits.rs`: a tab arranged in the rail and the strip, each side, nesting, the order, a seam dragged, a close, Split space in a layout of the user's); input channels (`tests/channels.rs`: join, what a member and a non-member get, a paste bracketed by each, leave, close, an ended program); settings written; lock and unlock. Real
+marked by OSC 133, the overlay under the caret, the keys, what is written, the history, the gating); find (`tests/find.rs`: Ctrl+F opens the bar, the count, Enter and Shift+Enter, Escape gives the focus back); links (`tests/links.rs`, the shell faked: https opens, http asks and opens on Open, `javascript:` is refused with a card); splits (`tests/splits.rs`: a tab arranged in the rail and the strip, each side, nesting, the order, a seam dragged, a close, Split space in a layout of the user's); input channels (`tests/channels.rs`: join, what a member and a non-member get, a paste bracketed by each, leave, close, an ended program); the Connect dialogs (`tests/asking.rs`, against the engine's test servers on 127.0.0.1); settings written; lock and unlock. Real
 shells only in `quadra-shell`'s pseudo console test.

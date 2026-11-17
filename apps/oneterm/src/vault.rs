@@ -60,7 +60,7 @@ fn make(password: &str) -> Option<(String, Key)> {
 pub(crate) fn reseal(key: &[u8; 32], password: &str) -> Option<String> {
     let salt = random_bytes::<16>()?;
     let kek = derive_key(password, &salt, ROUNDS)?;
-    let sealed = seal(&kek, key)?;
+    let sealed = seal(&kek, key, b"")?;
     Some(format!("v1${ROUNDS}${}${}", hex(&salt), hex(&sealed)))
 }
 
@@ -70,7 +70,7 @@ fn unseal(password: &str, vault: &str) -> Option<Key> {
     let ["v1", rounds, salt, sealed] = parts[..] else { return None };
     let (rounds, salt, sealed) = (rounds.parse().ok()?, unhex(salt)?, unhex(sealed)?);
     let kek = derive_key(password, &salt, rounds)?;
-    let plain = open(&kek, &sealed)?;
+    let plain = open(&kek, &sealed, b"")?;
     let mut key = Zeroizing::new([0u8; 32]);
     (plain.len() == 32).then(|| key.copy_from_slice(&plain))?;
     Some(key)
@@ -90,13 +90,23 @@ pub(crate) fn open_with(password: &str, hash: &str, vault: &str) -> Option<(Key,
     Some((key, Some(vault)))
 }
 
-/// A secret sealed under the data key, as `ssh.secrets` keeps it.
-pub(crate) fn seal_secret(key: &[u8; 32], plain: &str) -> Option<String> {
-    Some(format!("sv1:{}", hex(&seal(key, plain.as_bytes())?)))
+/// What a host's secret is bound to: its target, so it opens for no other.
+pub(crate) fn bound(remote: &Remote) -> String {
+    remote.target.label()
 }
 
-fn open_secret(key: &[u8; 32], sealed: &str) -> Option<Secret> {
-    let bytes = open(key, &unhex(sealed.strip_prefix("sv1:")?)?)?;
+/// A secret sealed under the data key for a target, as `ssh.secrets` keeps it.
+pub(crate) fn seal_secret(key: &[u8; 32], plain: &str, bound: &str) -> Option<String> {
+    Some(format!("sv2:{}", hex(&seal(key, plain.as_bytes(), bound.as_bytes())?)))
+}
+
+/// A secret opened, if it was sealed for `bound` (or in the first form, bound to nothing).
+pub(crate) fn open_secret(key: &[u8; 32], sealed: &str, bound: &str) -> Option<Secret> {
+    let bytes = match sealed.split_once(':')? {
+        ("sv2", hex) => open(key, &unhex(hex)?, bound.as_bytes())?,
+        ("sv1", hex) => open(key, &unhex(hex)?, b"")?,
+        _ => return None,
+    };
     std::str::from_utf8(&bytes).ok().map(|it| Secret(Zeroizing::new(it.to_string())))
 }
 
@@ -152,7 +162,7 @@ impl Model {
     /// The saved secret of the host a connection goes to, opened, if the data key is in memory.
     pub(crate) fn saved_secret(&self, remote: &Remote) -> Option<Secret> {
         let key = self.lock().key.get_untracked()?;
-        open_secret(&key, &self.sealed_for(remote)?)
+        open_secret(&key, &self.sealed_for(remote)?, &bound(remote))
     }
 }
 
@@ -172,11 +182,11 @@ fn random_key() -> Option<Key> {
     None
 }
 #[cfg(not(windows))]
-fn seal(_: &[u8; 32], _: &[u8]) -> Option<Vec<u8>> {
+fn seal(_: &[u8; 32], _: &[u8], _: &[u8]) -> Option<Vec<u8>> {
     None
 }
 #[cfg(not(windows))]
-fn open(_: &[u8; 32], _: &[u8]) -> Option<Zeroizing<Vec<u8>>> {
+fn open(_: &[u8; 32], _: &[u8], _: &[u8]) -> Option<Zeroizing<Vec<u8>>> {
     None
 }
 #[cfg(not(windows))]
@@ -198,10 +208,14 @@ mod tests {
             Some(key.clone()),
             "the same key again"
         );
-        let sealed = seal_secret(&key, "hunter2").unwrap();
-        assert!(sealed.starts_with("sv1:") && !sealed.contains("hunter2"));
-        assert_eq!(open_secret(&key, &sealed).as_ref().map(Secret::as_str), Some("hunter2"));
-        assert_eq!(open_secret(&[0; 32], &sealed), None);
+        let sealed = seal_secret(&key, "hunter2", "me@box").unwrap();
+        assert!(sealed.starts_with("sv2:") && !sealed.contains("hunter2"));
+        assert_eq!(open_secret(&key, &sealed, "me@box").as_ref().map(Secret::as_str), Some("hunter2"));
+        assert_eq!(open_secret(&[0; 32], &sealed, "me@box"), None);
+        assert_eq!(open_secret(&key, &sealed, "me@evil:2222"), None, "another target");
+        // The first form, bound to nothing, still opens.
+        let first = format!("sv1:{}", hex(&seal(&key, b"old", b"").unwrap()));
+        assert_eq!(open_secret(&key, &first, "any").as_ref().map(Secret::as_str), Some("old"));
         // A new master password seals the same key.
         let moved = reseal(&key, "other").unwrap();
         assert_eq!(unseal("other", &moved), Some(key.clone()));

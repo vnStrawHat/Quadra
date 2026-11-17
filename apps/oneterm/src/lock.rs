@@ -47,6 +47,10 @@ impl Lock {
             prefs,
             owner: Scope::current(),
         };
+        // With a vault the window opens locked (specs/19, "M6 in detail").
+        if untrack(|| lock.can_lock() && !prefs.vault.with(String::is_empty)) {
+            lock.locked.set(true);
+        }
         let _ = interval(Duration::from_secs(u64::from(STEP)), move || lock.tick());
         let _ = interval(Duration::from_secs(1), move || {
             if lock.wait.get_untracked() > 0 {

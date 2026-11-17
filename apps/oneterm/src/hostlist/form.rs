@@ -170,8 +170,13 @@ fn save(model: &Model, form: Form, was: Option<String>) {
         remote.forwards.push(forward);
     }
     let jump = model.jump_host(form.jump.get_untracked()).map_or(String::new(), |it| it.name);
-    // The secret saved for the host edited stays unless another is typed.
-    let kept = was.as_ref().and_then(|it| model.sealed(it));
+    // The secret saved for the host edited stays unless another is typed, with the target
+    // it was sealed for.
+    let kept = was.as_ref().and_then(|was| {
+        let host = model.hosts().into_iter().find(|it| it.name == *was)?;
+        Some((model.sealed(was)?, crate::vault::bound(&host.remote)))
+    });
+    let bound = crate::vault::bound(&remote);
     if let Some(was) = was.filter(|it| *it != name) {
         model.remove_host(&was);
     }
@@ -183,7 +188,7 @@ fn save(model: &Model, form: Form, was: Option<String>) {
         jump,
     });
     model.set_host_tag(&name, tag.as_deref());
-    super::secret::save(model, form, &name, kept);
+    super::secret::save(model, form, &name, &bound, kept);
     model.set_startup(&name, Some(form.startup.get_untracked()));
     for field in [
         form.name,

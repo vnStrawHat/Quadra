@@ -16,6 +16,11 @@ struct App {
 }
 
 fn app(password: Option<&str>) -> App {
+    app_with(password, None)
+}
+
+/// A window whose settings hold a password and, when given, a vault.
+fn app_with(password: Option<&str>, vault: Option<String>) -> App {
     let mut h = Harness::new();
     h.size = quadra::Size::new(1200.0, 700.0);
     h.tree.set_keymap(Rc::new(keymap()));
@@ -23,6 +28,9 @@ fn app(password: Option<&str>) -> App {
     if let Some(password) = password {
         let hash = quadra_shell::hash_password(password).expect("random bytes");
         settings.value("security.password", String::new()).set(hash);
+    }
+    if let Some(vault) = vault {
+        settings.value("ssh.vault", String::new()).set(vault);
     }
     let (made, given) = (Rc::new(std::cell::RefCell::new(None::<Session>)), settings.clone());
     let keeps = made.clone();
@@ -191,4 +199,25 @@ fn removing_the_password_asks_first_and_forgets_the_saved_ones() {
     }
     assert!(a.settings.value("security.password", String::new()).get().is_empty());
     assert!(secrets.get().is_empty());
+}
+
+#[test]
+fn with_a_vault_the_window_opens_locked_and_its_password_opens_the_vault() {
+    // A vault as 1Term writes it: a data key sealed under the master password's key.
+    let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+    let salt = quadra_shell::random_bytes::<16>().unwrap();
+    let kek = quadra_shell::derive_key("master", &salt, 1000).unwrap();
+    let sealed = quadra_shell::seal(&kek, &*quadra_shell::random_key().unwrap(), b"").unwrap();
+    let vault = format!("v1$1000${}${}", hex(&salt), hex(&sealed));
+    let mut a = app_with(Some("master"), Some(vault.clone()));
+    assert!(a.locked() && a.tabs() == 0, "locked at start, nothing shown");
+    a.unlock_with("master");
+    a.h.settle();
+    assert!(!a.locked() && a.tabs() == 1);
+    let kept = a.settings.value("ssh.vault", String::new()).get();
+    assert_eq!(kept, vault, "the vault opened, not made again");
+
+    // A password alone does not lock at start.
+    let a = app(Some("master"));
+    assert!(!a.locked());
 }

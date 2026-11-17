@@ -158,6 +158,7 @@ whose every cell changes every frame, costs what the V build's costs.
   premultiplied once, painted from the colour atlas at their cell under the text, clipped to
   the grid and scrolling with their rows, freed on `GraphicReleased`; the cell's device
   pixels told to the engine. Test: `crates/quadra-term/tests/images.rs`.
+- **The vault at start and secrets bound to their target**: with a vault the window opens locked, and the password that opens it opens the data key (`tests/lock.rs`); a secret is `sv2:`, sealed with the host's target as AES-GCM's associated data (`quadra_shell::seal(key, plain, bound)`), so one copied into another row, or a host whose target was edited, does not open it (an edited target seals it again while the key is in memory, else forgets it with a card); `sv1:` rows still open.
 
 ### Editing in 1Term, each space's dock (2026-11-17)
 

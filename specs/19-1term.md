@@ -332,6 +332,9 @@ the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep 
   and a new one twice. Hashing and verifying run on the pool.
 - **Idle** is no key and no pointer press or move in the window; it is counted in steps of
   10 s on the app's timers, so it locks within 10 s after the time set.
+- **At start**, with a vault (passwords saved under the master password, below), the window
+  opens locked: what is saved is not a start away from anyone at the machine, and the
+  password that opens the window opens the vault's data key with it.
 - **Locked, the workspace is not displayed** (the design draws it blurred behind): a node
   that is displayed is in the semantic tree, which any process can read through the OS's
   accessibility, so blurred tab titles and terminal text would still be readable there. The
@@ -462,8 +465,10 @@ thread never waits on the network.
 - **Saved passwords**: a vault in `ssh.vault`,
   `v1$<rounds>$<salt hex>$<sealed key hex>`: a random data key of 32 bytes sealed
   (`quadra_shell::seal`, specs/16) under a key derived from the master password (PBKDF2, its
-  own salt, 600,000 rounds); a host's secret is sealed under the data key, `sv1:<hex>`, in
-  `ssh.secrets` (rows of the host's name and that). The data key is in memory only, from the
+  own salt, 600,000 rounds); a host's secret is sealed under the data key, `sv2:<hex>`, in
+  `ssh.secrets` (rows of the host's name and that), the name its associated data (AES-GCM's
+  AAD), so a secret copied into another host's row does not open; a row of the first form,
+  `sv1:` (no associated data), still opens. The data key is in memory only, from the
   first time the master password is typed (setting it, unlocking, a Master password field);
   setting the first password makes the vault, changing it seals the data key again, removing
   it forgets the vault and every saved secret, once a dialog said so: Remove the master

@@ -8,15 +8,26 @@ use windows::Win32::Security::Cryptography::{
     BCryptGenerateSymmetricKey,
 };
 
+use zeroize::Zeroizing;
+
 const NONCE: usize = 12;
 const TAG: usize = 16;
 
 /// `N` random bytes from the OS.
 pub fn random_bytes<const N: usize>() -> Option<[u8; N]> {
     let mut bytes = [0u8; N];
-    // SAFETY: the buffer is a local whose length the call is told.
-    unsafe { BCryptGenRandom(None, &mut bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG) }.ok().ok()?;
-    Some(bytes)
+    fill(&mut bytes).then_some(bytes)
+}
+
+/// A key of 32 random bytes, made in place and wiped when dropped.
+pub fn random_key() -> Option<Zeroizing<[u8; 32]>> {
+    let mut key = Zeroizing::new([0u8; 32]);
+    fill(&mut *key).then_some(key)
+}
+
+fn fill(bytes: &mut [u8]) -> bool {
+    // SAFETY: the buffer is borrowed for the call, which is told its length.
+    unsafe { BCryptGenRandom(None, bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG) }.is_ok()
 }
 
 /// `plain` sealed under `key`: the nonce, the ciphertext, the tag.
@@ -36,15 +47,15 @@ pub fn seal(key: &[u8; 32], plain: &[u8]) -> Option<Vec<u8>> {
     .then_some(out)
 }
 
-/// What `seal` sealed, if `key` is the one and nothing was changed.
-pub fn open(key: &[u8; 32], sealed: &[u8]) -> Option<Vec<u8>> {
+/// What `seal` sealed, if `key` is the one and nothing was changed; wiped when dropped.
+pub fn open(key: &[u8; 32], sealed: &[u8]) -> Option<Zeroizing<Vec<u8>>> {
     if sealed.len() < NONCE + TAG {
         return None;
     }
     let (head, rest) = sealed.split_at(NONCE);
     let (body, tag) = rest.split_at(rest.len() - TAG);
     let (mut nonce, mut tag) = (<[u8; NONCE]>::try_from(head).ok()?, <[u8; TAG]>::try_from(tag).ok()?);
-    let mut plain = vec![0u8; body.len()];
+    let mut plain = Zeroizing::new(vec![0u8; body.len()]);
     crypt(key, &mut nonce, &mut tag, |hkey, info| {
         let mut done = 0u32;
         // SAFETY: as in `seal`; a wrong tag is an error status, not a fault.
@@ -93,12 +104,13 @@ mod tests {
         let (key, other) = ([7u8; 32], [8u8; 32]);
         let sealed = seal(&key, b"hunter2").unwrap();
         assert_eq!(sealed.len(), 12 + 7 + 16);
-        assert_eq!(open(&key, &sealed).as_deref(), Some(&b"hunter2"[..]));
+        assert_eq!(open(&key, &sealed).as_deref().map(|it| &it[..]), Some(&b"hunter2"[..]));
         assert_eq!(open(&other, &sealed), None);
         let mut changed = sealed.clone();
         changed[14] ^= 1;
         assert_eq!(open(&key, &changed), None);
         assert_ne!(seal(&key, b"hunter2").unwrap(), sealed, "a fresh nonce each time");
-        assert_eq!(open(&key, &seal(&key, b"").unwrap()).as_deref(), Some(&b""[..]));
+        assert_eq!(open(&key, &seal(&key, b"").unwrap()).map(|it| it.len()), Some(0));
+        assert_ne!(*random_key().unwrap(), [0; 32]);
     }
 }

@@ -6,14 +6,38 @@ mod unlock;
 
 pub(crate) use unlock::dialog;
 
+use std::rc::Rc;
+
+use quadra::Signal;
+use quadra_shell::{Zeroize, Zeroizing};
+
 use crate::model::Model;
 use crate::shells::Remote;
 
 const ROUNDS: u64 = 600_000;
 
-/// A secret in memory, never shown by `Debug`.
+/// A key of 32 bytes, wiped when dropped.
+type Key = Zeroizing<[u8; 32]>;
+
+/// The saved passwords' data key in memory, shared; wiped when the last holder drops it.
+pub type DataKey = Rc<Key>;
+
+/// A secret in memory, wiped when dropped, never shown by `Debug`.
 #[derive(Clone, PartialEq, Eq)]
-pub struct Secret(pub String);
+pub struct Secret(Zeroizing<String>);
+
+impl Secret {
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// Empties a field that held a password, wiping what it held.
+pub(crate) fn wipe(field: Signal<String>) {
+    if !field.with_untracked(String::is_empty) {
+        field.update(|it| it.zeroize());
+    }
+}
 
 impl std::fmt::Debug for Secret {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -22,12 +46,12 @@ impl std::fmt::Debug for Secret {
 }
 
 /// A new data key.
-pub(crate) fn new_key() -> Option<[u8; 32]> {
-    random_bytes::<32>()
+pub(crate) fn new_key() -> Option<Key> {
+    random_key()
 }
 
 /// A new vault of `password`: what is written, and the data key.
-fn make(password: &str) -> Option<(String, [u8; 32])> {
+fn make(password: &str) -> Option<(String, Key)> {
     let key = new_key()?;
     Some((reseal(&key, password)?, key))
 }
@@ -35,22 +59,27 @@ fn make(password: &str) -> Option<(String, [u8; 32])> {
 /// The data key sealed under a new salt's key of `password`.
 pub(crate) fn reseal(key: &[u8; 32], password: &str) -> Option<String> {
     let salt = random_bytes::<16>()?;
-    let sealed = seal(&derive_key(password, &salt, ROUNDS)?, key)?;
+    let kek = derive_key(password, &salt, ROUNDS)?;
+    let sealed = seal(&kek, key)?;
     Some(format!("v1${ROUNDS}${}${}", hex(&salt), hex(&sealed)))
 }
 
 /// The data key a vault holds, if `password` opens it.
-fn unseal(password: &str, vault: &str) -> Option<[u8; 32]> {
+fn unseal(password: &str, vault: &str) -> Option<Key> {
     let parts: Vec<&str> = vault.split('$').collect();
     let ["v1", rounds, salt, sealed] = parts[..] else { return None };
     let (rounds, salt, sealed) = (rounds.parse().ok()?, unhex(salt)?, unhex(sealed)?);
-    open(&derive_key(password, &salt, rounds)?, &sealed)?.try_into().ok()
+    let kek = derive_key(password, &salt, rounds)?;
+    let plain = open(&kek, &sealed)?;
+    let mut key = Zeroizing::new([0u8; 32]);
+    (plain.len() == 32).then(|| key.copy_from_slice(&plain))?;
+    Some(key)
 }
 
 /// What the master password opens, if it is the one `hash` was made from: the data key, and
 /// a new vault to write when there was none (or one it does not open: what it sealed is lost).
 /// On the pool: it derives twice.
-pub(crate) fn open_with(password: &str, hash: &str, vault: &str) -> Option<([u8; 32], Option<String>)> {
+pub(crate) fn open_with(password: &str, hash: &str, vault: &str) -> Option<(Key, Option<String>)> {
     if !verify_password(password, hash) {
         return None;
     }
@@ -66,9 +95,9 @@ pub(crate) fn seal_secret(key: &[u8; 32], plain: &str) -> Option<String> {
     Some(format!("sv1:{}", hex(&seal(key, plain.as_bytes())?)))
 }
 
-fn open_secret(key: &[u8; 32], sealed: &str) -> Option<String> {
+fn open_secret(key: &[u8; 32], sealed: &str) -> Option<Secret> {
     let bytes = open(key, &unhex(sealed.strip_prefix("sv1:")?)?)?;
-    String::from_utf8(bytes).ok()
+    std::str::from_utf8(&bytes).ok().map(|it| Secret(Zeroizing::new(it.to_string())))
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -123,15 +152,15 @@ impl Model {
     /// The saved secret of the host a connection goes to, opened, if the data key is in memory.
     pub(crate) fn saved_secret(&self, remote: &Remote) -> Option<Secret> {
         let key = self.lock().key.get_untracked()?;
-        open_secret(&key, &self.sealed_for(remote)?).map(Secret)
+        open_secret(&key, &self.sealed_for(remote)?)
     }
 }
 
 #[cfg(windows)]
-use quadra_shell::{derive_key, open, random_bytes, seal, verify_password};
+use quadra_shell::{derive_key, open, random_bytes, random_key, seal, verify_password};
 
 #[cfg(not(windows))]
-fn derive_key(_: &str, _: &[u8], _: u64) -> Option<[u8; 32]> {
+fn derive_key(_: &str, _: &[u8], _: u64) -> Option<Key> {
     None
 }
 #[cfg(not(windows))]
@@ -139,11 +168,15 @@ fn random_bytes<const N: usize>() -> Option<[u8; N]> {
     None
 }
 #[cfg(not(windows))]
+fn random_key() -> Option<Key> {
+    None
+}
+#[cfg(not(windows))]
 fn seal(_: &[u8; 32], _: &[u8]) -> Option<Vec<u8>> {
     None
 }
 #[cfg(not(windows))]
-fn open(_: &[u8; 32], _: &[u8]) -> Option<Vec<u8>> {
+fn open(_: &[u8; 32], _: &[u8]) -> Option<Zeroizing<Vec<u8>>> {
     None
 }
 #[cfg(not(windows))]
@@ -160,14 +193,18 @@ mod tests {
         let hash = quadra_shell::hash_password("master").unwrap();
         assert!(open_with("wrong", &hash, "").is_none());
         let (key, Some(vault)) = open_with("master", &hash, "").unwrap() else { panic!("a new vault") };
-        assert_eq!(open_with("master", &hash, &vault).map(|it| it.0), Some(key), "the same key again");
+        assert_eq!(
+            open_with("master", &hash, &vault).map(|it| it.0),
+            Some(key.clone()),
+            "the same key again"
+        );
         let sealed = seal_secret(&key, "hunter2").unwrap();
         assert!(sealed.starts_with("sv1:") && !sealed.contains("hunter2"));
-        assert_eq!(open_secret(&key, &sealed).as_deref(), Some("hunter2"));
+        assert_eq!(open_secret(&key, &sealed).as_ref().map(Secret::as_str), Some("hunter2"));
         assert_eq!(open_secret(&[0; 32], &sealed), None);
         // A new master password seals the same key.
         let moved = reseal(&key, "other").unwrap();
-        assert_eq!(unseal("other", &moved), Some(key));
+        assert_eq!(unseal("other", &moved), Some(key.clone()));
         assert_eq!(unseal("master", &moved), None);
     }
 }

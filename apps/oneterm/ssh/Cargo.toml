@@ -18,6 +18,8 @@ testing = []
 russh = { version = "0.65", default-features = false, features = ["ring", "rsa"] }
 russh-sftp = "3"
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "time", "sync", "io-util"] }
+# A passphrase wiped once used (specs/01, R15).
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
 
 [dev-dependencies]
 oneterm-ssh = { path = ".", features = ["testing"] }

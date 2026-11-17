@@ -115,6 +115,9 @@ is that PBKDF2 key of 32 bytes, `random_bytes::<N>()` the OS's random bytes, and
 `seal(key, plain)` / `open(key, sealed)` AES-256-GCM through the OS's crypto (the AES-GCM
 pseudo handle): a fresh random nonce of 12 bytes, then the ciphertext, then the tag of 16.
 `open` gives `None` for a wrong key or bytes changed. Nothing here writes a key anywhere.
+What is secret comes back wiped on drop (`zeroize`'s `Zeroizing`, re-exported with
+`Zeroize`): the derived key, what `open` opened, and `random_key()`, 32 random bytes made in
+place; the derived keys `verify_password` compares are wiped too.
 
 ## Console
 

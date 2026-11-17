@@ -197,7 +197,7 @@ fn save(model: &Model, form: Form, was: Option<String>) {
         form.again,
         form.startup,
     ] {
-        field.set(String::new());
+        crate::vault::wipe(field);
     }
     form.jump.set(0);
 }

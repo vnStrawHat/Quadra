@@ -47,7 +47,7 @@ impl Conn {
 /// A host's saved secret and the question it answers: the target's password, or its key
 /// file's passphrase.
 struct Saved {
-    secret: Option<String>,
+    secret: Option<crate::vault::Secret>,
     target: String,
     key: Option<std::path::PathBuf>,
 }
@@ -58,7 +58,7 @@ impl Saved {
             oneterm_ssh::Auth::Key(path) => Some(path.clone()),
             _ => None,
         };
-        Saved { secret: secret.map(|it| it.0), target: remote.target.label(), key }
+        Saved { secret, target: remote.target.label(), key }
     }
 
     /// The secret, each time its question is asked first (a refusal asks `again`).
@@ -68,7 +68,8 @@ impl Saved {
             Ask::Passphrase { file, again: false } => self.key.as_ref() == Some(file),
             _ => false,
         };
-        if ours { self.secret.clone() } else { None }
+        // A copy goes to the engine, which gives it to `russh` to send.
+        if ours { self.secret.as_ref().map(|it| it.as_str().to_string()) } else { None }
     }
 }
 

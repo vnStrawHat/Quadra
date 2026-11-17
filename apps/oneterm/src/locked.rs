@@ -160,14 +160,14 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>, default: Signal<f64>) -> 
         }
         lock.set_password(current.get_untracked(), new.get_untracked(), move |words| said.set(words.into()));
         for field in [current, new, again] {
-            field.set(String::new());
+            crate::vault::wipe(field);
         }
     };
     // Removing asks first: the saved passwords go with it.
     let asking = signal(false);
     let remove = move || {
         lock.set_password(current.get_untracked(), String::new(), move |words| said.set(words.into()));
-        current.set(String::new());
+        crate::vault::wipe(current);
     };
     let asked = move || {
         let saved = match lock.saved_secrets() {

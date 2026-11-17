@@ -14,7 +14,7 @@ mod usage;
 pub use crash::crash_reports;
 pub use instance::single_instance;
 pub use measure::{cycles_per_second, private_memory, process_cycles, window_shown};
-pub use seal::{open, random_bytes, seal};
+pub use seal::{open, random_bytes, random_key, seal};
 pub use secret::{derive_key, hash_password, verify_password};
 pub use usage::process_usage;
 

@@ -1010,6 +1010,7 @@ dependencies = [
  "russh",
  "russh-sftp",
  "tokio",
+ "zeroize",
 ]
 
 [[package]]
@@ -1538,6 +1539,7 @@ dependencies = [
  "quadra-text",
  "quadra-view",
  "windows",
+ "zeroize",
 ]
 
 [[package]]

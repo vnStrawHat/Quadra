@@ -44,7 +44,7 @@ pub(crate) fn dialogs(model: &Model) -> impl View + use<> {
             };
             typed.set(user);
         } else if want != Some(SIGN_IN) && !typed.with_untracked(String::is_empty) {
-            typed.set(String::new());
+            crate::vault::wipe(typed);
         }
         for (at, open) in opens.iter().enumerate() {
             if open.get_untracked() != (want == Some(at)) {

@@ -26,7 +26,7 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
         }
         let Some((remotes, here)) = untrack(|| pending.get()) else { return };
         pending.set(None);
-        typed.set(String::new());
+        crate::vault::wipe(typed);
         said.set(String::new());
         for remote in remotes {
             gives_up.connect_with(remote, here, None);
@@ -39,7 +39,7 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
         pending.set(None);
         let model = tries.clone();
         tries.lock().open(typed.get_untracked(), move |right| {
-            typed.set(String::new());
+            crate::vault::wipe(typed);
             if right {
                 said.set(String::new());
                 model.connect_all(waiting.0, waiting.1);

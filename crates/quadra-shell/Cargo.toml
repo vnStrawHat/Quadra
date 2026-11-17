@@ -18,6 +18,8 @@ quadra-app = { path = "../quadra-app" }
 quadra-async = { path = "../quadra-async" }
 quadra-reactive = { path = "../quadra-reactive" }
 quadra-render = { path = "../quadra-render" }
+# Secrets wiped from memory when dropped (specs/01, R15).
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
 
 # What only Windows builds: the `win` module.
 [target.'cfg(windows)'.dependencies]

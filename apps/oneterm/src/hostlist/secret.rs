@@ -51,14 +51,15 @@ pub(super) fn fields(model: &Model, form: Form, editing: Option<String>) -> impl
 /// auth than Password and Key file saves none. Without a master password the one typed is set
 /// first.
 pub(super) fn save(model: &Model, form: Form, name: &str, kept: Option<String>) {
-    let typed = form.secret.get_untracked();
+    let typed = quadra_shell::Zeroizing::new(form.secret.get_untracked());
     if !matches!(form.auth.get_untracked(), 2 | 3) {
         return model.set_sealed(name, None);
     }
     if typed.is_empty() {
         return model.set_sealed(name, kept);
     }
-    let (master, again) = (form.master.get_untracked(), form.again.get_untracked());
+    let (master, again) =
+        (form.master.get_untracked(), quadra_shell::Zeroizing::new(form.again.get_untracked()));
     let (lock, model, name) = (model.lock(), model.clone(), name.to_string());
     let sealing = move |model: &Model, why: &str| match model.lock().key.get_untracked() {
         Some(key) => model.set_sealed(&name, crate::vault::seal_secret(&key, &typed)),
@@ -75,7 +76,7 @@ pub(super) fn save(model: &Model, form: Form, name: &str, kept: Option<String>) 
         let opens = model.clone();
         return lock.open(master, move |_| sealing(&opens, "Wrong master password"));
     }
-    if master.is_empty() || master != again {
+    if master.is_empty() || master != *again {
         let why = if master.is_empty() { "No master password" } else { "The master passwords differ" };
         return sealing(&model, why);
     }

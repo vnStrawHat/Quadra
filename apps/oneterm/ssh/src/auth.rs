@@ -85,7 +85,7 @@ async fn key<H: Handler>(
     if matches!(key, Err(russh::keys::Error::KeyIsEncrypted)) {
         for again in [false, true, true] {
             let ask = Ask::Passphrase { file: file.to_path_buf(), again };
-            let passphrase = prompt.ask(ask).await.ok_or(CANCELLED)?;
+            let passphrase = zeroize::Zeroizing::new(prompt.ask(ask).await.ok_or(CANCELLED)?);
             // Whatever goes wrong with a passphrase given, it was the wrong one.
             if let Ok(opened) = load_secret_key(file, Some(&passphrase)) {
                 key = Ok(opened);

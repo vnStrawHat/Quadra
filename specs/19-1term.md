@@ -473,7 +473,12 @@ thread never waits on the network.
   its key file's passphrase is answered with it, a Retry included (a wrong one asks in the
   Sign in dialog as before); without it, a dialog Unlock saved
   passwords asks the master password first (Cancel connects without). Connect all asks once.
-  A secret is never written plain, logged or shown.
+  A secret is never written plain, logged or shown. In memory the data key, a secret opened
+  (`Secret`, its `Debug` hiding it) and the passwords typed are wiped when dropped or cleared
+  (`zeroize`): the master password and the secret fields of the dialogs, the Sign in field and
+  the lock card's field are wiped, not just emptied, once used; the engine wipes a key file's
+  passphrase once it opened the key. What leaves 1Term's hands is not: a password given to
+  `russh` to send, the text fields' own copies while typing.
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
   Quick connect, and Add SSH host. Its field is the title bar's Search's.
 - **Latency**: the engine pings the server (an SSH ping, a request that wants a reply) every

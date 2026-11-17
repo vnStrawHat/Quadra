@@ -25,7 +25,7 @@ pub struct Lock {
     /// Seconds left before another try.
     pub wait: Signal<u32>,
     /// The saved passwords' data key, once the master password was typed (`vault.rs`).
-    pub key: Signal<Option<[u8; 32]>>,
+    pub key: Signal<Option<crate::vault::DataKey>>,
     tries: Signal<u32>,
     idle: Signal<u32>,
     prefs: Prefs,
@@ -110,7 +110,7 @@ impl Lock {
         }
         let lock = *self;
         self.open(self.typed.get_untracked(), move |right| {
-            lock.typed.set(String::new());
+            crate::vault::wipe(lock.typed);
             if right {
                 lock.tries.set(0);
                 lock.said.set(String::new());
@@ -132,13 +132,14 @@ impl Lock {
     /// Tries the master password on the pool: right, the saved passwords' data key is in
     /// memory (a new vault's when there was none). `done` is told whether it was right.
     pub fn open(&self, typed: String, done: impl FnOnce(bool) + 'static) {
+        let typed = quadra_shell::Zeroizing::new(typed);
         let (key, vault) = (self.key, self.prefs.vault);
         let (stored, sealed) = (self.prefs.password.get_untracked(), vault.get_untracked());
         self.owner.run(|| {
             spawn(async move {
                 let opened = background(move || crate::vault::open_with(&typed, &stored, &sealed)).await;
                 let Ok(Some((data, made))) = opened else { return done(false) };
-                key.set(Some(data));
+                key.set(Some(std::rc::Rc::new(data)));
                 if let Some(made) = made {
                     vault.set(made);
                 }
@@ -151,6 +152,7 @@ impl Lock {
     /// Sets, changes or removes (an empty `new`) the master password; `current` must be the
     /// one set, if any. `done` is told what came of it.
     pub fn set_password(&self, current: String, new: String, done: impl Fn(&str) + 'static) {
+        let (current, new) = (quadra_shell::Zeroizing::new(current), quadra_shell::Zeroizing::new(new));
         let (stored, password) = (self.prefs.password.get_untracked(), self.prefs.password);
         let (sealed, (vault, secrets, key)) =
             (self.prefs.vault.get_untracked(), (self.prefs.vault, self.prefs.secrets, self.key));
@@ -176,7 +178,7 @@ impl Lock {
                         let removed = hash.is_empty();
                         password.set(hash);
                         vault.set(sealed);
-                        key.set(data);
+                        key.set(data.map(std::rc::Rc::new));
                         // Removed, the saved secrets go with it.
                         if removed {
                             secrets.set(Vec::new());

@@ -1,6 +1,8 @@
 //! Passwords kept as a salted hash (specs/16, "Passwords"): PBKDF2 with HMAC-SHA256 from
 //! the OS's crypto.
 
+use zeroize::Zeroizing;
+
 use windows::Win32::Security::Cryptography::{
     BCRYPT_HMAC_SHA256_ALG_HANDLE, BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptDeriveKeyPBKDF2, BCryptGenRandom,
 };
@@ -14,7 +16,7 @@ pub fn hash_password(password: &str) -> Option<String> {
     // SAFETY: the buffer is a local whose length the call is told.
     unsafe { BCryptGenRandom(None, &mut salt, BCRYPT_USE_SYSTEM_PREFERRED_RNG) }.ok().ok()?;
     let key = derive_key(password, &salt, ROUNDS)?;
-    Some(format!("{KIND}${ROUNDS}${}${}", hex(&salt), hex(&key)))
+    Some(format!("{KIND}${ROUNDS}${}${}", hex(&salt), hex(&*key)))
 }
 
 /// Whether a password is the one `stored` was made from.
@@ -29,9 +31,10 @@ pub fn verify_password(password: &str, stored: &str) -> bool {
     found.iter().zip(&key).fold(0u8, |differ, (a, b)| differ | (a ^ b)) == 0
 }
 
-/// The PBKDF2-HMAC-SHA256 key of 32 bytes of a password, a salt and a count of rounds.
-pub fn derive_key(password: &str, salt: &[u8], rounds: u64) -> Option<[u8; 32]> {
-    let mut key = [0u8; 32];
+/// The PBKDF2-HMAC-SHA256 key of 32 bytes of a password, a salt and a count of rounds; wiped
+/// when dropped.
+pub fn derive_key(password: &str, salt: &[u8], rounds: u64) -> Option<Zeroizing<[u8; 32]>> {
+    let mut key = Zeroizing::new([0u8; 32]);
     // SAFETY: the pseudo handle needs no opening or closing; the slices are told with their
     // lengths.
     unsafe {
@@ -40,7 +43,7 @@ pub fn derive_key(password: &str, salt: &[u8], rounds: u64) -> Option<[u8; 32]> 
             Some(password.as_bytes()),
             Some(salt),
             rounds,
-            &mut key,
+            &mut *key,
             0,
         )
     }
@@ -79,6 +82,6 @@ mod tests {
     fn the_key_is_pbkdf2_with_hmac_sha256() {
         // RFC 7914, section 11: P = "passwd", S = "salt", c = 1, the first 32 bytes.
         let key = derive_key("passwd", b"salt", 1).unwrap();
-        assert_eq!(hex(&key), "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc");
+        assert_eq!(hex(&*key), "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc");
     }
 }

@@ -61,6 +61,11 @@ impl Lock {
         !self.prefs.password.with(String::is_empty)
     }
 
+    /// How many hosts have a secret saved under the master password.
+    pub fn saved_secrets(&self) -> usize {
+        self.prefs.secrets.with_untracked(Vec::len)
+    }
+
     /// Whole minutes left before the window locks while idle; None when it cannot lock.
     pub fn left(&self) -> Option<u32> {
         if !self.can_lock() {

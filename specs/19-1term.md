@@ -460,7 +460,9 @@ thread never waits on the network.
   `ssh.secrets` (rows of the host's name and that). The data key is in memory only, from the
   first time the master password is typed (setting it, unlocking, a Master password field);
   setting the first password makes the vault, changing it seals the data key again, removing
-  it forgets the vault and every saved secret. Connecting to a saved host with a secret: with
+  it forgets the vault and every saved secret, once a dialog said so: Remove the master
+  password?, `The window will no longer lock, and the 3 saved passwords are forgotten. It
+  cannot be undone.` (the count left out with none saved), Cancel and Remove (danger). Connecting to a saved host with a secret: with
   the data key, each first question of its password (the host's own, not a jump host's) or
   its key file's passphrase is answered with it, a Retry included (a wrong one asks in the
   Sign in dialog as before); without it, a dialog Unlock saved

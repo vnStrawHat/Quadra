@@ -163,12 +163,28 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>, default: Signal<f64>) -> 
             field.set(String::new());
         }
     };
+    // Removing asks first: the saved passwords go with it.
+    let asking = signal(false);
     let remove = move || {
         lock.set_password(current.get_untracked(), String::new(), move |words| said.set(words.into()));
         current.set(String::new());
     };
+    let asked = move || {
+        let saved = match lock.saved_secrets() {
+            0 => String::new(),
+            1 => ", and the saved password is forgotten".into(),
+            n => format!(", and the {n} saved passwords are forgotten"),
+        };
+        text(format!("The window will no longer lock{saved}. It cannot be undone."))
+    };
+    let confirm = quadra_design::dialog(asking, "Remove the master password?", asked)
+        .action("Cancel", quadra_design::Variant::Secondary, || {})
+        .action("Remove", quadra_design::Variant::Danger, remove);
     let buttons = quadra::row().gap(8.0).child(button("Set password").on_click(set)).child(
-        div().display(shown(move || lock.can_lock())).child(button("Remove password").on_click(remove)),
+        div()
+            .display(shown(move || lock.can_lock()))
+            .child(button("Remove password").on_click(move || asking.set(true)))
+            .child(confirm),
     );
     SettingsGroup::new("Master password")
         .about("Kept as a salted hash, never the password. Without one the window does not lock.")

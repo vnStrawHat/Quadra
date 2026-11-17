@@ -158,3 +158,37 @@ fn five_wrong_tries_start_a_back_off() {
     a.unlock_with("pw");
     assert!(!a.locked());
 }
+
+#[test]
+fn removing_the_password_asks_first_and_forgets_the_saved_ones() {
+    let mut a = app(Some("pw"));
+    let secrets = a.settings.value("ssh.secrets", Vec::<Vec<String>>::new());
+    secrets.set(vec![vec!["a".into(), "sv1:00".into()], vec!["b".into(), "sv1:00".into()]]);
+    a.h.get_by_role(Role::Button, "Settings").click();
+    a.h.settle();
+    a.h.get_by_role(Role::TreeItem, "Security & lock").click();
+    a.h.settle();
+    a.h.get_by_test_id("password-current").set_value("pw");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Remove password").click();
+    a.h.settle();
+    let said =
+        "The window will no longer lock, and the 2 saved passwords are forgotten. It cannot be undone.";
+    assert!(a.says("Remove the master password?") && a.says(said), "{}", a.h.semantics());
+    a.h.get_by_role(Role::Button, "Cancel").click();
+    a.h.settle();
+    assert!(a.settings.value("security.password", String::new()).get().starts_with("pbkdf2"));
+    assert_eq!(secrets.get().len(), 2, "Cancel keeps all");
+
+    a.h.get_by_role(Role::Button, "Remove password").click();
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Remove").click();
+    let end = Instant::now() + Duration::from_secs(20);
+    while !a.says("Password removed") {
+        assert!(Instant::now() < end, "never removed");
+        a.h.advance(Duration::from_millis(10));
+        a.h.settle();
+    }
+    assert!(a.settings.value("security.password", String::new()).get().is_empty());
+    assert!(secrets.get().is_empty());
+}

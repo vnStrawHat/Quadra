@@ -139,7 +139,8 @@ whose every cell changes every frame, costs what the V build's costs.
   password seals (`ssh.vault`, `ssh.secrets`); the key is in memory once the master password
   is typed (set, unlock, or the Unlock saved passwords dialog that connecting asks first). The
   engine's first question of that password or passphrase is answered with it. Changing the
-  master password seals the key again; removing it forgets every secret. Forget password in a
+  master password seals the key again; removing it forgets every secret, after a dialog
+  that says how many (Remove the master password?; `tests/lock.rs`). Forget password in a
   host's menu. Tests: `apps/oneterm/tests/vault.rs`, the vault's and the seal's unit tests.
 - **Connect all (n)** in a group heading's menu: a tab for each host, one master password
   asked for all.

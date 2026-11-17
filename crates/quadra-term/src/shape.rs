@@ -21,7 +21,13 @@ pub(crate) fn joins(row: &SnapshotRow, col: usize) -> bool {
     let cell = &row.cells[col];
     let SnapshotContent::Scalar(c) = cell.content else { return false };
     let drawing = matches!(c as u32, 0x2500..=0x25FF | 0xE0B0..=0xE0D7);
-    cell.width == CellWidth::Narrow && c != ' ' && !drawing
+    cell.width == CellWidth::Narrow && !blank(c) && !drawing
+}
+
+/// Whether a cell's scalar draws nothing: a space, or the tab the engine keeps where a tab
+/// started (for a copy).
+pub(crate) fn blank(c: char) -> bool {
+    matches!(c, ' ' | '\t')
 }
 
 /// The end of the token that starts at `col`: the cells that join, of its style run, up to

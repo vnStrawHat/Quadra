@@ -160,7 +160,7 @@ fn text(
         let style = row.style_of(cell);
         let meant = class(col).filter(|_| plain(style)).and_then(Highlight::of);
         let underlined = meant.is_some_and(Highlight::underlined) || hovered.contains(&(col as u16));
-        let blank = matches!(cell.content, SnapshotContent::Scalar(' '));
+        let blank = matches!(cell.content, SnapshotContent::Scalar(c) if crate::shape::blank(c));
         if blank && !underlined && !style.attrs.intersects(Attrs::ALL_UNDERLINES | Attrs::STRIKEOUT) {
             continue; // nothing to draw, so no colour to work out
         }

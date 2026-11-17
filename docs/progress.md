@@ -144,6 +144,8 @@ whose every cell changes every frame, costs what the V build's costs.
   `oneterm-ssh/tests/live.rs`, `apps/oneterm/tests/asking.rs`, all on 127.0.0.1; checked
   against the user's VM by a probe under `.tmp/`. Shots: `ask-*` scenes.
 - The gutter keeps no digits ahead: it grows with the highest line number (specs/18).
+- A tab draws nothing: the engine keeps a printed tab in its cell (a newer console host
+  passes `ls`'s tabs through), and it was drawn as a missing glyph (specs/18).
 
 ### Fixes after a trial (2026-11-17)
 

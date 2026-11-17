@@ -84,6 +84,8 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   the cells it covers (to the next group's column): a ligature of two characters spans their
   two cells. A glyph's colour is its group's cell's. Tokens go through the text system's cache
   of words, so a row that did not change costs lookups, not shaping; nothing is shaped by row.
+- A blank is a space or a tab: the engine keeps the tab a program printed in the cell it
+  started at (a copy gives it back), and it draws nothing, in a token or a glyph a cell.
 - Semantic highlighting (`TermLook::highlighting`, off by default): text in the default
   foreground is coloured by what it means, per class (`Highlight`): the prompt's sign, the
   command and its options; the words of errors, success, warnings, information and debugging

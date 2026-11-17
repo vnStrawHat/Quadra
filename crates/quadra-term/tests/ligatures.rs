@@ -16,7 +16,8 @@ use quadra_text::{
 use quadra_tree::Role;
 use quadra_view::column;
 
-/// The fake backend, with `->` one glyph of two advances, as a coding font's ligature.
+/// The fake backend, with `->` one glyph of two advances, as a coding font's ligature, and a
+/// tab drawn as a box, as a real font's missing glyph.
 struct Arrows(FakeBackend);
 
 impl TextBackend for Arrows {
@@ -49,6 +50,7 @@ impl TextBackend for Arrows {
         glyphs
     }
     fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap> {
+        let glyph = if glyph == u16::from(b'\t') { u16::from(b'x') } else { glyph };
         self.0.rasterize(face, glyph, size, phase)
     }
 }
@@ -143,4 +145,16 @@ fn a_ligature_under_the_cursor_is_drawn_apart_in_either_phase_of_its_blink() {
         h.tree.mark_paint(node);
         assert_eq!(xs(&mut h).len(), 4, "the cursor's cell alone, the caret on: {on}");
     }
+}
+
+#[test]
+fn a_tab_draws_nothing_in_a_token_or_alone() {
+    // A newer console host passes a program's tab through; the engine keeps it in the cell.
+    let (mut h, s, look) = term(Box::new(Arrows(FakeBackend::new())), false);
+    s.feeder().feed(b"ab\tc", Instant::now());
+    h.settle();
+    assert_eq!(xs(&mut h), [9.0, 18.0, 81.0], "a, b, then c at the tab stop of column 8");
+    look.update(|it| it.ligatures = true);
+    h.settle();
+    assert_eq!(xs(&mut h), [9.0, 18.0, 81.0], "the tab is no part of the token `ab`");
 }

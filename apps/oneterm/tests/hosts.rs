@@ -35,6 +35,16 @@ fn app() -> App {
 }
 
 impl App {
+    /// Clicks a host's row with the pointer, `times` in a row.
+    fn click_host(&mut self, name: &str, times: usize) {
+        let row = self.h.get_by_role(Role::Button, name).node();
+        let at = self.h.tree.window_rect(row).center();
+        for _ in 0..times {
+            self.h.click(at.x, at.y);
+        }
+        self.h.settle();
+    }
+
     fn add(&mut self, name: &str, group: &str, target: &str) {
         self.h.get_by_role(Role::Button, "Add SSH host").click();
         self.h.settle();
@@ -52,7 +62,7 @@ impl App {
 }
 
 #[test]
-fn a_host_added_is_saved_listed_and_connects_on_a_click() {
+fn a_host_added_is_saved_listed_and_connects_on_a_double_click() {
     let mut a = app();
     assert!(a.h.has_text("local shell"), "the status bar names a local space");
     a.add("prod-api-01", "Production", "trung@10.20.1.14");
@@ -61,8 +71,10 @@ fn a_host_added_is_saved_listed_and_connects_on_a_click() {
     assert_eq!(a.rows()[1][..3], ["10.30.2.8", "Staging", "trung@10.30.2.8:2222"]);
     assert!(a.h.has_text("Production") && a.h.has_text("Staging"));
 
-    a.h.get_by_role(Role::Button, "prod-api-01").click();
-    a.h.settle();
+    let tabs = a.made.borrow().len();
+    a.click_host("prod-api-01", 1);
+    assert_eq!(a.made.borrow().len(), tabs, "one click connects to nothing");
+    a.click_host("prod-api-01", 2);
     let launch = a.made.borrow().last().cloned().unwrap();
     assert_eq!(launch.ssh.map(|it| it.target.label()), Some("trung@10.20.1.14".into()));
     assert!(a.h.has_text("1 ssh \u{B7} 1 space"), "the tab counts its kinds");
@@ -90,8 +102,7 @@ fn a_host_reached_through_another_carries_its_way_and_forwards() {
     a.h.settle();
     assert_eq!(a.rows()[1][5..], ["bastion", "5432:localhost:5432"]);
 
-    a.h.get_by_role(Role::Button, "db").click();
-    a.h.settle();
+    a.click_host("db", 2);
     let remote = a.made.borrow().last().cloned().unwrap().ssh.unwrap();
     let hops: Vec<String> = remote.jumps.iter().map(|it| it.target.label()).collect();
     assert_eq!(hops, ["ops@203.0.113.5"]);

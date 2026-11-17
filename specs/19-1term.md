@@ -106,7 +106,8 @@ a panel of 248 px at the left.
 
 A tab holds one or more spaces laid out by a pane tree (the kit's `work::Pane`, `panes`):
 splits in two, nested, side by side or one over the other, with the kit's seams between (a
-1 px line in a strip of 6 px that is dragged to give a side more room; a double click makes the
+1 px line, the only room between two spaces, under a strip of 6 px over their edges that is
+dragged to give a side more room; a double click makes the
 sides even). A tab arranges its spaces by itself until the user lays them out: arranged, its
 spaces stand side by side (a row of equal columns); beside the rail, three or more stand as the
 first on the left (half the width) and the others stacked at its right in equal heights. The
@@ -387,13 +388,14 @@ blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output,
 - **The rail**, under "New terminal": "SSH hosts" with an Add SSH host button at its right, a
   filter (on the name and the target, whatever the case), then the hosts by group in the order
   first met (a click on a group's heading folds it), each a row of the square of its colour
-  tag, its name and its address. A click opens a tab
-  connected to it; its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
+  tag, its name and its address. A double click opens a tab connected to it (one click does
+  nothing; a reader connects by its menu's Connect); its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
   filled, titled Edit SSH host; a new name takes the old one's place), Remove. The Add dialog
   takes the name (the host when empty), the group, the target,
   the colour tag (the kit's `color_picker`, "By group" while empty: its presets are the
   seven hues as the dark theme has them, its "Default" swatch the group's colour, and a colour
-  chosen that is a preset's is saved by the preset's name), the auth and the key file. Quick connect has
+  chosen that is a preset's is saved by the preset's name), the auth and the key file; its
+  fields, pickers and selects are all 28 px high. Quick connect has
   "Save as host".
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
   Quick connect, and Add SSH host. Its field is the title bar's Search's.

@@ -123,7 +123,12 @@ fn host_row(model: &Model, host: Host) -> impl View + use<> {
     let face = line()
         .role(Role::Button)
         .label(host.name.clone())
-        .on_click(move |_| opens.connect_to(remote.clone(), false))
+        // A double click; a reader connects by the row's menu (Connect).
+        .on_click(move |e| {
+            if e.clicks == 2 {
+                opens.connect_to(remote.clone(), false)
+            }
+        })
         .child(square)
         .child(div().grow(1.0).min_width(Length::Px(0.0)).child(text(host.name.clone()).ellipsis()))
         .child(address(short(&host.remote.target)));
@@ -194,10 +199,13 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
             editing.set(None);
         }
     });
-    // The dialog is 440 wide: its body fits in 416, padding included.
+    // The dialog is 440 wide: its body fits in 416, padding included. Its fields are as high
+    // as its selects and the colour picker.
+    const H: f32 = quadra_design::size::H_MD;
     let body = move || {
-        let text_field =
-            |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id).width(392.0);
+        let text_field = |value, hint: &str, id: &'static str| {
+            input(value).placeholder(hint).test_id(id).width(392.0).height(H)
+        };
         let key = text_field(form.key, "Path of the key file", "host-key");
         let how = quadra::row().gap(12.0).child(field("Auth", select(AUTHS, form.auth).width(190.0))).child(
             field("Jump host", select(lists.jump_choices(), form.jump).width(190.0).test_id("host-jump")),
@@ -212,7 +220,7 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
                     .gap(12.0)
                     .child(field(
                         "Group",
-                        input(form.group).placeholder("Group").test_id("host-group").width(190.0),
+                        input(form.group).placeholder("Group").test_id("host-group").width(190.0).height(H),
                     ))
                     .child(field("Colour tag", tag_picker(form.tag, form.group))),
             )

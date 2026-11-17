@@ -54,7 +54,7 @@ fn the_parts_of_a_tree_are_placed_and_a_seam_is_dragged() {
     let at = |x, y, w, h| Rect::new(x, y, w, h);
     assert_eq!(
         rects(&mut p),
-        [at(0.0, 0.0, 201.0, 406.0), at(207.0, 0.0, 599.0, 203.0), at(207.0, 209.0, 599.0, 197.0)]
+        [at(0.0, 0.0, 201.0, 406.0), at(202.0, 0.0, 604.0, 203.0), at(202.0, 204.0, 604.0, 202.0)]
     );
 
     // The seam beside "a" is held and moved 100 px: the share follows, and nothing is built.
@@ -89,7 +89,7 @@ fn a_leaf_is_kept_while_the_tree_changes_around_it() {
     p.settle();
     assert_eq!((["a", "b", "c"].map(|group| p.leaf(group).0), p.built.get_untracked()), (before, 4));
     let (b, d) = (p.leaf("b").1, p.leaf("d").1);
-    assert_eq!((b.width, d.x, d.right()), (299.0, b.right() + 6.0, 806.0));
+    assert_eq!((b.width, d.x, d.right()), (302.0, b.right() + 1.0, 806.0));
 
     // Folded, "c" keeps its header under a line of one pixel, and what is over it has the rest.
     p.root.update(|tree| tree.toggle("c"));

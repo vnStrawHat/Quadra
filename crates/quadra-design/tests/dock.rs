@@ -125,7 +125,7 @@ fn a_tab_is_torn_off_its_strip_and_dropped_on_a_strip_or_a_pane() {
     settle(&mut h);
     let stacked = Pane::column(Pane::leaf("left"), Pane::leaf("group-1"), 0.5);
     assert_eq!(work.root.get_untracked(), Pane::row(stacked, Pane::leaf("right"), 0.5));
-    assert_eq!((ids(work, "group-1"), tab(&mut h, "Shell").y), ("shell (shell)".into(), 209.0));
+    assert_eq!((ids(work, "group-1"), tab(&mut h, "Shell").y), ("shell (shell)".into(), 204.0));
 
     // A click chooses a tab of a strip whose tabs can be torn off.
     let logs = tab(&mut h, "Logs");

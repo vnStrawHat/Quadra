@@ -153,9 +153,10 @@ impl Pane {
         (stacked && is(first), stacked && is(second) && !is(first))
     }
 
-    /// Where the leaves and the seams stand in `rect`, on whole pixels: the leaves in
-    /// reading order, then the seams. A collapsed leaf keeps `header` of height and has a
-    /// line of one pixel beside it; any other seam is a strip `grip` wide.
+    /// Where the leaves and the seams stand in `rect`: the leaves in reading order, on whole
+    /// pixels, then the seams. Every seam takes one pixel between its sides; a collapsed
+    /// leaf keeps `header` of height, and any other seam is a strip `grip` wide centred on
+    /// its pixel, over the edges of its sides (the seams come after the leaves, on top).
     pub fn place(&self, rect: Rect, (header, grip): (f32, f32)) -> Vec<Part> {
         let (mut leaves, mut seams) = (Vec::new(), Vec::new());
         self.place_in(rect, (header, grip), &mut Vec::new(), &mut leaves, &mut seams);
@@ -177,19 +178,20 @@ impl Pane {
         };
         let row = axis == Axis::Row;
         let length = if row { rect.width } else { rect.height };
-        // How much of the length the first side has, and how wide the seam after it is.
-        let (before, seam, fixed) = match Pane::folded(axis, first, second) {
-            (true, _) => (header.min(length), 1.0, true),
-            (_, true) => ((length - header - 1.0).max(0.0), 1.0, true),
-            _ => ((ratio * length).floor().min((length - grip).max(0.0)), grip, false),
+        // How much of the length the first side has; the seam after it takes one pixel.
+        let (before, fixed) = match Pane::folded(axis, first, second) {
+            (true, _) => (header.min(length), true),
+            (_, true) => ((length - header - 1.0).max(0.0), true),
+            _ => ((ratio * length).floor().min((length - 1.0).max(0.0)), false),
         };
         let cut = |from: f32, len: f32| match row {
             true => Rect::new(rect.x + from, rect.y, len.max(0.0), rect.height),
             false => Rect::new(rect.x, rect.y + from, rect.width, len.max(0.0)),
         };
-        seams.push(Part::Seam { path: path.clone(), axis, rect: cut(before, seam), whole: rect, fixed });
+        let strip = if fixed { cut(before, 1.0) } else { cut(before - (grip - 1.0) / 2.0, grip) };
+        seams.push(Part::Seam { path: path.clone(), axis, rect: strip, whole: rect, fixed });
         for (side, pane, part) in
-            [(0, first, cut(0.0, before)), (1, second, cut(before + seam, length - before - seam))]
+            [(0, first, cut(0.0, before)), (1, second, cut(before + 1.0, length - before - 1.0))]
         {
             path.push(side);
             pane.place_in(part, (header, grip), path, leaves, seams);
@@ -256,15 +258,16 @@ mod tests {
             parts[..3],
             [
                 leaf("explorer", 0.0, 0.0, 201.0, 406.0),
-                leaf("editor", 207.0, 0.0, 599.0, 203.0),
-                leaf("terminal", 207.0, 209.0, 599.0, 197.0),
+                leaf("editor", 202.0, 0.0, 604.0, 203.0),
+                leaf("terminal", 202.0, 204.0, 604.0, 202.0),
             ]
         );
-        let whole = Rect::new(207.0, 0.0, 599.0, 406.0);
+        // The seam takes the pixel at 203; its strip of 6 lies over the edges of both sides.
+        let whole = Rect::new(202.0, 0.0, 604.0, 406.0);
         let seam = Part::Seam {
             path: vec![1],
             axis: Axis::Column,
-            rect: Rect::new(207.0, 203.0, 599.0, 6.0),
+            rect: Rect::new(202.0, 200.5, 604.0, 6.0),
             whole,
             fixed: false,
         };
@@ -275,12 +278,12 @@ mod tests {
         let parts = tree.place(Rect::new(0.0, 0.0, 806.0, 406.0), (28.0, 6.0));
         assert_eq!(
             parts[1..3],
-            [leaf("editor", 207.0, 0.0, 599.0, 377.0), leaf("terminal", 207.0, 378.0, 599.0, 28.0)]
+            [leaf("editor", 202.0, 0.0, 604.0, 377.0), leaf("terminal", 202.0, 378.0, 604.0, 28.0)]
         );
         let line = Part::Seam {
             path: vec![1],
             axis: Axis::Column,
-            rect: Rect::new(207.0, 377.0, 599.0, 1.0),
+            rect: Rect::new(202.0, 377.0, 604.0, 1.0),
             whole,
             fixed: true,
         };

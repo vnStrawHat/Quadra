@@ -19,10 +19,10 @@ pub fn close(face: Div, open: Signal<bool>) -> Div {
     face.role(Role::Button).label("Close").on_click(move |_| open.set(false))
 }
 
-/// What an answer does: `act`, then the dialog closes.
+/// What an answer does: `act`, then the dialog closes (unless `act` closed what it was of).
 pub fn answer(open: Signal<bool>, act: Rc<dyn Fn()>) -> impl Fn() + 'static {
     move || {
         act();
-        open.set(false);
+        open.try_set(false);
     }
 }

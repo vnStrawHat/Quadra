@@ -142,3 +142,16 @@ fn the_table_has_an_entry_a_character() {
     assert_eq!(arms('╔'), Some([0, 3, 3, 0]));
     assert_eq!(arms('╿'), Some([2, 0, 1, 0]));
 }
+
+#[test]
+fn in_a_cell_whose_sides_share_a_parity_lines_are_as_thick_down_as_across() {
+    for (w, h) in [(9, 19), (8, 18), (7, 17), (18, 38)] {
+        for c in ['┼', '╋'] {
+            // Across the top row, the up arm; down the first column, the left arm.
+            let m = mask(c, w, h);
+            let down = m[..w as usize].iter().filter(|&&v| v == 255).count();
+            let across = m.chunks_exact(w as usize).filter(|row| row[0] == 255).count();
+            assert_eq!(down, across, "{c} at {w} x {h}");
+        }
+    }
+}

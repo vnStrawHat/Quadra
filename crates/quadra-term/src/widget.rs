@@ -130,11 +130,12 @@ impl TerminalWidget {
     }
 
     /// The cell's width: the look's, grown with the text size as the face is, or the advance
-    /// of `0`; whole device pixels.
+    /// of `0`; and its height, the line's of the width's parity; whole device pixels.
     pub(crate) fn fit_cell(&mut self) {
         let width = self.cell_width.map_or(self.advance, |(px, at)| px * self.style.size / at.max(1.0));
         self.cell = (width * self.scale).round().max(1.0) / self.scale;
     }
+        self.line = line(self.style.line_px() * self.scale, self.cell * self.scale) / self.scale;
 
     /// Takes the engine's snapshot (the first phase of drawing, under the lock): a paint
     /// reads it alone, so a paint from scratch draws what the last one did. True when the
@@ -207,7 +208,17 @@ impl Widget for TerminalWidget {
         let face = cx.text.face_for(&self.style);
         self.advance = cx.text.word("0", face, self.style.size).width;
         self.fit_cell();
-        self.line = (self.style.line_px() * self.scale).round().max(1.0) / self.scale;
+/// A line's height in device pixels: whole, of the parity of the cell's width (`cell`, whole
+/// device pixels), the nearer to `ideal` (the larger on a tie), so drawn lines are as thick
+/// down as across and centred both ways (specs/18, "Drawn characters").
+fn line(ideal: f32, cell: f32) -> f32 {
+    let near = ideal.round().max(1.0);
+    if near % 2.0 == cell.round() % 2.0 {
+        return near;
+    }
+    if near > 1.0 && ideal < near { near - 1.0 } else { near + 1.0 }
+}
+
         let fill =
             |known: Option<f32>, avail: f32| known.unwrap_or(if avail.is_finite() { avail } else { 0.0 });
         Size::new(fill(known.width, avail.width), fill(known.height, avail.height))

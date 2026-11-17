@@ -45,7 +45,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 
 - One widget, a surface (02): it paints the viewport rows from the snapshot. Cell size from the
   mono face of the kit at the code size: the advance of `0` by the line height, each snapped to
-  whole device pixels; padding around the grid, a value a side (8 px each unless the look says).
+  whole device pixels, the height then to the nearer of the two with the width's parity (the
+  larger on a tie), so a drawn line has one thickness both ways and is centred both ways
+  ("Drawn characters"); padding around the grid, a value a side (8 px each unless the look says).
 - The cell's width can be set (`TermLook::cell_width`, in pixels at the look's size; `None`, the
   advance of `0`): it grows with the text size as the face does, and is snapped the same. A glyph
   stays in the middle of its cells, so a wider cell spaces the text out.
@@ -91,7 +93,8 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   no gap. Every mask is the mirror, about the box's vertical and horizontal middle, of the
   character mirrored that way (`╭` of `╮` and `╰`, `▀` of `▄`, `┣` of `┫`; tested):
   - A line is centred: its thickness takes the parity of the side it crosses, so both its
-    edges fall on pixel edges and as many pixels lie either side (light, the nearest to a
+    edges fall on pixel edges and as many pixels lie either side; a cell's sides share a
+    parity, so a cell's lines are as thick down as across (light, the nearest to a
     tenth of the box's height of that parity; heavy, to twice that). A double line is two
     light strokes and a gap, the whole of that parity. Lines run to the box's edges; arms
     meet at a square; double junctions draw their inner and outer corners.

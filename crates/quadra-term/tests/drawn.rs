@@ -106,3 +106,18 @@ fn glyphs_are_smoothed_by_pixel_unless_the_look_says_otherwise() {
     assert!(!told.borrow().is_empty(), "rasterized again, as the system smooths");
     assert!(told.borrow().iter().all(|it| it.1 & GRAYSCALE == 0));
 }
+
+#[test]
+fn a_cells_height_takes_the_parity_of_its_width() {
+    let (mut h, s, look, _) = term();
+    let cell = |h: &mut Harness| {
+        let reply = s.feeder().feed(b"\x1b[14t", Instant::now());
+        h.settle();
+        String::from_utf8(reply).unwrap()
+    };
+    // The text area in device pixels: rows by the line, columns by the cell.
+    assert_eq!(cell(&mut h), "\x1b[4;112;384t", "8 rows of 14, 64 columns of 6: both even");
+    look.update(|it| it.cell_width = Some(9.0));
+    h.settle();
+    assert_eq!(cell(&mut h), "\x1b[4;120;378t", "9 wide: 14 becomes 15, 8 rows of it");
+}

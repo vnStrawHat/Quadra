@@ -116,11 +116,11 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   paints, so its repaint shows the new faces. The last list set wins over `App::font_fallbacks`.
 - The gutter (`TermLook::gutter`, off by default): a column at the left of the grid with, per
   row that shows, the time the row was first written and its line number, `[HH:MM:SS] 12`,
-  in the mono face: one cell between them and the number left-aligned, so the cells kept for
-  longer numbers stay empty between it and the grid. Its width is whole cells, `11 + digits`
-  of them, and 8 px (4 each side);
-  `digits` is at least 5 and only grows, when a line number needs more, so the grid is sized
-  again only then. The grid, the pointer's cells and the caret start after it. Colours
+  in the mono face: the number right-aligned in `digits` cells after one, so it ends 4 px
+  before the grid and the cells kept for longer numbers are between the clock and it. Its
+  width is whole cells, `11 + digits` of them, and 8 px (4 each side);
+  `digits` is at least 3 and only grows, when a line number needs more, so the grid is sized
+  again only then (at line 1,000 and 10,000). The grid, the pointer's cells and the caret start after it. Colours
   (`TermColors`): `gutter_fg` (else the foreground mixed half with the background), `gutter_bg`
   (else the terminal's background), `clock_fg` and `line_number_fg` (else `gutter_fg`).
 - Times live with the engine, stamped by the feed with its `now` (so a view not shown keeps

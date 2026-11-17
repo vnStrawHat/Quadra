@@ -58,15 +58,16 @@ fn the_grid_is_narrower_by_the_gutter() {
     assert_eq!(t.row(0), None, "no gutter, no labels");
     t.look.update(|it| it.gutter = true);
     t.h.settle();
-    assert_eq!(t.h.tree.widget_mut::<TerminalWidget>(t.id).unwrap().gutter_width(), 104.0);
-    assert_eq!(t.s.size().cols, 46, "(400 - 104 - 16) / 6");
+    // `[HH:MM:SS] ` and 3 digits, and 4 px each side: (11 + 3) * 6 + 8.
+    assert_eq!(t.h.tree.widget_mut::<TerminalWidget>(t.id).unwrap().gutter_width(), 92.0);
+    assert_eq!(t.s.size().cols, 48, "(400 - 92 - 16) / 6");
 }
 
 #[test]
 fn a_click_is_the_cell_after_the_gutter() {
     let mut t = term(true);
     t.feed(b"\x1b[?1000h\x1b[?1006h", Instant::now());
-    let at = Point::new(104.0 + 8.0 + 3.0 * 6.0 + 3.0, 8.0 + 14.0 + 5.0);
+    let at = Point::new(92.0 + 8.0 + 3.0 * 6.0 + 3.0, 8.0 + 14.0 + 5.0);
     t.h.tree.pointer(PointerInput::Down, MouseButton::Left, at, Mods::NONE, t.h.now());
     t.h.settle();
     assert_eq!(&*t.wrote.borrow(), b"\x1b[<0;4;2M");
@@ -99,7 +100,7 @@ fn numbers_count_from_the_first_row_and_survive_a_column_change() {
     // More room around the grid: other columns, so every row has a new id, and a row less.
     t.look.update(|it| it.padding = Edges::all(20.0));
     t.h.settle();
-    assert_eq!(t.s.size().cols, 42, "(400 - 104 - 40) / 6");
+    assert_eq!(t.s.size().cols, 44, "(400 - 92 - 40) / 6");
     let shown = t.s.screen_text();
     let last = shown.iter().position(|it| it == "line 20").unwrap();
     assert_eq!(t.row(last), Some((20, Some(t1))));
@@ -113,7 +114,7 @@ fn numbers_count_from_the_first_row_and_survive_a_column_change() {
 #[test]
 fn a_line_that_wraps_again_numbers_the_rows_after_it_again() {
     let mut t = term(true);
-    let long = "x".repeat(44);
+    let long = "x".repeat(46);
     t.feed(format!("a\r\n{long}\r\nb").as_bytes(), Instant::now());
     // The number of the row that shows `b`.
     let b = |t: &mut Term| {
@@ -121,7 +122,7 @@ fn a_line_that_wraps_again_numbers_the_rows_after_it_again() {
         t.row(at).unwrap().0
     };
     assert_eq!(b(&mut t), 3);
-    // 42 columns: the long line takes two rows (and a row less: `a` goes to the history).
+    // 44 columns: the long line takes two rows (and a row less: `a` goes to the history).
     t.look.update(|it| it.padding = Edges::all(20.0));
     t.h.settle();
     assert_eq!(b(&mut t), 4);

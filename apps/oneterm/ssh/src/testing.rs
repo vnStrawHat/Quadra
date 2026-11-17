@@ -156,6 +156,36 @@ impl server::Handler for Shell {
         Ok(())
     }
 
+    /// A remote forward: listens on this machine's loopback, each connection opened back to
+    /// the client on a channel of its own.
+    async fn tcpip_forward(
+        &mut self,
+        _: &str,
+        port: &mut u32,
+        session: &mut Session,
+    ) -> Result<bool, Self::Error> {
+        let Ok(listener) = tokio::net::TcpListener::bind(("127.0.0.1", *port as u16)).await else {
+            return Ok(false);
+        };
+        *port = listener.local_addr().map_or(0, |it| it.port().into());
+        let (handle, asked, quiet) = (session.handle(), *port, self.sftp.clone());
+        tokio::spawn(async move {
+            while let Ok((mut socket, from)) = listener.accept().await {
+                let from = from.port().into();
+                let Ok(channel) =
+                    handle.channel_open_forwarded_tcpip("localhost", asked, "127.0.0.1", from).await
+                else {
+                    break;
+                };
+                quiet.lock().unwrap().push(channel.id());
+                tokio::spawn(async move {
+                    let _ = tokio::io::copy_bidirectional(&mut socket, &mut channel.into_stream()).await;
+                });
+            }
+        });
+        Ok(true)
+    }
+
     /// Carries a channel to a host and port of this machine (only 127.0.0.1 is asked).
     async fn channel_open_direct_tcpip(
         &mut self,

@@ -604,12 +604,19 @@ license's notice. Without them every space still runs, on the system's host.
   the shell, the target first. A saved host names another saved host as its jump host (a
   sixth word of its row; a host it names that is gone is no jump), shown in the menu as
   `· jump`; Quick connect and Add SSH host choose one among the saved hosts.
-- **Local forwards**: `Options::forwards`, each `local port → host:port` as seen from the
-  server; the engine listens on 127.0.0.1 and opens a `direct-tcpip` channel for each
-  connection. A forward that cannot listen is one line in the space; the shell stays up.
-  A saved host keeps its forwards as a seventh word, `8080:localhost:80` joined by spaces,
-  typed so in Add SSH host.
-  Remote and dynamic forwards wait.
+- **Forwards**: `Options::forwards`, each a `Forward` of a way (`Way`), the port listened on,
+  and a host and port. Written as OpenSSH's flags are, without the dash:
+  - local, `8080:localhost:80` (or `L8080:…`): the engine listens on 127.0.0.1:8080 and opens
+    a `direct-tcpip` channel to `localhost:80` as the server sees it for each connection;
+  - remote, `R9000:localhost:3000`: the server is asked (`tcpip-forward`) to listen on its
+    loopback port 9000; each connection it opens back (`forwarded-tcpip`) is carried to
+    `localhost:3000` as this machine sees it; a channel for a port not asked is refused;
+  - dynamic, `D1080`: a SOCKS5 proxy on 127.0.0.1:1080 (no auth, CONNECT, IPv4, IPv6 or a
+    name), each connection a `direct-tcpip` channel to the address asked, so it goes out from
+    the server; another command, or a channel refused, is answered with SOCKS's error.
+  A forward that cannot listen, or that the server refuses, is one line in the space; the
+  shell stays up. A saved host keeps its forwards as a seventh word joined by spaces, typed
+  so in Add SSH host (Forwards, `8080:localhost:80 R9000:localhost:3000 D1080`).
 
 ## Tests
 

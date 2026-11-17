@@ -1,17 +1,16 @@
 //! The way to the target (specs/19, "M10 in detail"): through each jump host's
-//! `direct-tcpip` channel, signed in at every hop; and the local forwards of a connection.
+//! `direct-tcpip` channel, signed in at every hop.
 
 use std::sync::Arc;
 use std::time::Duration;
 
 use russh::client::{self, Handle};
-use tokio::net::{TcpListener, TcpStream};
-use tokio::task::JoinHandle;
+use tokio::net::TcpStream;
 
 use crate::auth::CANCELLED;
 use crate::hostkey::Checker;
 use crate::prompt::{Ask, Event, Prompt};
-use crate::{Forward, Hop, Options};
+use crate::{Hop, Options};
 
 const CONNECT: Duration = Duration::from_secs(20);
 /// The most jump hosts on a way.
@@ -65,8 +64,14 @@ async fn open(
         keepalive_max: options.keepalive_max.max(1),
         ..Default::default()
     });
-    let checker =
-        Checker { host: host.clone(), port, file: options.known_hosts.clone(), prompt: prompt.clone() };
+    let checker = Checker {
+        host: host.clone(),
+        port,
+        file: options.known_hosts.clone(),
+        prompt: prompt.clone(),
+        // Only the target is asked for remote forwards.
+        remotes: options.forwards.clone(),
+    };
     let refused = |e: russh::Error| match e {
         russh::Error::UnknownKey => {
             let why = prompt.why.lock().unwrap_or_else(|e| e.into_inner()).take();
@@ -90,38 +95,4 @@ async fn open(
             client::connect_stream(config, channel.into_stream(), checker).await.map_err(refused)
         }
     }
-}
-
-/// Listens for each local forward and carries each connection through a channel; a forward
-/// that cannot listen is said in the space. The tasks end when they are aborted.
-pub(crate) async fn forward(
-    handle: &Arc<Link>,
-    forwards: &[Forward],
-    prompt: &Prompt,
-) -> Vec<JoinHandle<()>> {
-    let mut tasks = Vec::new();
-    for forward in forwards {
-        let listener = match TcpListener::bind(("127.0.0.1", forward.local)).await {
-            Ok(listener) => listener,
-            Err(e) => {
-                prompt.say(&format!("[forward {} could not listen: {e}]\n", forward.label()));
-                continue;
-            }
-        };
-        let (handle, forward) = (handle.clone(), forward.clone());
-        tasks.push(tokio::spawn(async move {
-            while let Ok((mut socket, from)) = listener.accept().await {
-                let (handle, forward) = (handle.clone(), forward.clone());
-                tokio::spawn(async move {
-                    let (host, port, from) = (forward.host, forward.port.into(), from.port().into());
-                    if let Ok(channel) = handle.channel_open_direct_tcpip(host, port, "127.0.0.1", from).await
-                    {
-                        let mut stream = channel.into_stream();
-                        let _ = tokio::io::copy_bidirectional(&mut socket, &mut stream).await;
-                    }
-                });
-            }
-        }));
-    }
-    tasks
 }

@@ -4,9 +4,10 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use russh::client::Handler;
+use russh::client::{ChannelOpenHandle, Handler, Msg, Session};
 use russh::keys::known_hosts::{check_known_hosts_path, learn_known_hosts_path};
 use russh::keys::{HashAlg, PublicKeyOrCertificate};
+use russh::{Channel, ChannelOpenFailure};
 
 use crate::auth::CANCELLED;
 use crate::prompt::{Ask, Prompt};
@@ -16,6 +17,9 @@ pub(crate) struct Checker {
     pub(crate) port: u16,
     pub(crate) file: PathBuf,
     pub(crate) prompt: Arc<Prompt>,
+    /// The connection's forwards: the remote ones say where a channel the server opens back
+    /// goes.
+    pub(crate) remotes: Vec<crate::Forward>,
 }
 
 impl Checker {
@@ -28,6 +32,27 @@ impl Checker {
 
 impl Handler for Checker {
     type Error = russh::Error;
+
+    /// A connection to a remote forward's port, opened back by the server.
+    async fn server_channel_open_forwarded_tcpip(
+        &mut self,
+        channel: Channel<Msg>,
+        _address: &str,
+        port: u32,
+        _from: &str,
+        _from_port: u32,
+        reply: ChannelOpenHandle,
+        _session: &mut Session,
+    ) -> Result<(), Self::Error> {
+        match crate::forward::asked(port, &self.remotes) {
+            Some(to) => {
+                reply.accept().await;
+                crate::forward::back(channel, to);
+            }
+            None => reply.reject(ChannelOpenFailure::AdministrativelyProhibited).await,
+        }
+        Ok(())
+    }
 
     async fn check_server_key(&mut self, key: &PublicKeyOrCertificate) -> Result<bool, Self::Error> {
         let PublicKeyOrCertificate::PublicKey { key, .. } = key else {

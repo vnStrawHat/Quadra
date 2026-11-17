@@ -4,6 +4,7 @@
 
 mod auth;
 mod files;
+mod forward;
 mod hostkey;
 mod prompt;
 mod route;
@@ -64,30 +65,58 @@ pub struct Hop {
     pub auth: Auth,
 }
 
-/// A local port carried to a host and port as the server sees them.
+/// Which way a forward carries connections (specs/19, "M10 in detail").
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Way {
+    /// A port here carried to a host and port as the server sees them.
+    #[default]
+    Local,
+    /// A port of the server carried to a host and port as this machine sees them.
+    Remote,
+    /// A SOCKS5 proxy here whose connections go out from the server.
+    Dynamic,
+}
+
+/// A forward: its way, the port listened on (here, or on the server for `Remote`), and where
+/// connections go (none for `Dynamic`: the proxy is told).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Forward {
-    pub local: u16,
+    pub way: Way,
+    pub listen: u16,
     pub host: String,
     pub port: u16,
 }
 
 impl Forward {
-    /// `8080:localhost:80`.
+    /// `8080:localhost:80` or `L8080:localhost:80`, `R9000:localhost:3000`, `D1080`.
     pub fn parse(text: &str) -> Option<Forward> {
-        let (local, rest) = text.split_once(':')?;
+        let (way, rest) = match text.as_bytes().first()? {
+            b'L' => (Way::Local, &text[1..]),
+            b'R' => (Way::Remote, &text[1..]),
+            b'D' => (Way::Dynamic, &text[1..]),
+            _ => (Way::Local, text),
+        };
+        if way == Way::Dynamic {
+            return Some(Forward { way, listen: rest.parse().ok()?, host: String::new(), port: 0 });
+        }
+        let (listen, rest) = rest.split_once(':')?;
         let (host, port) = rest.rsplit_once(':')?;
         let host = host.trim_start_matches('[').trim_end_matches(']');
         if host.is_empty() {
             return None;
         }
-        Some(Forward { local: local.parse().ok()?, host: host.into(), port: port.parse().ok()? })
+        Some(Forward { way, listen: listen.parse().ok()?, host: host.into(), port: port.parse().ok()? })
     }
 
     pub fn label(&self) -> String {
-        match self.host.contains(':') {
-            true => format!("{}:[{}]:{}", self.local, self.host, self.port),
-            false => format!("{}:{}:{}", self.local, self.host, self.port),
+        let to = match self.host.contains(':') {
+            true => format!("[{}]:{}", self.host, self.port),
+            false => format!("{}:{}", self.host, self.port),
+        };
+        match self.way {
+            Way::Local => format!("{}:{to}", self.listen),
+            Way::Remote => format!("R{}:{to}", self.listen),
+            Way::Dynamic => format!("D{}", self.listen),
         }
     }
 }
@@ -214,4 +243,21 @@ pub(crate) fn runtime() -> &'static Runtime {
             .build()
             .expect("the SSH runtime starts")
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn forwards_read_as_openssh_writes_them_and_back() {
+        for text in ["8080:localhost:80", "R9000:localhost:3000", "D1080", "22:[::1]:22"] {
+            assert_eq!(Forward::parse(text).map(|it| it.label()).as_deref(), Some(text));
+        }
+        assert_eq!(Forward::parse("L8080:db:5432").map(|it| it.label()).as_deref(), Some("8080:db:5432"));
+        assert_eq!(Forward::parse("R1:h:2").unwrap().way, Way::Remote);
+        for bad in ["", "D", "Dx", "8080", "8080::80", "R9000:h", "x:h:1"] {
+            assert_eq!(Forward::parse(bad), None, "{bad}");
+        }
+    }
 }

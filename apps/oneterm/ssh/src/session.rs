@@ -80,7 +80,7 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> 
     let (mut read, write) = channel.split();
     // A ping every 5 s: how long the server takes to answer.
     let handle = Arc::new(handle);
-    let forwards = crate::route::forward(&handle, &options.forwards, &prompt).await;
+    let forwards = crate::forward::start(&handle, &options.forwards, &prompt).await;
     *shared.handle.lock().unwrap_or_else(|e| e.into_inner()) = Some(handle.clone());
     let (pings, latency) = (handle.clone(), shared.clone());
     let pinger = tokio::spawn(async move {

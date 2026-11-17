@@ -227,8 +227,11 @@ mod tests {
     #[test]
     fn a_host_is_a_row_of_words_and_back() {
         let mut remote = Remote::new(Target::parse("ops@10.20.0.2:2222").unwrap(), Auth::Key("k".into()));
-        remote.forwards =
-            vec![Forward::parse("8080:localhost:80").unwrap(), Forward::parse("5432:db:5432").unwrap()];
+        remote.forwards = vec![
+            Forward::parse("8080:localhost:80").unwrap(),
+            Forward::parse("R5432:db:5432").unwrap(),
+            Forward::parse("D1080").unwrap(),
+        ];
         let host =
             Host { name: "prod-lb".into(), group: "Production".into(), remote, jump: "bastion".into() };
         let row = [
@@ -238,7 +241,7 @@ mod tests {
             "Key",
             "k",
             "bastion",
-            "8080:localhost:80 5432:db:5432",
+            "8080:localhost:80 R5432:db:5432 D1080",
         ];
         assert_eq!(host.row(), row);
         assert_eq!(Host::of(&host.row()), Some(host));

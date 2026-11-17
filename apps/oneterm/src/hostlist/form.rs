@@ -99,8 +99,8 @@ pub(crate) fn add_dialog(model: &Model) -> impl View + use<> {
                 text_field(form.startup, "Written once the shell is open", "host-startup"),
             ))
             .child(field(
-                "Local forwards",
-                text_field(form.forwards, "8080:localhost:80 ...", "host-forwards"),
+                "Forwards",
+                text_field(form.forwards, "8080:localhost:80 R9000:localhost:3000 D1080", "host-forwards"),
             ))
     };
     let adds = quadra_design::dialog(open, "Add SSH host", body.clone())

@@ -135,7 +135,10 @@ impl TerminalWidget {
     /// gutter needs more digits, so the grid is sized again.
     pub(crate) fn refresh(&mut self) -> bool {
         let mut engine = self.session.engine();
-        let Engine { term, stamps, status, .. } = &mut *engine;
+        let Engine { term, stamps, status, images, .. } = &mut *engine;
+        self.session.0.images.borrow_mut().take(images);
+        let px = |v: f32| (v * self.scale).round() as u16;
+        term.set_cell_pixels(px(self.cell), px(self.line)); // a store: images are sized by it
         (self.status, self.hovered_at) = (*status, None);
         // ponytail: a `?2026` block held past its deadline waits for the next output or key
         // to be shown; a timer at `sync().deadline()` when a program leaves one open.

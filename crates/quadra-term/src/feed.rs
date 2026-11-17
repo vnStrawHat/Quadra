@@ -22,6 +22,8 @@ pub(crate) struct Engine {
     pub marked: bool,
     /// The status of the command that ended last (OSC 133 `D`).
     pub status: Option<i32>,
+    /// The images decoded and let go of since the UI thread last took them.
+    pub images: crate::images::Arrivals,
 }
 
 /// What the UI thread must hear from a feed.
@@ -68,11 +70,16 @@ impl Feeder {
         let (mut replies, mut events, mut repaint, mut cleared) = (Vec::new(), Vec::new(), false, false);
         {
             let mut engine = lock(&self.engine);
-            let Engine { term, batch, statuses, stamps, marked, status } = &mut *engine;
+            let Engine { term, batch, statuses, stamps, marked, status, images } = &mut *engine;
             term.feed(bytes, batch, now);
+            for image in term.take_graphics() {
+                images.arrive(image);
+                repaint = true;
+            }
             for event in batch.iter() {
                 match *event {
                     VtEvent::Repaint => repaint = true,
+                    VtEvent::GraphicReleased(id) => images.release(id),
                     VtEvent::ScreenCleared => cleared = true,
                     VtEvent::Reply(span) => replies.extend_from_slice(batch.bytes(span)),
                     VtEvent::ColorQuery { key, terminator } => {

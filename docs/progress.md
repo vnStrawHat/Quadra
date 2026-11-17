@@ -154,6 +154,10 @@ whose every cell changes every frame, costs what the V build's costs.
   it (`crates/quadra-term/tests/input.rs`).
 - **The editor's menu**: Copy, Paste, Find, Close (Close only for a binary file or while the
   diff shows). Test: `apps/oneterm/tests/editing_menu.rs`.
+- **Sixel images** in the terminal view (specs/18, "Images (Sixel)"): taken after each feed,
+  premultiplied once, painted from the colour atlas at their cell under the text, clipped to
+  the grid and scrolling with their rows, freed on `GraphicReleased`; the cell's device
+  pixels told to the engine. Test: `crates/quadra-term/tests/images.rs`.
 
 ### Editing in 1Term, each space's dock (2026-11-17)
 

@@ -81,6 +81,8 @@ pub(crate) struct Shared {
     pub find: crate::find::Finding,
     /// Told what the user sends (`Session::on_input`).
     pub input: RefCell<Option<Rc<crate::input::InputFn>>>,
+    /// The images it shows, taken from the engine when its view refreshes.
+    pub images: RefCell<crate::images::Images>,
 }
 
 impl Session {
@@ -102,6 +104,7 @@ impl Session {
             stamps: Default::default(),
             marked: false,
             status: None,
+            images: Default::default(),
         };
         let engine = Arc::new(Mutex::new(engine));
         let events = inbox::<Event>();
@@ -136,6 +139,7 @@ impl Session {
             sized: RefCell::new(Some(Vec::new())),
             find: crate::find::Finding::new(),
             input: RefCell::new(None),
+            images: RefCell::default(),
         });
         let (took, ended) = (Rc::downgrade(&shared), Rc::downgrade(&shared));
         events

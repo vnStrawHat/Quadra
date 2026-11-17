@@ -9,6 +9,7 @@ mod feed;
 mod find;
 mod gutter;
 mod highlight;
+mod images;
 mod input;
 mod keys;
 mod line;

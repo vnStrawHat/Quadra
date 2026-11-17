@@ -21,7 +21,7 @@ Resumed by the user on 2026-11-15 for the 1Term app (19). It was on hold since 2
 | `Pty` | `quadra-shell` (`pty`) | a local shell behind the pseudo console of `oneterm_vt::pty`, and the thread that polls it |
 
 Dependencies: `quadra-term` uses `oneterm-vt` without its default features (no `pty`, no
-graphics); `quadra-shell` uses it with `pty` and holds the `unsafe` registration with the poller
+kitty graphics: Sixel is in the engine's core); `quadra-shell` uses it with `pty` and holds the `unsafe` registration with the poller
 (R16). Neither knows the other; the app joins them: the shell's output callback is the
 session's `Feeder`, the session's `Link` is the shell's handle.
 
@@ -145,6 +145,30 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - ponytail: every row that shows is painted again on a change; per-row damage
   (`SnapshotUpdate::Partial`) when a full screen's repaint shows in the frame. Box drawing and
   block elements are the font's glyphs; geometry (behaviour/17) when gaps between cells show.
+
+## Images (Sixel)
+
+- What: a Sixel image (`DCS q`) the engine decoded, shown whole at its own size in device
+  pixels (`display_size`), its top-left corner at its top-left cell's origin, over the
+  backgrounds, the selection and the cursor and under the text (the engine's layer 0). It is
+  clipped to the grid and moves with its rows: one partly above the viewport shows its part
+  in view; one on the hidden screen is not drawn.
+- Delivery: the reader thread takes the images after each feed (`take_graphics`, under the
+  lock), premultiplies their pixels once and queues them with the engine; the UI thread takes
+  the queue in its update, with the snapshot, into the session's images keyed by the engine's
+  id. A new image posts `Output`. Paint draws each from pieces of the colour atlas (specs/11,
+  "Images"), keyed by the image and the piece, so a frame uploads nothing it already has.
+- Freed: on `GraphicReleased` (the engine's rule: its rows reset, cleared from the alternate
+  screen, trimmed from the history, RIS, its own limits). One released before the UI took it
+  never reaches it, so a session without a view holds no more than the engine keeps alive.
+  An image keeps its pixels while it lives (the engine hands them out once): a piece the
+  atlas lost is made again from them.
+- The cell's size in device pixels (the cell and the line at the scale) is told to the engine
+  (`set_cell_pixels`) at each update, so an image's footprint and `CSI 14 t` follow a new
+  font or DPI; images already placed keep theirs (the engine's rule).
+- Limits are the engine's: 4096 px a side, 256 placements, 256 MiB of live pixels (the
+  oldest go), 128 MiB waiting to be taken. DA1 says Sixel (`?62;4;22c`). Kitty graphics are
+  not enabled.
 
 ## Input
 
@@ -294,6 +318,10 @@ done, idle. OSC 133 A (a new prompt) drops working, blocked and idle. `?` is ans
   previous wrapping, the view scrolled to a match in history and left alone for one in view,
   output found again after the wait with the current match kept, the quads painted, an empty
   text ending it.
+- `tests/images.rs`: a Sixel image is kept at its size and painted at its cell, clipped to the
+  grid; it scrolls with its rows, part above the grid; RIS and a history of none release it,
+  one released before the view took it never reaches it; `CSI 14 t` gives the cell in device
+  pixels; DA1 answers.
 - `src/status.rs` unit tests: OSC 7501 parsing, records, the summary, the prompt rule, the query.
 - `quadra-shell` `tests/pty.rs`: `cmd /c echo` through the pseudo console, its output and its
   exit; skipped when no console can be made.

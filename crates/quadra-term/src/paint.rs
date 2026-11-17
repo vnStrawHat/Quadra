@@ -53,8 +53,11 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx) {
         None
     };
     for (r, row) in rows.rows().iter().enumerate() {
+        under(w, cx, row, &rows, (left, top + r as f32 * w.line), r, background);
+    }
+    crate::images::paint(w, cx, &rows, (left, top)); // over every background, under the text
+    for (r, row) in rows.rows().iter().enumerate() {
         let y = top + r as f32 * w.line;
-        under(w, cx, row, &rows, (left, y), r, background);
         let classes = marks.classes(row.id);
         let sign = tint.as_ref().filter(|(rows, _)| rows.contains(&r)).map(|it| it.1);
         let class = |col: usize| match classes.get(col).copied() {

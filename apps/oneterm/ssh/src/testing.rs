@@ -30,6 +30,35 @@ pub fn write_user_key(path: &std::path::Path) {
     std::fs::write(path, text.as_bytes()).unwrap();
 }
 
+/// As [`write_user_key`], the key sealed by `passphrase` (salt and nonce fixed).
+pub fn write_locked_user_key(path: &std::path::Path, passphrase: &str) {
+    let locked = key(9).encrypt(&mut Fixed, passphrase).unwrap();
+    std::fs::write(path, locked.to_openssh(russh::keys::ssh_key::LineEnding::LF).unwrap().as_bytes())
+        .unwrap();
+}
+
+/// Salt and nonce for a key a test seals: no randomness wanted.
+struct Fixed;
+
+impl russh::keys::ssh_key::rand_core::TryRng for Fixed {
+    type Error = std::convert::Infallible;
+
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        Ok(7)
+    }
+
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        Ok(7)
+    }
+
+    fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
+        dst.fill(7);
+        Ok(())
+    }
+}
+
+impl russh::keys::ssh_key::rand_core::TryCryptoRng for Fixed {}
+
 pub fn key(seed: u8) -> PrivateKey {
     PrivateKey::from(Ed25519Keypair::from_seed(&[seed; 32]))
 }

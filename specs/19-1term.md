@@ -461,8 +461,9 @@ thread never waits on the network.
   first time the master password is typed (setting it, unlocking, a Master password field);
   setting the first password makes the vault, changing it seals the data key again, removing
   it forgets the vault and every saved secret. Connecting to a saved host with a secret: with
-  the data key, the space's first question of a password or a passphrase is answered with it
-  (a wrong one asks in the Sign in dialog as before); without it, a dialog Unlock saved
+  the data key, each first question of its password (the host's own, not a jump host's) or
+  its key file's passphrase is answered with it, a Retry included (a wrong one asks in the
+  Sign in dialog as before); without it, a dialog Unlock saved
   passwords asks the master password first (Cancel connects without). Connect all asks once.
   A secret is never written plain, logged or shown.
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under

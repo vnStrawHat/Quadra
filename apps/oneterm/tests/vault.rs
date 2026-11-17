@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 
 use oneterm::{Host, Model, NewSession, OneTerm, Remote, keymap, remote_shell_with};
 use oneterm_ssh::Auth;
-use oneterm_ssh::testing::{folder, options, serve, trust};
+use oneterm_ssh::testing::{folder, options, serve, trust, write_locked_user_key};
 use quadra::{Role, Settings, provide};
 use quadra_term::echo;
 use quadra_testing::Harness;
@@ -18,6 +18,7 @@ struct App {
     model: Model,
     settings: Rc<Settings>,
     port: u16,
+    dir: std::path::PathBuf,
 }
 
 fn app(name: &str) -> App {
@@ -48,7 +49,7 @@ fn app(name: &str) -> App {
     });
     h.settle();
     let model = kept.borrow().clone().unwrap();
-    App { h, model, settings, port }
+    App { h, model, settings, port, dir }
 }
 
 impl App {
@@ -66,8 +67,12 @@ impl App {
     }
 
     fn host(&mut self, name: &str, group: &str) {
+        self.host_with(name, group, Auth::Password);
+    }
+
+    fn host_with(&mut self, name: &str, group: &str, auth: Auth) {
         let target = oneterm_ssh::Target::parse(&format!("tester@127.0.0.1:{}", self.port)).unwrap();
-        let remote = Remote::new(target, Auth::Password);
+        let remote = Remote::new(target, auth);
         self.model.save_host(Host { name: name.into(), group: group.into(), remote, jump: String::new() });
         self.h.settle();
     }
@@ -157,4 +162,31 @@ fn a_group_connects_all_and_removing_the_master_password_forgets_secrets() {
     a.settings.value("ssh.secrets", Vec::<Vec<String>>::new()).set(vec![vec!["one".into(), "sv1:00".into()]]);
     a.master("master", "");
     assert!(a.secrets().is_empty() && a.model.lock().key.get_untracked().is_none());
+}
+
+#[test]
+fn a_passphrase_is_saved_by_the_master_password_typed_in_the_dialog() {
+    let mut a = app("vault-passphrase");
+    a.master("", "master");
+    let file = a.dir.join("id");
+    write_locked_user_key(&file, "open sesame");
+    a.host_with("keyed", "", Auth::Key(file));
+    // As after a start: the dialog asks the master password with the passphrase.
+    a.model.lock().key.set(None);
+    let edit = |a: &mut App, master: &str| {
+        a.menu("keyed", "Edit\u{2026}");
+        a.h.get_by_test_id("host-secret").set_value("open sesame");
+        a.h.get_by_test_id("host-master").set_value(master);
+        a.h.settle();
+        a.h.get_by_role(Role::Button, "Save").click();
+        a.h.settle();
+    };
+    edit(&mut a, "wrong");
+    a.wait(|a| a.h.has_text("Wrong master password: the password was not saved."), "the card");
+    assert!(a.secrets().is_empty());
+    edit(&mut a, "master");
+    a.wait(|a| a.secrets().len() == 1, "the passphrase saved");
+    a.menu("keyed", "Connect");
+    a.wait(|a| a.welcomed() == 1, "signed in by the saved passphrase");
+    assert!(!a.h.has_text("Sign in") && !a.h.has_text("Unlock saved passwords"));
 }

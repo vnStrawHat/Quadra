@@ -61,14 +61,14 @@ impl Saved {
         Saved { secret: secret.map(|it| it.0), target: remote.target.label(), key }
     }
 
-    /// The secret, the first time its question is asked.
-    fn answer(&mut self, ask: &Ask) -> Option<String> {
+    /// The secret, each time its question is asked first (a refusal asks `again`).
+    fn answer(&self, ask: &Ask) -> Option<String> {
         let ours = match ask {
             Ask::Password { target, again: false } => *target == self.target,
             Ask::Passphrase { file, again: false } => self.key.as_ref() == Some(file),
             _ => false,
         };
-        if ours { self.secret.take() } else { None }
+        if ours { self.secret.clone() } else { None }
     }
 }
 
@@ -113,13 +113,12 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     // Kept with the session, where the SFTP dock and the dialogs find it.
     let ssh = Arc::new(ssh);
     let answers = ssh.clone();
-    let saved = std::cell::RefCell::new(saved);
     events.on_data(move |burst| {
         for event in burst.drain(..) {
             let _ = match event {
                 Event::Connecting(to) => label.try_set(to) && phase.try_set(Phase::Connecting),
                 // The saved secret answers its question once; refused, the dialog asks.
-                Event::Ask(ask) => match saved.borrow_mut().answer(&ask) {
+                Event::Ask(ask) => match saved.answer(&ask) {
                     Some(secret) => {
                         answers.answer(Some(secret));
                         true

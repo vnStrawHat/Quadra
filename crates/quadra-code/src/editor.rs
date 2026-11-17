@@ -24,7 +24,7 @@ use find_bar::Finding;
 
 pub use keys::{EDITOR_CONTEXT, EditorCommand, bind_keys};
 pub use marks::{Mark, marks};
-pub use widget::EditorWidget;
+pub use widget::{EditorWidget, KeptDoc};
 
 use crate::highlight::{Highlight, Highlighter};
 use crate::token::{Tokenizer, tokenizer_for};
@@ -40,6 +40,7 @@ pub struct Editor {
     base: Option<String>,
     changed: Option<Signal<bool>>,
     top: Option<Signal<usize>>,
+    kept: Option<KeptDoc>,
 }
 
 /// A code editor over a text, in the kit's mono face at 15 px with lines of 25. Give it a
@@ -55,6 +56,7 @@ pub fn editor(text: impl Into<String>) -> Editor {
         base: None,
         changed: None,
         top: None,
+        kept: None,
     }
 }
 
@@ -101,6 +103,13 @@ impl Editor {
     /// line to the top, as far as the view goes. For a preview that follows the editor.
     pub fn top_line(mut self, line: Signal<usize>) -> Self {
         self.top = Some(line);
+        self
+    }
+
+    /// Where the document goes when the view does, and is taken back from when it is built
+    /// again over the same slot: its text, cursors and undo.
+    pub fn keep(mut self, slot: KeptDoc) -> Self {
+        self.kept = Some(slot);
         self
     }
 
@@ -192,6 +201,11 @@ impl View for Surface {
         widget.prose = matches!(tokenizer, Tokenizer::Plain | Tokenizer::Markdown);
         widget.base = editor.base.as_deref().map(marks::Base::new);
         widget.changed = editor.changed;
+        if let Some(doc) = editor.kept.as_ref().and_then(|it| it.take()) {
+            widget.doc = doc;
+            widget.doc.dirty = 0; // coloured again from the start
+        }
+        widget.kept = editor.kept;
         widget.remark();
         let editor_link = editor.on_link.clone();
         let (size, line) = editor.font;

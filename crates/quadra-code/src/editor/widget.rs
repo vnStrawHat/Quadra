@@ -1,7 +1,9 @@
 //! The editor's widget (specs/13, "Code"): the document, its highlighter and what finding
 //! found; measured as high as its lines, and where things are in it.
 
+use std::cell::RefCell;
 use std::ops::Range;
+use std::rc::Rc;
 
 use quadra_a11y::{Role, Semantics};
 use quadra_design::token;
@@ -34,8 +36,13 @@ pub(super) struct Colors {
     pub syntax: [Color; 17],
 }
 
+/// Where an editor's document is kept while it has no view (`Editor::keep`).
+pub type KeptDoc = Rc<RefCell<Option<Doc>>>;
+
 pub struct EditorWidget {
     pub doc: Doc,
+    /// Given the document when the widget goes.
+    pub(super) kept: Option<KeptDoc>,
     /// What colours its lines.
     pub highlight: Box<dyn Highlight>,
     /// What is looked for while the find bar is open, where it was found, and the match
@@ -116,6 +123,7 @@ impl EditorWidget {
             rows: None,
             tiles: Vec::new(),
             tokens: Vec::new(),
+            kept: None,
         }
     }
 
@@ -257,5 +265,13 @@ impl Widget for EditorWidget {
         };
         says.selection = Some((at(primary.anchor), at(primary.head)));
         says.value = Some(text);
+    }
+}
+
+impl Drop for EditorWidget {
+    fn drop(&mut self) {
+        if let Some(slot) = self.kept.take() {
+            *slot.borrow_mut() = Some(std::mem::replace(&mut self.doc, Doc::new("")));
+        }
     }
 }

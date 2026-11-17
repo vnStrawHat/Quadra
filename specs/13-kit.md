@@ -1245,7 +1245,10 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     a short one above a line where some were removed. `.changed(signal)` keeps a signal true
     while any line is marked (the text is not the base) and false while none is: an app's
     "modified", at no cost past the marks. `EditorWidget::set_base(text)` puts another base,
-    as after a save, and marks again.
+    as after a save, and marks again. `.keep(KeptDoc)` lets the document outlive the view:
+    the widget gives it to the slot when it goes, and an editor built again over the slot
+    takes it back with its text, cursors and undo (an app's view built again when its tab
+    shows again).
 - In the find bar's query Enter goes to the next match and Shift-Enter to the one before
   (an input submits on Enter alone, and leaves Shift-Enter to what is around it).
 - To a reader the editor is a text input of many lines: its text and its selection in

@@ -67,6 +67,8 @@ pub struct EditorWidget {
     /// The text the marks of the gutter compare with, the marks, and their colours.
     pub(super) base: Option<super::marks::Base>,
     pub marks: Vec<Mark>,
+    /// Told whether any line is marked: the text is other than the base.
+    pub(super) changed: Option<Signal<bool>>,
     pub(super) mark_colors: [Color; 3],
     /// The link under the pointer, and whether Ctrl is held over it.
     pub(super) link: Option<(Range<usize>, String)>,
@@ -105,6 +107,7 @@ impl EditorWidget {
             widest: 0.0,
             base: None,
             marks: Vec::new(),
+            changed: None,
             mark_colors: [Color::TRANSPARENT; 3],
             link: None,
             link_hot: false,

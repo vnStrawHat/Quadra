@@ -38,6 +38,7 @@ pub struct Editor {
     wrap: bool,
     on_link: Option<pointer::OnLink>,
     base: Option<String>,
+    changed: Option<Signal<bool>>,
     top: Option<Signal<usize>>,
 }
 
@@ -52,6 +53,7 @@ pub fn editor(text: impl Into<String>) -> Editor {
         wrap: false,
         on_link: None,
         base: None,
+        changed: None,
         top: None,
     }
 }
@@ -80,6 +82,12 @@ impl Editor {
     /// it was saved, or as version control has it.
     pub fn base(mut self, text: impl Into<String>) -> Self {
         self.base = Some(text.into());
+        self
+    }
+
+    /// Kept true while the text is other than the base, false while it is the same.
+    pub fn changed(mut self, changed: Signal<bool>) -> Self {
+        self.changed = Some(changed);
         self
     }
 
@@ -183,6 +191,7 @@ impl View for Surface {
         widget.wrap = editor.wrap;
         widget.prose = matches!(tokenizer, Tokenizer::Plain | Tokenizer::Markdown);
         widget.base = editor.base.as_deref().map(marks::Base::new);
+        widget.changed = editor.changed;
         widget.remark();
         let editor_link = editor.on_link.clone();
         let (size, line) = editor.font;

@@ -1242,7 +1242,10 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     comparison of numbers a line. On 100,000 lines the whole text compared took 16 ms a
     letter; a letter and its frame take 1.4 ms now. A test of random typing, keys, undo
     and cursors holds the kept marks to those of the whole text; a bar beside the numbers,
-    a short one above a line where some were removed.
+    a short one above a line where some were removed. `.changed(signal)` keeps a signal true
+    while any line is marked (the text is not the base) and false while none is: an app's
+    "modified", at no cost past the marks. `EditorWidget::set_base(text)` puts another base,
+    as after a save, and marks again.
 - In the find bar's query Enter goes to the next match and Shift-Enter to the one before
   (an input submits on Enter alone, and leaves Shift-Enter to what is around it).
 - To a reader the editor is a text input of many lines: its text and its selection in

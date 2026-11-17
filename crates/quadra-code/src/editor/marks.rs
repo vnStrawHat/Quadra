@@ -98,6 +98,16 @@ impl EditorWidget {
         }
         base.version = Some(doc.version);
         self.marks = marks_of(diff_ids(&base.old, &base.new), base.new.len());
+        let changed = self.marks.iter().any(|it| *it != Mark::None);
+        if let Some(told) = self.changed {
+            told.try_set(changed); // a signal of a view that is gone is not told
+        }
+    }
+
+    /// Puts another base, as after the text was saved, and marks the lines against it.
+    pub fn set_base(&mut self, text: &str) {
+        self.base = Some(Base::new(text));
+        self.remark();
     }
 
     /// Paints the mark of a line on its rows, a bar two cells left of the gutter's edge; a

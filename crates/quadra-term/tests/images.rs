@@ -1,4 +1,4 @@
-//! Images (specs/18, "Images (Sixel)"): a Sixel image is kept by the session, painted from the
+//! Images (specs/18, "Images (Sixel, kitty)"): a Sixel image is kept by the session, painted from the
 //! colour atlas at its top-left cell, scrolls with its rows, and goes when the engine lets go of
 //! it; the engine is told the cell's size in device pixels.
 
@@ -66,7 +66,7 @@ fn a_sixel_image_is_kept_and_painted_at_its_cell() {
     let drawn = sprites(&mut h);
     assert_eq!(drawn.len(), 1);
     assert_eq!(drawn[0].0, [8.0 + 2.0 * 6.0, 8.0 + 14.0, 6.0, 12.0], "row 2, column 3, its own size");
-    assert_eq!(drawn[0].1, [8.0, 8.0, 384.0, 112.0], "clipped to the grid");
+    assert_eq!(drawn[0].1, drawn[0].0, "clipped to its box, inside the grid");
 }
 
 #[test]
@@ -107,4 +107,31 @@ fn an_image_released_before_the_view_took_it_never_reaches_it() {
     s.feeder().feed(b"\x1bc", Instant::now());
     h.settle();
     assert!(s.images().is_empty());
+}
+
+#[test]
+fn a_kitty_program_finds_the_protocol_and_its_part_of_an_image_is_stretched_to_its_cells() {
+    let (mut h, s) = term();
+    let asked = feed(&mut h, &s, b"\x1b_Ga=q,i=31,f=24,s=1,v=1;/wAA\x1b\\");
+    assert_eq!(asked, b"\x1b_Gi=31;OK\x1b\\");
+    // 4 x 2 RGB pixels; its right half (x=2, w=2) over 2 cells of a row: 12 x 14.
+    feed(
+        &mut h,
+        &s,
+        b"\x1b_Ga=T,q=2,f=24,s=4,v=2,x=2,w=2,h=2,c=2,r=1;AAECAwQFBgcICQoLDA0ODxAREhMUFRYX\x1b\\",
+    );
+    assert_eq!(s.images(), [(4, 2)]);
+    let drawn = sprites(&mut h);
+    assert_eq!(drawn.len(), 1);
+    assert_eq!(drawn[0].0, [8.0 - 12.0, 8.0, 24.0, 14.0], "6 x 7 a pixel, its left half outside");
+    assert_eq!(drawn[0].1, [8.0, 8.0, 12.0, 14.0], "cut to the cells it covers");
+}
+
+#[test]
+fn a_lower_kitty_layer_is_drawn_first() {
+    let (mut h, s) = term();
+    feed(&mut h, &s, b"\x1b_Ga=T,q=2,C=1,f=24,s=1,v=1,c=1,r=1,z=1;/wAA\x1b\\");
+    feed(&mut h, &s, b"\x1b_Ga=T,q=2,C=1,f=24,s=1,v=1,c=2,r=1,z=-1;/wAA\x1b\\");
+    let widths: Vec<f32> = sprites(&mut h).iter().map(|it| it.0[2]).collect();
+    assert_eq!(widths, [12.0, 6.0], "z=-1 (two cells) under z=1 (one)");
 }

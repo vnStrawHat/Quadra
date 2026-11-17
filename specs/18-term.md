@@ -20,8 +20,8 @@ Resumed by the user on 2026-11-15 for the 1Term app (19). It was on hold since 2
 | `echo()` | `quadra-term` | a link that writes what is typed back as output: tests and the gallery |
 | `Pty` | `quadra-shell` (`pty`) | a local shell behind the pseudo console of `oneterm_vt::pty`, and the thread that polls it |
 
-Dependencies: `quadra-term` uses `oneterm-vt` without its default features (no `pty`, no
-kitty graphics: Sixel is in the engine's core); `quadra-shell` uses it with `pty` and holds the `unsafe` registration with the poller
+Dependencies: `quadra-term` uses `oneterm-vt` without `pty` and with `kitty-graphics` (Sixel
+is in the engine's core); `quadra-shell` uses it with `pty` and holds the `unsafe` registration with the poller
 (R16). Neither knows the other; the app joins them: the shell's output callback is the
 session's `Feeder`, the session's `Link` is the shell's handle.
 
@@ -146,13 +146,17 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   (`SnapshotUpdate::Partial`) when a full screen's repaint shows in the frame. Box drawing and
   block elements are the font's glyphs; geometry (behaviour/17) when gaps between cells show.
 
-## Images (Sixel)
+## Images (Sixel, kitty)
 
-- What: a Sixel image (`DCS q`) the engine decoded, shown whole at its own size in device
-  pixels (`display_size`), its top-left corner at its top-left cell's origin, over the
-  backgrounds, the selection and the cursor and under the text (the engine's layer 0). It is
-  clipped to the grid and moves with its rows: one partly above the viewport shows its part
-  in view; one on the hidden screen is not drawn.
+- What: an image the engine decoded, a Sixel one (`DCS q`) or a kitty one (`APC G`, direct
+  data: RGB, RGBA, PNG, zlib, chunks). A placement shows the part `source_origin` +
+  `source_size` of its image stretched to `display_size` device pixels, at its top-left
+  cell's origin plus `pixel_offset` (a Sixel one: the whole image at its own size). Every
+  image is over the backgrounds, the selection and the cursor and under the text, whatever its
+  layer: text printed over an image's cell takes that cell, and stays readable; between
+  images a higher `z_index` is drawn later. It is clipped to the grid and moves with its rows:
+  one partly above the viewport shows its part in view; one on the hidden screen is not
+  drawn.
 - Delivery: the reader thread takes the images after each feed (`take_graphics`, under the
   lock), premultiplies their pixels once and queues them with the engine; the UI thread takes
   the queue in its update, with the snapshot, into the session's images keyed by the engine's
@@ -167,8 +171,10 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   (`set_cell_pixels`) at each update, so an image's footprint and `CSI 14 t` follow a new
   font or DPI; images already placed keep theirs (the engine's rule).
 - Limits are the engine's: 4096 px a side, 256 placements, 256 MiB of live pixels (the
-  oldest go), 128 MiB waiting to be taken. DA1 says Sixel (`?62;4;22c`). Kitty graphics are
-  not enabled.
+  oldest go), 128 MiB waiting to be taken. DA1 says Sixel (`?62;4;22c`); a kitty program finds
+  its protocol by `a=q`, answered `OK`. The kitty limits are the engine's too: 4096 px a
+  side, 128 MiB and 1,024 stored images; files, shared memory, animation and Unicode
+  placeholders are refused (`EINVAL`), so programs fall back to direct data.
 
 ## Input
 

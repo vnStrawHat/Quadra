@@ -1,4 +1,4 @@
-//! Images (specs/18, "Images (Sixel)"): the engine's decoded pixels, premultiplied once on the
+//! Images (specs/18, "Images (Sixel, kitty)"): the engine's decoded pixels, premultiplied once on the
 //! reader thread, taken by the UI thread at its next refresh, and painted from pieces of the
 //! colour atlas at the top-left cell of each placement that shows.
 
@@ -75,10 +75,9 @@ impl Session {
     }
 }
 
-/// Paints each placement that meets the viewport, under the text and clipped to the grid: at
-/// its top-left cell's origin plus its offset, `display_size` device pixels.
-// ponytail: the whole image is drawn (a Sixel's case); kitty's crop (`source_origin`,
-// `source_size`) and layers over the text when kitty graphics are enabled.
+/// Paints each placement that meets the viewport, under the text, lower layers first: the
+/// part of its image it shows stretched to `display_size` device pixels at its top-left cell's
+/// origin plus its offset, clipped to that box and the grid.
 pub(crate) fn paint(w: &TerminalWidget, cx: &mut PaintCx, state: &SnapshotState, (left, top): (f32, f32)) {
     let mut images = w.session.0.images.borrow_mut();
     let rows = state.rows();
@@ -91,7 +90,9 @@ pub(crate) fn paint(w: &TerminalWidget, cx: &mut PaintCx, state: &SnapshotState,
     let grid = cx.device(Rect::new(left, top, cols * w.cell, n as f32 * w.line));
     let clip = cx.clip.then(grid, 0.0);
     let mut tiles = Vec::new();
-    for p in state.placements() {
+    let mut placements: Vec<_> = state.placements().iter().collect();
+    placements.sort_by_key(|p| p.z_index); // stable: oldest first within a layer
+    for p in placements {
         // The other screen's rows are 2^63 away: they never meet the viewport.
         let (start, end) = (p.row.0, p.row.0.saturating_add(u64::from(p.rows)));
         if end <= first || start >= first.saturating_add(n) {
@@ -101,8 +102,13 @@ pub(crate) fn paint(w: &TerminalWidget, cx: &mut PaintCx, state: &SnapshotState,
         let r = start.wrapping_sub(first) as i64 as f32;
         let x = ((left + f32::from(p.col) * w.cell) * cx.scale).round() + f32::from(p.pixel_offset.0);
         let y = ((top + r * w.line) * cx.scale).round() + f32::from(p.pixel_offset.1);
-        let dest = Rect::new(x, y, p.display_size.0 as f32, p.display_size.1 as f32);
-        paint_image(cx, &image, dest, &clip, &mut tiles);
+        let shown = Rect::new(x, y, p.display_size.0 as f32, p.display_size.1 as f32);
+        // The whole image laid out so the part shown fills the box, the rest clipped away.
+        let (sx, sy) =
+            (shown.width / p.source_size.0.max(1) as f32, shown.height / p.source_size.1.max(1) as f32);
+        let (ox, oy) = (p.source_origin.0 as f32 * sx, p.source_origin.1 as f32 * sy);
+        let dest = Rect::new(x - ox, y - oy, image.width as f32 * sx, image.height as f32 * sy);
+        paint_image(cx, &image, dest, &clip.then(shown, 0.0), &mut tiles);
     }
     images.tiles = tiles; // the old ones are let go after the new are held
 }

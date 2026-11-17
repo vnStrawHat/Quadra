@@ -5,6 +5,7 @@
 mod actions;
 mod clip;
 mod contrast;
+mod drawn;
 mod feed;
 mod find;
 mod gutter;

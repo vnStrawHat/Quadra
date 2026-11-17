@@ -8,7 +8,7 @@ use oneterm_vt::{Attrs, Color as VtColor, CursorShape, Pos, SnapshotContent, Sna
 use quadra_prim::{Color, Edges, Point, Rect};
 use quadra_render::Quad;
 use quadra_text::FaceId;
-use quadra_tree::{PaintCx, paint_glyph};
+use quadra_tree::{PaintCx, paint_glyph_with};
 
 use crate::highlight::{Highlight, plain};
 use crate::shape::Scratch;
@@ -192,6 +192,9 @@ fn text(
         if blank || style.attrs.contains(Attrs::HIDDEN) || col < token_to {
             continue;
         }
+        if crate::drawn::paint(w, cx, cell.content, b, fg) {
+            continue; // drawn to its box, not the font's glyph
+        }
         let face = face(w, cx, style);
         if w.ligatures {
             let end = crate::shape::token_end(row, col, split);
@@ -210,7 +213,7 @@ fn text(
         let shift = (b.width - word.width) / 2.0;
         for g in &word.glyphs {
             let pen = Point::new((b.x + shift + g.x) * scale, baseline - (g.y * scale).round());
-            w.tiles.extend(paint_glyph(cx, (g.face, g.id), w.style.size * scale, pen, fg));
+            w.tiles.extend(paint_glyph_with(cx, (g.face, g.id), w.style.size * scale, pen, fg, w.grayscale));
         }
     }
 }
@@ -261,7 +264,8 @@ fn token(
         };
         let glyph = &word.glyphs[g];
         let pen = Point::new((x + dx) * cx.scale, baseline - (glyph.y * cx.scale).round());
-        w.tiles.extend(paint_glyph(cx, (glyph.face, glyph.id), w.style.size * cx.scale, pen, fg));
+        let (size, gray) = (w.style.size * cx.scale, w.grayscale);
+        w.tiles.extend(paint_glyph_with(cx, (glyph.face, glyph.id), size, pen, fg, gray));
     }
     w.shaping = s;
 }

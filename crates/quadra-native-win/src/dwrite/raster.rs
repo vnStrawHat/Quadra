@@ -2,7 +2,7 @@
 
 use std::mem::ManuallyDrop;
 
-use quadra_text::{FaceId, GlyphBitmap, GlyphFormat};
+use quadra_text::{FaceId, GRAYSCALE, GlyphBitmap, GlyphFormat};
 use windows::Win32::Graphics::DirectWrite::{
     DWRITE_GLYPH_OFFSET, DWRITE_GLYPH_RUN, DWRITE_GRID_FIT_MODE_DEFAULT, DWRITE_MEASURING_MODE_NATURAL,
     DWRITE_RENDERING_MODE_NATURAL_SYMMETRIC, DWRITE_TEXT_ANTIALIAS_MODE,
@@ -19,9 +19,11 @@ struct ColorLayer {
 }
 
 impl DirectWrite {
-    /// `phase` quarters of a pixel move the glyph right before it is sampled.
+    /// `phase` quarters of a pixel move the glyph right before it is sampled; `GRAYSCALE` in
+    /// it smooths by pixel whatever the system does.
     pub(super) fn raster(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap> {
         let face = self.faces.get(face.0 as usize)?;
+        let (gray, phase) = (phase & GRAYSCALE != 0, phase & !GRAYSCALE);
         let (offset, advance, x) = (DWRITE_GLYPH_OFFSET::default(), 0.0f32, phase as f32 / 4.0);
         let mut run = DWRITE_GLYPH_RUN {
             fontFace: ManuallyDrop::new(Some(face.face.clone())),
@@ -34,7 +36,7 @@ impl DirectWrite {
         };
         let colored = if face.color { self.raster_color(&run, x) } else { None };
         let bitmap = colored.or_else(|| {
-            if self.cleartype {
+            if self.cleartype && !gray {
                 let per_stripe = self.coverage(
                     &run,
                     x,

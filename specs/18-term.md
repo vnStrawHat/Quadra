@@ -84,6 +84,26 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   the cells it covers (to the next group's column): a ligature of two characters spans their
   two cells. A glyph's colour is its group's cell's. Tokens go through the text system's cache
   of words, so a row that did not change costs lookups, not shaping; nothing is shaped by row.
+- Drawn characters: box drawing (U+2500 to U+257F), block elements (U+2580 to U+259F) and the
+  separators of patched fonts U+E0B0 to U+E0B3 are not the font's: each is drawn to its cells'
+  box in whole device pixels, a coverage mask keyed by the character and the box's size,
+  tinted by its colour as a glyph is, so it joins its neighbours and the line height leaves
+  no gap. Every mask is the mirror, about the box's vertical and horizontal middle, of the
+  character mirrored that way (`╭` of `╮` and `╰`, `▀` of `▄`, `┣` of `┫`; tested):
+  - A line is centred: its thickness takes the parity of the side it crosses, so both its
+    edges fall on pixel edges and as many pixels lie either side (light, the nearest to a
+    tenth of the box's height of that parity; heavy, to twice that). A double line is two
+    light strokes and a gap, the whole of that parity. Lines run to the box's edges; arms
+    meet at a square; double junctions draw their inner and outer corners.
+  - Dashes (2, 3 or 4 a cell) are centred in equal parts. An arc is a quarter ellipse from
+    the middle of one edge to the middle of the next, its stroke meeting the straight lines'
+    edges. Diagonals run corner to corner.
+  - Blocks fill their part of the box exactly (eighths, halves, quadrants): an edge inside a
+    pixel covers it by the part it covers. Shades are 25, 50 and 75 % coverage. The
+    separators are a solid triangle and a chevron to the middle of the opposite edge.
+- Smoothing (`TermLook::grayscale`, on by default): glyphs are smoothed by pixel even where
+  Windows smooths by subpixel (ClearType), so coloured text and drawings show no coloured
+  fringes; off, as Windows smooths.
 - A blank is a space or a tab: the engine keeps the tab a program printed in the cell it
   started at (a copy gives it back), and it draws nothing, in a token or a glyph a cell.
 - Semantic highlighting (`TermLook::highlighting`, off by default): text in the default
@@ -143,8 +163,7 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - Selection: the engine's (`Selection`), drawn as a fill under the text in the theme's
   selection role.
 - ponytail: every row that shows is painted again on a change; per-row damage
-  (`SnapshotUpdate::Partial`) when a full screen's repaint shows in the frame. Box drawing and
-  block elements are the font's glyphs; geometry (behaviour/17) when gaps between cells show.
+  (`SnapshotUpdate::Partial`) when a full screen's repaint shows in the frame.
 
 ## Images (Sixel, kitty)
 
@@ -165,6 +184,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - Freed: on `GraphicReleased` (the engine's rule: its rows reset, cleared from the alternate
   screen, trimmed from the history, RIS, its own limits). One released before the UI took it
   never reaches it, so a session without a view holds no more than the engine keeps alive.
+  While synchronized output (`?2026`) holds the snapshot, the frame shown keeps its
+  placements and their images (releases wait): a program that swaps images a frame (a
+  video, a frame's data over many reads) never shows an empty one.
   An image keeps its pixels while it lives (the engine hands them out once): a piece the
   atlas lost is made again from them.
 - The cell's size in device pixels (the cell and the line at the scale) is told to the engine
@@ -184,9 +206,6 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   app's first: the view is a focus scope's leaf, and bindings run before it.
 - Paste: `Terminal::encode_paste(text)` (bracketed when asked, controls dropped). Copy: the
   selection's text. Both through the clipboard the app provides (specs/09); never the real one
-  While synchronized output (`?2026`) holds the snapshot, the frame shown keeps its
-  placements and their images (releases wait): a program that swaps images a frame (a
-  video, a frame's data over many reads) never shows an empty one.
   in a test.
 - Pointer: with mouse reporting on and Shift not held, presses, releases, drags and the wheel
   go to the program (`encode_mouse_*`); otherwise a press and drag select (double-click a word,

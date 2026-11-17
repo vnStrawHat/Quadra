@@ -34,6 +34,8 @@ pub struct TermLook {
     pub gutter: bool,
     /// The cells of a word shaped together, so the font's ligatures show; off, a glyph a cell.
     pub ligatures: bool,
+    /// Glyphs smoothed by pixel even where Windows smooths by subpixel: no coloured fringes.
+    pub grayscale: bool,
     /// Text in the default foreground coloured by what it means (`Highlight`).
     pub highlighting: bool,
     pub colors: TermColors,
@@ -52,6 +54,7 @@ impl Default for TermLook {
             min_contrast: 1.0,
             gutter: false,
             ligatures: false,
+            grayscale: true,
             highlighting: false,
             colors: TermColors::default(),
         }

@@ -159,7 +159,16 @@ whose every cell changes every frame, costs what the V build's costs.
   text, clipped to their box and the grid and scrolling with their rows, freed on
   `GraphicReleased`; the cell's device pixels told to the engine. Kitty graphics (the engine's
   `kitty-graphics`: `a=q` answered, a placement's part of its image stretched to its cells,
-  lower layers first). Test: `crates/quadra-term/tests/images.rs`.
+  lower layers first). While `?2026` holds a frame, the frame keeps its placements and their
+  images (the engine lists new placements before it holds the rows), so a video of images
+  never shows an empty frame. Test: `crates/quadra-term/tests/images.rs`.
+- **Drawn characters and grayscale smoothing** (specs/18, "The view"): box drawing, block
+  elements and the separators U+E0B0 to U+E0B3 are drawn to their cells' box in device pixels
+  (`crates/quadra-term/src/drawn.rs`), lines of the side's parity so every mask is the mirror
+  of its mirrored character about both middles; glyphs are smoothed by pixel
+  (`TermLook::grayscale`, `quadra_text::GRAYSCALE`, `paint_glyph_with`; 1Term's Grayscale
+  smoothing, `terminal.grayscale`, on). Tests: `src/drawn/tests.rs`, `tests/drawn.rs`,
+  `apps/oneterm/tests/settings.rs`.
 - **The vault at start and secrets bound to their target**: with a vault the window opens locked, and the password that opens it opens the data key (`tests/lock.rs`); a secret is `sv2:`, sealed with the host's target as AES-GCM's associated data (`quadra_shell::seal(key, plain, bound)`), so one copied into another row, or a host whose target was edited, does not open it (an edited target seals it again while the key is in memory, else forgets it with a card); `sv1:` rows still open.
 - **Close to the right, text zoom, crash reports**: a tab's menu closes the tabs after it (asked first as any close; `Model::close_right`); `zoom_in` Ctrl+=, `zoom_out` Ctrl+- and `zoom_reset` Ctrl+0 (`Command::Zoom`) step the terminals' text size; 1Term installs `quadra_shell::crash_reports` and shows the last run's report as a card with Show report (`OneTerm::crashed`). Tests: `tests/tabs.rs`, `tests/settings.rs`, `tests/links.rs`.
 - **An input method's composition in the terminal view** (specs/18, "Input"): drawn at the

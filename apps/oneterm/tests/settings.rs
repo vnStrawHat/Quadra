@@ -263,7 +263,7 @@ fn terminal_inks(h: &mut Harness) -> Vec<[f32; 4]> {
 }
 
 #[test]
-fn ligatures_and_semantic_highlighting_are_on_and_follow_the_page() {
+fn ligatures_grayscale_and_semantic_highlighting_are_on_and_follow_the_page() {
     let mut a = app();
     // Errors take the ANSI red, here one set, as it is.
     a.settings.value("terminal.colors.ansi.red", String::new()).set("#ff0000".into());
@@ -274,14 +274,16 @@ fn ligatures_and_semantic_highlighting_are_on_and_follow_the_page() {
     assert_eq!((inks[0], inks[5] == red), (red, false), "`error` in red, `plain` in the foreground");
     a.h.get_by_role(Role::Button, "Settings").click();
     a.h.settle();
-    assert!(a.says("Ligatures") && a.says("Semantic highlighting"));
+    assert!(a.says("Ligatures") && a.says("Grayscale smoothing") && a.says("Semantic highlighting"));
     let switches = a.h.query(|n| n.semantics.role == Role::Switch);
-    assert_eq!(switches.len(), 3, "the gutter, ligatures, semantic highlighting");
-    a.h.tree.act(switches[1], &SemanticAction::Click);
-    a.h.tree.act(switches[2], &SemanticAction::Click);
+    assert_eq!(switches.len(), 4, "the gutter, ligatures, grayscale, semantic highlighting");
+    for on in &switches[1..] {
+        a.h.tree.act(*on, &SemanticAction::Click);
+    }
     a.h.get_by_role(Role::Button, "Done").click();
     a.h.settle();
     assert!(!a.settings.value("terminal.ligatures", true).get());
+    assert!(!a.settings.value("terminal.grayscale", true).get());
     assert!(!a.settings.value("terminal.semantic_highlighting", true).get());
     let inks = terminal_inks(&mut a.h);
     assert_eq!(inks[0], inks[5], "off: both in the foreground");

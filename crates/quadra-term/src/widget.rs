@@ -55,6 +55,8 @@ pub struct TerminalWidget {
     /// Tokens shaped together; semantic highlighting, its classes by row, and the status of
     /// the command that ended last.
     pub(crate) ligatures: bool,
+    /// Glyphs smoothed by pixel (`TermLook::grayscale`).
+    pub(crate) grayscale: bool,
     pub(crate) highlighting: bool,
     pub(crate) marks: Marks,
     pub(crate) status: Option<i32>,
@@ -106,6 +108,7 @@ impl TerminalWidget {
             clock: (Instant::now(), 0),
             label: String::new(),
             ligatures: false,
+            grayscale: true,
             highlighting: false,
             marks: Marks::default(),
             status: None,
@@ -145,11 +148,11 @@ impl TerminalWidget {
         // ponytail: a `?2026` block held past its deadline waits for the next output or key
         // to be shown; a timer at `sync().deadline()` when a program leaves one open.
         term.snapshot_update(&mut self.state, Instant::now());
+        // A frame `?2026` holds keeps showing the images it places.
+        self.session.0.images.borrow_mut().take(images, &self.state, term.sync().is_set());
         self.palette = term.palette();
         self.cursor_style = term.cursor_style();
         self.modes = term.mode_snapshot();
-        // A frame `?2026` holds keeps showing the images it places.
-        self.session.0.images.borrow_mut().take(images, &self.state, term.sync().is_set());
         self.gutter_rows.clear();
         if !self.gutter {
             return false;

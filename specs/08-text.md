@@ -165,7 +165,8 @@ family, the size, the weight and the slant (`Shaping`).
 ## Glyph tiles
 
 - A tile is identified by face, glyph, device size and subpixel phase (four horizontal
-  phases). Vertical position is snapped to whole pixels.
+  phases, and `GRAYSCALE`, the phase's high bit: smoothed by pixel whatever the OS does;
+  `paint_glyph_with`). Vertical position is snapped to whole pixels.
 - A rasterized glyph is one of three formats: coverage (a byte a pixel), subpixel coverage
   (the three stripes of an LCD pixel, blended per channel in the text's colour; what the
   backend gives when the OS smooths fonts that way) or a colour image (emoji). Coverage goes

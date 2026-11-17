@@ -141,6 +141,10 @@ impl Shaping {
 }
 
 /// Fonts and shaping of one operating system (or a fake).
+/// A flag of a rasterized glyph's `phase`: smoothed by pixel even where the OS smooths fonts
+/// by subpixel (no coloured fringes on coloured text).
+pub const GRAYSCALE: u8 = 0x80;
+
 pub trait TextBackend {
     fn default_family(&self) -> String;
 
@@ -160,7 +164,8 @@ pub trait TextBackend {
     fn shape(&mut self, text: &str, face: FaceId, size: f32) -> Vec<ShapedGlyph>;
 
     /// Rasterizes a glyph at a size in device pixels, its pen `phase` quarters of a pixel
-    /// to the right. A glyph with no ink is a bitmap of no size.
+    /// to the right; with [`GRAYSCALE`] set in `phase`, smoothed by pixel whatever the OS
+    /// does. A glyph with no ink is a bitmap of no size.
     fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap>;
 
     /// The system's settings changed: reads again what rasterizing follows (how the OS

@@ -300,7 +300,7 @@ it (37 of the user's terminal's palettes as files of the kit's theme format, `ap
 `.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
 chosen from the families of the machine in a select with a search, the first "The kit's mono" for none; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
 Nerd Font"; size, 15; weight, Normal and Thin to Black; line height, 1.2; the cell's width, 0 for the advance of `0`, up to
-48 px; the padding a side, 0 on all four, each 0 to 64 px, the only room between the grid and the space's edges; ligatures, on; semantic
+48 px; the padding a side, 0 on all four, each 0 to 64 px, the only room between the grid and the space's edges; ligatures, on; grayscale smoothing, on (no coloured fringes; off, as Windows smooths); semantic
 highlighting, on: text in the default colour coloured by what it means, in the colour theme's ANSI colours;
 the reference's Auto and On do the same, so it is a switch) and colours over the theme's
 (foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_picker`, its swatch and
@@ -308,7 +308,7 @@ code the theme's colour while it is empty: the gutter's text and clock the foreg
 background, its background the background, its line number `#2b7f99` by default; the minimum contrast, 4.5, from 1, off, to 21; the sixteen ANSI colours, a row a
 colour with its normal and bright fields), the view's `TermLook` (specs/18). Keys: `terminal.font_fallbacks`,
 `terminal.cell_width`, `terminal.padding.top` (`right`, `bottom`, `left`), `terminal.colors.min_contrast`,
-`terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`), `terminal.ligatures`,
+`terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`), `terminal.ligatures`, `terminal.grayscale`,
 `terminal.semantic_highlighting`:
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
 blink, scrollback lines, the default local shell (the OS's, a shell found, or "A program": the

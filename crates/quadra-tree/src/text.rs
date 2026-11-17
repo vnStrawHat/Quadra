@@ -229,12 +229,25 @@ pub(crate) fn paint_runs(
 /// tile to hold, which keeps it in the atlas; none for a glyph with no ink.
 pub fn paint_glyph(
     cx: &mut PaintCx,
-    (face, id): (FaceId, u16),
+    glyph: (FaceId, u16),
     size: f32,
     pen: Point,
     color: Color,
 ) -> Option<GlyphTile> {
+    paint_glyph_with(cx, glyph, size, pen, color, false)
+}
+
+/// [`paint_glyph`], smoothed by pixel when `grayscale` even where the OS smooths by subpixel.
+pub fn paint_glyph_with(
+    cx: &mut PaintCx,
+    (face, id): (FaceId, u16),
+    size: f32,
+    pen: Point,
+    color: Color,
+    grayscale: bool,
+) -> Option<GlyphTile> {
     let phase = ((pen.x - pen.x.floor()) * SUBPIXEL_STEPS as f32) as u8;
+    let phase = if grayscale { phase | quadra_text::GRAYSCALE } else { phase };
     let tile = cx.fonts.glyph(face, id, size, phase).filter(|tile| tile.rect.w > 0)?;
     let (left, top) = (pen.x.floor() + tile.meta.left, pen.y + tile.meta.top);
     let sprite = Sprite {

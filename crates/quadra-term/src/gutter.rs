@@ -9,7 +9,7 @@ use std::time::Instant;
 use oneterm_vt::{Cell, RowId, Terminal};
 use quadra_prim::{Point, Rect};
 use quadra_render::Quad;
-use quadra_tree::{PaintCx, paint_glyph};
+use quadra_tree::{PaintCx, paint_glyph_with};
 
 use crate::widget::{TerminalWidget, color};
 
@@ -170,7 +170,14 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx, top: f32) {
             let x = cx.rect.x + GAP / 2.0 + col as f32 * w.cell + (w.cell - word.width) / 2.0;
             for g in &word.glyphs {
                 let pen = Point::new((x + g.x) * scale, baseline - (g.y * scale).round());
-                w.tiles.extend(paint_glyph(cx, (g.face, g.id), w.style.size * scale, pen, ink));
+                w.tiles.extend(paint_glyph_with(
+                    cx,
+                    (g.face, g.id),
+                    w.style.size * scale,
+                    pen,
+                    ink,
+                    w.grayscale,
+                ));
             }
         }
     }

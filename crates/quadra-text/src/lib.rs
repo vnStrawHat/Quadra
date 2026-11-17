@@ -27,8 +27,8 @@ pub use normalize::{fold_diacritics, is_mark, normalize_nfc};
 pub use paragraph::{Line, Paragraph, PositionedGlyph};
 pub use system::{TextStats, TextSystem, Word};
 pub use types::{
-    FaceId, FaceMetrics, Feature, FontKey, GlyphBitmap, GlyphFormat, ShapedGlyph, Shaping, TextBackend,
-    TextStyle,
+    FaceId, FaceMetrics, Feature, FontKey, GRAYSCALE, GlyphBitmap, GlyphFormat, ShapedGlyph, Shaping,
+    TextBackend, TextStyle,
 };
 pub use url::{UrlSpan, find_urls, url_openable};
 pub use width::{cell_step, char_width, display_width, grapheme_width};

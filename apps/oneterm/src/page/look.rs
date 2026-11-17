@@ -58,6 +58,12 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .row("Ligatures", "Draw the font's ligatures (=>, ->, !=) when it has them.", switch(l.ligatures))
         .back(l.ligatures, k.ligatures)
         .row(
+            "Grayscale smoothing",
+            "Smooth the text by pixel, not by ClearType's subpixels: no coloured fringes.",
+            switch(l.grayscale),
+        )
+        .back(l.grayscale, k.grayscale)
+        .row(
             "Semantic highlighting",
             "Colour paths, commands, numbers, errors and URLs in text a program left plain.",
             switch(l.semantic_highlighting),

@@ -5,7 +5,7 @@
 use oneterm_vt::{SnapshotState, scalar_width};
 use quadra_prim::{Point, Rect};
 use quadra_render::Quad;
-use quadra_tree::{NodeId, PaintCx, Tree, paint_glyph};
+use quadra_tree::{NodeId, PaintCx, Tree, paint_glyph_with};
 use quadra_view::MountCx;
 
 use crate::paint::{cells, colors};
@@ -76,7 +76,7 @@ pub(crate) fn paint(
         let shift = (b.width - word.width) / 2.0;
         for g in &word.glyphs {
             let pen = Point::new((b.x + shift + g.x) * scale, baseline - (g.y * scale).round());
-            w.tiles.extend(paint_glyph(cx, (g.face, g.id), w.style.size * scale, pen, fg));
+            w.tiles.extend(paint_glyph_with(cx, (g.face, g.id), w.style.size * scale, pen, fg, w.grayscale));
         }
     }
     w.preedit = Some((text, target));

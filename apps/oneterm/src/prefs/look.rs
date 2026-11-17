@@ -77,6 +77,8 @@ pub struct LookPrefs {
     pub show_gutter: Signal<bool>,
     /// A word's cells shaped together, so the font's ligatures show.
     pub ligatures: Signal<bool>,
+    /// Glyphs smoothed by pixel, not by ClearType's subpixels: no coloured fringes.
+    pub grayscale: Signal<bool>,
     /// Text in the default colour coloured by what it means.
     pub semantic_highlighting: Signal<bool>,
 }
@@ -97,6 +99,7 @@ impl LookPrefs {
             min_contrast: s.value("terminal.colors.min_contrast", 4.5),
             show_gutter: s.value("terminal.show_gutter", false),
             ligatures: s.value("terminal.ligatures", true),
+            grayscale: s.value("terminal.grayscale", true),
             semantic_highlighting: s.value("terminal.semantic_highlighting", true),
         }
     }
@@ -122,6 +125,7 @@ impl LookPrefs {
             min_contrast: self.min_contrast.get().clamp(1.0, 21.0) as f32,
             gutter: self.show_gutter.get(),
             ligatures: self.ligatures.get(),
+            grayscale: self.grayscale.get(),
             highlighting: self.semantic_highlighting.get(),
             colors: TermColors {
                 foreground,

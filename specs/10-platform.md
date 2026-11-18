@@ -70,7 +70,8 @@ pub trait PlatformHandler {
   app's to act on. Minimize and close are buttons of the app's like any other.
 - **What a view asks of its window.** `quadra_view::window()` gives the window the calling
   view is in: `.minimize()`, `.toggle_maximize()`, `.close()` (as the close button of the
-  OS: the app decides), and `.is_maximized()`, a read that what it is in runs again for;
+  OS: the app decides), and `.is_maximized()`, `.is_active()` (it has the keyboard) and
+  `.is_minimized()`, reads that what they are in runs again for;
   `.frames()` counts the frames its tree made (`Handle::frames`, not a signal: read twice a
   second apart, the frames a second, and reading it makes none).
   The asks wait on the tree (`Tree::take_window_requests`) and the app does them after the

@@ -60,7 +60,7 @@ pub fn mount_with<V: View>(tree: &mut Tree, build: impl FnOnce() -> V) -> NodeId
     let scope = Scope::child();
     let id = scope.run(|| {
         provide(cx.handle.clone());
-        provide(Window::new(cx.handle.clone(), cx.tree.maximized()));
+        provide(Window::new(cx.handle.clone(), cx.tree.window_state()));
         build().mount(&mut cx)
     });
     cx.tree.set_scope(id, scope);

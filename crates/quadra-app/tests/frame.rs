@@ -18,7 +18,8 @@ use quadra_view::{column, div, row, text, window};
 /// at its right, buttons that minimize, maximize and close. Under it, the content.
 fn page() -> impl quadra_view::View {
     let window = window();
-    let (min, max, close, state) = (window.clone(), window.clone(), window.clone(), window);
+    let (min, max, close, state, is) =
+        (window.clone(), window.clone(), window.clone(), window.clone(), window);
     let button = || div().size(40.0, 32.0);
     let bar = row()
         .height(32.0)
@@ -29,7 +30,18 @@ fn page() -> impl quadra_view::View {
         .child(button().window_region(HitRegion::Maximize).on_click(move |_| max.toggle_maximize()))
         .child(button().on_click(move |_| close.close()));
     let says = text(move || if state.is_maximized() { "maximized" } else { "restored" });
+    // A minimized window makes no frame: what it hears is kept here.
+    quadra_reactive::effect(move || HEARD.with(|heard| heard.set((is.is_active(), is.is_minimized()))));
     column().child(bar).child(div().grow(1.0).child(says))
+}
+
+thread_local! {
+    /// Whether the window is active and minimized, as the view last heard.
+    static HEARD: std::cell::Cell<(bool, bool)> = const { std::cell::Cell::new((false, false)) };
+}
+
+fn heard() -> (bool, bool) {
+    HEARD.with(|heard| heard.get())
 }
 
 fn click(platform: &HeadlessPlatform, app: &mut App<NullRenderer>, window: WindowId, x: f32) {
@@ -73,6 +85,17 @@ fn the_app_says_what_a_point_is_and_does_what_a_view_asks_of_its_window() {
     assert!(said(&app, "maximized"));
     click(&platform, &mut app, window, 300.0);
     assert!(platform.is_minimized(window));
+    // Minimized, it lost the keyboard and its size: the view hears of both.
+    platform.push(window, PlatformEvent::Focus(false));
+    platform.resize(window, Size::new(0.0, 0.0), 1.0);
+    platform.step(&mut app);
+    platform.step(&mut app);
+    assert_eq!(heard(), (false, true));
+    platform.push(window, PlatformEvent::Focus(true));
+    platform.resize(window, Size::new(400.0, 300.0), 1.0);
+    platform.step(&mut app);
+    platform.step(&mut app);
+    assert_eq!(heard(), (true, false));
     click(&platform, &mut app, window, 380.0);
     assert_eq!(app.window_count(), 0);
 }

@@ -154,6 +154,9 @@ impl Tree {
     /// had it has it again when the window is back.
     pub fn set_active(&mut self, active: bool) {
         if std::mem::replace(&mut self.active, active) != active {
+            if let Some(state) = self.state {
+                state.active.set(active);
+            }
             self.focus_states(self.focus, active, active && self.focus_ring);
             let Some(node) = self.focus.filter(|&n| self.is_alive(n)) else { return };
             for handler in &mut self.nodes[node.index as usize].handlers {

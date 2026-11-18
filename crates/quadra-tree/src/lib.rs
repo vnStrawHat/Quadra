@@ -70,4 +70,4 @@ pub use theme::{Amount, Cast, Measure, Paint, Theme, Token};
 pub use thumb::ScrollThumb;
 pub use tree::Tree;
 pub use widget::{MeasureCx, PaintCx, Widget};
-pub use window::WindowRequest;
+pub use window::{WindowRequest, WindowState};

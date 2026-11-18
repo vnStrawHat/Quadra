@@ -1,6 +1,6 @@
 //! What a tree knows of the window it is in, and asks of it (specs/10, "Windows with their
 //! own frame"): which of its nodes the window is dragged by, whether the window is
-//! maximized, the minimize, maximize and close a view asks for, and whether the window may
+//! maximized, active or minimized, the minimize, maximize and close a view asks for, and whether the window may
 //! close (specs/15, "Closing").
 
 use quadra_platform::HitRegion;
@@ -11,6 +11,15 @@ use crate::input::Handler;
 use crate::node::NodeId;
 use crate::shared::Handle;
 use crate::tree::Tree;
+
+/// What a tree knows of its window, as signals: what reads one runs again when it changes.
+#[derive(Clone, Copy)]
+pub struct WindowState {
+    pub maximized: Signal<bool>,
+    /// It has the keyboard.
+    pub active: Signal<bool>,
+    pub minimized: Signal<bool>,
+}
 
 /// What a view asks of its window. The app does it after the handler that asked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -94,16 +103,32 @@ impl Tree {
         true
     }
 
-    /// Whether the window is maximized, as a signal: made where it is first asked for, which
+    /// What the tree knows of its window, as signals: made where it is first asked for, which
     /// is where the window's view is mounted.
-    pub fn maximized(&mut self) -> Signal<bool> {
-        *self.maximized.get_or_insert_with(|| signal(false))
+    pub fn window_state(&mut self) -> WindowState {
+        let active = self.active;
+        *self.state.get_or_insert_with(|| WindowState {
+            maximized: signal(false),
+            active: signal(active),
+            minimized: signal(false),
+        })
     }
 
     /// Tells the tree whether its window is maximized: what reads it runs again.
     pub fn set_maximized(&mut self, on: bool) {
-        if let Some(maximized) = self.maximized {
-            maximized.set(on);
+        if let Some(state) = self.state
+            && state.maximized.get_untracked() != on
+        {
+            state.maximized.set(on);
+        }
+    }
+
+    /// Tells the tree whether its window is minimized: what reads it runs again.
+    pub fn set_minimized(&mut self, on: bool) {
+        if let Some(state) = self.state
+            && state.minimized.get_untracked() != on
+        {
+            state.minimized.set(on);
         }
     }
 

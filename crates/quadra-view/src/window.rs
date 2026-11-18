@@ -1,14 +1,14 @@
 //! The window a view is in (specs/10, "Windows with their own frame"): what a title bar
 //! drawn by the app asks of it.
 
-use quadra_reactive::{Memo, Signal, expect, use_context};
-use quadra_tree::{Handle, WindowRequest};
+use quadra_reactive::{Memo, expect, use_context};
+use quadra_tree::{Handle, WindowRequest, WindowState};
 
 /// The window of the view that asked for it.
 #[derive(Clone)]
 pub struct Window {
     handle: Handle,
-    maximized: Signal<bool>,
+    state: WindowState,
 }
 
 /// The text scale of the app's windows (specs/12, "Text size"), as the app gives it to views.
@@ -29,8 +29,8 @@ pub fn window() -> Window {
 }
 
 impl Window {
-    pub(crate) fn new(handle: Handle, maximized: Signal<bool>) -> Window {
-        Window { handle, maximized }
+    pub(crate) fn new(handle: Handle, state: WindowState) -> Window {
+        Window { handle, state }
     }
 
     pub fn minimize(&self) {
@@ -61,6 +61,16 @@ impl Window {
 
     /// Whether the window is maximized: a read that what it is in runs again for.
     pub fn is_maximized(&self) -> bool {
-        self.maximized.get()
+        self.state.maximized.get()
+    }
+
+    /// Whether the window has the keyboard: a read that what it is in runs again for.
+    pub fn is_active(&self) -> bool {
+        self.state.active.get()
+    }
+
+    /// Whether the window is minimized: a read that what it is in runs again for.
+    pub fn is_minimized(&self) -> bool {
+        self.state.minimized.get()
     }
 }

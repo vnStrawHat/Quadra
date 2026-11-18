@@ -347,7 +347,9 @@ What any completion needs, with no knowledge of commands (specs/20 is 1Term's):
 paused), `status` (OSC 7501) and `status_name` (the id of the record the summary is, the latest
 of the strongest: `deploy`), `exited` (the code once the program ended), and each notification
 (OSC 9, 777, 99) as an event (`on_notification`): a `Notice` holds its id, title, body,
-buttons, urgency, expiry and what it asks (focus, reports of activation and closing). A
+buttons, urgency, expiry, when it wants to show (`occasion`), its sound as named, its icon
+names, its icon's data (`Arc<[u8]>`, empty without) and the id it is kept under, and what it
+asks (focus, reports of activation and closing). A
 program's OSC 99 asks to close one (`on_notice_close(id)`) or which still show
 (`on_notice_alive(id)`); the app answers by writing `vt::input::NotificationReport`. What the
 app can do is its `Config::notifications`, from which the engine answers `p=?`. `link_note` is what the link says of itself in

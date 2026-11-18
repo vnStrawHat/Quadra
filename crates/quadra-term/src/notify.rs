@@ -1,7 +1,11 @@
 //! Desktop notifications (specs/18, "Signals an app reads"): what a program wants the user
 //! told, by OSC 9, 777 or 99, and what an OSC 99 program asks of the ones shown.
 
-use oneterm_vt::{EventBatch, NotificationExpiry, NotificationRef, NotificationUrgency};
+use std::sync::Arc;
+
+use oneterm_vt::{
+    EventBatch, NotificationExpiry, NotificationOccasion, NotificationRef, NotificationUrgency,
+};
 
 use crate::session::Session;
 
@@ -16,6 +20,16 @@ pub struct Notice {
     pub buttons: Vec<String>,
     pub urgency: Option<NotificationUrgency>,
     pub expiry: NotificationExpiry,
+    /// When it wants to show: always, or only while its window lacks the keyboard or is unseen.
+    pub occasion: NotificationOccasion,
+    /// The sound it names (`s`); empty when it named none.
+    pub sound: String,
+    /// The names of icons to try, the first first (`error`, `info`, an application's).
+    pub icon_names: Vec<String>,
+    /// The id its icon's data is kept under (`g`), and that data as sent (a PNG, JPEG or GIF
+    /// file), empty without: with no data, the data kept under the id earlier.
+    pub icon_id: String,
+    pub icon: Arc<[u8]>,
     /// Opening it shows where it came from.
     pub focus: bool,
     /// The program wants to hear it opened or a button pressed (`Activated`, `Button`).
@@ -39,6 +53,11 @@ impl Notice {
             buttons: batch.strs(said.buttons).map(str::to_string).collect(),
             urgency: said.urgency,
             expiry: said.expiry,
+            occasion: said.occasion,
+            sound: batch.str(said.sound).into(),
+            icon_names: batch.strs(said.icon_names).map(str::to_string).collect(),
+            icon_id: batch.str(said.icon_id).into(),
+            icon: batch.bytes(said.icon).into(),
             focus: said.focus_on_activation,
             report_activation: said.report_activation,
             report_close: said.report_close,

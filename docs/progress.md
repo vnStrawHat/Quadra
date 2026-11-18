@@ -196,7 +196,14 @@ whose every cell changes every frame, costs what the V build's costs.
   stacks and queries answered from the cursors there are (`link::drawn_shapes`); the colour
   scheme, dark or light by the background, told to the engine with the theme's colours and
   reported to a program that subscribed (`?2031`; `CSI ? 996 n` answered); OSC 99
-  notifications read as a title and a body, no ability declared. Test: `tests/asks.rs`.
+  notifications in full (`quadra_term::Notice`: id, buttons, urgency, expiry, what it asks;
+  `on_notice_close`, `on_notice_alive`). Test: `tests/asks.rs`. The kit's cards open by their
+  words (`Notice::on_open`), tell when they go (`on_close`, from `Queue::on_gone`) and take
+  another's place (`Notices::replace`, `shows`; `quadra-design/tests/notices.rs`). 1Term
+  declares focus, reports, close events, buttons, close, alive, urgency and expiry
+  (`notify::abilities`): a program's buttons on its card, opening shows its space, the
+  reports it asked for, a card replaced by its id, its close and alive query answered
+  (`apps/oneterm/tests/notices.rs`).
 
 ### Editing in 1Term, each space's dock (2026-11-17)
 

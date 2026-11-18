@@ -84,6 +84,7 @@ pub fn remote_shell(launch: Launch) -> Session {
 pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Target) -> Options) -> Session {
     let mut config = Config::default();
     (config.default_cursor_style, config.scrollback_limit) = (launch.cursor, launch.scrollback);
+    config.notifications = crate::notify::abilities();
     // A server's terminal reflows its own lines; the viewport's top stays.
     let session = Session::configured(ResizePolicy::KeepViewportTop, config);
     let Some(remote) = launch.ssh else { return session };

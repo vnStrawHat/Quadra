@@ -21,6 +21,7 @@ mod locked;
 mod logs;
 mod marks;
 mod model;
+mod notify;
 mod page;
 mod panes;
 mod prefs;

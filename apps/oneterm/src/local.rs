@@ -16,6 +16,7 @@ pub fn local_shell(launch: Launch) -> Session {
     // Windows' console resizes keeping the viewport's top.
     let mut config = Config::default();
     (config.default_cursor_style, config.scrollback_limit) = (launch.cursor, launch.scrollback);
+    config.notifications = crate::notify::abilities();
     let session = Session::configured(ResizePolicy::KeepViewportTop, config);
     let start = launch.cwd.filter(|dir| dir.is_dir()).or_else(|| std::env::current_dir().ok());
     if let Some(start) = &start {

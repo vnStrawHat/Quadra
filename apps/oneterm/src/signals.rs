@@ -2,17 +2,12 @@
 //! a space that is not looked at, OSC 9 notifications. A tab sums its spaces; seeing a tab
 //! clears its bells and the "done" it showed.
 
-use std::time::Duration;
-
 use quadra::{Signal, effect, untrack};
 use quadra_design::{Notice, Tone};
 use quadra_term::vt::Progress;
 use quadra_term::{ProgramState, Session};
 
 use crate::model::{Model, Tab};
-
-/// How long a notification's card stays.
-const NOTICE: Duration = Duration::from_secs(6);
 
 impl Tab {
     /// The strongest state of its spaces' programs; idle when the settings ignore states.
@@ -89,24 +84,7 @@ impl Model {
                 raises.notify(Notice::new(title).tone(tone));
             }
         });
-        let tells = self.clone();
-        session.on_notification(move |n| {
-            let kept = match prefs.notices.get_untracked() {
-                0 => Some(NOTICE),
-                1 => None,
-                _ => return, // silent
-            };
-            // The title, else the text in its place; then where it came from.
-            let (title, words) = match n.title.is_empty() {
-                true => (n.body.clone(), String::new()),
-                false => (n.title.clone(), n.body.clone()),
-            };
-            let card = Notice::new(title).body(words).note(format!("{} \u{B7} OSC 9", tells.tab_name(id)));
-            tells.notify(match kept {
-                Some(time) => card.lasts(time),
-                None => card,
-            });
-        });
+        self.follow_notices(id, session);
     }
 
     /// Whether a space is the focused one of the tab that shows.
@@ -115,7 +93,7 @@ impl Model {
     }
 
     /// The title of the tab that holds a space.
-    fn tab_name(&self, id: u64) -> String {
+    pub(crate) fn tab_name(&self, id: u64) -> String {
         let tabs = self.tabs().get_untracked();
         let tab =
             tabs.iter().find(|tab| tab.spaces.with_untracked(|spaces| spaces.iter().any(|it| it.id == id)));
@@ -124,10 +102,14 @@ impl Model {
 
     /// A card, and one more unseen; locked, only counted (a card would show what it says).
     pub(crate) fn notify(&self, notice: Notice) {
-        if !self.lock().locked.get_untracked() {
-            self.notices().notify(notice);
-        }
+        self.notify_card(notice);
+    }
+
+    /// As [`Model::notify`], returning the card's id when it shows.
+    pub(crate) fn notify_card(&self, notice: Notice) -> Option<u64> {
+        let card = (!self.lock().locked.get_untracked()).then(|| self.notices().notify(notice));
         self.unread().update(|n| *n += 1);
+        card
     }
 }
 

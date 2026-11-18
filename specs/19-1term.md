@@ -223,7 +223,17 @@ all on but where it says. A change applies at once (`Engine::set_config`).
 | OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else `idle` in the third text colour | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
 | OSC 9;4 progress | the percentage in mono and the accent at the end, a 2 px accent bar along the row's lower seam | the percentage | `build`, a 56 px line and the percentage | |
 | BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the title bar's count | |
-| OSC 9 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and `OSC 9`), 6 s or until dismissed (setting) |
+| OSC 9, 777, 99 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and `OSC 9`), 6 s or until dismissed (setting) |
+
+OSC 99 in full (`Config::notifications` declares focus, report, close events, buttons, close,
+alive, urgency; no icons, sounds or occasions): a notification's buttons are the card's,
+a click on its words opens it, which shows its tab and focuses its space unless it asked not
+to (`a=-focus`); either is reported to a program that asked (`a=report`: `Activated`,
+`Button`). A card that goes is reported closed to one that asked (`c=1`). One with the id of a
+card of the same space that still shows takes that card's place. Critical urgency is the
+danger tone and stays until dismissed, low and normal inform; an expiry the program gives
+(`w`) replaces the setting's time, `w=0` stays. A program's close shuts its card; its alive
+query is answered with the ids of its cards that show.
 
 Seen clears: selecting the tab clears its bell and a "done" seen state.
 

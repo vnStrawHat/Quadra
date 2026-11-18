@@ -119,7 +119,13 @@ pub const WINDOW_RESTORE: &str = r#"<rect width="12" height="12" x="4" y="8" rx=
 
 pub const ZAP: &str = r#"<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>"#;
 /// Every icon, with the name it is known by: what a catalogue of them shows.
-pub const ALL: [(&str, &str); 101] = [
+/// Match case: `A` and `a`.
+pub const CASE_SENSITIVE: &str =
+    r#"<path d="m3 15 4-8 4 8"/><path d="M4 13h6"/><circle cx="18" cy="12" r="3"/><path d="M21 9v6"/>"#;
+/// Whole words: two letters on a line.
+pub const WHOLE_WORD: &str = r#"<circle cx="7" cy="12" r="3"/><path d="M10 9v6"/><circle cx="17" cy="12" r="3"/><path d="M14 7v8"/><path d="M22 17v1c0 .5-.5 1-1 1H3c-.5 0-1-.5-1-1v-1"/>"#;
+/// Every icon, with the name it is known by: what a catalogue of them shows.
+pub const ALL: [(&str, &str); 103] = [
     ("app-window", APP_WINDOW),
     ("arrow-down", ARROW_DOWN),
     ("arrow-left", ARROW_LEFT),
@@ -131,6 +137,7 @@ pub const ALL: [(&str, &str); 101] = [
     ("book-open", BOOK_OPEN),
     ("bookmark", BOOKMARK),
     ("calendar", CALENDAR),
+    ("case-sensitive", CASE_SENSITIVE),
     ("check", CHECK),
     ("chevron-down", CHEVRON_DOWN),
     ("chevron-left", CHEVRON_LEFT),
@@ -216,6 +223,7 @@ pub const ALL: [(&str, &str); 101] = [
     ("undo", UNDO),
     ("upload", UPLOAD),
     ("user", USER),
+    ("whole-word", WHOLE_WORD),
     ("workflow", WORKFLOW),
     ("x", X),
     ("zap", ZAP),

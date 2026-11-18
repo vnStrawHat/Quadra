@@ -132,6 +132,16 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### 1Term's remaining parts (2026-11-18)
+
+- The working state turns: its icon is the kit's `spinner()` (named by `.label(..)`, new), in
+  tabs, badges and headers (`marks::state_icon`; `tests/signals.rs`).
+- The find bar again (specs/19, "Find"): one row of 28 px, the query small with the search icon
+  and the error colour while nothing is found, Match case and Whole word as icon toggles (the
+  kit's new `case-sensitive`, `whole-word`), the count in a fixed box, a rule, the arrows off
+  while nothing is found; it shrinks to stay inside a narrow space. Picture: the scene `find`
+  of `bench/oneterm-shots`.
+
 ### Saved passwords, Connect all, the editor's menu (2026-11-17)
 
 - **Saved passwords** (specs/19, "Saved passwords"): a host's password or key passphrase is

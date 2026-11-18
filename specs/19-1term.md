@@ -173,11 +173,15 @@ address, or a target over 256 KiB is refused, with a card saying why.
 `Ctrl+F` (the binding `find` of the Keybindings page; bound for the whole window, so the keys
 reach a shell only once unbound there) opens a find bar at the top right of the focused space,
 over its terminal, and puts the focus in its query; pressed again it gives the focus back to the
-query. The bar is the editor's in the kit's pieces: the query (`input`, placeholder and name
-"Find"), the switches `Aa` (case) and `W` (whole words) as toggled ghost buttons, the count in
-the third text colour ("3 of 12", "No results", nothing while the query is empty), Previous
-match, Next match and Close as icon buttons, on the overlay colour with a strong line, the
-middle radius and the first elevation. Typing finds at once (specs/18, "Find"); Enter and F3
+query. The bar is one row of 28 px in the kit's pieces, 4 px inside its plane: the query (`input`,
+small, 28 px, 220 wide or less in a narrow space (96 at least: the bar stays inside it), the search
+icon before it, placeholder and name "Find"; the error colour
+while it finds nothing), the switches Match case and Whole word as toggled icon buttons (the
+icons `case-sensitive`, `whole-word`: the accent while on), the count in 12 px of the second
+text colour in a box of 64 px so the row does not move ("3 of 12", "No results" in the third,
+nothing while the query is empty), a rule, then Previous match and Next match (off while
+nothing is found) and Close as icon buttons; on the overlay colour with a line, the middle
+radius and the first elevation. Typing finds at once (specs/18, "Find"); Enter and F3
 go to the next match, Shift+Enter and Shift+F3 to the one before, wrapping; Escape or Close
 ends finding and gives the focus back to the terminal. Closed, the bar keeps its query: opened
 again, it finds it again. Open, it stays open with its query when the space's view is built

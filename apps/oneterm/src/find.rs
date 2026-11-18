@@ -6,10 +6,10 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use quadra::{
-    Action, Align, Div, Key, KeyEvent, Mods, MountCx, NodeId, NodeRef, Signal, View, column, div, effect,
-    row, show, signal, text,
+    Action, Align, Div, Justify, Key, KeyEvent, Length, Mods, MountCx, NodeId, NodeRef, Signal, View, column,
+    div, effect, row, show, signal, text,
 };
-use quadra_design::{Size, Variant, button, icon_button, icons, input, size, token};
+use quadra_design::{icon_button, icons, input, size, token};
 use quadra_term::{FindQuery, Session};
 
 /// Opens the find bar of the space the focus is in, or puts the focus back in its query.
@@ -81,7 +81,8 @@ impl<V: View + 'static> View for Around<V> {
             }
         });
         let shown = move || bar(b, &session, close.clone(), at.clone());
-        let over = show(move || b.open.get(), shown).container(div().absolute().top(6.0).right(16.0));
+        let at_right = row().absolute().top(6.0).right(16.0).left(16.0).justify(Justify::End);
+        let over = show(move || b.open.get(), shown).container(at_right);
         column()
             .grow(1.0)
             .min_height(0.0)
@@ -96,35 +97,44 @@ impl<V: View + 'static> View for Around<V> {
     }
 }
 
-/// The bar: the query, `Aa` and `W`, the count, Previous, Next and Close.
+/// The bar: the query, Match case and Whole word, the count, a rule, Previous, Next, Close.
 fn bar(b: Bar, s: &Session, close: Rc<dyn Fn()>, at: NodeRef) -> Div {
     let step = |back: bool| {
         let s = s.clone();
         move || s.find_next(back)
     };
-    let switch = |label: &'static str, name: &'static str, on: Signal<bool>| {
-        let flip = move || on.set(!on.get_untracked());
-        button(label).variant(Variant::Ghost).size(Size::Sm).label(name).toggled(on).on_click(flip)
+    let switch = |body: &'static str, name: &'static str, on: Signal<bool>| {
+        icon_button(body, name).toggled(on).on_click(move || on.set(!on.get_untracked()))
     };
     let found = s.found();
+    let none = move || !b.query.with(String::is_empty) && found.get().1 == 0;
     let said = move || match (b.query.with(String::is_empty), found.get()) {
         (true, _) => String::new(),
         (false, (_, 0)) => "No results".to_string(),
         (false, (i, n)) => format!("{i} of {n}"),
     };
-    let count = text(said).size(size::TEXT_SM.size).color(token::TEXT_3);
+    let tone = move || if none() { token::TEXT_3 } else { token::TEXT_2 };
+    let count =
+        div().width(64.0).shrink(0.0).text_size(size::TEXT_SM.size).text_color(tone).child(text(said));
     let next = step(false);
-    let query = input(b.query).width(180.0).placeholder("Find").label("Find").on_submit(move |_| next());
+    // 220 wide, less in a narrow space: the bar stays inside it.
+    let query = input(b.query).small().height(28.0).fill().icon(icons::SEARCH);
+    let query = query.placeholder("Find").label("Find").invalid(none).on_submit(move |_| next());
+    let query = row().width(224.0).min_width(Length::Px(96.0)).padding_right(4.0).child(query);
+    let rule = div().width(1.0).height(16.0).shrink(0.0).bg(token::LINE);
     let closes = close.clone();
     let line = row()
         .align_items(Align::Center)
-        .gap(4.0)
+        .gap(2.0)
+        .min_width(Length::Px(0.0))
         .child(query)
-        .child(switch("Aa", "Match case", b.case))
-        .child(switch("W", "Whole word", b.word))
-        .child(count)
-        .child(icon_button(icons::ARROW_UP, "Previous match").on_click(step(true)))
-        .child(icon_button(icons::ARROW_DOWN, "Next match").on_click(step(false)))
+        .child(switch(icons::CASE_SENSITIVE, "Match case", b.case))
+        .child(switch(icons::WHOLE_WORD, "Whole word", b.word))
+        .child(div().padding_x(6.0).child(count))
+        .child(rule)
+        .child(div().width(4.0))
+        .child(icon_button(icons::ARROW_UP, "Previous match").disabled(none).on_click(step(true)))
+        .child(icon_button(icons::ARROW_DOWN, "Next match").disabled(none).on_click(step(false)))
         .child(icon_button(icons::X, "Close").on_click(move || closes()));
     let (next, back) = (step(false), step(true));
     let keys = move |e: &mut KeyEvent| match e.key {
@@ -143,6 +153,11 @@ fn bar(b: Bar, s: &Session, close: Rc<dyn Fn()>, at: NodeRef) -> Div {
         }
         _ => {}
     };
-    let plane = column().padding(4.0).bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE_STRONG);
+    let plane = column()
+        .min_width(Length::Px(0.0))
+        .padding(4.0)
+        .bg(token::OVERLAY_BG)
+        .border(1.0)
+        .border_color(token::LINE);
     plane.radius(token::RADIUS_MD).elevation(1).node_ref(&at).on_key_down(keys).child(line)
 }

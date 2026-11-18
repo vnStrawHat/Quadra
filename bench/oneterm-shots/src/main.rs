@@ -5,7 +5,8 @@
 //!     tools/cargo.sh run -p quadra-bench-oneterm-shots -- [out dir] [scene ..]
 //!
 //! Scenes: main, collapsed, horizontal, menu, connect, add, settings, lock, sftp, gutter (main
-//! with the terminals' gutter on), usage (the pointer resting on RAM: its card), and the
+//! with the terminals' gutter on), usage (the pointer resting on RAM: its card), find (the
+//! find bar over the focused space, a word typed), and the
 //! Connect dialogs: ask-connecting, ask-host, ask-sign-in, ask-failed (`asks.rs`); the editor
 //! space: edit, edit-diff (`edits.rs`).
 
@@ -32,7 +33,7 @@ use quadra_term::{Session, echo};
 
 type Shots = App<D3d11Renderer>;
 
-const SCENES: [&str; 11] = [
+const SCENES: [&str; 12] = [
     "main",
     "collapsed",
     "horizontal",
@@ -44,6 +45,7 @@ const SCENES: [&str; 11] = [
     "sftp",
     "gutter",
     "usage",
+    "find",
 ];
 
 fn pass(platform: &HeadlessPlatform, app: &mut Shots, ms: u64) {
@@ -225,6 +227,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             "lock" => model.lock().lock_now(),
             "sftp" => model.ui().expanded.set(true),
             "collapsed" => model.prefs().rail_folded.set(true),
+            "find" => {
+                for down in [true, false] {
+                    let (key, mods) = (quadra_platform::Key::F, quadra_platform::Mods::CTRL);
+                    platform.push(window, PlatformEvent::Key { key, code: 0, mods, down, repeat: false });
+                }
+                pass(&platform, &mut app, 150);
+                platform.push(window, PlatformEvent::Text("deploy".into()));
+            }
             // Once what was fed has moved the bar's groups to their places.
             "usage" => {
                 pass(&platform, &mut app, 150);

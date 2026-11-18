@@ -4,13 +4,14 @@
 //! [`Notices::host`] once in the window.
 
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Duration;
 
 use quadra_headless::notices::{Queue, TOAST};
 use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
 use quadra_tree::{PointerKind, Role};
-use quadra_view::{Div, Place, View, column, div, each, overlay, row, show, text};
+use quadra_view::{AnyView, Div, Place, View, column, div, each, image, overlay, row, show, text};
 
 use crate::button::{Size, Variant, button, icon_button};
 use crate::display::Tone;
@@ -28,6 +29,9 @@ pub struct Notice {
     /// Where it came from, in 12 px under the body: `staging-db-01 · OSC 9`.
     note: String,
     tone: Tone,
+    /// Another icon than the tone's, or a picture from a file's bytes.
+    icon: Option<&'static str>,
+    picture: Option<Arc<[u8]>>,
     /// What its buttons say, whether each is the one to take, and what it does.
     actions: Vec<(String, bool, Act)>,
     lasts: Option<Duration>,
@@ -41,7 +45,8 @@ impl Notice {
     pub fn new(title: impl Into<String>) -> Notice {
         let (title, body, tone) = (title.into(), String::new(), Tone::Info);
         let (note, actions) = (String::new(), Vec::new());
-        Notice { title, body, note, tone, actions, lasts: None, toast: false, opened: None, closed: None }
+        let (icon, picture, opened, closed) = (None, None, None, None);
+        Notice { title, body, note, tone, icon, picture, actions, lasts: None, toast: false, opened, closed }
     }
 
     /// A line or two under the title.
@@ -59,6 +64,19 @@ impl Notice {
     /// What it is about: the icon and its colour.
     pub fn tone(mut self, tone: Tone) -> Self {
         self.tone = tone;
+        self
+    }
+
+    /// One of the kit's icons in the place of the tone's, in the tone's colour.
+    pub fn icon(mut self, svg: &'static str) -> Self {
+        self.icon = Some(svg);
+        self
+    }
+
+    /// A picture from a file's bytes (PNG, JPEG, GIF) in the place of the icon, 16 px; nothing
+    /// shows when it is none.
+    pub fn picture(mut self, file: Arc<[u8]>) -> Self {
+        self.picture = Some(file);
         self
     }
 
@@ -93,12 +111,16 @@ impl Notice {
     }
 }
 
-/// The icon of a tone, in its colour.
 /// The icon of a notice, in the colour of its tone: 16 px on a card, 14 px in a toast. One
-/// that only informs has the accent on a card, and is quiet in a toast.
-fn mark(tone: Tone, toast: bool) -> impl View {
+/// that only informs has the accent on a card, and is quiet in a toast. A picture in its place.
+fn mark(notice: &Notice, toast: bool) -> AnyView {
     let (size, informs) = if toast { (14.0, token::TEXT_2) } else { (16.0, token::ACCENT_TEXT) };
-    icon(tone.icon()).size(size).color(if tone == Tone::Info { informs } else { tone.role() })
+    if let Some(file) = notice.picture.clone() {
+        return AnyView::new(image(quadra_view::ImageSource::Bytes(file)).width(size).height(size));
+    }
+    let tone = notice.tone;
+    let color = if tone == Tone::Info { informs } else { tone.role() };
+    AnyView::new(icon(notice.icon.unwrap_or(tone.icon())).size(size).color(color))
 }
 
 /// What a window is told to show, and what it shows. Copies are the same one.
@@ -185,6 +207,7 @@ impl Notices {
     /// A card: 448 px on the panel's plane at the level of dialogs.
     fn card(&self, id: u64) -> Div {
         let (me, Some(notice)) = (*self, self.find(id)) else { return div() };
+        let mark = mark(&notice, false);
         let words = column().grow(1.0).child(text(notice.title.clone()));
         let words = match notice.body.is_empty() {
             true => words,
@@ -205,11 +228,7 @@ impl Notices {
             None => words,
         };
         let close = icon_button(icons::X, "Dismiss notification").on_click(move || me.close(id));
-        let top = row()
-            .gap(8.0)
-            .child(div().padding_top(3.0).child(mark(notice.tone, false)))
-            .child(words)
-            .child(close);
+        let top = row().gap(8.0).child(div().padding_top(3.0).child(mark)).child(words).child(close);
         let card = surface(2).width(448.0).padding(12.0).gap(8.0);
         let card = me.held(card, id).role(Role::Group).label(notice.title).child(top);
         if notice.actions.is_empty() {
@@ -231,7 +250,7 @@ impl Notices {
     fn line(&self, id: u64) -> Div {
         let Some(notice) = self.find(id) else { return div() };
         let line = row().align_items(Align::Center).gap(8.0).padding_x(10.0).padding_y(6.0);
-        let line = line.child(mark(notice.tone, true)).child(text(notice.title.clone()));
+        let line = line.child(mark(&notice, true)).child(text(notice.title.clone()));
         let line = surface(2).role(Role::Group).label(notice.title).child(line);
         self.held(line, id)
     }

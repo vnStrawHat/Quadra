@@ -212,7 +212,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   `Character` key a character (the engine encodes one; an input method commits many), with
   Shift when the character needs it on a US layout (a capital, `!`, `?`): under the kitty
   protocol's report-all-keys flag a key is its unshifted code, and Shift is what keeps a
-  capital one. A key the app's keymap binds (copy, paste, new tab) is the
+  capital one. A key's release is sent too (`KeyEventKind::Release`, a key that types its
+  unshifted character): the engine writes it only for a program that asked for event types
+  (kitty's report-event-types), as a game or a key viewer does. A key the app's keymap binds (copy, paste, new tab) is the
   app's first: the view is a focus scope's leaf, and bindings run before it.
 - Paste: `Terminal::encode_paste(text)` (bracketed when asked, controls dropped). Copy: the
   selection's text. Both through the clipboard the app provides (specs/09); never the real one
@@ -222,7 +224,8 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   triple-click a line), and the wheel scrolls the history (three rows a notch), or sends
   arrows on the alternate screen when the program asked for alternate scroll.
 - Typing scrolls back to the bottom. Focus in and out is told to the program when it asked
-  (`encode_focus`).
+  (`encode_focus`): the view's focus, and the window's keyboard while the view has the focus
+  (`Tree::on_active`), so switching windows is told.
 - Input methods (`Tree::on_composition`): while one composes, its text is drawn at the cursor
   over the cells it covers: the background of the cursor's cell behind it, the text in the
   terminal's foreground, underlined, the clause being converted underlined twice as thick. A

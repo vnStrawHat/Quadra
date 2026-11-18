@@ -55,6 +55,17 @@ pub(crate) fn key_event(key: Key, mods: Mods, repeat: bool) -> Option<KeyEvent> 
     Some(event)
 }
 
+/// A key let go of: a named key, or one that types a character (its unshifted one). The
+/// engine reports it only to a program that asked for event types.
+pub(crate) fn release_event(key: Key, mods: Mods) -> Option<KeyEvent> {
+    let mut event = key_event(key, mods, false).or_else(|| {
+        let shift = KeyMods { shift: mods.contains(Mods::SHIFT), ..KeyMods::default() };
+        Some(KeyEvent::new(KeySpec::Character(printable(key)?.to_string()), shift))
+    })?;
+    event.kind = KeyEventKind::Release;
+    Some(event)
+}
+
 fn named(key: Key) -> Option<NamedKey> {
     use NamedKey as N;
     Some(match key {

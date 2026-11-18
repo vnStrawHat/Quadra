@@ -1,26 +1,24 @@
 //! The terminal as a view (specs/18, "The view", "Input"): one widget that fills its box,
 //! sizes the grid after layout, and sends keys, text, paste and focus to the program.
 
-use std::cell::Cell;
 use std::rc::Rc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use oneterm_vt::input::{KeyMods, KeySpec, NamedKey};
-use quadra_async::{Timers, interval};
 use quadra_platform::{Clipboard, Cursor, Key, Mods, Platform};
-use quadra_reactive::{Scope, Signal, on_cleanup, signal, use_context};
+use quadra_reactive::{Signal, on_cleanup, signal, use_context};
 use quadra_tree::{NodeId, Style, Tree};
 use quadra_view::{MountCx, View};
 
 use crate::actions::TermSettings;
 use crate::input::{Input, sent};
-use crate::keys::{TERMINAL_CONTEXT, TermCommand, key_event};
+use crate::keys::{TERMINAL_CONTEXT, TermCommand, key_event, release_event};
 use crate::link::TermLink;
 use crate::look::TermLook;
 use crate::session::Session;
 use crate::widget::TerminalWidget;
 
-const CARET_BLINK: Duration = Duration::from_millis(530);
+pub(crate) const CARET_BLINK: Duration = Duration::from_millis(530);
 
 pub struct Terminal {
     session: Session,
@@ -182,6 +180,13 @@ impl View for Terminal {
             writer.with(move |tree| sent(tree, id, &s, &bytes, Input::Keys(&bytes)));
         });
         let (writer, s) = (cx.handle.clone(), session.clone());
+        cx.tree.on_key(id, false, move |e| {
+            let event = release_event(e.key, e.mods);
+            let bytes = event.and_then(|it| s.engine().term.encode_key_event(&it)).unwrap_or_default();
+            let s = s.clone(); // after the press, which is written the same way
+            writer.with(move |_| s.write(&bytes));
+        });
+        let (writer, s) = (cx.handle.clone(), session.clone());
         cx.tree.on_text(id, move |typed| {
             let bytes = crate::input::typed(&s.engine().term, typed);
             let (s, typed) = (s.clone(), typed.to_string());
@@ -216,7 +221,7 @@ impl View for Terminal {
             let s = s.clone();
             writer.with(move |tree| sent(tree, id, &s, &bytes, Input::Keys(&bytes)));
         });
-        focus(cx, id, &session);
+        crate::focus::focus(cx, id, &session);
         if autofocus {
             cx.handle.with(move |tree| tree.focus(id));
         }
@@ -251,43 +256,4 @@ fn clock() -> (Instant, i64) {
     };
     let offset = use_context::<Rc<dyn Platform>>().map_or(0, |platform| platform.utc_offset(unix));
     (Instant::now(), unix + i64::from(offset))
-}
-
-/// The focus: told to the program when it asked, and the cursor's blink while it is there.
-fn focus(cx: &mut MountCx, id: NodeId, session: &Session) {
-    let (owner, blinks) = (Scope::current(), use_context::<Rc<Timers>>().is_some());
-    let blinking: Cell<Option<Scope>> = Cell::new(None);
-    let (writer, s) = (cx.handle.clone(), session.clone());
-    cx.tree.on_focus(id, move |gained| {
-        if let Some(ended) = blinking.take() {
-            ended.dispose();
-        }
-        if gained && blinks {
-            let scope = owner.run(Scope::child);
-            let writer = writer.clone();
-            scope.run(|| {
-                interval(CARET_BLINK, move || {
-                    writer.with(move |tree| {
-                        if let Some(w) = tree.widget_mut::<TerminalWidget>(id)
-                            && w.cursor_style.blinking
-                        {
-                            w.caret_on = !w.caret_on;
-                            crate::widget::repaint(tree, id);
-                        }
-                    })
-                })
-            });
-            blinking.set(Some(scope));
-        }
-        let told = s.engine().term.encode_focus(gained).map(<[u8]>::to_vec);
-        if let Some(bytes) = told {
-            s.write(&bytes);
-        }
-        writer.with(move |tree| {
-            if let Some(w) = tree.widget_mut::<TerminalWidget>(id) {
-                (w.focused, w.caret_on, w.preedit) = (gained, true, None);
-                crate::widget::repaint(tree, id);
-            }
-        });
-    });
 }

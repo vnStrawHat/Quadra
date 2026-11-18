@@ -186,3 +186,26 @@ fn typed_text_is_a_key_a_character_and_a_capital_keeps_its_shift() {
     t.h.type_text("Lo?");
     assert_eq!(t.taken(), b"\x1b[108:76;2u\x1b[111u\x1b[47:63;2u");
 }
+
+#[test]
+fn a_key_let_go_of_is_told_to_a_program_that_asked_for_event_types() {
+    let mut t = term();
+    assert_eq!(t.key(Key::Up, Mods::NONE), b"\x1b[A");
+    t.feed(b"\x1b[>10u");
+    assert_eq!(t.key(Key::Up, Mods::NONE), b"\x1b[A\x1b[1;1:3A");
+    // A key that types: its text comes as text, its release as its unshifted character.
+    assert_eq!(t.key(Key::A, Mods::SHIFT), b"\x1b[97;2:3u");
+}
+
+#[test]
+fn switching_windows_is_told_to_a_program_that_asked_for_focus_reports() {
+    let mut t = term();
+    t.h.tree.set_active(false);
+    assert!(t.taken().is_empty(), "not asked");
+    t.h.tree.set_active(true);
+    t.feed(b"\x1b[?1004h");
+    t.h.tree.set_active(false);
+    assert_eq!(t.taken(), b"\x1b[O");
+    t.h.tree.set_active(true);
+    assert_eq!(t.taken(), b"\x1b[I");
+}

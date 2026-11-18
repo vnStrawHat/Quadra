@@ -47,7 +47,7 @@ opens it: a link from content that is not the user's goes through
 
 `Sounds::play(Sound)` plays one of the system's sounds and returns at once: `Sound::{Default,
 Info, Warning, Error, Question}`, the sounds the user set for those events (`MessageBeep`). The
-fake records `sound <kind>`; a test never plays one.
+fake records `sound: Error` and the like; a test never plays one.
 
 ## Tray and notifications
 

@@ -116,7 +116,8 @@ impl Notice {
 fn mark(notice: &Notice, toast: bool) -> AnyView {
     let (size, informs) = if toast { (14.0, token::TEXT_2) } else { (16.0, token::ACCENT_TEXT) };
     if let Some(file) = notice.picture.clone() {
-        return AnyView::new(image(quadra_view::ImageSource::Bytes(file)).width(size).height(size));
+        let picture = image(quadra_view::ImageSource::Bytes(file)).label("Icon");
+        return AnyView::new(picture.width(size).height(size));
     }
     let tone = notice.tone;
     let color = if tone == Tone::Info { informs } else { tone.role() };

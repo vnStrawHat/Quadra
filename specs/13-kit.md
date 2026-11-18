@@ -723,7 +723,7 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   not when `.replace(id, notice)` puts another in its place, in the same place in the stack;
   `.shows(id)` says whether it still shows. `.icon(svg)` puts another of the kit's icons in
   the place of the tone's, `.picture(file)` a picture from a file's bytes (a PNG, JPEG or GIF,
-  16 px, decoded at that size; nothing shows when it is none). `.toast(tone, words)` is a line
+  16 px, decoded at that size, named `Icon`; nothing shows when it is none). `.toast(tone, words)` is a line
   on the panel's plane with its icon at the bottom centre for ten seconds. The icon is 16 px
   on a card and 14 px in a toast, in the colour of the tone; a notice that only informs has
   the accent on a card and the second text colour in a toast. The stacks are overlays that take

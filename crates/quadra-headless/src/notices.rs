@@ -2,6 +2,7 @@
 //! was told, each until it is closed or for as long as it lasts. The look gives the card of
 //! each and the stacks they stand in.
 
+use std::rc::Rc;
 use std::time::Duration;
 
 use quadra_async::{Timer, timeout};
@@ -10,6 +11,9 @@ use quadra_reactive::{Scope, Signal, signal};
 /// How long a toast shows.
 pub const TOAST: Duration = Duration::from_secs(10);
 
+/// What is told of what went.
+type Gone<T> = Rc<dyn Fn(T)>;
+
 /// What shows, each with the id it was given. Copies are the same one.
 pub struct Queue<T: 'static> {
     shown: Signal<Vec<(u64, T)>>,
@@ -17,6 +21,8 @@ pub struct Queue<T: 'static> {
     owner: Scope,
     /// What lasts a while: how long, and the timer that closes it while nothing holds it.
     timed: Signal<Vec<(u64, Duration, Option<Timer>)>>,
+    /// Told what went, however it went (closed, timed out); not what was replaced.
+    gone: Signal<Option<Gone<T>>>,
 }
 
 impl<T> Clone for Queue<T> {
@@ -31,20 +37,56 @@ impl<T: Clone + 'static> Queue<T> {
     /// A queue of the scope it is made in: make it where the window's view is built.
     pub fn new() -> Queue<T> {
         let timed = signal(Vec::new());
-        Queue { shown: signal(Vec::new()), last: signal(0), owner: Scope::current(), timed }
+        let (shown, last, gone) = (signal(Vec::new()), signal(0), signal(None));
+        Queue { shown, last, owner: Scope::current(), timed, gone }
+    }
+
+    /// Tells `f` what goes, however it goes, but for what [`Queue::replace`] puts another in
+    /// the place of.
+    pub fn on_gone(&self, f: impl Fn(T) + 'static) {
+        self.gone.update(|it| *it = Some(Rc::new(f)));
     }
 
     /// Shows `item` after those that show already, for `lasts` if it says, and returns what
     /// [`Queue::close`] takes.
     pub fn push(&self, item: T, lasts: Option<Duration>) -> u64 {
+        let id = self.timed_id(lasts);
+        self.shown.update(|all| all.push((id, item)));
+        id
+    }
+
+    /// Puts `item` in the place of `id`, as a new one, for `lasts` if it says, and returns its
+    /// id; what was there goes untold. When `id` no longer shows, `item` comes after the rest.
+    pub fn replace(&self, id: u64, item: T, lasts: Option<Duration>) -> u64 {
+        let Some(at) = self.shown.with_untracked(|all| all.iter().position(|(it, _)| *it == id)) else {
+            return self.push(item, lasts);
+        };
+        self.untime(id);
+        let new = self.timed_id(lasts);
+        self.shown.update(|all| all[at] = (new, item));
+        new
+    }
+
+    /// A new id, timed to close after `lasts`.
+    fn timed_id(&self, lasts: Option<Duration>) -> u64 {
         let (id, me) = (self.last.get_untracked() + 1, *self);
         self.last.set(id);
         if let Some(time) = lasts.filter(|_| self.owner.is_alive()) {
-            let timer = self.owner.run(|| timeout(time, move || me.close(id)));
+            let timer = self.owner.run(|| timeout(time, move || _ = me.close(id)));
             self.timed.update(|all| all.push((id, time, Some(timer))));
         }
-        self.shown.update(|all| all.push((id, item)));
         id
+    }
+
+    fn untime(&self, id: u64) {
+        if self.timed.with_untracked(|all| all.iter().any(|(at, ..)| *at == id)) {
+            self.timed.update(|all| {
+                let at = all.iter().position(|(at, ..)| *at == id).unwrap();
+                if let Some(timer) = all.remove(at).2 {
+                    timer.cancel();
+                }
+            });
+        }
     }
 
     /// Holds what lasts a while, or lets it go: while the pointer is on it, it waits, and
@@ -58,18 +100,22 @@ impl<T: Clone + 'static> Queue<T> {
             }
             if !held && me.owner.is_alive() {
                 let time = *time;
-                *timer = Some(me.owner.run(|| timeout(time, move || me.close(id))));
+                *timer = Some(me.owner.run(|| timeout(time, move || _ = me.close(id))));
             }
         });
     }
 
-    pub fn close(&self, id: u64) {
-        if self.shown.with_untracked(|all| all.iter().any(|(at, _)| *at == id)) {
-            self.shown.update(|all| all.retain(|(at, _)| *at != id));
+    /// Closes `id` and returns what it was, if it showed.
+    pub fn close(&self, id: u64) -> Option<T> {
+        self.untime(id);
+        let at = self.shown.with_untracked(|all| all.iter().position(|(it, _)| *it == id))?;
+        let mut gone = None;
+        self.shown.update(|all| gone = Some(all.remove(at).1));
+        let gone = gone?;
+        if let Some(tell) = self.gone.with_untracked(Clone::clone) {
+            tell(gone.clone());
         }
-        if self.timed.with_untracked(|all| all.iter().any(|(at, ..)| *at == id)) {
-            self.timed.update(|all| all.retain(|(at, ..)| *at != id));
-        }
+        Some(gone)
     }
 
     /// What `id` stands for, while it shows.

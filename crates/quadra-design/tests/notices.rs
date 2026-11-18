@@ -119,3 +119,35 @@ fn a_toast_waits_while_the_pointer_is_on_it_and_lasts_again_after() {
     settle(&mut h);
     assert!(!h.has_text("Saved"));
 }
+
+#[test]
+fn a_card_opens_by_its_words_tells_when_it_goes_and_another_can_take_its_place() {
+    let (mut h, all) = page();
+    let said = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let tell = |what: &'static str| {
+        let said = said.clone();
+        move || said.borrow_mut().push(what)
+    };
+    let first = all.notify(Notice::new("Build").on_open(tell("opened")).on_close(tell("closed")));
+    all.notify(Notice::new("Deploy"));
+    settle(&mut h);
+    // Another in its place: the first goes untold, and the new one stands where it stood.
+    let second = all.replace(first, Notice::new("Build again").on_close(tell("closed again")));
+    settle(&mut h);
+    assert!(!all.shows(first) && all.shows(second) && said.borrow().is_empty());
+    assert!(card(&mut h, "Build again").y < card(&mut h, "Deploy").y, "the older place, higher");
+    all.close(second);
+    assert_eq!(*said.borrow(), ["closed again"]);
+    let third = all.notify(Notice::new("Tests").on_open(tell("opened")).on_close(tell("closed")));
+    settle(&mut h);
+    h.get_by_role(Role::Button, "Tests").click();
+    settle(&mut h);
+    assert!(!all.shows(third));
+    assert_eq!(*said.borrow(), ["closed again", "opened", "closed"]);
+    // Its time out is a close too.
+    all.notify(Notice::new("Brief").lasts(Duration::from_secs(1)).on_close(tell("timed out")));
+    settle(&mut h);
+    h.advance(Duration::from_secs(2));
+    settle(&mut h);
+    assert_eq!(said.borrow().last(), Some(&"timed out"));
+}

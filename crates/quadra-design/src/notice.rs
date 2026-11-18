@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use quadra_headless::notices::{Queue, TOAST};
 use quadra_layout::{Align, Justify};
+use quadra_platform::Cursor;
 use quadra_tree::{PointerKind, Role};
 use quadra_view::{Div, Place, View, column, div, each, overlay, row, show, text};
 
@@ -31,12 +32,16 @@ pub struct Notice {
     actions: Vec<(String, bool, Act)>,
     lasts: Option<Duration>,
     toast: bool,
+    /// What a click on its words does; what runs when it goes.
+    opened: Option<Act>,
+    closed: Option<Act>,
 }
 
 impl Notice {
     pub fn new(title: impl Into<String>) -> Notice {
         let (title, body, tone) = (title.into(), String::new(), Tone::Info);
-        Notice { title, body, note: String::new(), tone, actions: Vec::new(), lasts: None, toast: false }
+        let (note, actions) = (String::new(), Vec::new());
+        Notice { title, body, note, tone, actions, lasts: None, toast: false, opened: None, closed: None }
     }
 
     /// A line or two under the title.
@@ -69,6 +74,18 @@ impl Notice {
         self
     }
 
+    /// Makes its words a button: a click does `f` and closes the card.
+    pub fn on_open(mut self, f: impl Fn() + 'static) -> Self {
+        self.opened = Some(Rc::new(f));
+        self
+    }
+
+    /// Runs `f` when the card goes, however it goes, but not when another takes its place.
+    pub fn on_close(mut self, f: impl Fn() + 'static) -> Self {
+        self.closed = Some(Rc::new(f));
+        self
+    }
+
     /// Closes the card by itself after so long; without it the card stays until closed.
     pub fn lasts(mut self, time: Duration) -> Self {
         self.lasts = Some(time);
@@ -98,7 +115,13 @@ pub struct Notices {
 
 /// The notifications of a window: make it where the window's view is built.
 pub fn notices() -> Notices {
-    Notices { queue: Queue::new(), lift: 0.0, top: None, right: 12.0 }
+    let queue = Queue::new();
+    queue.on_gone(|notice: Notice| {
+        if let Some(closed) = notice.closed {
+            closed();
+        }
+    });
+    Notices { queue, lift: 0.0, top: None, right: 12.0 }
 }
 
 impl Notices {
@@ -134,8 +157,20 @@ impl Notices {
         self.notify(Notice { toast: true, ..Notice::new(words).tone(tone).lasts(TOAST) })
     }
 
+    /// Shows `notice` in the place of the card `id`, which goes without its `on_close`
+    /// (after the others when it no longer shows), and returns what [`Notices::close`] takes.
+    pub fn replace(&self, id: u64, notice: Notice) -> u64 {
+        let lasts = notice.lasts;
+        self.queue.replace(id, notice, lasts)
+    }
+
     pub fn close(&self, id: u64) {
-        self.queue.close(id)
+        self.queue.close(id);
+    }
+
+    /// Whether the card or toast `id` still shows.
+    pub fn shows(&self, id: u64) -> bool {
+        self.queue.find(id).is_some()
     }
 
     fn find(&self, id: u64) -> Option<Notice> {
@@ -158,6 +193,16 @@ impl Notices {
         let words = match notice.note.is_empty() {
             true => words,
             false => words.child(text(notice.note).size(size::TEXT_SM.size).color(token::TEXT_2)),
+        };
+        let words = match notice.opened {
+            Some(open) => {
+                let words = words.role(Role::Button).label(notice.title.clone()).cursor(Cursor::Pointer);
+                quadra_headless::settings::acts(words, move || {
+                    open();
+                    me.close(id);
+                })
+            }
+            None => words,
         };
         let close = icon_button(icons::X, "Dismiss notification").on_click(move || me.close(id));
         let top = row()

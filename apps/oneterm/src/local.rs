@@ -30,7 +30,8 @@ pub fn local_shell(launch: Launch) -> Session {
         let options = PtyOptions {
             program,
             cwd: start,
-            env: vec![("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into())],
+            // FORCE_HYPERLINK: programs that know terminals by name show OSC 8 links here too.
+            env: vec![("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into()), ("FORCE_HYPERLINK".into(), "1".into())],
             rows: size.rows,
             cols: size.cols,
         };

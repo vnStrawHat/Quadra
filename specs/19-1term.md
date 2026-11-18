@@ -246,7 +246,8 @@ the icon's place. The title bar's Search opens the same menu under itself with a
   (`%ProgramFiles%\PowerShell\7\pwsh.exe`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe`
   `--login -i`), WSL (`%SystemRoot%\System32\wsl.exe`), each where its file is. The default
   shell is Command Prompt until settings (M5) name another. A split starts in the focused
-  space's directory.
+  space's directory. A local shell's environment adds `FORCE_HYPERLINK=1`: 1Term opens OSC 8
+  links, and programs that know terminals by name (1Term is on no list) show links on it.
 - **The `+` menu** has no search field; the title bar's Search shows it with one
   (`searched_menu`): what is typed keeps the shells, recent targets and hosts whose
   names or addresses hold it (whatever the case), and a typed target (`Target::parse`) is a

@@ -175,3 +175,14 @@ fn an_alt_drag_selects_a_block() {
     let text = t.s.selection_text().unwrap();
     assert_eq!(text.lines().collect::<Vec<_>>(), ["bcd", "hij"], "the same columns of each row");
 }
+
+#[test]
+fn typed_text_is_a_key_a_character_and_a_capital_keeps_its_shift() {
+    let mut t = term();
+    t.h.type_text("Ab!");
+    assert_eq!(t.taken(), b"Ab!");
+    // kitty's report-all-keys and alternate keys: a key is its unshifted code.
+    t.feed(b"\x1b[>12u");
+    t.h.type_text("Lo?");
+    assert_eq!(t.taken(), b"\x1b[108:76;2u\x1b[111u\x1b[47:63;2u");
+}

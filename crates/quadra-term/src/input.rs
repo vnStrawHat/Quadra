@@ -3,6 +3,7 @@
 
 use std::rc::Rc;
 
+use oneterm_vt::Terminal;
 use oneterm_vt::input::{KeyEvent, KeyMods, KeySpec};
 use quadra_tree::{NodeId, Tree};
 
@@ -52,10 +53,7 @@ impl Session {
             }
             let bytes = match *input {
                 Input::Keys(bytes) => bytes.to_vec(),
-                Input::Text(text) => {
-                    let event = KeyEvent::new(KeySpec::Character(text.to_string()), KeyMods::default());
-                    engine.term.encode_key_event(&event).unwrap_or_else(|| text.as_bytes().to_vec())
-                }
+                Input::Text(text) => typed(&engine.term, text),
                 Input::Paste(text) => engine.term.encode_paste(text),
             };
             (bytes, back)
@@ -65,6 +63,25 @@ impl Session {
         }
         self.write(&bytes);
     }
+}
+
+/// Typed text as the program asked for keys: a character a key (the engine encodes the first
+/// of a `Character`), with Shift when it needs it on a US layout, so a capital stays one where
+/// a key is its unshifted code (kitty's report-all-keys). ponytail: Shift from the character,
+/// not the keyboard: Caps Lock reads as Shift, and a layout's own shifted keys as unshifted.
+pub(crate) fn typed(term: &Terminal, text: &str) -> Vec<u8> {
+    let mut out = Vec::with_capacity(text.len());
+    for c in text.chars() {
+        let shift = c.is_uppercase() || "~!@#$%^&*()_+{}|:\"<>?".contains(c);
+        let mods = KeyMods { shift, ..KeyMods::default() };
+        let mut event = KeyEvent::new(KeySpec::Character(c.to_string()), mods);
+        event.shifted = shift.then_some(c);
+        match term.encode_key_event(&event) {
+            Some(bytes) => out.extend(bytes),
+            None => out.extend(c.encode_utf8(&mut [0; 4]).as_bytes()),
+        }
+    }
+    out
 }
 
 /// Writes what the user sent through the view, then tells the hook.

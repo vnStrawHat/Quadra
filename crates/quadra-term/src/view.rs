@@ -5,7 +5,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use oneterm_vt::input::{KeyEvent, KeyMods, KeySpec, NamedKey};
+use oneterm_vt::input::{KeyMods, KeySpec, NamedKey};
 use quadra_async::{Timers, interval};
 use quadra_platform::{Clipboard, Cursor, Key, Mods, Platform};
 use quadra_reactive::{Scope, Signal, on_cleanup, signal, use_context};
@@ -183,8 +183,7 @@ impl View for Terminal {
         });
         let (writer, s) = (cx.handle.clone(), session.clone());
         cx.tree.on_text(id, move |typed| {
-            let event = KeyEvent::new(KeySpec::Character(typed.to_string()), KeyMods::default());
-            let bytes = s.engine().term.encode_key_event(&event).unwrap_or_else(|| typed.as_bytes().to_vec());
+            let bytes = crate::input::typed(&s.engine().term, typed);
             let (s, typed) = (s.clone(), typed.to_string());
             writer.with(move |tree| sent(tree, id, &s, &bytes, Input::Text(&typed)));
         });

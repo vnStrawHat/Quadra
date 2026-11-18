@@ -209,7 +209,10 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 
 - Keys: the platform key and modifiers become a `KeyEvent` and `Terminal::encode_key_event`
   turns them into bytes; `None` sends nothing. Text from typing or an input method is a
-  `Character` key with its text. A key the app's keymap binds (copy, paste, new tab) is the
+  `Character` key a character (the engine encodes one; an input method commits many), with
+  Shift when the character needs it on a US layout (a capital, `!`, `?`): under the kitty
+  protocol's report-all-keys flag a key is its unshifted code, and Shift is what keeps a
+  capital one. A key the app's keymap binds (copy, paste, new tab) is the
   app's first: the view is a focus scope's leaf, and bindings run before it.
 - Paste: `Terminal::encode_paste(text)` (bracketed when asked, controls dropped). Copy: the
   selection's text. Both through the clipboard the app provides (specs/09); never the real one

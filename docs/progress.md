@@ -179,7 +179,10 @@ whose every cell changes every frame, costs what the V build's costs.
   cursor over its cells (wide characters on two, clipped at the row's end), underlined, the
   clause thicker, the cursor hidden; nothing sent until it is committed; an empty composition,
   a commit or the focus leaving ends it (`crates/quadra-term/src/ime.rs`). An Alt+drag block
-  selection has a test now. Tests: `crates/quadra-term/tests/ime.rs`, `tests/input.rs`.
+  selection has a test now. Tests: `crates/quadra-term/tests/ime.rs`, `tests/input.rs`. Typed text is a
+  key a character, with Shift when the character needs it on a US layout, so a program that
+  asked for kitty's report-all-keys gets every character of an input method's commit and
+  keeps its capitals (`quadra_term::input::typed`).
 
 ### Editing in 1Term, each space's dock (2026-11-17)
 

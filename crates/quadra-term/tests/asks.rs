@@ -8,6 +8,7 @@ use std::time::Instant;
 use quadra_platform::{Cursor, Mods, MouseButton};
 use quadra_prim::{Color, Point};
 use quadra_reactive::{Signal, signal};
+use quadra_term::vt;
 use quadra_term::vt::ResizePolicy;
 use quadra_term::{Link, Notice, Session, TermColors, TermLook, terminal};
 use quadra_testing::Harness;
@@ -84,18 +85,31 @@ fn the_scheme_is_dark_or_light_by_the_background_and_a_subscriber_hears_a_switch
 }
 
 #[test]
-fn an_osc99_notification_in_chunks_is_one_notice_and_the_query_says_titles_and_bodies() {
+fn an_osc99_notification_in_chunks_is_one_notice_and_a_program_asks_to_close_and_what_shows() {
     let mut t = term();
-    let notices = Rc::new(RefCell::new(Vec::new()));
-    let seen = notices.clone();
-    t.s.on_notification(move |n| seen.borrow_mut().push(n.clone()));
+    let told = Rc::new(RefCell::new(Vec::new()));
+    let (seen, closed, alive) = (told.clone(), told.clone(), told.clone());
+    t.s.on_notification(move |n| seen.borrow_mut().push(format!("{n:?}")));
+    t.s.on_notice_close(move |id| closed.borrow_mut().push(format!("close {id}")));
+    t.s.on_notice_alive(move |id| alive.borrow_mut().push(format!("alive {id}")));
+    // Without abilities declared (the app's), the query says titles and bodies.
     let answer = t.feed(b"\x1b]99;i=q:p=?;\x1b\\");
-    assert!(
-        answer.starts_with(b"\x1b]99;i=q:p=?;") && answer.ends_with(b"p=title,body,?\x1b\\"),
-        "{answer:?}"
-    );
-    t.feed(b"\x1b]99;i=b:d=0;Build failed\x1b\\");
-    assert!(notices.borrow().is_empty(), "held until its last chunk");
-    t.feed(b"\x1b]99;i=b:p=body:e=1;MyBlcnJvcnM=\x1b\\");
-    assert_eq!(*notices.borrow(), [Notice { title: "Build failed".into(), body: "3 errors".into() }]);
+    assert!(answer.ends_with(b"p=title,body,?\x1b\\"), "{answer:?}");
+    t.feed(b"\x1b]99;i=b:d=0:u=2:a=report,-focus:c=1;Build failed\x1b\\");
+    assert!(told.borrow().is_empty(), "held until its last chunk");
+    t.feed(b"\x1b]99;i=b:d=0:p=body:e=1;MyBlcnJvcnM=\x1b\\");
+    t.feed("\x1b]99;i=b:p=buttons;Log\u{2028}Retry\x1b\\".as_bytes());
+    let want = Notice {
+        id: "b".into(),
+        title: "Build failed".into(),
+        body: "3 errors".into(),
+        buttons: vec!["Log".into(), "Retry".into()],
+        urgency: Some(vt::NotificationUrgency::Critical),
+        focus: false,
+        report_activation: true,
+        report_close: true,
+        ..Notice::default()
+    };
+    t.feed(b"\x1b]99;i=b:p=close;\x1b\\\x1b]99;i=q:p=alive;\x1b\\");
+    assert_eq!(*told.borrow(), [format!("{want:?}"), "close b".into(), "alive q".into()]);
 }

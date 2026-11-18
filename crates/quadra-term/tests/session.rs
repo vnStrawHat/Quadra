@@ -132,7 +132,7 @@ fn the_signals_follow_what_the_program_says() {
     assert_eq!(t.s.bells().get_untracked(), 2);
     t.feed(b"\x1b]9;4;1;40\x07\x1b]9;done here\x07");
     assert_eq!(t.s.progress().get_untracked(), Some(Progress::Set(40)));
-    assert_eq!(notices.borrow()[0], Notice { title: String::new(), body: "done here".into() });
+    assert_eq!(notices.borrow()[0], Notice::text("", "done here"));
     t.feed(b"\x1b]9;9;\"C:\\work\"\x07"); // a Windows shell's directory is no notice
     assert_eq!(t.s.cwd().get_untracked(), "C:\\work");
     assert_eq!(notices.borrow().len(), 1);

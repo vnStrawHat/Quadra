@@ -33,9 +33,8 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   queued, so a key half written is never cut.
 - What the UI must hear goes through one inbox (specs/11): `Output` (a repaint is due: posted
   once while none is pending, so a burst costs one frame), `Title`, `Cwd` (OSC 7, and OSC 9;9,
-  which Windows shells send), `Bell`, `Notification` (a title and a body, of OSC 9, 777 or 99;
-  the session declares no OSC 99 ability, so the query is answered "titles and bodies, always
-  shown"), `Progress`, `Status` (OSC 7501, below; OSC
+  which Windows shells send), `Bell`, `Notification` (OSC 9, 777 or 99: below), `NoticeClose`,
+  `NoticeAlive`, `Progress`, `Status` (OSC 7501, below; OSC
   133 A applies its prompt rule), and the end of the stream with the exit code. OSC 52 stores are
   dropped until an app setting lets them through. The UI thread drains it, updates the session's signals and marks the
   view for paint.
@@ -346,8 +345,12 @@ What any completion needs, with no knowledge of commands (specs/20 is 1Term's):
 
 `title`, `cwd`, `bells` (a count), `progress` (OSC 9;4: none, a part, indeterminate, error,
 paused), `status` (OSC 7501) and `status_name` (the id of the record the summary is, the latest
-of the strongest: `deploy`), `exited` (the code once the program ended), and each OSC 9
-notification as an event (`on_notification`). `link_note` is what the link says of itself in
+of the strongest: `deploy`), `exited` (the code once the program ended), and each notification
+(OSC 9, 777, 99) as an event (`on_notification`): a `Notice` holds its id, title, body,
+buttons, urgency, expiry and what it asks (focus, reports of activation and closing). A
+program's OSC 99 asks to close one (`on_notice_close(id)`) or which still show
+(`on_notice_alive(id)`); the app answers by writing `vt::input::NotificationReport`. What the
+app can do is its `Config::notifications`, from which the engine answers `p=?`. `link_note` is what the link says of itself in
 a few words, written by whoever made the link (a remote one's latency, `124 ms`); empty for a
 local program. An app keeps its own data with a session (`keep`, `kept::<T>()`): a remote
 space's connection, for one.

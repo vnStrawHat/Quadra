@@ -9,6 +9,7 @@ use std::time::Instant;
 use oneterm_vt::{ClipboardKind, EventBatch, Progress, ShellMark, StringTerm, Terminal, VtEvent};
 use quadra_async::Sender;
 
+use crate::notify::{Notice, Told};
 use crate::status::{ProgramState, Report, Statuses};
 
 /// The engine and what feeding it needs, behind the session's lock.
@@ -36,7 +37,7 @@ pub(crate) enum Event {
     Title(String),
     Cwd(String),
     Bell,
-    Notice(Notice),
+    Notice(crate::notify::Told),
     Progress(Progress),
     /// The summary of the records, and the id of the one it is.
     Status(ProgramState, String),
@@ -44,13 +45,6 @@ pub(crate) enum Event {
     ClipLoad,
     /// OSC 22: the pointer shape the program names.
     Pointer(String),
-}
-
-/// An OSC 9 notification (or OSC 777's): what a program wants the user told.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Notice {
-    pub title: String,
-    pub body: String,
 }
 
 /// What the reader thread of a transport calls with the program's output. It is `Send`.
@@ -139,16 +133,18 @@ fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) -> 
             VtEvent::Bell => heard.events.push(Event::Bell),
             VtEvent::Cwd { path, .. } => heard.events.push(Event::Cwd(engine.batch.str(path).to_string())),
             VtEvent::Notification(at) => {
-                let said = engine.batch.notification(at);
-                let (title, body) = (said.title, engine.batch.str(said.body));
+                let notice = Notice::of(&engine.batch, at);
                 // OSC 9;9 is a Windows shell's working directory, not a notice.
-                heard.events.push(match body.strip_prefix("9;") {
+                heard.events.push(match notice.body.strip_prefix("9;") {
                     Some(path) => Event::Cwd(path.trim_matches('"').to_string()),
-                    None => Event::Notice(Notice {
-                        title: engine.batch.str(title).to_string(),
-                        body: body.to_string(),
-                    }),
+                    None => Event::Notice(Told::Shown(notice)),
                 })
+            }
+            VtEvent::NotificationClose { id } => {
+                heard.events.push(Event::Notice(Told::Close(engine.batch.str(id).into())))
+            }
+            VtEvent::NotificationAliveQuery { id } => {
+                heard.events.push(Event::Notice(Told::Alive(engine.batch.str(id).into())))
             }
             VtEvent::Progress(p) => heard.events.push(Event::Progress(p)),
             VtEvent::ShellMark(ShellMark::PromptEnd) => engine.marked = true,

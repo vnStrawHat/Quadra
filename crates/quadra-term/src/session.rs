@@ -12,13 +12,14 @@ use quadra_async::inbox;
 use quadra_reactive::{Signal, signal};
 use quadra_tree::{Handle, NodeId};
 
-use crate::feed::{Engine, Event, Feeder, Notice, lock};
+use crate::feed::{Engine, Event, Feeder, lock};
+use crate::notify::Told;
 use crate::status::{ProgramState, Statuses};
 
 mod signals;
 
 type WriteFn = dyn FnMut(&[u8]);
-type NoticeFn = dyn Fn(&Notice);
+type NoticeFn = dyn Fn(&Told);
 type Waiting = Vec<Box<dyn FnOnce(Size)>>;
 
 /// What a transport gives a session: where the keys go, and what a resize and the end do.
@@ -235,8 +236,8 @@ impl Session {
         self.0.exited
     }
 
-    /// Runs `f` with each OSC 9 notification.
-    pub fn on_notification(&self, f: impl Fn(&Notice) + 'static) {
+    /// Runs `f` with what the program says of notifications.
+    pub(crate) fn on_told(&self, f: impl Fn(&Told) + 'static) {
         self.0.notices.borrow_mut().push(Rc::new(f));
     }
 

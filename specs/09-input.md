@@ -79,7 +79,10 @@ Handlers are closures on nodes (05). A node with no handler for an event kind is
   (the press goes on to what is around the outermost disabled node), and is passed by when
   Tab walks.
 - A window that does not have the keyboard shows no focus: the states are cleared, the node is
-  remembered, and both come back with the window.
+  remembered, and both come back with the window. The focus stays where it is (no focus or
+  blur event: a selection or an edit survives switching windows); the focused node can ask to
+  be told the keyboard leaving and coming back (`Tree::on_active`), as a terminal tells its
+  program.
 - App code focuses a node through its `NodeRef` (04); the focus moves in the next frame.
 
 ## Keys, contexts and actions

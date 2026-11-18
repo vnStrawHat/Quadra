@@ -80,6 +80,12 @@ impl Tree {
         self.add_handler(id, Handler::Focus(Box::new(f)));
     }
 
+    /// Runs `f` with false when the window loses the keyboard while the node has the focus,
+    /// and with true when it gets it back; the focus itself stays (specs/09, "Focus").
+    pub fn on_active(&mut self, id: NodeId, f: impl FnMut(bool) + 'static) {
+        self.add_handler(id, Handler::Active(Box::new(f)));
+    }
+
     /// Runs `f` with the text typed while the node has the focus: committed characters, never
     /// control keys.
     pub fn on_text(&mut self, id: NodeId, f: impl FnMut(&str) + 'static) {
@@ -149,6 +155,12 @@ impl Tree {
     pub fn set_active(&mut self, active: bool) {
         if std::mem::replace(&mut self.active, active) != active {
             self.focus_states(self.focus, active, active && self.focus_ring);
+            let Some(node) = self.focus.filter(|&n| self.is_alive(n)) else { return };
+            for handler in &mut self.nodes[node.index as usize].handlers {
+                if let Handler::Active(run) = handler {
+                    run(active);
+                }
+            }
         }
     }
 

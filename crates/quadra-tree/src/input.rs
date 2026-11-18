@@ -94,6 +94,8 @@ pub(crate) enum Handler {
     KeyFirst(Box<dyn FnMut(&mut KeyEvent)>),
     /// Focus came to the node (true) or left it.
     Focus(Box<dyn FnMut(bool)>),
+    /// The window got the keyboard (true) or lost it while the node had the focus.
+    Active(Box<dyn FnMut(bool)>),
     /// Text was typed while the node had the focus.
     Text(Box<dyn FnMut(&str)>),
     /// An input method is composing text for the node: the text so far and the caret in it.

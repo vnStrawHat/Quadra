@@ -223,6 +223,10 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   go to the program (`encode_mouse_*`); otherwise a press and drag select (double-click a word,
   triple-click a line), and the wheel scrolls the history (three rows a notch), or sends
   arrows on the alternate screen when the program asked for alternate scroll.
+- The pointer's shape is the program's when it names one (OSC 22, CSS names: `default` an
+  arrow, `pointer` a hand, `grab` a hand and `grabbing` Move since the system has no closed
+  hand, `cell` a crosshair, the resize names), the text cursor otherwise or for a name the
+  system has no cursor for; a link under Ctrl shows the hand over it.
 - Typing scrolls back to the bottom. Focus in and out is told to the program when it asked
   (`encode_focus`): the view's focus, and the window's keyboard while the view has the focus
   (`Tree::on_active`), so switching windows is told.

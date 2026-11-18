@@ -276,6 +276,11 @@ impl Session {
                 }
                 Event::ClipStore(text) => self.clip_store(&text),
                 Event::ClipLoad => self.clip_load(),
+                Event::Pointer(name) => {
+                    if let (Some(id), Some(handle)) = (self.0.view.get(), self.0.handle.borrow().clone()) {
+                        handle.with(move |tree| crate::link::shape(tree, id, &name));
+                    }
+                }
             }
         }
     }

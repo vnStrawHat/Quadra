@@ -42,6 +42,8 @@ pub(crate) enum Event {
     Status(ProgramState, String),
     ClipStore(String),
     ClipLoad,
+    /// OSC 22: the pointer shape the program names.
+    Pointer(String),
 }
 
 /// An OSC 9 notification (or OSC 777's): what a program wants the user told.
@@ -132,6 +134,7 @@ fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) -> 
             }
             VtEvent::Title(text) => heard.events.push(Event::Title(engine.batch.str(text).to_string())),
             VtEvent::TitleReset => heard.events.push(Event::Title(String::new())),
+            VtEvent::Pointer(name) => heard.events.push(Event::Pointer(engine.batch.str(name).to_string())),
             VtEvent::Bell => heard.events.push(Event::Bell),
             VtEvent::Cwd { path, .. } => heard.events.push(Event::Cwd(engine.batch.str(path).to_string())),
             VtEvent::Notification { title, body } => {

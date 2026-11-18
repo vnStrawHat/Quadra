@@ -182,3 +182,21 @@ fn the_other_button_tells_the_link_under_it() {
     right(&mut t, cell(0, 3), MouseButton::Left);
     assert_eq!(t.s.link_pressed(), None, "a press of another button");
 }
+
+#[test]
+fn the_pointer_takes_the_shape_the_program_names_and_a_link_still_shows_the_hand() {
+    let mut t = term();
+    t.feed(OSC8);
+    t.press(&[PointerInput::Move], cell(0, 3), Mods::NONE);
+    for (name, shape) in [("grabbing", Cursor::Move), ("default", Cursor::Arrow), ("no-such", Cursor::Text)] {
+        t.feed(format!("\x1b]22;{name}\x1b\\").as_bytes());
+        assert_eq!(t.h.tree.cursor(), shape, "{name}");
+    }
+    t.feed(b"\x1b]22;cell\x1b\\");
+    t.h.tree.key(Key::Ctrl, 0, Mods::CTRL, true, false);
+    t.h.settle();
+    assert_eq!(t.h.tree.cursor(), Cursor::Pointer, "the link's hand over the program's");
+    t.h.tree.key(Key::Ctrl, 0, Mods::NONE, false, false);
+    t.h.settle();
+    assert_eq!(t.h.tree.cursor(), Cursor::Crosshair);
+}

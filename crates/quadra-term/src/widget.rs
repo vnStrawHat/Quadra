@@ -64,6 +64,8 @@ pub struct TerminalWidget {
     /// The cells of the link Ctrl is held over, and the cell it was looked for at (`None`
     /// inside: Ctrl not held, or off the grid); a new snapshot has it looked for again.
     pub(crate) hover: crate::link::Cells,
+    /// The pointer's shape away from a link: the program's (OSC 22) or the text cursor.
+    pub(crate) shape: quadra_platform::Cursor,
     pub(crate) hovered_at: Option<Option<(usize, usize)>>,
     /// What an input method is composing, and the clause of it being converted (bytes).
     pub(crate) preedit: Option<(String, std::ops::Range<usize>)>,
@@ -114,6 +116,7 @@ impl TerminalWidget {
             status: None,
             shaping: Default::default(),
             hover: Vec::new(),
+            shape: quadra_platform::Cursor::Text,
             hovered_at: None,
             preedit: None,
         }

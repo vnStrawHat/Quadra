@@ -102,10 +102,36 @@ pub(crate) fn hover(tree: &mut Tree, id: NodeId, at: Option<Point>, ctrl: bool) 
     if cells == w.hover {
         return;
     }
-    let hand = !cells.is_empty();
+    let shape = if cells.is_empty() { w.shape } else { Cursor::Pointer };
     w.hover = cells;
-    tree.set_cursor(id, Some(if hand { Cursor::Pointer } else { Cursor::Text }));
+    tree.set_cursor(id, Some(shape));
     tree.mark_paint(id);
+}
+
+/// The pointer shape a program names (OSC 22, CSS's names) as the system's cursor; the text
+/// cursor for a name it has none for. ponytail: `grab` the hand and `grabbing` Move, as the
+/// system has no closed hand; a cursor of our own when that matters.
+pub(crate) fn shape(tree: &mut Tree, id: NodeId, name: &str) {
+    let shape = match name {
+        "default" | "left_ptr" | "arrow" => Cursor::Arrow,
+        "pointer" | "hand" | "pointing_hand" | "grab" | "openhand" => Cursor::Pointer,
+        "move" | "grabbing" | "closedhand" | "all-scroll" | "fleur" => Cursor::Move,
+        "crosshair" | "cell" | "cross" => Cursor::Crosshair,
+        "not-allowed" | "no-drop" | "forbidden" => Cursor::NotAllowed,
+        "ew-resize" | "col-resize" | "e-resize" | "w-resize" => Cursor::ResizeHorizontal,
+        "ns-resize" | "row-resize" | "n-resize" | "s-resize" => Cursor::ResizeVertical,
+        "nwse-resize" | "nw-resize" | "se-resize" => Cursor::ResizeNwse,
+        "nesw-resize" | "ne-resize" | "sw-resize" => Cursor::ResizeNesw,
+        "wait" | "watch" => Cursor::Wait,
+        "progress" => Cursor::Progress,
+        "help" => Cursor::Help,
+        _ => Cursor::Text,
+    };
+    let Some(w) = tree.widget_mut::<TerminalWidget>(id) else { return };
+    w.shape = shape;
+    if w.hover.is_empty() {
+        tree.set_cursor(id, Some(shape));
+    }
 }
 
 /// Where the pointer was last over the view, and whether Ctrl was held then.

@@ -96,6 +96,7 @@ impl Session {
     /// one, the history kept. OSC 7501 is routed to the session whatever it says.
     pub fn configured(policy: ResizePolicy, mut config: Config) -> Session {
         config.osc_routes.route(7501, OscRoute::Forward);
+        config.pointer_shapes.supported = crate::link::drawn_shapes();
         let term = Terminal::new(Size { rows: 24, cols: 80 }, config);
         let engine = Engine {
             term,
@@ -107,7 +108,6 @@ impl Session {
             images: Default::default(),
             frame: oneterm_vt::SnapshotState::new(),
             framed: false,
-            alternate: false,
         };
         let engine = Arc::new(Mutex::new(engine));
         let events = inbox::<Event>();

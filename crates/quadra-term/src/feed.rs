@@ -28,8 +28,6 @@ pub(crate) struct Engine {
     /// not taken it.
     pub frame: oneterm_vt::SnapshotState,
     pub framed: bool,
-    /// The alternate screen was up after the last feed.
-    pub alternate: bool,
 }
 
 /// What the UI thread must hear from a feed.
@@ -121,10 +119,6 @@ struct Heard {
 /// fed, and whether it closed one.
 fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) -> (usize, bool) {
     let stats = engine.term.feed_frame(bytes, &mut engine.batch, now);
-    let alternate = engine.term.grid().alt_active();
-    if std::mem::replace(&mut engine.alternate, alternate) && !alternate {
-        heard.events.push(Event::Pointer(String::new())); // the text cursor back
-    }
     for image in engine.term.take_graphics() {
         engine.images.arrive(image);
         heard.repaint = true;
@@ -141,10 +135,12 @@ fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) -> 
             VtEvent::Title(text) => heard.events.push(Event::Title(engine.batch.str(text).to_string())),
             VtEvent::TitleReset => heard.events.push(Event::Title(String::new())),
             VtEvent::Pointer(name) => heard.events.push(Event::Pointer(engine.batch.str(name).to_string())),
+            VtEvent::PointerReset => heard.events.push(Event::Pointer(String::new())),
             VtEvent::Bell => heard.events.push(Event::Bell),
             VtEvent::Cwd { path, .. } => heard.events.push(Event::Cwd(engine.batch.str(path).to_string())),
-            VtEvent::Notification { title, body } => {
-                let body = engine.batch.str(body);
+            VtEvent::Notification(at) => {
+                let said = engine.batch.notification(at);
+                let (title, body) = (said.title, engine.batch.str(said.body));
                 // OSC 9;9 is a Windows shell's working directory, not a notice.
                 heard.events.push(match body.strip_prefix("9;") {
                     Some(path) => Event::Cwd(path.trim_matches('"').to_string()),

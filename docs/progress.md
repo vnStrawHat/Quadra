@@ -191,9 +191,12 @@ whose every cell changes every frame, costs what the V build's costs.
   Force links is on (`terminal.force_hyperlink`, on), so programs that know terminals by name
   show OSC 8 links (`apps/oneterm/tests/local_env.rs`). The
   pointer takes the shape a program names (OSC 22, CSS names onto the system's cursors:
-  `link::shape`), the hand still over a link under Ctrl, the text cursor back when the
-  alternate screen is left (the engine's issue 5: its reset makes no event). Test:
-  `tests/links.rs`.
+  `link::shape`), the hand still over a link under Ctrl, the text cursor back on the engine's
+  `PointerReset`. Test: `tests/links.rs`. With the engine at v0.4.0 (2026-11-18): OSC 22
+  stacks and queries answered from the cursors there are (`link::drawn_shapes`); the colour
+  scheme, dark or light by the background, told to the engine with the theme's colours and
+  reported to a program that subscribed (`?2031`; `CSI ? 996 n` answered); OSC 99
+  notifications read as a title and a body, no ability declared. Test: `tests/asks.rs`.
 
 ### Editing in 1Term, each space's dock (2026-11-17)
 

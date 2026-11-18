@@ -33,7 +33,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   queued, so a key half written is never cut.
 - What the UI must hear goes through one inbox (specs/11): `Output` (a repaint is due: posted
   once while none is pending, so a burst costs one frame), `Title`, `Cwd` (OSC 7, and OSC 9;9,
-  which Windows shells send), `Bell`, `Notification`, `Progress`, `Status` (OSC 7501, below; OSC
+  which Windows shells send), `Bell`, `Notification` (a title and a body, of OSC 9, 777 or 99;
+  the session declares no OSC 99 ability, so the query is answered "titles and bodies, always
+  shown"), `Progress`, `Status` (OSC 7501, below; OSC
   133 A applies its prompt rule), and the end of the stream with the exit code. OSC 52 stores are
   dropped until an app setting lets them through. The UI thread drains it, updates the session's signals and marks the
   view for paint.
@@ -232,9 +234,14 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - The pointer's shape is the program's when it names one (OSC 22, CSS names: `default` an
   arrow, `pointer` a hand, `grab` a hand and `grabbing` Move since the system has no closed
   hand, `cell` a crosshair, the resize names), the text cursor otherwise or for a name the
-  system has no cursor for; a link under Ctrl shows the hand over it. Leaving the alternate
-  screen gives the text cursor back (the reset a program sends on its way out, OSC 22 with no
-  name, reaches no event in the engine yet).
+  system has no cursor for; a link under Ctrl shows the hand over it. The engine's
+  `PointerReset` (OSC 22 with no name, a pop to nothing, a screen without a shape, RIS) gives
+  the text cursor back. The engine answers OSC 22 queries from `Config::pointer_shapes`: the
+  session declares the CSS names it has a cursor for, `text` the default, `default` grabbed.
+- The colour scheme: the view tells the engine dark or light by its background's luminance
+  (`set_color_scheme`, below a half is dark) whenever it gives it the theme's colours, and
+  writes the report the engine returns to a program that asked for updates (`?2031`); the
+  query (`CSI ? 996 n`) is answered by the engine.
 - Typing scrolls back to the bottom. Focus in and out is told to the program when it asked
   (`encode_focus`): the view's focus, and the window's keyboard while the view has the focus
   (`Tree::on_active`), so switching windows is told.

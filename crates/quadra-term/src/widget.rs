@@ -178,7 +178,16 @@ impl TerminalWidget {
     /// The theme's colours with the look's over them, to the engine.
     pub(crate) fn paint_colors(&mut self) {
         let palette = self.colors.over(&self.base.0);
-        self.session.engine().term.set_theme_colors(&palette);
+        let bg = palette.background;
+        let light = 0.2126 * f32::from(bg.r) + 0.7152 * f32::from(bg.g) + 0.0722 * f32::from(bg.b) >= 127.5;
+        let scheme = if light { oneterm_vt::ColorScheme::Light } else { oneterm_vt::ColorScheme::Dark };
+        let report = {
+            let mut engine = self.session.engine();
+            engine.term.set_theme_colors(&palette);
+            engine.term.set_color_scheme(scheme)
+        };
+        // A program that asked to hear of a switch (`?2031`) is told.
+        self.session.write(report.unwrap_or_default());
         self.selection = self.colors.selection.unwrap_or(self.base.1);
         self.refresh();
     }

@@ -112,7 +112,23 @@ pub(crate) fn hover(tree: &mut Tree, id: NodeId, at: Option<Point>, ctrl: bool) 
 /// cursor for a name it has none for. ponytail: `grab` the hand and `grabbing` Move, as the
 /// system has no closed hand; a cursor of our own when that matters.
 pub(crate) fn shape(tree: &mut Tree, id: NodeId, name: &str) {
-    let shape = match name {
+    let shape = cursor_of(name).unwrap_or(Cursor::Text);
+    let Some(w) = tree.widget_mut::<TerminalWidget>(id) else { return };
+    w.shape = shape;
+    if w.hover.is_empty() {
+        tree.set_cursor(id, Some(shape));
+    }
+}
+
+/// The CSS pointer names there is a cursor for: what the engine answers a program's query by.
+pub(crate) fn drawn_shapes() -> Vec<std::borrow::Cow<'static, str>> {
+    let has = |name: &&&str| cursor_of(name).is_some();
+    oneterm_vt::PointerShapes::CSS.iter().filter(has).map(|&name| name.into()).collect()
+}
+
+/// The system's cursor for a pointer name of a program, CSS or X11.
+fn cursor_of(name: &str) -> Option<Cursor> {
+    Some(match name {
         "default" | "left_ptr" | "arrow" => Cursor::Arrow,
         "pointer" | "hand" | "pointing_hand" | "grab" | "openhand" => Cursor::Pointer,
         "move" | "grabbing" | "closedhand" | "all-scroll" | "fleur" => Cursor::Move,
@@ -125,13 +141,9 @@ pub(crate) fn shape(tree: &mut Tree, id: NodeId, name: &str) {
         "wait" | "watch" => Cursor::Wait,
         "progress" => Cursor::Progress,
         "help" => Cursor::Help,
-        _ => Cursor::Text,
-    };
-    let Some(w) = tree.widget_mut::<TerminalWidget>(id) else { return };
-    w.shape = shape;
-    if w.hover.is_empty() {
-        tree.set_cursor(id, Some(shape));
-    }
+        "text" | "xterm" | "ibeam" => Cursor::Text,
+        _ => return None,
+    })
 }
 
 /// Where the pointer was last over the view, and whether Ctrl was held then.

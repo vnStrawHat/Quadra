@@ -458,7 +458,9 @@ As built so far:
   at the right. A page is `SettingsPage::new(title).icon(..).about(..).group(..)`, a group
   `SettingsGroup::new(title).about(..).row(title, about, control)`: a row is what a setting
   is called, a line about it, and its control at the right, any view of the app's
-  (`.wide(control)` is a row that is its control alone). The app owns the controls and the
+  (`.wide(control)` is a row that is its control alone). A reader hears the row's title as
+  the name of its control: the first switch, checkbox, input or slider in it that has no
+  name of its own takes it (`Tree::meaning` reads what a node says). The app owns the controls and the
   index of the chosen page, `current`; the component keeps which pages are open in the
   column, the chosen group and where the page is scrolled. Every page is mounted once, the
   ones that do not show are not displayed: a control keeps its state while another page

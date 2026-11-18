@@ -57,7 +57,7 @@ impl Tree {
 
     /// What a node says of itself: what was set on it, completed by its widget (a text names
     /// itself by its text, an input gives its value). The root is the window.
-    fn meaning(&self, id: NodeId) -> Semantics {
+    pub fn meaning(&self, id: NodeId) -> Semantics {
         let node = &self.nodes[id.index as usize];
         let mut says = node.semantics.as_deref().cloned().unwrap_or_default();
         if let Some(widget) = &node.widget {

@@ -248,7 +248,9 @@ whose every cell changes every frame, costs what the V build's costs.
   Browse, the dialog given as a callback; tests on `FakeShell`), gallery pages for them. Every
   overlay is the menu plane (`overlay_bg`, a `line` border, `radius_sm`); `overlay_bg` is `panel`
   in the kit's two themes. A submenu stands beside its menu's edge, on the left when the right
-  has no room. The rows of `settings(..).cards()` are as wide as their column. Tests:
+  has no room. The rows of `settings(..).cards()` are as wide as their column. A row's
+  title names its switch, checkbox, input or slider for a reader when it has no name of its
+  own (`Tree::meaning` reads a node's semantics, its widget's part included). Tests:
   `quadra-design/tests/pickers.rs`, `menus.rs`, `settings.rs`.
 - **Shell** (specs/16): `Usage` with the private working set, the working set, its peak, private
   bytes, threads and uptime; the `Meter` trait, faked by `FakeShell::set_usage`.

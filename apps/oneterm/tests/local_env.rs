@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use oneterm::{NewSession, OneTerm, keymap};
-use quadra::{Key, Mods, Role, SemanticAction, Settings, provide};
+use quadra::{Key, Mods, Role, Settings, provide};
 use quadra_term::echo;
 use quadra_testing::Harness;
 
@@ -36,12 +36,7 @@ fn force_links_is_on_for_a_new_local_shell_until_its_switch_turns_it_off() {
     h.settle();
     h.get_by_role(Role::TreeItem, "Terminal").click();
     h.settle();
-    // The row's switch: the one inside the row named Force links.
-    let row = h.query(|n| n.semantics.role == Role::Group && n.semantics.name == "Force links")[0];
-    let nodes = h.tree.semantic_tree().nodes;
-    let row = nodes.iter().find(|n| h.tree.node_of(n.id) == Some(row)).map(|n| n.bounds).unwrap();
-    let switch = h.query(|n| n.semantics.role == Role::Switch && row.contains(n.bounds.center()))[0];
-    h.tree.act(switch, &SemanticAction::Click);
+    h.get_by_role(Role::Switch, "Force links").click();
     h.get_by_role(Role::Button, "Done").click();
     h.settle();
     assert!(!settings.value("terminal.force_hyperlink", true).get());

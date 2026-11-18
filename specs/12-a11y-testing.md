@@ -92,6 +92,8 @@ semantic children attach to the nearest semantic ancestor.
   point into the runs, and a place in a run that a reader asks for is a character of the
   value. An input that says no lines (or more than 2 048) is one run with no places.
 - A scroll view (`scroll`) is a `ScrollView` unless the view gives it another role.
+- `Tree::meaning(id)` is what a node says of itself, its widget's part included: what a
+  component reads of a view it was given (the settings rows name their controls by it).
 - Relations (`Semantics::relations`, `Relation`): a node is named by another
   (`.labelled_by(&label)`), described by one (`.described_by(&hint)`: the hint or the error
   under a field), or changes what one shows (`.controls(&panel)`: a tab its panel, a combobox

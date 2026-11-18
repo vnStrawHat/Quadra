@@ -184,7 +184,7 @@ fn a_group_of_settings_stands_on_its_own_in_a_page() {
     // Its title is a heading; a row is a group named by its title, and its control works.
     assert!(h.semantics().contains("Heading"), "{}", h.semantics());
     h.get_by_role(Role::Group, "Show FPS monitor");
-    h.get_by_role(Role::Switch, "").click();
+    h.get_by_role(Role::Switch, "Show FPS monitor").click();
     h.frame();
     assert!(fps.get_untracked());
 }
@@ -215,7 +215,7 @@ fn a_changed_row_goes_back_to_its_default_alone_or_with_its_page() {
         // At its default a row has no reset, and the page none.
         assert!(!has_button(&h, "Reset Autosave") && !has_button(&h, "Reset all"));
 
-        h.get_by_role(Role::Switch, "").click();
+        h.get_by_role(Role::Switch, "Autosave").click();
         settle(&mut h);
         assert!(has_button(&h, "Reset Autosave") && !has_button(&h, "Reset Font Size"));
         assert!(has_button(&h, "Reset all"));
@@ -260,4 +260,21 @@ fn every_row_of_the_column_reaches_its_right_end() {
             assert_eq!(n.bounds.right(), end, "{:?}, cards: {cards}", n.semantics.name);
         }
     }
+}
+
+#[test]
+fn a_rows_switch_without_a_name_is_named_by_the_row_and_a_named_one_keeps_its_own() {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let group = SettingsGroup::new("Mouse")
+            .row("Copy on select", "", quadra_design::switch(signal(true)))
+            .row("Paste", "", quadra_design::switch(signal(false)).label("Middle click"));
+        quadra_design::root().child(settings(signal(0)).page(SettingsPage::new("General").group(group)))
+    });
+    settle(&mut h);
+    let named =
+        |h: &Harness, name: &str| h.query(|n| n.semantics.role == Role::Switch && n.semantics.name == name);
+    assert_eq!((named(&h, "Copy on select").len(), named(&h, "Middle click").len()), (1, 1));
+    assert!(named(&h, "Paste").is_empty());
 }

@@ -12,7 +12,7 @@ use quadra_headless::settings::{Model, Reset, shown};
 use quadra_layout::Align;
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo, signal};
-use quadra_tree::NodeId;
+use quadra_tree::{NodeId, Role, Tree};
 use quadra_view::{AnyView, Div, MountCx, View, div, row};
 
 use crate::button::{Size, Variant, button, icon_button};
@@ -182,14 +182,37 @@ fn acts(line: Div, f: impl Fn() + Clone + 'static) -> Div {
     base::acts(line, f)
 }
 
-/// The control of a row at the right, after the button that resets it while it differs.
+/// The control of a row at the right, after the button that resets it while it differs; the
+/// row's title names it for a reader.
 fn control(title: &str, control: AnyView, reset: Option<Reset>) -> Div {
-    let at = div().shrink(0.0);
+    let name = title.to_string();
+    let at = div().shrink(0.0).on_mount(move |tree, id| _ = name_control(tree, id, &name));
     let Some(reset) = reset else { return at.child(control) };
     let changed = reset.changed;
     let back = icon_button(icons::UNDO, "").label(format!("Reset {title}"));
     let back = div().display(move || shown(changed.get())).child(back.on_click(move || reset.reset()));
     at.align_items(Align::Center).gap(4.0).child(back).child(control)
+}
+
+/// Names the first switch, checkbox, input or slider under `id` that has no name: a reader
+/// hears what the row is called, not "switch".
+fn name_control(tree: &mut Tree, id: NodeId, name: &str) -> bool {
+    let says = tree.meaning(id);
+    if matches!(says.role, Role::Switch | Role::Checkbox | Role::TextInput | Role::Slider) {
+        if says.name.is_empty() && !(says.role.named_by_content() && has_text(tree, id)) {
+            tree.update_semantics(id, |it| it.name = name.to_string());
+        }
+        return true;
+    }
+    tree.children(id).to_vec().into_iter().any(|child| name_control(tree, child, name))
+}
+
+/// Whether a text says something inside `id`: a switch with words of its own is named by them.
+fn has_text(tree: &Tree, id: NodeId) -> bool {
+    tree.children(id).iter().any(|&child| {
+        let says = tree.meaning(child);
+        (says.role == Role::Text && !says.name.trim().is_empty()) || has_text(tree, child)
+    })
 }
 
 /// A page's "Reset all", shown while one of the rows a search keeps differs; none for a

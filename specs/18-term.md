@@ -208,11 +208,11 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 ## Input
 
 - Keys: the platform key and modifiers become a `KeyEvent` and `Terminal::encode_key_event`
-  turns them into bytes; `None` sends nothing. Text from typing or an input method is a
-  `Character` key a character (the engine encodes one; an input method commits many), with
-  Shift when the character needs it on a US layout (a capital, `!`, `?`): under the kitty
-  protocol's report-all-keys flag a key is its unshifted code, and Shift is what keeps a
-  capital one. A key's release is sent too (`KeyEventKind::Release`, a key that types its
+  turns them into bytes; `None` sends nothing. A typed character is a `Character` key, with
+  Shift when it needs it on a US layout (a capital, `!`, `?`): under the kitty protocol's
+  report-all-keys flag a key is its unshifted code, and Shift is what keeps a capital one.
+  Text of several characters at once (an input method's commit: a word, an emoji joined by
+  ZWJ) is no key and goes as it is, UTF-8, in every mode. A key's release is sent too (`KeyEventKind::Release`, a key that types its
   unshifted character): the engine writes it only for a program that asked for event types
   (kitty's report-event-types), as a game or a key viewer does. A key the app's keymap binds (copy, paste, new tab) is the
   app's first: the view is a focus scope's leaf, and bindings run before it.
@@ -226,7 +226,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - The pointer's shape is the program's when it names one (OSC 22, CSS names: `default` an
   arrow, `pointer` a hand, `grab` a hand and `grabbing` Move since the system has no closed
   hand, `cell` a crosshair, the resize names), the text cursor otherwise or for a name the
-  system has no cursor for; a link under Ctrl shows the hand over it.
+  system has no cursor for; a link under Ctrl shows the hand over it. Leaving the alternate
+  screen gives the text cursor back (the reset a program sends on its way out, OSC 22 with no
+  name, reaches no event in the engine yet).
 - Typing scrolls back to the bottom. Focus in and out is told to the program when it asked
   (`encode_focus`): the view's focus, and the window's keyboard while the view has the focus
   (`Tree::on_active`), so switching windows is told.

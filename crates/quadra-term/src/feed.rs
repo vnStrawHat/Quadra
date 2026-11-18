@@ -28,6 +28,8 @@ pub(crate) struct Engine {
     /// not taken it.
     pub frame: oneterm_vt::SnapshotState,
     pub framed: bool,
+    /// The alternate screen was up after the last feed.
+    pub alternate: bool,
 }
 
 /// What the UI thread must hear from a feed.
@@ -119,6 +121,10 @@ struct Heard {
 /// fed, and whether it closed one.
 fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) -> (usize, bool) {
     let stats = engine.term.feed_frame(bytes, &mut engine.batch, now);
+    let alternate = engine.term.grid().alt_active();
+    if std::mem::replace(&mut engine.alternate, alternate) && !alternate {
+        heard.events.push(Event::Pointer(String::new())); // the text cursor back
+    }
     for image in engine.term.take_graphics() {
         engine.images.arrive(image);
         heard.repaint = true;

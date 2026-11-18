@@ -179,16 +179,18 @@ whose every cell changes every frame, costs what the V build's costs.
   cursor over its cells (wide characters on two, clipped at the row's end), underlined, the
   clause thicker, the cursor hidden; nothing sent until it is committed; an empty composition,
   a commit or the focus leaving ends it (`crates/quadra-term/src/ime.rs`). An Alt+drag block
-  selection has a test now. Tests: `crates/quadra-term/tests/ime.rs`, `tests/input.rs`. Typed text is a
-  key a character, with Shift when the character needs it on a US layout, so a program that
-  asked for kitty's report-all-keys gets every character of an input method's commit and
-  keeps its capitals (`quadra_term::input::typed`). A key's release goes to a program that
+  selection has a test now. Tests: `crates/quadra-term/tests/ime.rs`, `tests/input.rs`. A typed character
+  is a key, with Shift when it needs it on a US layout, so a program that asked for kitty's
+  report-all-keys keeps its capitals; an input method's commit of several characters goes as
+  text (`quadra_term::input::typed`). A key's release goes to a program that
   asked for event types (`keys::release_event`); the window's keyboard leaving and coming back
   is told to a program that asked for focus reports (`Tree::on_active`, specs/09: the focus
   itself stays, so a selection or an edit survives switching windows). 1Term's local shells
   get `FORCE_HYPERLINK=1`, so programs that know terminals by name show OSC 8 links. The
   pointer takes the shape a program names (OSC 22, CSS names onto the system's cursors:
-  `link::shape`), the hand still over a link under Ctrl. Test: `tests/links.rs`.
+  `link::shape`), the hand still over a link under Ctrl, the text cursor back when the
+  alternate screen is left (the engine's issue 5: its reset makes no event). Test:
+  `tests/links.rs`.
 
 ### Editing in 1Term, each space's dock (2026-11-17)
 

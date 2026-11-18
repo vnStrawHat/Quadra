@@ -200,3 +200,14 @@ fn the_pointer_takes_the_shape_the_program_names_and_a_link_still_shows_the_hand
     t.h.settle();
     assert_eq!(t.h.tree.cursor(), Cursor::Crosshair);
 }
+
+#[test]
+fn leaving_the_alternate_screen_gives_the_text_cursor_back() {
+    let mut t = term();
+    t.press(&[PointerInput::Move], cell(0, 3), Mods::NONE);
+    t.feed(b"\x1b[?1049h\x1b]22;default\x1b\\");
+    assert_eq!(t.h.tree.cursor(), Cursor::Arrow);
+    // On its way out a program resets the shape (no name) and leaves the screen.
+    t.feed(b"\x1b]22;\x1b\\\x1b[?1049l");
+    assert_eq!(t.h.tree.cursor(), Cursor::Text);
+}

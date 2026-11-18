@@ -183,8 +183,13 @@ fn typed_text_is_a_key_a_character_and_a_capital_keeps_its_shift() {
     assert_eq!(t.taken(), b"Ab!");
     // kitty's report-all-keys and alternate keys: a key is its unshifted code.
     t.feed(b"\x1b[>12u");
-    t.h.type_text("Lo?");
+    for c in ["L", "o", "?"] {
+        t.h.type_text(c);
+    }
     assert_eq!(t.taken(), b"\x1b[108:76;2u\x1b[111u\x1b[47:63;2u");
+    // An input method's commit is no key: an emoji joined by ZWJ stays whole.
+    t.h.type_text("Hà 👨\u{200d}👩");
+    assert_eq!(t.taken(), "Hà 👨\u{200d}👩".as_bytes());
 }
 
 #[test]

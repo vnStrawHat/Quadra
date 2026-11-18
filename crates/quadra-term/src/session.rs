@@ -107,6 +107,7 @@ impl Session {
             images: Default::default(),
             frame: oneterm_vt::SnapshotState::new(),
             framed: false,
+            alternate: false,
         };
         let engine = Arc::new(Mutex::new(engine));
         let events = inbox::<Event>();

@@ -65,23 +65,18 @@ impl Session {
     }
 }
 
-/// Typed text as the program asked for keys: a character a key (the engine encodes the first
-/// of a `Character`), with Shift when it needs it on a US layout, so a capital stays one where
-/// a key is its unshifted code (kitty's report-all-keys). ponytail: Shift from the character,
-/// not the keyboard: Caps Lock reads as Shift, and a layout's own shifted keys as unshifted.
+/// Typed text as the program asked for keys: one character is a key, with Shift when it needs
+/// it on a US layout, so a capital stays one where a key is its unshifted code (kitty's
+/// report-all-keys); several at once (an input method's commit) are no key and go as they are.
+/// ponytail: Shift from the character, not the keyboard: Caps Lock reads as Shift, and a
+/// layout's own shifted keys as unshifted.
 pub(crate) fn typed(term: &Terminal, text: &str) -> Vec<u8> {
-    let mut out = Vec::with_capacity(text.len());
-    for c in text.chars() {
-        let shift = c.is_uppercase() || "~!@#$%^&*()_+{}|:\"<>?".contains(c);
-        let mods = KeyMods { shift, ..KeyMods::default() };
-        let mut event = KeyEvent::new(KeySpec::Character(c.to_string()), mods);
-        event.shifted = shift.then_some(c);
-        match term.encode_key_event(&event) {
-            Some(bytes) => out.extend(bytes),
-            None => out.extend(c.encode_utf8(&mut [0; 4]).as_bytes()),
-        }
-    }
-    out
+    let mut chars = text.chars();
+    let (Some(c), None) = (chars.next(), chars.next()) else { return text.as_bytes().to_vec() };
+    let shift = c.is_uppercase() || "~!@#$%^&*()_+{}|:\"<>?".contains(c);
+    let mut event = KeyEvent::new(KeySpec::Character(text.into()), KeyMods { shift, ..KeyMods::default() });
+    event.shifted = shift.then_some(c);
+    term.encode_key_event(&event).unwrap_or_else(|| text.as_bytes().to_vec())
 }
 
 /// Writes what the user sent through the view, then tells the hook.

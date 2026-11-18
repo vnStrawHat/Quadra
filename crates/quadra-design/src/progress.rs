@@ -74,14 +74,21 @@ impl View for Busy {
 
 pub struct Spinner {
     side: f32,
+    label: String,
 }
 
 /// An open ring that turns, 16 px unless told, in the colour of the text around it.
 pub fn spinner() -> Spinner {
-    Spinner { side: 16.0 }
+    Spinner { side: 16.0, label: "Loading".into() }
 }
 
 impl Spinner {
+    /// What a reader hears of it: `Loading` unless told.
+    pub fn label(mut self, words: impl Into<String>) -> Self {
+        self.label = words.into();
+        self
+    }
+
     pub fn size(mut self, px: f32) -> Self {
         self.side = px;
         self
@@ -99,7 +106,7 @@ impl View for Spinner {
             handle.with(move |tree| tree.set_layer_turn(ring, degrees));
             true
         });
-        let around = div().shrink(0.0).role(Role::ProgressBar).label("Loading".to_string()).mount(cx);
+        let around = div().shrink(0.0).role(Role::ProgressBar).label(self.label).mount(cx);
         cx.tree.set_children(around, &[ring]);
         around
     }

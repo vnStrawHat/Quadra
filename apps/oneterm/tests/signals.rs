@@ -53,7 +53,10 @@ impl App {
 fn a_status_shows_on_the_tab_and_the_header_and_done_is_seen_when_the_tab_shows() {
     let mut a = app();
     a.feed(0, b"\x1b]7501;state=working:id=build\x07");
-    assert_eq!(a.h.query(|n| n.semantics.name == "Working").len(), 2, "the tab's spinner and the header's");
+    let turning = |n: &quadra_tree::SemanticNode| {
+        n.semantics.role == Role::ProgressBar && n.semantics.name == "Working"
+    };
+    assert_eq!(a.h.query(turning).len(), 2, "the tab's spinner and the header's, the kit's that turns");
     assert!(a.says("build working"), "the header's label: the record's id and its state");
     a.feed(0, b"\x1b]7501;state=done:id=build\x07");
     assert!(a.says("Done, result not yet seen"));

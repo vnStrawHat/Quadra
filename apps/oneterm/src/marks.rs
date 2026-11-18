@@ -2,7 +2,7 @@
 //! seam bar of its progress, the second line of its row, a space header's signal.
 
 use quadra::{Align, AnyView, Display, Length, Role, View, div, dynamic, row, text};
-use quadra_design::{fonts, icon, icons, token};
+use quadra_design::{fonts, icon, icons, spinner, token};
 use quadra_term::ProgramState;
 use quadra_term::vt::Progress;
 
@@ -20,9 +20,12 @@ fn state_look(state: ProgramState) -> Option<(&'static str, quadra::Token, &'sta
     }
 }
 
-/// The state's icon of `px`, named for a reader.
+/// The state's icon of `px`, named for a reader; working's turns.
 pub(crate) fn state_icon(state: ProgramState, px: f32) -> Option<quadra::Div> {
     let (body, color, said) = state_look(state)?;
+    if state == ProgramState::Working {
+        return Some(div().shrink(0.0).text_color(color).child(spinner().size(px).label(said)));
+    }
     Some(div().shrink(0.0).role(Role::Image).label(said).child(icon(body).size(px).color(color)))
 }
 

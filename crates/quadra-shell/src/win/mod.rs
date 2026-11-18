@@ -37,8 +37,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use windows::core::{HSTRING, Interface, PCWSTR, w};
 
 use crate::{
-    Answer, Dialogs, FileDialog, Message, MessageKind, Meter, Opener, Tray, TrayEvent, TrayIcon, TrayImage,
-    Usage,
+    Answer, Dialogs, FileDialog, Message, MessageKind, Meter, Opener, Sound, Sounds, Tray, TrayEvent,
+    TrayIcon, TrayImage, Usage,
 };
 use tray::WinTray;
 
@@ -170,6 +170,21 @@ fn shell_open(file: &HSTRING, args: Option<&HSTRING>) -> bool {
         ShellExecuteW(None, w!("open"), file, args, None, SW_SHOWNORMAL)
     };
     done.0 as isize > 32
+}
+
+impl Sounds for WinShell {
+    fn play(&self, sound: Sound) {
+        use windows::Win32::UI::WindowsAndMessaging::{MB_ICONASTERISK, MB_ICONEXCLAMATION, MB_ICONHAND};
+        let kind = match sound {
+            Sound::Default => MB_OK,
+            Sound::Info => MB_ICONASTERISK,
+            Sound::Warning => MB_ICONEXCLAMATION,
+            Sound::Error => MB_ICONHAND,
+            Sound::Question => MB_ICONQUESTION,
+        };
+        // SAFETY: no pointer is passed; the sound plays on the system's thread.
+        let _ = unsafe { windows::Win32::System::Diagnostics::Debug::MessageBeep(kind) };
+    }
 }
 
 impl Opener for WinShell {

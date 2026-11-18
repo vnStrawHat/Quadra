@@ -144,6 +144,22 @@ pub trait Opener {
     fn open_with(&self, program: &std::path::Path, args: &[String], file: &std::path::Path) -> bool;
 }
 
+/// One of the system's sounds: the one the user set for that kind of event.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sound {
+    Default,
+    Info,
+    Warning,
+    Error,
+    Question,
+}
+
+/// The system's sounds.
+pub trait Sounds {
+    /// Plays `sound` and returns at once.
+    fn play(&self, sound: Sound);
+}
+
 /// What the icon in the tray tells the app.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TrayEvent {
@@ -197,13 +213,14 @@ pub enum Instance {
     Second,
 }
 
-/// Gives the app's views the OS's dialogs, opener, tray and meter ([`dialogs`], [`opener`],
-/// [`tray`], `Rc<dyn Meter>`).
+/// Gives the app's views the OS's dialogs, opener, tray, meter and sounds ([`dialogs`],
+/// [`opener`], [`tray`], `Rc<dyn Meter>`, `Rc<dyn Sounds>`).
 #[cfg(windows)]
 pub fn install<R: Renderer>(app: App<R>) -> App<R> {
     let shell = Rc::new(WinShell);
     let app = app.provide::<Rc<dyn Dialogs>>(shell.clone()).provide::<Rc<dyn Opener>>(shell.clone());
-    app.provide::<Rc<dyn Tray>>(shell.clone()).provide::<Rc<dyn Meter>>(shell)
+    let app = app.provide::<Rc<dyn Tray>>(shell.clone()).provide::<Rc<dyn Meter>>(shell.clone());
+    app.provide::<Rc<dyn Sounds>>(shell)
 }
 
 /// The app's tray. Call it while a view is built.

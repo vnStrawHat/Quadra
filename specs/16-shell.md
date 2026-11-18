@@ -14,7 +14,8 @@ built only for it (`src/win/`, `#[cfg(windows)]`, with the `windows` crate a dep
 that target alone), which gives `install`, `single_instance` and `crash_reports` of the
 same signatures. Another OS is another module (`src/mac/`), not another crate; the
 platform and renderer are crates by OS (`quadra-native-win`) because they are far larger. Views reach the app's through
-context (`App::provide`; `dialogs()`, `opener()`, taken while a view is built);
+context (`App::provide`; `dialogs()`, `opener()`, `Rc<dyn Sounds>`, taken while a view is
+built);
 `quadra_shell::install(app)` provides the Windows ones, `FakeShell::provide` a fake in a
 test's scope. No test opens a real dialog, a real tray icon or a real
 notification: they are manual checks (00, R5).
@@ -41,6 +42,12 @@ file)` starts a program the user named with the arguments, then the file (no con
 for it, no shell between: the arguments are not read again). What opens a program
 opens it: a link from content that is not the user's goes through
 `quadra_text::url_openable` first.
+
+## Sounds
+
+`Sounds::play(Sound)` plays one of the system's sounds and returns at once: `Sound::{Default,
+Info, Warning, Error, Question}`, the sounds the user set for those events (`MessageBeep`). The
+fake records `sound <kind>`; a test never plays one.
 
 ## Tray and notifications
 

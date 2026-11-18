@@ -11,7 +11,8 @@ use quadra_reactive::provide;
 use quadra_async::Sender;
 
 use crate::{
-    Answer, Dialogs, FileDialog, Message, Meter, Opener, Tray, TrayEvent, TrayIcon, TrayImage, Usage,
+    Answer, Dialogs, FileDialog, Message, Meter, Opener, Sound, Sounds, Tray, TrayEvent, TrayIcon, TrayImage,
+    Usage,
 };
 
 #[derive(Default)]
@@ -28,13 +29,14 @@ impl FakeShell {
         Rc::new(FakeShell::default())
     }
 
-    /// Gives the views mounted in the current scope this shell as their dialogs, opener, tray
-    /// and meter.
+    /// Gives the views mounted in the current scope this shell as their dialogs, opener, tray,
+    /// meter and sounds.
     pub fn provide(self: &Rc<Self>) {
         provide::<Rc<dyn Dialogs>>(self.clone());
         provide::<Rc<dyn Opener>>(self.clone());
         provide::<Rc<dyn Tray>>(self.clone());
         provide::<Rc<dyn Meter>>(self.clone());
+        provide::<Rc<dyn Sounds>>(self.clone());
     }
 
     /// What the meter reads from now on.
@@ -112,6 +114,12 @@ impl Opener for FakeShell {
         let line: Vec<String> = line.chain([file.display().to_string()]).collect();
         self.ask("open with", &line.join(" "));
         true
+    }
+}
+
+impl Sounds for FakeShell {
+    fn play(&self, sound: Sound) {
+        self.ask("sound", &format!("{sound:?}"));
     }
 }
 

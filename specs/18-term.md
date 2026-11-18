@@ -102,9 +102,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
     tenth of the box's height of that parity; heavy, to twice that). A double line is two
     light strokes and a gap, the whole of that parity. Lines run to the box's edges; arms
     meet at a square; double junctions draw their inner and outer corners.
-  - Dashes (2, 3 or 4 a cell) are centred in equal parts. An arc is a quarter ellipse from
-    the middle of one edge to the middle of the next, its stroke meeting the straight lines'
-    edges. Diagonals run corner to corner.
+  - Dashes (2, 3 or 4 a cell) are centred in equal parts. An arc is a quarter circle of half the
+    box's shorter side, tangent to the lines from the middles of its two edges (on the longer
+    side a straight part first), its ends as thick as theirs. Diagonals run corner to corner.
   - Blocks fill their part of the box exactly (eighths, halves, quadrants): an edge inside a
     pixel covers it by the part it covers. Shades are 25, 50 and 75 % coverage. The
     separators are a solid triangle and a chevron to the middle of the opposite edge.

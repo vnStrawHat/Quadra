@@ -103,10 +103,9 @@ pub(crate) fn mask(c: char, w: u32, h: u32) -> Vec<u8> {
         0x2596..=0x259F => {
             let quads = [4, 8, 1, 13, 9, 7, 11, 2, 6, 14][(n - 0x2596) as usize];
             let (x, y) = (wf / 2.0, hf / 2.0);
-            for (bit, (x0, y0)) in [(1, (0.0, 0.0)), (2, (x, 0.0)), (4, (0.0, y)), (8, (x, y))] {
-                if quads & bit != 0 {
-                    m.rect(x0, y0, x0 + x, y0 + y);
-                }
+            let corners = [(1, 0.0, 0.0), (2, x, 0.0), (4, 0.0, y), (8, x, y)];
+            for (_, x0, y0) in corners.into_iter().filter(|it| quads & it.0 != 0) {
+                m.rect(x0, y0, x0 + x, y0 + y);
             }
         }
         0xE0B0..=0xE0B3 => {
@@ -285,15 +284,17 @@ impl Mask {
         self.add(&if down { m.transposed() } else { m });
     }
 
-    /// `╭`: a quarter ellipse about the bottom right corner from the middle of the bottom edge
-    /// to the middle of the right one, its edges those of the straight lines it meets.
+    /// `╭`: a quarter circle of half the shorter side, tangent to the line up from the bottom
+    /// edge and the one out to the right edge, its ends as thick as theirs.
     fn arc(&mut self, ideal: f64) {
         let (w, h) = (self.w as f64, self.h as f64);
-        let (tv, th) = (thick(ideal, self.w), thick(ideal, self.h));
-        let (outer, inner) = (((w + tv) / 2.0, (h + th) / 2.0), ((w - tv) / 2.0, (h - th) / 2.0));
-        let within = |(a, b): (f64, f64), dx: f64, dy: f64| {
-            a > 0.0 && b > 0.0 && (dx / a).powi(2) + (dy / b).powi(2) <= 1.0
-        };
-        self.shape(|x, y| within(outer, w - x, h - y) && !within(inner, w - x, h - y));
+        let (tv, th, r) = (thick(ideal, self.w) / 2.0, thick(ideal, self.h) / 2.0, w.min(h) / 2.0);
+        let (cx, cy) = (w / 2.0 + r, h / 2.0 + r);
+        let e = |a: f64, b: f64, x: f64, y: f64| a.min(b) > 0.0 && (x / a).powi(2) + (y / b).powi(2) <= 1.0;
+        self.shape(|x, y| {
+            let (dx, dy) = (cx - x, cy - y);
+            let ring = dx >= 0.0 && dy >= 0.0 && e(r + tv, r + th, dx, dy) && !e(r - tv, r - th, dx, dy);
+            ring || ((x - w / 2.0).abs() <= tv && y >= cy) || ((y - h / 2.0).abs() <= th && x >= cx)
+        });
     }
 }

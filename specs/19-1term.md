@@ -225,8 +225,9 @@ all on but where it says. A change applies at once (`Engine::set_config`).
 | BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the title bar's count | |
 | OSC 9, 777, 99 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and `OSC 9`), 6 s or until dismissed (setting) |
 
-OSC 99 in full (`Config::notifications` declares focus, report, close events, buttons, close,
-alive, urgency; no icons, sounds or occasions): a notification's buttons are the card's,
+OSC 99 in full (`Config::notifications` declares every ability: focus, report, close events,
+unfocused, invisible, icons, buttons, close, alive, sounds, urgency, expiry): a notification's
+buttons are the card's,
 a click on its words opens it, which shows its tab and focuses its space unless it asked not
 to (`a=-focus`); either is reported to a program that asked (`a=report`: `Activated`,
 `Button`). A card that goes is reported closed to one that asked (`c=1`). One with the id of a
@@ -234,6 +235,17 @@ card of the same space that still shows takes that card's place. Critical urgenc
 danger tone and stays until dismissed, low and normal inform; an expiry the program gives
 (`w`) replaces the setting's time, `w=0` stays. A program's close shuts its card; its alive
 query is answered with the ids of its cards that show.
+One that wants to show only unfocused (`o=unfocused`) is dropped while its space has the
+keyboard: the window active, its tab shown (no settings page over it), the space its tab's
+focus; one only invisible (`o=invisible`) while the window is active or its tab shows and the
+window is not minimized.
+A covered window counts as seen. Its icon is a name first (`error`, `warn`, `warning`, `info`,
+`question`, `help`: the kit's icons of those), else its data, kept under its icon id for later
+notifications of the space that name only the id (8 kept, the oldest forgotten). A sound plays
+only when the program names one (`system`, `info`, `warning`, `warn`, `error`, `question`; a
+name of its own plays the system's): a card in the window is no desktop notification, and the
+shell's notification after each command stays quiet. A notification that shows no card
+(dropped, the cards silent, the window locked) plays nothing.
 
 Seen clears: selecting the tab clears its bell and a "done" seen state.
 

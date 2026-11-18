@@ -47,6 +47,7 @@ use quadra_term::Session;
 pub use hosts::Host;
 pub use local::local_shell;
 pub use model::{Command, Model, Side, Space, Tab};
+pub use notify::abilities;
 pub use prefs::{KIT_THEME, Prefs, theme};
 pub use remote::{remote_shell, remote_shell_with};
 pub use shells::{Launch, Remote, Shell};

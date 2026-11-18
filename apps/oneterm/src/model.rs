@@ -58,6 +58,8 @@ struct Inner {
     unread: Signal<u32>,
     ui: Ui,
     lock: Lock,
+    /// The window's state and the system's sounds, for notifications.
+    outside: crate::notify::Outside,
 }
 
 impl Model {
@@ -86,6 +88,7 @@ impl Model {
                 complete: crate::complete::Completion::new(),
             },
             lock: Lock::new(prefs),
+            outside: crate::notify::Outside::here(),
         };
         let model = Model(Rc::new(inner));
         model.new_tab();
@@ -128,6 +131,10 @@ impl Model {
 
     pub fn lock(&self) -> Lock {
         self.0.lock
+    }
+
+    pub(crate) fn outside(&self) -> &crate::notify::Outside {
+        &self.0.outside
     }
 
     pub fn active_tab(&self) -> Option<Tab> {

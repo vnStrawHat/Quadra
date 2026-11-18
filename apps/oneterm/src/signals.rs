@@ -88,7 +88,7 @@ impl Model {
     }
 
     /// Whether a space is the focused one of the tab that shows.
-    fn looks_at(&self, id: u64) -> bool {
+    pub(crate) fn looks_at(&self, id: u64) -> bool {
         self.active_tab().and_then(|tab| tab.focused()).is_some_and(|space| space.id == id)
     }
 

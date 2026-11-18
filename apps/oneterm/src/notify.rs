@@ -1,14 +1,18 @@
 //! A program's notifications as cards (specs/19, "Signals"): OSC 9 and 777 words, and OSC 99
 //! in full: buttons, opening, closing and the reports a program asked for, a card that takes
-//! the place of one with its id, the program's close and its question of what still shows.
+//! the place of one with its id, the program's close and its question of what still shows,
+//! when it wants to show, its icon and its sound.
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Duration;
 
-use quadra_design::{Notice, Tone};
+use quadra::{Window, untrack, use_context};
+use quadra_design::{Notice, Tone, icons};
+use quadra_shell::{Sound, Sounds};
 use quadra_term::vt::input::NotificationReport;
-use quadra_term::vt::{NotificationExpiry, NotificationSupport, NotificationUrgency};
+use quadra_term::vt::{NotificationExpiry, NotificationOccasion, NotificationSupport, NotificationUrgency};
 use quadra_term::{Notice as Told, Session};
 
 use crate::model::Model;
@@ -16,19 +20,84 @@ use crate::model::Model;
 /// How long a card lasts unless the setting keeps it or the program says.
 const NOTICE: Duration = Duration::from_secs(6);
 
+/// How many icons a space's program has kept by their ids: each may be 1 MiB.
+const ICONS: usize = 8;
+
+/// The sounds a program may name: the system's for that kind, `silent` none.
+const SOUNDS: [&str; 7] = ["system", "silent", "info", "warning", "warn", "error", "question"];
+
+/// What notifications reach outside the model: the window's state and the system's sounds,
+/// taken where the window's view is built.
+pub(crate) struct Outside {
+    window: Option<Window>,
+    sounds: Option<Rc<dyn Sounds>>,
+}
+
+impl Outside {
+    pub(crate) fn here() -> Outside {
+        Outside { window: use_context::<Window>(), sounds: use_context::<Rc<dyn Sounds>>() }
+    }
+}
+
 /// What 1Term does with an OSC 99 notification, from which the engine answers `p=?`.
-pub(crate) fn abilities() -> NotificationSupport {
+pub fn abilities() -> NotificationSupport {
     NotificationSupport {
         focus: true,
         report: true,
         close_events: true,
+        unfocused: true,
+        invisible: true,
+        icons: true,
         buttons: true,
         close: true,
         alive: true,
+        sounds: SOUNDS.into_iter().map(Into::into).collect(),
         urgency: true,
         expiry: true,
-        ..NotificationSupport::default()
     }
+}
+
+/// The kit's icon of a name a program gives.
+fn named(name: &str) -> Option<&'static str> {
+    match name {
+        "error" => Some(icons::CIRCLE_X),
+        "warn" | "warning" => Some(icons::TRIANGLE_ALERT),
+        "info" => Some(icons::INFO),
+        "question" | "help" => Some(icons::CIRCLE_HELP),
+        _ => None,
+    }
+}
+
+/// The system's sound of a name a program gives; none for none and `silent`.
+fn sound(name: &str) -> Option<Sound> {
+    Some(match name {
+        "" | "silent" => return None,
+        "info" => Sound::Info,
+        "warn" | "warning" => Sound::Warning,
+        "error" => Sound::Error,
+        "question" => Sound::Question,
+        _ => Sound::Default,
+    })
+}
+
+/// Icon data a space's program sent, by the ids it gave, the oldest first.
+type Kept = Vec<(String, Arc<[u8]>)>;
+
+/// The icon data a notification brings, kept under its id; or what was kept under the id it
+/// names alone.
+fn picture(kept: &RefCell<Kept>, n: &Told) -> Option<Arc<[u8]>> {
+    let mut kept = kept.borrow_mut();
+    if n.icon.is_empty() {
+        return kept.iter().find(|it| !n.icon_id.is_empty() && it.0 == n.icon_id).map(|it| it.1.clone());
+    }
+    if !n.icon_id.is_empty() {
+        kept.retain(|it| it.0 != n.icon_id);
+        if kept.len() == ICONS {
+            kept.remove(0);
+        }
+        kept.push((n.icon_id.clone(), n.icon.clone()));
+    }
+    Some(n.icon.clone())
 }
 
 impl Model {
@@ -36,19 +105,31 @@ impl Model {
     pub(crate) fn follow_notices(&self, id: u64, session: &Session) {
         // The cards that show, by the id the program gave them.
         let cards: Rc<RefCell<Vec<(String, u64)>>> = Rc::default();
-        let (me, shown) = (self.clone(), cards.clone());
+        let (me, shown, kept) = (self.clone(), cards.clone(), RefCell::default());
         session.on_notification(move |n| {
             let lasts = match me.prefs().notices.get_untracked() {
                 0 => Some(NOTICE),
                 1 => None,
                 _ => return, // silent
             };
-            let card = me.card_of(id, n, lasts, &shown);
+            let picture = picture(&kept, n);
+            if untrack(|| me.held_back(id, n.occasion)) {
+                return;
+            }
+            let mut card = me.card_of(id, n, lasts, &shown);
+            if let Some(svg) = n.icon_names.iter().find_map(|name| named(name)) {
+                card = card.icon(svg);
+            } else if let Some(file) = picture {
+                card = card.picture(file);
+            }
             let held = shown.borrow().iter().find(|it| !n.id.is_empty() && it.0 == n.id).map(|it| it.1);
             let card = match held.filter(|&at| me.notices().shows(at)) {
                 Some(at) => Some(me.notices().replace(at, card)),
                 None => me.notify_card(card),
             };
+            if let (Some(_), Some(sounds), Some(sound)) = (card, &me.outside().sounds, sound(&n.sound)) {
+                sounds.play(sound);
+            }
             let mut shown = shown.borrow_mut();
             shown.retain(|it| it.0 != n.id || n.id.is_empty());
             shown.extend(card.filter(|_| !n.id.is_empty()).map(|card| (n.id.clone(), card)));
@@ -117,6 +198,22 @@ impl Model {
                 me.tell(id, NotificationReport::Closed { id: &told.id });
             }
         })
+    }
+
+    /// Whether a notification that wants to show only while its space lacks the keyboard, or
+    /// is not seen, waits for nothing: it is dropped. A covered window counts as seen.
+    fn held_back(&self, id: u64, occasion: NotificationOccasion) -> bool {
+        let window = self.outside().window.as_ref();
+        let (active, minimized) = window.map_or((true, false), |w| (w.is_active(), w.is_minimized()));
+        let settings = self.ui().settings.get();
+        let shown = || {
+            !settings && self.active_tab().is_some_and(|tab| tab.spaces.get().iter().any(|it| it.id == id))
+        };
+        match occasion {
+            NotificationOccasion::Always => false,
+            NotificationOccasion::Unfocused => active && !settings && self.looks_at(id),
+            NotificationOccasion::Invisible => active || (!minimized && shown()),
+        }
     }
 
     /// Writes a report to the program of a space, while it is there.

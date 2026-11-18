@@ -200,10 +200,14 @@ whose every cell changes every frame, costs what the V build's costs.
   `on_notice_close`, `on_notice_alive`). Test: `tests/asks.rs`. The kit's cards open by their
   words (`Notice::on_open`), tell when they go (`on_close`, from `Queue::on_gone`) and take
   another's place (`Notices::replace`, `shows`; `quadra-design/tests/notices.rs`). 1Term
-  declares focus, reports, close events, buttons, close, alive, urgency and expiry
-  (`notify::abilities`): a program's buttons on its card, opening shows its space, the
-  reports it asked for, a card replaced by its id, its close and alive query answered
-  (`apps/oneterm/tests/notices.rs`).
+  declares every ability (`oneterm::abilities`): a program's buttons on its card, opening
+  shows its space, the reports it asked for, a card replaced by its id, its close and alive
+  query answered; one wanted only unfocused or unseen dropped while its space is seen (the
+  window's `is_active`, `is_minimized`, from `Tree::window_state`; `quadra-app/tests/frame.rs`);
+  its icon by name, else its data kept by its id (8), on the card (`Notice::icon`, `picture`);
+  a sound it names played (`quadra_shell::Sounds`, `MessageBeep`), none when it names none
+  (`apps/oneterm/tests/notices.rs`). The real decoding of an icon and the real sound are
+  manual checks.
 
 ### Editing in 1Term, each space's dock (2026-11-17)
 

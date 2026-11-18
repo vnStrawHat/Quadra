@@ -284,11 +284,11 @@ impl Mask {
         self.add(&if down { m.transposed() } else { m });
     }
 
-    /// `╭`: a quarter circle of half the shorter side, tangent to the line up from the bottom
-    /// edge and the one out to the right edge, its ends as thick as theirs.
+    /// `╭`: a quarter circle tangent to the lines from two edges' middles, the edge pixels theirs.
     fn arc(&mut self, ideal: f64) {
         let (w, h) = (self.w as f64, self.h as f64);
-        let (tv, th, r) = (thick(ideal, self.w) / 2.0, thick(ideal, self.h) / 2.0, w.min(h) / 2.0);
+        let (tv, th) = (thick(ideal, self.w) / 2.0, thick(ideal, self.h) / 2.0);
+        let r = (w.min(h) / 2.0 - 1.0).max(0.5);
         let (cx, cy) = (w / 2.0 + r, h / 2.0 + r);
         let e = |a: f64, b: f64, x: f64, y: f64| a.min(b) > 0.0 && (x / a).powi(2) + (y / b).powi(2) <= 1.0;
         self.shape(|x, y| {

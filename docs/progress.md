@@ -165,7 +165,8 @@ whose every cell changes every frame, costs what the V build's costs.
   that draws without a pause (each read closes a frame and opens the next) shows every frame
   (the engine at a commit of its main after v0.2.0, which fixed issues 1 and 2 of its
   repository). Test: `crates/quadra-term/tests/images.rs`.
-- **Drawn characters and grayscale smoothing** (specs/18, "The view"): box drawing, block
+- **Drawn characters and grayscale smoothing** (specs/18, "The view"; each of the 164
+  checked against its Unicode name at six box sizes, `drawn/tests/oracle.rs`): box drawing, block
   elements and the separators U+E0B0 to U+E0B3 are drawn to their cells' box in device pixels
   (`crates/quadra-term/src/drawn.rs`), lines of the side's parity so every mask is the mirror
   of its mirrored character about both middles; glyphs are smoothed by pixel

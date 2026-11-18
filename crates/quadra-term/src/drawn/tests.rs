@@ -1,5 +1,7 @@
 use super::*;
 
+mod oracle;
+
 /// Boxes of both parities, at 1x and 2x.
 const SIZES: [(u32, u32); 6] = [(9, 18), (8, 17), (10, 21), (7, 15), (12, 24), (18, 36)];
 

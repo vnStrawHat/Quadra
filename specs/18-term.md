@@ -103,11 +103,17 @@ session's `Feeder`, the session's `Link` is the shell's handle.
     light strokes and a gap, the whole of that parity. Lines run to the box's edges; arms
     meet at a square; double junctions draw their inner and outer corners.
   - Dashes (2, 3 or 4 a cell) are centred in equal parts. An arc is a quarter circle of half the
-    box's shorter side, tangent to the lines from the middles of its two edges (on the longer
-    side a straight part first), its ends as thick as theirs. Diagonals run corner to corner.
+    box's shorter side less a pixel, tangent to the lines from the middles of its two edges, so
+    the pixels at the edges are the straight lines' and it joins them exactly. Diagonals run corner to corner.
   - Blocks fill their part of the box exactly (eighths, halves, quadrants): an edge inside a
     pixel covers it by the part it covers. Shades are 25, 50 and 75 % coverage. The
     separators are a solid triangle and a chevron to the middle of the opposite edge.
+  - Every drawn character is checked at boxes of both parities, at 1x and 2x, against what
+    its Unicode name says (the names, from the Unicode Character Database, kept beside the
+    test): each edge's strokes (none, light, heavy, double; how thick, centred), whole arms
+    up to where they meet and nothing outside them, the number of dashes, an arc on its
+    circle, a diagonal's corners, a block's coverage to the pixel, shades and separators;
+    and the characters drawn are exactly the ones named.
 - Smoothing (`TermLook::grayscale`, on by default): glyphs are smoothed by pixel even where
   Windows smooths by subpixel (ClearType), so coloured text and drawings show no coloured
   fringes; off, as Windows smooths.

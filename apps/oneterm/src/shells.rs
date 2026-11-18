@@ -51,6 +51,8 @@ pub struct Launch {
     pub secret: Option<crate::vault::Secret>,
     /// What is written to the shell once it is open (a saved host's startup command).
     pub startup: Option<String>,
+    /// A local shell gets `FORCE_HYPERLINK=1` (the setting Force links).
+    pub force_links: bool,
 }
 
 /// A host and how to sign in to it.
@@ -130,6 +132,7 @@ impl Model {
             keepalive: p.keepalive(),
             secret: None,
             startup: None,
+            force_links: p.force_links.get_untracked(),
         }
     }
 

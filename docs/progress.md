@@ -186,7 +186,9 @@ whose every cell changes every frame, costs what the V build's costs.
   asked for event types (`keys::release_event`); the window's keyboard leaving and coming back
   is told to a program that asked for focus reports (`Tree::on_active`, specs/09: the focus
   itself stays, so a selection or an edit survives switching windows). 1Term's local shells
-  get `FORCE_HYPERLINK=1`, so programs that know terminals by name show OSC 8 links. The
+  are told `TERM_PROGRAM=1Term` and its version, and `FORCE_HYPERLINK=1` while the setting
+  Force links is on (`terminal.force_hyperlink`, on), so programs that know terminals by name
+  show OSC 8 links (`apps/oneterm/tests/local_env.rs`). The
   pointer takes the shape a program names (OSC 22, CSS names onto the system's cursors:
   `link::shape`), the hand still over a link under Ctrl, the text cursor back when the
   alternate screen is left (the engine's issue 5: its reset makes no event). Test:

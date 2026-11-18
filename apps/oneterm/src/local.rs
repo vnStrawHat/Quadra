@@ -25,16 +25,18 @@ pub fn local_shell(launch: Launch) -> Session {
     // its size only at start reads the real one. ponytail: the closure holds the session until
     // then, so a space never shown keeps its session alive with it.
     let program = launch.shell.map(|shell| (shell.program.display().to_string(), shell.args));
+    let mut env: Vec<(String, String)> = vec![
+        ("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into()),
+        ("TERM_PROGRAM".into(), "1Term".into()),
+        ("TERM_PROGRAM_VERSION".into(), env!("CARGO_PKG_VERSION").into()),
+    ];
+    if launch.force_links {
+        // Programs that know terminals by name show OSC 8 links here too.
+        env.push(("FORCE_HYPERLINK".into(), "1".into()));
+    }
     let starts = session.clone();
     session.when_sized(move |size| {
-        let options = PtyOptions {
-            program,
-            cwd: start,
-            // FORCE_HYPERLINK: programs that know terminals by name show OSC 8 links here too.
-            env: vec![("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into()), ("FORCE_HYPERLINK".into(), "1".into())],
-            rows: size.rows,
-            cols: size.cols,
-        };
+        let options = PtyOptions { program, cwd: start, env, rows: size.rows, cols: size.cols };
         let (feeder, ended) = (starts.feeder(), starts.feeder());
         let spawned = Pty::spawn(
             options,

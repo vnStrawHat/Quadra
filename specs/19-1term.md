@@ -246,8 +246,10 @@ the icon's place. The title bar's Search opens the same menu under itself with a
   (`%ProgramFiles%\PowerShell\7\pwsh.exe`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe`
   `--login -i`), WSL (`%SystemRoot%\System32\wsl.exe`), each where its file is. The default
   shell is Command Prompt until settings (M5) name another. A split starts in the focused
-  space's directory. A local shell's environment adds `FORCE_HYPERLINK=1`: 1Term opens OSC 8
-  links, and programs that know terminals by name (1Term is on no list) show links on it.
+  space's directory. A local shell's environment names the terminal (`TERM_PROGRAM=1Term`,
+  `TERM_PROGRAM_VERSION` its version) and, while Force links is on, adds `FORCE_HYPERLINK=1`:
+  1Term opens OSC 8 links, and programs that know terminals by name (1Term is on no list)
+  show links on it; off, a program that writes links even into a pipe or a file does not.
 - **The `+` menu** has no search field; the title bar's Search shows it with one
   (`searched_menu`): what is typed keeps the shells, recent targets and hosts whose
   names or addresses hold it (whatever the case), and a typed target (`Target::parse`) is a
@@ -314,7 +316,7 @@ colour with its normal and bright fields), the view's `TermLook` (specs/18). Key
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
 blink, scrollback lines, the default local shell (the OS's, a shell found, or "A program": the
 program and its arguments typed, `terminal.shell_program`, `terminal.shell_args`), where new spaces start (active space's cwd,
-home, last used); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
+home, last used), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
 the view's `TermSettings` (specs/18). Not yet: "last used", a bell's
 sound or flash. A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on

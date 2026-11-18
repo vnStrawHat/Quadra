@@ -44,6 +44,8 @@ pub struct Prefs {
     pub shell_program: Signal<String>,
     pub shell_args: Signal<String>,
     pub start: Signal<usize>,
+    /// A new local shell gets `FORCE_HYPERLINK=1`.
+    pub force_links: Signal<bool>,
     pub vertical: Signal<bool>,
     /// The rail's width, and whether it is folded to its icons.
     pub rail_width: Signal<f64>,
@@ -125,6 +127,7 @@ impl Prefs {
             shell_program: s.value("terminal.shell_program", String::new()),
             shell_args: s.value("terminal.shell_args", String::new()),
             start: choice(s, "terminal.start_in", &STARTS),
+            force_links: s.value("terminal.force_hyperlink", true),
             vertical: s.value("tabs.vertical", true),
             rail_width: s.value("tabs.rail_width", 248.0),
             rail_folded: s.value("tabs.rail_folded", false),

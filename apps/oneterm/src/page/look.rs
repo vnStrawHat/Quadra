@@ -180,7 +180,13 @@ pub(super) fn terminal(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
             "Where a new tab's shell starts.",
             select(prefs::STARTS, p.start).width(240.0),
         )
-        .back(p.start, d.start);
+        .back(p.start, d.start)
+        .row(
+            "Force links",
+            "Programs that know terminals by name show links here (FORCE_HYPERLINK); some write them into pipes too.",
+            switch(p.force_links),
+        )
+        .back(p.force_links, d.force_links);
     vec![cursor, mouse, shell]
 }
 

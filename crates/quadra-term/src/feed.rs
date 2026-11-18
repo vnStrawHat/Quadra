@@ -24,8 +24,6 @@ pub(crate) struct Engine {
     pub status: Option<i32>,
     /// The images decoded and let go of since the UI thread last took them.
     pub images: crate::images::Arrivals,
-    /// How much of a `CSI ? 2026 l` the end of the last read matched.
-    pub closing: usize,
     /// The last frame a program closed, copied when it did; `framed` while the UI thread has
     /// not taken it.
     pub frame: oneterm_vt::SnapshotState,
@@ -71,7 +69,7 @@ pub(crate) fn lock(engine: &Mutex<Engine>) -> MutexGuard<'_, Engine> {
 impl Feeder {
     /// Feeds output to the engine; returns the replies the transport must write back, before
     /// anything else it was given, in order. A read is fed in parts that end where a
-    /// synchronized update ends, and the frame it closed is copied then (`frame`).
+    /// synchronized update closes (`feed_frame`), and the frame it closed is copied then.
     pub fn feed(&self, bytes: &[u8], now: Instant) -> Vec<u8> {
         crate::log::Log::write(&self.log, bytes);
         let mut heard = Heard::default();
@@ -79,16 +77,13 @@ impl Feeder {
             let mut engine = lock(&self.engine);
             let mut rest = bytes;
             while !rest.is_empty() {
-                let close = crate::frame::close_end(&mut engine.closing, rest);
-                let (part, after) = rest.split_at(close.unwrap_or(rest.len()));
-                apply(&mut engine, part, now, &mut heard);
-                if close.is_some() && !engine.term.sync().is_set() {
-                    let Engine { term, frame, framed, images, .. } = &mut *engine;
+                let (fed, closed) = apply(&mut engine, rest, now, &mut heard);
+                if closed {
+                    let Engine { term, frame, framed, .. } = &mut *engine;
                     term.snapshot_update(frame, now);
                     *framed = true;
-                    images.mark();
                 }
-                rest = after;
+                rest = &rest[fed..];
             }
             let Engine { term, stamps, .. } = &mut *engine;
             stamps.update(term, heard.cleared, Some(now));
@@ -118,9 +113,10 @@ struct Heard {
     cleared: bool,
 }
 
-/// Feeds a part of a read and takes what it made.
-fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) {
-    engine.term.feed(bytes, &mut engine.batch, now);
+/// Feeds a read up to a closed synchronized update and takes what it made: how many bytes it
+/// fed, and whether it closed one.
+fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) -> (usize, bool) {
+    let stats = engine.term.feed_frame(bytes, &mut engine.batch, now);
     for image in engine.term.take_graphics() {
         engine.images.arrive(image);
         heard.repaint = true;
@@ -180,4 +176,5 @@ fn apply(engine: &mut Engine, bytes: &[u8], now: Instant, heard: &mut Heard) {
             _ => {}
         }
     }
+    (stats.bytes.max(1).min(bytes.len()), stats.frames_closed > 0)
 }

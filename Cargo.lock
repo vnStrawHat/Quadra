@@ -1071,7 +1071,7 @@ dependencies = [
 [[package]]
 name = "oneterm-vt"
 version = "0.2.0"
-source = "git+https://github.com/vnStrawHat/oneterm-vt?tag=v0.2.0#437baf07d7025e0643f1db6a274ccaa006aeec60"
+source = "git+https://github.com/vnStrawHat/oneterm-vt?rev=aafadd6a5c3c5550a86ce12c7b50d092fa57dc0e#aafadd6a5c3c5550a86ce12c7b50d092fa57dc0e"
 dependencies = [
  "bitflags",
  "libc",

@@ -105,7 +105,6 @@ impl Session {
             marked: false,
             status: None,
             images: Default::default(),
-            closing: 0,
             frame: oneterm_vt::SnapshotState::new(),
             framed: false,
         };

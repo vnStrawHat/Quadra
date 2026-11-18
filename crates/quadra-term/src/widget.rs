@@ -14,7 +14,6 @@ use quadra_tree::{GlyphTile, Inherited, MeasureCx, NodeId, PaintCx, Theme, Tree,
 use crate::contrast::Contrast;
 use crate::feed::Engine;
 use crate::highlight::Marks;
-use crate::images::Shown;
 use crate::look::TermColors;
 use crate::session::Session;
 
@@ -153,15 +152,10 @@ impl TerminalWidget {
         // While `?2026` holds the latest frame, the last one a program closed shows if the
         // reader copied one since (a program that draws without a pause leaves no gap between
         // its frames to take one in), else the one shown.
-        let shown = match (term.sync().is_set(), std::mem::take(framed)) {
-            (false, _) => Shown::Live,
-            (true, false) => Shown::Held,
-            (true, true) => {
-                std::mem::swap(&mut self.state, frame); // each keeps what it copied
-                Shown::Closed
-            }
-        };
-        self.session.0.images.borrow_mut().take(images, &self.state, shown);
+        if std::mem::take(framed) && term.sync().is_set() {
+            std::mem::swap(&mut self.state, frame); // each keeps what it copied
+        }
+        self.session.0.images.borrow_mut().take(images, &self.state);
         self.palette = term.palette();
         self.cursor_style = term.cursor_style();
         self.modes = term.mode_snapshot();

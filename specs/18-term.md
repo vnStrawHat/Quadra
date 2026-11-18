@@ -41,10 +41,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   a resize, a key, the pointer, the theme), never in paint; drawing reads the snapshot alone (the engine's two-phase hand-off). Synchronized output (`?2026`) is the
   engine's: a held frame is `Unchanged`. A program that draws without a pause opens its next
   update in the read that closes one, so the UI thread, which takes its snapshot later, would
-  find every frame held: the feeder feeds a read in parts that end where an update ends
-  (`CSI ? 2026 l`, found across reads) and copies a second snapshot there, which the next
-  update shows while the latest is held (each keeps what it copied; images released after
-  that frame wait for it).
+  find every frame held: the feeder feeds with `Terminal::feed_frame`, which stops right
+  after a closed update, and copies a second snapshot there, which the next update shows
+  while the latest is held (each keeps what it copied).
 
 ## The view
 
@@ -192,9 +191,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
 - Freed: on `GraphicReleased` (the engine's rule: its rows reset, cleared from the alternate
   screen, trimmed from the history, RIS, its own limits). One released before the UI took it
   never reaches it, so a session without a view holds no more than the engine keeps alive.
-  While synchronized output (`?2026`) holds the snapshot, the frame shown keeps its
-  placements and their images (releases wait): a program that swaps images a frame (a
-  video, a frame's data over many reads) never shows an empty one.
+  While synchronized output (`?2026`) holds the snapshot, the engine keeps the frame's
+  placements and holds `GraphicReleased` back (a second at most): a program that swaps
+  images a frame (a video, a frame's data over many reads) never shows an empty one.
   An image keeps its pixels while it lives (the engine hands them out once): a piece the
   atlas lost is made again from them.
 - The cell's size in device pixels (the cell and the line at the scale) is told to the engine

@@ -11,7 +11,7 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
-oneterm-vt = { git = "https://github.com/vnStrawHat/oneterm-vt", tag = "v0.2.0", default-features = false, features = ["kitty-graphics"] }
+oneterm-vt = { git = "https://github.com/vnStrawHat/oneterm-vt", rev = "aafadd6a5c3c5550a86ce12c7b50d092fa57dc0e", default-features = false, features = ["kitty-graphics"] }
 quadra-a11y = { path = "../quadra-a11y" }
 quadra-async = { path = "../quadra-async" }
 quadra-design = { path = "../quadra-design" }

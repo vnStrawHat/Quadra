@@ -159,12 +159,12 @@ whose every cell changes every frame, costs what the V build's costs.
   text, clipped to their box and the grid and scrolling with their rows, freed on
   `GraphicReleased`; the cell's device pixels told to the engine. Kitty graphics (the engine's
   `kitty-graphics`: `a=q` answered, a placement's part of its image stretched to its cells,
-  lower layers first). While `?2026` holds a frame, the frame keeps its placements and their
-  images (the engine lists new placements before it holds the rows), so a video of images
-  never shows an empty frame. A frame a program closes is copied where it closes, so one
+  lower layers first). While `?2026` holds a frame, the engine keeps its placements and
+  holds their releases back, so a video of images never shows an empty frame; the feeder
+  feeds with `feed_frame` and copies each frame a program closes where it closes, so one
   that draws without a pause (each read closes a frame and opens the next) shows every frame
-  (`crates/quadra-term/src/frame.rs`). The engine's side: issues 1 and 2 of its repository.
-  Test: `crates/quadra-term/tests/images.rs`.
+  (the engine at a commit of its main after v0.2.0, which fixed issues 1 and 2 of its
+  repository). Test: `crates/quadra-term/tests/images.rs`.
 - **Drawn characters and grayscale smoothing** (specs/18, "The view"): box drawing, block
   elements and the separators U+E0B0 to U+E0B3 are drawn to their cells' box in device pixels
   (`crates/quadra-term/src/drawn.rs`), lines of the side's parity so every mask is the mirror

@@ -45,6 +45,9 @@ fn end_at(tree: &mut Tree, page: NodeId, at: Point) -> Option<End> {
 
 /// Selects from `from` to `to` (none: nothing), and paints again the texts that changed.
 fn apply(tree: &mut Tree, page: NodeId, ends: Option<(End, End)>) {
+    if !tree.is_alive(page) {
+        return; // what selected took the document away: a link that opened another
+    }
     let texts = texts(tree, page);
     let place = |(id, at): End| texts.iter().position(|&t| t == id).map(|k| (k, at));
     let ends = ends.and_then(|(a, b)| Some((place(a)?, place(b)?)));

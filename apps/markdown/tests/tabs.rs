@@ -162,3 +162,47 @@ fn a_later_start_hands_its_files_to_tabs_and_the_window_comes_to_the_front() {
     assert_eq!(a.active(), "later-2.md");
     assert!(a.h.tree.take_window_requests().contains(&WindowRequest::Front));
 }
+
+#[test]
+fn a_tab_opened_by_a_link_lives_on_when_its_tab_shows() {
+    let from = file("link-a.md", "Go to the [next](link-b.md) one.\n");
+    file("link-b.md", "# Linked here\n");
+    let mut a = app(Some(from));
+    let words = a.h.get_by_text("Go to the next one.").node();
+    let at = a.h.tree.window_rect(words);
+    // "next" is from the tenth letter on, 9.6 px each.
+    let (x, y) = (at.x + 10.0 * 9.6 + 8.0, at.y + 12.0);
+    for input in
+        [quadra_tree::PointerInput::Move, quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up]
+    {
+        let now = a.h.now();
+        a.h.tree.pointer(input, quadra::MouseButton::Left, quadra::Point::new(x, y), Mods::CTRL, now);
+    }
+    a.h.settle();
+    assert_eq!(a.active(), "link-b.md");
+    assert!(a.h.has_text("Linked here"));
+    a.key(Key::Tab, Mods::CTRL);
+    a.key(Key::Tab, Mods::CTRL);
+    assert_eq!(a.active(), "link-b.md");
+    assert!(a.h.has_text("Linked here"), "its text lives on");
+    a.edit("z");
+    assert!(a.tabs.current_untracked().changed.get_untracked());
+}
+
+#[test]
+fn closing_the_window_saves_each_tab_when_told_to() {
+    let (first, second) = (file("save-1.md", "# One\n"), file("save-2.md", "# Two\n"));
+    let mut a = app(Some(first.clone()));
+    a.edit("p");
+    a.shell.choose(&[&second.display().to_string()]);
+    a.key(Key::O, Mods::CTRL);
+    a.edit("q");
+    a.h.tree.take_window_requests();
+    a.shell.answer(Answer::Yes);
+    a.shell.answer(Answer::Yes);
+    assert!(!a.h.tree.may_close());
+    a.h.settle();
+    assert_eq!(std::fs::read_to_string(&first).unwrap(), "p# One\n");
+    assert_eq!(std::fs::read_to_string(&second).unwrap(), "q# Two\n");
+    assert!(a.h.tree.take_window_requests().contains(&WindowRequest::CloseNow));
+}

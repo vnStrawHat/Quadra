@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
-use quadra::{Signal, effect, signal, untrack};
+use quadra::{Scope, Signal, effect, signal, untrack};
 use quadra_design::work::Tab;
 
 use crate::model::Model;
@@ -14,6 +14,10 @@ use crate::model::Model;
 #[derive(Clone)]
 pub struct Tabs {
     docs: Rc<RefCell<Vec<Model>>>,
+    /// The window's scope, and each later tab's own under it, by the tab's id: a tab made
+    /// where an event was handled (a link pressed in a document) lives as long as the tab.
+    window: Scope,
+    scopes: Rc<RefCell<Vec<(String, Scope)>>>,
     /// Counts the documents added and taken away: what the strip's names follow.
     count: Signal<u64>,
     /// The strip's tabs in their order, and the id of the one showing.
@@ -28,6 +32,8 @@ impl Tabs {
             strip: signal(vec![Tab::new(first.id.clone(), first.name())]),
             active: signal(first.id.clone()),
             docs: Rc::new(RefCell::new(vec![first])),
+            window: Scope::current(),
+            scopes: Rc::default(),
             count: signal(0),
         };
         // Each tab is its file's name, marked while it has unsaved work.
@@ -86,7 +92,10 @@ impl Tabs {
     /// A new untitled document, sharing the window's settings and notices.
     pub fn fresh(&self) -> Model {
         let first = self.docs.borrow()[0].clone();
-        Model::with(first.prefs, first.notices)
+        let own = self.window.run(Scope::child);
+        let m = own.run(|| Model::with(first.prefs, first.notices));
+        self.scopes.borrow_mut().push((m.id.clone(), own));
+        m
     }
 
     /// A new untitled tab.
@@ -114,6 +123,8 @@ impl Tabs {
         m.open(path);
         if m.path.get_untracked().is_some() {
             self.add(m);
+        } else {
+            self.drop_scope(&m.id);
         }
     }
 
@@ -130,6 +141,15 @@ impl Tabs {
         if self.active.get_untracked() == id {
             let order = self.order();
             self.active.set(order[at.min(order.len() - 1)].clone());
+        }
+        self.drop_scope(id);
+    }
+
+    /// Ends a tab's scope, and with it its signals. The first tab's is the window's.
+    fn drop_scope(&self, id: &str) {
+        let mut scopes = self.scopes.borrow_mut();
+        if let Some(at) = scopes.iter().position(|(own, _)| own == id) {
+            scopes.swap_remove(at).1.dispose();
         }
     }
 

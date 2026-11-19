@@ -29,8 +29,13 @@ fn main() -> quadra::Result<()> {
         quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), &named.get(), seen));
     // The system's dialogs and what opens files, for SFTP's Edit.
     let app = quadra_shell::install(app);
-    let options =
-        WindowOptions::new("1Term").size(1440.0, 900.0).fit(0.85).centered().custom_frame().remember("main");
+    let options = WindowOptions::new("1Term")
+        .size(1440.0, 900.0)
+        .fit(0.85)
+        .min_size(720.0, 480.0)
+        .centered()
+        .custom_frame()
+        .remember("main");
     let shells: NewSession = Rc::new(start);
     app.keymap(keymap())
         .window(options, move || {

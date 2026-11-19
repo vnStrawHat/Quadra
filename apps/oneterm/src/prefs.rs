@@ -13,9 +13,9 @@ pub use look::{ANSI, COLORS, LookPrefs, PADDING, WEIGHTS};
 /// The choices of the settings that are one of a few.
 pub const THEMES: [&str; 3] = ["System", "Dark", "Light"];
 pub const CURSORS: [&str; 3] = ["Block", "Bar", "Underline"];
-pub const STARTS: [&str; 2] = ["The active space's directory", "Home"];
+pub const STARTS: [&str; 3] = ["The active space's directory", "Home", "The last directory used"];
 pub const STATUS_SHOWN: [&str; 3] = ["On the tab and the header", "On the tab only", "Ignored"];
-pub const BELLS: [&str; 2] = ["A dot and a count", "Ignored"];
+pub const BELLS: [&str; 4] = ["A dot and a count", "A dot and a sound", "A dot and a flash", "Ignored"];
 pub const TITLES: [&str; 2] = ["The program's title", "Terminal, or the host"];
 pub const NOTICES: [&str; 3] = ["A card for 6 s", "A card until dismissed", "Silent"];
 
@@ -42,6 +42,8 @@ pub struct Prefs {
     /// program typed, with its arguments.
     pub shell: Signal<String>,
     pub shell_program: Signal<String>,
+    /// The directory a local shell said last: where "the last directory used" starts.
+    pub last_dir: Signal<String>,
     pub shell_args: Signal<String>,
     pub start: Signal<usize>,
     /// A new local shell gets `FORCE_HYPERLINK=1`.
@@ -125,6 +127,7 @@ impl Prefs {
             alternate_scroll: s.value("scroll.alternate", true),
             shell: s.value("terminal.shell", String::new()),
             shell_program: s.value("terminal.shell_program", String::new()),
+            last_dir: s.value("terminal.last_dir", String::new()),
             shell_args: s.value("terminal.shell_args", String::new()),
             start: choice(s, "terminal.start_in", &STARTS),
             force_links: s.value("terminal.force_hyperlink", true),

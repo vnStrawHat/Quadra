@@ -116,9 +116,13 @@ impl Model {
             args: p.shell_args.get_untracked().split_whitespace().map(Into::into).collect(),
         });
         let shell = shell.or(typed).or_else(|| found().into_iter().find(|it| it.name == named));
+        let home = || std::env::var_os("USERPROFILE").map(Into::into);
         let cwd = match p.start.get_untracked() {
             0 => self.focused_cwd(),
-            _ => std::env::var_os("USERPROFILE").map(Into::into),
+            1 => home(),
+            _ => Some(p.last_dir.get_untracked().into())
+                .filter(|it: &std::path::PathBuf| it.is_dir())
+                .or_else(home),
         };
         let shape =
             [CursorShape::Block, CursorShape::Beam, CursorShape::Underline][p.cursor.get_untracked().min(2)];

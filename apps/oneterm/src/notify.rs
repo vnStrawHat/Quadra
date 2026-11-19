@@ -127,8 +127,8 @@ impl Model {
                 Some(at) => Some(me.notices().replace(at, card)),
                 None => me.notify_card(card),
             };
-            if let (Some(_), Some(sounds), Some(sound)) = (card, &me.outside().sounds, sound(&n.sound)) {
-                sounds.play(sound);
+            if let (Some(_), Some(sound)) = (card, sound(&n.sound)) {
+                me.play(sound);
             }
             let mut shown = shown.borrow_mut();
             shown.retain(|it| it.0 != n.id || n.id.is_empty());
@@ -198,6 +198,13 @@ impl Model {
                 me.tell(id, NotificationReport::Closed { id: &told.id });
             }
         })
+    }
+
+    /// Plays one of the system's sounds, where the app has them.
+    pub(crate) fn play(&self, sound: Sound) {
+        if let Some(sounds) = &self.outside().sounds {
+            sounds.play(sound);
+        }
     }
 
     /// Whether a notification that wants to show only while its space lacks the keyboard, or

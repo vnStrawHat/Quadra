@@ -43,7 +43,8 @@ unexpectedly` with the report's name, whose Show report shows the report in the 
 (`Opener::reveal`); each report is told once (`App::last_crash`). Nothing is sent anywhere.
 
 Custom frame (`WindowOptions::custom_frame`), 1440×900 at most 85 % of the display, centred,
-at least 720×480, its place remembered. Top to bottom: the title bar (38 px), the body, the
+at least 720×480 (`WindowOptions::min_size`; a smaller remembered place opens at it), its place
+remembered. Top to bottom: the title bar (38 px), the body, the
 status bar (30 px). Colours are the kit's roles; the accent is the theme's. The look follows
 the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: the UI face at
 14 px on 23 px lines, labels 12 px on 19, the kit's mono face for paths, numbers and keys).
@@ -342,12 +343,13 @@ colour with its normal and bright fields), the view's `TermLook` (specs/18). Key
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
 blink, scrollback lines, the default local shell (the OS's, a shell found, or "A program": the
 program and its arguments typed, `terminal.shell_program`, `terminal.shell_args`), where new spaces start (active space's cwd,
-home, last used), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
+home, last used: the directory a local shell said last, kept across runs as
+`terminal.last_dir`, home when it is no longer there), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
-the view's `TermSettings` (specs/18). Not yet: "last used", a bell's
-sound or flash. A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
-blocked; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound / badge and flash /
-ignore; OSC 9: toast 6 s / until dismissed / silent.
+the view's `TermSettings` (specs/18). A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
+blocked; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound (the system's
+default sound, at once for each bell however the space is looked at) / badge and flash (the
+space's terminal tinted the selection colour for 120 ms) / ignore; OSC 9: toast 6 s / until dismissed / silent.
 
 ## Lock
 

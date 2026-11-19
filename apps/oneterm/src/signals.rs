@@ -2,12 +2,29 @@
 //! a space that is not looked at, OSC 9 notifications. A tab sums its spaces; seeing a tab
 //! clears its bells and the "done" it showed.
 
-use quadra::{Signal, effect, untrack};
+use std::cell::Cell;
+use std::rc::Rc;
+use std::time::Duration;
+
+use quadra::{Scope, Signal, effect, signal, timeout, untrack};
 use quadra_design::{Notice, Tone};
 use quadra_term::vt::Progress;
 use quadra_term::{ProgramState, Session};
 
 use crate::model::{Model, Tab};
+
+/// How long a bell flashes its space.
+const FLASH: Duration = Duration::from_millis(120);
+
+/// Whether a space flashes for its bell, kept with its session for its view.
+pub(crate) struct Flash(pub(crate) Signal<bool>);
+
+impl crate::model::Space {
+    /// Whether its bell flashes it now.
+    pub fn flashing(&self) -> bool {
+        self.session.kept::<Flash>().is_some_and(|it| it.0.get())
+    }
+}
 
 impl Tab {
     /// The strongest state of its spaces' programs; idle when the settings ignore states.
@@ -63,13 +80,29 @@ impl Model {
     /// seen at once, a notification and a program that waits or failed raise a card.
     pub(crate) fn watch(&self, id: u64, session: &Session) {
         let (bells, status, prefs) = (session.bells(), session.status(), self.prefs());
-        let looked_at = self.clone();
+        let (looked_at, rang, flash, scope) = (self.clone(), Cell::new(0), signal(false), Scope::current());
+        session.keep(Rc::new(Flash(flash)));
         effect(move || {
+            // A new bell sounds or flashes, as the settings say.
+            let n = bells.get();
+            if n > rang.replace(n) {
+                untrack(|| looked_at.ring(flash, scope));
+            }
             // Bells the settings ignore are seen as they ring.
-            if bells.get() > 0 && (prefs.bell.get() == 1 || looked_at.looks_at(id)) {
+            if n > 0 && (prefs.bell.get() == 3 || looked_at.looks_at(id)) {
                 bells.set(0);
             }
         });
+        // A local shell's directory is the last one used.
+        if session.kept::<crate::shells::ShellName>().is_some() {
+            let (cwd, last) = (session.cwd(), prefs.last_dir);
+            effect(move || {
+                let at = cwd.get();
+                if !at.is_empty() && untrack(|| last.get()) != at {
+                    last.set(at);
+                }
+            });
+        }
         let raises = self.clone();
         let was: std::cell::Cell<ProgramState> = Default::default();
         effect(move || {
@@ -88,6 +121,19 @@ impl Model {
     }
 
     /// Whether a space is the focused one of the tab that shows.
+    /// A bell's sound, or its space's flash, when the settings ask for one. The flash ends by
+    /// a timer of the space's scope, which outlives the effect that rang.
+    fn ring(&self, flash: Signal<bool>, scope: Scope) {
+        match self.prefs().bell.get_untracked() {
+            1 => self.play(quadra_shell::Sound::Default),
+            2 => {
+                flash.set(true);
+                scope.run(|| timeout(FLASH, move || flash.set(false)));
+            }
+            _ => {}
+        }
+    }
+
     pub(crate) fn looks_at(&self, id: u64) -> bool {
         self.active_tab().and_then(|tab| tab.focused()).is_some_and(|space| space.id == id)
     }

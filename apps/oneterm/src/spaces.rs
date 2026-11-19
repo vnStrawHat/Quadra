@@ -198,11 +198,26 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
             tree.on_pointer_capture(id, quadra::PointerKind::Down, move |_| tab.focus.set(index()))
         })
         .child(header)
-        .child(column().grow(1.0).min_height(0.0).child(crate::find::around(
-            &s,
-            crate::complete::around(model, &space, |view| menu_of(model, &s, &space, view, &links)),
-        )))
+        .child(
+            column()
+                .grow(1.0)
+                .min_height(0.0)
+                .child(crate::find::around(
+                    &s,
+                    crate::complete::around(model, &space, |view| menu_of(model, &s, &space, view, &links)),
+                ))
+                .child(flash(&s)),
+        )
         .child(links.dialog())
+}
+
+/// The tint over the space while its bell flashes; not displayed otherwise, so the pointer
+/// reaches the terminal under it.
+fn flash(s: &Session) -> impl quadra::View + use<> {
+    let on = s.kept::<crate::signals::Flash>().map(|it| it.0);
+    let on = move || on.is_some_and(|on| on.get());
+    let shown = move || if on() { quadra::Display::Flex } else { quadra::Display::None };
+    div().absolute().top(0.0).left(0.0).right(0.0).bottom(0.0).display(shown).bg(token::SELECTION)
 }
 
 /// The space's menu for the other button (specs/19, "Spaces"), when the settings have it; the

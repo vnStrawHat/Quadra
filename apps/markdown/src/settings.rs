@@ -79,7 +79,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> [Vec<SettingsGroup>; 5] {
     let preview = SettingsGroup::new("Page")
         .row(
             "Text width",
-            "The column of the text: 640, 760 or 960 px, or the pane's width.",
+            "The column of the text: 720, 900 or 1200 px, or the pane's width.",
             select(prefs::WIDTHS, p.width).width(200.0),
         )
         .resets(p.width, d.width.get_untracked());

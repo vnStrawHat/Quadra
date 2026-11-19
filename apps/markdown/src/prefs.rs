@@ -47,7 +47,7 @@ impl Prefs {
             theme: s.choice("appearance.theme", &THEMES),
             text_size: s.value("editor.text_size", 14.0),
             wrap: s.value("editor.wrap", true),
-            width: s.choice("preview.width", &WIDTHS),
+            width: s.choice_or("preview.width", &WIDTHS, 1),
             opens_in: s.choice("layout.opens_in", &OPENS),
             together: s.value("layout.scroll_together", true),
             outline: s.value("window.outline", true),
@@ -62,7 +62,7 @@ impl Prefs {
 
     /// The preview's text column at most, in pixels; `None`: the pane's width.
     pub fn column(&self) -> Option<f32> {
-        [Some(640.0), Some(760.0), Some(960.0), None][self.width.get().min(3)]
+        [Some(720.0), Some(900.0), Some(1200.0), None][self.width.get().min(3)]
     }
 
     /// The editor's text and line, in whole pixels: the line 11/7 of the text, 22 for 14.
@@ -80,4 +80,16 @@ pub fn theme(chosen: usize, appearance: &Appearance) -> Theme {
         _ => quadra_design::system_theme(appearance),
     }
     .theme()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_preview_is_900_wide_where_nothing_is_written() {
+        let p = Prefs::defaults();
+        assert_eq!((p.width.get_untracked(), p.column()), (1, Some(900.0)));
+        assert_eq!(p.theme.get_untracked(), 0, "System");
+    }
 }

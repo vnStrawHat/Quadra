@@ -150,11 +150,17 @@ impl Settings {
     }
 
     /// A setting that is one of `options`, kept as its words (the file reads as a settings
-    /// page does) and given as its index: the two follow each other. Words the app does not
-    /// know are the first option.
+    /// page does) and given as its index: the two follow each other. Where none is written,
+    /// and for words the app does not know, it is the first option.
     pub fn choice(&self, key: &str, options: &'static [&'static str]) -> Signal<usize> {
-        let words = self.value(key, options[0].to_string());
-        let at = move || options.iter().position(|o| words.with(|w| o == w)).unwrap_or(0);
+        self.choice_or(key, options, 0)
+    }
+
+    /// As [`Settings::choice`], the option at `default` where none is written.
+    pub fn choice_or(&self, key: &str, options: &'static [&'static str], default: usize) -> Signal<usize> {
+        let default = default.min(options.len() - 1);
+        let words = self.value(key, options[default].to_string());
+        let at = move || options.iter().position(|o| words.with(|w| o == w)).unwrap_or(default);
         self.scope.run(|| {
             let index = signal(untrack(at));
             effect(move || {

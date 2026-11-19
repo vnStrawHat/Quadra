@@ -76,7 +76,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   layout (in the dist build, 920 lines: 20 ms to Side by side, 11 back to Preview). The
   focus in a pane that is hidden goes (04, "Removing"). Opening another document, the
   editor's face and wrapping build both again.
-- The preview's text column is at most 760 px wide, centred, with 32 px of room at the sides.
+- The preview's text column is at most 900 px wide (the setting Text width), centred, with 32
+  px of room at the sides.
 - The editor wraps lines (prose), uses the kit's mono face at 14 px with lines of 22 px, and
   colours the text as Markdown.
 - A link opens with Ctrl held, in the preview and in the editor alike. A document may not be
@@ -245,7 +246,7 @@ What is a setting is what has a value someone may want otherwise, in place of a 
 | Appearance | Theme | System, Dark, Light | System |
 | Editor | Text size | 12 to 20 px; the line is 11/7 of it, whole pixels | 14 |
 | Editor | Wrap lines | on or off | on |
-| Preview | Text width | Narrow (640 px), Normal (760), Wide (960), Full | Normal |
+| Preview | Text width | Narrow (720 px), Normal (900), Wide (1200), Full | Normal |
 | Layouts | A file opens in | Preview, Side by side, Raw | Preview |
 | Layouts | Scroll together | side by side, the panes follow each other | on |
 

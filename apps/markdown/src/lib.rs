@@ -4,6 +4,7 @@ mod bar;
 mod files;
 mod model;
 mod panes;
+mod sync;
 
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -14,6 +15,7 @@ use quadra_shell::Opener;
 
 pub use files::{NewFile, OpenFile, Save, SaveAs};
 pub use model::{Model, PREVIEW, RAW, SIDE_BY_SIDE};
+pub use sync::Driver;
 
 use files::Files;
 
@@ -74,6 +76,7 @@ impl MdApp {
             still.get();
             shown.refresh();
         });
+        sync::follow(&m);
         let layout = m.layout;
         let (f, s, a, o, c) = (files.clone(), files.clone(), files.clone(), files.clone(), files.clone());
         let drops = files.clone();

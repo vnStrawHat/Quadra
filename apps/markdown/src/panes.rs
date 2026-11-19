@@ -3,12 +3,16 @@
 
 use std::rc::Rc;
 
-use quadra::{AnyView, Div, Justify, Role, View, column, dynamic, row, scroll, signal, untrack};
+use quadra::{
+    AnyView, Display, Div, Justify, Length, PointerKind, Role, Scope, View, column, div, dynamic, row,
+    scroll, untrack,
+};
 use quadra_code::editor;
 use quadra_design::{split, token};
 use quadra_md::markdown;
 
 use crate::model::{Model, RAW, SIDE_BY_SIDE};
+use crate::sync::{self, Driver, PAD};
 
 /// The preview's text column at most.
 const COLUMN: f32 = 760.0;
@@ -45,20 +49,51 @@ fn source(m: &Model, follow: &Follow) -> Div {
         .edited(m.edited)
         .handle(m.editor.clone())
         .keep(m.doc.clone())
+        .position(m.pos)
+        .caret_line(m.caret)
         .on_link(move |target| follow(target));
-    column().grow(1.0).min_width(0.0).min_height(0.0).role(Role::Group).label("Source").child(code)
+    let pane = column().grow(1.0).min_width(0.0).min_height(0.0).role(Role::Group).label("Source");
+    drives(pane, m, Driver::Editor).child(code)
 }
 
 /// The document rendered, in a column of at most 760 px in the middle.
 fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
-    let (text, reveal, follow) = (m.text, m.reveal, follow.clone());
-    let mut doc =
-        markdown(move || text.get()).on_link(move |target| follow(target)).reveal(move || reveal.get());
+    let (text, reveal, follow, scope, chooses) =
+        (m.text, m.reveal, follow.clone(), Scope::current(), m.clone());
+    let doc = markdown(move || text.get()).on_link(move |target| follow(target)).reveal(move || reveal.get());
+    let mut doc = doc.places(m.places).on_heading(move |line| sync::chosen(&chooses, line, scope));
     if let Some(folder) = untrack(|| m.folder()) {
         doc = doc.base(folder);
     }
-    let page = row().justify(Justify::Center).padding_x(32.0).padding_y(24.0);
-    let page = page.child(column().grow(1.0).min_width(0.0).max_width(COLUMN).child(doc));
+    let text = column().grow(1.0).min_width(0.0).max_width(COLUMN).child(tint(m)).child(doc);
+    let page = row().justify(Justify::Center).padding_x(32.0).padding_y(PAD).child(text);
     let pane = column().grow(1.0).min_width(0.0).min_height(0.0).bg(token::CANVAS);
-    pane.role(Role::Group).label("Rendered").child(scroll(signal(0.0), page))
+    drives(pane.role(Role::Group).label("Rendered"), m, Driver::Preview).child(scroll(m.preview_y, page))
+}
+
+/// A pane the wheel, a press or a key in it makes the one that drives.
+fn drives(pane: Div, m: &Model, side: Driver) -> Div {
+    let driver = m.driver;
+    pane.on_mount(move |tree, id| {
+        for kind in [PointerKind::Wheel, PointerKind::Down] {
+            tree.on_pointer_capture(id, kind, move |_| driver.set(side));
+        }
+        tree.on_key_capture(id, true, move |_| driver.set(side));
+    })
+}
+
+/// The heading chosen, tinted for a moment behind its text.
+fn tint(m: &Model) -> Div {
+    let (flash, places) = (m.flash, m.places);
+    let place =
+        move || flash.get().and_then(|line| places.with(|p| p.iter().find(|it| it.line == line).copied()));
+    div()
+        .absolute()
+        .left(0.0)
+        .right(0.0)
+        .top(move || Length::Px(place().map_or(0.0, |it| it.top)))
+        .height(move || Length::Px(place().map_or(0.0, |it| it.height)))
+        .radius(4.0)
+        .bg(token::SELECTION)
+        .display(move || if place().is_some() { Display::Flex } else { Display::None })
 }

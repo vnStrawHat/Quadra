@@ -1044,7 +1044,8 @@ What it reads and how it looks is behaviour/21. As built:
   block's source line, top and height from the top of the document (`Place`): for an
   outline, and for two panes that scroll together (the other pane takes the line of the
   place at its top). `.reveal(|| line)` brings the block a line is in into view, as little
-  as shows it.
+  as shows it. `.on_heading(|line| ..)`: a press on a heading says its source line (an
+  editor beside the document goes there).
 - `.scrolls(scroll_y)`: the document scrolls itself, its blocks the rows of a `virtual_list`
   (each as high as it is, counted at 48 px until it is mounted): only the blocks that show
   are mounted, so ten thousand sections mount a few dozen; its places are those of the
@@ -1268,6 +1269,11 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
 - `.top_line(line)`: the line at the top of the view, a signal kept as it scrolls (the
   wheel, the keys); setting it scrolls that line to the top, as far as the view goes, and
   the line it then shows is told back. For a preview that follows the editor.
+- `.position(signal)`: where the view stands as a fractional line, the line at its top and
+  how far down its rows (wrapped rows counted), kept as it scrolls; setting it scrolls there,
+  as far as the view goes. Finer than `.top_line`, for panes that scroll together.
+  `.caret_line(signal)`: the line of the primary cursor, kept as it moves (keys, the
+  pointer, an edit from outside).
 - `.edited(signal)`: the document's version, set after each change of the text (an app's
   preview reads the text when it moves, not on every key). `.handle(EditorHandle)`: what
   reaches the editor from outside it while it is mounted (`is_mounted`). `read(f)` runs `f`

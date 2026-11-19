@@ -3,7 +3,8 @@
 //!
 //!     tools/cargo.sh run -p quadra-bench-markdown-shots -- [out dir] [scene ..]
 //!
-//! Scenes: preview, raw, side (the sample document, `sample.md`, in each layout).
+//! Scenes: preview, raw, side (the sample document, `sample.md`, in each layout), chosen (side
+//! by side, the heading "Code" pressed in the preview: both panes at it, tinted).
 
 #[path = "../../shots/src/png.rs"]
 mod png;
@@ -19,7 +20,8 @@ use quadra_app::{App, AppError};
 use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 
-const SCENES: [(&str, usize); 3] = [("preview", PREVIEW), ("raw", RAW), ("side", SIDE_BY_SIDE)];
+const SCENES: [(&str, usize); 4] =
+    [("preview", PREVIEW), ("raw", RAW), ("side", SIDE_BY_SIDE), ("chosen", SIDE_BY_SIDE)];
 
 fn pass(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, ms: u64) {
     for _ in 0..ms.div_ceil(75) {
@@ -51,7 +53,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         let model = built.borrow().clone().ok_or("no model")?;
         pass(&platform, &mut app, 150);
         model.layout.set(*layout);
-        pass(&platform, &mut app, 900);
+        pass(&platform, &mut app, 300);
+        if *scene == "chosen" {
+            let line = model.text.get_untracked().lines().position(|it| it == "## Code").unwrap_or(0);
+            let top = model.places.with_untracked(|p| p.iter().find(|it| it.line == line).map(|it| it.top));
+            model.driver.set(markdown::Driver::Preview);
+            model.preview_y.set(top.unwrap_or(0.0) + 24.0);
+            model.flash.set(Some(line));
+        }
+        pass(&platform, &mut app, 300);
         let pixels = app.read_pixels(window)?;
         let file = out.join(format!("{scene}.png"));
         std::fs::write(&file, png::png(pixels.size.width, pixels.size.height, &pixels.rgba))?;

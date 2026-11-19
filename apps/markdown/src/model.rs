@@ -6,6 +6,9 @@ use std::path::{Path, PathBuf};
 use quadra::{Signal, batch, signal};
 use quadra_code::{EditorHandle, KeptDoc};
 use quadra_design::{Notices, Tone, notices};
+use quadra_md::Place;
+
+use crate::sync::Driver;
 
 /// The layouts, in the order of the bar's segmented control.
 pub const RAW: usize = 0;
@@ -32,6 +35,16 @@ pub struct Model {
     pub edited: Signal<u64>,
     /// The source line the preview brings into view (a link to a heading).
     pub reveal: Signal<Option<usize>>,
+    /// Where the editor stands, as a fractional line, and where the preview is scrolled to:
+    /// kept while a pane is not shown.
+    pub pos: Signal<f64>,
+    pub preview_y: Signal<f32>,
+    /// Where the preview's blocks are, the editor's caret line, and the pane that drives.
+    pub places: Signal<Vec<Place>>,
+    pub caret: Signal<usize>,
+    pub driver: Signal<Driver>,
+    /// The line of the heading tinted in the preview, a moment after it was chosen.
+    pub flash: Signal<Option<usize>>,
     /// The editor while it shows, and its document while it does not.
     pub editor: EditorHandle,
     pub doc: KeptDoc,
@@ -51,6 +64,12 @@ impl Model {
             changed: signal(false),
             edited: signal(0),
             reveal: signal(None),
+            pos: signal(0.0),
+            preview_y: signal(0.0),
+            places: signal(Vec::new()),
+            caret: signal(0),
+            driver: signal(Driver::Editor),
+            flash: signal(None),
             editor: EditorHandle::default(),
             doc: KeptDoc::default(),
             notices: notices().above(0.0),
@@ -78,6 +97,9 @@ impl Model {
             self.text.set(text);
             self.changed.set(false);
             self.layout.set(PREVIEW);
+            self.pos.set(0.0);
+            self.preview_y.set(0.0);
+            self.reveal.set(None);
             self.opened.update(|n| *n += 1);
         });
     }

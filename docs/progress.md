@@ -138,7 +138,7 @@ whose every cell changes every frame, costs what the V build's costs.
 |---|---|
 | M1 the window, a file opened in Preview, the layouts | Done (2026-11-19): `apps/markdown` (`MdApp`, `Model`, the bar, the three layouts by the bar's segmented control and Ctrl+1, 2, 3; the window's title by `Window::set_title`, new: `WindowRequest::Title`). `tests/layouts.rs` (3); `bench/markdown-shots` draws the sample in each layout |
 | M2 the editor, files | Done (2026-11-19): the editor (prose wrapped, its changes marked against the text saved, the unsaved dot), the preview 120 ms after the last edit, New, Open, Save (beside the file, renamed over it; CR LF kept), Save as, a file dropped, links (Ctrl: a heading, an address, a document beside), and the question before unsaved work is lost (New, Open, closing). New in `quadra-code`: `Editor::edited`, `EditorHandle` (`read`, `edit`; `tests/handle.rs`); new icons `folder-open`, `heading-1..3`, `list-todo`. `tests/files.rs` (4) |
-| M3 panes by headings | Not yet |
+| M3 panes by headings | Done (2026-11-19): side by side, the pane the wheel, a press or a key moved drives and the other follows, linear between the headings' pairs (`sync.rs`, unit-tested: `y_of`, `line_of`, `pairs`); a heading pressed in the preview puts the editor's caret on its line and both panes at it; the caret on a heading's line shows it in the preview; the heading chosen tinted 600 ms. New: `Editor::position`, `Editor::caret_line` (`quadra-code/tests/top.rs`), `Markdown::on_heading` (`quadra-md/tests/places.rs`, with a fix: a document removed before its layout wrote its places from a removed node). `tests/sync.rs` (4) |
 | M4 the toolbar | Not yet |
 | M5 the logo | Not yet |
 

@@ -1,12 +1,13 @@
-//! The bar along the top (specs/21, "Window"): the file's name, the unsaved mark, the layout.
+//! The bar along the top (specs/21, "Window"): the kit's title bar of the window's own frame,
+//! with the logo, the file's name, the unsaved mark, the layout and the app's buttons.
 
-use quadra::{Align, Display, Div, div, row, text};
-use quadra_design::{Size, icon_button, icons, segmented, token, tooltip};
+use quadra::{Display, View, div, text};
+use quadra_design::{Size, icon_button, icons, segmented, titlebar, token, tooltip};
 
 use crate::files::Files;
 use crate::model::Model;
 
-pub(crate) fn bar(model: &Model, files: &Files) -> Div {
+pub(crate) fn bar(model: &Model, files: &Files) -> impl View + use<> {
     let (opens, saves) = (files.clone(), files.clone());
     let open = icon_button(icons::FOLDER_OPEN, "Open").on_click(move || opens.open());
     let save = icon_button(icons::SAVE, "Save").on_click(move || saves.save(|| {}));
@@ -29,22 +30,16 @@ pub(crate) fn bar(model: &Model, files: &Files) -> Div {
         .role(quadra::Role::Image)
         .display(move || if changed.get() { Display::Flex } else { Display::None });
     let layout = segmented(["Raw", "Side by side", "Preview"], model.layout).size(Size::Sm);
-    row()
+    // The empty room between the name and the layout drags the window.
+    titlebar("")
         .height(40.0)
-        .shrink(0.0)
-        .align_items(Align::Center)
-        .gap(8.0)
-        .padding_x(12.0)
-        .bg(token::PANEL)
-        .border_bottom(1.0)
-        .border_color(token::LINE)
-        .child(crate::logo::logo(20.0))
-        .child(name)
-        .child(dot)
-        .child(div().grow(1.0))
-        .child(layout)
-        .child(tooltip("Outline (Ctrl+Shift+O)", outline))
-        .child(tooltip("Open (Ctrl+O)", open))
-        .child(tooltip("Save (Ctrl+S)", save))
-        .child(tooltip("Settings (Ctrl+,)", settings))
+        .control(div().padding_left(12.0).padding_right(4.0).child(crate::logo::logo(20.0)))
+        .control(name)
+        .control(dot)
+        .control(div().grow(1.0))
+        .control(layout)
+        .control(tooltip("Outline (Ctrl+Shift+O)", outline))
+        .control(tooltip("Open (Ctrl+O)", open))
+        .control(tooltip("Save (Ctrl+S)", save))
+        .control(div().padding_right(8.0).child(tooltip("Settings (Ctrl+,)", settings)))
 }

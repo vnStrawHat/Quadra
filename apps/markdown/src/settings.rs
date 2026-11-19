@@ -39,8 +39,12 @@ pub fn file_types(exe: PathBuf) -> FileTypes {
 /// the main window.
 pub(crate) fn open_window(windows: &quadra::Windows, model: &Model) {
     let model = model.clone();
-    let options = quadra::WindowOptions::new("Markdown Settings").size(980.0, 680.0).remember("settings");
-    windows.open(options, move || quadra_design::root().child(page(&model, 0)));
+    let options = quadra::WindowOptions::new("Markdown Settings").size(980.0, 680.0);
+    let options = options.custom_frame().remember("settings");
+    windows.open(options, move || {
+        let bar = quadra_design::titlebar("Markdown Settings").title_size(14.0);
+        quadra_design::root().child(bar).child(page(&model, 0))
+    });
 }
 
 /// The pages, in the kit's layout of cards, the page `first` (of Appearance, Editor, Preview,

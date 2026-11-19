@@ -75,3 +75,25 @@ fn without_a_file_it_is_untitled_and_one_that_cannot_be_read_says_so() {
     assert!(!h2.query(|n| n.semantics.name.starts_with("Could not open")).is_empty());
     assert!(h2.has_text("Untitled"), "the document is as it was");
 }
+
+#[test]
+fn a_layout_that_hides_the_editor_takes_the_keys_away_from_it() {
+    let path = file("hidden-keys.md", "# Kept\n");
+    let mut h = app(Some(path));
+    h.key(Key::Digit1, Mods::CTRL);
+    h.settle();
+    h.get_by_role(Role::TextInput, "").type_text("a");
+    h.settle();
+    // Preview: the editor is kept, hidden, and what is typed reaches nothing.
+    h.key(Key::Digit3, Mods::CTRL);
+    h.settle();
+    assert_eq!(panes(&h), ["Rendered"], "the editor hidden");
+    assert_eq!(h.tree.focused(), None);
+    h.type_text("zz");
+    h.settle();
+    h.key(Key::Digit1, Mods::CTRL);
+    h.settle();
+    let value = h.get_by_role(Role::TextInput, "").node();
+    let said = h.tree.meaning(value).value.unwrap_or_default();
+    assert!(said.starts_with("a# Kept") && !said.contains('z'), "{said}");
+}

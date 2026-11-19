@@ -26,16 +26,19 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 
 - One window, titled `<file name> - Markdown`. An unsaved document is `Untitled`. The window
   is 1280 × 860 at first, 85 % of the display at most, at least 560 × 400. It is centred and
-  remembered as `main`. It has the OS's frame.
-- **The bar.** 40 px tall, along the top, on the panel colour, with a line under it. From left
-  to right:
+  remembered as `main`. It draws its own frame (10, "Windows with their own frame"): the bar
+  below is the kit's title bar (13, `titlebar`, 40 tall), the window is dragged by its empty
+  room, a double click maximizes it, and minimize, maximize and close are at its right end.
+- **The bar.** 40 px tall, along the top, on the chrome colour, with a line under it. From
+  left to right:
   - the logo at 20 px;
   - the file's name in 13 px, 600 weight;
   - a dot in the accent colour while the text is not saved;
   - a gap;
   - the layout as a segmented control (Raw, Side by side, Preview; 13, "Segmented");
   - Outline (`panel-left`), Open (`folder-open`), Save (`save`) and Settings (`settings`) as
-    ghost icon buttons with tooltips that name their keys.
+    ghost icon buttons with tooltips that name their keys;
+  - the window's minimize, maximize and close.
 - **Below the bar.** At the left, the outline (below), in every layout. At its right, while
   the editor shows, the toolbar (below), and under that the document in its layout.
 - **The status bar** (13, "Status bar"), along the bottom, of the active tab:
@@ -229,8 +232,9 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 ## Settings
 
 Ctrl+, or the bar's Settings button opens the settings in a window of their own (980 × 680,
-remembered as `settings`), or brings it to the front; it closes with the main window. It is
-the kit's settings view (13, "Settings"), its pages in a column with a search. Each control
+remembered as `settings`), or brings it to the front; it closes with the main window. It draws
+its own frame too: the kit's title bar of 34 px with the caption "Markdown Settings" at 14 px
+(`title_size`). Under it, the kit's settings view (13, "Settings"), its pages in a column with a search. Each control
 writes its setting to `settings.json` in the app's config folder at once, and the main
 window follows. Each row goes back to its default.
 

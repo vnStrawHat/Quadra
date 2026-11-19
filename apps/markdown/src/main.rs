@@ -37,6 +37,7 @@ fn main() -> quadra::Result<()> {
     markdown::plain_code(&mut app);
     let app = quadra_shell::install(app);
     let options = WindowOptions::new("Markdown")
+        .custom_frame()
         .size(1280.0, 860.0)
         .fit(0.85)
         .min_size(560.0, 400.0)

@@ -107,7 +107,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 - **Ctrl+F** finds in the document; F3 and Shift+F3, the next and the one before.
   - While the editor shows (Raw, Side by side), it is the editor's find bar, with replace
     (Ctrl+H; behaviour/18, "Find"): Ctrl+F gives the editor the focus where it is not.
-  - In Preview, a bar at the top right of the preview: the query, Match case and Whole
+  - In Preview, a bar at the top right of the preview, its row 22 tall (behaviour/15, "Text
+    input"; as 1Term's, 19 "Find"): the query with the search icon, Match case and Whole
     word, `3 of 12` (`No results`), the one before and the next, and a cross. Enter is the
     next, Shift+Enter the one before; Escape closes it. The matches are marked in the
     preview (13, "Markdown", Find), the current one brought into view. Each tab has its own

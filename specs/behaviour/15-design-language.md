@@ -290,7 +290,9 @@ same rule: no backdrop, an outside click closes them.
   editor foreground (`code.editor.foreground`: `#ACB2BE` / `#242529`), placeholder
   `text_3`; focused: `border_focused`; invalid: an `error` border, focused or not, and
   the form field shows the message under it in 12 px `error`. No hover style. `height`
-  fixes a single-line input's height (the cards settings use 32; bars 28 and 22). `.prefix(words)`
+  fixes a single-line input's height (the cards settings use 32; bars 28 and 22). A find
+  bar's fields are 22, as its icon buttons are: 12 px text, the query with a 14 `search`
+  icon; nothing in the row is taller than 22. `.prefix(words)`
   puts words in `text_2` before the text (`ssh`), `.mono()` the mono face, `.small()` 12 px text,
   `.fill()` the room left in a row; `.reveal()` gives a password a 22 eye at its end (Show password,
   pressed while the characters show; emptied, it hides again; copy and cut still do nothing).

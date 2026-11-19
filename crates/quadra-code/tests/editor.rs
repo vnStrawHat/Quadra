@@ -173,7 +173,7 @@ fn the_find_bar_finds_goes_to_matches_replaces_and_gives_the_focus_back() {
     assert_eq!(e.w().doc.primary().range(), 18..21);
     e.keys(&[(Key::Enter, NONE)]);
     assert_eq!(e.w().doc.primary().range(), 0..3);
-    e.h.get_by_role(Role::Button, ".*").click();
+    e.h.get_by_role(Role::Button, "Regular expression").click();
     e.h.frame();
     e.h.get_by_role(Role::TextInput, "Find").set_value("o(");
     e.h.frame();

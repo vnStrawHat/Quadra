@@ -140,6 +140,8 @@ Implementation spec for the editor of specs/16. Budgets there: open a 10 MB file
 ## Find
 - An inline bar at the top right: query, match case, whole word, regex (`regex` module),
   previous and next (enter, shift-enter, F3), replace and replace all (one undo group).
+  Its rows are 22 tall, as its icon buttons (behaviour/15, "Text input"): the fields small
+  and 22, the query with the search icon.
   Matches are found over the whole document when the query changes and are shifted by later
   edits; the bar shows "n of m".
 

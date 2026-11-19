@@ -2,11 +2,11 @@
 //! switches, the count and the way to the next match. A tab's own.
 
 use quadra::{
-    Action, Align, Div, Key, KeyEvent, Mods, NodeRef, Role, Signal, View, column, effect, memo, row, show,
-    signal, text, untrack,
+    Action, Align, Div, Key, KeyEvent, Mods, NodeRef, Role, Signal, View, column, div, effect, memo, row,
+    show, signal, text, untrack,
 };
 use quadra_code::Query;
-use quadra_design::{Size, Variant, button, icon_button, icons, input, size, token};
+use quadra_design::{icon_button, icons, input, size, token};
 
 /// Finds in the document (Ctrl+F): the editor's bar while it shows, else Preview's.
 #[derive(Clone, Copy, Debug)]
@@ -106,21 +106,39 @@ pub(crate) fn bar(s: &Search) -> impl View + use<> {
 }
 
 fn face(s: &Search) -> Div {
-    let switch = |label: &'static str, name: &'static str, on: Signal<bool>| {
-        let flip = move || on.set(!on.get_untracked());
-        button(label).variant(Variant::Ghost).size(Size::Sm).toggled(on).label(name).on_click(flip)
+    let switch = |body: &'static str, name: &'static str, on: Signal<bool>| {
+        icon_button(body, name).toggled(on).on_click(move || on.set(!on.get_untracked()))
     };
     let (count, current, words) = (s.count, s.current, s.text);
+    let none = move || !words.with(String::is_empty) && count.get() == 0;
     let said = memo(move || match (count.get(), words.with(String::is_empty)) {
         (_, true) => String::new(),
         (0, false) => "No results".to_string(),
         (n, false) => format!("{} of {n}", current.get().min(n - 1) + 1),
     });
-    let said = text(move || said.get()).size(size::TEXT_SM.size).color(token::TEXT_3);
-    let (next, back, close) = (s.clone(), s.clone(), s.open);
+    let tone = move || if none() { token::TEXT_3 } else { token::TEXT_2 };
+    // A box of its own, so the row does not move as the count changes.
+    let words_box = div().width(64.0).shrink(0.0).text_size(size::TEXT_SM.size).text_color(tone);
+    let said = words_box.child(text(move || said.get()));
     let submit = s.clone();
-    let query =
-        input(s.text).width(200.0).placeholder("Find").label("Find").on_submit(move |_| submit.step(false));
+    let query = input(s.text).small().height(22.0).width(220.0).icon(icons::SEARCH);
+    let query = query.placeholder("Find").label("Find").invalid(none).on_submit(move |_| submit.step(false));
+    let rule = div().width(1.0).height(16.0).shrink(0.0).bg(token::LINE);
+    let (next, back, close) = (s.clone(), s.clone(), s.open);
+    let line = row()
+        .align_items(Align::Center)
+        .gap(2.0)
+        .child(row().padding_right(4.0).child(query))
+        .child(switch(icons::CASE_SENSITIVE, "Match case", s.case))
+        .child(switch(icons::WHOLE_WORD, "Whole word", s.word))
+        .child(div().padding_x(6.0).child(said))
+        .child(rule)
+        .child(div().width(4.0))
+        .child(
+            icon_button(icons::ARROW_UP, "Previous match").disabled(none).on_click(move || back.step(true)),
+        )
+        .child(icon_button(icons::ARROW_DOWN, "Next match").disabled(none).on_click(move || next.step(false)))
+        .child(icon_button(icons::X, "Close").on_click(move || close.set(false)));
     let keys = {
         let s = s.clone();
         move |e: &mut KeyEvent| match e.key {
@@ -128,29 +146,19 @@ fn face(s: &Search) -> Div {
                 s.open.set(false);
                 e.stop();
             }
-            Key::F3 => {
-                s.step(e.mods.contains(Mods::SHIFT));
-                e.stop();
-            }
             // Enter is the next match (the field's submit); with Shift, the one before.
-            Key::Enter if e.mods.contains(Mods::SHIFT) => {
-                s.step(true);
+            Key::F3 | Key::Enter if e.key == Key::F3 || e.mods.contains(Mods::SHIFT) => {
+                s.step(e.mods.contains(Mods::SHIFT));
                 e.stop();
             }
             _ => {}
         }
     };
-    let first = row().align_items(Align::Center).gap(4.0).child(query);
-    let first = first.child(switch("Aa", "Match case", s.case)).child(switch("W", "Whole word", s.word));
-    let first = first.child(said);
-    let first = first.child(icon_button(icons::ARROW_UP, "Previous match").on_click(move || back.step(true)));
-    let first = first.child(icon_button(icons::ARROW_DOWN, "Next match").on_click(move || next.step(false)));
-    let first = first.child(icon_button(icons::X, "Close").on_click(move || close.set(false)));
-    let plane = column().padding(4.0).bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE_STRONG);
+    let plane = column().padding(4.0).bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE);
     let plane = plane.radius(token::RADIUS_MD).elevation(1).role(Role::Group).label("Find in the document");
     plane
         .node_ref(&s.bar)
         .on_mount(|tree, id| tree.after_layout(move |tree| _ = tree.focus_first(id)))
         .on_key_down(keys)
-        .child(first)
+        .child(line)
 }

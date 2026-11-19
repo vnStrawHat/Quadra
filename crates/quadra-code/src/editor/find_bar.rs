@@ -6,7 +6,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use quadra_design::{Size, Variant, button, icon_button, icons, input, size, token};
+use quadra_design::{Size, button, icon_button, icons, input, size, token};
 use quadra_layout::Align;
 use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, memo, signal};
@@ -138,9 +138,8 @@ pub(super) fn bar(
             });
         }
     };
-    let switch = |label: &'static str, on: Signal<bool>| {
-        let flip = move || on.set(!on.get_untracked());
-        button(label).variant(Variant::Ghost).size(Size::Sm).toggled(on).on_click(flip)
+    let switch = |body: &'static str, name: &'static str, on: Signal<bool>| {
+        icon_button(body, name).toggled(on).on_click(move || on.set(!on.get_untracked()))
     };
     let said = memo(move || match f.found.get() {
         None => "Bad pattern".to_string(),
@@ -149,9 +148,12 @@ pub(super) fn bar(
     });
     let count = text(move || said.get()).size(size::TEXT_SM.size).color(token::TEXT_3);
     let next = act(Act::Next(false));
-    let query = input(f.query).width(180.0).placeholder("Find").on_submit(move |_| next());
+    let query = input(f.query).small().height(22.0).icon(icons::SEARCH).width(200.0);
+    let query = query.placeholder("Find").label("Find").on_submit(move |_| next());
     let first = row().align_items(Align::Center).gap(4.0).child(query);
-    let first = first.child(switch("Aa", f.case)).child(switch("W", f.word)).child(switch(".*", f.regex));
+    let first = first.child(switch(icons::CASE_SENSITIVE, "Match case", f.case));
+    let first = first.child(switch(icons::WHOLE_WORD, "Whole word", f.word));
+    let first = first.child(switch(icons::REGEX, "Regular expression", f.regex));
     let first = first
         .child(count)
         .child(icon_button(icons::ARROW_UP, "Previous match").on_click(act(Act::Next(true))));
@@ -159,7 +161,7 @@ pub(super) fn bar(
     let first = first.child(icon_button(icons::X, "Close").on_click(act(Act::Close)));
     let (one, all) = (act(Act::Replace), act(Act::All));
     let second = move || {
-        let with = input(f.with).width(180.0).placeholder("Replace");
+        let with = input(f.with).small().height(22.0).width(200.0).placeholder("Replace").label("Replace");
         let row = row().align_items(Align::Center).gap(4.0).child(with);
         row.child(button("Replace").size(Size::Sm).on_click(one.clone()))
             .child(button("All").size(Size::Sm).on_click(all.clone()))

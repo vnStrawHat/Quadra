@@ -342,7 +342,11 @@ same rule: no backdrop, an outside click closes them.
   the focus in its field; the rows are asked
   again with what the field says as it changes, and Enter does the first row that can be done.
 - **Tooltip:** level 1, padding 8 × 4, 14 text, max width 288, shortcut muted 16 to the
-  right, an optional meta line under it in 12 `text_2`, shown after 500 ms.
+  right, an optional meta line under it in 12 `text_2`, shown after 500 ms. An arrow on the
+  edge toward what it is about: a triangle 12 across and 6 deep, its base on the border (the
+  border stops under it and runs on along its slopes, in `line`, the fill `overlay_bg`),
+  pointing at the middle of what it is about, at least 4 from the bubble's corners, on the
+  side the bubble shows on, the other when it was flipped for room.
 - **List row:** 23 tall (dense) or 32 (picker rows, 4 padding), padding 6, `radius_md` when
   inset; tree indent 20 with 1 px indent guides; selected `press` with a 2 px `accent` bar
   along its left edge and its icon in `accent_text`. A mark takes no room: rows keep their

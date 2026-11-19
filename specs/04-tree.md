@@ -124,7 +124,8 @@ frame round instead of a loop inside the pass.
 
 `Tree::after_layout(f)` runs `f` once, on the tree, after the next layout pass: for what must
 see where nodes are before it can say where others go, and cannot wait for a size to change
-(a list's box that was given another row may be exactly as tall as before). State it writes
+(a list's box that was given another row may be exactly as tall as before). The overlays are
+placed against their anchors before it runs, so it sees where a popup stands. State it writes
 is seen by another round of the same frame.
 
 ## State bits

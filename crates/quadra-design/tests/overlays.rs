@@ -12,6 +12,16 @@ use quadra_testing::Harness;
 use quadra_tree::{PointerInput, Role};
 use quadra_view::{column, text};
 
+/// The box of the open tooltip's arrow (12 px square, the last child of its bubble), and which
+/// of its four pairs shows: above, below, left, right.
+fn arrow_of(h: &Harness) -> (quadra_prim::Rect, usize) {
+    let bubble = h.tree.overlays().next().expect("a tooltip");
+    let arrow = *h.tree.children(bubble).last().expect("its arrow");
+    let layers = h.tree.children(arrow).to_vec();
+    let shown = (0..4).find(|k| h.tree.rect(layers[k * 2]).width > 0.0).expect("one pair shows");
+    (h.tree.window_rect(arrow), shown)
+}
+
 struct Page {
     h: Harness,
     asking: Signal<bool>,
@@ -74,6 +84,11 @@ fn a_tooltip_shows_after_the_pointer_has_rested_and_goes_when_it_leaves() {
         (p.h.tree.window_rect(save), p.h.tree.window_rect(p.h.tree.overlays().next().unwrap()));
     assert!(tip.y >= button.bottom() + 4.0 && (tip.center().x - button.center().x).abs() < 1.0, "{tip:?}");
     assert_eq!(p.h.tree.focused(), None);
+    // Its arrow points up at the button's middle, its base on the bubble's top border, and of
+    // the four the one pointing up shows.
+    let (arrow, shown) = arrow_of(&p.h);
+    assert!((arrow.center().x - button.center().x).abs() <= 1.0, "{arrow:?} {button:?}");
+    assert_eq!((arrow.bottom(), shown), (tip.y + 1.0, 1), "{arrow:?} {tip:?}");
 
     p.h.pointer(PointerInput::Move, 600.0, 500.0); // away: it goes
     p.settle();
@@ -145,4 +160,25 @@ fn a_tooltip_follows_words_that_change() {
     h.frame();
     while h.frame_if_needed().is_some() {}
     assert_eq!(told(&h).as_deref(), Some("two"));
+}
+
+#[test]
+fn a_tooltip_at_the_right_points_left_at_the_middle_of_its_view() {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let tab = tooltip("Pages", button("P").test_id("p")).side(quadra_tree::Side::Right);
+        quadra_design::root().child(column().padding_top(200.0).child(tab))
+    });
+    h.frame();
+    let at = h.get_by_test_id("p").node();
+    let view = h.tree.window_rect(at);
+    h.pointer(PointerInput::Move, view.center().x, view.center().y);
+    h.advance(Duration::from_millis(600));
+    while h.frame_if_needed().is_some() {}
+    let tip = h.tree.window_rect(h.tree.overlays().next().expect("a tooltip"));
+    let (arrow, shown) = arrow_of(&h);
+    assert_eq!(shown, 3, "the pair of a bubble at the right");
+    assert_eq!(arrow.right(), tip.x + 1.0, "{arrow:?} {tip:?}");
+    assert!((arrow.center().y - view.center().y).abs() <= 1.0, "{arrow:?} {view:?}");
 }

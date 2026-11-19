@@ -125,7 +125,6 @@ impl Tree {
                 break;
             }
         }
-        self.place_overlays();
         if self.input.pointer.is_some() {
             // What is under the pointer may have moved away from it, or come under it: a list
             // that scrolled. Its hover shows in this frame; a layout that its handlers ask
@@ -249,6 +248,8 @@ impl Tree {
     /// The layout pass: lays out what changed, then flags for paint the nodes whose rect did.
     fn layout_pass(&mut self) {
         self.lay_out();
+        // The overlays against their anchors first: what sees the layout sees them placed.
+        self.place_overlays();
         // What asked to see the result may write state: the frame then goes round again.
         for see in std::mem::take(&mut self.after_layout) {
             see(self);

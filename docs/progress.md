@@ -167,6 +167,8 @@ whose every cell changes every frame, costs what the V build's costs.
   `State::INERT` (`Tree::set_inert`, `Div::inert`; specs/12): shown, but out of the semantic
   tree, and no press or Tab reaches it (`quadra-view/tests/semantics.rs`; `tests/lock.rs`). The
   dock's Expand button, on a layer of its own, shows sharp over the blur.
+- The gallery's Toast page shows a card with another icon and one with a picture (`Notice::icon`,
+  `picture`; a test in `crates/quadra-design/tests/notices.rs`).
 - Asked of the engine: a public way to turn a byte range of `GridText` into a match, for
   finding by a pattern with the `regex-lite` Quadra has (oneterm-vt #6), and which sequence a
   notification came from (#7).

@@ -151,3 +151,16 @@ fn a_card_opens_by_its_words_tells_when_it_goes_and_another_can_take_its_place()
     settle(&mut h);
     assert_eq!(said.borrow().last(), Some(&"timed out"));
 }
+
+#[test]
+fn a_card_shows_a_picture_in_the_place_of_its_icon() {
+    let (mut h, all) = page();
+    all.notify(Notice::new("Tests are waiting").icon(quadra_design::icons::CIRCLE_HELP));
+    let file = quadra_platform::FlatImages::file(16, 16, 0xff00_00ff);
+    all.notify(Notice::new("Build finished").picture(file.into()));
+    settle(&mut h);
+    let pictures = h.query(|n| n.semantics.role == Role::Image && n.semantics.name == "Icon");
+    assert_eq!(pictures.len(), 1, "one card has a picture, the other an icon");
+    let on = h.tree.window_rect(pictures[0]);
+    assert!(card(&mut h, "Build finished").contains(on.origin()) && (on.width, on.height) == (16.0, 16.0));
+}

@@ -211,6 +211,12 @@ pub fn toast_page(gallery: Gallery) -> Div {
         let saved = Notice::new("Saved").body("This one closes by itself after 5 s.").tone(Tone::Success);
         all.notify(saved.lasts(std::time::Duration::from_secs(5)));
     };
+    // Another icon than the tone's, and a picture from a file's bytes in its place.
+    let pictured = move || {
+        all.notify(Notice::new("Tests are waiting").body("Run them now?").icon(icons::CIRCLE_HELP));
+        let mark: std::sync::Arc<[u8]> = include_bytes!("../../assets/mark.png").as_slice().into();
+        all.notify(Notice::new("Build finished").body("From the CI of quadra.").picture(mark));
+    };
     let about = "A brief notice at the bottom center that expires after 10 s; notifications stay at the \
                  bottom right until closed.";
     page(
@@ -222,6 +228,11 @@ pub fn toast_page(gallery: Gallery) -> Div {
                 "Notification",
                 line().child(button("Notify").on_click(notify)),
                 "notices.notify(Notice::new(\"Language server installed\").body(\"..\"))",
+            ),
+            demo(
+                "Icon and picture",
+                line().child(button("Notify").test_id("pictured").on_click(pictured)),
+                "Notice::new(\"Build finished\").picture(file) // or .icon(icons::CIRCLE_HELP)",
             ),
         ],
     )

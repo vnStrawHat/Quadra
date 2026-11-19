@@ -60,3 +60,16 @@ svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" he
 svg += "\n".join("  " + it for it in out) + "\n</svg>\n"
 io.open("apps/markdown/assets/logo.svg", "w", encoding="utf-8", newline="\n").write(svg)
 print(len(out), "shapes")
+
+# The mark alone, for an icon under 40 px: the square with M and the arrow, and the circle,
+# larger in the box; the guides, the hatching and the nodes are too fine to read there.
+small = [
+    f'<circle cx="49" cy="49" r="13" fill="{YELLOW}" stroke="{YELLOW_EDGE}" stroke-width="2"/>',
+    f'<rect x="3" y="3" width="50" height="50" rx="9" fill="{BLUE}" stroke="{BLUE_EDGE}" stroke-width="2"/>',
+    '<polyline points="11,41 11,15 20.5,27 30,15 30,41" fill="none" stroke="#FFFFFF" stroke-width="6"/>',
+    '<line x1="42" y1="15" x2="42" y2="36" stroke="#FFFFFF" stroke-width="6"/>',
+    '<polygon points="34,30 50,30 42,42" fill="#FFFFFF"/>',
+]
+svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">\n'
+svg += "\n".join("  " + it for it in small) + "\n</svg>\n"
+io.open("apps/markdown/assets/logo-small.svg", "w", encoding="utf-8", newline="\n").write(svg)

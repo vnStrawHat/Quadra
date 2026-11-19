@@ -7,6 +7,8 @@ use quadra_view::{DrawingView, drawing};
 
 /// The drawing, a 64-unit square.
 pub const LOGO: &str = include_str!("../assets/logo.svg");
+/// The mark alone, for an icon under 40 px.
+pub const LOGO_SMALL: &str = include_str!("../assets/logo-small.svg");
 
 thread_local! {
     static READ: Rc<Svg> = Rc::new(Svg::parse(LOGO));

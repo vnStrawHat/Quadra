@@ -19,7 +19,7 @@ use quadra_shell::Opener;
 
 pub use files::{NewFile, OpenFile, Save, SaveAs};
 pub use format::{Change, Format, format};
-pub use logo::{LOGO, logo};
+pub use logo::{LOGO, LOGO_SMALL, logo};
 pub use model::{Model, PREVIEW, RAW, SIDE_BY_SIDE};
 pub use sync::Driver;
 pub use toolbar::ApplyFormat;

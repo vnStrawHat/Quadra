@@ -7,8 +7,10 @@
 //! by side, the heading "Code" pressed in the preview: both panes at it, tinted), empty (an
 //! untitled window), tables and tables-side (`tables.md`, tables with long text, in Preview and
 //! side by side), logo (the logo at 256 px on the dark and the light canvas), large (the time
-//! of a large document's steps, printed; run it in the dist profile).
+//! of a large document's steps, printed; run it in the dist profile), icon (writes
+//! `apps/markdown/assets/logo.ico`, and a picture of its sizes).
 
+mod icon;
 mod large;
 #[path = "../../shots/src/png.rs"]
 mod png;
@@ -53,6 +55,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let wanted = |it: &str| only.is_empty() || only.iter().any(|o| o == it);
     if wanted("logo") {
         logo(&out)?;
+    }
+    if only.iter().any(|o| o == "icon") {
+        icon::icon(&out)?;
     }
     if only.iter().any(|o| o == "large") {
         large::large(&out)?;

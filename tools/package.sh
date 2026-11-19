@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# tools/package.sh <example|oneterm>: the shipped binary (the dist profile) of examples/<example> (the package
-# quadra-<example>, whose binary is <example>), or of 1Term (apps/oneterm, binary 1term),
+# tools/package.sh <example|oneterm|markdown>: the shipped binary (the dist profile) of examples/<example> (the package
+# quadra-<example>, whose binary is <example>), of 1Term (apps/oneterm, binary 1term) or of
+# Markdown (apps/markdown, whose icon is checked to be in the binary),
 # with tools/app.manifest embedded by the linker, put in target/package/<name>/ (specs/16,
 # "Packaging"). Fonts and images are in the binary (specs/15, "Assets"); 1Term's folder also
 # holds its console host and the host's notice (specs/19, "The console host").
-# ponytail: no installer, version resource or icon of the executable; an MSIX package when
-# an app ships.
+# ponytail: no installer or version resource; an MSIX package when an app ships.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-name="${1:?usage: tools/package.sh <example|oneterm>}"
+name="${1:?usage: tools/package.sh <example|oneterm|markdown>}"
 case "$name" in
 oneterm) crate=oneterm bin=1term ;;
+markdown) crate=markdown bin=markdown ;;
 *)
 	[ -d "examples/$name" ] || { echo "package: no examples/$name" >&2; exit 1; }
 	crate="quadra-$name" bin="$name"
@@ -25,6 +26,9 @@ rm -rf "$out"
 mkdir -p "$out"
 cp "target/dist/$bin.exe" "$out/"
 grep -q PerMonitorV2 "$out/$bin.exe" || { echo "package: the manifest is not in $out/$bin.exe" >&2; exit 1; }
+if [ "$name" = markdown ]; then
+	python tools/exe_icon.py "$out/$bin.exe" > /dev/null
+fi
 if [ "$name" = oneterm ]; then
 	tools/conpty.sh "$out" > /dev/null
 	cp tools/notices/conpty.txt "$out/THIRD-PARTY-NOTICES.txt"

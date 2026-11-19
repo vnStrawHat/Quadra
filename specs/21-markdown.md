@@ -179,8 +179,12 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   are short lines. The drawing view shows it in its own colours (13, "Icons"). It shows at
   20 px in the bar, and at 96 px in an empty window with how to start. The `logo` scene of
   `bench/markdown-shots` draws it at 256 px on both canvases.
-- **Not yet.** The window's and the executable's icon wait for a window icon in
-  `quadra-platform`.
+- **The icon.** `assets/logo.ico` holds the logo at 16, 20, 24, 32, 40, 48, 64 and 256 px as
+  PNG images. Under 40 px it is `logo-small.svg`, the mark alone (the square with M↓ and the
+  circle, without the guides, the hatching and the nodes), as those are too fine to read
+  there. The `icon` scene of `bench/markdown-shots` makes the file and a picture of every
+  size. `build.rs` links it as the executable's icon (16, "Packaging"), which the window
+  takes (10, "Win32 behaviour").
 
 ## Tests
 

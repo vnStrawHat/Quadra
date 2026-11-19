@@ -143,5 +143,10 @@ version 6 of the common controls, which the dialogs use) embedded by the linker
 (`cargo rustc` with `/MANIFEST:EMBED /MANIFESTINPUT:`, so only the final crate is linked
 again), and puts it in `target/package/<name>/`: fonts and images are in the binary, so it
 is alone there. The script fails when the manifest is not in the binary. The gallery is
-packaged so. ponytail: no installer, version
-resource or icon of the executable yet; an MSIX package when an app ships.
+packaged so, and Markdown (`tools/package.sh markdown`).
+
+**An executable's icon.** An app's build script turns an `.ico` file into a resource file of
+an icon group (resource 1, its images 1 to n) and links it with the binaries: written by the
+script itself, as the format is a few headers, so no resource compiler is needed. Markdown's
+is `apps/markdown/build.rs` over `assets/logo.ico`. ponytail: no installer or version
+resource yet; an MSIX package when an app ships.

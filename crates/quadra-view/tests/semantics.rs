@@ -236,4 +236,14 @@ fn an_inert_box_shows_but_no_reader_press_or_tab_reaches_it() {
     inert.set(false);
     h.frame();
     assert!(h.has_text("Behind"));
+    // A listener hears the box go and come back: what it holds is the tree each time.
+    let mut mirror = Mirror::default();
+    h.tree.listen(true);
+    follow(&mut mirror, &mut h);
+    inert.set(true);
+    follow(&mut mirror, &mut h);
+    assert!(!mirror.nodes().iter().any(|n| n.semantics.name == "Behind"));
+    inert.set(false);
+    follow(&mut mirror, &mut h);
+    assert!(mirror.nodes().iter().any(|n| n.semantics.name == "Behind"));
 }

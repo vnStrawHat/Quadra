@@ -177,6 +177,12 @@ impl Tree {
         }
     }
 
+    /// Tells every overlay a press missed it, as a press on nothing would: each closes as it
+    /// does then (a menu, a popover). What locks a window closes what was open over it.
+    pub fn dismiss_overlays(&mut self) {
+        quadra_reactive::batch(|| self.press_outside(&[]));
+    }
+
     /// A removed node was an overlay's root: it leaves the stack.
     pub(crate) fn forget_overlay(&mut self, root: NodeId) {
         let before = self.overlays.len();

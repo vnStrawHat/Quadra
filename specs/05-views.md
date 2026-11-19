@@ -265,7 +265,8 @@ that box by `.left(..)`, `.top(..)`, `.right(..)` and `.bottom(..)`, each a cons
 reactive: the knob of a slider. It is laid out alone when one of them changes. Pointer events reach the top overlay first; an
 overlay is told of a press that lands outside it (`on_outside_press`), which is how a menu
 closes; a press in an overlay that stands beside a node of another (a submenu beside its row)
-is inside that other one too, so a choice in a submenu reaches it; a focus scope in it keeps
+is inside that other one too, so a choice in a submenu reaches it; `Tree::dismiss_overlays` tells
+every overlay a press missed it, as one on nothing would; a focus scope in it keeps
 Tab inside. A field given the focus back after its view is gone (popups closing in turn) takes
 it and starts nothing.
 

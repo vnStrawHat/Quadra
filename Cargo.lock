@@ -1423,6 +1423,7 @@ dependencies = [
  "quadra-native-win",
  "quadra-platform",
  "quadra-prim",
+ "quadra-vector",
  "quadra-view",
 ]
 

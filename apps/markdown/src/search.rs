@@ -121,7 +121,7 @@ fn face(s: &Search) -> Div {
     let words_box = div().width(64.0).shrink(0.0).text_size(size::TEXT_SM.size).text_color(tone);
     let said = words_box.child(text(move || said.get()));
     let submit = s.clone();
-    let query = input(s.text).small().height(22.0).width(220.0).icon(icons::SEARCH);
+    let query = input(s.text).height(26.0).width(220.0).icon(icons::SEARCH);
     let query = query.placeholder("Find").label("Find").invalid(none).on_submit(move |_| submit.step(false));
     let rule = div().width(1.0).height(16.0).shrink(0.0).bg(token::LINE);
     let (next, back, close) = (s.clone(), s.clone(), s.open);

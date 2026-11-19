@@ -1418,6 +1418,7 @@ dependencies = [
  "markdown",
  "quadra-app",
  "quadra-async",
+ "quadra-code",
  "quadra-design",
  "quadra-layout",
  "quadra-native-win",

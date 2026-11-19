@@ -27,7 +27,7 @@ use quadra_app::{App, AppError};
 use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 
-const SCENES: [(&str, usize); 9] = [
+const SCENES: [(&str, usize); 10] = [
     ("preview", PREVIEW),
     ("raw", RAW),
     ("side", SIDE_BY_SIDE),
@@ -37,6 +37,7 @@ const SCENES: [(&str, usize); 9] = [
     ("tables-side", SIDE_BY_SIDE),
     ("tabs", PREVIEW),
     ("find", PREVIEW),
+    ("find-raw", RAW),
 ];
 
 fn pass(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, ms: u64) {
@@ -98,6 +99,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             model.driver.set(markdown::Driver::Preview);
             model.preview_y.set(top.unwrap_or(0.0) + 24.0);
             model.flash.set(Some(line));
+        }
+        if *scene == "find-raw" {
+            model.editor.run(quadra_code::EditorCommand::Find);
         }
         if *scene == "find" {
             model.search.text.set("the".into());

@@ -142,13 +142,14 @@ pub(super) fn bar(
         icon_button(body, name).toggled(on).on_click(move || on.set(!on.get_untracked()))
     };
     let said = memo(move || match f.found.get() {
+        _ if f.query.with(String::is_empty) => String::new(),
         None => "Bad pattern".to_string(),
         Some((_, 0)) => "No results".to_string(),
         Some((i, n)) => format!("{i} of {n}"),
     });
     let count = text(move || said.get()).size(size::TEXT_SM.size).color(token::TEXT_3);
     let next = act(Act::Next(false));
-    let query = input(f.query).small().height(22.0).icon(icons::SEARCH).width(200.0);
+    let query = input(f.query).height(26.0).icon(icons::SEARCH).width(220.0);
     let query = query.placeholder("Find").label("Find").on_submit(move |_| next());
     let first = row().align_items(Align::Center).gap(4.0).child(query);
     let first = first.child(switch(icons::CASE_SENSITIVE, "Match case", f.case));
@@ -161,8 +162,9 @@ pub(super) fn bar(
     let first = first.child(icon_button(icons::X, "Close").on_click(act(Act::Close)));
     let (one, all) = (act(Act::Replace), act(Act::All));
     let second = move || {
-        let with = input(f.with).small().height(22.0).width(200.0).placeholder("Replace").label("Replace");
-        let row = row().align_items(Align::Center).gap(4.0).child(with);
+        let with = input(f.with).height(26.0).width(220.0).placeholder("Replace").label("Replace");
+        // 4 under the row above: the plane has no gap, so nothing is under the last row.
+        let row = row().align_items(Align::Center).gap(4.0).padding_top(4.0).child(with);
         row.child(button("Replace").size(Size::Sm).on_click(one.clone()))
             .child(button("All").size(Size::Sm).on_click(all.clone()))
     };
@@ -183,7 +185,7 @@ pub(super) fn bar(
         }
         _ => {}
     };
-    let plane = column().gap(4.0).padding(4.0).bg(token::OVERLAY_BG);
+    let plane = column().padding(4.0).bg(token::OVERLAY_BG);
     let plane = plane.border(1.0).border_color(token::LINE_STRONG).radius(token::RADIUS_MD).elevation(1);
     plane.node_ref(&at).on_key_down(keys).child(first).child(show(move || f.replacing.get(), second))
 }

@@ -18,6 +18,7 @@ path = "src/main.rs"
 markdown = { path = "../../apps/markdown" }
 quadra-app = { path = "../../crates/quadra-app" }
 quadra-async = { path = "../../crates/quadra-async" }
+quadra-code = { path = "../../crates/quadra-code" }
 quadra-design = { path = "../../crates/quadra-design" }
 quadra-native-win = { path = "../../crates/quadra-native-win" }
 quadra-platform = { path = "../../crates/quadra-platform" }

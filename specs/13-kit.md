@@ -181,7 +181,10 @@ As built so far:
   text around it unless `.color(..)` says. A body is read once (`quadra-vector`); its mask is
   rasterized once for each size in device pixels and kept as a tile of the coverage atlas
   beside the glyphs (`Fonts::mask`, `TileKey::Mask`); showing it is one instance. The widget
-  is `Drawing` in the tree, and `drawing(svg)` the view for any drawing. A button takes
+  is `Drawing` in the tree, and `drawing(svg)` the view for any drawing. A drawing with
+  colours of its own (art, a logo) is shown in them: rasterized once a size into the colour
+  atlas (`Svg::render_rgba`, `Fonts::image`), the shapes without a colour in the text's. A
+  button takes
   `.icon(body)` before its label (14 px, 16 in the two larger sizes), and
   `icon_button(body, name)` is a ghost of 22 px with the icon alone, named for a reader.
 - **`input(value)`**: the field of `quadra-view` in a frame (the field's fill, a hairline

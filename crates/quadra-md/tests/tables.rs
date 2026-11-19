@@ -84,6 +84,17 @@ fn a_table_of_one_row_of_one_column_and_of_too_many_columns() {
 }
 
 #[test]
+fn a_column_of_short_cells_is_whole_beside_one_of_long_prose() {
+    let long = PROSE.repeat(4);
+    let source = format!("| What | Notes |\n|---|---|\n| Fresh machine | {long} |\n| Gate | short |\n");
+    let h = page(&source, 900.0);
+    let cells = rects(&h, Role::Cell);
+    // "Fresh machine" on one line is 145 px in the harness's text, its longest word 91.
+    assert!(cells[0].width > 140.0 && cells[0].width < 160.0, "{cells:?}");
+    assert!(cells[3].height > 3.0 * cells[0].height, "the prose wraps: {cells:?}");
+}
+
+#[test]
 fn an_escaped_pipe_is_in_its_cell_and_makes_no_column() {
     let source = "| What | Command |\n|---|---|\n| Shots | `shots.sh [dark\\|light]` draws them |\n| Gate | `check.sh` |\n";
     let h = page(source, 900.0);

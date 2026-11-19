@@ -16,6 +16,11 @@ changed node and climbs only as far as the change is felt.
 - **Fractions** share the space left after the other tracks. One whose size is already more
   than its share keeps its size and is left out, and the others share what is left again,
   until none is: the tracks then fill the grid and no more (CSS's "find the size of an fr").
+- **`minmax(px, max_content)`** in a grid of a known size starts at its minimum and grows to
+  its content by the room the grid has, shared evenly among the tracks still short of theirs
+  (CSS's "maximize tracks"): a short column is whole before a long one takes the rest. Room
+  left once all are whole is shared among them by their size, so they fill the grid. Without
+  a known size the track is as wide as its content.
 - Leaves with content (text, image, a custom widget) report an intrinsic size through
   `Widget::measure` (04).
 

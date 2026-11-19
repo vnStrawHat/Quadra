@@ -29,11 +29,10 @@ pub struct Table {
 }
 
 impl Table {
-    /// What each column asks for: its longest cell on one line, and its longest word. The
-    /// columns share the width of the table by the first, and none is narrower than the second.
-    fn wants(&self, columns: usize, cx: &mut MountCx) -> (Vec<f32>, Vec<f32>) {
+    /// Each column's longest word: none is narrower than that.
+    fn least(&self, columns: usize, cx: &mut MountCx) -> Vec<f32> {
         let (fonts, scale) = (cx.tree.fonts(), cx.tree.text_scale());
-        let (mut wants, mut least) = (vec![0.0f32; columns], vec![0.0f32; columns]);
+        let mut least = vec![0.0f32; columns];
         let text = &mut fonts.borrow_mut().text;
         for (r, cells) in self.rows.iter().enumerate() {
             let weight = if r == 0 { size::WEIGHT_STRONG } else { size::WEIGHT_NORMAL };
@@ -41,7 +40,7 @@ impl Table {
                 TextStyle { family: fonts::UI.into(), size: BODY * scale, weight, ..TextStyle::default() };
             // Code in a cell is drawn in the code face, smaller (`view::spans`).
             let code = TextStyle { family: fonts::MONO.into(), size: BODY * 0.875 * scale, ..prose.clone() };
-            for ((want, word), cell) in wants.iter_mut().zip(least.iter_mut()).zip(cells) {
+            for (word, cell) in least.iter_mut().zip(cells) {
                 let mut line = |it: &str, in_code: bool| {
                     let style = if in_code { code.clone() } else { prose.clone() };
                     Paragraph::new(text, it, style).wrap(text, f32::INFINITY).width
@@ -49,8 +48,6 @@ impl Table {
                 // The parts between backticks are code: each measured in its face.
                 let parts: Vec<(String, bool)> =
                     cell.split('`').enumerate().map(|(k, part)| (plain(part), k % 2 == 1)).collect();
-                let wide: f32 = parts.iter().map(|(part, in_code)| line(part, *in_code)).sum();
-                *want = want.max(wide);
                 // The longest words by their letters, of which the widest drawn.
                 let mut long: Vec<(&str, bool)> = parts
                     .iter()
@@ -60,18 +57,19 @@ impl Table {
                 *word = long.into_iter().take(4).map(|(it, in_code)| line(it, in_code)).fold(*word, f32::max);
             }
         }
-        (wants, least)
+        least
     }
 }
 
 impl View for Table {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let columns = self.rows.iter().map(Vec::len).max().unwrap_or(0).clamp(1, WIDEST);
-        let (wants, least) = self.wants(columns, cx);
+        let least = self.least(columns, cx);
         let least: Vec<f32> = least.into_iter().map(|word| word.min(LONG_WORD) + PADDING).collect();
-        let share =
-            |(want, least): (f32, &f32)| Track::minmax(TrackSize::Px(*least), TrackSize::Fr(want + PADDING));
-        let tracks: Vec<Track> = wants.into_iter().zip(&least).map(share).collect();
+        // From the longest word to the longest cell on one line, by the room the table has,
+        // shared evenly: a column of short cells is whole before a long one takes the rest.
+        let track = |least: &f32| Track::minmax(TrackSize::Px(*least), TrackSize::MaxContent);
+        let tracks: Vec<Track> = least.iter().map(track).collect();
         // As wide as the page, and wider (scrolled sideways) only when its longest words do not
         // fit beside each other: prose in a cell wraps.
         let narrowest = least.iter().sum::<f32>() + 2.0;

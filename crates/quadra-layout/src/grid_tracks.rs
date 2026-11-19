@@ -23,6 +23,31 @@ pub(crate) fn span_size(sizes: &[f32], start: usize, span: usize, gap: f32) -> f
     tracks + gap * span.saturating_sub(1) as f32
 }
 
+/// The tracks that `grows` names take `room` left by all the tracks: evenly among those still
+/// short of their `limit`, up to it, then what is left by their sizes, so they fill it.
+fn grow_to_content(sizes: &mut [f32], limit: &[f32], room: f32, grows: impl Fn(usize) -> bool) {
+    let mut open: Vec<usize> = (0..sizes.len()).filter(|&k| grows(k) && limit[k] > sizes[k]).collect();
+    loop {
+        let free = room - sizes.iter().sum::<f32>();
+        if free <= 0.01 || open.is_empty() {
+            break;
+        }
+        let each = free / open.len() as f32;
+        let whole: Vec<usize> = open.iter().copied().filter(|&k| sizes[k] + each >= limit[k]).collect();
+        if whole.is_empty() {
+            open.iter().for_each(|&k| sizes[k] += each);
+            return;
+        }
+        whole.iter().for_each(|&k| sizes[k] = limit[k]);
+        open.retain(|k| !whole.contains(k));
+    }
+    let free = room - sizes.iter().sum::<f32>();
+    let grown: f32 = (0..sizes.len()).filter(|&k| grows(k)).map(|k| sizes[k]).sum();
+    if free > 0.01 && grown > 0.0 {
+        (0..sizes.len()).filter(|&k| grows(k)).for_each(|k| sizes[k] += free * sizes[k] / grown);
+    }
+}
+
 /// Where each track starts, with one more entry for the end.
 pub(crate) fn track_offsets(sizes: &[f32], gap: f32, free: f32, justify: Justify) -> Vec<f32> {
     let mut pos = match justify {
@@ -62,6 +87,12 @@ impl LayoutTree {
     ) -> Vec<f32> {
         let mut sizes = vec![0.0; tracks.len()];
         let mut fixed = vec![false; tracks.len()];
+        // `minmax(px, max_content)` in a grid of a known size: content sets how far it may
+        // grow (`limit`), the room the grid has how far it does.
+        let grows = |k: usize| {
+            ax.inner.is_some() && tracks[k].max == TrackSize::MaxContent && tracks[k].min.is_fixed_unit()
+        };
+        let mut limit = vec![0.0f32; tracks.len()];
         for (i, track) in tracks.iter().enumerate() {
             if track.min.is_fixed_unit() && track.max.is_fixed_unit() {
                 sizes[i] = track.max.fixed(ax.inner).unwrap_or(0.0);
@@ -89,13 +120,27 @@ impl LayoutTree {
                 let min_only = first.min == TrackSize::MinContent || first.max == TrackSize::MinContent;
                 let need = self.contribution(m, it, ax, min_only, col_widths);
                 let have = span_size(&sizes, start, span, ax.gap);
+                let have = have.max(span_size(&limit, start, span, ax.gap));
                 if need > have {
                     let extra = (need - have) / free.len() as f32;
                     for k in free {
-                        sizes[k] = clamp_axis(sizes[k] + extra, None, tracks[k].max.fixed(ax.inner));
+                        match grows(k) {
+                            true => limit[k] = limit[k].max(sizes[k]) + extra,
+                            false => {
+                                sizes[k] = clamp_axis(sizes[k] + extra, None, tracks[k].max.fixed(ax.inner))
+                            }
+                        }
                     }
                 }
             }
+        }
+        if let Some(space) = ax.inner {
+            grow_to_content(
+                &mut sizes,
+                &limit,
+                space - ax.gap * tracks.len().saturating_sub(1) as f32,
+                grows,
+            );
         }
         // fr tracks share the space left over, never below what they already have: one whose
         // size is more than its share keeps it and is left out, and the others share again.

@@ -1,11 +1,22 @@
 use super::Highlight as H;
+use super::ShellProfile;
 use super::scan::{Role, prompt_sign, scan};
 
 /// The runs of `line` that `class` covers, in order.
 fn runs(line: &str, role: Option<Role>, input_at: Option<usize>, class: H) -> Vec<String> {
+    runs_in(ShellProfile::Unix, line, role, input_at, class)
+}
+
+fn runs_in(
+    profile: ShellProfile,
+    line: &str,
+    role: Option<Role>,
+    at: Option<usize>,
+    class: H,
+) -> Vec<String> {
     let chars: Vec<char> = line.chars().collect();
     let mut out = Vec::new();
-    scan(&chars, line, role, input_at, &mut out);
+    scan(&chars, line, role, at, profile, &mut out);
     let mut found: Vec<String> = Vec::new();
     let mut open = false;
     for (c, &k) in chars.iter().zip(&out) {
@@ -104,4 +115,25 @@ fn a_marked_prompt_ends_where_the_input_starts() {
     assert_eq!(runs(line, Some(Role::Prompt), at, H::Command), ["git"]);
     assert_eq!(runs("user ┐ ls", Some(Role::Prompt), Some(7), H::PromptSign), ["┐"], "the last non-blank");
     assert_eq!(runs("me@box:~$ error", Some(Role::Output), None, H::PromptSign), Vec::<String>::new());
+}
+
+#[test]
+fn a_shells_profile_knows_its_own_prompts_and_options() {
+    let sign = |p: ShellProfile, line: &str| runs_in(p, line, None, None, H::PromptSign);
+    let (cmd, pwsh, dumb, unix) =
+        (ShellProfile::Cmd, ShellProfile::PowerShell, ShellProfile::Dumb, ShellProfile::Unix);
+    // Continuations: Command Prompt's `>`, PowerShell's `>>`; output elsewhere (a quote).
+    assert_eq!(sign(cmd, "> more"), [">"]);
+    assert_eq!(sign(pwsh, ">> $x"), [">"]);
+    assert!(sign(unix, "> a quoted line").is_empty());
+    let unc = r"PS Microsoft.PowerShell.Core\FileSystem::\server\share> ls";
+    assert_eq!(sign(pwsh, unc), [">"]);
+    assert_eq!(runs_in(pwsh, unc, None, None, H::Command), ["ls"]);
+    // A router's prompt, only on a dumb line.
+    assert_eq!(sign(dumb, "core-sw1# show run"), ["#"]);
+    assert!(sign(unix, "core-sw1# show run").is_empty());
+    // `/s` is an option of Command Prompt's, a path of the others'.
+    let line = r"C:\work>dir /s -a";
+    assert_eq!(runs_in(cmd, line, None, None, H::Flag), ["/s", "-a"]);
+    assert_eq!(runs_in(unix, line, None, None, H::Flag), ["-a"]);
 }

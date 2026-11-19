@@ -36,7 +36,7 @@ pub use actions::echo;
 pub use contrast::{contrast_ratio, with_contrast};
 pub use feed::Feeder;
 pub use find::FindQuery;
-pub use highlight::Highlight;
+pub use highlight::{Highlight, ShellProfile};
 pub use input::Input;
 pub use keys::{TERMINAL_CONTEXT, TermCommand, bind_keys};
 pub use line::CommandLine;

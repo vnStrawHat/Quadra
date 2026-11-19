@@ -145,9 +145,13 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   input cells), is a prompt line (the sign is the last sign glyph before the first input cell,
   or the last non-blank there; what follows is the command); one whose first marked cell is
   output is output; anything else, or the viewport's first line, is told by the prompt's look
-  (`user@host:~$ `, `[user ~]# `, `C:\path>`, `PS C:\path>`). On a prompt line the path in the
+  (`user@host:~$ `, `[user ~]# `, `C:\path>`, `PS C:\path>`), and by the shell's own looks its
+  session says (`Session::set_shell_profile(ShellProfile)`, `Unix` until told; another one reads
+  the lines again): `Cmd` its `>` continuation, `PowerShell` its `>>` and a location behind a
+  provider (`PS Microsoft.PowerShell.Core\FileSystem::\server\share>`), `Dumb` (a router, a
+  serial line) any first word that ends in a sign (`core-sw1#`). On a prompt line the path in the
   prompt is a path, the first word after the sign is the command (again after `;`, `|`, `&&`,
-  `||`), words with `-` are options, the rest is left. On an output line the matchers run in
+  `||`), words with `-` are options (and with `/` for `Cmd` and `Dumb`), the rest is left. On an output line the matchers run in
   order, each only on what the ones before left: strings, permissions, keywords, MAC, IPv6,
   dates and times, IPv4, paths, numbers, options, operators and brackets; URLs over all. After a
   command ended (OSC 133 `D` with a status), while the viewport is at the bottom, the sign of the

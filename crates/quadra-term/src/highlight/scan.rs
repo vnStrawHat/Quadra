@@ -2,7 +2,7 @@
 //! then the command), or output (`output.rs`); URLs over both.
 
 use super::Highlight as H;
-use super::{output, probe};
+use super::{ShellProfile, output, probe};
 
 /// What the shell's marks made a line; `None`, its look decides.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -18,15 +18,16 @@ pub(crate) fn scan(
     text: &str,
     role: Option<Role>,
     input_at: Option<usize>,
+    profile: ShellProfile,
     out: &mut Vec<u8>,
 ) {
     out.clear();
     out.resize(chars.len(), 0);
     match role {
-        Some(Role::Prompt) => prompt_line(chars, out, marked_sign(chars, input_at)),
+        Some(Role::Prompt) => prompt_line(chars, out, marked_sign(chars, input_at), profile),
         Some(Role::Output) => output::scan(chars, out),
-        None => match prompt_sign(chars) {
-            Some(sign) => prompt_line(chars, out, Some(sign)),
+        None => match profile.sign(chars).or_else(|| prompt_sign(chars)) {
+            Some(sign) => prompt_line(chars, out, Some(sign), profile),
             None => output::scan(chars, out),
         },
     }
@@ -112,7 +113,7 @@ fn windows_path(head: &[char]) -> Option<usize> {
 }
 
 /// The sign, the path before it, then the command after it.
-fn prompt_line(chars: &[char], out: &mut [u8], sign: Option<usize>) {
+fn prompt_line(chars: &[char], out: &mut [u8], sign: Option<usize>, profile: ShellProfile) {
     let n = chars.len();
     let first = || {
         let before_space = chars.iter().enumerate().take_while(|&(i, &c)| c != ' ' || i == 0);
@@ -127,13 +128,13 @@ fn prompt_line(chars: &[char], out: &mut [u8], sign: Option<usize>) {
     }
     let start = sign + 1 + chars[sign + 1..].iter().take_while(|&&c| c == ' ').count();
     if start < n {
-        command(&chars[start..], &mut out[start..]);
+        command(&chars[start..], &mut out[start..], profile);
     }
 }
 
 /// A command line: the first word is the command (again after `;`, `|`, `&&`, `||`), words
-/// that start with `-` are options, the rest is left.
-pub(super) fn command(chars: &[char], out: &mut [u8]) {
+/// that start with `-` (or `/`, as the profile says) are options, the rest is left.
+pub(super) fn command(chars: &[char], out: &mut [u8], profile: ShellProfile) {
     let (n, mut i, mut expect) = (chars.len(), 0, true);
     while i < n {
         let c = chars[i];
@@ -155,7 +156,7 @@ pub(super) fn command(chars: &[char], out: &mut [u8]) {
         if expect {
             out[start..i].fill(H::Command as u8);
             expect = false;
-        } else if c == '-' {
+        } else if profile.option(c) {
             out[start..i].fill(H::Flag as u8);
         }
     }

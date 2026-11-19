@@ -80,6 +80,7 @@ pub(crate) struct Shared {
     /// What waits for a view to size the grid; `None` once one has.
     pub sized: RefCell<Option<Waiting>>,
     pub find: crate::find::Finding,
+    pub profile: Cell<crate::ShellProfile>,
     /// Told what the user sends (`Session::on_input`).
     pub input: RefCell<Option<Rc<crate::input::InputFn>>>,
     /// The images it shows, taken from the engine when its view refreshes.
@@ -142,6 +143,7 @@ impl Session {
             line: crate::line::Follow::new(),
             sized: RefCell::new(Some(Vec::new())),
             find: crate::find::Finding::new(),
+            profile: Cell::default(),
             input: RefCell::new(None),
             images: RefCell::default(),
         });

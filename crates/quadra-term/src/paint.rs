@@ -47,7 +47,7 @@ pub(crate) fn paint(w: &mut TerminalWidget, cx: &mut PaintCx) {
     let rows = std::mem::take(&mut w.state);
     let mut marks = std::mem::take(&mut w.marks);
     let tint = if w.highlighting {
-        marks.update(rows.rows());
+        marks.update(rows.rows(), w.session.shell_profile());
         w.status.filter(|_| rows.scroll_offset() == 0).and_then(|s| marks.tinted(rows.rows(), s))
     } else {
         marks.clear();

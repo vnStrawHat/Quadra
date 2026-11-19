@@ -4,12 +4,15 @@
 
 mod output;
 mod probe;
+mod profile;
 mod scan;
+mod tinted;
+
+pub use profile::ShellProfile;
 #[cfg(test)]
 mod tests;
 
 use std::collections::HashMap;
-use std::ops::Range;
 
 use oneterm_vt::{Attrs, Color as VtColor, NamedColor, RowId, Semantic, SeqNo, SnapshotContent, SnapshotRow};
 
@@ -149,6 +152,8 @@ pub(crate) struct Marks {
     /// For each character: its row in the line and its column.
     at: Vec<(usize, usize)>,
     out: Vec<u8>,
+    /// The shell's profile the classes were worked out for.
+    profile: ShellProfile,
 }
 
 /// Whether a cell's glyph takes its class's colour: the program left it the default.
@@ -162,8 +167,11 @@ impl Marks {
     }
 
     /// The classes of `rows`, the viewport: lines whose rows, stamps or mark above changed
-    /// are scanned again, the others kept.
-    pub(crate) fn update(&mut self, rows: &[SnapshotRow]) {
+    /// are scanned again, the others kept; all of them for another profile.
+    pub(crate) fn update(&mut self, rows: &[SnapshotRow], profile: ShellProfile) {
+        if std::mem::replace(&mut self.profile, profile) != profile {
+            self.rows.clear();
+        }
         self.epoch = self.epoch.wrapping_add(1);
         let (mut prev, mut start) = (None, 0);
         while start < rows.len() {
@@ -248,7 +256,8 @@ impl Marks {
         };
         let mut classes: Vec<Vec<u8>> = vec![Vec::new(); line.len()];
         if any {
-            scan::scan(chars, text, role, input_at.filter(|_| role == Some(Role::Prompt)), &mut self.out);
+            let input_at = input_at.filter(|_| role == Some(Role::Prompt));
+            scan::scan(chars, text, role, input_at, self.profile, &mut self.out);
             for (&class, &(r, col)) in self.out.iter().zip(at.iter()) {
                 if class != 0 {
                     let row = &mut classes[r];
@@ -271,26 +280,5 @@ impl Marks {
             self.rows.insert(row.id, entry);
         }
         mark
-    }
-
-    /// The rows of the prompt whose command ended last, and the class its sign takes: the
-    /// prompt line above the newest one, success for a status of 0, error otherwise.
-    pub(crate) fn tinted(&self, rows: &[SnapshotRow], status: i32) -> Option<(Range<usize>, u8)> {
-        let prompt = |r: usize| self.rows.get(&rows[r].id).is_some_and(|e| e.role == Some(Role::Prompt));
-        let (mut before, mut last, mut r) = (None, None, 0);
-        while r < rows.len() {
-            if !prompt(r) {
-                r += 1;
-                continue;
-            }
-            let start = r;
-            while rows[r].wrapped && r + 1 < rows.len() && prompt(r + 1) {
-                r += 1;
-            }
-            r += 1;
-            before = last.replace(start..r);
-        }
-        let class = if status == 0 { Highlight::Success } else { Highlight::Error };
-        before.map(|rows| (rows, class as u8))
     }
 }

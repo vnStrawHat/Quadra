@@ -12,7 +12,7 @@ publish.workspace = true
 
 [dependencies]
 # The pseudo console (`pty`): the terminal engine's, polled with its poller (specs/01, R15).
-oneterm-vt = { git = "https://github.com/vnStrawHat/oneterm-vt", tag = "v0.4.0", default-features = false, features = ["pty"] }
+oneterm-vt = { git = "https://github.com/vnStrawHat/oneterm-vt", tag = "v0.4.1", default-features = false, features = ["pty"] }
 polling = "3"
 quadra-app = { path = "../quadra-app" }
 quadra-async = { path = "../quadra-async" }

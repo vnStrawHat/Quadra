@@ -16,16 +16,37 @@ use quadra_tree::PaintCx;
 use crate::session::Session;
 use crate::widget::TerminalWidget;
 
+/// The matches of a regular expression, a line at a time; empty ones are left out.
+fn by_pattern(text: &GridText, query: &FindQuery) -> Vec<SearchMatch> {
+    let pattern = if query.word { format!(r"\b(?:{})\b", query.text) } else { query.text.clone() };
+    let Ok(re) = regex_lite::RegexBuilder::new(&pattern).case_insensitive(!query.case).build() else {
+        return Vec::new();
+    };
+    let (mut found, mut start) = (Vec::new(), 0);
+    for line in text.as_str().split_inclusive('\n') {
+        for m in re.find_iter(line.strip_suffix('\n').unwrap_or(line)).filter(|m| !m.is_empty()) {
+            if found.len() == oneterm_vt::search::MAX_MATCHES {
+                return found;
+            }
+            found.extend(text.span(start + m.start(), start + m.end()));
+        }
+        start += line.len();
+    }
+    found
+}
+
 /// The wait after output before its text is matched again.
 const AFTER_OUTPUT: Duration = Duration::from_millis(150);
 
-/// What is looked for: a literal `text`, matched exactly with `case` (else lower-cased), and
-/// only as a whole word with `word`. An empty text looks for nothing.
+/// What is looked for: `text`, a literal or with `pattern` a regular expression, matched
+/// exactly with `case` (else in any case), and only as a whole word with `word`. An empty
+/// text, or a pattern that is not one, finds nothing.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FindQuery {
     pub text: String,
     pub case: bool,
     pub word: bool,
+    pub pattern: bool,
 }
 
 /// A session's finding: the query, its matches top to bottom, the current one.
@@ -132,6 +153,9 @@ impl Session {
         (options.case_sensitive, options.whole_word) = (query.case, query.word);
         // ponytail: matched on the UI thread; on the pool (`background`) if long histories
         // make a search take more than a frame.
+        if query.pattern {
+            return by_pattern(&text, &query);
+        }
         search_grid_text(&text, SearchPattern::Literal(&query.text), options)
     }
 

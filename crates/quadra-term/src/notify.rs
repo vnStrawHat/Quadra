@@ -4,7 +4,8 @@
 use std::sync::Arc;
 
 use oneterm_vt::{
-    EventBatch, NotificationExpiry, NotificationOccasion, NotificationRef, NotificationUrgency,
+    EventBatch, NotificationExpiry, NotificationOccasion, NotificationRef, NotificationSource,
+    NotificationUrgency,
 };
 
 use crate::session::Session;
@@ -14,6 +15,8 @@ use crate::session::Session;
 pub struct Notice {
     /// The id the program gave it (OSC 99 `i`), empty without; reports name it.
     pub id: String,
+    /// The sequence it came from (OSC 9, 777 or 99); none for one made here.
+    pub source: Option<NotificationSource>,
     pub title: String,
     pub body: String,
     /// The labels of its buttons, the first first.
@@ -41,13 +44,15 @@ pub struct Notice {
 impl Notice {
     /// A notice of words alone, as OSC 9 sends.
     pub fn text(title: impl Into<String>, body: impl Into<String>) -> Notice {
-        Notice { title: title.into(), body: body.into(), focus: true, ..Notice::default() }
+        let source = Some(NotificationSource::Osc9);
+        Notice { source, title: title.into(), body: body.into(), focus: true, ..Notice::default() }
     }
 
     pub(crate) fn of(batch: &EventBatch, at: NotificationRef) -> Notice {
         let said = batch.notification(at);
         Notice {
             id: batch.str(said.id).into(),
+            source: Some(said.source),
             title: batch.str(said.title).into(),
             body: batch.str(said.body).into(),
             buttons: batch.strs(said.buttons).map(str::to_string).collect(),

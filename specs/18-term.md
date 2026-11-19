@@ -329,12 +329,13 @@ What any completion needs, with no knowledge of commands (specs/20 is 1Term's):
 
 ## Find
 
-- `Session::find(&FindQuery { text, case, word })` looks for `text` in the active screen, its
+- `Session::find(&FindQuery { text, case, word, pattern })` looks for `text` in the active screen, its
   history with it, through the engine's matcher (`vt::search`: a copy of the text taken under
   the lock, matched after it; a literal, lower-cased unless `case`, and only whole words with
-  `word`; a match never crosses a hard line end, a wrapped line is one). No regular
-  expressions: the engine's are behind a feature with a dependency of its own. An empty text
-  ends finding. The current match is the first at or below the top of the view, else the last
+  `word`; a match never crosses a hard line end, a wrapped line is one). With `pattern` the
+  text is a regular expression (`regex-lite`, a logical line at a time, each hit turned into a
+  match by `GridText::span`; empty hits are left out, and one that is no pattern finds nothing);
+  `case` and `word` mean the same. An empty text ends finding. The current match is the first at or below the top of the view, else the last
   one; `find_next(back)` steps to the next (or, `back`, the one before), wrapping. The view
   scrolls to the current match when it is out of view, so that it stands in the middle (as
   near as the history allows); a match in view does not move it.
@@ -364,7 +365,7 @@ What any completion needs, with no knowledge of commands (specs/20 is 1Term's):
 `title`, `cwd`, `bells` (a count), `progress` (OSC 9;4: none, a part, indeterminate, error,
 paused), `status` (OSC 7501) and `status_name` (the id of the record the summary is, the latest
 of the strongest: `deploy`), `exited` (the code once the program ended), and each notification
-(OSC 9, 777, 99) as an event (`on_notification`): a `Notice` holds its id, title, body,
+(OSC 9, 777, 99) as an event (`on_notification`): a `Notice` holds its id, the sequence it came from (`source`), title, body,
 buttons, urgency, expiry, when it wants to show (`occasion`), its sound as named, its icon
 names, its icon's data (`Arc<[u8]>`, empty without) and the id it is kept under, and what it
 asks (focus, reports of activation and closing). A

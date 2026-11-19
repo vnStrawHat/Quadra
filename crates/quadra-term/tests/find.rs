@@ -51,7 +51,7 @@ fn lines(h: &mut Harness, s: &Session) {
 }
 
 fn query(text: &str, case: bool, word: bool) -> FindQuery {
-    FindQuery { text: text.into(), case, word }
+    FindQuery { text: text.into(), case, word, pattern: false }
 }
 
 /// The first row that shows.
@@ -185,4 +185,23 @@ fn a_resize_that_reflows_finds_again() {
     assert_eq!(s.size().cols, 40);
     assert_eq!(s.found().get_untracked(), (1, 1));
     assert_eq!(quads(&mut h, current), [(80.0 + 22.0 * 6.0, 24.0)]);
+}
+
+#[test]
+fn a_pattern_finds_by_a_regular_expression() {
+    let (mut h, s) = term();
+    lines(&mut h, &s);
+    let pattern = |text: &str, case, word| FindQuery { pattern: true, ..query(text, case, word) };
+    s.find(&pattern(r"line 2\d", false, false));
+    assert_eq!(s.found().get_untracked().1, 10, "lines 20 to 29");
+    s.find(&pattern("fo+d?", false, false));
+    assert_eq!(s.found().get_untracked().1, 5);
+    s.find(&pattern("fo+", true, true));
+    assert_eq!(s.found().get_untracked().1, 3, "case and whole words as a literal's");
+    s.find(&pattern("x*", false, false));
+    assert_eq!(s.found().get_untracked(), (0, 0), "empty matches are none");
+    s.find(&pattern("(unclosed", false, false));
+    assert_eq!(s.found().get_untracked(), (0, 0), "not a pattern: nothing");
+    s.find(&query("fo+", false, false));
+    assert_eq!(s.found().get_untracked(), (0, 0), "a literal is no pattern");
 }

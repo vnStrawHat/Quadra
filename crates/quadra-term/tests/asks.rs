@@ -101,6 +101,7 @@ fn an_osc99_notification_in_chunks_is_one_notice_and_a_program_asks_to_close_and
     t.feed("\x1b]99;i=b:p=buttons;Log\u{2028}Retry\x1b\\".as_bytes());
     let want = Notice {
         id: "b".into(),
+        source: Some(vt::NotificationSource::Osc99),
         title: "Build failed".into(),
         body: "3 errors".into(),
         buttons: vec!["Log".into(), "Retry".into()],

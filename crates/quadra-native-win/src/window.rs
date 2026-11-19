@@ -284,6 +284,10 @@ impl PlatformWindow for WinWindow {
         self.0.toggle_maximize();
     }
 
+    fn to_front(&self) {
+        self.0.to_front();
+    }
+
     fn is_maximized(&self) -> bool {
         self.0.is_maximized()
     }

@@ -179,6 +179,9 @@ pub trait PlatformWindow {
     fn minimize(&self);
     /// Maximizes the window, or puts it back as it was.
     fn toggle_maximize(&self);
+    /// Shows the window again if it is minimized, and brings it to the front with the
+    /// keyboard, as far as the OS lets this process.
+    fn to_front(&self);
     fn is_maximized(&self) -> bool;
     /// Where the window is now: what [`WindowOptions::placement`] opens it at again.
     fn placement(&self) -> Placement;

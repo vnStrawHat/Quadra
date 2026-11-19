@@ -67,7 +67,9 @@ records what it is asked and `FakeShell::click_tray` is the user.
 `single_instance(id, args) -> Instance`: the first process to ask in the user's session
 holds a named mutex and a hidden window of its own (`Instance::First(inbox)`); a later one
 finds the window, sends it the folder it started in and its arguments (`WM_COPYDATA`) and
-is told to end (`Instance::Second`). The first makes its window just after its mutex, so a
+is told to end (`Instance::Second`). The later one lets any process take the foreground
+(`AllowSetForegroundWindow`) before it sends, as it is the one the user just started: so the
+first may bring its window to the front. The first makes its window just after its mutex, so a
 later one that starts in between looks for it again for up to two seconds. The first receives each `Launch { folder, args }`
 through the inbox, on its UI thread (`.on_data(..)` in a view).
 

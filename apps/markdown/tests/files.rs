@@ -1,12 +1,12 @@
 //! Files (specs/21, "Files"): an edit shown in the preview, saving through a rename with the
 //! line ends kept, save as for an untitled document, and the question before unsaved work is
-//! lost, by opening another file and by closing the window. The OS's dialogs are a fake.
+//! lost by closing the window (the tabs are `tabs.rs`). The OS's dialogs are a fake.
 
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
-use markdown::{MdApp, Model, keymap};
+use markdown::{MdApp, keymap};
 use quadra::{Key, Mods, Role};
 use quadra_shell::{Answer, FakeShell};
 use quadra_testing::Harness;
@@ -27,24 +27,20 @@ fn file(name: &str, text: &str) -> PathBuf {
 struct App {
     h: Harness,
     shell: Rc<FakeShell>,
-    model: Model,
 }
 
 fn app(path: Option<PathBuf>) -> App {
     let mut h = Harness::new();
     h.size = quadra::Size::new(1200.0, 800.0);
     h.tree.set_keymap(Rc::new(keymap()));
-    let (shell, built) = (FakeShell::new(), Rc::new(std::cell::RefCell::new(None)));
-    let (given, tell) = (shell.clone(), built.clone());
+    let shell = FakeShell::new();
+    let given = shell.clone();
     h.mount(move || {
         given.provide();
-        let md = MdApp::new(path);
-        *tell.borrow_mut() = Some(md.model.clone());
-        md.view()
+        MdApp::new(path).view()
     });
     h.settle();
-    let model = built.borrow_mut().take().unwrap();
-    App { h, shell, model }
+    App { h, shell }
 }
 
 impl App {
@@ -98,28 +94,6 @@ fn an_untitled_document_is_saved_where_the_user_says() {
     assert_eq!(std::fs::read_to_string(&target).unwrap(), "# Fresh");
     assert!(a.h.has_text("fresh.md") && !a.unsaved());
     assert_eq!(a.shell.asked(), ["save_file: Save as"]);
-}
-
-#[test]
-fn opening_another_file_asks_first_about_unsaved_work() {
-    let first = file("first.md", "# First\n");
-    let second = file("second.md", "# Second\n");
-    let mut a = app(Some(first.clone()));
-    a.key(Key::Digit1, Mods::CTRL);
-    a.type_in("x");
-    // Cancel: nothing opens.
-    a.shell.answer(Answer::Cancel);
-    a.key(Key::O, Mods::CTRL);
-    assert!(a.h.has_text("first.md"));
-    // Don't save: the other opens, in Preview, and the first is as it was.
-    a.shell.choose(&[&second.display().to_string()]);
-    a.shell.answer(Answer::No);
-    a.key(Key::O, Mods::CTRL);
-    assert!(a.h.has_text("second.md") && a.h.has_text("Second"));
-    assert_eq!(std::fs::read_to_string(&first).unwrap(), "# First\n");
-    assert_eq!(a.model.layout.get_untracked(), markdown::PREVIEW);
-    let asked = a.shell.asked();
-    assert_eq!(asked, ["message: Markdown", "message: Markdown", "open_files: Open"]);
 }
 
 #[test]

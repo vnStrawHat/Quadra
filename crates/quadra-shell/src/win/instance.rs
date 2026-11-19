@@ -55,6 +55,8 @@ pub fn single_instance(id: &str, args: &[String]) -> Instance {
     unsafe {
         let mutex = CreateMutexW(None, true, &name);
         if mutex.is_ok() && GetLastError() == ERROR_ALREADY_EXISTS {
+            // The user started this one: the first may take the foreground from it.
+            let _ = windows::Win32::UI::WindowsAndMessaging::AllowSetForegroundWindow(u32::MAX);
             let started = std::time::Instant::now();
             let mut found = FindWindowExW(Some(HWND_MESSAGE), None, class, &title);
             while found.is_err() && started.elapsed() < WAIT {

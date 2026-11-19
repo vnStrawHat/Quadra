@@ -12,8 +12,9 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     DefWindowProcW, HTCAPTION, HTCLIENT, HTLEFT, HTMAXBUTTON, HTRIGHT, HTTOP, HTTOPLEFT, HTTOPRIGHT,
-    IsZoomed, SM_CXPADDEDBORDER, SM_CYSIZEFRAME, SW_MAXIMIZE, SW_MINIMIZE, SW_RESTORE, ShowWindow,
-    WM_NCCALCSIZE, WM_NCHITTEST, WM_NCLBUTTONDOWN, WM_NCLBUTTONUP, WM_NCMOUSEMOVE,
+    IsIconic, IsZoomed, SM_CXPADDEDBORDER, SM_CYSIZEFRAME, SW_MAXIMIZE, SW_MINIMIZE, SW_RESTORE,
+    SetForegroundWindow, ShowWindow, WM_NCCALCSIZE, WM_NCHITTEST, WM_NCLBUTTONDOWN, WM_NCLBUTTONUP,
+    WM_NCMOUSEMOVE,
 };
 
 use crate::input::{current_mods, position};
@@ -31,6 +32,18 @@ impl WindowState {
     pub fn minimize(&self) {
         // SAFETY: a window that is gone refuses the call.
         let _ = unsafe { ShowWindow(self.hwnd.get(), SW_MINIMIZE) };
+    }
+
+    pub fn to_front(&self) {
+        let hwnd = self.hwnd.get();
+        // SAFETY: a window that is gone refuses the calls; the OS may refuse the foreground to
+        // a process the user is not using, and then flashes the window's button instead.
+        unsafe {
+            if IsIconic(hwnd).as_bool() {
+                let _ = ShowWindow(hwnd, SW_RESTORE);
+            }
+            let _ = SetForegroundWindow(hwnd);
+        }
     }
 
     pub fn toggle_maximize(&self) {

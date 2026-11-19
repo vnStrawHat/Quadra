@@ -19,6 +19,8 @@ pub const PREVIEW: usize = 2;
 /// The window's state. Copies are the same one.
 #[derive(Clone)]
 pub struct Model {
+    /// What the tab is known by.
+    pub id: String,
     /// The file, `None` while untitled.
     pub path: Signal<Option<PathBuf>>,
     /// The text the preview shows: as read, then as edited.
@@ -59,10 +61,19 @@ pub struct Model {
 
 impl Model {
     /// An untitled, empty document in Preview, with the app's settings (in memory where
-    /// there are none).
+    /// there are none). Call it where a view is built.
     pub fn new() -> Model {
-        let prefs = Prefs::load();
+        Model::with(Prefs::load(), notices().above(0.0))
+    }
+
+    /// An untitled, empty document with the window's settings and notices: another tab.
+    pub fn with(prefs: Prefs, notices: Notices) -> Model {
+        thread_local! {
+            static MADE: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+        }
+        let n = MADE.with(|made| made.replace(made.get() + 1));
         Model {
+            id: format!("doc-{n}"),
             path: signal(None),
             text: signal(String::new()),
             saved: signal(String::new()),
@@ -82,7 +93,7 @@ impl Model {
             touched: signal(0),
             editor: EditorHandle::default(),
             doc: KeptDoc::default(),
-            notices: notices().above(0.0),
+            notices,
             prefs,
         }
     }

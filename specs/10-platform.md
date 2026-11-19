@@ -31,6 +31,7 @@ pub trait PlatformWindow {                       // dropping it closes the windo
     fn set_text_input(&self, caret: Option<Rect>);   // text is typed there, or nowhere
     fn update_semantics(&self, update: &TreeUpdate); // for assistive technology (12)
     fn minimize(&self);  fn toggle_maximize(&self);  fn is_maximized(&self) -> bool;
+    fn to_front(&self);  // shown again if minimized, and given the keyboard
 }
 
 pub trait PlatformHandler {
@@ -74,7 +75,10 @@ pub trait PlatformHandler {
   app's to act on. Minimize and close are buttons of the app's like any other.
 - **What a view asks of its window.** `quadra_view::window()` gives the window the calling
   view is in: `.minimize()`, `.toggle_maximize()`, `.close()` (as the close button of the
-  OS: the app decides), `.set_title(words)` (what the OS shows of it: its frame, the taskbar), and `.is_maximized()`, `.is_active()` (it has the keyboard) and
+  OS: the app decides), `.set_title(words)` (what the OS shows of it: its frame, the taskbar),
+  `.to_front()` (shown again if it was minimized, and brought to the front with the
+  keyboard, as far as the OS lets a process that is not in front: one instance, 16), and
+  `.is_maximized()`, `.is_active()` (it has the keyboard) and
   `.is_minimized()`, reads that what they are in runs again for;
   `.frames()` counts the frames its tree made (`Handle::frames`, not a signal: read twice a
   second apart, the frames a second, and reading it makes none).

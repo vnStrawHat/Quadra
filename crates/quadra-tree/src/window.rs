@@ -33,6 +33,8 @@ pub enum WindowRequest {
     CloseNow,
     /// What the OS shows as its title: its frame, the taskbar.
     Title(String),
+    /// Shown again if minimized, and brought to the front.
+    Front,
 }
 
 impl Tree {

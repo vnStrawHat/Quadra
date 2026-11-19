@@ -6,7 +6,7 @@
 //! Scenes: preview, raw, side (the sample document, `sample.md`, in each layout), chosen (side
 //! by side, the heading "Code" pressed in the preview: both panes at it, tinted), empty (an
 //! untitled window), tables and tables-side (`tables.md`, tables with long text, in Preview and
-//! side by side), logo (the logo at 256 px on the dark and the light canvas), large (the time
+//! side by side), tabs (the sample and the tables in two tabs), logo (the logo at 256 px on the dark and the light canvas), large (the time
 //! of a large document's steps, printed; run it in the dist profile), icon (writes
 //! `apps/markdown/assets/logo.ico`, and a picture of its sizes), settings and about (the
 //! settings window at its first page and at About).
@@ -27,7 +27,7 @@ use quadra_app::{App, AppError};
 use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 
-const SCENES: [(&str, usize); 7] = [
+const SCENES: [(&str, usize); 8] = [
     ("preview", PREVIEW),
     ("raw", RAW),
     ("side", SIDE_BY_SIDE),
@@ -35,6 +35,7 @@ const SCENES: [(&str, usize); 7] = [
     ("empty", PREVIEW),
     ("tables", PREVIEW),
     ("tables-side", SIDE_BY_SIDE),
+    ("tabs", PREVIEW),
 ];
 
 fn pass(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, ms: u64) {
@@ -76,9 +77,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         markdown::plain_code(&mut app);
         let built: Rc<RefCell<Option<Model>>> = Rc::default();
         let document = if scene.starts_with("tables") { tables.clone() } else { sample.clone() };
-        let (tell, file) = (built.clone(), (*scene != "empty").then_some(document));
+        let mut files: Vec<PathBuf> = (*scene != "empty").then_some(document).into_iter().collect();
+        if *scene == "tabs" {
+            files.push(tables.clone());
+        }
+        let tell = built.clone();
         let window = app.open_window(WindowOptions::new("Markdown").size(1280.0, 860.0), move || {
-            let md = MdApp::new(file.clone());
+            let md = MdApp::with_files(files.clone());
             *tell.borrow_mut() = Some(md.model.clone());
             md.view()
         })?;

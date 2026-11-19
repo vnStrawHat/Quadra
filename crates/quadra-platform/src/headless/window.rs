@@ -51,6 +51,10 @@ impl PlatformWindow for HeadlessWindow {
         self.0.maximized.set(!self.0.maximized.get());
     }
 
+    fn to_front(&self) {
+        self.0.minimized.set(false);
+    }
+
     fn is_maximized(&self) -> bool {
         self.0.maximized.get()
     }

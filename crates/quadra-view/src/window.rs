@@ -55,6 +55,12 @@ impl Window {
     }
 
     /// What the OS shows as the window's title: its frame, the taskbar.
+    /// Shows the window again if it is minimized, and brings it to the front, as far as the
+    /// OS lets this process.
+    pub fn to_front(&self) {
+        self.handle.ask_window(WindowRequest::Front);
+    }
+
     pub fn set_title(&self, title: impl Into<String>) {
         self.handle.ask_window(WindowRequest::Title(title.into()));
     }

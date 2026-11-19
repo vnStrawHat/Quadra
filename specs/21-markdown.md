@@ -18,6 +18,7 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 | M5 | The logo |
 | M6 | The outline: a sidebar of the document's headings |
 | M7 | Settings, About, and making Markdown the default for `.md` files |
+| M8 | Tabs, and one process: files opened from the OS go to tabs of the window there is |
 
 ## Window
 
@@ -35,10 +36,11 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
     ghost icon buttons with tooltips that name their keys.
 - **Below the bar.** At the left, the outline (below), in every layout. At its right, while
   the editor shows, the toolbar (below), and under that the document in its layout.
-- **Opening a file.** The command line's first argument, a path, is the file opened at start.
-  That is how a file opens straight from the OS ("Open with", a file's association). Without
-  one, the window starts with an untitled empty document. A `.md`, `.markdown` or `.txt` file
-  dropped on the window opens it.
+- **Opening a file.** The command line's arguments, paths, are the files opened at start,
+  each a tab. That is how a file opens straight from the OS ("Open with", a file's
+  association; several files chosen in Explorer start the app once each, and all go to the
+  first: "Tabs"). Without one, the window starts with an untitled empty document. A `.md`,
+  `.markdown` or `.txt` file dropped on the window opens it.
 - **A byte order mark** at the start of a file is dropped when it is read, and not written
   back on a save.
 - **The app's folders.** These hold its settings and log. `MARKDOWN_HOME=<folder>` puts them in
@@ -62,14 +64,38 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   - A link to an address opens with the OS's opener, if it is one that opens
     (`url_openable`).
   - A link to `#anchor` scrolls the preview to that heading.
-  - A link to another `.md` file, by a path from this one's folder, opens it here. It asks
-    first when there is unsaved work.
+  - A link to another `.md` file, by a path from this one's folder, opens it in a tab
+    ("Tabs").
+
+## Tabs
+
+- **One process.** Markdown starts by asking whether it is the first in the user's session
+  (16, "One instance"; the name is `markdown`, or `markdown-trial` under `MARKDOWN_HOME`, so a
+  trial run is apart). A later start (files opened from Explorer, "Open with", the
+  command line) hands the first its folder and its files and ends; the first opens each file
+  as a tab, a relative path from that folder, and brings its window to the front.
+- **A tab is a document**: its file, its text, its editor's document, its layout, where its
+  panes are and its outline's row. The settings and the notices are the window's.
+- **The strip.** Under the bar while there are two tabs or more: the kit's tab strip (13,
+  "Tab strip"), each tab the file's name with the unsaved mark, a cross that closes it, the
+  tabs dragged to another order. The bar, the title and the toolbar are the active tab's.
+- **Where a file opens.** In the tab that has it already; else in the active tab when it is
+  untitled, empty and unchanged; else in a new tab after the active one, which becomes active.
+  So opening never loses work and asks nothing. A file dropped on the window, a link to
+  another document and Ctrl+O all open so.
+- **Keys.** Ctrl+N or Ctrl+T: a new untitled tab. Ctrl+W: close the active tab. Ctrl+Tab and
+  Ctrl+Shift+Tab: the next and the previous tab, round.
+- **Closing.** A tab with unsaved work asks first ("Save changes to <name>?"). Closing the
+  last tab leaves an untitled one. Closing the window asks for each tab with unsaved work in
+  turn; Cancel on any keeps the window open.
+- **Its cost.** Switching tabs builds the active document's panes again, as a layout changed
+  does; the other tabs hold their text and their editor's document, not their views.
 
 ## Files
 
 - **Keys.**
-  - Ctrl+N: a new, untitled document.
-  - Ctrl+O: open (the system's dialog, Markdown files first).
+  - Ctrl+N: a new, untitled document (a tab, above).
+  - Ctrl+O: open (the system's dialog, Markdown files first), in a tab (above).
   - Ctrl+S: save. An untitled document is saved through Save as.
   - Ctrl+Shift+S: save as.
 - **Writing.** A save goes to a file beside the target, which is then renamed over it, so a
@@ -77,8 +103,9 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   stay as they were read. A failure says why in a toast and keeps the work unsaved.
 - **The unsaved mark.** It follows the editor's `changed` signal: true while the text differs
   from what was last read or saved.
-- **Before work is lost.** New, Open, opening a linked file and closing the window all ask
-  first: "Save changes to <name>?" with Save, Don't save and Cancel.
+- **Before work is lost.** Closing a tab or the window asks first: "Save changes to
+  <name>?" with Save, Don't save and Cancel. Opening goes to a tab (above), so it asks
+  nothing.
 
 ## Side by side
 
@@ -228,7 +255,8 @@ The line is read again when the window comes back to the front.
 The tests drive the controls through the semantic tree:
 - the file of the command line opening in Preview, and the three layouts;
 - saving through the rename;
-- the question before losing work;
+- the question before losing work, closing a tab or the window;
+- the tabs: where a file opens, closing, the keys, and the files a later start hands over;
 - the panes following by headings, both ways, with no echo;
 - the heading chosen;
 - the toolbar's changes, and their undo;

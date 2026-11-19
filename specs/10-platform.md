@@ -139,6 +139,10 @@ A second OS adds a second native crate. Nothing above the traits changes.
 As behaviour/02 notes it (first written for the V implementation):
 
 - Per-monitor DPI awareness v2; a scale change resizes the window as the OS suggests.
+- **A window's icon** is the executable's icon resource 1, where it has one, at the system's
+  sizes for an icon and a small icon (the title bar, the taskbar, Alt+Tab); without one the
+  OS's. An app gives its executable an icon at build time (16, "Packaging"), so there is one
+  icon for the file, its windows and the files it opens.
 - A minimum size is answered in `WM_GETMINMAXINFO`: the minimum content times the window's DPI
   of the moment (read at each message, so right after a DPI change), plus the frame
   `AdjustWindowRectExForDpi` gives for the window's style. With a frame of its own only the

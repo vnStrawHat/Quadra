@@ -14,6 +14,7 @@ mod drop;
 mod dwrite;
 mod frame;
 mod gpu;
+mod icon;
 mod image;
 mod ime;
 mod input;

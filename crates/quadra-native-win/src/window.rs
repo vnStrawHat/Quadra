@@ -89,11 +89,15 @@ pub(crate) unsafe fn register_class(
 ) -> Result<(), PlatformError> {
     // SAFETY: the structure is complete and `name` is a static string.
     unsafe {
+        let module = GetModuleHandleW(None).map_err(failed)?.into();
+        let (icon, small) = crate::icon::exe_icons(module);
         let class = WNDCLASSEXW {
             cbSize: size_of::<WNDCLASSEXW>() as u32,
             style: CS_HREDRAW | CS_VREDRAW,
             lpfnWndProc: WNDPROC::Some(proc),
-            hInstance: GetModuleHandleW(None).map_err(failed)?.into(),
+            hInstance: module,
+            hIcon: icon,
+            hIconSm: small,
             hCursor: LoadCursorW(None, IDC_ARROW).map_err(failed)?,
             lpszClassName: name,
             ..Default::default()

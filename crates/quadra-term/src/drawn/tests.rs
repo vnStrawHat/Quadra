@@ -29,8 +29,10 @@ fn with_arms(want: [u8; 4]) -> char {
 
 const BOTH: &[u32] = &[0x2573, 0x2588, 0x2591, 0x2592, 0x2593];
 const SELF_X: &[u32] = &[0x2580, 0x2581, 0x2582, 0x2583, 0x2584, 0x2585, 0x2586, 0x2587, 0x2594];
-const SELF_Y: &[u32] =
-    &[0x2589, 0x258A, 0x258B, 0x258C, 0x258D, 0x258E, 0x258F, 0x2590, 0x2595, 0xE0B0, 0xE0B1, 0xE0B2, 0xE0B3];
+const SELF_Y: &[u32] = &[
+    0x2589, 0x258A, 0x258B, 0x258C, 0x258D, 0x258E, 0x258F, 0x2590, 0x2595, 0xE0B0, 0xE0B1, 0xE0B2, 0xE0B3,
+    0xE0B4, 0xE0B5, 0xE0B6, 0xE0B7,
+];
 const PAIRS_X: &[(u32, u32)] = &[
     (0x258C, 0x2590),
     (0x258F, 0x2595),
@@ -44,6 +46,12 @@ const PAIRS_X: &[(u32, u32)] = &[
     (0x2571, 0x2572),
     (0xE0B0, 0xE0B2),
     (0xE0B1, 0xE0B3),
+    (0xE0B4, 0xE0B6),
+    (0xE0B5, 0xE0B7),
+    (0xE0B8, 0xE0BA),
+    (0xE0B9, 0xE0BB),
+    (0xE0BC, 0xE0BE),
+    (0xE0BD, 0xE0BF),
 ];
 const PAIRS_Y: &[(u32, u32)] = &[
     (0x2580, 0x2584),
@@ -56,11 +64,28 @@ const PAIRS_Y: &[(u32, u32)] = &[
     (0x256D, 0x2570),
     (0x256E, 0x256F),
     (0x2571, 0x2572),
+    (0xE0B8, 0xE0BC),
+    (0xE0B9, 0xE0BD),
+    (0xE0BA, 0xE0BE),
+    (0xE0BB, 0xE0BF),
 ];
+
+/// The sextants' parts, bits `1 2 / 3 4 / 5 6`, in the order of their code points.
+fn sextants() -> Vec<u32> {
+    (1..63).filter(|it| *it != 0b010101 && *it != 0b101010).collect()
+}
 
 /// The character `c` mirrored about the vertical middle (`x`) or the horizontal one.
 fn mirror(c: char, x: bool) -> Option<char> {
     let n = c as u32;
+    if let Some(&parts) = sextants().get(n.wrapping_sub(0x1FB00) as usize) {
+        let other = if x {
+            (parts & 0b010101) << 1 | (parts >> 1) & 0b010101
+        } else {
+            (parts & 0b11) << 4 | parts & 0b1100 | parts >> 4
+        };
+        return char::from_u32(0x1FB00 + sextants().iter().position(|&it| it == other)? as u32);
+    }
     if let Some([up, right, down, left]) = arms(c) {
         return Some(with_arms(if x { [up, left, down, right] } else { [down, right, up, left] }));
     }
@@ -77,7 +102,7 @@ fn mirror(c: char, x: bool) -> Option<char> {
 #[test]
 fn every_mask_is_the_mirror_of_its_mirrored_character_about_both_middles() {
     let mut checked = 0;
-    for c in (0x2500..=0x259F).chain(0xE0B0..=0xE0B3).filter_map(char::from_u32) {
+    for c in (0x2500..=0x259F).chain(0xE0B0..=0xE0BF).chain(0x1FB00..=0x1FB3B).filter_map(char::from_u32) {
         for x in [true, false] {
             let Some(other) = mirror(c, x) else { continue };
             for (w, h) in SIZES {
@@ -155,5 +180,25 @@ fn in_a_cell_whose_sides_share_a_parity_lines_are_as_thick_down_as_across() {
             let across = m.chunks_exact(w as usize).filter(|row| row[0] == 255).count();
             assert_eq!(down, across, "{c} at {w} x {h}");
         }
+    }
+}
+
+#[test]
+fn sextants_tile_the_box_and_line_up_with_the_half_blocks() {
+    let sextant = |parts: u32| {
+        char::from_u32(0x1FB00 + sextants().iter().position(|&it| it == parts).unwrap() as u32).unwrap()
+    };
+    // Heights of each remainder by 3.
+    for (w, h) in SIZES.into_iter().chain([(8, 16), (9, 19)]) {
+        // A sextant and its complement cover each pixel once (a pixel split in half, 128 each).
+        for &parts in &sextants() {
+            let (a, b) = (mask(sextant(parts), w, h), mask(sextant(63 - parts), w, h));
+            let once = a.iter().zip(&b).all(|(x, y)| (255..=256).contains(&(u16::from(*x) + u16::from(*y))));
+            assert!(once, "{parts:06b} at {w} x {h}");
+        }
+        // The left column's parts, 1 3 and 5, are the left half block; no row overlaps.
+        let (top, low) = (mask(sextant(0b000101), w, h), mask(sextant(0b010000), w, h));
+        let left: Vec<u8> = top.iter().zip(&low).map(|(a, b)| a + b).collect();
+        assert_eq!(left, mask('▌', w, h), "at {w} x {h}");
     }
 }

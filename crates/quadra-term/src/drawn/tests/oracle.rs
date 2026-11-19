@@ -2,13 +2,14 @@
 //! from the Unicode Character Database; the separators, private use, named by hand), on its
 //! mask's pixels at each size of `SIZES`: the strokes at each edge (none, light, heavy,
 //! double: how many, how thick, centred), nothing outside the arms, dashes, arcs, diagonals,
-//! the eighths and quadrants of blocks, shades and the separators. An arm's edge pixels are
+//! the eighths, quadrants and sextants of blocks, shades and the separators. An arm's edge pixels are
 //! those of the straight line of its weight, so any two neighbours join.
 
 use super::SIZES;
 use crate::drawn::{drawn, mask};
 
 mod says;
+mod shapes;
 use says::{Says, says};
 
 const NAMES: &str = include_str!("names.txt");
@@ -162,28 +163,12 @@ fn check(c: char, says: &Says, (w, h): (u32, u32)) {
             ];
             assert!(corners.iter().all(|&(v, want)| (v > 0) == want), "{c} {w}x{h}: corners {corners:?}");
             assert!((0..h).all(|y| (0..w).any(|x| at(x, y) > 0)), "{c} {w}x{h}: a row without the line");
+            shapes::on_diagonals(c, &m, (w, h), rising, falling);
         }
-        Says::Blocks(ref parts) => {
-            let (wf, hf) = (f64::from(w), f64::from(h));
-            for y in 0..h {
-                for x in 0..w {
-                    let covered: f64 = parts
-                        .iter()
-                        .map(|&[x0, y0, x1, y1]| {
-                            let dx = (x1 * wf).min(f64::from(x + 1)) - (x0 * wf).max(f64::from(x));
-                            let dy = (y1 * hf).min(f64::from(y + 1)) - (y0 * hf).max(f64::from(y));
-                            dx.max(0.0) * dy.max(0.0)
-                        })
-                        .sum();
-                    let want = (covered.min(1.0) * 255.0).round();
-                    assert!(
-                        (f64::from(at(x, y)) - want).abs() <= 1.0,
-                        "{c} {w}x{h} at ({x}, {y}): {} for {want}",
-                        at(x, y)
-                    );
-                }
-            }
-        }
+        Says::Blocks(ref parts) => shapes::blocks(c, &m, (w, h), parts),
+        Says::Sextant(bits) => shapes::sextant(c, &m, (w, h), bits),
+        Says::HalfCircle(right, solid) => shapes::half_circle(c, &m, (w, h), right, solid),
+        Says::Corner(right, lower) => shapes::corner(c, &m, (w, h), right, lower),
         Says::Shade(part) => {
             assert!(m.iter().all(|&v| (f64::from(v) - part * 255.0).abs() <= 1.0), "{c} {w}x{h}")
         }
@@ -215,9 +200,13 @@ fn every_drawn_character_is_what_its_unicode_name_says_at_every_size() {
         })
         .collect();
     // Enough: every character drawn here has a name, and every named one is drawn.
-    let all: Vec<char> = (0x2500..0x25A0).chain(0xE0B0..0xE0B4).filter_map(char::from_u32).collect();
+    let all: Vec<char> =
+        (0x2500..0x25A0).chain(0xE0B0..0xE0C0).chain(0x1FB00..0x1FB3C).filter_map(char::from_u32).collect();
     assert_eq!(named.iter().map(|it| it.0).collect::<Vec<_>>(), all);
-    assert!(all.iter().all(|&c| drawn(c)) && !drawn('\u{24FF}') && !drawn('\u{25A0}') && !drawn('\u{E0B4}'));
+    assert!(all.iter().all(|&c| drawn(c)));
+    assert!(
+        ['\u{24FF}', '\u{25A0}', '\u{E0AF}', '\u{E0C0}', '\u{1FAFF}', '\u{1FB3C}'].iter().all(|&c| !drawn(c))
+    );
     for (c, says) in &named {
         for size in SIZES {
             check(*c, says, size);

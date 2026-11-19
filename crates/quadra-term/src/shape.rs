@@ -20,7 +20,7 @@ pub(crate) struct Scratch {
 pub(crate) fn joins(row: &SnapshotRow, col: usize) -> bool {
     let cell = &row.cells[col];
     let SnapshotContent::Scalar(c) = cell.content else { return false };
-    let drawing = matches!(c as u32, 0x2500..=0x25FF | 0xE0B0..=0xE0D7);
+    let drawing = matches!(c as u32, 0x2500..=0x25FF | 0xE0B0..=0xE0D7 | 0x1FB00..=0x1FBFF);
     cell.width == CellWidth::Narrow && !blank(c) && !drawing
 }
 

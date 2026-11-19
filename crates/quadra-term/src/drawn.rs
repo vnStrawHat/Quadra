@@ -1,6 +1,6 @@
 //! Characters drawn, not the font's (specs/18, "Drawn characters"): box drawing, block
-//! elements and the separators of patched fonts, each a coverage mask of its cells' box in
-//! whole device pixels, the mirror of its mirrored character about both middles.
+//! elements, sextants and the separators of patched fonts, each a coverage mask of its cells'
+//! box in whole device pixels, the mirror of its mirrored character about both middles.
 
 use oneterm_vt::SnapshotContent;
 use quadra_prim::{Color, Corners, Rect};
@@ -9,12 +9,13 @@ use quadra_tree::PaintCx;
 
 use crate::widget::TerminalWidget;
 
+mod shapes;
 #[cfg(test)]
 mod tests;
 
 /// Whether `c` is drawn here.
 pub(crate) fn drawn(c: char) -> bool {
-    matches!(c as u32, 0x2500..=0x259F | 0xE0B0..=0xE0B3)
+    matches!(c as u32, 0x2500..=0x259F | 0xE0B0..=0xE0BF | 0x1FB00..=0x1FB3B)
 }
 
 /// Paints a cell's character over its cells' box `b` (logical pixels) in `fg`, as a glyph is,
@@ -108,16 +109,8 @@ pub(crate) fn mask(c: char, w: u32, h: u32) -> Vec<u8> {
                 m.rect(x0, y0, x0 + x, y0 + y);
             }
         }
-        0xE0B0..=0xE0B3 => {
-            let half = hf / 2.0;
-            if n.is_multiple_of(2) {
-                m.shape(|x, y| x <= wf * (1.0 - (y - half).abs() / half));
-            } else {
-                let len = wf.hypot(half);
-                m.shape(|x, y| (half * x - wf * y.min(hf - y)).abs() / len <= half_light);
-            }
-            m.flip(n >= 0xE0B2, false);
-        }
+        0x1FB00..=0x1FB3B => m.sextant(n - 0x1FB00),
+        0xE0B0..=0xE0BF => m.powerline(n - 0xE0B0, half_light),
         _ => {}
     }
     m.px.iter().map(|&v| (v.clamp(0.0, 1.0) * 255.0).round() as u8).collect()

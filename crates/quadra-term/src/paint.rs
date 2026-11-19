@@ -26,7 +26,8 @@ pub(crate) fn colors(w: &TerminalWidget, style: &Style) -> (Color, Color) {
 fn glyph_color(w: &mut TerminalWidget, style: &Style, c: Option<char>, class: Option<Highlight>) -> Color {
     let named = if style.attrs.contains(Attrs::INVERSE) { style.bg } else { style.fg };
     let exact = matches!(named, VtColor::Rgb(_) | VtColor::Palette(16..));
-    let drawing = c.is_some_and(|c| matches!(c as u32, 0x2500..=0x25FF | 0xE0B0..=0xE0D7));
+    let drawing =
+        c.is_some_and(|c| matches!(c as u32, 0x2500..=0x25FF | 0xE0B0..=0xE0D7 | 0x1FB00..=0x1FBFF));
     let (mut fg, bg) = colors(w, style);
     if let Some(class) = class {
         fg = w.colors.highlights[class.index()].unwrap_or_else(|| color(w.palette.indexed[class.ansi()]));

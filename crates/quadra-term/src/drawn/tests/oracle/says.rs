@@ -14,6 +14,12 @@ pub(super) enum Says {
     Shade(f64),
     /// A separator pointing right (or left): solid or a chevron.
     Separator(bool, bool),
+    /// The parts of a sextant filled, bits `1 2 / 3 4 / 5 6`.
+    Sextant(u8),
+    /// A half circle bulging right (or left) from its flat edge: solid or its arc.
+    HalfCircle(bool, bool),
+    /// A solid triangle in the box's corner on the right (or left), below (or above).
+    Corner(bool, bool),
 }
 
 pub(super) fn says(name: &str) -> Says {
@@ -27,6 +33,12 @@ pub(super) fn says(name: &str) -> Says {
             "MEDIUM" => 0.5,
             _ => 0.75,
         }),
+        ["BLOCK", sextant] => Says::Sextant(
+            sextant.strip_prefix("SEXTANT-").expect("a sextant").bytes().map(|d| 1 << (d - b'1')).sum(),
+        ),
+        [.., "HALF", "CIRCLE"] => Says::HalfCircle(words.contains(&"RIGHT"), words[0] == "SOLID"),
+        ["SOLID", up @ ("LOWER" | "UPPER"), side, "TRIANGLE"] => Says::Corner(side == "RIGHT", up == "LOWER"),
+        [.., "SEPARATOR"] => Says::Diagonal(words[0] == "FORWARD", words[0] == "BACKSLASH"),
         ["SOLID" | "RIGHT" | "LEFT", ..] if !name.ends_with("BLOCK") => {
             Says::Separator(name.contains("RIGHT"), name.starts_with("SOLID"))
         }

@@ -126,8 +126,19 @@ pub const CASE_SENSITIVE: &str =
 pub const WHOLE_WORD: &str = r#"<circle cx="7" cy="12" r="3"/><path d="M10 9v6"/><circle cx="17" cy="12" r="3"/><path d="M14 7v8"/><path d="M22 17v1c0 .5-.5 1-1 1H3c-.5 0-1-.5-1-1v-1"/>"#;
 /// A regular expression: a star and a dot.
 pub const REGEX: &str = r#"<path d="M17 3v10"/><path d="m12.67 5.5 8.66 5"/><path d="m12.67 10.5 8.66-5"/><path d="M9 17a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2z"/>"#;
+/// Open: a folder open.
+pub const FOLDER_OPEN: &str = r#"<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>"#;
+/// A heading of the first level.
+pub const HEADING_1: &str =
+    r#"<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/>"#;
+/// A heading of the second level.
+pub const HEADING_2: &str = r#"<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/>"#;
+/// A heading of the third level.
+pub const HEADING_3: &str = r#"<path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2"/><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2"/>"#;
+/// A list of tasks: a box and a tick.
+pub const LIST_TODO: &str = r#"<rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>"#;
 /// Every icon, with the name it is known by: what a catalogue of them shows.
-pub const ALL: [(&str, &str); 104] = [
+pub const ALL: [(&str, &str); 109] = [
     ("app-window", APP_WINDOW),
     ("arrow-down", ARROW_DOWN),
     ("arrow-left", ARROW_LEFT),
@@ -227,6 +238,11 @@ pub const ALL: [(&str, &str); 104] = [
     ("user", USER),
     ("whole-word", WHOLE_WORD),
     ("regex", REGEX),
+    ("folder-open", FOLDER_OPEN),
+    ("heading-1", HEADING_1),
+    ("heading-2", HEADING_2),
+    ("heading-3", HEADING_3),
+    ("list-todo", LIST_TODO),
     ("workflow", WORKFLOW),
     ("x", X),
     ("zap", ZAP),

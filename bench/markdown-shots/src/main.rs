@@ -4,7 +4,8 @@
 //!     tools/cargo.sh run -p quadra-bench-markdown-shots -- [out dir] [scene ..]
 //!
 //! Scenes: preview, raw, side (the sample document, `sample.md`, in each layout), chosen (side
-//! by side, the heading "Code" pressed in the preview: both panes at it, tinted).
+//! by side, the heading "Code" pressed in the preview: both panes at it, tinted), empty (an
+//! untitled window), logo (the logo at 256 px on the dark and the light canvas).
 
 #[path = "../../shots/src/png.rs"]
 mod png;
@@ -20,8 +21,13 @@ use quadra_app::{App, AppError};
 use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 
-const SCENES: [(&str, usize); 4] =
-    [("preview", PREVIEW), ("raw", RAW), ("side", SIDE_BY_SIDE), ("chosen", SIDE_BY_SIDE)];
+const SCENES: [(&str, usize); 5] = [
+    ("preview", PREVIEW),
+    ("raw", RAW),
+    ("side", SIDE_BY_SIDE),
+    ("chosen", SIDE_BY_SIDE),
+    ("empty", PREVIEW),
+];
 
 fn pass(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, ms: u64) {
     for _ in 0..ms.div_ceil(75) {
@@ -38,15 +44,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let only: Vec<String> = args.collect();
     std::fs::create_dir_all(&out)?;
     let sample = std::path::absolute("bench/markdown-shots/src/sample.md")?;
-    for (scene, layout) in SCENES.iter().filter(|(it, _)| only.is_empty() || only.iter().any(|o| o == it)) {
+    let wanted = |it: &str| only.is_empty() || only.iter().any(|o| o == it);
+    if wanted("logo") {
+        logo(&out)?;
+    }
+    for (scene, layout) in SCENES.iter().filter(|(it, _)| wanted(it)) {
         let platform = HeadlessPlatform::new();
         let text = DirectWrite::new().map_err(AppError::Text)?;
         let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
         let mut app = quadra_design::install(app, &quadra_design::dark())?.keymap(keymap());
         let built: Rc<RefCell<Option<Model>>> = Rc::default();
-        let (tell, file) = (built.clone(), sample.clone());
+        let (tell, file) = (built.clone(), (*scene != "empty").then(|| sample.clone()));
         let window = app.open_window(WindowOptions::new("Markdown").size(1280.0, 860.0), move || {
-            let md = MdApp::new(Some(file.clone()));
+            let md = MdApp::new(file.clone());
             *tell.borrow_mut() = Some(md.model.clone());
             md.view()
         })?;
@@ -67,5 +77,33 @@ fn main() -> Result<(), Box<dyn Error>> {
         std::fs::write(&file, png::png(pixels.size.width, pixels.size.height, &pixels.rgba))?;
         println!("{}", file.display());
     }
+    Ok(())
+}
+
+/// The logo at 256 px on the dark canvas and on the light, side by side.
+fn logo(out: &std::path::Path) -> Result<(), Box<dyn Error>> {
+    let platform = HeadlessPlatform::new();
+    let text = DirectWrite::new().map_err(AppError::Text)?;
+    let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
+    let mut app = quadra_design::install(app, &quadra_design::dark())?;
+    let window = app.open_window(WindowOptions::new("Logo").size(640.0, 320.0), || {
+        let tile = |bg: quadra_prim::Color| {
+            quadra_view::column()
+                .grow(1.0)
+                .align_items(quadra_layout::Align::Center)
+                .justify(quadra_layout::Justify::Center)
+                .bg(bg)
+                .child(markdown::logo(256.0))
+        };
+        quadra_view::row()
+            .grow(1.0)
+            .child(tile(quadra_prim::Color::rgb(0x1e2227)))
+            .child(tile(quadra_prim::Color::WHITE))
+    })?;
+    pass(&platform, &mut app, 300);
+    let pixels = app.read_pixels(window)?;
+    let file = out.join("logo.png");
+    std::fs::write(&file, png::png(pixels.size.width, pixels.size.height, &pixels.rgba))?;
+    println!("{}", file.display());
     Ok(())
 }

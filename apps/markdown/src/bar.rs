@@ -29,6 +29,7 @@ pub(crate) fn bar(model: &Model, files: &Files) -> Div {
         .bg(token::PANEL)
         .border_bottom(1.0)
         .border_color(token::LINE)
+        .child(crate::logo::logo(20.0))
         .child(name)
         .child(dot)
         .child(div().grow(1.0))

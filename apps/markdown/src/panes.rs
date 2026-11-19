@@ -65,10 +65,24 @@ fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
     if let Some(folder) = untrack(|| m.folder()) {
         doc = doc.base(folder);
     }
-    let text = column().grow(1.0).min_width(0.0).max_width(COLUMN).child(tint(m)).child(doc);
+    let text = column().grow(1.0).min_width(0.0).max_width(COLUMN).child(tint(m)).child(empty(m)).child(doc);
     let page = row().justify(Justify::Center).padding_x(32.0).padding_y(PAD).child(text);
     let pane = column().grow(1.0).min_width(0.0).min_height(0.0).bg(token::CANVAS);
     drives(pane.role(Role::Group).label("Rendered"), m, Driver::Preview).child(scroll(m.preview_y, page))
+}
+
+/// What an empty document shows: the logo, and how to start.
+fn empty(m: &Model) -> Div {
+    let text = m.text;
+    let words = "Open a file (Ctrl+O), drop one here, or start writing in Raw (Ctrl+1).";
+    column()
+        .align_items(quadra::Align::Center)
+        .gap(16.0)
+        .padding_top(96.0)
+        .text_color(token::TEXT_3)
+        .display(move || if text.with(String::is_empty) { Display::Flex } else { Display::None })
+        .child(crate::logo::logo(96.0))
+        .child(quadra::text(words))
 }
 
 /// A pane the wheel, a press or a key in it makes the one that drives.

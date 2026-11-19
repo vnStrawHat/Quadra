@@ -929,6 +929,8 @@ dependencies = [
  "quadra-testing",
  "quadra-text",
  "quadra-tree",
+ "quadra-vector",
+ "quadra-view",
 ]
 
 [[package]]
@@ -1417,8 +1419,11 @@ dependencies = [
  "quadra-app",
  "quadra-async",
  "quadra-design",
+ "quadra-layout",
  "quadra-native-win",
  "quadra-platform",
+ "quadra-prim",
+ "quadra-view",
 ]
 
 [[package]]

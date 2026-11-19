@@ -3,6 +3,7 @@
 mod bar;
 mod files;
 mod format;
+mod logo;
 mod model;
 mod panes;
 mod sync;
@@ -17,6 +18,7 @@ use quadra_shell::Opener;
 
 pub use files::{NewFile, OpenFile, Save, SaveAs};
 pub use format::{Change, Format, format};
+pub use logo::{LOGO, logo};
 pub use model::{Model, PREVIEW, RAW, SIDE_BY_SIDE};
 pub use sync::Driver;
 pub use toolbar::ApplyFormat;

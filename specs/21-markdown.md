@@ -147,8 +147,10 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   is caught in the middle of a stroke: a curve with its node handles still showing. A yellow
   circle stands at a corner, as a shape not yet placed.
 - **The file.** It is `apps/markdown/assets/logo.svg`, a 64-unit square drawn in what
-  `quadra-vector` renders. It shows in the bar and in the empty window. Its picture at 256 px
-  is `apps/markdown/assets/logo.png`.
+  `quadra-vector` renders: it has no dashes, opacity or masks, so the dashes and the hatching
+  are short lines. The drawing view shows it in its own colours (13, "Icons"). It shows at
+  20 px in the bar, and at 96 px in an empty window with how to start. The `logo` scene of
+  `bench/markdown-shots` draws it at 256 px on both canvases.
 - **Not yet.** The window's and the executable's icon wait for a window icon in
   `quadra-platform`.
 

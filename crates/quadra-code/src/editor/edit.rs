@@ -46,6 +46,12 @@ impl EditorHandle {
         reach.handle.with(move |tree| edit(tree, reach.id, (reach.epoch, at), |w, _| f(w)));
     }
 
+    /// Gives the editor the focus, in the tree's next pass: after a toolbar's button took it.
+    pub fn focus(&self) {
+        let Some(reach) = self.0.borrow().clone() else { return };
+        reach.handle.with(move |tree| tree.focus(reach.id));
+    }
+
     /// The editor `id` is mounted; it is forgotten when its view goes.
     pub(super) fn mounted(&self, handle: Handle, id: NodeId, epoch: Instant) {
         *self.0.borrow_mut() = Some(Reach { handle, id, epoch });

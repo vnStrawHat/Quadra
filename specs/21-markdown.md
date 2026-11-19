@@ -162,9 +162,11 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 - **Choosing.** A row chosen by the pointer or the keys goes to its heading: the editor's
   caret to the start of its line and the line to the editor's top, the heading to the
   preview's top, tinted for a moment; in each pane that shows. The focus stays in the
-  outline.
+  outline. The row chosen stays selected until the user moves a pane: a heading in the last
+  screenful does not reach the top, as the panes stop at their ends.
 - **Its cost.** The headings are read once for each text the preview shows, shared with the
-  panes' following; the tree is asked again only when the headings change.
+  panes' following, and so are the pairs that map one pane to the other: the panes scrolling
+  costs a search of them. The tree is asked again only when the headings change.
 
 ## Logo
 

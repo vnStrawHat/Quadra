@@ -40,22 +40,29 @@ pub(crate) fn outline(m: &Model, headings: Memo<Vec<Heading>>) -> Div {
     let (layout, pos, y) = (m.layout, m.pos, m.preview_y);
     let reading = move || match layout.get() {
         RAW => pos.get(),
-        _ => sync::line_of(&all(), y.get()),
+        _ => all.with(|all| sync::line_of(all, y.get())),
     };
     let here = memo(move || headings.with(|h| section(h, reading())));
-    let chosen = signal(None::<String>);
+    // The row chosen holds until the user moves a pane: a heading in the last screenful is
+    // not at the top when the pane stops at its end.
+    let (chosen, held, touched) = (signal(None::<String>), signal(None::<usize>), m.touched);
+    effect(move || {
+        touched.get();
+        held.set(None);
+    });
     // The panes move: the row of the section at the top is selected.
     effect(move || {
-        let now = here.get().map(|line| line.to_string());
+        let now = held.get().or(here.get()).map(|line| line.to_string());
         if untrack(|| chosen.get()) != now {
             chosen.set(now);
         }
     });
-    // A row chosen that is not the section at the top: the panes go to its heading.
+    // A row chosen that is not where the panes are: they go to its heading.
     let (goes, scope) = (m.clone(), Scope::current());
     effect(move || {
         let Some(line) = chosen.get().and_then(|id| id.parse::<usize>().ok()) else { return };
-        if untrack(|| here.get()) != Some(line) {
+        if untrack(|| held.get().or(here.get())) != Some(line) {
+            held.set(Some(line));
             untrack(|| go(&goes, line, scope));
         }
     });

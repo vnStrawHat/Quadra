@@ -47,6 +47,8 @@ pub struct Model {
     pub flash: Signal<Option<usize>>,
     /// The outline shows.
     pub outline: Signal<bool>,
+    /// Counts the times the user moved a pane: the wheel, a press or a key in it.
+    pub touched: Signal<u64>,
     /// The editor while it shows, and its document while it does not.
     pub editor: EditorHandle,
     pub doc: KeptDoc,
@@ -73,6 +75,7 @@ impl Model {
             driver: signal(Driver::Editor),
             flash: signal(None),
             outline: signal(true),
+            touched: signal(0),
             editor: EditorHandle::default(),
             doc: KeptDoc::default(),
             notices: notices().above(0.0),

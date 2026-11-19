@@ -74,15 +74,13 @@ pub(crate) fn headings(text: Signal<String>) -> Memo<Vec<Heading>> {
     memo(move || text.with(|text| outline(&parse(text))))
 }
 
-/// The pairs of where a line is in the editor and in the preview, as they change.
-pub(crate) fn mapping(
-    m: &Model,
-    headings: Memo<Vec<Heading>>,
-) -> impl Fn() -> Vec<(f64, f32)> + Copy + use<> {
+/// The pairs of where a line is in the editor and in the preview: made again when the
+/// headings or their places change, not as the panes scroll.
+pub(crate) fn mapping(m: &Model, headings: Memo<Vec<Heading>>) -> Memo<Vec<(f64, f32)>> {
     let (text, places) = (m.text, m.places);
     let lines = memo(move || text.with(|text| text.matches('\n').count() + 1));
     let at = memo(move || headings.with(|h| h.iter().map(|it| it.line).collect::<Vec<_>>()));
-    move || at.with(|h| places.with(|p| pairs(h, p, lines.get())))
+    memo(move || at.with(|h| places.with(|p| pairs(h, p, lines.get()))))
 }
 
 /// Keeps the panes together while they are side by side, and shows a heading chosen on
@@ -94,7 +92,7 @@ pub(crate) fn follow(m: &Model, headings: Memo<Vec<Heading>>) {
     // The editor drives: the preview follows.
     effect(move || {
         if side() && driver.get() == Driver::Editor {
-            let now = y_of(&all(), pos.get());
+            let now = all.with(|all| y_of(all, pos.get()));
             if (now - untrack(|| y.get())).abs() > 0.5 {
                 y.set(now);
             }
@@ -103,7 +101,7 @@ pub(crate) fn follow(m: &Model, headings: Memo<Vec<Heading>>) {
     // The preview drives: the editor follows.
     effect(move || {
         if side() && driver.get() == Driver::Preview {
-            let now = line_of(&all(), y.get());
+            let now = all.with(|all| line_of(all, y.get()));
             if (now - untrack(|| pos.get())).abs() > 1e-3 {
                 pos.set(now);
             }

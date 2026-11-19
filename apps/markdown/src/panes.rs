@@ -89,12 +89,16 @@ fn empty(m: &Model) -> Div {
 
 /// A pane the wheel, a press or a key in it makes the one that drives.
 fn drives(pane: Div, m: &Model, side: Driver) -> Div {
-    let driver = m.driver;
+    let (driver, touched) = (m.driver, m.touched);
+    let moved = move || {
+        driver.set(side);
+        touched.update(|n| *n += 1);
+    };
     pane.on_mount(move |tree, id| {
         for kind in [PointerKind::Wheel, PointerKind::Down] {
-            tree.on_pointer_capture(id, kind, move |_| driver.set(side));
+            tree.on_pointer_capture(id, kind, move |_| moved());
         }
-        tree.on_key_capture(id, true, move |_| driver.set(side));
+        tree.on_key_capture(id, true, move |_| moved());
     })
 }
 

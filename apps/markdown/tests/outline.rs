@@ -109,6 +109,8 @@ fn the_section_at_the_top_is_selected_and_a_row_chosen_goes_there() {
     h.key(Key::Digit1, Mods::CTRL);
     frames(&mut h);
     assert_eq!(m.layout.get_untracked(), RAW);
+    // The user moves the editor (the wheel over it), and it stands in section 7.
+    h.wheel(700.0, 400.0, 3.0);
     m.pos.set((2 + 8 * 7 + 3) as f64);
     frames(&mut h);
     assert_eq!(selected(&h), ["Part 7"], "the section at the top");
@@ -117,4 +119,24 @@ fn the_section_at_the_top_is_selected_and_a_row_chosen_goes_there() {
     assert!((m.pos.get_untracked() - (2 + 8 * 12) as f64).abs() < 1e-3, "{}", m.pos.get_untracked());
     assert_eq!(m.caret.get_untracked(), 2 + 8 * 12, "the caret at the heading");
     assert_eq!(selected(&h), ["Part 12"]);
+}
+
+#[test]
+fn the_last_heading_chosen_stays_chosen_where_the_panes_end() {
+    let (mut h, m) = app("last");
+    for layout in [Key::Digit1, Key::Digit3] {
+        h.key(layout, Mods::CTRL);
+        frames(&mut h);
+        h.get_by_role(Role::TreeItem, "Part 20").click();
+        frames(&mut h);
+        // The last heading, in the last screenful: the panes stop at their ends below it.
+        h.key(Key::End, Mods::NONE);
+        frames(&mut h);
+        assert_eq!(selected(&h), ["Part 29"], "{:?}", m.layout.get_untracked());
+    }
+    // A pane moved by the user: the row follows it again.
+    h.wheel(700.0, 400.0, -3.0);
+    m.preview_y.set(0.0);
+    frames(&mut h);
+    assert_eq!(selected(&h), ["Title"]);
 }

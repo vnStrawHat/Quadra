@@ -85,3 +85,37 @@ fn a_document_that_scrolls_itself_mounts_the_blocks_that_show() {
     let part = placed.iter().find(|place| place.line == 28_000).expect("placed");
     assert!(part.top >= at && part.top < at + 400.0, "{part:?} at {at}");
 }
+
+#[test]
+fn a_heading_pressed_says_its_source_line() {
+    let told = signal(None::<usize>);
+    let mut h = harness();
+    h.mount(move || {
+        quadra_design::root().child(markdown(sections(3)).on_heading(move |line| told.set(Some(line))))
+    });
+    h.settle();
+    h.get_by_role(quadra_tree::Role::Heading, "Part 1").click();
+    h.settle();
+    assert_eq!(told.get_untracked(), Some(4));
+    h.get_by_text("The words of part 2.").click();
+    h.settle();
+    assert_eq!(told.get_untracked(), Some(4), "a paragraph is no heading");
+}
+
+#[test]
+fn a_document_gone_before_its_layout_writes_no_places() {
+    let (places, source, shown) = (signal(Vec::<Place>::new()), signal(sections(2)), signal(true));
+    let mut h = harness();
+    h.mount(move || {
+        let doc = move || markdown(source).places(places);
+        quadra_design::root().child(quadra_view::show(move || shown.get(), doc))
+    });
+    h.settle();
+    // A change that asks for its places, and the document removed in the same pass.
+    quadra_reactive::batch(|| {
+        source.set(sections(3));
+        shown.set(false);
+    });
+    h.settle();
+    assert_eq!(places.get_untracked().len(), 4, "the places it last had");
+}

@@ -25,6 +25,7 @@ pub struct Place {
 }
 
 type Line = Box<dyn Fn() -> Option<usize>>;
+type OnHeading = Rc<dyn Fn(usize)>;
 
 pub struct Markdown {
     source: Prop<String>,
@@ -33,13 +34,14 @@ pub struct Markdown {
     scroll: Option<Signal<f32>>,
     places: Option<Signal<Vec<Place>>>,
     reveal: Option<Line>,
+    on_heading: Option<OnHeading>,
 }
 
 /// A document, rendered. The source is a property: when it changes, the blocks whose source
 /// did not change keep their nodes.
 pub fn markdown<M>(source: impl IntoProp<String, M>) -> Markdown {
     let source = source.into_prop();
-    Markdown { source, on_link: None, base: None, scroll: None, places: None, reveal: None }
+    Markdown { source, on_link: None, base: None, scroll: None, places: None, reveal: None, on_heading: None }
 }
 
 impl Markdown {
@@ -68,6 +70,13 @@ impl Markdown {
     /// panes that scroll together.
     pub fn places(mut self, out: Signal<Vec<Place>>) -> Self {
         self.places = Some(out);
+        self
+    }
+
+    /// Runs `f` with a heading's source line when it is pressed: for an editor beside the
+    /// document that goes to it.
+    pub fn on_heading(mut self, f: impl Fn(usize) + 'static) -> Self {
+        self.on_heading = Some(Rc::new(f));
         self
     }
 
@@ -114,11 +123,25 @@ impl View for Markdown {
         let lines = memo(move || parsed.with(|parsed| parsed.1.clone()));
         let rows = Rows::default();
         let known = rows.clone();
+        let on_heading = self.on_heading;
         let row = move |entry: &dyn Fn() -> Entry| -> Div {
             let (key, kind) = (entry().key, entry().kind);
             let block = block(&kind, &on_link, base.as_deref());
             let known = known.clone();
-            column().on_mount(move |_, id| known.0.borrow_mut().push((id, key))).child(block)
+            let row = column().on_mount(move |_, id| known.0.borrow_mut().push((id, key))).child(block);
+            match (&on_heading, &*kind) {
+                (Some(told), crate::Kind::Heading { .. }) => {
+                    let told = told.clone();
+                    row.on_click(move |_| {
+                        if let Some(line) =
+                            quadra_reactive::untrack(|| lines.with(|lines| lines.get(&key).copied()))
+                        {
+                            told(line);
+                        }
+                    })
+                }
+                _ => row,
+            }
         };
         let page = column().width(Length::Fill).text_color(token::TEXT).text_size(BODY).line_height(1.5);
         // The block a line is in: the last that starts at or before it.
@@ -181,6 +204,9 @@ impl View for Markdown {
                 let (rows, lines) = (rows.clone(), lines.get());
                 handle.with(move |tree| {
                     tree.after_layout(move |tree| {
+                        if !tree.is_alive(id) {
+                            return; // the document went before its layout
+                        }
                         let places = rows.places(tree, id, scrolled, &lines);
                         if out.with_untracked(|was| *was != places) {
                             out.set(places);

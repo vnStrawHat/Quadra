@@ -3,8 +3,8 @@
 
 use std::time::Duration;
 
-use quadra::{Scope, effect, memo, timeout, untrack};
-use quadra_md::{Place, outline, parse};
+use quadra::{Memo, Scope, Signal, effect, memo, timeout, untrack};
+use quadra_md::{Heading, Place, outline, parse};
 
 use crate::model::{Model, SIDE_BY_SIDE};
 
@@ -69,15 +69,27 @@ pub(crate) fn pairs(headings: &[usize], places: &[Place], lines: usize) -> Vec<(
     kept
 }
 
+/// The document's headings, read again when the text the preview shows changes.
+pub(crate) fn headings(text: Signal<String>) -> Memo<Vec<Heading>> {
+    memo(move || text.with(|text| outline(&parse(text))))
+}
+
+/// The pairs of where a line is in the editor and in the preview, as they change.
+pub(crate) fn mapping(
+    m: &Model,
+    headings: Memo<Vec<Heading>>,
+) -> impl Fn() -> Vec<(f64, f32)> + Copy + use<> {
+    let (text, places) = (m.text, m.places);
+    let lines = memo(move || text.with(|text| text.matches('\n').count() + 1));
+    let at = memo(move || headings.with(|h| h.iter().map(|it| it.line).collect::<Vec<_>>()));
+    move || at.with(|h| places.with(|p| pairs(h, p, lines.get())))
+}
+
 /// Keeps the panes together while they are side by side, and shows a heading chosen on
 /// either side on the other. Call it while the view is built.
-pub(crate) fn follow(m: &Model) {
-    let text = m.text;
-    let headings =
-        memo(move || text.with(|text| outline(&parse(text)).into_iter().map(|it| it.line).collect()));
-    let lines = memo(move || text.with(|text| text.matches('\n').count() + 1));
-    let (places, layout, driver, pos, y) = (m.places, m.layout, m.driver, m.pos, m.preview_y);
-    let all = move || headings.with(|h: &Vec<usize>| places.with(|p| pairs(h, p, lines.get())));
+pub(crate) fn follow(m: &Model, headings: Memo<Vec<Heading>>) {
+    let all = mapping(m, headings);
+    let (layout, driver, pos, y) = (m.layout, m.driver, m.pos, m.preview_y);
     let side = move || layout.get() == SIDE_BY_SIDE;
     // The editor drives: the preview follows.
     effect(move || {
@@ -101,7 +113,7 @@ pub(crate) fn follow(m: &Model) {
     let (caret, shown, scope) = (m.caret, m.clone(), Scope::current());
     effect(move || {
         let line = caret.get();
-        if side() && untrack(|| headings.with(|h| h.contains(&line))) {
+        if side() && untrack(|| headings.with(|h| h.iter().any(|it| it.line == line))) {
             show_heading(&shown, line, scope);
         }
     });
@@ -133,7 +145,7 @@ pub(crate) fn show_heading(m: &Model, line: usize, scope: Scope) {
 }
 
 /// Tints the heading of `line` in the preview for a moment.
-fn tint(m: &Model, line: usize, scope: Scope) {
+pub(crate) fn tint(m: &Model, line: usize, scope: Scope) {
     let (flash, reveal) = (m.flash, m.reveal);
     flash.set(Some(line));
     scope.run(|| {

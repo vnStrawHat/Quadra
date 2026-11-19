@@ -16,6 +16,7 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 | M3 | Side by side: the panes scroll together by their headings, and a heading chosen on one side is shown on the other |
 | M4 | The toolbar: formatting and quick inserts |
 | M5 | The logo |
+| M6 | The outline: a sidebar of the document's headings |
 
 ## Window
 
@@ -29,10 +30,10 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   - a dot in the accent colour while the text is not saved;
   - a gap;
   - the layout as a segmented control (Raw, Side by side, Preview; 13, "Segmented");
-  - Open (`folder-open`) and Save (`save`) as ghost icon buttons with tooltips that name
-    their keys.
-- **Below the bar.** Under it, while the editor shows, is the toolbar (below). Under that is
-  the document in its layout.
+  - Outline (`panel-left`), Open (`folder-open`) and Save (`save`) as ghost icon buttons
+    with tooltips that name their keys.
+- **Below the bar.** At the left, the outline (below), in every layout. At its right, while
+  the editor shows, the toolbar (below), and under that the document in its layout.
 - **Opening a file.** The command line's first argument, a path, is the file opened at start.
   That is how a file opens straight from the OS ("Open with", a file's association). Without
   one, the window starts with an untitled empty document. A `.md`, `.markdown` or `.txt` file
@@ -146,6 +147,25 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 - These are pure functions from the text and the selections to the edits and the selections
   after them (`format.rs`). They are tested without a window.
 
+## Outline
+
+- **Where.** A sidebar 240 px wide at the left, under the bar, on the panel colour with a
+  line at its right, in every layout. The bar's Outline button and Ctrl+Shift+O show and
+  hide it; it shows at first.
+- **What.** The kit's tree (13, "Tree") of the document's headings: a heading holds those of
+  deeper levels after it, up to the next of its level or higher. Every heading that holds
+  others is open when the headings change, and can be closed. A heading's text is one line,
+  cut with "…" where the row ends; its whole text is the row's name for a reader. A document
+  without headings shows "No headings" in the faint text colour.
+- **Following.** As the panes scroll, the row selected is that of the section at the top:
+  the last heading at or above the line at the top of the editor (Raw) or of the preview.
+- **Choosing.** A row chosen by the pointer or the keys goes to its heading: the editor's
+  caret to the start of its line and the line to the editor's top, the heading to the
+  preview's top, tinted for a moment; in each pane that shows. The focus stays in the
+  outline.
+- **Its cost.** The headings are read once for each text the preview shows, shared with the
+  panes' following; the tree is asked again only when the headings change.
+
 ## Logo
 
 - **The mark.** A blue square with "M" and a down arrow (the mark of Markdown), drawn as if
@@ -168,7 +188,8 @@ The tests drive the controls through the semantic tree:
 - the question before losing work;
 - the panes following by headings, both ways, with no echo;
 - the heading chosen;
-- the toolbar's changes, and their undo.
+- the toolbar's changes, and their undo;
+- the outline: nesting, a long heading cut, the row following the panes, a row chosen.
 
 The formatting functions are unit-tested. Nothing opens a real dialog or writes outside
 `.tmp/`.

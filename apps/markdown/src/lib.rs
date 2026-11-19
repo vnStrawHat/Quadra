@@ -5,6 +5,7 @@ mod files;
 mod format;
 mod logo;
 mod model;
+mod outline;
 mod panes;
 mod sync;
 mod toolbar;
@@ -36,6 +37,14 @@ impl Action for ShowLayout {
     const NAME: &'static str = "markdown::ShowLayout";
 }
 
+/// Shows or hides the outline (Ctrl+Shift+O).
+#[derive(Clone, Copy, Debug)]
+pub struct ToggleOutline;
+
+impl Action for ToggleOutline {
+    const NAME: &'static str = "markdown::ToggleOutline";
+}
+
 /// The app's keys, the kit's and the editor's.
 pub fn keymap() -> Keymap {
     let mut map = quadra_design::keymap();
@@ -48,6 +57,7 @@ pub fn keymap() -> Keymap {
     map.bind("ctrl-o", OpenFile).expect(well_formed);
     map.bind("ctrl-s", Save).expect(well_formed);
     map.bind("ctrl-shift-s", SaveAs).expect(well_formed);
+    map.bind("ctrl-shift-o", ToggleOutline).expect(well_formed);
     for (keys, what) in toolbar::keys() {
         map.bind(&keys, ApplyFormat(what)).expect(well_formed);
     }
@@ -85,12 +95,14 @@ impl MdApp {
             still.get();
             shown.refresh();
         });
-        sync::follow(&m);
-        let layout = m.layout;
+        let headings = sync::headings(m.text);
+        sync::follow(&m, headings);
+        let (layout, outlined) = (m.layout, m.outline);
         let (f, s, a, o, c) = (files.clone(), files.clone(), files.clone(), files.clone(), files.clone());
         let (drops, formats) = (files.clone(), m.clone());
         quadra_design::root()
             .on_action::<ShowLayout>(move |&ShowLayout(chosen)| layout.set(chosen))
+            .on_action::<ToggleOutline>(move |_| outlined.update(|on| *on = !*on))
             .on_action::<ApplyFormat>(move |&ApplyFormat(what)| toolbar::apply(&formats, what))
             .on_action::<NewFile>(move |_| f.new_file())
             .on_action::<OpenFile>(move |_| o.open())
@@ -111,13 +123,21 @@ impl MdApp {
             })
             .child(bar::bar(&m, &files))
             .child(
-                quadra::show(move || layout.get() != PREVIEW, {
-                    let m = m.clone();
-                    move || toolbar::toolbar(&m)
-                })
-                .container(quadra::column().shrink(0.0)),
+                quadra::row().grow(1.0).min_height(0.0).child(outline::outline(&m, headings)).child(
+                    quadra::column()
+                        .grow(1.0)
+                        .min_width(0.0)
+                        .min_height(0.0)
+                        .child(
+                            quadra::show(move || layout.get() != PREVIEW, {
+                                let m = m.clone();
+                                move || toolbar::toolbar(&m)
+                            })
+                            .container(quadra::column().shrink(0.0)),
+                        )
+                        .child(panes::body(&m, follow(&m, &files))),
+                ),
             )
-            .child(panes::body(&m, follow(&m, &files)))
             .child(m.notices.host())
     }
 }

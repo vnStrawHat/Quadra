@@ -10,6 +10,9 @@ pub(crate) fn bar(model: &Model, files: &Files) -> Div {
     let (opens, saves) = (files.clone(), files.clone());
     let open = icon_button(icons::FOLDER_OPEN, "Open").on_click(move || opens.open());
     let save = icon_button(icons::SAVE, "Save").on_click(move || saves.save(|| {}));
+    let outlined = model.outline;
+    let outline =
+        icon_button(icons::PANEL_LEFT, "Outline").on_click(move || outlined.update(|on| *on = !*on));
     let (m, changed) = (model.clone(), model.changed);
     let name = div().font_weight(600).text_size(13.0).child(text(move || m.name()));
     let dot = div()
@@ -34,6 +37,7 @@ pub(crate) fn bar(model: &Model, files: &Files) -> Div {
         .child(dot)
         .child(div().grow(1.0))
         .child(layout)
+        .child(tooltip("Outline (Ctrl+Shift+O)", outline))
         .child(tooltip("Open (Ctrl+O)", open))
         .child(tooltip("Save (Ctrl+S)", save))
 }

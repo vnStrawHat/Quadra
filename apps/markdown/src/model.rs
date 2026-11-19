@@ -45,6 +45,8 @@ pub struct Model {
     pub driver: Signal<Driver>,
     /// The line of the heading tinted in the preview, a moment after it was chosen.
     pub flash: Signal<Option<usize>>,
+    /// The outline shows.
+    pub outline: Signal<bool>,
     /// The editor while it shows, and its document while it does not.
     pub editor: EditorHandle,
     pub doc: KeptDoc,
@@ -70,6 +72,7 @@ impl Model {
             caret: signal(0),
             driver: signal(Driver::Editor),
             flash: signal(None),
+            outline: signal(true),
             editor: EditorHandle::default(),
             doc: KeptDoc::default(),
             notices: notices().above(0.0),

@@ -1,0 +1,23 @@
+[package]
+name = "quadra-bench-markdown-shots"
+description = "The Markdown app's screens drawn without a window, to pictures (specs/21)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "markdown-shots"
+path = "src/main.rs"
+
+[dependencies]
+markdown = { path = "../../apps/markdown" }
+quadra-app = { path = "../../crates/quadra-app" }
+quadra-async = { path = "../../crates/quadra-async" }
+quadra-design = { path = "../../crates/quadra-design" }
+quadra-native-win = { path = "../../crates/quadra-native-win" }
+quadra-platform = { path = "../../crates/quadra-platform" }

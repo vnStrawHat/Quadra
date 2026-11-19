@@ -1,0 +1,89 @@
+//! What the window holds (specs/21): the file, its text, the layout, and the editor's
+//! document while it is not shown.
+
+use std::path::{Path, PathBuf};
+
+use quadra::{Signal, batch, signal};
+use quadra_code::KeptDoc;
+use quadra_design::{Notices, Tone, notices};
+
+/// The layouts, in the order of the bar's segmented control.
+pub const RAW: usize = 0;
+pub const SIDE_BY_SIDE: usize = 1;
+pub const PREVIEW: usize = 2;
+
+/// The window's state. Copies are the same one.
+#[derive(Clone)]
+pub struct Model {
+    /// The file, `None` while untitled.
+    pub path: Signal<Option<PathBuf>>,
+    /// The text the preview shows: as read, then as edited.
+    pub text: Signal<String>,
+    /// Counts the documents opened: the editor is built again for each.
+    pub opened: Signal<u64>,
+    pub layout: Signal<usize>,
+    /// How much of the width the editor has, side by side.
+    pub share: Signal<f32>,
+    /// The text is not what was last read or saved.
+    pub changed: Signal<bool>,
+    /// The editor's document while it is not shown: its text, cursors and undo.
+    pub doc: KeptDoc,
+    pub notices: Notices,
+}
+
+impl Model {
+    /// An untitled, empty document in Preview.
+    pub fn new() -> Model {
+        Model {
+            path: signal(None),
+            text: signal(String::new()),
+            opened: signal(0),
+            layout: signal(PREVIEW),
+            share: signal(0.5),
+            changed: signal(false),
+            doc: KeptDoc::default(),
+            notices: notices().above(0.0),
+        }
+    }
+
+    /// Opens a file in Preview; one that cannot be read says why and leaves the document as
+    /// it was.
+    pub fn open(&self, path: &Path) {
+        match std::fs::read_to_string(path) {
+            Ok(text) => self.show(Some(path.to_path_buf()), text),
+            Err(e) => {
+                let words = format!("Could not open {}: {e}", path.display());
+                self.notices.toast(Tone::Danger, words);
+            }
+        }
+    }
+
+    /// Shows a document: its file and its text, in Preview, with a new editor.
+    pub fn show(&self, path: Option<PathBuf>, text: String) {
+        self.doc.borrow_mut().take();
+        batch(|| {
+            self.path.set(path);
+            self.text.set(text);
+            self.changed.set(false);
+            self.layout.set(PREVIEW);
+            self.opened.update(|n| *n += 1);
+        });
+    }
+
+    /// The file's name, or `Untitled`.
+    pub fn name(&self) -> String {
+        let name = self.path.with(|path| path.as_ref().and_then(|it| it.file_name()).map(|it| it.to_owned()));
+        name.map_or_else(|| "Untitled".to_string(), |it| it.to_string_lossy().into_owned())
+    }
+
+    /// The folder of the file, where its images are looked for.
+    pub fn folder(&self) -> Option<PathBuf> {
+        self.path.with(|path| path.as_ref().and_then(|it| it.parent()).map(Path::to_path_buf))
+    }
+}
+
+impl Default for Model {
+    fn default() -> Self {
+        Model::new()
+    }
+}

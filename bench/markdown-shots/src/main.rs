@@ -1,0 +1,61 @@
+//! The Markdown app's screens drawn without a window, to pictures (specs/21): the software
+//! device, the real text, the headless platform. Nothing shows on the desktop.
+//!
+//!     tools/cargo.sh run -p quadra-bench-markdown-shots -- [out dir] [scene ..]
+//!
+//! Scenes: preview, raw, side (the sample document, `sample.md`, in each layout).
+
+#[path = "../../shots/src/png.rs"]
+mod png;
+
+use std::cell::RefCell;
+use std::error::Error;
+use std::path::PathBuf;
+use std::rc::Rc;
+use std::time::Duration;
+
+use markdown::{MdApp, Model, PREVIEW, RAW, SIDE_BY_SIDE, keymap};
+use quadra_app::{App, AppError};
+use quadra_native_win::{D3d11Renderer, DirectWrite};
+use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
+
+const SCENES: [(&str, usize); 3] = [("preview", PREVIEW), ("raw", RAW), ("side", SIDE_BY_SIDE)];
+
+fn pass(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, ms: u64) {
+    for _ in 0..ms.div_ceil(75) {
+        quadra_async::wait_idle(Duration::from_secs(10));
+        platform.waker().wake();
+        platform.step(app);
+        platform.advance(Duration::from_millis(75), app);
+    }
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut args = std::env::args().skip(1);
+    let out = PathBuf::from(args.next().unwrap_or_else(|| ".tmp/shots/markdown".into()));
+    let only: Vec<String> = args.collect();
+    std::fs::create_dir_all(&out)?;
+    let sample = std::path::absolute("bench/markdown-shots/src/sample.md")?;
+    for (scene, layout) in SCENES.iter().filter(|(it, _)| only.is_empty() || only.iter().any(|o| o == it)) {
+        let platform = HeadlessPlatform::new();
+        let text = DirectWrite::new().map_err(AppError::Text)?;
+        let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
+        let mut app = quadra_design::install(app, &quadra_design::dark())?.keymap(keymap());
+        let built: Rc<RefCell<Option<Model>>> = Rc::default();
+        let (tell, file) = (built.clone(), sample.clone());
+        let window = app.open_window(WindowOptions::new("Markdown").size(1280.0, 860.0), move || {
+            let md = MdApp::new(Some(file.clone()));
+            *tell.borrow_mut() = Some(md.model.clone());
+            md.view()
+        })?;
+        let model = built.borrow().clone().ok_or("no model")?;
+        pass(&platform, &mut app, 150);
+        model.layout.set(*layout);
+        pass(&platform, &mut app, 900);
+        let pixels = app.read_pixels(window)?;
+        let file = out.join(format!("{scene}.png"));
+        std::fs::write(&file, png::png(pixels.size.width, pixels.size.height, &pixels.rgba))?;
+        println!("{}", file.display());
+    }
+    Ok(())
+}

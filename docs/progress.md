@@ -132,6 +132,16 @@ with views built once, passes over what changed, display lists kept per layer, a
 layout engine of requests and answers. The one scene built to make this design lose, a grid
 whose every cell changes every frame, costs what the V build's costs.
 
+### Markdown, the app (specs/21, from 2026-11-19)
+
+| Milestone | Status |
+|---|---|
+| M1 the window, a file opened in Preview, the layouts | Done (2026-11-19): `apps/markdown` (`MdApp`, `Model`, the bar, the three layouts by the bar's segmented control and Ctrl+1, 2, 3; the window's title by `Window::set_title`, new: `WindowRequest::Title`). `tests/layouts.rs` (3); `bench/markdown-shots` draws the sample in each layout |
+| M2 the editor, files | Not yet |
+| M3 panes by headings | Not yet |
+| M4 the toolbar | Not yet |
+| M5 the logo | Not yet |
+
 ### 1Term's remaining parts (2026-11-18)
 
 - The working state turns: its icon is the kit's `spinner()` (named by `.label(..)`, new), in

@@ -1,0 +1,26 @@
+[package]
+name = "markdown"
+description = "Markdown: an app that opens .md files to read them, and edits them (specs/21)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "markdown"
+path = "src/main.rs"
+
+[dependencies]
+quadra = { path = "../../crates/quadra" }
+quadra-code = { path = "../../crates/quadra-code" }
+quadra-design = { path = "../../crates/quadra-design" }
+quadra-md = { path = "../../crates/quadra-md" }
+quadra-shell = { path = "../../crates/quadra-shell" }
+quadra-tree = { path = "../../crates/quadra-tree" }
+
+[dev-dependencies]
+quadra-testing = { path = "../../crates/quadra-testing" }

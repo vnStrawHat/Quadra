@@ -7,7 +7,7 @@
 use std::sync::mpsc::channel;
 
 use quadra_bench_doomfire::args;
-use quadra_shell::{Pty, PtyOptions};
+use quadra_term::{Pty, PtyOptions};
 
 fn main() {
     let args = args();

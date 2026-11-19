@@ -1,5 +1,6 @@
-//! A local shell behind the OS's pseudo console (specs/18, "Pieces"): the console of
-//! `oneterm_vt::pty` and the thread that owns it, polls it, hands its output to the app and
+//! A local shell behind the OS's pseudo console (specs/18, "Pieces"; the `pty` feature): the
+//! console of `oneterm_vt::pty`, on its poller in safe code (`Registered`), and the thread that
+//! owns it, polls it, hands its output to the app and
 //! writes what the app gives it. The app joins it to a terminal session: the output callback
 //! is the session's feeder, and the session's link calls [`Pty::write`], `resize`, `close`.
 
@@ -10,8 +11,8 @@ use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread;
 
 use oneterm_vt::pty::{
-    ChildEvent, EventedPty, EventedReadWrite, OnResize, Options, PTY_CHILD_EVENT_TOKEN, PTY_READ_WRITE_TOKEN,
-    PseudoConsole, Shell, WindowSize,
+    ChildEvent, Options, PTY_CHILD_EVENT_TOKEN, PTY_READ_WRITE_TOKEN, PseudoConsole, Registered, Shell,
+    WindowSize,
 };
 use polling::{Event, Events, PollMode, Poller};
 
@@ -63,17 +64,14 @@ impl Pty {
             cell_width: 0,
             cell_height: 0,
         };
-        let mut console = PseudoConsole::spawn(&spawn, size)?;
+        let console = PseudoConsole::spawn(&spawn, size)?;
         let poller = Arc::new(Poller::new()?);
-        // SAFETY: the console is deregistered by `run` before it and the poller are dropped,
-        // on the thread that owns both from here on.
-        unsafe { console.register(&poller, Event::readable(PTY_READ_WRITE_TOKEN), PollMode::Level)? };
+        let readable = Event::readable(PTY_READ_WRITE_TOKEN);
+        let mut console = Registered::new(console, poller.clone(), readable, PollMode::Level)?;
         let (commands, inbox) = channel();
-        let owned = poller.clone();
         thread::Builder::new().name("pty".into()).spawn(move || {
-            let code = run(&mut console, &owned, &inbox, output).unwrap_or(-1);
-            let _ = console.deregister(&owned);
-            drop(console);
+            let code = run(&mut console, &inbox, output).unwrap_or(-1);
+            drop(console); // off the poller, then closed
             if code != CLOSED {
                 exited(code);
             }
@@ -112,15 +110,14 @@ const CLOSED: i32 = i32::MIN;
 
 /// The console's loop: commands, output, writes kept until there is room, the exit.
 fn run(
-    console: &mut PseudoConsole,
-    poller: &Arc<Poller>,
+    console: &mut Registered,
     commands: &Receiver<Command>,
     mut output: impl FnMut(&[u8]) -> Vec<u8>,
 ) -> io::Result<i32> {
     let (mut events, mut pending, mut ended, mut writable) = (Events::new(), Vec::<u8>::new(), false, false);
     loop {
         events.clear();
-        poller.wait(&mut events, None)?;
+        console.poller().wait(&mut events, None)?;
         for command in commands.try_iter() {
             match command {
                 Command::Write(bytes) => pending.extend_from_slice(&bytes),
@@ -152,7 +149,7 @@ fn run(
         }
         // What the console takes now; the rest when it says there is room.
         while !pending.is_empty() {
-            match console.writer().write(&pending) {
+            match console.write(&pending) {
                 Ok(0) => break,
                 Ok(n) => _ = pending.drain(..n),
                 Err(e) if e.kind() == ErrorKind::WouldBlock => break,
@@ -166,20 +163,20 @@ fn run(
             } else {
                 Event::readable(PTY_READ_WRITE_TOKEN)
             };
-            console.reregister(poller, interest, PollMode::Level)?;
+            console.reregister(interest, PollMode::Level)?;
         }
     }
 }
 
 /// Reads until the console has no more for now; true when its output ended.
 fn drain(
-    console: &mut PseudoConsole,
+    console: &mut Registered,
     output: &mut impl FnMut(&[u8]) -> Vec<u8>,
     pending: &mut Vec<u8>,
 ) -> io::Result<bool> {
     let mut buf = [0u8; 16 * 1024];
     loop {
-        let n = match console.reader().read(&mut buf) {
+        let n = match console.read(&mut buf) {
             Ok(0) => return Ok(true),
             Ok(n) => n,
             Err(e) if e.kind() == ErrorKind::WouldBlock => return Ok(false),

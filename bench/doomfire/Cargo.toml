@@ -24,4 +24,4 @@ path = "src/conpty.rs"
 
 [dependencies]
 quadra-shell = { path = "../../crates/quadra-shell" }
-quadra-term = { path = "../../crates/quadra-term" }
+quadra-term = { path = "../../crates/quadra-term", features = ["pty"] }

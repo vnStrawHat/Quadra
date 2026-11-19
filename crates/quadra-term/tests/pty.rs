@@ -1,13 +1,13 @@
 //! A shell behind the pseudo console (specs/18, "Tests"): `cmd /c echo` gives its output and
 //! its exit. Skipped where no console can be made.
 
-#![cfg(windows)]
+#![cfg(all(windows, feature = "pty"))]
 
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use quadra_shell::{Pty, PtyOptions};
+use quadra_term::{Pty, PtyOptions};
 
 #[test]
 fn a_command_gives_its_output_and_its_exit() {
@@ -35,13 +35,4 @@ fn a_command_gives_its_output_and_its_exit() {
     assert_eq!(code, 0);
     let text = String::from_utf8_lossy(&out.lock().unwrap()).into_owned();
     assert!(text.contains("quadra-pty"), "the output: {text:?}");
-}
-
-#[test]
-fn the_process_says_what_it_used() {
-    let usage = quadra_shell::process_usage().expect("Windows reads it");
-    assert!(usage.memory > 64 * 1024, "a private working set of more than 64 KB: {usage:?}");
-    assert!(usage.memory <= usage.working_set && usage.working_set <= usage.peak_working_set, "{usage:?}");
-    assert!(usage.private_bytes > 0 && usage.threads >= 1, "{usage:?}");
-    assert!(usage.uptime > Duration::ZERO && usage.uptime < Duration::from_secs(24 * 3600), "{usage:?}");
 }

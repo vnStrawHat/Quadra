@@ -10,9 +10,14 @@ publish.workspace = true
 [lints]
 workspace = true
 
+[features]
+# A local shell behind the pseudo console (`Pty`): the engine's, polled with its poller.
+pty = ["oneterm-vt/pty", "dep:polling"]
+
 [dependencies]
+polling = { version = "3", optional = true }
 regex-lite = "0.1"
-oneterm-vt = { git = "https://github.com/vnStrawHat/oneterm-vt", tag = "v0.4.1", default-features = false, features = ["kitty-graphics"] }
+oneterm-vt = { git = "https://github.com/vnStrawHat/oneterm-vt", tag = "v0.4.2", default-features = false, features = ["kitty-graphics"] }
 quadra-a11y = { path = "../quadra-a11y" }
 quadra-async = { path = "../quadra-async" }
 quadra-design = { path = "../quadra-design" }

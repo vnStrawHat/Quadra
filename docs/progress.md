@@ -174,10 +174,9 @@ whose every cell changes every frame, costs what the V build's costs.
 - On oneterm-vt v0.4.1: finding by a regular expression (`FindQuery::pattern`, `regex-lite`
   through `GridText::span`; the find bar's Regular expression switch; `tests/find.rs`), and a
   card that names the sequence it came from (`Notice::source`; `tests/notices.rs`).
-- Asked of the engine (oneterm-vt #8): a safe registration of the pseudo console on its poller.
-  With it, `Pty` moves from `quadra-shell` into `quadra-term` behind a `pty` feature, and
-  `quadra-shell` no longer depends on `oneterm-vt` or `polling` (it holds `Pty` today only for
-  the one `unsafe` call).
+- On oneterm-vt v0.4.2 (`Registered`, the console on its poller in safe code): `Pty` moved from
+  `quadra-shell` into `quadra-term` behind its `pty` feature; `quadra-shell` no longer depends
+  on `oneterm-vt` or `polling` (`crates/quadra-term/tests/pty.rs`).
 
 ### Saved passwords, Connect all, the editor's menu (2026-11-17)
 

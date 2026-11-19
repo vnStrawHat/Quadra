@@ -395,7 +395,7 @@ the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep 
 
 The engine is the crate `oneterm-ssh` (`apps/oneterm/ssh`), the one place `russh` and `tokio`
 are named: a runtime of two worker threads, made when the first connection starts, behind a
-blocking API of the shape of `quadra_shell::Pty`: `Ssh::connect(options, output, told,
+blocking API of the shape of `quadra_term::Pty`: `Ssh::connect(options, output, told,
 exited)`, `write`, `resize`, `close`, and `answer` and `cancel` for the Connect dialogs. The UI
 thread never waits on the network.
 

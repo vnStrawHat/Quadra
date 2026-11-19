@@ -549,7 +549,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e35d6e78f4cebb90e51d543db8fe41528851d6deeef6ef21ebd4bfdc1e784776"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1070,8 +1070,8 @@ dependencies = [
 
 [[package]]
 name = "oneterm-vt"
-version = "0.4.1"
-source = "git+https://github.com/vnStrawHat/oneterm-vt?tag=v0.4.1#560dec278cb5b4c2dc51ba5b9d8ad84ebf25ff95"
+version = "0.4.2"
+source = "git+https://github.com/vnStrawHat/oneterm-vt?tag=v0.4.2#28f16956b6dd0bacd532e0ab20b982f4e2d6aebb"
 dependencies = [
  "bitflags",
  "libc",
@@ -1599,8 +1599,6 @@ dependencies = [
 name = "quadra-shell"
 version = "0.1.0"
 dependencies = [
- "oneterm-vt",
- "polling",
  "quadra-app",
  "quadra-async",
  "quadra-platform",
@@ -1617,6 +1615,7 @@ name = "quadra-term"
 version = "0.1.0"
 dependencies = [
  "oneterm-vt",
+ "polling",
  "quadra-a11y",
  "quadra-async",
  "quadra-design",
@@ -1934,7 +1933,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

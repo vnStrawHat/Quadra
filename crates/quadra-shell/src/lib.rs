@@ -5,7 +5,6 @@
 //! module is the same on every OS; an OS's module, `win` for now, is built only for it.
 
 mod fake;
-mod pty;
 #[cfg(windows)]
 mod win;
 
@@ -42,7 +41,6 @@ pub struct Usage {
 pub trait Meter {
     fn usage(&self) -> Option<Usage>;
 }
-pub use pty::{Pty, PtyOptions};
 #[cfg(windows)]
 pub use win::console;
 #[cfg(windows)]

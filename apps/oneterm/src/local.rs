@@ -3,9 +3,9 @@
 use std::rc::Rc;
 use std::time::Instant;
 
-use quadra_shell::{Pty, PtyOptions};
 use quadra_term::vt::{Config, ResizePolicy};
 use quadra_term::{Link, Session};
+use quadra_term::{Pty, PtyOptions};
 
 use crate::shells::Launch;
 

@@ -18,12 +18,13 @@ Resumed by the user on 2026-11-15 for the 1Term app (19). It was on hold since 2
 | `Link` | `quadra-term` | what a transport gives a session: `write(bytes)`, `resize(size)`, `close()`. Closures: the transport crate needs no knowledge of this one |
 | `terminal(&session)` | `quadra-term` | the view: one widget that paints the rows that show and takes keys, text, the pointer and the wheel |
 | `echo()` | `quadra-term` | a link that writes what is typed back as output: tests and the gallery |
-| `Pty` | `quadra-shell` (`pty`) | a local shell behind the pseudo console of `oneterm_vt::pty`, and the thread that polls it |
+| `Pty` | `quadra-term` (the `pty` feature) | a local shell behind the pseudo console of `oneterm_vt::pty`, on its poller by the engine's `Registered` (safe code), and the thread that polls it |
 
-Dependencies: `quadra-term` uses `oneterm-vt` without `pty` and with `kitty-graphics` (Sixel
-is in the engine's core); `quadra-shell` uses it with `pty` and holds the `unsafe` registration with the poller
-(R16). Neither knows the other; the app joins them: the shell's output callback is the
-session's `Feeder`, the session's `Link` is the shell's handle.
+Dependencies: `quadra-term` uses `oneterm-vt` with `kitty-graphics` (Sixel is in the engine's
+core), and with `pty` (and `polling`) only under its own `pty` feature, which an app with local
+shells turns on (1Term, the `doomfire` bench); the view and the session never use it. The app
+joins them: the shell's output callback is the session's `Feeder`, the session's `Link` is the
+shell's handle.
 
 ## Delivery
 

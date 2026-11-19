@@ -22,6 +22,8 @@ mod look;
 mod notify;
 mod paint;
 mod pointer;
+#[cfg(feature = "pty")]
+mod pty;
 mod session;
 mod shape;
 mod status;
@@ -30,6 +32,8 @@ mod widget;
 
 /// The engine, for the types a session's API names.
 pub use oneterm_vt as vt;
+#[cfg(feature = "pty")]
+pub use pty::{Pty, PtyOptions};
 
 pub use actions::TermSettings;
 pub use actions::echo;

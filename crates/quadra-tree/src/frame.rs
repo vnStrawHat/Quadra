@@ -250,6 +250,7 @@ impl Tree {
         self.lay_out();
         // The overlays against their anchors first: what sees the layout sees them placed.
         self.place_overlays();
+        self.drop_hidden_focus();
         // What asked to see the result may write state: the frame then goes round again.
         for see in std::mem::take(&mut self.after_layout) {
             see(self);

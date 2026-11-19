@@ -296,7 +296,9 @@ As built so far:
   one pixel in a grip of 6 with the cursor of a resize. `share` is the first pane's part
   of the whole, a signal: dragging the seam writes it, never leaving a pane under
   `.least(px)` (80), and a double click makes the panes even. What does not fit in a pane
-  is cut.
+  is cut. `.alone(|| ..)`: while it gives `Some(0)` or `Some(1)` that pane has the whole
+  and the other and the seam are not displayed, kept mounted with what they hold (a layout
+  of one pane, then two, costs a layout, nothing built again).
 - **`titlebar(title)`** is the bar of a window with its own frame (10): 32 px on the chrome
   plane over a strong line, 12 px text, and the window is dragged by it. `.menu(|| items)`
   puts the app's menu behind a button at its left end, `.icon(body)` an icon before the

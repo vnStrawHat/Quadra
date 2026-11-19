@@ -67,6 +67,12 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 
 - A file always opens in **Preview**. Changing the layout keeps the text, cursors, undo and
   where each pane is. The editor's document is kept while it is not shown (`Editor::keep`).
+- **Changing the layout builds nothing it built before.** The editor and the preview are
+  the two panes of the kit's split (`.alone`): each is built the first time a layout shows
+  it, then kept, hidden while another layout does not show it, so another layout is a
+  layout (in the dist build, 920 lines: 20 ms to Side by side, 11 back to Preview). The
+  focus in a pane that is hidden goes (04, "Removing"). Opening another document, the
+  editor's face and wrapping build both again.
 - The preview's text column is at most 760 px wide, centred, with 32 px of room at the sides.
 - The editor wraps lines (prose), uses the kit's mono face at 14 px with lines of 22 px, and
   colours the text as Markdown.
@@ -99,15 +105,14 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 - **Closing.** A tab with unsaved work asks first ("Save changes to <name>?"). Closing the
   last tab leaves an untitled one. Closing the window asks for each tab with unsaved work in
   turn; Cancel on any keeps the window open.
-- **Its cost.** Switching tabs builds the active document's panes again, as a layout changed
-  does; the other tabs hold their text and their editor's document, not their views.
+- **Its cost.** Switching tabs builds the active document's panes again; the other tabs hold their text and their editor's document, not their views.
 
 ## Find
 
 - **Ctrl+F** finds in the document; F3 and Shift+F3, the next and the one before.
   - While the editor shows (Raw, Side by side), it is the editor's find bar, with replace
     (Ctrl+H; behaviour/18, "Find"): Ctrl+F gives the editor the focus where it is not.
-  - In Preview, a bar at the top right of the preview, its row 22 tall (behaviour/15, "Text
+  - In Preview, a bar at the top right of the preview, its row 26 tall (behaviour/15, "Text
     input"; as 1Term's, 19 "Find"): the query with the search icon, Match case and Whole
     word, `3 of 12` (`No results`), the one before and the next, and a cross. Enter is the
     next, Shift+Enter the one before; Escape closes it. The matches are marked in the

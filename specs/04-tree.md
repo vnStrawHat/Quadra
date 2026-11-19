@@ -103,7 +103,9 @@ Every pass counts what it visited into `FrameStats` (14). Tests assert on those 
   releases its glyph tiles and images through `Drop`, and frees the nodes. Its ranges leave the
   layer's display list in the same frame's paint pass.
 - If a removed node had focus, focus moves to the nearest focusable ancestor. If it had the
-  pointer captured, the capture ends.
+  pointer captured, the capture ends. So does a focus that a layout finds under a box not
+  displayed or inert (a pane kept but hidden): to the nearest focusable ancestor that shows,
+  or none, so no key reaches a field no one sees.
 
 ## Node handles
 

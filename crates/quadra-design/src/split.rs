@@ -19,12 +19,14 @@ pub struct Split {
     share: Signal<f32>,
     stacked: bool,
     least: f32,
+    alone: Option<Box<dyn Fn() -> Option<usize>>>,
 }
 
 /// Two panes side by side: `share` is how much of the width the first one has. Dragging the
 /// seam writes it; a double click on the seam makes the panes even.
 pub fn split(first: impl View + 'static, second: impl View + 'static, share: Signal<f32>) -> Split {
-    Split { first: AnyView::new(first), second: AnyView::new(second), share, stacked: false, least: 80.0 }
+    let (first, second) = (AnyView::new(first), AnyView::new(second));
+    Split { first, second, share, stacked: false, least: 80.0, alone: None }
 }
 
 impl Split {
@@ -39,6 +41,13 @@ impl Split {
         self.least = px;
         self
     }
+
+    /// While `f` gives `Some(0)` or `Some(1)`, that pane has the whole, the other and the seam
+    /// hidden and kept.
+    pub fn alone(mut self, f: impl Fn() -> Option<usize> + 'static) -> Self {
+        self.alone = Some(Box::new(f));
+        self
+    }
 }
 
 impl View for Split {
@@ -49,7 +58,10 @@ impl View for Split {
             true => seam.height(GRIP).direction(Direction::Column).cursor(Cursor::ResizeVertical),
             false => seam.width(GRIP).cursor(Cursor::ResizeHorizontal),
         };
-        let split = base::split(self.first, self.second, self.share, seam).least(self.least);
+        let mut split = base::split(self.first, self.second, self.share, seam).least(self.least);
+        if let Some(alone) = self.alone {
+            split = split.alone(alone);
+        }
         if self.stacked { split.stacked() } else { split }.mount(cx)
     }
 }

@@ -89,13 +89,20 @@ pub fn large(out: &std::path::Path) -> Result<(), Box<dyn Error>> {
         // The preview takes the text 120 ms after the last edit.
         let typed = settle(&platform, &mut app, &seen, 225);
         let shown = m.text.with_untracked(|it| it.lines().nth(middle).is_some_and(|it| it.starts_with('x')));
+        // Back to Preview, and to Side by side again: the panes are kept, only laid out.
+        m.layout.set(markdown::PREVIEW);
+        let back = settle(&platform, &mut app, &seen, 0);
+        m.layout.set(SIDE_BY_SIDE);
+        let again = settle(&platform, &mut app, &seen, 0);
         let ms = |d: Duration| d.as_secs_f64() * 1000.0;
         println!(
-            "large: {lines} lines ({places} blocks placed): open {:.0} ms, side by side {:.0} ms, the editor moved and the preview following {:.1} ms (followed: {followed}), a letter to the preview {:.0} ms (shown: {shown}), {} frames",
+            "large: {lines} lines ({places} blocks placed): open {:.0} ms, side by side {:.0} ms, the editor moved and the preview following {:.1} ms (followed: {followed}), a letter to the preview {:.0} ms (shown: {shown}), back to Preview {:.1} ms, side by side again {:.1} ms, {} frames",
             ms(opened),
             ms(switched),
             ms(wheel),
             ms(typed),
+            ms(back),
+            ms(again),
             seen.get().0,
         );
     }

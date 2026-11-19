@@ -7,7 +7,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use quadra_layout::{Direction, Length, Overflow};
+use quadra_layout::{Direction, Display, Length, Overflow};
 use quadra_prim::Size;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, PointerEvent, PointerKind};
@@ -20,6 +20,7 @@ pub struct Split {
     seam: Div,
     stacked: bool,
     least: f32,
+    alone: Option<Rc<dyn Fn() -> Option<usize>>>,
 }
 
 /// Two panes side by side with `seam` between them: `share` is how much of the width the
@@ -31,7 +32,7 @@ pub fn split(
     seam: Div,
 ) -> Split {
     let (first, second) = (AnyView::new(first), AnyView::new(second));
-    Split { first, second, share, seam, stacked: false, least: 80.0 }
+    Split { first, second, share, seam, stacked: false, least: 80.0, alone: None }
 }
 
 impl Split {
@@ -46,15 +47,39 @@ impl Split {
         self.least = px;
         self
     }
+
+    /// While `f` gives `Some(0)` or `Some(1)`, that pane has the whole and the other and the
+    /// seam are not displayed: kept, with what they hold.
+    pub fn alone(mut self, f: impl Fn() -> Option<usize> + 'static) -> Self {
+        self.alone = Some(Rc::new(f));
+        self
+    }
 }
 
 impl View for Split {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (share, stacked, least) = (self.share, self.stacked, self.least);
         let along = move |size: Size| if stacked { size.height } else { size.width };
-        let part = move || Length::Pct(share.get() * 100.0);
+        // The pane that has the whole, if one has.
+        let alone = self.alone.clone();
+        let solo: Rc<dyn Fn() -> Option<usize>> = Rc::new(move || alone.as_ref().and_then(|f| f()));
+        let shown = |pane: usize| {
+            let solo = solo.clone();
+            move || match solo() {
+                Some(only) if only != pane => Display::None,
+                _ => Display::Flex,
+            }
+        };
+        let part = {
+            let solo = solo.clone();
+            move || match solo() {
+                Some(_) => Length::Pct(100.0),
+                None => Length::Pct(share.get() * 100.0),
+            }
+        };
         let pane = || div().overflow_x(Overflow::Hidden).overflow_y(Overflow::Hidden);
-        let (first, second) = (pane().shrink(0.0).child(self.first), pane().grow(1.0).child(self.second));
+        let first = pane().shrink(0.0).display(shown(0)).child(self.first);
+        let second = pane().grow(1.0).display(shown(1)).child(self.second);
         let first = if stacked { first.height(part) } else { first.width(part) };
 
         // The press on the seam takes the pointer, and the share follows the pointer by as
@@ -83,6 +108,7 @@ impl View for Split {
             }
         });
 
+        let seam = seam.display(move || if solo().is_some() { Display::None } else { Display::Flex });
         let frame = div().grow(1.0).direction(if stacked { Direction::Column } else { Direction::Row });
         let id = frame.child(first).child(seam).child(second).mount(cx);
         whole.set(Some(cx.tree.size_signal(id)));

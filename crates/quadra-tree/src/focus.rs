@@ -169,6 +169,16 @@ impl Tree {
 
     /// Moves the focus: the states of the old and the new node and of their ancestors, then
     /// the events, the one that loses it first.
+    /// A focus under a box not displayed or inert goes to the nearest focusable ancestor
+    /// that shows, or nowhere: no key reaches a field no one sees. After each layout.
+    pub(crate) fn drop_hidden_focus(&mut self) {
+        let Some(at) = self.focus.filter(|&id| self.is_alive(id)) else { return };
+        let path = self.path(at);
+        let Some(last) = path.iter().rposition(|&id| self.hidden(id)) else { return };
+        let to = path[last + 1..].iter().copied().find(|&id| self.nodes[id.index as usize].focusable);
+        batch(|| self.set_focus(to, false));
+    }
+
     pub(crate) fn set_focus(&mut self, to: Option<NodeId>, by_keyboard: bool) {
         let from = self.focus;
         self.focus_ring = to.is_some() && (by_keyboard || (from == to && self.focus_ring));

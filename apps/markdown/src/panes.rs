@@ -4,20 +4,22 @@
 use std::rc::Rc;
 
 use quadra::{
-    AnyView, Display, Div, Justify, Length, PointerKind, Role, Scope, View, column, div, dynamic, row,
-    scroll, untrack,
+    AnyView, Display, Div, Justify, Length, PointerKind, Role, Scope, View, column, div, dynamic, effect,
+    row, scroll, show, signal, untrack,
 };
 use quadra_code::editor;
 use quadra_design::{split, token};
 use quadra_md::markdown;
 
-use crate::model::{Model, RAW, SIDE_BY_SIDE};
+use crate::model::{Model, PREVIEW, RAW, SIDE_BY_SIDE};
 use crate::sync::{self, Driver, PAD};
 
 /// What a link does with its target, Ctrl held.
 pub(crate) type Follow = Rc<dyn Fn(&str)>;
 
-/// The layout chosen, built again when it changes or another document opens.
+/// The document in its layout: the editor and the preview as the two panes of a split, the
+/// one a layout does not show hidden. Each is built the first time a layout shows it and kept,
+/// so another layout is a layout, not a build; all is built again when another document opens.
 pub(crate) fn body(model: &Model, follow: Follow) -> Div {
     let m = model.clone();
     let shown = dynamic(move || {
@@ -25,11 +27,28 @@ pub(crate) fn body(model: &Model, follow: Follow) -> Div {
         // The editor's face and wrapping: it is built again, its document kept.
         m.prefs.editor_font();
         m.prefs.wrap.get();
-        match m.layout.get() {
-            RAW => AnyView::new(source(&m, &follow)),
-            SIDE_BY_SIDE => AnyView::new(split(source(&m, &follow), preview(&m, &follow), m.share)),
-            _ => AnyView::new(preview(&m, &follow)),
-        }
+        let layout = m.layout;
+        let (editing, reading) = (signal(false), signal(false));
+        effect(move || {
+            let now = layout.get();
+            if now != PREVIEW && !editing.get_untracked() {
+                editing.set(true);
+            }
+            if now != RAW && !reading.get_untracked() {
+                reading.set(true);
+            }
+        });
+        let pane = || column().grow(1.0).min_width(0.0).min_height(0.0);
+        let (s, f) = (m.clone(), follow.clone());
+        let editor = show(move || editing.get(), move || source(&s, &f)).container(pane());
+        let (p, f) = (m.clone(), follow.clone());
+        let page = show(move || reading.get(), move || preview(&p, &f)).container(pane());
+        let alone = move || match layout.get() {
+            RAW => Some(0),
+            SIDE_BY_SIDE => None,
+            _ => Some(1),
+        };
+        AnyView::new(split(editor, page, m.share).alone(alone))
     });
     column().grow(1.0).min_height(0.0).child(shown.container(column().grow(1.0).min_height(0.0)))
 }

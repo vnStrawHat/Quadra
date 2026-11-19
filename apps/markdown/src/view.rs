@@ -56,14 +56,7 @@ pub(crate) fn window(tabs: &Tabs, launches: Option<Inbox<Launch>>) -> Div {
     let windows = use_context::<quadra::Windows>();
     let current = tabs.clone();
     let first = tabs.current_untracked();
-    let strip = {
-        let (tabs, files) = (tabs.clone(), files.clone());
-        move || {
-            let files = files.clone();
-            tab_strip(tabs.strip, tabs.active).on_close(move |id| files.close_tab(id))
-        }
-    };
-    let (many, bars, docs, ends) = (tabs.strip, tabs.clone(), (tabs.clone(), files.clone()), tabs.clone());
+    let (bars, docs, ends) = (tabs.clone(), (tabs.clone(), files.clone()), tabs.clone());
     quadra_design::root()
         .on_action::<ShowLayout>(move |&ShowLayout(chosen)| t.current_untracked().layout.set(chosen))
         .on_action::<ToggleOutline>(move |_| first.outline.update(|on| *on = !*on))
@@ -118,17 +111,17 @@ pub(crate) fn window(tabs: &Tabs, launches: Option<Inbox<Launch>>) -> Div {
         .child(
             dynamic(move || AnyView::new(bar::bar(&bars.current(), &files))).container(column().shrink(0.0)),
         )
-        .child(show(move || many.with(Vec::len) > 1, strip).container(column().shrink(0.0)))
         .child(
-            dynamic(move || AnyView::new(document(&docs.0.current(), &docs.1)))
+            dynamic(move || AnyView::new(document(&docs.0.current(), &docs.1, &docs.0)))
                 .container(column().grow(1.0).min_height(0.0)),
         )
         .child(dynamic(move || AnyView::new(status::bar(&ends.current()))).container(column().shrink(0.0)))
         .child(tabs.current_untracked().notices.host())
 }
 
-/// A tab's document: the outline, the toolbar while the editor shows, and the panes.
-fn document(m: &Model, files: &Files) -> Div {
+/// A tab's document: the outline, and beside it the strip of tabs while there are two or
+/// more, the toolbar while the editor shows, and the panes.
+fn document(m: &Model, files: &Files, tabs: &Tabs) -> Div {
     // The preview follows the editor once it stands still.
     let (still, shown) = (debounce(m.edited, PREVIEW_AFTER), m.clone());
     effect(move || {
@@ -149,10 +142,19 @@ fn document(m: &Model, files: &Files) -> Div {
         let m = m.clone();
         move || toolbar::toolbar(&m)
     });
+    let strip = {
+        let (tabs, files) = (tabs.clone(), files.clone());
+        move || {
+            let files = files.clone();
+            tab_strip(tabs.strip, tabs.active).on_close(move |id| files.close_tab(id))
+        }
+    };
+    let many = tabs.strip;
     let right = column()
         .grow(1.0)
         .min_width(0.0)
         .min_height(0.0)
+        .child(show(move || many.with(Vec::len) > 1, strip).container(column().shrink(0.0)))
         .child(tools.container(column().shrink(0.0)))
         .child(panes::body(m, follow(m, files)));
     row().grow(1.0).min_height(0.0).child(outline::outline(m, headings)).child(right)

@@ -97,7 +97,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   as a tab, a relative path from that folder, and brings its window to the front.
 - **A tab is a document**: its file, its text, its editor's document, its layout, where its
   panes are and its outline's row. The settings and the notices are the window's.
-- **The strip.** Under the bar while there are two tabs or more: the kit's tab strip (13,
+- **The strip.** Over the content while there are two tabs or more, from the outline's edge
+  to the window's (the outline is the tab's, under the bar): the kit's tab strip (13,
   "Tab strip"), each tab the file's name with the unsaved mark, a cross that closes it, the
   tabs dragged to another order. The bar, the title and the toolbar are the active tab's.
 - **Where a file opens.** In the tab that has it already; else in the active tab when it is

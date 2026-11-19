@@ -3,6 +3,7 @@
 
 use quadra_design::{fonts, size, token};
 use quadra_layout::{Justify, Track, TrackSize};
+use quadra_prim::Corners;
 use quadra_text::{Paragraph, TextStyle};
 use quadra_tree::{NodeId, Role};
 use quadra_view::{MountCx, View, div, row};
@@ -62,6 +63,9 @@ impl View for Table {
                     _ if r % 2 == 0 => cell.bg(token::PANEL).border_top(1.0).border_color(token::LINE_STRONG),
                     _ => cell.border_top(1.0).border_color(token::LINE_STRONG),
                 };
+                // The cells at the frame's corners are rounded inside it: their fill does not
+                // cover its line.
+                let cell = cell.radii(corner(r, c, self.rows.len(), columns));
                 grid = grid.child(match cells.get(c).map(|cell| spans(cell)) {
                     Some(runs) if !runs.is_empty() => cell.child(rich(runs, &self.on_link)),
                     _ => cell,
@@ -69,5 +73,19 @@ impl View for Table {
             }
         }
         grid.mount(cx)
+    }
+}
+
+/// The corners of the cell at row `r` and column `c` that are those of the table's frame,
+/// rounded by the frame's radius less its line.
+fn corner(r: usize, c: usize, rows: usize, columns: usize) -> Corners {
+    let radius = size::RADIUS_MD - 1.0;
+    let at = |yes: bool| if yes { radius } else { 0.0 };
+    let (top, bottom, left, right) = (r == 0, r + 1 == rows, c == 0, c + 1 == columns);
+    Corners {
+        top_left: at(top && left),
+        top_right: at(top && right),
+        bottom_right: at(bottom && right),
+        bottom_left: at(bottom && left),
     }
 }

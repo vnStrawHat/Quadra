@@ -2,9 +2,11 @@
 
 mod bar;
 mod files;
+mod format;
 mod model;
 mod panes;
 mod sync;
+mod toolbar;
 
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -14,8 +16,10 @@ use quadra::{Action, DroppedFiles, Keymap, View, debounce, effect, use_context};
 use quadra_shell::Opener;
 
 pub use files::{NewFile, OpenFile, Save, SaveAs};
+pub use format::{Change, Format, format};
 pub use model::{Model, PREVIEW, RAW, SIDE_BY_SIDE};
 pub use sync::Driver;
+pub use toolbar::ApplyFormat;
 
 use files::Files;
 
@@ -42,6 +46,9 @@ pub fn keymap() -> Keymap {
     map.bind("ctrl-o", OpenFile).expect(well_formed);
     map.bind("ctrl-s", Save).expect(well_formed);
     map.bind("ctrl-shift-s", SaveAs).expect(well_formed);
+    for (keys, what) in toolbar::keys() {
+        map.bind(&keys, ApplyFormat(what)).expect(well_formed);
+    }
     map
 }
 
@@ -79,9 +86,10 @@ impl MdApp {
         sync::follow(&m);
         let layout = m.layout;
         let (f, s, a, o, c) = (files.clone(), files.clone(), files.clone(), files.clone(), files.clone());
-        let drops = files.clone();
+        let (drops, formats) = (files.clone(), m.clone());
         quadra_design::root()
             .on_action::<ShowLayout>(move |&ShowLayout(chosen)| layout.set(chosen))
+            .on_action::<ApplyFormat>(move |&ApplyFormat(what)| toolbar::apply(&formats, what))
             .on_action::<NewFile>(move |_| f.new_file())
             .on_action::<OpenFile>(move |_| o.open())
             .on_action::<Save>(move |_| s.save(|| {}))
@@ -100,6 +108,13 @@ impl MdApp {
                 !unsaved
             })
             .child(bar::bar(&m, &files))
+            .child(
+                quadra::show(move || layout.get() != PREVIEW, {
+                    let m = m.clone();
+                    move || toolbar::toolbar(&m)
+                })
+                .container(quadra::column().shrink(0.0)),
+            )
             .child(panes::body(&m, follow(&m, &files)))
             .child(m.notices.host())
     }

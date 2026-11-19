@@ -14,10 +14,10 @@ fn sections(n: usize) -> String {
     (0..n).map(|k| format!("## Part {k}\n\nOne {k}.\n\nTwo {k}.\n\nThree {k}.\n\n")).collect()
 }
 
-fn app() -> (Harness, Model) {
+fn app(name: &str) -> (Harness, Model) {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.tmp/markdown-tests");
     std::fs::create_dir_all(&path).unwrap();
-    let path = path.join("sync.md");
+    let path = path.join(format!("sync-{name}.md"));
     std::fs::write(&path, sections(30)).unwrap();
     let mut h = Harness::new();
     h.size = quadra::Size::new(1200.0, 700.0);
@@ -42,7 +42,7 @@ fn heading_y(m: &Model, line: usize) -> f32 {
 
 #[test]
 fn the_editor_drives_and_a_heading_at_its_top_is_at_the_previews() {
-    let (mut h, m) = app();
+    let (mut h, m) = app("drives");
     m.pos.set(80.0); // Part 10 at the editor's top
     h.settle();
     assert_eq!(m.driver.get_untracked(), Driver::Editor);
@@ -56,7 +56,7 @@ fn the_editor_drives_and_a_heading_at_its_top_is_at_the_previews() {
 
 #[test]
 fn the_wheel_over_the_preview_makes_it_drive_with_no_echo() {
-    let (mut h, m) = app();
+    let (mut h, m) = app("wheel");
     let pane = h.get_by_role(Role::Group, "Rendered").node();
     let r = h.tree.window_rect(pane);
     h.wheel(r.x + 100.0, r.y + 100.0, -20.0);
@@ -76,7 +76,7 @@ fn the_wheel_over_the_preview_makes_it_drive_with_no_echo() {
 
 #[test]
 fn a_heading_pressed_in_the_preview_takes_the_editor_there() {
-    let (mut h, m) = app();
+    let (mut h, m) = app("pressed");
     h.get_by_role(Role::Heading, "Part 2").click();
     h.settle();
     assert_eq!(m.caret.get_untracked(), 16, "the caret at its line");
@@ -90,7 +90,7 @@ fn a_heading_pressed_in_the_preview_takes_the_editor_there() {
 
 #[test]
 fn the_caret_on_a_heading_shows_it_in_the_preview() {
-    let (mut h, m) = app();
+    let (mut h, m) = app("caret");
     m.editor.edit(|w| {
         let at = w.doc.buffer.line_start(24);
         w.doc.set_cursor(at, at, false);

@@ -105,8 +105,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 
 - **Where.** A row of 36 px, under the bar, while the editor shows (Raw, Side by side). It
   holds ghost icon buttons of 28 px with tooltips that name their keys, in groups split by
-  rules. A press does not take the focus from the editor: the selection stays, and so does
-  the caret.
+  rules. After a press the focus is back in the editor, its selection as the button left
+  it. The buttons work on the primary cursor's selection.
 - **The buttons.**
 
 | Group | Buttons (icon, key) |
@@ -117,20 +117,21 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 | Insert | Link (`link`, Ctrl+K), Image (`image`), Code block (`square-code`), Table (`table`), Horizontal rule (`minus`) |
 
 - **What they do.** Each button is one change, so one undo undoes it.
-  - **Text styles.** These wrap each selection in their marks: `**`, `*`, `~~` or a
+  - **Text styles.** These wrap the selection in their marks: `**`, `*`, `~~` or a
     backtick.
     - A selection already wrapped, inside or just outside, is unwrapped.
     - With no selection, the word at the caret is wrapped. With no word there, an empty pair
       goes in with the caret between.
-  - **Headings.** They set the level of every line the selections touch. A line that is
+  - **Headings.** They set the level of every line the selection touches. A line that is
     already at that level becomes a paragraph.
   - **Lists and quotes.** They toggle their prefix on every line touched: `- `, `1. ` (counted
-    on), `- [ ] ` or `> `. A line that has another list's prefix takes this one instead.
+    on), `- [ ] ` or `> `, after the line's indent. When every line has it already, it comes
+    off. A line that has another list's prefix takes this one instead.
   - **Link.** It makes `[selection](url)` with `url` selected. An empty selection gives
     `[text](url)` with `text` selected.
   - **Image.** The same as Link, with `![alt](path)`.
   - **Code block.** It fences the lines touched with ` ``` ` above and below, the caret after
-    the opening fence. With nothing selected, it is an empty block with the caret inside.
+    the opening fence. With nothing selected, it is an empty block, the caret after its opening fence.
   - **Table.** It inserts a table of 3 columns and 2 rows at the start of the next line, with
     the first header selected.
   - **Rule.** It inserts `---` on a line of its own.

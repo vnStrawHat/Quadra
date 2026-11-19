@@ -41,7 +41,11 @@ impl View for Card {
             if lock.locked.get() {
                 // After the writes of this pass, one of which displays the card.
                 let later = handle.clone();
-                handle.with(move |_| later.with(move |tree| _ = tree.focus_first(id)));
+                // What was open over the window (a menu) closes: it is no part of the workspace.
+                handle.with(move |tree| {
+                    tree.dismiss_overlays();
+                    later.with(move |tree| _ = tree.focus_first(id))
+                });
             }
         });
         id

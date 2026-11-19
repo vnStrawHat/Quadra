@@ -5,9 +5,10 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use oneterm::{NewSession, OneTerm, keymap};
-use quadra::{Key, Mods, Role, Settings, provide};
+use quadra::{Key, Mods, MouseButton, Role, Settings, provide};
 use quadra_term::{Session, echo};
 use quadra_testing::Harness;
+use quadra_tree::PointerInput;
 
 struct App {
     h: Harness,
@@ -220,4 +221,42 @@ fn with_a_vault_the_window_opens_locked_and_its_password_opens_the_vault() {
     // A password alone does not lock at start.
     let a = app(Some("master"));
     assert!(!a.locked());
+}
+
+#[test]
+fn locked_nothing_but_the_card_the_title_bar_and_the_status_bar_is_in_reach() {
+    let mut a = app(Some("pw"));
+    // A space's menu open when the lock falls: an overlay, no part of the workspace.
+    let id = a.h.query(|n| n.semantics.role == Role::TextInput && n.semantics.name == "Terminal")[0];
+    let at = a.h.tree.window_rect(id).center();
+    for input in [PointerInput::Move, PointerInput::Down, PointerInput::Up] {
+        a.h.tree.pointer(input, MouseButton::Right, at, Mods::NONE, a.h.now());
+    }
+    a.h.settle();
+    assert!(a.h.query(|n| n.semantics.role == Role::MenuItem).len() > 1, "the menu is open");
+    a.h.advance(Duration::from_secs(11 * 60));
+    a.h.settle();
+    assert!(a.locked());
+    let reach = |n: &quadra_tree::SemanticNode| {
+        matches!(
+            n.semantics.role,
+            Role::Button | Role::MenuItem | Role::TextInput | Role::Tab | Role::TreeItem
+        )
+    };
+    let in_reach = |a: &App| {
+        let nodes = a.h.tree.semantic_tree().nodes;
+        let mut names: Vec<String> =
+            nodes.iter().filter(|n| reach(n)).map(|n| n.semantics.name.clone()).collect();
+        names.sort();
+        names
+    };
+    let card = ["Close", "Master password", "Maximize", "Minimize", "Show password", "Unlock"];
+    assert_eq!(in_reach(&a), card, "the menu closed as the lock fell");
+    // A dialog open when it locks (Quick connect) is not in reach either.
+    a.unlock_with("pw");
+    a.key(Key::K, Mods::CTRL | Mods::SHIFT);
+    assert_eq!(a.h.query(|n| n.semantics.role == Role::Dialog).len(), 1, "Quick connect is open");
+    a.h.advance(Duration::from_secs(11 * 60));
+    a.h.settle();
+    assert_eq!(in_reach(&a), card);
 }

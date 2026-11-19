@@ -383,7 +383,8 @@ the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep 
   a displayed node is in the semantic tree, which any process can read through the OS's
   accessibility, so the rail and the spaces are left out of it while locked, and no press or
   Tab reaches them; the lock's card stands over them on a layer that blurs them by 24 px
-  (`backdrop_blur`) and dims them with the scrim. The settings page and the notification cards
+  (`backdrop_blur`) and dims them with the scrim. What was open over the window when it locks (a menu, a dialog)
+  closes as a press outside would close it (`Tree::dismiss_overlays`). The settings page and the notification cards
   are not displayed; the title bar
   keeps its window buttons and says "Locked"; the app's keys do nothing but `Ctrl+Shift+L`;
   the card is a focus scope with the focus in the password field, and neither Escape nor a

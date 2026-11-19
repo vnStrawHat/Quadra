@@ -19,6 +19,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 | M6 | The outline: a sidebar of the document's headings |
 | M7 | Settings, About, and making Markdown the default for `.md` files |
 | M8 | Tabs, and one process: files opened from the OS go to tabs of the window there is |
+| M9 | The status bar |
+| M10 | Find in the preview |
 
 ## Window
 
@@ -36,6 +38,15 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
     ghost icon buttons with tooltips that name their keys.
 - **Below the bar.** At the left, the outline (below), in every layout. At its right, while
   the editor shows, the toolbar (below), and under that the document in its layout.
+- **The status bar** (13, "Status bar"), along the bottom, of the active tab:
+  - at its left, the document's words, its characters and its reading time at 200 words a
+    minute (`1,204 words · 7,310 characters · 6 min read`), counted on the text the preview
+    shows, so on the editor's text once it stands still; a word is a run without spaces
+    that holds a letter or a digit, so `#`, `-` and `|` are none; characters leave out line
+    ends;
+  - at its right, while the editor shows, the primary cursor (`Ln 12, Col 5`, and
+    `(34 selected)` while there is a selection); then the document's lines and its line
+    ends as read (`LF` or `CRLF`, what a save writes).
 - **Opening a file.** The command line's arguments, paths, are the files opened at start,
   each a tab. That is how a file opens straight from the OS ("Open with", a file's
   association; several files chosen in Explorer start the app once each, and all go to the

@@ -45,6 +45,8 @@ pub struct Model {
     /// Where the preview's blocks are, the editor's caret line, and the pane that drives.
     pub places: Signal<Vec<Place>>,
     pub caret: Signal<usize>,
+    /// The editor's cursor for the status bar.
+    pub place: Signal<quadra_code::Caret>,
     pub driver: Signal<Driver>,
     /// The line of the heading tinted in the preview, a moment after it was chosen.
     pub flash: Signal<Option<usize>>,
@@ -87,6 +89,7 @@ impl Model {
             preview_y: signal(0.0),
             places: signal(Vec::new()),
             caret: signal(0),
+            place: signal(quadra_code::Caret { line: 1, column: 1, selected: 0 }),
             driver: signal(Driver::Editor),
             flash: signal(None),
             outline: prefs.outline,
@@ -129,6 +132,7 @@ impl Model {
             self.reveal.set(None);
             self.flash.set(None);
             self.caret.set(0);
+            self.place.set(quadra_code::Caret { line: 1, column: 1, selected: 0 });
             self.driver.set(Driver::Editor);
             self.opened.update(|n| *n += 1);
         });

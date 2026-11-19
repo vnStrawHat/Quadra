@@ -12,7 +12,8 @@ use crate::files::{self, CloseTab, Files, NewFile, NextTab, OpenFile, PreviousTa
 use crate::model::{Model, PREVIEW};
 use crate::tabs::Tabs;
 use crate::{
-    ApplyFormat, OpenSettings, ShowLayout, ToggleOutline, bar, outline, panes, settings, sync, toolbar,
+    ApplyFormat, OpenSettings, ShowLayout, ToggleOutline, bar, outline, panes, settings, status, sync,
+    toolbar,
 };
 
 /// The wait after the last edit before the preview shows the text.
@@ -61,7 +62,7 @@ pub(crate) fn window(tabs: &Tabs, launches: Option<Inbox<Launch>>) -> Div {
             tab_strip(tabs.strip, tabs.active).on_close(move |id| files.close_tab(id))
         }
     };
-    let (many, bars, docs) = (tabs.strip, tabs.clone(), (tabs.clone(), files.clone()));
+    let (many, bars, docs, ends) = (tabs.strip, tabs.clone(), (tabs.clone(), files.clone()), tabs.clone());
     quadra_design::root()
         .on_action::<ShowLayout>(move |&ShowLayout(chosen)| t.current_untracked().layout.set(chosen))
         .on_action::<ToggleOutline>(move |_| first.outline.update(|on| *on = !*on))
@@ -101,6 +102,7 @@ pub(crate) fn window(tabs: &Tabs, launches: Option<Inbox<Launch>>) -> Div {
             dynamic(move || AnyView::new(document(&docs.0.current(), &docs.1)))
                 .container(column().grow(1.0).min_height(0.0)),
         )
+        .child(dynamic(move || AnyView::new(status::bar(&ends.current()))).container(column().shrink(0.0)))
         .child(tabs.current_untracked().notices.host())
 }
 

@@ -1279,7 +1279,8 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   how far down its rows (wrapped rows counted), kept as it scrolls; setting it scrolls there,
   as far as the view goes. Finer than `.top_line`, for panes that scroll together.
   `.caret_line(signal)`: the line of the primary cursor, kept as it moves (keys, the
-  pointer, an edit from outside).
+  pointer, an edit from outside). `.caret(signal)`: the same cursor as a `Caret { line,
+  column, selected }`, the column and the selection counted in characters, for a status bar.
 - `.edited(signal)`: the document's version, set after each change of the text (an app's
   preview reads the text when it moves, not on every key). `.handle(EditorHandle)`: what
   reaches the editor from outside it while it is mounted (`is_mounted`). `read(f)` runs `f`

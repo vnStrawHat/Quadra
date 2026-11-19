@@ -9,6 +9,24 @@ use quadra_tree::{Handle, NodeId, Tree};
 
 use super::EditorWidget;
 
+/// Where the primary cursor is, counted from 1, and how many characters it selects.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Caret {
+    pub line: usize,
+    pub column: usize,
+    pub selected: usize,
+}
+
+impl Caret {
+    fn of(w: &EditorWidget) -> Caret {
+        let (cursor, buffer) = (w.doc.primary(), &w.doc.buffer);
+        let line = buffer.line_of(cursor.head);
+        let column = buffer.slice(buffer.line_start(line)..cursor.head).chars().count() + 1;
+        let range = cursor.anchor.min(cursor.head)..cursor.anchor.max(cursor.head);
+        Caret { line: line + 1, column, selected: buffer.slice(range).chars().count() }
+    }
+}
+
 /// Reaches an editor from outside it while it is mounted: a toolbar, a save. Copies are the
 /// same one.
 #[derive(Clone, Default)]
@@ -90,6 +108,9 @@ pub(super) fn edit(
     let moved = (w.doc.primary().anchor, w.doc.primary().head) != held;
     if let Some(caret) = w.caret_line.filter(|_| moved || changed) {
         caret.try_set(w.doc.buffer.line_of(w.doc.primary().head));
+    }
+    if let Some(place) = w.caret.filter(|_| moved || changed) {
+        place.try_set(Caret::of(w));
     }
     let relaid = w.doc.buffer.line_count() != lines || w.row_count() != rows;
     if changed && w.find.is_some() {

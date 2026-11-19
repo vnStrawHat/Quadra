@@ -9,6 +9,7 @@ mod outline;
 mod panes;
 mod prefs;
 mod settings;
+mod status;
 mod sync;
 mod tabs;
 mod toolbar;

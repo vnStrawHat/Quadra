@@ -24,7 +24,7 @@ use quadra_view::{MountCx, NodeRef, View, column, div, scroll, show};
 use edit::{edit, rows_by};
 use find_bar::Finding;
 
-pub use edit::EditorHandle;
+pub use edit::{Caret, EditorHandle};
 pub use keys::{EDITOR_CONTEXT, EditorCommand, bind_keys};
 pub use marks::{Mark, marks};
 pub use widget::{EditorWidget, KeptDoc};
@@ -48,6 +48,7 @@ pub struct Editor {
     reach: Option<EditorHandle>,
     position: Option<Signal<f64>>,
     caret: Option<Signal<usize>>,
+    place: Option<Signal<Caret>>,
 }
 
 /// A code editor over a text, in the kit's mono face at 15 px with lines of 25. Give it a
@@ -68,6 +69,7 @@ pub fn editor(text: impl Into<String>) -> Editor {
         reach: None,
         position: None,
         caret: None,
+        place: None,
     }
 }
 
@@ -145,6 +147,12 @@ impl Editor {
         self
     }
 
+    /// The primary cursor's line, column and selection, kept as it moves: a status bar's.
+    pub fn caret(mut self, place: Signal<Caret>) -> Self {
+        self.place = Some(place);
+        self
+    }
+
     /// What reaches the editor from outside it while it is mounted.
     pub fn handle(mut self, reach: EditorHandle) -> Self {
         self.reach = Some(reach);
@@ -199,6 +207,7 @@ impl View for Surface {
         widget.changed = editor.changed;
         widget.edited = editor.edited;
         widget.caret_line = editor.caret;
+        widget.caret = editor.place;
         if let Some(doc) = editor.kept.as_ref().and_then(|it| it.take()) {
             widget.doc = doc;
             widget.doc.dirty = 0; // coloured again from the start

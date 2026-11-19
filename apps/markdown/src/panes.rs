@@ -52,6 +52,7 @@ fn source(m: &Model, follow: &Follow) -> Div {
         .keep(m.doc.clone())
         .position(m.pos)
         .caret_line(m.caret)
+        .caret(m.place)
         .on_link(move |target| follow(target));
     let pane = column().grow(1.0).min_width(0.0).min_height(0.0).role(Role::Group).label("Source");
     drives(pane, m, Driver::Editor).child(code)

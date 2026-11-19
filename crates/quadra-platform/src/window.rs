@@ -18,6 +18,9 @@ pub struct WindowOptions {
     pub title: String,
     /// The content size, in logical pixels.
     pub size: Size,
+    /// The smallest content size the user can drag the window to, in logical pixels; a
+    /// window asked to open smaller (by `size`, `fit` or a placement) opens this big.
+    pub min_size: Size,
     pub resizable: bool,
     /// Opens centred on the primary display; otherwise where the OS puts it.
     pub centered: bool,
@@ -50,6 +53,7 @@ impl WindowOptions {
         WindowOptions {
             title: title.to_string(),
             size: Size::new(960.0, 600.0),
+            min_size: Size::ZERO,
             resizable: true,
             centered: false,
             fit: 0.0,
@@ -62,6 +66,11 @@ impl WindowOptions {
 
     pub fn size(mut self, width: f32, height: f32) -> WindowOptions {
         self.size = Size::new(width, height);
+        self
+    }
+
+    pub fn min_size(mut self, width: f32, height: f32) -> WindowOptions {
+        self.min_size = Size::new(width, height);
         self
     }
 
@@ -140,6 +149,11 @@ pub fn fit_size(size: Size, display: Size, fit: f32) -> Size {
     } else {
         size
     }
+}
+
+/// A size grown, side by side, to at least `min`.
+pub fn at_least(size: Size, min: Size) -> Size {
+    Size::new(size.width.max(min.width), size.height.max(min.height))
 }
 
 /// An open window. Dropping it closes the window.

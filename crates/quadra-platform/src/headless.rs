@@ -15,7 +15,7 @@ use crate::clipboard::{Clipboard, MemoryClipboard};
 use crate::event::PlatformEvent;
 use crate::platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
 use crate::system::Appearance;
-use crate::window::{Cursor, Placement, PlatformWindow, WindowId, WindowOptions};
+use crate::window::{Cursor, Placement, PlatformWindow, WindowId, WindowOptions, at_least};
 
 mod window;
 
@@ -28,6 +28,8 @@ struct Timer {
 struct WindowState {
     id: WindowId,
     size: Cell<Size>,
+    /// What a resize is held at, as the OS holds a drag of the border.
+    min: Size,
     scale: Cell<f32>,
     title: RefCell<String>,
     frame: Cell<bool>,
@@ -99,9 +101,11 @@ impl HeadlessPlatform {
         self.0.events.borrow_mut().push_back((window, event));
     }
 
-    /// Gives a window a new size and scale, and queues the event that says so.
+    /// Gives a window a new size, no smaller than its minimum, and scale, and queues the
+    /// event that says so.
     pub fn resize(&self, window: WindowId, size: Size, scale: f32) {
         if let Some(w) = self.window(window) {
+            let size = at_least(size, w.min);
             w.size.set(size);
             w.scale.set(scale);
             self.push(window, PlatformEvent::Resize { size, scale });
@@ -241,7 +245,8 @@ impl Platform for HeadlessPlatform {
         let size = placed.map_or(options.size, |p| Size::new(p.width as f32, p.height as f32));
         let state = Rc::new(WindowState {
             id: WindowId(self.next_id() as u32),
-            size: Cell::new(size),
+            size: Cell::new(at_least(size, options.min_size)),
+            min: options.min_size,
             scale: Cell::new(1.0),
             title: RefCell::new(options.title.clone()),
             frame: Cell::new(false),

@@ -7,12 +7,12 @@ use std::rc::Rc;
 use quadra_a11y::TreeUpdate;
 use quadra_platform::{
     Cursor, Placement, PlatformError, PlatformEvent, PlatformWindow, WindowHandle, WindowId, WindowOptions,
-    fit_size,
+    at_least, fit_size,
 };
 use quadra_prim::{Rect, Size};
 use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
-use windows::Win32::UI::HiDpi::{AdjustWindowRectExForDpi, GetDpiForWindow};
+use windows::Win32::UI::HiDpi::GetDpiForWindow;
 use windows::Win32::UI::WindowsAndMessaging::{
     CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, CreateWindowExW, DestroyWindow, GWLP_USERDATA, GetClientRect,
     HCURSOR, IDC_ARROW, LoadCursorW, RegisterClassExW, SW_SHOW, SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE,
@@ -54,6 +54,8 @@ pub(crate) struct WindowState {
     pub custom_frame: bool,
     pub resizable: bool,
     pub frame_down: Cell<bool>,
+    /// The smallest content size, in logical pixels (`place.rs`, `WM_GETMINMAXINFO`).
+    pub min_size: Size,
 }
 
 impl WindowState {
@@ -151,6 +153,7 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         custom_frame: options.custom_frame,
         resizable: options.resizable,
         frame_down: Cell::new(false),
+        min_size: options.min_size,
     });
     let style = if options.resizable {
         WS_OVERLAPPEDWINDOW
@@ -176,17 +179,7 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         let display = primary_display();
         let (dw, dh) = (display.right - display.left, display.bottom - display.top);
         let size = fit_size(options.size, Size::new(dw as f32 / scale, dh as f32 / scale), options.fit);
-        let mut frame = RECT {
-            left: 0,
-            top: 0,
-            right: (size.width * scale) as i32,
-            bottom: (size.height * scale) as i32,
-        };
-        AdjustWindowRectExForDpi(&mut frame, style, false, WINDOW_EX_STYLE(0), dpi).map_err(failed)?;
-        if options.custom_frame {
-            frame.top = 0; // the content covers the caption: no room is added for one
-        }
-        let (w, h) = (frame.right - frame.left, frame.bottom - frame.top);
+        let (w, h) = state.frame_size(hwnd, at_least(size, options.min_size), dpi);
         // With a frame of its own the window works its client area out again, our way.
         let mut flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED;
         if !options.centered {

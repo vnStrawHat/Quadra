@@ -114,6 +114,22 @@ fn a_resize_changes_what_the_window_reports_and_says_so() {
 }
 
 #[test]
+fn a_window_is_held_at_its_minimum_size() {
+    let p = HeadlessPlatform::new();
+    let mut log = Log::new(&p);
+    let small = WindowOptions::new("w").size(300.0, 500.0).min_size(400.0, 200.0);
+    let w = p.open_window(&small).unwrap();
+    assert_eq!(w.size(), Size::new(400.0, 500.0)); // opened smaller: grown to the minimum
+    p.resize(w.id(), Size::new(100.0, 100.0), 1.0);
+    assert_eq!(w.size(), Size::new(400.0, 200.0));
+    p.step(&mut log);
+    let said = log.take(); // the event carries the size held, not the one asked for
+    assert!(said.len() == 1 && said[0].contains("width: 400.0, height: 200.0"), "{said:?}");
+    p.resize(w.id(), Size::new(500.0, 300.0), 1.0);
+    assert_eq!(w.size(), Size::new(500.0, 300.0));
+}
+
+#[test]
 fn a_waker_fired_on_another_thread_wakes_the_loop_once() {
     let p = HeadlessPlatform::new();
     let mut log = Log::new(&p);

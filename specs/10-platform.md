@@ -56,6 +56,10 @@ pub trait PlatformHandler {
   an event at once (setting a title, moving a window). The platform queues such an event and
   delivers it when the handler returns. `hit_test`, which must answer at once, answers
   `Client` in that case.
+- **A minimum size.** `WindowOptions::min_size(w, h)` is the smallest content size, in logical
+  pixels, the user can drag the window to. A window asked to open smaller, by `size`, `fit` or a
+  remembered placement, opens at the minimum; the minimum wins over `fit`. The headless
+  platform holds `resize` at it, and the `Resize` event carries the size held.
 - **Windows with their own frame.** `WindowOptions::custom_frame()` asks for a window whose
   content covers where the OS would draw a caption: the app draws the title bar. The OS
   keeps moving, resizing and snapping the window, and for that asks what a point is:
@@ -135,6 +139,11 @@ A second OS adds a second native crate. Nothing above the traits changes.
 As behaviour/02 notes it (first written for the V implementation):
 
 - Per-monitor DPI awareness v2; a scale change resizes the window as the OS suggests.
+- A minimum size is answered in `WM_GETMINMAXINFO`: the minimum content times the window's DPI
+  of the moment (read at each message, so right after a DPI change), plus the frame
+  `AdjustWindowRectExForDpi` gives for the window's style. With a frame of its own only the
+  borders that resize are added, as the content covers the caption, so the minimum is the
+  content the user sees.
 - The modal move and resize loop: frames keep being drawn while the user drags a border, and
   content stays in step with the window edge.
 - Custom titlebar: the app draws it; the OS keeps resizing, snapping and the snap layouts

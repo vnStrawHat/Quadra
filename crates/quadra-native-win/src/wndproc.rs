@@ -126,6 +126,15 @@ impl WindowState {
                 self.resized();
                 done
             }
+            // The OS holds a drag of the border at the frame of the minimum content, worked
+            // out at the window's DPI of now: right after a change of display too.
+            WM_GETMINMAXINFO => {
+                // SAFETY: with this message `lparam` points at the sizes the window is held to.
+                let held = unsafe { &mut (*(lparam.0 as *mut MINMAXINFO)).ptMinTrackSize };
+                let (w, h) = self.min_frame(hwnd);
+                *held = POINT { x: held.x.max(w), y: held.y.max(h) };
+                done
+            }
             WM_CLOSE => {
                 self.emit(PlatformEvent::CloseRequested);
                 done

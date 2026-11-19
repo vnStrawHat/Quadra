@@ -2,6 +2,7 @@
 //! shell, the tray, one instance, crash reports and passwords. What shows something to the user is
 //! never run by a test: those are manual checks.
 
+mod assoc;
 pub mod console;
 mod crash;
 mod instance;

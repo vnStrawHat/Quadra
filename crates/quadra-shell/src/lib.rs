@@ -5,6 +5,7 @@
 //! module is the same on every OS; an OS's module, `win` for now, is built only for it.
 
 mod fake;
+mod files;
 #[cfg(windows)]
 mod win;
 
@@ -19,6 +20,7 @@ use quadra_reactive::expect;
 use quadra_render::Renderer;
 
 pub use fake::FakeShell;
+pub use files::{Associations, FileTypes, RegValue, default_apps_page, registration, same_program};
 
 /// What the app's process has used (specs/16, "Process usage"): processor time since it
 /// started, its memory in bytes, its threads.
@@ -211,14 +213,15 @@ pub enum Instance {
     Second,
 }
 
-/// Gives the app's views the OS's dialogs, opener, tray, meter and sounds ([`dialogs`],
-/// [`opener`], [`tray`], `Rc<dyn Meter>`, `Rc<dyn Sounds>`).
+/// Gives the app's views the OS's dialogs, opener, tray, meter, sounds and file types
+/// ([`dialogs`], [`opener`], [`tray`], `Rc<dyn Meter>`, `Rc<dyn Sounds>`,
+/// `Rc<dyn Associations>`).
 #[cfg(windows)]
 pub fn install<R: Renderer>(app: App<R>) -> App<R> {
     let shell = Rc::new(WinShell);
     let app = app.provide::<Rc<dyn Dialogs>>(shell.clone()).provide::<Rc<dyn Opener>>(shell.clone());
     let app = app.provide::<Rc<dyn Tray>>(shell.clone()).provide::<Rc<dyn Meter>>(shell.clone());
-    app.provide::<Rc<dyn Sounds>>(shell)
+    app.provide::<Rc<dyn Sounds>>(shell.clone()).provide::<Rc<dyn Associations>>(shell)
 }
 
 /// The app's tray. Call it while a view is built.

@@ -135,6 +135,32 @@ For a program of the bench that writes to the console it runs in (`bench/doomfir
 the output, the UTF-8 code page; false when the output is no console), `console::write(bytes)`
 (`WriteConsoleA`, all of it; the bytes as they are when the output is no console).
 
+## File types
+
+An app says which kinds of file it opens (`FileTypes`: its name as registered, its vendor,
+what it is, what its documents are called, their extensions, its executable), and the trait
+`Associations` registers it for them, says which program opens a kind now, and shows where
+the user makes it the default.
+
+- **What is written** is a pure function, `registration(&FileTypes)`, of values under
+  `HKEY_CURRENT_USER` alone (nothing machine-wide, no administrator):
+  - the program identifier `<Vendor>.<Name>.Document`, named as the documents are, with the
+    executable's first icon (`DefaultIcon`) and `"<exe>" "%1"` as its open command;
+  - each extension's `OpenWithProgids` naming it, and the executable's `SupportedTypes` under
+    `Software\Classes\Applications\<exe name>`: it is offered in "Open with";
+  - its capabilities (`Software\<Vendor>\<Name>\Capabilities`: its name, its description,
+    the extensions it takes), named in `Software\RegisteredApplications`.
+  `WinShell` writes them as strings and tells the shell associations changed
+  (`SHChangeNotify`). The fake records what it was asked.
+- **The default is the user's to choose.** Windows lets no program make itself the default
+  for a kind of file: `choose_default` opens the system's Default apps page at the app
+  (`ms-settings:defaultapps?registeredAppUser=<name>`, Windows 11 21H2 with the update of
+  2023-04 and later), where the user chooses.
+- **Which program opens a kind** now is the shell's answer (`AssocQueryStringW`, the
+  executable), so an app can say whether it is the one.
+- Tests never write the registry: they use the fake, and the function's values are unit
+  tested.
+
 ## Packaging
 
 `tools/package.sh <example>` builds the release binary of an example with

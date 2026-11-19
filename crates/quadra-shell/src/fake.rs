@@ -22,6 +22,8 @@ pub struct FakeShell {
     asked: Rc<RefCell<Vec<String>>>,
     tray: RefCell<Option<Sender<TrayEvent>>>,
     usage: std::cell::Cell<Option<Usage>>,
+    /// What opens each extension, as a test says.
+    openers: RefCell<std::collections::HashMap<String, PathBuf>>,
 }
 
 impl FakeShell {
@@ -37,6 +39,12 @@ impl FakeShell {
         provide::<Rc<dyn Tray>>(self.clone());
         provide::<Rc<dyn Meter>>(self.clone());
         provide::<Rc<dyn Sounds>>(self.clone());
+        provide::<Rc<dyn crate::Associations>>(self.clone());
+    }
+
+    /// The program the fake says opens files of `extension` from now on.
+    pub fn set_opener(&self, extension: &str, program: impl Into<PathBuf>) {
+        self.openers.borrow_mut().insert(extension.to_string(), program.into());
     }
 
     /// What the meter reads from now on.
@@ -95,6 +103,24 @@ impl Dialogs for FakeShell {
         self.ask("message", &message.title);
         let none = if message.kind == crate::MessageKind::Question { Answer::Cancel } else { Answer::Ok };
         self.answers.borrow_mut().pop_front().unwrap_or(none)
+    }
+}
+
+/// Registering is recorded, and makes the fake say the app opens its extensions: what the
+/// user would choose on the page `choose_default` shows.
+impl crate::Associations for FakeShell {
+    fn register(&self, types: &crate::FileTypes) -> Result<(), String> {
+        self.ask("register", &format!("{} {}", types.prog_id(), types.extensions.join(" ")));
+        Ok(())
+    }
+
+    fn opener_of(&self, extension: &str) -> Option<PathBuf> {
+        self.openers.borrow().get(extension).cloned()
+    }
+
+    fn choose_default(&self, types: &crate::FileTypes) -> bool {
+        self.ask("choose default", &types.name);
+        true
     }
 }
 

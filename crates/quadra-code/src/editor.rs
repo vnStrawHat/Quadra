@@ -2,6 +2,7 @@
 //! widget, and what edits it (typed text, composition, the commands of its keys, the
 //! clipboard, the pointer, the caret's blink).
 
+mod edit;
 mod find_bar;
 mod keys;
 mod marks;
@@ -17,11 +18,13 @@ use std::time::Instant;
 
 use quadra_platform::{Clipboard, Cursor, Mods};
 use quadra_reactive::{Signal, signal, use_context};
-use quadra_tree::{NodeId, PointerKind, Style, TextValues, Tree};
+use quadra_tree::{NodeId, PointerKind, Style, TextValues};
 use quadra_view::{MountCx, NodeRef, View, column, div, scroll, show};
 
+use edit::{edit, rows_by};
 use find_bar::Finding;
 
+pub use edit::EditorHandle;
 pub use keys::{EDITOR_CONTEXT, EditorCommand, bind_keys};
 pub use marks::{Mark, marks};
 pub use widget::{EditorWidget, KeptDoc};
@@ -41,6 +44,8 @@ pub struct Editor {
     changed: Option<Signal<bool>>,
     top: Option<Signal<usize>>,
     kept: Option<KeptDoc>,
+    edited: Option<Signal<u64>>,
+    reach: Option<EditorHandle>,
 }
 
 /// A code editor over a text, in the kit's mono face at 15 px with lines of 25. Give it a
@@ -57,6 +62,8 @@ pub fn editor(text: impl Into<String>) -> Editor {
         changed: None,
         top: None,
         kept: None,
+        edited: None,
+        reach: None,
     }
 }
 
@@ -113,6 +120,19 @@ impl Editor {
         self
     }
 
+    /// The document's version, set after each change of the text: read the text when it
+    /// moves, not on every key.
+    pub fn edited(mut self, version: Signal<u64>) -> Self {
+        self.edited = Some(version);
+        self
+    }
+
+    /// What reaches the editor from outside it while it is mounted.
+    pub fn handle(mut self, reach: EditorHandle) -> Self {
+        self.reach = Some(reach);
+        self
+    }
+
     /// The size of the text and the height of a line, in pixels.
     pub fn font(mut self, size: f32, line: f32) -> Self {
         self.font = (size, line);
@@ -137,51 +157,6 @@ impl View for Editor {
     }
 }
 
-/// Runs `f` on the editor's widget, as at `at` on the window's clock (when the event came),
-/// then has it painted again (laid out again when its count of lines changed) with its
-/// caret in view.
-fn edit(
-    tree: &mut Tree,
-    id: NodeId,
-    (epoch, at): (Instant, Instant),
-    f: impl FnOnce(&mut EditorWidget, usize),
-) {
-    let now = at.saturating_duration_since(epoch).as_millis() as u64;
-    // A page is the lines of the view the editor scrolls in.
-    let view = tree.parent(id).map_or(0.0, |port| tree.rect(port).height);
-    let Some(w) = tree.widget_mut::<EditorWidget>(id) else { return };
-    w.sync_rows();
-    let (lines, version, rows) = (w.doc.buffer.line_count(), w.doc.version, w.row_count());
-    let held = (w.doc.primary().anchor, w.doc.primary().head);
-    w.doc.now = now;
-    f(w, ((view / w.line_px) as usize).max(1));
-    w.caret_on = true; // a caret in use does not blink away
-    w.follow_caret();
-    w.sync_rows();
-    let changed = w.doc.version != version;
-    let moved = (w.doc.primary().anchor, w.doc.primary().head) != held;
-    let relaid = w.doc.buffer.line_count() != lines || w.row_count() != rows;
-    if changed && w.find.is_some() {
-        w.refind_changed(); // the matches of the text as it is now
-    }
-    if changed {
-        w.remark();
-    }
-    let caret = w.caret_rect();
-    if relaid {
-        tree.mark_layout(id);
-    }
-    tree.mark_paint(id);
-    if changed || relaid || moved {
-        tree.update_semantics(id, |_| {}); // the text, the caret and the selection, for a reader
-    }
-    if relaid {
-        tree.after_layout(move |tree| tree.scroll_rect_into_view(id, caret));
-    } else {
-        tree.scroll_rect_into_view(id, caret);
-    }
-}
-
 /// The widget, and what the find bar shares with it.
 struct Surface {
     editor: Editor,
@@ -201,6 +176,7 @@ impl View for Surface {
         widget.prose = matches!(tokenizer, Tokenizer::Plain | Tokenizer::Markdown);
         widget.base = editor.base.as_deref().map(marks::Base::new);
         widget.changed = editor.changed;
+        widget.edited = editor.edited;
         if let Some(doc) = editor.kept.as_ref().and_then(|it| it.take()) {
             widget.doc = doc;
             widget.doc.dirty = 0; // coloured again from the start
@@ -217,6 +193,9 @@ impl View for Surface {
         cx.tree.set_cursor(id, Some(Cursor::Text));
         cx.tree.set_key_context(id, EDITOR_CONTEXT);
         slot.set(Some(id));
+        if let Some(reach) = &editor.reach {
+            reach.mounted(cx.handle.clone(), id, epoch);
+        }
         find_bar::follow(cx, id, find);
 
         let writer = cx.handle.clone();
@@ -283,17 +262,5 @@ impl View for Surface {
         time::blink(cx, id);
         pointer::pointer(cx, id, epoch, editor_link);
         id
-    }
-}
-
-/// How many rows a motion goes, down; none for one that is not up or down.
-fn rows_by(motion: crate::doc::Move, page: usize) -> Option<isize> {
-    use crate::doc::Move;
-    match motion {
-        Move::Up => Some(-1),
-        Move::Down => Some(1),
-        Move::PageUp => Some(-(page as isize)),
-        Move::PageDown => Some(page as isize),
-        _ => None,
     }
 }

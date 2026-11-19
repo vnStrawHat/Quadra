@@ -41,6 +41,8 @@ pub type KeptDoc = Rc<RefCell<Option<Doc>>>;
 
 pub struct EditorWidget {
     pub doc: Doc,
+    /// Told the document's version after each change of the text.
+    pub(super) edited: Option<Signal<u64>>,
     /// Given the document when the widget goes.
     pub(super) kept: Option<KeptDoc>,
     /// What colours its lines.
@@ -94,6 +96,7 @@ impl EditorWidget {
     pub fn new(text: &str, highlight: Box<dyn Highlight>) -> EditorWidget {
         EditorWidget {
             doc: Doc::new(text),
+            edited: None,
             highlight,
             find: None,
             matches: Vec::new(),

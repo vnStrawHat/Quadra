@@ -1268,6 +1268,12 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
 - `.top_line(line)`: the line at the top of the view, a signal kept as it scrolls (the
   wheel, the keys); setting it scrolls that line to the top, as far as the view goes, and
   the line it then shows is told back. For a preview that follows the editor.
+- `.edited(signal)`: the document's version, set after each change of the text (an app's
+  preview reads the text when it moves, not on every key). `.handle(EditorHandle)`: what
+  reaches the editor from outside it while it is mounted (`is_mounted`). `read(f)` runs `f`
+  on its widget in the tree's next pass, and `edit(f)` changes it there as a key would: then
+  it is coloured, marked, laid out and painted again, the caret in view and the reader told.
+  A toolbar's button and a save go through it.
 - A character whose glyph is wider or narrower than the cells it takes (one of two cells
   in a face without it) is drawn in the middle of them.
 - In markup what a `<script>` holds is read as JavaScript and what a `<style>` holds as

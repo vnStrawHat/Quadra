@@ -20,6 +20,7 @@ quadra-code = { path = "../../crates/quadra-code" }
 quadra-design = { path = "../../crates/quadra-design" }
 quadra-md = { path = "../../crates/quadra-md" }
 quadra-shell = { path = "../../crates/quadra-shell" }
+quadra-text = { path = "../../crates/quadra-text" }
 quadra-tree = { path = "../../crates/quadra-tree" }
 
 [dev-dependencies]

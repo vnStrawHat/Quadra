@@ -1,11 +1,15 @@
 //! The bar along the top (specs/21, "Window"): the file's name, the unsaved mark, the layout.
 
 use quadra::{Align, Display, Div, div, row, text};
-use quadra_design::{Size, segmented, token};
+use quadra_design::{Size, icon_button, icons, segmented, token, tooltip};
 
+use crate::files::Files;
 use crate::model::Model;
 
-pub(crate) fn bar(model: &Model) -> Div {
+pub(crate) fn bar(model: &Model, files: &Files) -> Div {
+    let (opens, saves) = (files.clone(), files.clone());
+    let open = icon_button(icons::FOLDER_OPEN, "Open").on_click(move || opens.open());
+    let save = icon_button(icons::SAVE, "Save").on_click(move || saves.save(|| {}));
     let (m, changed) = (model.clone(), model.changed);
     let name = div().font_weight(600).text_size(13.0).child(text(move || m.name()));
     let dot = div()
@@ -29,4 +33,6 @@ pub(crate) fn bar(model: &Model) -> Div {
         .child(dot)
         .child(div().grow(1.0))
         .child(layout)
+        .child(tooltip("Open (Ctrl+O)", open))
+        .child(tooltip("Save (Ctrl+S)", save))
 }

@@ -137,7 +137,7 @@ whose every cell changes every frame, costs what the V build's costs.
 | Milestone | Status |
 |---|---|
 | M1 the window, a file opened in Preview, the layouts | Done (2026-11-19): `apps/markdown` (`MdApp`, `Model`, the bar, the three layouts by the bar's segmented control and Ctrl+1, 2, 3; the window's title by `Window::set_title`, new: `WindowRequest::Title`). `tests/layouts.rs` (3); `bench/markdown-shots` draws the sample in each layout |
-| M2 the editor, files | Not yet |
+| M2 the editor, files | Done (2026-11-19): the editor (prose wrapped, its changes marked against the text saved, the unsaved dot), the preview 120 ms after the last edit, New, Open, Save (beside the file, renamed over it; CR LF kept), Save as, a file dropped, links (Ctrl: a heading, an address, a document beside), and the question before unsaved work is lost (New, Open, closing). New in `quadra-code`: `Editor::edited`, `EditorHandle` (`read`, `edit`; `tests/handle.rs`); new icons `folder-open`, `heading-1..3`, `list-todo`. `tests/files.rs` (4) |
 | M3 panes by headings | Not yet |
 | M4 the toolbar | Not yet |
 | M5 the logo | Not yet |

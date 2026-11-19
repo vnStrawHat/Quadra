@@ -53,12 +53,13 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 - The preview's text column is at most 760 px wide, centred, with 32 px of room at the sides.
 - The editor wraps lines (prose), uses the kit's mono face at 14 px with lines of 22 px, and
   colours the text as Markdown.
-- In Preview, a link opens with a plain click.
-  - A link to an address opens with the OS's opener.
-  - A link to `#anchor` scrolls to that heading.
-  - A link to another `.md` file next to this one opens it here, asking first when there is
-    unsaved work.
-- In the editor, a link opens with Ctrl held.
+- A link opens with Ctrl held, in the preview and in the editor alike. A document may not be
+  the user's, so a plain click opens nothing (13, "Markdown").
+  - A link to an address opens with the OS's opener, if it is one that opens
+    (`url_openable`).
+  - A link to `#anchor` scrolls the preview to that heading.
+  - A link to another `.md` file, by a path from this one's folder, opens it here. It asks
+    first when there is unsaved work.
 
 ## Files
 

@@ -927,6 +927,7 @@ dependencies = [
  "quadra-md",
  "quadra-shell",
  "quadra-testing",
+ "quadra-text",
  "quadra-tree",
 ]
 

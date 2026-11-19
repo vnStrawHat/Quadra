@@ -4,7 +4,7 @@
 use std::path::{Path, PathBuf};
 
 use quadra::{Signal, batch, signal};
-use quadra_code::KeptDoc;
+use quadra_code::{EditorHandle, KeptDoc};
 use quadra_design::{Notices, Tone, notices};
 
 /// The layouts, in the order of the bar's segmented control.
@@ -19,6 +19,8 @@ pub struct Model {
     pub path: Signal<Option<PathBuf>>,
     /// The text the preview shows: as read, then as edited.
     pub text: Signal<String>,
+    /// The text as last read or saved: what the editor's marks and `changed` compare with.
+    pub saved: Signal<String>,
     /// Counts the documents opened: the editor is built again for each.
     pub opened: Signal<u64>,
     pub layout: Signal<usize>,
@@ -26,7 +28,12 @@ pub struct Model {
     pub share: Signal<f32>,
     /// The text is not what was last read or saved.
     pub changed: Signal<bool>,
-    /// The editor's document while it is not shown: its text, cursors and undo.
+    /// The editor's document's version, after each change of its text.
+    pub edited: Signal<u64>,
+    /// The source line the preview brings into view (a link to a heading).
+    pub reveal: Signal<Option<usize>>,
+    /// The editor while it shows, and its document while it does not.
+    pub editor: EditorHandle,
     pub doc: KeptDoc,
     pub notices: Notices,
 }
@@ -37,10 +44,14 @@ impl Model {
         Model {
             path: signal(None),
             text: signal(String::new()),
+            saved: signal(String::new()),
             opened: signal(0),
             layout: signal(PREVIEW),
             share: signal(0.5),
             changed: signal(false),
+            edited: signal(0),
+            reveal: signal(None),
+            editor: EditorHandle::default(),
             doc: KeptDoc::default(),
             notices: notices().above(0.0),
         }
@@ -63,10 +74,44 @@ impl Model {
         self.doc.borrow_mut().take();
         batch(|| {
             self.path.set(path);
+            self.saved.set(text.clone());
             self.text.set(text);
             self.changed.set(false);
             self.layout.set(PREVIEW);
             self.opened.update(|n| *n += 1);
+        });
+    }
+
+    /// Calls `f` with the text as the file is to have it (its line ends as read): the
+    /// editor's, its kept document's, or the text as read when it was never edited. The
+    /// editor's is read in the tree's next pass.
+    pub fn file_text(&self, f: impl FnOnce(String) + 'static) {
+        if self.editor.is_mounted() {
+            return self.editor.read(move |w| f(w.doc.buffer.file_text()));
+        }
+        let kept = self.doc.borrow().as_ref().map(|doc| doc.buffer.file_text());
+        f(kept.unwrap_or_else(|| self.text.get_untracked()));
+    }
+
+    /// The text the editor holds now, its lines ended by `\n`, for the preview.
+    pub fn refresh(&self) {
+        let text = self.text;
+        if self.editor.is_mounted() {
+            return self.editor.read(move |w| text.set(w.doc.text()));
+        }
+        if let Some(now) = self.doc.borrow().as_ref().map(|doc| doc.text()) {
+            text.set(now);
+        }
+    }
+
+    /// The text was written to `path`: it is the file now, and nothing is unsaved.
+    pub fn saved_as(&self, path: PathBuf, text: String) {
+        let base = text.replace("\r\n", "\n");
+        self.editor.read(move |w| w.set_base(&base));
+        batch(|| {
+            self.path.set(Some(path));
+            self.saved.set(text);
+            self.changed.set(false);
         });
     }
 

@@ -27,6 +27,7 @@ struct Bar {
     query: Signal<String>,
     case: Signal<bool>,
     word: Signal<bool>,
+    pattern: Signal<bool>,
 }
 
 /// `inner` (the space's terminal) with the find bar over it while it is open.
@@ -49,12 +50,14 @@ impl<V: View + 'static> View for Around<V> {
             query: signal(was.text),
             case: signal(was.case),
             word: signal(was.word),
+            pattern: signal(was.pattern),
         };
         // What the bar says is looked for, while it is open; closed, nothing.
         let (finds, finding) = (session.clone(), Cell::new(false));
         effect(move || {
             let open = b.open.get();
-            let query = FindQuery { text: b.query.get(), case: b.case.get(), word: b.word.get() };
+            let (case, word, pattern) = (b.case.get(), b.word.get(), b.pattern.get());
+            let query = FindQuery { text: b.query.get(), case, word, pattern };
             if open || finding.replace(false) {
                 finding.set(open);
                 finds.find(&if open { query } else { FindQuery::default() });
@@ -97,7 +100,7 @@ impl<V: View + 'static> View for Around<V> {
     }
 }
 
-/// The bar: the query, Match case and Whole word, the count, a rule, Previous, Next, Close.
+/// The bar: the query, Match case, Whole word and Regular expression, the count, a rule, Previous, Next, Close.
 fn bar(b: Bar, s: &Session, close: Rc<dyn Fn()>, at: NodeRef) -> Div {
     let step = |back: bool| {
         let s = s.clone();
@@ -130,6 +133,7 @@ fn bar(b: Bar, s: &Session, close: Rc<dyn Fn()>, at: NodeRef) -> Div {
         .child(query)
         .child(switch(icons::CASE_SENSITIVE, "Match case", b.case))
         .child(switch(icons::WHOLE_WORD, "Whole word", b.word))
+        .child(switch(icons::REGEX, "Regular expression", b.pattern))
         .child(div().padding_x(6.0).child(count))
         .child(rule)
         .child(div().width(4.0))

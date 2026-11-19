@@ -124,8 +124,10 @@ pub const CASE_SENSITIVE: &str =
     r#"<path d="m3 15 4-8 4 8"/><path d="M4 13h6"/><circle cx="18" cy="12" r="3"/><path d="M21 9v6"/>"#;
 /// Whole words: two letters on a line.
 pub const WHOLE_WORD: &str = r#"<circle cx="7" cy="12" r="3"/><path d="M10 9v6"/><circle cx="17" cy="12" r="3"/><path d="M14 7v8"/><path d="M22 17v1c0 .5-.5 1-1 1H3c-.5 0-1-.5-1-1v-1"/>"#;
+/// A regular expression: a star and a dot.
+pub const REGEX: &str = r#"<path d="M17 3v10"/><path d="m12.67 5.5 8.66 5"/><path d="m12.67 10.5 8.66-5"/><path d="M9 17a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2z"/>"#;
 /// Every icon, with the name it is known by: what a catalogue of them shows.
-pub const ALL: [(&str, &str); 103] = [
+pub const ALL: [(&str, &str); 104] = [
     ("app-window", APP_WINDOW),
     ("arrow-down", ARROW_DOWN),
     ("arrow-left", ARROW_LEFT),
@@ -224,6 +226,7 @@ pub const ALL: [(&str, &str); 103] = [
     ("upload", UPLOAD),
     ("user", USER),
     ("whole-word", WHOLE_WORD),
+    ("regex", REGEX),
     ("workflow", WORKFLOW),
     ("x", X),
     ("zap", ZAP),

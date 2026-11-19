@@ -181,8 +181,8 @@ over its terminal, and puts the focus in its query; pressed again it gives the f
 query. The bar is one row of 28 px in the kit's pieces, 4 px inside its plane: the query (`input`,
 small, 28 px, 220 wide or less in a narrow space (96 at least: the bar stays inside it), the search
 icon before it, placeholder and name "Find"; the error colour
-while it finds nothing), the switches Match case and Whole word as toggled icon buttons (the
-icons `case-sensitive`, `whole-word`: the accent while on), the count in 12 px of the second
+while it finds nothing), the switches Match case, Whole word and Regular expression as toggled icon buttons (the
+icons `case-sensitive`, `whole-word`, `regex`: the accent while on), the count in 12 px of the second
 text colour in a box of 64 px so the row does not move ("3 of 12", "No results" in the third,
 nothing while the query is empty), a rule, then Previous match and Next match (off while
 nothing is found) and Close as icon buttons; on the overlay colour with a line, the middle
@@ -232,7 +232,7 @@ all on but where it says. A change applies at once (`Engine::set_config`).
 | OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else `idle` in the third text colour | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
 | OSC 9;4 progress | the percentage in mono and the accent at the end, a 2 px accent bar along the row's lower seam | the percentage | `build`, a 56 px line and the percentage | |
 | BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the title bar's count | |
-| OSC 9, 777, 99 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and `OSC 9`), 6 s or until dismissed (setting) |
+| OSC 9, 777, 99 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and the sequence: `OSC 9`, `OSC 777` or `OSC 99`), 6 s or until dismissed (setting) |
 
 OSC 99 in full (`Config::notifications` declares every ability: focus, report, close events,
 unfocused, invisible, icons, buttons, close, alive, sounds, urgency, expiry): a notification's

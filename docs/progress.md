@@ -171,9 +171,9 @@ whose every cell changes every frame, costs what the V build's costs.
   title bar's controls are in reach (`tests/lock.rs`).
 - The gallery's Toast page shows a card with another icon and one with a picture (`Notice::icon`,
   `picture`; a test in `crates/quadra-design/tests/notices.rs`).
-- Asked of the engine: a public way to turn a byte range of `GridText` into a match, for
-  finding by a pattern with the `regex-lite` Quadra has (oneterm-vt #6), and which sequence a
-  notification came from (#7).
+- On oneterm-vt v0.4.1: finding by a regular expression (`FindQuery::pattern`, `regex-lite`
+  through `GridText::span`; the find bar's Regular expression switch; `tests/find.rs`), and a
+  card that names the sequence it came from (`Notice::source`; `tests/notices.rs`).
 
 ### Saved passwords, Connect all, the editor's menu (2026-11-17)
 

@@ -12,7 +12,9 @@ use quadra::{Window, untrack, use_context};
 use quadra_design::{Notice, Tone, icons};
 use quadra_shell::{Sound, Sounds};
 use quadra_term::vt::input::NotificationReport;
-use quadra_term::vt::{NotificationExpiry, NotificationOccasion, NotificationSupport, NotificationUrgency};
+use quadra_term::vt::{
+    NotificationExpiry, NotificationOccasion, NotificationSource, NotificationSupport, NotificationUrgency,
+};
 use quadra_term::{Notice as Told, Session};
 
 use crate::model::Model;
@@ -169,7 +171,12 @@ impl Model {
             NotificationExpiry::After(ms) => Some(Duration::from_millis(ms.into())),
             NotificationExpiry::Platform => lasts,
         };
-        let mut card = Notice::new(title).body(words).note(format!("{} \u{B7} OSC 9", self.tab_name(id)));
+        let source = match n.source {
+            Some(NotificationSource::Osc777) => "OSC 777",
+            Some(NotificationSource::Osc99) => "OSC 99",
+            _ => "OSC 9",
+        };
+        let mut card = Notice::new(title).body(words).note(format!("{} \u{B7} {source}", self.tab_name(id)));
         card = card.tone(if critical { Tone::Danger } else { Tone::Info });
         if let Some(time) = lasts {
             card = card.lasts(time);

@@ -158,3 +158,14 @@ fn an_icon_is_a_name_first_else_its_data_kept_by_its_id_and_a_named_sound_plays(
     a.feed(0, b"\x1b]99;s=ZXJyb3I=;Failed\x1b\\\x1b]99;s=c2lsZW50;Quiet\x1b\\\x1b]99;s=Ymxvb3A=;Odd\x1b\\");
     assert_eq!(a.shell.asked(), ["sound: Error", "sound: Default"]);
 }
+
+#[test]
+fn a_card_names_the_sequence_it_came_from() {
+    let mut a = app();
+    a.feed(0, b"\x1b]9;plain\x07\x1b]777;notify;Shell;done\x07\x1b]99;;kitty\x1b\\");
+    assert_eq!(a.cards(), 3);
+    for source in ["OSC 9", "OSC 777", "OSC 99"] {
+        let said = format!("\u{B7} {source}");
+        assert_eq!(a.h.query(|n| n.semantics.name.ends_with(&said)).len(), 1, "{source}");
+    }
+}

@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use quadra::{Appearance, Settings, Signal, Theme, effect, signal, untrack, use_context};
+use quadra::{Appearance, Settings, Signal, Theme, use_context};
 
 mod look;
 
@@ -113,11 +113,11 @@ impl Prefs {
 
     fn of(s: &Settings) -> Prefs {
         Prefs {
-            theme: choice(s, "appearance.theme", &THEMES),
-            colour_theme: choice(s, "appearance.colour_theme", &COLOUR_THEMES),
+            theme: s.choice("appearance.theme", &THEMES),
+            colour_theme: s.choice("appearance.colour_theme", &COLOUR_THEMES),
             ui_text: s.value("appearance.ui_text_percent", 100.0),
             look: LookPrefs::of(s),
-            cursor: choice(s, "terminal.cursor", &CURSORS),
+            cursor: s.choice("terminal.cursor", &CURSORS),
             blink: s.value("terminal.cursor_blink", false),
             scrollback: s.value("terminal.scrollback", 10_000.0),
             context_menu: s.value("mouse.context_menu", true),
@@ -129,7 +129,7 @@ impl Prefs {
             shell_program: s.value("terminal.shell_program", String::new()),
             last_dir: s.value("terminal.last_dir", String::new()),
             shell_args: s.value("terminal.shell_args", String::new()),
-            start: choice(s, "terminal.start_in", &STARTS),
+            start: s.choice("terminal.start_in", &STARTS),
             force_links: s.value("terminal.force_hyperlink", true),
             vertical: s.value("tabs.vertical", true),
             rail_width: s.value("tabs.rail_width", 248.0),
@@ -137,20 +137,20 @@ impl Prefs {
             dock_local: s.value("sftp.dock_open_local", false),
             dock_ssh: s.value("sftp.dock_open_ssh", true),
             dock_width: s.value("sftp.dock_width", 300.0),
-            tab_title: choice(s, "tabs.title", &TITLES),
+            tab_title: s.choice("tabs.title", &TITLES),
             keepalive_on: s.value("ssh.keepalive", true),
             log_local: s.value("logging.local", false),
             log_ssh: s.value("logging.ssh", false),
             log_folder: s.value("logging.folder", String::new()),
-            log_mode: choice(s, "logging.write_mode", &crate::logs::MODES),
+            log_mode: s.choice("logging.write_mode", &crate::logs::MODES),
             keepalive_secs: s.value("ssh.keepalive_interval_secs", 30.0),
             keepalive_max: s.value("ssh.keepalive_max", 3.0),
-            status_shown: choice(s, "signals.status", &STATUS_SHOWN),
+            status_shown: s.choice("signals.status", &STATUS_SHOWN),
             toast_blocked: s.value("signals.status_toast", true),
             progress_tab: s.value("signals.progress_tab", true),
             progress_bar: s.value("signals.progress_status_bar", true),
-            bell: choice(s, "signals.bell", &BELLS),
-            notices: choice(s, "signals.notifications", &NOTICES),
+            bell: s.choice("signals.bell", &BELLS),
+            notices: s.choice("signals.notifications", &NOTICES),
             show_git: s.value("status_bar.git", true),
             show_usage: s.value("status_bar.usage", true),
             show_clock: s.value("status_bar.clock", true),
@@ -164,7 +164,7 @@ impl Prefs {
             secrets: s.value("ssh.secrets", Vec::new()),
             startup: s.value("ssh.startup", Vec::new()),
             downloads: s.value("sftp.downloads", String::new()),
-            editor: choice(s, "sftp.editor", &crate::sftp::EDITORS),
+            editor: s.choice("sftp.editor", &crate::sftp::EDITORS),
             editor_program: s.value("sftp.editor_program", String::new()),
             editor_args: s.value("sftp.editor_args", String::new()),
             edit_limit_kb: s.value("sftp.edit_max_kb", 1024.0),
@@ -219,27 +219,6 @@ pub static COLOUR_THEMES: std::sync::LazyLock<Vec<&'static str>> = std::sync::La
 });
 /// What stands for no colour theme: the kit's, as the mode says.
 pub const KIT_THEME: &str = "The kit's";
-
-/// A setting that is one of `options`, kept as its words and given as its index: the two
-/// follow each other. Words the app does not know are the first option.
-pub(crate) fn choice(settings: &Settings, key: &str, options: &'static [&'static str]) -> Signal<usize> {
-    let words = settings.value(key, options[0].to_string());
-    let at = move || options.iter().position(|o| words.with(|w| o == w)).unwrap_or(0);
-    let index = signal(untrack(at));
-    effect(move || {
-        let now = at();
-        if untrack(|| index.get()) != now {
-            index.set(now);
-        }
-    });
-    effect(move || {
-        let at = index.get();
-        if untrack(|| words.get()) != options[at] {
-            words.set(options[at].to_string());
-        }
-    });
-    index
-}
 
 #[cfg(test)]
 #[test]

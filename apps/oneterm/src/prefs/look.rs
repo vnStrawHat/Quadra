@@ -91,7 +91,7 @@ impl LookPrefs {
             font_family: s.value("terminal.font_family", String::new()),
             fallbacks: s.value("terminal.font_fallbacks", FALLBACKS.to_string()),
             line_height: s.value("terminal.line_height", 1.2),
-            weight: crate::prefs::choice(s, "terminal.font_weight", &WEIGHTS),
+            weight: s.choice("terminal.font_weight", &WEIGHTS),
             cell_width: s.value("terminal.cell_width", 0.0),
             padding: PADDING.map(|(key, _, default)| s.value(key, default)),
             colors: COLORS.map(|(key, _)| s.value(key, color_default(key).to_string())),

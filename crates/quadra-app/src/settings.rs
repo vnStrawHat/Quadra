@@ -11,7 +11,7 @@ use std::rc::{Rc, Weak};
 use std::time::Duration;
 
 use quadra_async::{Timer, Timers, timeout};
-use quadra_reactive::{Scope, Signal, effect, signal, use_context};
+use quadra_reactive::{Scope, Signal, effect, signal, untrack, use_context};
 use serde_json::{Map, Value};
 
 use crate::log;
@@ -146,6 +146,30 @@ impl Settings {
             pending: RefCell::default(),
             scope: Scope::current(),
             me: me.clone(),
+        })
+    }
+
+    /// A setting that is one of `options`, kept as its words (the file reads as a settings
+    /// page does) and given as its index: the two follow each other. Words the app does not
+    /// know are the first option.
+    pub fn choice(&self, key: &str, options: &'static [&'static str]) -> Signal<usize> {
+        let words = self.value(key, options[0].to_string());
+        let at = move || options.iter().position(|o| words.with(|w| o == w)).unwrap_or(0);
+        self.scope.run(|| {
+            let index = signal(untrack(at));
+            effect(move || {
+                let now = at();
+                if untrack(|| index.get()) != now {
+                    index.set(now);
+                }
+            });
+            effect(move || {
+                let at = index.get();
+                if untrack(|| words.get()) != options[at] {
+                    words.set(options[at].to_string());
+                }
+            });
+            index
         })
     }
 

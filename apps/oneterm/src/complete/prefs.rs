@@ -59,7 +59,7 @@ impl CompletePrefs {
             off_in_alt_screen: s.value("completion.disable_in_alt_screen", on.disable_in_alt_screen),
             only_at_prompt: s.value("completion.require_prompt_region", on.require_prompt_region),
             coreutils: s.value("completion.windows_allow_coreutils", on.windows_allow_coreutils),
-            family: crate::prefs::choice(s, "completion.force_family", &FAMILIES),
+            family: s.choice("completion.force_family", &FAMILIES),
             redact: s.value("completion.redact_sensitive", on.redact_sensitive),
         }
     }

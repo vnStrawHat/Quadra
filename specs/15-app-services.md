@@ -27,6 +27,9 @@ tool and the benches never write outside the project; a test that does gives a f
   functions of the trait over `serde_json::Value`). Views read it as any signal and are
   updated; writing it writes the setting. A value of the wrong shape in the file is the
   default.
+- `settings.choice(key, options)` is a setting that is one of a few words, given as the index
+  of its word in `options` (what a select or a segmented control writes) and kept as the word,
+  so the file reads as the settings page does; words the app does not know are the first.
 - Writes are debounced (500 ms after the last change) and atomic: the text goes to
   `name.json.tmp` in the same folder, then is renamed over the file. `save_now` writes at
   once; the app calls it when it ends.

@@ -53,7 +53,18 @@ impl Completion {
 /// What a session was started as, for its family: a local shell's program, or `ssh`.
 struct Started(String);
 
-/// Makes sessions as `make` does, each kept with what it was started as.
+/// How a program's lines are read by its file's name: Command Prompt's, PowerShell's, else a
+/// Unix shell's (SSH reaches one, WSL and Git Bash are).
+fn profile(started: &str) -> quadra_term::ShellProfile {
+    let name = std::path::Path::new(started).file_stem().map(|it| it.to_string_lossy().to_lowercase());
+    match name.as_deref() {
+        Some("cmd") => quadra_term::ShellProfile::Cmd,
+        Some("powershell" | "pwsh") => quadra_term::ShellProfile::PowerShell,
+        _ => quadra_term::ShellProfile::Unix,
+    }
+}
+
+/// Makes sessions as `make` does, each kept with what it was started as and read by its shell.
 pub(crate) fn tagged(make: NewSession) -> NewSession {
     Rc::new(move |launch: crate::Launch| {
         let started = match (&launch.ssh, &launch.shell) {
@@ -62,6 +73,7 @@ pub(crate) fn tagged(make: NewSession) -> NewSession {
             (None, None) => "cmd.exe".to_string(), // the OS's shell
         };
         let session = make(launch);
+        session.set_shell_profile(profile(&started));
         session.keep(Rc::new(Started(started)));
         session
     })

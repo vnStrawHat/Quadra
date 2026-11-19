@@ -134,13 +134,15 @@ impl OneTerm {
                 ),
             ),
         });
-        // Locked, only the lock's card is displayed.
+        // Locked, the workspace shows blurred behind the lock's card and is out of reach: no
+        // reader, press or key gets to it. The settings are not displayed.
         let (open, lock) = (model.ui().settings, model.lock());
         let shows = move |on: bool| move || !lock.locked.get() && open.get() == on;
+        let behind = column().grow(1.0).display(locked::shown(move || !open.get())).inert(lock.locked);
         let body = column()
             .grow(1.0)
             .min_height(0.0)
-            .child(body.container(column().grow(1.0).display(locked::shown(shows(false)))))
+            .child(body.container(behind))
             // Mounted only while open: its fields are built when they are seen.
             .child(quadra::show(shows(true), {
                 let model = model.clone();

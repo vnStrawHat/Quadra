@@ -11,6 +11,9 @@ use crate::lock::Lock;
 use crate::model::Model;
 use crate::page::Back;
 
+/// How far the workspace behind the lock is blurred: no text can be made out.
+const BLUR: f32 = 24.0;
+
 /// Shown while `on` says so, else not displayed (and so not in the semantic tree).
 pub(crate) fn shown(on: impl Fn() -> bool + 'static) -> impl Fn() -> Display + 'static {
     move || if on() { Display::Flex } else { Display::None }
@@ -134,12 +137,18 @@ fn card(model: &Model) -> Div {
         .child(
             row().justify(Justify::End).padding(8.0).border_top(1.0).border_color(token::LINE).child(unlock),
         );
+    // Over the workspace, which it blurs and dims.
     column()
-        .grow(1.0)
+        .absolute()
+        .top(0.0)
+        .left(0.0)
+        .right(0.0)
+        .bottom(0.0)
         .align_items(Align::Center)
         .padding_top(42.0)
         .padding_x(16.0)
-        .bg(token::PANEL)
+        .backdrop_blur(BLUR)
+        .bg(token::SCRIM)
         .display(shown(move || lock.locked.get()))
         .child(card)
 }

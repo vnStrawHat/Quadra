@@ -112,6 +112,10 @@ a panel of 248 px at the left.
 
 ## Spaces
 
+A space's terminal reads its lines by its shell (specs/18, `ShellProfile`): `cmd.exe` as
+Command Prompt's, `powershell.exe` and `pwsh.exe` as PowerShell's, anything else (Git Bash,
+WSL, a host over SSH) as a Unix shell's, by the file name of what it started.
+
 A tab holds one or more spaces laid out by a pane tree (the kit's `work::Pane`, `panes`):
 splits in two, nested, side by side or one over the other, with the kit's seams between (a
 1 px line, the only room between two spaces, under a strip of 6 px over their edges that is
@@ -375,10 +379,12 @@ the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep 
 - **At start**, with a vault (passwords saved under the master password, below), the window
   opens locked: what is saved is not a start away from anyone at the machine, and the
   password that opens the window opens the vault's data key with it.
-- **Locked, the workspace is not displayed** (the design draws it blurred behind): a node
-  that is displayed is in the semantic tree, which any process can read through the OS's
-  accessibility, so blurred tab titles and terminal text would still be readable there. The
-  rail, the spaces, the settings page and the notification cards are hidden; the title bar
+- **Locked, the workspace shows blurred behind, and is inert** (`Div::inert`, `State::INERT`):
+  a displayed node is in the semantic tree, which any process can read through the OS's
+  accessibility, so the rail and the spaces are left out of it while locked, and no press or
+  Tab reaches them; the lock's card stands over them on a layer that blurs them by 24 px
+  (`backdrop_blur`) and dims them with the scrim. The settings page and the notification cards
+  are not displayed; the title bar
   keeps its window buttons and says "Locked"; the app's keys do nothing but `Ctrl+Shift+L`;
   the card is a focus scope with the focus in the password field, and neither Escape nor a
   press outside closes it. Unlocking gives the focus back to the focused space. The design's

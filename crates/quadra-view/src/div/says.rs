@@ -129,6 +129,12 @@ impl Div {
         })
     }
 
+    /// Shown but out of reach while `on` says so (`Tree::set_inert`): no reader, press or Tab
+    /// gets to the box or to what it holds.
+    pub fn inert<M>(self, on: impl IntoProp<bool, M>) -> Self {
+        self.with_value(on.into_prop(), |tree, id, on| tree.set_inert(id, on))
+    }
+
     /// What the box holds is not accepted, or is: a style can follow it (`State::INVALID`).
     pub fn invalid<M>(self, invalid: impl IntoProp<bool, M>) -> Self {
         self.with_value(invalid.into_prop(), |tree, id, on| tree.set_state(id, State::INVALID, on))

@@ -188,7 +188,7 @@ impl Tree {
     fn hit(&self, id: NodeId, at: Point) -> Option<NodeId> {
         let node = &self.nodes[id.index as usize];
         let style = self.layout.style(node.layout);
-        if style.display == Display::None {
+        if style.display == Display::None || node.state.contains(crate::State::INERT) {
             return None;
         }
         let rect = self.layout.rect(node.layout);
@@ -204,6 +204,17 @@ impl Tree {
         }
         let under = node.children.iter().rev().find_map(|&child| self.hit(child, local));
         under.or(inside.then_some(id))
+    }
+
+    /// Keeps a node shown but out of reach (`State::INERT`): left out of the semantic tree, and
+    /// no press or Tab gets to it or to what it holds. What is behind a lock, blurred.
+    pub fn set_inert(&mut self, id: NodeId, on: bool) {
+        if self.get(id).is_none_or(|node| node.state.contains(crate::State::INERT) == on) {
+            return;
+        }
+        self.set_state(id, crate::State::INERT, on);
+        let around = self.get(id).and_then(|node| node.parent).unwrap_or(id);
+        self.semantics_changed(around);
     }
 
     /// A node and its ancestors, the node first.

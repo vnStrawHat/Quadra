@@ -7,7 +7,8 @@ tree. What a screen reader can reach, a test can reach, in the same way.
 
 A node that means something to a user has semantics: a role, a name, and what applies of
 value, description, states (disabled, checked, selected, expanded, focused), range, the actions
-it supports, and relations (labelled by, controls). Nodes without semantics are skipped; their
+it supports, and relations (labelled by, controls). An inert node (`Tree::set_inert`, `Div::inert`: shown, but no reader, press or Tab gets
+to it) is left out with what it holds, as one not displayed is. Nodes without semantics are skipped; their
 semantic children attach to the nearest semantic ancestor.
 
 - Built-in widgets and kit components set their semantics. A custom widget fills them in

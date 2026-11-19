@@ -52,8 +52,9 @@ impl Tree {
     /// left out with everything under it.
     fn tab_stops(&self, id: NodeId, out: &mut Vec<NodeId>) {
         let node = &self.nodes[id.index as usize];
-        // What is not displayed, or is disabled, is left out with everything under it.
-        if self.layout.style(node.layout).display == Display::None || node.state.contains(State::DISABLED) {
+        // What is not displayed, is disabled or inert, is left out with everything under it.
+        let off = node.state.contains(State::DISABLED) || node.state.contains(State::INERT);
+        if self.layout.style(node.layout).display == Display::None || off {
             return;
         }
         if node.focusable && node.tab_index >= 0 {

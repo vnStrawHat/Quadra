@@ -115,11 +115,13 @@ impl Tree {
         out.push(SemanticNode { id: semantic_id(id), semantics: says, bounds, focused, focusable, children });
     }
 
-    /// Whether a node, and so what is under it, is left out for not being displayed. The
+    /// Whether a node, and so what is under it, is left out: not displayed, or inert. The
     /// window never is: a listener always has that much.
     pub(crate) fn hidden(&self, id: NodeId) -> bool {
         let node = &self.nodes[id.index as usize];
-        self.root != Some(id) && self.layout.style(node.layout).display == Display::None
+        let out = self.layout.style(node.layout).display == Display::None
+            || node.state.contains(crate::State::INERT);
+        self.root != Some(id) && out
     }
 
     /// Whether a node is one of the semantic tree, and not skipped or part of a name.

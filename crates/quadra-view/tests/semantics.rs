@@ -211,3 +211,29 @@ fn a_field_is_named_and_described_by_other_nodes_and_a_tab_controls_its_panel() 
     let panel_id = tree.nodes.iter().find(|n| n.semantics.role == Role::TabPanel).unwrap().id;
     assert_eq!(says(Role::Tab).relations, [(Relation::Controls, panel_id)]);
 }
+
+#[test]
+fn an_inert_box_shows_but_no_reader_press_or_tab_reaches_it() {
+    let (inert, pressed) = (signal(false), signal(0u32));
+    let mut h = Harness::new();
+    h.mount(move || {
+        let button = div().role(Role::Button).size(100.0, 20.0).focusable().child(text("Behind"));
+        let button = button.on_click(move |_| pressed.update(|n| *n += 1));
+        let after = div().role(Role::Button).focusable().size(100.0, 20.0).child(text("After"));
+        column().child(column().inert(inert).child(button)).child(after)
+    });
+    h.frame();
+    h.click(10.0, 10.0);
+    assert_eq!(pressed.get_untracked(), 1);
+    inert.set(true);
+    h.frame();
+    assert!(!h.has_text("Behind"), "out of the semantic tree");
+    h.click(10.0, 10.0);
+    assert_eq!(pressed.get_untracked(), 1, "a press does not reach it");
+    h.key(Key::Tab, Mods::NONE);
+    h.frame();
+    assert_eq!(h.query(|n| n.focused && n.semantics.name == "After").len(), 1, "Tab goes past it");
+    inert.set(false);
+    h.frame();
+    assert!(h.has_text("Behind"));
+}

@@ -31,6 +31,9 @@ impl State {
     pub const DISABLED: State = State(512);
     /// What the node holds is not accepted: a field whose value is wrong.
     pub const INVALID: State = State(1024);
+    /// Shown, but out of reach (`Tree::set_inert`): no reader, pointer or Tab gets to it or to
+    /// what it holds.
+    pub const INERT: State = State(2048);
 
     pub fn contains(self, other: State) -> bool {
         self.0 & other.0 == other.0

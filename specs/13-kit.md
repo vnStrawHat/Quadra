@@ -927,7 +927,8 @@ What it reads and how it looks is behaviour/21. As built:
     is faint.
   - **The columns of a table** share its width by what each asks for (its longest cell on
     one line, measured when the table is mounted), and none is narrower than its longest
-    word up to 200 px: a longer word (an address) is broken inside its cell. The table is as
+    word up to 160 px: a longer word (an address) is broken inside its cell. Code in a
+    cell is measured in the code face it is drawn in. The table is as
     wide as the page, so prose in a cell wraps; it is wider, and scrolls sideways, only when
     those least widths do not fit beside each other.
   - **Links** (`[text](url)`, `<url>`, bare URLs, and URLs in code, which keep the colours

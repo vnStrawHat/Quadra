@@ -20,7 +20,7 @@ const WIDEST: usize = 64;
 const PADDING: f32 = 24.0;
 /// A column is at least as wide as its longest word up to this: a longer word (an address)
 /// is broken inside its cell rather than the table scrolled.
-const LONG_WORD: f32 = 200.0;
+const LONG_WORD: f32 = 160.0;
 
 pub struct Table {
     pub align: Vec<Align>,
@@ -37,17 +37,27 @@ impl Table {
         let text = &mut fonts.borrow_mut().text;
         for (r, cells) in self.rows.iter().enumerate() {
             let weight = if r == 0 { size::WEIGHT_STRONG } else { size::WEIGHT_NORMAL };
-            let style =
+            let prose =
                 TextStyle { family: fonts::UI.into(), size: BODY * scale, weight, ..TextStyle::default() };
+            // Code in a cell is drawn in the code face, smaller (`view::spans`).
+            let code = TextStyle { family: fonts::MONO.into(), size: BODY * 0.875 * scale, ..prose.clone() };
             for ((want, word), cell) in wants.iter_mut().zip(least.iter_mut()).zip(cells) {
-                let words = plain(cell);
-                let mut line =
-                    |it: &str| Paragraph::new(text, it, style.clone()).wrap(text, f32::INFINITY).width;
-                *want = want.max(line(&words));
+                let mut line = |it: &str, in_code: bool| {
+                    let style = if in_code { code.clone() } else { prose.clone() };
+                    Paragraph::new(text, it, style).wrap(text, f32::INFINITY).width
+                };
+                // The parts between backticks are code: each measured in its face.
+                let parts: Vec<(String, bool)> =
+                    cell.split('`').enumerate().map(|(k, part)| (plain(part), k % 2 == 1)).collect();
+                let wide: f32 = parts.iter().map(|(part, in_code)| line(part, *in_code)).sum();
+                *want = want.max(wide);
                 // The longest words by their letters, of which the widest drawn.
-                let mut long: Vec<&str> = words.split_whitespace().collect();
-                long.sort_by_key(|it| std::cmp::Reverse(it.chars().count()));
-                *word = long.into_iter().take(3).map(&mut line).fold(*word, f32::max);
+                let mut long: Vec<(&str, bool)> = parts
+                    .iter()
+                    .flat_map(|(part, in_code)| part.split_whitespace().map(move |it| (it, *in_code)))
+                    .collect();
+                long.sort_by_key(|(it, _)| std::cmp::Reverse(it.chars().count()));
+                *word = long.into_iter().take(4).map(|(it, in_code)| line(it, in_code)).fold(*word, f32::max);
             }
         }
         (wants, least)

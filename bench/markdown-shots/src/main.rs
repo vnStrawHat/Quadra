@@ -5,8 +5,11 @@
 //!
 //! Scenes: preview, raw, side (the sample document, `sample.md`, in each layout), chosen (side
 //! by side, the heading "Code" pressed in the preview: both panes at it, tinted), empty (an
-//! untitled window), logo (the logo at 256 px on the dark and the light canvas).
+//! untitled window), tables and tables-side (`tables.md`, tables with long text, in Preview and
+//! side by side), logo (the logo at 256 px on the dark and the light canvas), large (the time
+//! of a large document's steps, printed; run it in the dist profile).
 
+mod large;
 #[path = "../../shots/src/png.rs"]
 mod png;
 
@@ -21,12 +24,14 @@ use quadra_app::{App, AppError};
 use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 
-const SCENES: [(&str, usize); 5] = [
+const SCENES: [(&str, usize); 7] = [
     ("preview", PREVIEW),
     ("raw", RAW),
     ("side", SIDE_BY_SIDE),
     ("chosen", SIDE_BY_SIDE),
     ("empty", PREVIEW),
+    ("tables", PREVIEW),
+    ("tables-side", SIDE_BY_SIDE),
 ];
 
 fn pass(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, ms: u64) {
@@ -44,9 +49,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let only: Vec<String> = args.collect();
     std::fs::create_dir_all(&out)?;
     let sample = std::path::absolute("bench/markdown-shots/src/sample.md")?;
+    let tables = std::path::absolute("bench/markdown-shots/src/tables.md")?;
     let wanted = |it: &str| only.is_empty() || only.iter().any(|o| o == it);
     if wanted("logo") {
         logo(&out)?;
+    }
+    if only.iter().any(|o| o == "large") {
+        large::large(&out)?;
     }
     for (scene, layout) in SCENES.iter().filter(|(it, _)| wanted(it)) {
         let platform = HeadlessPlatform::new();
@@ -54,7 +63,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
         let mut app = quadra_design::install(app, &quadra_design::dark())?.keymap(keymap());
         let built: Rc<RefCell<Option<Model>>> = Rc::default();
-        let (tell, file) = (built.clone(), (*scene != "empty").then(|| sample.clone()));
+        let document = if scene.starts_with("tables") { tables.clone() } else { sample.clone() };
+        let (tell, file) = (built.clone(), (*scene != "empty").then_some(document));
         let window = app.open_window(WindowOptions::new("Markdown").size(1280.0, 860.0), move || {
             let md = MdApp::new(file.clone());
             *tell.borrow_mut() = Some(md.model.clone());

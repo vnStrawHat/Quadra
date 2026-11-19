@@ -3,6 +3,7 @@
 
 mod code;
 mod doc;
+mod find;
 mod hint;
 mod picture;
 mod select;
@@ -29,6 +30,7 @@ use crate::outline::plain;
 use crate::tex::formula;
 use code::code_box;
 pub use doc::{Markdown, Place, markdown};
+pub use find::Find;
 use table::Table;
 
 /// The size of the text of a document, and of the code in it.

@@ -35,13 +35,16 @@ pub struct Markdown {
     places: Option<Signal<Vec<Place>>>,
     reveal: Option<Line>,
     on_heading: Option<OnHeading>,
+    find: Option<super::Find>,
 }
 
 /// A document, rendered. The source is a property: when it changes, the blocks whose source
 /// did not change keep their nodes.
 pub fn markdown<M>(source: impl IntoProp<String, M>) -> Markdown {
     let source = source.into_prop();
-    Markdown { source, on_link: None, base: None, scroll: None, places: None, reveal: None, on_heading: None }
+    let (on_link, base, scroll, places, reveal, on_heading, find) =
+        (None, None, None, None, None, None, None);
+    Markdown { source, on_link, base, scroll, places, reveal, on_heading, find }
 }
 
 impl Markdown {
@@ -77,6 +80,12 @@ impl Markdown {
     /// document that goes to it.
     pub fn on_heading(mut self, f: impl Fn(usize) + 'static) -> Self {
         self.on_heading = Some(Rc::new(f));
+        self
+    }
+
+    /// Marks where a query matches, says how many, and brings the current one into view.
+    pub fn find(mut self, find: super::Find) -> Self {
+        self.find = Some(find);
         self
     }
 
@@ -195,6 +204,9 @@ impl View for Markdown {
             }
         };
         super::select::selectable(cx, id);
+        if let Some(find) = self.find {
+            super::find::follow(cx, id, find, move || blocks.with(|_| ()));
+        }
         if let Some(out) = self.places {
             // After a layout that moved the blocks: the page changed size, or scrolled.
             let (size, handle) = (cx.tree.size_signal(id), cx.handle.clone());

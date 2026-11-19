@@ -14,4 +14,4 @@ mod view;
 pub use block::{Align, Block, Kind, parse};
 pub use inline::{Span, parse_inline};
 pub use outline::{Heading, anchor, block_at, outline, plain, words};
-pub use view::{Markdown, Place, markdown};
+pub use view::{Find, Markdown, Place, markdown};

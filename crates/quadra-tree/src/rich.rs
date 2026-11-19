@@ -1,9 +1,7 @@
 //! The rich text widget: one paragraph of spans, each with what it has otherwise than the
 //! text values that hold at the node (specs/05, "Rules"; specs/08, "Paragraphs").
 
-use std::cell::RefCell;
 use std::ops::Range;
-use std::rc::Rc;
 
 use quadra_a11y::{Role, Semantics};
 use quadra_layout::Known;
@@ -17,39 +15,10 @@ use crate::text::paint_runs;
 use crate::theme::{Paint, Theme};
 use crate::widget::{MeasureCx, PaintCx, Widget};
 
-/// A span of a rich text: where it ends in the text, and what it says of itself.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct RichSpan {
-    pub end: usize,
-    pub shaping: Shaping,
-    /// Its colour, where it is not that of the text around: a colour, or a role.
-    pub color: Option<Paint>,
-    /// A fill behind it, as high as its line.
-    pub background: Option<Paint>,
-    /// A line through it.
-    pub strike: bool,
-    /// What a click on it gives: it is a link, and underlined.
-    pub link: Option<Rc<str>>,
-}
+mod marks;
+mod span;
 
-/// What is in a line of rich text and is no text: a formula. Its span is one character,
-/// U+FFFC, and as wide as the box says.
-pub trait InlineBox {
-    /// Its width, its height above the baseline and its depth below it, in a text of a
-    /// style. A line it is on is made as high as it reaches.
-    fn measure(&mut self, cx: &mut MeasureCx, style: &TextStyle) -> (f32, f32, f32);
-
-    /// Paints it with the left end of its baseline at `origin`, in the colour of its span.
-    fn paint(&mut self, cx: &mut PaintCx, origin: Point, color: Color);
-
-    /// What it is to a reader: said in its place in the text.
-    fn says(&self) -> &str;
-}
-
-/// Where the links of a rich text are, from the node's corner, as last painted: a box for
-/// each line a link is on, and what the link gives. The view that handles the pointer holds
-/// them too.
-pub type LinkBoxes = Rc<RefCell<Vec<(Rect, Rc<str>)>>>;
+pub use span::{InlineBox, LinkBoxes, RichSpan};
 
 pub struct RichText {
     text: String,
@@ -74,6 +43,7 @@ pub struct RichText {
     selection: Color,
     /// The link the keyboard is on, by its number among the links: outlined.
     focused: Option<usize>,
+    marks: marks::Marks,
 }
 
 impl RichText {
@@ -98,6 +68,7 @@ impl RichText {
             selected,
             selection,
             focused: None,
+            marks: marks::Marks::default(),
         }
     }
 
@@ -247,6 +218,7 @@ impl Widget for RichText {
             start = span.end;
         }
         drop(links);
+        self.marks.paint(cx, paragraph);
         for part in paragraph.spans(self.selected.clone(), 0.0) {
             let bounds = Rect::new(cx.rect.x + part.x, cx.rect.y + part.y, part.width, part.height);
             cx.quad(Quad { bounds, background: self.selection, ..Quad::default() });

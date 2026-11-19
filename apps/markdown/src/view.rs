@@ -10,6 +10,7 @@ use quadra_shell::{Launch, Opener};
 
 use crate::files::{self, CloseTab, Files, NewFile, NextTab, OpenFile, PreviousTab, Save, SaveAs};
 use crate::model::{Model, PREVIEW};
+use crate::search::{Find, FindNext};
 use crate::tabs::Tabs;
 use crate::{
     ApplyFormat, OpenSettings, ShowLayout, ToggleOutline, bar, outline, panes, settings, status, sync,
@@ -74,6 +75,26 @@ pub(crate) fn window(tabs: &Tabs, launches: Option<Inbox<Launch>>) -> Div {
         .on_action::<ApplyFormat>(move |&ApplyFormat(what)| {
             toolbar::apply(&formats.current_untracked(), what)
         })
+        .on_action::<Find>({
+            let tabs = tabs.clone();
+            move |_| {
+                let m = tabs.current_untracked();
+                match m.layout.get_untracked() {
+                    PREVIEW => m.search.show(),
+                    _ => m.editor.run(quadra_code::EditorCommand::Find),
+                }
+            }
+        })
+        .on_action::<FindNext>({
+            let tabs = tabs.clone();
+            move |&FindNext(back)| {
+                let m = tabs.current_untracked();
+                match m.layout.get_untracked() {
+                    PREVIEW => m.search.step(back),
+                    _ => m.editor.run(quadra_code::EditorCommand::FindNext(back)),
+                }
+            }
+        })
         .on_action::<NewFile>(move |_| f.new_file())
         .on_action::<OpenFile>(move |_| o.open())
         .on_action::<Save>(move |_| s.save(|| {}))
@@ -117,6 +138,13 @@ fn document(m: &Model, files: &Files) -> Div {
     let headings = sync::headings(m.text);
     sync::follow(m, headings);
     let layout = m.layout;
+    // Preview's find is Preview's alone.
+    let open = m.search.open;
+    effect(move || {
+        if layout.get() != PREVIEW {
+            open.set(false);
+        }
+    });
     let tools = show(move || layout.get() != PREVIEW, {
         let m = m.clone();
         move || toolbar::toolbar(&m)

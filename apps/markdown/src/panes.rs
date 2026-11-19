@@ -65,7 +65,8 @@ fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
     let (text, reveal, follow, scope, chooses) =
         (m.text, m.reveal, follow.clone(), Scope::current(), m.clone());
     let doc = markdown(move || text.get()).on_link(move |target| follow(target)).reveal(move || reveal.get());
-    let mut doc = doc.places(m.places).on_heading(move |line| sync::chosen(&chooses, line, scope));
+    let doc = doc.places(m.places).on_heading(move |line| sync::chosen(&chooses, line, scope));
+    let mut doc = doc.find(m.search.find());
     if let Some(folder) = untrack(|| m.folder()) {
         doc = doc.base(folder);
     }
@@ -74,7 +75,8 @@ fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
     let text = column().grow(1.0).min_width(0.0).max_width(widest).child(tint(m)).child(empty(m)).child(doc);
     let page = row().justify(Justify::Center).padding_x(32.0).padding_y(PAD).child(text);
     let pane = column().grow(1.0).min_width(0.0).min_height(0.0).bg(token::CANVAS);
-    drives(pane.role(Role::Group).label("Rendered"), m, Driver::Preview).child(scroll(m.preview_y, page))
+    let pane = drives(pane.role(Role::Group).label("Rendered"), m, Driver::Preview);
+    pane.child(scroll(m.preview_y, page)).child(crate::search::bar(&m.search))
 }
 
 /// What an empty document shows: the logo, and how to start.

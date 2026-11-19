@@ -6,7 +6,7 @@
 //! Scenes: preview, raw, side (the sample document, `sample.md`, in each layout), chosen (side
 //! by side, the heading "Code" pressed in the preview: both panes at it, tinted), empty (an
 //! untitled window), tables and tables-side (`tables.md`, tables with long text, in Preview and
-//! side by side), tabs (the sample and the tables in two tabs), logo (the logo at 256 px on the dark and the light canvas), large (the time
+//! side by side), tabs (the sample and the tables in two tabs), find (Preview's, "the"), logo (the logo at 256 px on the dark and the light canvas), large (the time
 //! of a large document's steps, printed; run it in the dist profile), icon (writes
 //! `apps/markdown/assets/logo.ico`, and a picture of its sizes), settings and about (the
 //! settings window at its first page and at About).
@@ -27,7 +27,7 @@ use quadra_app::{App, AppError};
 use quadra_native_win::{D3d11Renderer, DirectWrite};
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 
-const SCENES: [(&str, usize); 8] = [
+const SCENES: [(&str, usize); 9] = [
     ("preview", PREVIEW),
     ("raw", RAW),
     ("side", SIDE_BY_SIDE),
@@ -36,6 +36,7 @@ const SCENES: [(&str, usize); 8] = [
     ("tables", PREVIEW),
     ("tables-side", SIDE_BY_SIDE),
     ("tabs", PREVIEW),
+    ("find", PREVIEW),
 ];
 
 fn pass(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, ms: u64) {
@@ -97,6 +98,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             model.driver.set(markdown::Driver::Preview);
             model.preview_y.set(top.unwrap_or(0.0) + 24.0);
             model.flash.set(Some(line));
+        }
+        if *scene == "find" {
+            model.search.text.set("the".into());
+            model.search.open.set(true);
+            pass(&platform, &mut app, 100);
+            model.search.current.set(1);
         }
         pass(&platform, &mut app, 300);
         let pixels = app.read_pixels(window)?;

@@ -47,6 +47,8 @@ pub struct Model {
     pub caret: Signal<usize>,
     /// The editor's cursor for the status bar.
     pub place: Signal<quadra_code::Caret>,
+    /// Find in Preview.
+    pub search: crate::search::Search,
     pub driver: Signal<Driver>,
     /// The line of the heading tinted in the preview, a moment after it was chosen.
     pub flash: Signal<Option<usize>>,
@@ -90,6 +92,7 @@ impl Model {
             places: signal(Vec::new()),
             caret: signal(0),
             place: signal(quadra_code::Caret { line: 1, column: 1, selected: 0 }),
+            search: crate::search::Search::new(),
             driver: signal(Driver::Editor),
             flash: signal(None),
             outline: prefs.outline,

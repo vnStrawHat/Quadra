@@ -113,7 +113,7 @@ App code reaches a mounted node through a `NodeRef`, filled when the view is mou
 let field = NodeRef::new();
 text_input(value).node_ref(field);
 // later, in a handler:
-field.focus();  field.scroll_into_view();  let r = field.rect();
+field.focus();  field.focus_first();  field.scroll_into_view();  let r = field.rect();
 ```
 
 `NodeRef` methods are no-ops on a node that is gone.

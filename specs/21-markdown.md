@@ -102,6 +102,19 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 - **Its cost.** Switching tabs builds the active document's panes again, as a layout changed
   does; the other tabs hold their text and their editor's document, not their views.
 
+## Find
+
+- **Ctrl+F** finds in the document; F3 and Shift+F3, the next and the one before.
+  - While the editor shows (Raw, Side by side), it is the editor's find bar, with replace
+    (Ctrl+H; behaviour/18, "Find"): Ctrl+F gives the editor the focus where it is not.
+  - In Preview, a bar at the top right of the preview: the query, Match case and Whole
+    word, `3 of 12` (`No results`), the one before and the next, and a cross. Enter is the
+    next, Shift+Enter the one before; Escape closes it. The matches are marked in the
+    preview (13, "Markdown", Find), the current one brought into view. Each tab has its own
+    query.
+- **Its cost.** A find marks the texts of the document: proportional to its text, run on a
+  change of the query and after a layout that moved its blocks.
+
 ## Files
 
 - **Keys.**
@@ -268,6 +281,8 @@ The tests drive the controls through the semantic tree:
 - saving through the rename;
 - the question before losing work, closing a tab or the window;
 - the tabs: where a file opens, closing, the keys, and the files a later start hands over;
+- the status bar's counts and cursor;
+- find: Ctrl+F in each layout, the count and the next in Preview, a word in code and in a table found, the keys in the field;
 - the panes following by headings, both ways, with no echo;
 - the heading chosen;
 - the toolbar's changes, and their undo;

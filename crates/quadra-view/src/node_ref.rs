@@ -33,6 +33,15 @@ impl NodeRef {
         }
     }
 
+    /// Gives the focus to the first node under it that Tab reaches, after the window's next
+    /// layout: the field of a bar just opened.
+    pub fn focus_first(&self) {
+        if let Some((id, handle)) = &*self.0.borrow() {
+            let id = *id;
+            handle.with(move |tree| tree.after_layout(move |tree| _ = tree.focus_first(id)));
+        }
+    }
+
     /// Gives the node the focus, in the window's next frame.
     pub fn focus(&self) {
         if let Some((id, handle)) = &*self.0.borrow() {

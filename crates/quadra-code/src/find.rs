@@ -55,6 +55,15 @@ impl Query {
         Ok(self.find_in(&pattern, &text, 0).collect())
     }
 
+    /// Every place the query matches in a text that is not an editor's: a paragraph shown.
+    pub fn find_text(&self, text: &str) -> Result<Vec<Range<usize>>, String> {
+        if self.text.is_empty() {
+            return Ok(Vec::new());
+        }
+        let pattern = self.pattern()?;
+        Ok(self.find_in(&pattern, text, 0).collect())
+    }
+
     /// The matches in `text`, which starts at `base` in the document and at the start of a
     /// line, and ends at the end of one: what is past either end is no letter.
     fn find_in<'a>(

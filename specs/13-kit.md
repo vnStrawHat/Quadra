@@ -1063,6 +1063,14 @@ What it reads and how it looks is behaviour/21. As built:
   box said by what it says; Ctrl-A selects all of it; losing the focus lets it go. Ctrl and
   a press is for links. What is drawn and is no text (a diagram, a display formula) is not
   in it; in a document that scrolls itself, what is mounted is.
+- Find: `.find(Find { query, current, count })`. While `query` holds a `quadra_code::Query`
+  (its case, whole word and pattern switches as in the editor), the document marks where
+  it matches in each of its texts, those of code and of tables too, in the order of the
+  document, in the editor's find colours (`RichText::mark`), the `current`th (from 0, kept
+  under the count) in the stronger; it writes how many to `count`, and brings the current
+  one into view when the query or `current` change. It finds again after a layout that
+  moved its blocks: an edit, a page of another width. A match is within one text; what is
+  drawn is not searched; in a document that scrolls itself, what is mounted is.
 
 ## Code (`quadra-code`)
 

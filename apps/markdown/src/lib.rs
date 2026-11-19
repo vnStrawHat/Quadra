@@ -8,6 +8,7 @@ mod model;
 mod outline;
 mod panes;
 mod prefs;
+mod search;
 mod settings;
 mod status;
 mod sync;
@@ -25,6 +26,7 @@ pub use format::{Change, Format, format};
 pub use logo::{LOGO, LOGO_SMALL, logo};
 pub use model::{Model, PREVIEW, RAW, SIDE_BY_SIDE};
 pub use prefs::{Prefs, theme};
+pub use search::{Find, FindNext, Search};
 pub use settings::{file_types, page as settings_page};
 pub use sync::Driver;
 pub use tabs::Tabs;
@@ -79,6 +81,9 @@ pub fn keymap() -> Keymap {
     map.bind("ctrl-shift-s", SaveAs).expect(well_formed);
     map.bind("ctrl-shift-o", ToggleOutline).expect(well_formed);
     map.bind("ctrl-,", OpenSettings).expect(well_formed);
+    map.bind("ctrl-f", Find).expect(well_formed);
+    map.bind("f3", FindNext(false)).expect(well_formed);
+    map.bind("shift-f3", FindNext(true)).expect(well_formed);
     for (keys, what) in toolbar::keys() {
         map.bind(&keys, ApplyFormat(what)).expect(well_formed);
     }

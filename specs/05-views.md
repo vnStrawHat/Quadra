@@ -331,6 +331,10 @@ locale at the window root; a subtree can provide its own.
     line with no such box is the style's.
   - Its text can be selected by whoever selects across texts (`select`, `selected`, `index_at`):
     a document does.
+  - Ranges of its text can be marked apart from the selection, under it, by whoever finds
+    across texts (`text`, `mark(ranges, current, fill, chosen)`, the current one in the
+    second fill; `rect_of(range)`, where a range's first part is, to scroll to): a
+    document's find does.
   - **Links for the keyboard and a reader**: a text with links is a box that holds it and a
     node for each link, in the order of the text, without a size of its own. That node
     takes the focus (Tab reaches the links in order, as it reaches any control), is a link

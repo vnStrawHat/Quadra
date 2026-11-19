@@ -64,6 +64,16 @@ impl EditorHandle {
         reach.handle.with(move |tree| edit(tree, reach.id, (reach.epoch, at), |w, _| f(w)));
     }
 
+    /// Gives the editor the focus and runs a command in it as its key would, in the tree's
+    /// next pass: Find from a key of the app's.
+    pub fn run(&self, command: super::EditorCommand) {
+        let Some(reach) = self.0.borrow().clone() else { return };
+        reach.handle.with(move |tree| {
+            tree.focus(reach.id);
+            tree.dispatch(&command);
+        });
+    }
+
     /// Gives the editor the focus, in the tree's next pass: after a toolbar's button took it.
     pub fn focus(&self) {
         let Some(reach) = self.0.borrow().clone() else { return };

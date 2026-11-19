@@ -16,7 +16,7 @@ use quadra_view::MountCx;
 type End = (NodeId, usize);
 
 /// The rich texts under a node, in the order of the tree.
-fn texts(tree: &mut Tree, page: NodeId) -> Vec<NodeId> {
+pub(super) fn texts(tree: &mut Tree, page: NodeId) -> Vec<NodeId> {
     let (mut out, mut stack) = (Vec::new(), vec![page]);
     while let Some(at) = stack.pop() {
         if tree.widget_mut::<RichText>(at).is_some() {

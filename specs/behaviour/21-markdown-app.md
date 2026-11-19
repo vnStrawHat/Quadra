@@ -135,7 +135,7 @@ records its source line, which the outline, the scroll sync and the tests use.
   name, alias or extension through `code.tokenizer_for`, specs/18: about 30 languages;
   attributes like `{.class}` or `title=x` are ignored; tokenized once per build, the span
   array made once), quotes
-  (nested), rules, pipe tables with alignment (columns share the width by their content and keep their longest word whole, up to 160 px), images, math blocks, Mermaid blocks, YAML
+  (nested), rules, pipe tables with alignment (a `\|` in a cell is a `|` of it, in code too; columns share the width by their content and keep their longest word whole, up to 160 px), images, math blocks, Mermaid blocks, YAML
   front matter (hidden from the preview, shown as a muted block when it is the only content).
 - **Inline**: bold, italic, bold-italic, strikethrough (`~~`), code, links, autolinks
   (`<https://...>` and bare `https://...`), inline math, hard breaks (two spaces or `\`).

@@ -82,3 +82,15 @@ fn a_table_of_one_row_of_one_column_and_of_too_many_columns() {
     let h = page(&source, 800.0);
     assert_eq!(rects(&h, Role::Cell).len(), 64);
 }
+
+#[test]
+fn an_escaped_pipe_is_in_its_cell_and_makes_no_column() {
+    let source = "| What | Command |\n|---|---|\n| Shots | `shots.sh [dark\\|light]` draws them |\n| Gate | `check.sh` |\n";
+    let h = page(source, 900.0);
+    let cells = rects(&h, Role::Cell);
+    assert_eq!(cells.len(), 6, "two columns: {cells:?}");
+    assert_eq!(h.query(|n| n.semantics.name.contains("shots.sh [dark|light]")).len(), 1);
+    // The second column takes the room the first leaves.
+    let table = rects(&h, Role::Table)[0];
+    assert!((cells[1].x + cells[1].width - (table.x + table.width)).abs() < 2.0, "{cells:?} in {table:?}");
+}

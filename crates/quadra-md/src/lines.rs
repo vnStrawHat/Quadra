@@ -36,9 +36,25 @@ pub fn is_rule(t: &str) -> bool {
     marks().count() >= 3 && ['-', '*', '_'].iter().any(|mark| marks().all(|c| c == *mark))
 }
 
+/// The cells of a table's row, split at each `|` that is not `\|`; a `\|` is a `|` of its
+/// cell, in code too.
 pub fn table_cells(t: &str) -> Vec<String> {
-    let row = t.trim().trim_start_matches('|').trim_end_matches('|');
-    row.split('|').map(|cell| cell.trim().to_string()).collect()
+    let t = t.trim();
+    let t = t.strip_prefix('|').unwrap_or(t);
+    let t = match t.strip_suffix('|') {
+        Some(rest) if !rest.ends_with('\\') => rest,
+        _ => t,
+    };
+    let (mut cells, mut cell, mut chars) = (Vec::new(), String::new(), t.chars().peekable());
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if chars.peek() == Some(&'|') => cell.push(chars.next().unwrap_or('|')),
+            '|' => cells.push(std::mem::take(&mut cell).trim().to_string()),
+            _ => cell.push(c),
+        }
+    }
+    cells.push(cell.trim().to_string());
+    cells
 }
 
 /// The line under the head of a table: `|---|:-:|`.

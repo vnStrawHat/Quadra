@@ -1,4 +1,5 @@
-//! Links (specs/18, "Input"): an OSC 8 hyperlink and a URL in the text, one that wraps;
+//! Links (specs/18, "Input"): an OSC 8 hyperlink and a URL in the text, one that wraps, one
+//! wrapped off the rows that show;
 //! Ctrl+click follows one and is nothing else, a click without Ctrl selects as before, and the
 //! hand and the underline while Ctrl is held. Cells are 6 x 14 px from the padding of 8 px,
 //! 64 to a row.
@@ -116,6 +117,25 @@ fn a_url_that_wraps_is_one_link() {
     assert_eq!(t.followed(), [link(&url, None)]);
     t.ctrl_click(0, 45);
     assert_eq!(t.followed(), [link(&url, None)], "from its first row too");
+}
+
+#[test]
+fn a_url_wrapped_off_the_top_of_the_rows_that_show_is_still_whole() {
+    let mut t = term();
+    let url = format!("https://example.com/{}", "a".repeat(250));
+    t.feed(
+        format!(
+            "{} {url} end{}",
+            "x".repeat(40),
+            "
+"
+            .repeat(6)
+        )
+        .as_bytes(),
+    );
+    assert!(t.s.screen_text()[0].starts_with("aaaa"), "its first rows went into the history");
+    t.ctrl_click(0, 5);
+    assert_eq!(t.followed(), [link(&url, None)]);
 }
 
 #[test]

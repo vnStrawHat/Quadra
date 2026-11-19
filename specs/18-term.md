@@ -73,8 +73,8 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   worked out where a cell's colours are resolved, once a pair of colours (a small memo the paint
   keeps), never a pixel. Left as they are: colours a program named exactly (24-bit, and the
   palette past 15), the text on a block cursor, and box drawing, block elements, geometric shapes
-  and the separators of patched fonts (U+2500 to U+25FF, U+E0B0 to U+E0D7), whose colour is
-  their drawing's.
+  and the separators of patched fonts, the symbols for legacy computing (U+2500 to U+25FF,
+  U+E0B0 to U+E0D7, U+1FB00 to U+1FBFF), whose colour is their drawing's.
 - The look (`TermLook`, a signal given with `Terminal::look`; `font(size, line)` is a look that
   never changes): the family (empty, the kit's mono face), its fallback families, size, line
   height (times the size), weight, the cell's width, the padding (`Edges`: top, right, bottom,
@@ -91,8 +91,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   the cells it covers (to the next group's column): a ligature of two characters spans their
   two cells. A glyph's colour is its group's cell's. Tokens go through the text system's cache
   of words, so a row that did not change costs lookups, not shaping; nothing is shaped by row.
-- Drawn characters: box drawing (U+2500 to U+257F), block elements (U+2580 to U+259F) and the
-  separators of patched fonts U+E0B0 to U+E0B3 are not the font's: each is drawn to its cells'
+- Drawn characters: box drawing (U+2500 to U+257F), block elements (U+2580 to U+259F), the
+  sextants (U+1FB00 to U+1FB3B) and the separators of patched fonts U+E0B0 to U+E0BF are not the
+  font's: each is drawn to its cells'
   box in whole device pixels, a coverage mask keyed by the character and the box's size,
   tinted by its colour as a glyph is, so it joins its neighbours and the line height leaves
   no gap. Every mask is the mirror, about the box's vertical and horizontal middle, of the
@@ -107,13 +108,24 @@ session's `Feeder`, the session's `Link` is the shell's handle.
     box's shorter side less a pixel, tangent to the lines from the middles of its two edges, so
     the pixels at the edges are the straight lines' and it joins them exactly. Diagonals run corner to corner.
   - Blocks fill their part of the box exactly (eighths, halves, quadrants): an edge inside a
-    pixel covers it by the part it covers. Shades are 25, 50 and 75 % coverage. The
-    separators are a solid triangle and a chevron to the middle of the opposite edge.
+    pixel covers it by the part it covers. Shades are 25, 50 and 75 % coverage.
+  - A sextant fills parts of a grid of two columns by three rows: the columns those of the half
+    blocks, split at the middle (a pixel shared there half covered), the rows split at the
+    whole pixels nearest a third and two thirds of the height, so the rows tile the cell and
+    differ by a pixel at most, and a sextant and its complement make the full block.
+  - The separators are drawn once and mirrored, their straight sides on the cell's edges: the
+    triangle (E0B0, E0B2) and the chevron (E0B1, E0B3) to the middle of the opposite edge; the
+    half circle (E0B4, E0B6), half an ellipse on the flat edge as wide and as tall as the cell,
+    and its arc (E0B5, E0B7); the corner triangles (E0B8 lower left, E0BA lower right, E0BC
+    upper left, E0BE upper right), the half of the cell on one side of a corner-to-corner
+    diagonal; that diagonal alone (E0B9 and E0BF backslash, E0BB and E0BD slash). Outlines and
+    diagonals are strokes of the light weight.
   - Every drawn character is checked at boxes of both parities, at 1x and 2x, against what
     its Unicode name says (the names, from the Unicode Character Database, kept beside the
     test): each edge's strokes (none, light, heavy, double; how thick, centred), whole arms
     up to where they meet and nothing outside them, the number of dashes, an arc on its
-    circle, a diagonal's corners, a block's coverage to the pixel, shades and separators;
+    circle, a diagonal's corners, a block's coverage to the pixel, shades, a sextant's parts,
+    a half circle's shape and stroke, a corner triangle's area by the pixel, and separators;
     and the characters drawn are exactly the ones named.
 - Smoothing (`TermLook::grayscale`, on by default): glyphs are smoothed by pixel even where
   Windows smooths by subpixel (ClearType), so coloured text and drawings show no coloured
@@ -277,7 +289,9 @@ session's `Feeder`, the session's `Link` is the shell's handle.
   says so, off by default. The view gives the session its clipboard and settings as it mounts.
 - Links: an OSC 8 hyperlink (the engine's id on each cell, its target from the snapshot) or a
   URL in the text (`quadra_text::find_urls` over the logical line, so a URL that wraps is one
-  link), looked for in the snapshot the view drew last. An OSC 8 link runs over the cells of its
+  link), looked for in the snapshot the view drew last; the rows of the line above and below
+  those that show (32 at most each way) are read from the engine, so a URL wrapped off them is
+  whole, its cells underlined where they show. An OSC 8 link runs over the cells of its
   id along the logical line. With `Terminal::on_link(f)`, a press of the left button with Ctrl
   on a link calls `f(TermLink { url, text })` and does nothing else: no selection, and neither
   the press nor its release goes to a program that reports the mouse. `url` is an OSC 8 target

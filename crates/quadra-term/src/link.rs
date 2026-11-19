@@ -26,17 +26,26 @@ pub struct TermLink {
 /// The cells a link covers: a row and its columns, for each of its rows.
 pub(crate) type Cells = Vec<(RowId, Range<u16>)>;
 
-/// The link at the cell `(row, col)` of the viewport, and its cells.
-pub(crate) fn link_at(state: &SnapshotState, row: usize, col: usize) -> Option<(TermLink, Cells)> {
+/// The most rows a logical line is read beyond those that show, each way.
+const BEYOND: u64 = 32;
+
+/// The link at the cell `(row, col)` of the viewport, and its cells: those that show.
+pub(crate) fn link_at(
+    state: &SnapshotState,
+    s: &Session,
+    row: usize,
+    col: usize,
+) -> Option<(TermLink, Cells)> {
     let rows = state.rows();
     if rows.get(row).is_none_or(|it| col >= it.cells.len()) {
         return None;
     }
-    // ponytail: the rows that show only; a URL wrapped off the top or bottom is cut there.
     let first = (0..row).rev().take_while(|&r| rows[r].wrapped).last().unwrap_or(row);
     let last = (row..rows.len()).find(|&r| !rows[r].wrapped).unwrap_or(rows.len() - 1);
+    // What of the logical line is above and below the rows that show: a URL wrapped off them.
+    let (before, after) = s.beyond(rows[first].id, rows[last].wrapped.then_some(rows[last].id));
     // The logical line's text, and where each character's cell is and starts in it.
-    let (mut text, mut at) = (String::new(), Vec::new());
+    let (mut text, mut at) = (before.clone(), Vec::new());
     for (r, line) in rows.iter().enumerate().take(last + 1).skip(first) {
         for (c, cell) in line.cells.iter().enumerate().filter(|it| !it.1.width.is_spacer()) {
             at.push((r, c, text.len()));
@@ -46,10 +55,11 @@ pub(crate) fn link_at(state: &SnapshotState, row: usize, col: usize) -> Option<(
             }
         }
     }
+    text.push_str(&after);
     // The pressed cell, or the wide one a spacer belongs to.
     let k = at.iter().rposition(|&(r, c, _)| r == row && c <= col)?;
     let cell = |i: usize| &rows[at[i].0].cells[at[i].1];
-    let byte = |i: usize| at.get(i).map_or(text.len(), |it| it.2);
+    let byte = |i: usize| at.get(i).map_or(text.len() - after.len(), |it| it.2);
     let (from, to, link) = match cell(k).hyperlink {
         Some(id) => {
             let from = (0..k).rev().take_while(|&i| cell(i).hyperlink == Some(id)).last().unwrap_or(k);
@@ -77,6 +87,32 @@ pub(crate) fn link_at(state: &SnapshotState, row: usize, col: usize) -> Option<(
     Some((link, cells))
 }
 
+impl Session {
+    /// The text of the rows of a logical line above `first` and, when `last` goes on, below
+    /// it, at most [`BEYOND`] each way.
+    fn beyond(&self, first: RowId, last: Option<RowId>) -> (String, String) {
+        let engine = self.engine();
+        let (term, screen) = (&engine.term, engine.term.screen());
+        let (mut before, mut at) = (String::new(), first);
+        while first.0 - at.0 < BEYOND && at.0 > screen.oldest().0 && screen.row(RowId(at.0 - 1)).wrapped() {
+            at = RowId(at.0 - 1);
+            before.insert_str(0, &term.row_text(at));
+        }
+        let mut after = String::new();
+        if let Some(last) = last {
+            let mut at = last;
+            while at.0 - last.0 < BEYOND && at.0 < screen.newest().0 {
+                at = RowId(at.0 + 1);
+                after.push_str(&term.row_text(at));
+                if !screen.row(at).wrapped() {
+                    break;
+                }
+            }
+        }
+        (before, after)
+    }
+}
+
 /// The cell under a point of the view, when it is on the grid.
 fn cell_at(tree: &mut Tree, id: NodeId, at: Point) -> Option<(usize, usize)> {
     let (row, col) = crate::pointer::grid_at(tree, id, at)?;
@@ -86,7 +122,8 @@ fn cell_at(tree: &mut Tree, id: NodeId, at: Point) -> Option<(usize, usize)> {
 /// The link under a point of the view.
 pub(crate) fn under(tree: &mut Tree, id: NodeId, at: Point) -> Option<TermLink> {
     let (row, col) = cell_at(tree, id, at)?;
-    link_at(&tree.widget_mut::<TerminalWidget>(id)?.state, row, col).map(|it| it.0)
+    let w = tree.widget_mut::<TerminalWidget>(id)?;
+    link_at(&w.state, &w.session, row, col).map(|it| it.0)
 }
 
 /// Underlines the link under `at` while `ctrl` is held, the pointer a hand over it. Looked for
@@ -98,7 +135,8 @@ pub(crate) fn hover(tree: &mut Tree, id: NodeId, at: Option<Point>, ctrl: bool) 
         return;
     }
     w.hovered_at = Some(cell);
-    let cells = cell.and_then(|(r, c)| link_at(&w.state, r, c)).map(|it| it.1).unwrap_or_default();
+    let cells =
+        cell.and_then(|(r, c)| link_at(&w.state, &w.session, r, c)).map(|it| it.1).unwrap_or_default();
     if cells == w.hover {
         return;
     }

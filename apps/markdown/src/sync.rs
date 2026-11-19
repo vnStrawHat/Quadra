@@ -102,8 +102,7 @@ pub(crate) fn follow(m: &Model) {
     effect(move || {
         let line = caret.get();
         if side() && untrack(|| headings.with(|h| h.contains(&line))) {
-            shown.reveal.set(Some(line));
-            tint(&shown, line, scope);
+            show_heading(&shown, line, scope);
         }
     });
 }
@@ -126,14 +125,24 @@ pub(crate) fn chosen(m: &Model, line: usize, scope: Scope) {
     tint(m, line, scope);
 }
 
+/// Brings the heading of `line` into view in the preview, tinted for a moment; then the
+/// preview is free again (its blocks laid out anew do not bring it back).
+pub(crate) fn show_heading(m: &Model, line: usize, scope: Scope) {
+    m.reveal.set(Some(line));
+    tint(m, line, scope);
+}
+
 /// Tints the heading of `line` in the preview for a moment.
 fn tint(m: &Model, line: usize, scope: Scope) {
-    let flash = m.flash;
+    let (flash, reveal) = (m.flash, m.reveal);
     flash.set(Some(line));
     scope.run(|| {
         timeout(TINT, move || {
             if flash.get_untracked() == Some(line) {
                 flash.set(None);
+            }
+            if reveal.get_untracked() == Some(line) {
+                reveal.set(None);
             }
         })
     });

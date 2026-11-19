@@ -57,6 +57,8 @@ fn source(m: &Model, follow: &Follow) -> Div {
 }
 
 /// The document rendered, in a column of at most 760 px in the middle.
+// ponytail: every block is mounted, so the panes know where each heading is; a document of
+// thousands of blocks would want `Markdown::scrolls` and the headings' places kept apart.
 fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
     let (text, reveal, follow, scope, chooses) =
         (m.text, m.reveal, follow.clone(), Scope::current(), m.clone());

@@ -46,6 +46,12 @@ fn a_file_given_opens_in_preview_and_names_the_window() {
 }
 
 #[test]
+fn a_file_that_starts_with_a_byte_order_mark_shows_its_first_heading() {
+    let h = app(Some(file("bom.md", "\u{feff}# Marked\n\nText.\n")));
+    assert_eq!(h.query(|n| n.semantics.role == Role::Heading && n.semantics.name == "Marked").len(), 1);
+}
+
+#[test]
 fn the_layouts_by_the_bar_and_by_their_keys() {
     let mut h = app(Some(file("layouts.md", "# One\n\ntext\n")));
     h.get_by_role(Role::Radio, "Raw").click();

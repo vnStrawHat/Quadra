@@ -37,6 +37,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   That is how a file opens straight from the OS ("Open with", a file's association). Without
   one, the window starts with an untitled empty document. A `.md`, `.markdown` or `.txt` file
   dropped on the window opens it.
+- **A byte order mark** at the start of a file is dropped when it is read, and not written
+  back on a save.
 - **The app's folders.** These hold its settings and log. `MARKDOWN_HOME=<folder>` puts them in
   that folder instead, for a trial run.
 
@@ -97,7 +99,11 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
     brings that heading to its top.
   - A press on a heading in the preview puts the editor's caret at the start of its line,
     with the line at the top of the editor's view. The focus stays where it was.
-  - The heading chosen is tinted with the selection colour for 600 ms in the preview.
+  - The heading chosen is tinted with the selection colour for 600 ms in the preview; after
+    that the preview is free again, and laying out its blocks anew does not bring the heading
+    back.
+- **A layout changed** keeps where each pane is: an editor built again goes to the position
+  kept, once it is laid out at its width.
 - **The preview's text.** It follows the editor's text 120 ms after the last edit. Blocks
   whose source did not change keep their nodes.
 
@@ -146,7 +152,7 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   still under construction. It stands on light dashed guide lines and a hatched area. The pen
   is caught in the middle of a stroke: a curve with its node handles still showing. A yellow
   circle stands at a corner, as a shape not yet placed.
-- **The file.** It is `apps/markdown/assets/logo.svg`, a 64-unit square drawn in what
+- **The file.** It is `apps/markdown/assets/logo.svg` (made by `logo.py` beside it), a 64-unit square drawn in what
   `quadra-vector` renders: it has no dashes, opacity or masks, so the dashes and the hatching
   are short lines. The drawing view shows it in its own colours (13, "Icons"). It shows at
   20 px in the bar, and at 96 px in an empty window with how to start. The `logo` scene of

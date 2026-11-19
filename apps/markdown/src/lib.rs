@@ -126,11 +126,14 @@ impl MdApp {
 /// opens with the OS, another document beside this one opens here.
 fn follow(m: &Model, files: &Files) -> panes::Follow {
     let (m, files, opener) = (m.clone(), files.clone(), use_context::<Rc<dyn Opener>>());
+    let scope = quadra::Scope::current();
     Rc::new(move |target: &str| {
         if let Some(anchor) = target.strip_prefix('#') {
             let blocks = quadra_md::parse(&m.text.get_untracked());
             let found = quadra_md::outline(&blocks).into_iter().find(|it| it.anchor == anchor);
-            m.reveal.set(found.map(|it| it.line));
+            if let Some(heading) = found {
+                sync::show_heading(&m, heading.line, scope);
+            }
         } else if quadra_text::url_openable(target) {
             if let Some(opener) = &opener {
                 opener.open(target);

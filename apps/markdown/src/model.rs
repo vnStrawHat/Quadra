@@ -80,7 +80,11 @@ impl Model {
     /// it was.
     pub fn open(&self, path: &Path) {
         match std::fs::read_to_string(path) {
-            Ok(text) => self.show(Some(path.to_path_buf()), text),
+            // ponytail: a byte order mark is dropped, and not written back on a save.
+            Ok(text) => self.show(
+                Some(path.to_path_buf()),
+                text.strip_prefix('\u{feff}').map_or(text.clone(), str::to_string),
+            ),
             Err(e) => {
                 let words = format!("Could not open {}: {e}", path.display());
                 self.notices.toast(Tone::Danger, words);
@@ -100,6 +104,9 @@ impl Model {
             self.pos.set(0.0);
             self.preview_y.set(0.0);
             self.reveal.set(None);
+            self.flash.set(None);
+            self.caret.set(0);
+            self.driver.set(Driver::Editor);
             self.opened.update(|n| *n += 1);
         });
     }

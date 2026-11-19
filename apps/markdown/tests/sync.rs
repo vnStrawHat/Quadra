@@ -99,3 +99,61 @@ fn the_caret_on_a_heading_shows_it_in_the_preview() {
     assert_eq!((m.caret.get_untracked(), m.flash.get_untracked()), (24, Some(24)));
     assert_eq!(m.reveal.get_untracked(), Some(24));
 }
+
+/// Runs frames until nothing is left to do, 50 at most: a loop that never stands still fails.
+fn frames(h: &mut Harness) {
+    h.frame();
+    for n in 0.. {
+        if h.frame_if_needed().is_none() {
+            return;
+        }
+        assert!(n < 50, "the frames never stand still");
+    }
+}
+
+#[test]
+fn a_layout_changed_keeps_where_each_pane_is() {
+    let (mut h, m) = app("layouts");
+    // Raw, scrolled down: side by side, the editor is where it was.
+    h.key(quadra::Key::Digit1, quadra::Mods::CTRL);
+    frames(&mut h);
+    m.pos.set(80.0);
+    frames(&mut h);
+    h.key(quadra::Key::Digit2, quadra::Mods::CTRL);
+    frames(&mut h);
+    assert!((m.pos.get_untracked() - 80.0).abs() < 1e-3, "{}", m.pos.get_untracked());
+    let at = h.tree.window_rect(h.query(|n| n.semantics.role == Role::TextInput)[0]).y;
+    assert!((at - (40.0 + 36.0 - 80.0 * 22.0)).abs() < 1.0, "the editor's rows moved: {at}");
+    assert!((m.preview_y.get_untracked() - heading_y(&m, 80)).abs() < 1.0);
+    // Preview and back: the preview is where it was.
+    let y = m.preview_y.get_untracked();
+    h.key(quadra::Key::Digit3, quadra::Mods::CTRL);
+    frames(&mut h);
+    h.key(quadra::Key::Digit2, quadra::Mods::CTRL);
+    frames(&mut h);
+    assert!((m.preview_y.get_untracked() - y).abs() < 1.0, "{} {y}", m.preview_y.get_untracked());
+    assert!((m.pos.get_untracked() - 80.0).abs() < 1e-3);
+}
+
+#[test]
+fn a_heading_shown_once_does_not_pull_the_preview_back() {
+    let (mut h, m) = app("reveal");
+    m.editor.edit(|w| {
+        let at = w.doc.buffer.line_start(8);
+        w.doc.set_cursor(at, at, false);
+    });
+    frames(&mut h);
+    // Far away, then a letter typed there.
+    m.pos.set(160.0);
+    frames(&mut h);
+    m.editor.edit(|w| {
+        let at = w.doc.buffer.line_start(162);
+        w.doc.set_cursor(at, at, false);
+        w.doc.insert_text("x", true);
+    });
+    frames(&mut h);
+    h.advance(Duration::from_millis(700));
+    frames(&mut h);
+    let want = heading_y(&m, 160);
+    assert!((m.preview_y.get_untracked() - want).abs() < 40.0, "{} {want}", m.preview_y.get_untracked());
+}

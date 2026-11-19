@@ -7,6 +7,8 @@ mod logo;
 mod model;
 mod outline;
 mod panes;
+mod prefs;
+mod settings;
 mod sync;
 mod toolbar;
 
@@ -21,6 +23,8 @@ pub use files::{NewFile, OpenFile, Save, SaveAs};
 pub use format::{Change, Format, format};
 pub use logo::{LOGO, LOGO_SMALL, logo};
 pub use model::{Model, PREVIEW, RAW, SIDE_BY_SIDE};
+pub use prefs::{Prefs, theme};
+pub use settings::{file_types, page as settings_page};
 pub use sync::Driver;
 pub use toolbar::ApplyFormat;
 
@@ -35,6 +39,14 @@ pub struct ShowLayout(pub usize);
 
 impl Action for ShowLayout {
     const NAME: &'static str = "markdown::ShowLayout";
+}
+
+/// Opens the settings (Ctrl+,).
+#[derive(Clone, Copy, Debug)]
+pub struct OpenSettings;
+
+impl Action for OpenSettings {
+    const NAME: &'static str = "markdown::OpenSettings";
 }
 
 /// Shows or hides the outline (Ctrl+Shift+O).
@@ -58,6 +70,7 @@ pub fn keymap() -> Keymap {
     map.bind("ctrl-s", Save).expect(well_formed);
     map.bind("ctrl-shift-s", SaveAs).expect(well_formed);
     map.bind("ctrl-shift-o", ToggleOutline).expect(well_formed);
+    map.bind("ctrl-,", OpenSettings).expect(well_formed);
     for (keys, what) in toolbar::keys() {
         map.bind(&keys, ApplyFormat(what)).expect(well_formed);
     }
@@ -103,6 +116,14 @@ impl MdApp {
         quadra_design::root()
             .on_action::<ShowLayout>(move |&ShowLayout(chosen)| layout.set(chosen))
             .on_action::<ToggleOutline>(move |_| outlined.update(|on| *on = !*on))
+            .on_action::<OpenSettings>({
+                let (m, windows) = (m.clone(), use_context::<quadra::Windows>());
+                move |_| {
+                    if let Some(windows) = &windows {
+                        settings::open_window(windows, &m);
+                    }
+                }
+            })
             .on_action::<ApplyFormat>(move |&ApplyFormat(what)| toolbar::apply(&formats, what))
             .on_action::<NewFile>(move |_| f.new_file())
             .on_action::<OpenFile>(move |_| o.open())

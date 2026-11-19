@@ -14,9 +14,6 @@ use quadra_md::markdown;
 use crate::model::{Model, RAW, SIDE_BY_SIDE};
 use crate::sync::{self, Driver, PAD};
 
-/// The preview's text column at most.
-const COLUMN: f32 = 760.0;
-
 /// What a link does with its target, Ctrl held.
 pub(crate) type Follow = Rc<dyn Fn(&str)>;
 
@@ -25,6 +22,9 @@ pub(crate) fn body(model: &Model, follow: Follow) -> Div {
     let m = model.clone();
     let shown = dynamic(move || {
         m.opened.get();
+        // The editor's face and wrapping: it is built again, its document kept.
+        m.prefs.editor_font();
+        m.prefs.wrap.get();
         match m.layout.get() {
             RAW => AnyView::new(source(&m, &follow)),
             SIDE_BY_SIDE => AnyView::new(split(source(&m, &follow), preview(&m, &follow), m.share)),
@@ -40,10 +40,11 @@ fn source(m: &Model, follow: &Follow) -> Div {
     // The marks compare lines without their ends.
     let saved = untrack(|| m.saved.get()).replace("\r\n", "\n");
     let (text, follow) = (untrack(|| m.text.get()), follow.clone());
+    let ((size, line), wrap) = untrack(|| (m.prefs.editor_font(), m.prefs.wrap.get()));
     let code = editor(text)
         .path("document.md")
-        .wrap(true)
-        .font(14.0, 22.0)
+        .wrap(wrap)
+        .font(size, line)
         .base(saved)
         .changed(m.changed)
         .edited(m.edited)
@@ -56,7 +57,7 @@ fn source(m: &Model, follow: &Follow) -> Div {
     drives(pane, m, Driver::Editor).child(code)
 }
 
-/// The document rendered, in a column of at most 760 px in the middle.
+/// The document rendered, in a column of the width the settings say, in the middle.
 // ponytail: every block is mounted, so the panes know where each heading is; a document of
 // thousands of blocks would want `Markdown::scrolls` and the headings' places kept apart.
 fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
@@ -67,7 +68,9 @@ fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
     if let Some(folder) = untrack(|| m.folder()) {
         doc = doc.base(folder);
     }
-    let text = column().grow(1.0).min_width(0.0).max_width(COLUMN).child(tint(m)).child(empty(m)).child(doc);
+    let prefs = m.prefs;
+    let widest = move || prefs.column().map_or(Length::Auto, Length::Px);
+    let text = column().grow(1.0).min_width(0.0).max_width(widest).child(tint(m)).child(empty(m)).child(doc);
     let page = row().justify(Justify::Center).padding_x(32.0).padding_y(PAD).child(text);
     let pane = column().grow(1.0).min_width(0.0).min_height(0.0).bg(token::CANVAS);
     drives(pane.role(Role::Group).label("Rendered"), m, Driver::Preview).child(scroll(m.preview_y, page))

@@ -11,6 +11,12 @@ pub(crate) fn bar(model: &Model, files: &Files) -> Div {
     let open = icon_button(icons::FOLDER_OPEN, "Open").on_click(move || opens.open());
     let save = icon_button(icons::SAVE, "Save").on_click(move || saves.save(|| {}));
     let outlined = model.outline;
+    let (opens, windows) = (model.clone(), quadra::use_context::<quadra::Windows>());
+    let settings = icon_button(icons::SETTINGS, "Settings").on_click(move || {
+        if let Some(windows) = &windows {
+            crate::settings::open_window(windows, &opens);
+        }
+    });
     let outline =
         icon_button(icons::PANEL_LEFT, "Outline").on_click(move || outlined.update(|on| *on = !*on));
     let (m, changed) = (model.clone(), model.changed);
@@ -40,4 +46,5 @@ pub(crate) fn bar(model: &Model, files: &Files) -> Div {
         .child(tooltip("Outline (Ctrl+Shift+O)", outline))
         .child(tooltip("Open (Ctrl+O)", open))
         .child(tooltip("Save (Ctrl+S)", save))
+        .child(tooltip("Settings (Ctrl+,)", settings))
 }

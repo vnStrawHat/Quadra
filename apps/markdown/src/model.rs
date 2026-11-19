@@ -8,6 +8,7 @@ use quadra_code::{EditorHandle, KeptDoc};
 use quadra_design::{Notices, Tone, notices};
 use quadra_md::Place;
 
+use crate::prefs::Prefs;
 use crate::sync::Driver;
 
 /// The layouts, in the order of the bar's segmented control.
@@ -27,7 +28,7 @@ pub struct Model {
     /// Counts the documents opened: the editor is built again for each.
     pub opened: Signal<u64>,
     pub layout: Signal<usize>,
-    /// How much of the width the editor has, side by side.
+    /// How much of the width the editor has, side by side: kept in the settings.
     pub share: Signal<f32>,
     /// The text is not what was last read or saved.
     pub changed: Signal<bool>,
@@ -45,7 +46,7 @@ pub struct Model {
     pub driver: Signal<Driver>,
     /// The line of the heading tinted in the preview, a moment after it was chosen.
     pub flash: Signal<Option<usize>>,
-    /// The outline shows.
+    /// The outline shows: kept in the settings.
     pub outline: Signal<bool>,
     /// Counts the times the user moved a pane: the wheel, a press or a key in it.
     pub touched: Signal<u64>,
@@ -53,18 +54,21 @@ pub struct Model {
     pub editor: EditorHandle,
     pub doc: KeptDoc,
     pub notices: Notices,
+    pub prefs: Prefs,
 }
 
 impl Model {
-    /// An untitled, empty document in Preview.
+    /// An untitled, empty document in Preview, with the app's settings (in memory where
+    /// there are none).
     pub fn new() -> Model {
+        let prefs = Prefs::load();
         Model {
             path: signal(None),
             text: signal(String::new()),
             saved: signal(String::new()),
             opened: signal(0),
             layout: signal(PREVIEW),
-            share: signal(0.5),
+            share: prefs.split,
             changed: signal(false),
             edited: signal(0),
             reveal: signal(None),
@@ -74,11 +78,12 @@ impl Model {
             caret: signal(0),
             driver: signal(Driver::Editor),
             flash: signal(None),
-            outline: signal(true),
+            outline: prefs.outline,
             touched: signal(0),
             editor: EditorHandle::default(),
             doc: KeptDoc::default(),
             notices: notices().above(0.0),
+            prefs,
         }
     }
 
@@ -98,7 +103,8 @@ impl Model {
         }
     }
 
-    /// Shows a document: its file and its text, in Preview, with a new editor.
+    /// Shows a document: its file and its text, in the layout the settings say (Preview
+    /// unless told), with a new editor.
     pub fn show(&self, path: Option<PathBuf>, text: String) {
         self.doc.borrow_mut().take();
         batch(|| {
@@ -106,7 +112,7 @@ impl Model {
             self.saved.set(text.clone());
             self.text.set(text);
             self.changed.set(false);
-            self.layout.set(PREVIEW);
+            self.layout.set(self.prefs.opening());
             self.pos.set(0.0);
             self.preview_y.set(0.0);
             self.reveal.set(None);

@@ -87,8 +87,9 @@ pub(crate) fn mapping(m: &Model, headings: Memo<Vec<Heading>>) -> Memo<Vec<(f64,
 /// either side on the other. Call it while the view is built.
 pub(crate) fn follow(m: &Model, headings: Memo<Vec<Heading>>) {
     let all = mapping(m, headings);
-    let (layout, driver, pos, y) = (m.layout, m.driver, m.pos, m.preview_y);
-    let side = move || layout.get() == SIDE_BY_SIDE;
+    let (layout, driver, pos, y, together) = (m.layout, m.driver, m.pos, m.preview_y, m.prefs.together);
+    // Side by side, and following each other unless the settings say not to.
+    let side = move || layout.get() == SIDE_BY_SIDE && together.get();
     // The editor drives: the preview follows.
     effect(move || {
         if side() && driver.get() == Driver::Editor {

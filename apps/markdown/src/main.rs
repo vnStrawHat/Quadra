@@ -9,8 +9,8 @@
 
 use std::path::PathBuf;
 
-use markdown::{MdApp, keymap};
-use quadra::{AppDirs, WindowOptions};
+use markdown::{MdApp, Prefs, keymap};
+use quadra::{AppDirs, Feature, WindowOptions};
 
 fn main() -> quadra::Result<()> {
     let mut app = quadra::app()?;
@@ -21,7 +21,14 @@ fn main() -> quadra::Result<()> {
     }
     // The file to open: the first argument, as the OS gives it ("Open with").
     let file = app.args().first().map(PathBuf::from);
-    let app = quadra_shell::install(quadra_design::install_system(app)?);
+    // The theme the settings name, the system's by default.
+    let prefs = Prefs::of(&app.settings());
+    let first = quadra_design::system_theme(&app.appearance());
+    let mut app =
+        quadra_design::install(app, &first)?.theme_by(move |seen| markdown::theme(prefs.theme.get(), seen));
+    // The source reads as it is typed: `##`, `|---|` and `->` are not drawn as one sign.
+    app.font_features(quadra_design::fonts::MONO, &[Feature::off(b"calt"), Feature::off(b"liga")]);
+    let app = quadra_shell::install(app);
     let options = WindowOptions::new("Markdown")
         .size(1280.0, 860.0)
         .fit(0.85)

@@ -8,7 +8,8 @@
 //! untitled window), tables and tables-side (`tables.md`, tables with long text, in Preview and
 //! side by side), logo (the logo at 256 px on the dark and the light canvas), large (the time
 //! of a large document's steps, printed; run it in the dist profile), icon (writes
-//! `apps/markdown/assets/logo.ico`, and a picture of its sizes).
+//! `apps/markdown/assets/logo.ico`, and a picture of its sizes), settings and about (the
+//! settings window at its first page and at About).
 
 mod icon;
 mod large;
@@ -58,6 +59,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     if only.iter().any(|o| o == "icon") {
         icon::icon(&out)?;
+    }
+    for (scene, first) in [("settings", 0), ("about", 4)] {
+        if wanted(scene) {
+            settings(&out, scene, first)?;
+        }
     }
     if only.iter().any(|o| o == "large") {
         large::large(&out)?;
@@ -118,6 +124,24 @@ fn logo(out: &std::path::Path) -> Result<(), Box<dyn Error>> {
     pass(&platform, &mut app, 300);
     let pixels = app.read_pixels(window)?;
     let file = out.join("logo.png");
+    std::fs::write(&file, png::png(pixels.size.width, pixels.size.height, &pixels.rgba))?;
+    println!("{}", file.display());
+    Ok(())
+}
+
+/// The settings window, at its page `first`.
+fn settings(out: &std::path::Path, scene: &str, first: usize) -> Result<(), Box<dyn Error>> {
+    let platform = HeadlessPlatform::new();
+    let text = DirectWrite::new().map_err(AppError::Text)?;
+    let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
+    let mut app = quadra_design::install(app, &quadra_design::dark())?;
+    let window = app.open_window(WindowOptions::new("Markdown Settings").size(980.0, 680.0), move || {
+        let model = Model::new();
+        quadra_design::root().child(markdown::settings_page(&model, first))
+    })?;
+    pass(&platform, &mut app, 300);
+    let pixels = app.read_pixels(window)?;
+    let file = out.join(format!("{scene}.png"));
     std::fs::write(&file, png::png(pixels.size.width, pixels.size.height, &pixels.rgba))?;
     println!("{}", file.display());
     Ok(())

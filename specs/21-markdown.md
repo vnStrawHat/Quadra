@@ -17,6 +17,7 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 | M4 | The toolbar: formatting and quick inserts |
 | M5 | The logo |
 | M6 | The outline: a sidebar of the document's headings |
+| M7 | Settings, About, and making Markdown the default for `.md` files |
 
 ## Window
 
@@ -30,8 +31,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   - a dot in the accent colour while the text is not saved;
   - a gap;
   - the layout as a segmented control (Raw, Side by side, Preview; 13, "Segmented");
-  - Outline (`panel-left`), Open (`folder-open`) and Save (`save`) as ghost icon buttons
-    with tooltips that name their keys.
+  - Outline (`panel-left`), Open (`folder-open`), Save (`save`) and Settings (`settings`) as
+    ghost icon buttons with tooltips that name their keys.
 - **Below the bar.** At the left, the outline (below), in every layout. At its right, while
   the editor shows, the toolbar (below), and under that the document in its layout.
 - **Opening a file.** The command line's first argument, a path, is the file opened at start.
@@ -168,6 +169,42 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
   panes' following, and so are the pairs that map one pane to the other: the panes scrolling
   costs a search of them. The tree is asked again only when the headings change.
 
+## Settings
+
+Ctrl+, or the bar's Settings button opens the settings in a window of their own (980 × 680,
+remembered as `settings`), or brings it to the front; it closes with the main window. It is
+the kit's settings view (13, "Settings"), its pages in a column with a search. Each control
+writes its setting to `settings.json` in the app's config folder at once, and the main
+window follows. Each row goes back to its default.
+
+What is a setting is what has a value someone may want otherwise, in place of a constant:
+
+| Page | Setting | Choices | Default |
+|---|---|---|---|
+| Appearance | Theme | System, Dark, Light | System |
+| Editor | Text size | 12 to 20 px; the line is 11/7 of it, whole pixels | 14 |
+| Editor | Wrap lines | on or off | on |
+| Preview | Text width | Narrow (640 px), Normal (760), Wide (960), Full | Normal |
+| Layouts | A file opens in | Preview, Side by side, Raw | Preview |
+| Layouts | Scroll together | side by side, the panes follow each other | on |
+
+Kept without being settings, as the window's state: whether the outline shows and the
+share of the width side by side (the same file, `window.outline` and `window.split`).
+
+Not settings: the code face's ligatures are off in the whole app, so the source reads as it
+is typed (`##`, `|---|`, `->`); the toolbar, the keys and the outline's width are the app's.
+
+## About
+
+The last page of the settings: the logo at 64 px, the name, the version, what it is, the
+executable's path, and **Default app**:
+- a line that says whether Markdown opens `.md` files now (`Associations::opener_of`
+  against the executable);
+- **Set as default…**: registers Markdown for `.md` and `.markdown` under the user (16,
+  "File types"), then opens the system's Default apps page at Markdown, where the user
+  chooses it, as Windows lets no app choose for itself. A note under it says so.
+The line is read again when the window comes back to the front.
+
 ## Logo
 
 - **The mark.** A blue square with "M" and a down arrow (the mark of Markdown), drawn as if
@@ -195,7 +232,9 @@ The tests drive the controls through the semantic tree:
 - the panes following by headings, both ways, with no echo;
 - the heading chosen;
 - the toolbar's changes, and their undo;
-- the outline: nesting, a long heading cut, the row following the panes, a row chosen.
+- the outline: nesting, a long heading cut, the row following the panes, a row chosen;
+- the settings followed by the window, and the default app through the fake shell (nothing
+  writes the registry).
 
 The formatting functions are unit-tested. Nothing opens a real dialog or writes outside
 `.tmp/`.

@@ -91,20 +91,38 @@ pub(super) fn follow_top(
 }
 
 /// Keeps `at` the fractional line at the top of the view as `scroll_y` moves (the line, and
-/// how far down its rows the view stands), and scrolls the view there when `at` is set.
+/// how far down its rows the view stands), and scrolls the view there when `at` is set: after
+/// a layout, when the rows are those of the editor's width. Until it has been there once,
+/// the view's moves are not told: an editor built again starts where `at` says.
 pub(super) fn follow_position(
     cx: &mut MountCx,
     widget: Rc<Cell<Option<NodeId>>>,
     scroll_y: Signal<f32>,
     at: Signal<f64>,
 ) {
-    let (writer, slot) = (cx.handle.clone(), widget.clone());
+    let there = Rc::new(Cell::new(false));
+    let (writer, slot, arrived) = (cx.handle.clone(), widget.clone(), there.clone());
     cx.handle.bind(move || {
-        let y = scroll_y.get();
-        let slot = slot.clone();
+        at.get();
+        let (slot, arrived) = (slot.clone(), arrived.clone());
+        writer.with(move |tree| {
+            tree.after_layout(move |tree| {
+                go_to(tree, &slot, scroll_y, at.get_untracked());
+                arrived.set(true);
+            })
+        });
+    });
+    let writer = cx.handle.clone();
+    cx.handle.bind(move || {
+        scroll_y.get();
+        let (slot, there) = (widget.clone(), there.clone());
         writer.with(move |tree| {
             let Some(w) = slot.get().and_then(|id| tree.widget_mut::<EditorWidget>(id)) else { return };
+            if !there.get() {
+                return;
+            }
             w.sync_rows();
+            let y = scroll_y.get_untracked();
             let last = w.row_count().saturating_sub(1);
             let line = w.row_line(((y / w.line_px).max(0.0) as usize).min(last));
             let rows = w.line_rows(line);
@@ -115,23 +133,20 @@ pub(super) fn follow_position(
             }
         });
     });
-    let writer = cx.handle.clone();
-    cx.handle.bind(move || {
-        let wanted = at.get();
-        let widget = widget.clone();
-        writer.with(move |tree| {
-            let Some(id) = widget.get() else { return };
-            let view = tree.parent(id).map_or(0.0, |port| tree.rect(port).height);
-            let Some(w) = tree.widget_mut::<EditorWidget>(id) else { return };
-            w.sync_rows();
-            let line = (wanted.max(0.0) as usize).min(w.doc.buffer.line_count().saturating_sub(1));
-            let rows = w.line_rows(line);
-            let into = (wanted - line as f64).clamp(0.0, 1.0) as f32;
-            let end = (w.row_count() as f32 * w.line_px - view).max(0.0);
-            let y = ((rows.start as f32 + into * rows.len() as f32) * w.line_px).min(end);
-            if (y - scroll_y.get_untracked()).abs() > 0.5 {
-                scroll_y.set(y);
-            }
-        });
-    });
+}
+
+/// Scrolls the view so that `wanted`, a fractional line, is at its top, as far as it goes.
+fn go_to(tree: &mut quadra_tree::Tree, slot: &Cell<Option<NodeId>>, scroll_y: Signal<f32>, wanted: f64) {
+    let Some(id) = slot.get() else { return };
+    let view = tree.parent(id).map_or(0.0, |port| tree.rect(port).height);
+    let Some(w) = tree.widget_mut::<EditorWidget>(id) else { return };
+    w.sync_rows();
+    let line = (wanted.max(0.0) as usize).min(w.doc.buffer.line_count().saturating_sub(1));
+    let rows = w.line_rows(line);
+    let into = (wanted - line as f64).clamp(0.0, 1.0) as f32;
+    let end = (w.row_count() as f32 * w.line_px - view).max(0.0);
+    let y = ((rows.start as f32 + into * rows.len() as f32) * w.line_px).min(end);
+    if (y - scroll_y.get_untracked()).abs() > 0.5 {
+        scroll_y.set(y);
+    }
 }

@@ -82,6 +82,9 @@ pub(super) fn edit(
     w.sync_rows();
     let changed = w.doc.version != version;
     let moved = (w.doc.primary().anchor, w.doc.primary().head) != held;
+    if let Some(caret) = w.caret_line.filter(|_| moved || changed) {
+        caret.try_set(w.doc.buffer.line_of(w.doc.primary().head));
+    }
     let relaid = w.doc.buffer.line_count() != lines || w.row_count() != rows;
     if changed && w.find.is_some() {
         w.refind_changed(); // the matches of the text as it is now

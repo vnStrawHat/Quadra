@@ -46,6 +46,8 @@ pub struct Editor {
     kept: Option<KeptDoc>,
     edited: Option<Signal<u64>>,
     reach: Option<EditorHandle>,
+    position: Option<Signal<f64>>,
+    caret: Option<Signal<usize>>,
 }
 
 /// A code editor over a text, in the kit's mono face at 15 px with lines of 25. Give it a
@@ -64,6 +66,8 @@ pub fn editor(text: impl Into<String>) -> Editor {
         kept: None,
         edited: None,
         reach: None,
+        position: None,
+        caret: None,
     }
 }
 
@@ -127,6 +131,20 @@ impl Editor {
         self
     }
 
+    /// Where the view stands as a fractional line: the line at its top and how far down it
+    /// (its wrapped rows counted), kept as it scrolls; setting it scrolls there, as far as the
+    /// view goes. For panes that scroll together.
+    pub fn position(mut self, at: Signal<f64>) -> Self {
+        self.position = Some(at);
+        self
+    }
+
+    /// The line of the primary cursor, kept as it moves.
+    pub fn caret_line(mut self, line: Signal<usize>) -> Self {
+        self.caret = Some(line);
+        self
+    }
+
     /// What reaches the editor from outside it while it is mounted.
     pub fn handle(mut self, reach: EditorHandle) -> Self {
         self.reach = Some(reach);
@@ -148,6 +166,9 @@ impl View for Editor {
         let scroll_y = signal(0.0);
         if let Some(top) = self.top {
             time::follow_top(cx, widget.clone(), scroll_y, top);
+        }
+        if let Some(at) = self.position {
+            time::follow_position(cx, widget.clone(), scroll_y, at);
         }
         let surface = Surface { editor: self, find, widget: widget.clone(), bar: bar.clone(), epoch };
         let handle = cx.handle.clone();
@@ -177,6 +198,7 @@ impl View for Surface {
         widget.base = editor.base.as_deref().map(marks::Base::new);
         widget.changed = editor.changed;
         widget.edited = editor.edited;
+        widget.caret_line = editor.caret;
         if let Some(doc) = editor.kept.as_ref().and_then(|it| it.take()) {
             widget.doc = doc;
             widget.doc.dirty = 0; // coloured again from the start

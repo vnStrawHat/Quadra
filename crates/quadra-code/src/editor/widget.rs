@@ -43,6 +43,8 @@ pub struct EditorWidget {
     pub doc: Doc,
     /// Told the document's version after each change of the text.
     pub(super) edited: Option<Signal<u64>>,
+    /// Told the line of the primary cursor as it moves.
+    pub(super) caret_line: Option<Signal<usize>>,
     /// Given the document when the widget goes.
     pub(super) kept: Option<KeptDoc>,
     /// What colours its lines.
@@ -97,6 +99,7 @@ impl EditorWidget {
         EditorWidget {
             doc: Doc::new(text),
             edited: None,
+            caret_line: None,
             highlight,
             find: None,
             matches: Vec::new(),

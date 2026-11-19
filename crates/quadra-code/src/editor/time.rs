@@ -89,3 +89,49 @@ pub(super) fn follow_top(
         });
     });
 }
+
+/// Keeps `at` the fractional line at the top of the view as `scroll_y` moves (the line, and
+/// how far down its rows the view stands), and scrolls the view there when `at` is set.
+pub(super) fn follow_position(
+    cx: &mut MountCx,
+    widget: Rc<Cell<Option<NodeId>>>,
+    scroll_y: Signal<f32>,
+    at: Signal<f64>,
+) {
+    let (writer, slot) = (cx.handle.clone(), widget.clone());
+    cx.handle.bind(move || {
+        let y = scroll_y.get();
+        let slot = slot.clone();
+        writer.with(move |tree| {
+            let Some(w) = slot.get().and_then(|id| tree.widget_mut::<EditorWidget>(id)) else { return };
+            w.sync_rows();
+            let last = w.row_count().saturating_sub(1);
+            let line = w.row_line(((y / w.line_px).max(0.0) as usize).min(last));
+            let rows = w.line_rows(line);
+            let into = (y - rows.start as f32 * w.line_px) / (rows.len().max(1) as f32 * w.line_px);
+            let now = line as f64 + f64::from(into.clamp(0.0, 1.0));
+            if (now - at.get_untracked()).abs() > 1e-4 {
+                at.set(now);
+            }
+        });
+    });
+    let writer = cx.handle.clone();
+    cx.handle.bind(move || {
+        let wanted = at.get();
+        let widget = widget.clone();
+        writer.with(move |tree| {
+            let Some(id) = widget.get() else { return };
+            let view = tree.parent(id).map_or(0.0, |port| tree.rect(port).height);
+            let Some(w) = tree.widget_mut::<EditorWidget>(id) else { return };
+            w.sync_rows();
+            let line = (wanted.max(0.0) as usize).min(w.doc.buffer.line_count().saturating_sub(1));
+            let rows = w.line_rows(line);
+            let into = (wanted - line as f64).clamp(0.0, 1.0) as f32;
+            let end = (w.row_count() as f32 * w.line_px - view).max(0.0);
+            let y = ((rows.start as f32 + into * rows.len() as f32) * w.line_px).min(end);
+            if (y - scroll_y.get_untracked()).abs() > 0.5 {
+                scroll_y.set(y);
+            }
+        });
+    });
+}

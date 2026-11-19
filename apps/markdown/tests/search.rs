@@ -59,6 +59,7 @@ fn preview_finds_counts_and_steps_through_its_matches() {
     key(&mut h, Key::Enter, Mods::SHIFT);
     assert!(h.has_text("1 of 3"));
     key(&mut h, Key::F3, Mods::NONE);
+    assert!(h.has_text("2 of 3"), "one step a press");
     key(&mut h, Key::F3, Mods::NONE);
     key(&mut h, Key::F3, Mods::NONE);
     assert!(h.has_text("1 of 3"), "round");
@@ -90,7 +91,7 @@ fn the_apps_keys_work_from_the_query() {
 
 #[test]
 fn while_the_editor_shows_ctrl_f_is_its_find_from_either_pane() {
-    let (mut h, _) = app(vec![file("editor.md", FRUIT)]);
+    let (mut h, tabs) = app(vec![file("editor.md", FRUIT)]);
     key(&mut h, Key::Digit2, Mods::CTRL);
     // The focus in the preview's pane: Ctrl+F is still the editor's find.
     let rendered = h.get_by_role(Role::Group, "Rendered").node();
@@ -103,4 +104,9 @@ fn while_the_editor_shows_ctrl_f_is_its_find_from_either_pane() {
     h.type_text("apple");
     h.settle();
     assert!(h.has_text("1 of 3"), "the editor finds in the source");
+    // Again from its query: the focus stays there, and what is typed is the query's.
+    key(&mut h, Key::F, Mods::CTRL);
+    h.type_text("s");
+    h.settle();
+    assert!(!tabs.current_untracked().changed.get_untracked(), "the document is as it was");
 }

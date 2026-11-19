@@ -102,6 +102,9 @@ pub(super) fn edit(
     (epoch, at): (Instant, Instant),
     f: impl FnOnce(&mut EditorWidget, usize),
 ) {
+    if !tree.is_alive(id) {
+        return; // what came before took the editor away: a link that opened another document
+    }
     let now = at.saturating_duration_since(epoch).as_millis() as u64;
     // A page is the lines of the view the editor scrolls in.
     let view = tree.parent(id).map_or(0.0, |port| tree.rect(port).height);

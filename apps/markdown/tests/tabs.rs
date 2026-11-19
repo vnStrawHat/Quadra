@@ -206,3 +206,52 @@ fn closing_the_window_saves_each_tab_when_told_to() {
     assert_eq!(std::fs::read_to_string(&second).unwrap(), "q# Two\n");
     assert!(a.h.tree.take_window_requests().contains(&WindowRequest::CloseNow));
 }
+
+#[test]
+fn tabs_are_chosen_and_closed_with_the_pointer() {
+    let (first, second) = (file("ptr-1.md", "# One\n"), file("ptr-2.md", "# Two\n"));
+    let mut a = app(Some(first));
+    a.shell.choose(&[&second.display().to_string()]);
+    a.key(Key::O, Mods::CTRL);
+    assert_eq!(a.active(), "ptr-2.md");
+    a.h.get_by_role(Role::Tab, "ptr-1.md").click();
+    a.h.settle();
+    assert_eq!(a.active(), "ptr-1.md");
+    // The cross shows under the pointer; a press on it closes its tab.
+    let tab = a.h.get_by_role(Role::Tab, "ptr-1.md").node();
+    let at = a.h.tree.window_rect(tab);
+    a.h.pointer(quadra_tree::PointerInput::Move, at.x + 10.0, at.y + 10.0);
+    a.h.settle();
+    let crosses = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Close");
+    let cross = crosses.into_iter().map(|id| a.h.tree.window_rect(id)).find(|it| at.contains(it.center()));
+    let cross = cross.expect("the tab's cross");
+    a.h.click(cross.center().x, cross.center().y);
+    a.h.settle();
+    assert_eq!(a.active(), "ptr-2.md");
+    assert!(a.names().is_empty(), "one tab left");
+}
+
+#[test]
+fn ctrl_w_saves_a_tab_when_told_to_and_the_window_asks_for_a_hidden_one() {
+    let (first, second) = (file("ask-1.md", "# One\n"), file("ask-2.md", "# Two\n"));
+    let mut a = app(Some(first.clone()));
+    a.edit("s");
+    a.shell.choose(&[&second.display().to_string()]);
+    a.key(Key::O, Mods::CTRL);
+    a.edit("t");
+    // The first shows; the second, hidden, has unsaved work too.
+    a.key(Key::Tab, Mods::CTRL);
+    assert_eq!(a.active(), "ask-1.md");
+    a.shell.answer(Answer::Yes);
+    a.key(Key::W, Mods::CTRL);
+    assert_eq!(std::fs::read_to_string(&first).unwrap(), "s# One\n");
+    assert_eq!((a.active(), a.names().len()), ("ask-2.md".to_string(), 0));
+    a.key(Key::N, Mods::CTRL);
+    assert_eq!(a.active(), "Untitled");
+    a.h.tree.take_window_requests();
+    a.shell.answer(Answer::Yes);
+    assert!(!a.h.tree.may_close());
+    a.h.settle();
+    assert_eq!(std::fs::read_to_string(&second).unwrap(), "t# Two\n");
+    assert!(a.h.tree.take_window_requests().contains(&WindowRequest::CloseNow));
+}

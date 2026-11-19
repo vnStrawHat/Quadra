@@ -1,5 +1,5 @@
 //! The sidebar (specs/behaviour/09, "Navigation"): the places of an app in groups, one of
-//! them chosen. It folds to its icons alone.
+//! them chosen, a search that keeps those it names. It folds to its icons alone.
 
 use quadra_headless::list;
 use quadra_layout::{Align, Display, Justify, Length};
@@ -10,7 +10,7 @@ use quadra_view::{AnyView, Div, MountCx, View, by_text, column, div, row, scroll
 
 use crate::display::{chosen_mark, label};
 use crate::icon::icon;
-use crate::token;
+use crate::{icons, input, size, token};
 
 /// A place: what it is known by, what it is called, and its icon if it has one.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -39,12 +39,13 @@ pub struct Sidebar {
     folded: Folded,
     width: f32,
     head: Option<AnyView>,
+    query: Option<Signal<String>>,
 }
 
 /// A sidebar with no places yet: `chosen` holds the id of the chosen one, and a click or the
 /// arrows write it.
 pub fn sidebar(chosen: Signal<&'static str>) -> Sidebar {
-    Sidebar { groups: Vec::new(), chosen, folded: Box::new(|| false), width: 240.0, head: None }
+    Sidebar { groups: Vec::new(), chosen, folded: Box::new(|| false), width: 240.0, head: None, query: None }
 }
 
 impl Sidebar {
@@ -66,7 +67,13 @@ impl Sidebar {
         self
     }
 
-    /// Something above the places: a search field, the name of a project.
+    /// A search field at the top: the places whose names hold `query`, any case, are kept.
+    pub fn search(mut self, query: Signal<String>) -> Self {
+        self.query = Some(query);
+        self
+    }
+
+    /// Something above the places: the name of a project.
     pub fn head(mut self, view: impl View + 'static) -> Self {
         self.head = Some(AnyView::new(view));
         self
@@ -80,20 +87,44 @@ impl View for Sidebar {
         let words = move || if folded.get() { Display::None } else { Display::Flex };
         let ids: Vec<&'static str> =
             self.groups.iter().flat_map(|(_, items)| items.iter().map(|i| i.id)).collect();
+        // The names the query keeps; all of them without a query.
+        let query = self.query;
+        let names: Vec<(&'static str, String)> = (self.groups.iter())
+            .flat_map(|(_, items)| items.iter().map(|i| (i.id, i.label.to_lowercase())))
+            .collect();
+        let kept = memo(move || {
+            let asked = query.map(|q| q.with(|q| q.trim().to_lowercase())).unwrap_or_default();
+            names.iter().filter(|(_, name)| name.contains(&asked)).map(|(id, _)| *id).collect::<Vec<_>>()
+        });
+        let shown = move |yes: bool| if yes && !folded.get() { Display::Flex } else { Display::None };
         let mut places = column().padding_y(4.0);
+        if let Some(query) = query {
+            places = places.child(search(query, kept, chosen).display(move || shown(true)));
+        }
         if let Some(head) = self.head {
             places = places.child(head);
         }
         for (title, items) in self.groups {
+            let of: Vec<&'static str> = items.iter().map(|i| i.id).collect();
             if !title.is_empty() {
                 let title =
                     div().padding_left(10.0).padding_top(12.0).padding_bottom(4.0).child(label(title));
-                places = places.child(title.display(words));
+                let any = move || kept.with(|kept| of.iter().any(|id| kept.contains(id)));
+                places = places.child(title.display(move || shown(any())));
             }
             for item in items {
-                places = places.child(place(item, chosen, words, move || folded.get()));
+                let id = item.id;
+                let row = place(item, chosen, words, move || folded.get());
+                places = places.child(row.display(move || match kept.with(|kept| kept.contains(&id)) {
+                    true => Display::Flex,
+                    false => Display::None,
+                }));
             }
         }
+        let none =
+            div().padding_x(10.0).padding_y(8.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
+        let none = none.display(move || shown(kept.with(Vec::is_empty))).child(text("No results"));
+        places = places.child(none);
         let side = column().shrink(0.0).width(move || Length::Px(if folded.get() { 40.0 } else { width }));
         let side = side.bg(token::PANEL).border_right(1.0).border_color(token::LINE_STRONG);
         let side = side.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
@@ -123,4 +154,20 @@ fn place(
         None => line,
     };
     line.child(div().display(words).child(text(item.label))).child(chosen_mark(Side::Left, on))
+}
+
+/// The field at the top: Enter chooses the first place kept.
+fn search(
+    query: Signal<String>,
+    kept: quadra_reactive::Memo<Vec<&'static str>>,
+    chosen: Signal<&'static str>,
+) -> Div {
+    let field =
+        input(query).small().height(28.0).fill().icon(icons::SEARCH).placeholder("Search…").label("Search");
+    let field = field.on_submit(move |_| {
+        if let Some(first) = quadra_reactive::untrack(|| kept.with(|kept| kept.first().copied())) {
+            chosen.set(first);
+        }
+    });
+    row().padding_x(8.0).padding_top(4.0).padding_bottom(4.0).child(field)
 }

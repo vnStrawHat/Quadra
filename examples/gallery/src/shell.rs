@@ -89,7 +89,7 @@ impl Gallery {
         };
         let head = titlebar("Quadra Gallery").menu(menu).control(div().grow(1.0)).control(toggle);
 
-        let mut places = sidebar(page);
+        let mut places = sidebar(page).search(signal(String::new()));
         let mut groups: Vec<&str> = Vec::new();
         for known in PAGES {
             if !groups.contains(&known.group) {

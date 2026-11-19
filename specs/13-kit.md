@@ -324,7 +324,11 @@ As built so far:
   the focus in the sidebar the arrows, Home and End move it. A place is a row of 26 px,
   filled when chosen. While `.folded(|| ..)` says so it is 40 px wide and shows the icons
   alone; the places keep their names for a reader. `.head(view)` is above the places, and
-  what does not fit scrolls.
+  what does not fit scrolls. `.search(query)` puts a search field at its top (full width,
+  8 from the top and the sides; small, 28 tall, the search icon, "Search…"; not there while
+  folded) that keeps the places whose names hold the query (any case), and the titles of
+  the groups that keep one; with none, `No results` in `text_3`. Enter in the field chooses
+  the first place kept.
 - **`slider(value)`** holds a number between two ends (`.range(min, max, step)`; 0 to 100
   by 1 unless told): a track of 4 px, filled with the accent up to a knob of 12 px, in a
   box of 20 px, 200 wide unless told. A press on the track takes the value there, a drag
@@ -566,7 +570,7 @@ As built so far:
   `Prop<T>` is itself something a setter takes.
 - The gallery (`examples/gallery`, the crate `quadra-gallery`) shows the components in a
   real window in either theme: a window with its own title bar, the pages in a sidebar by
-  group, the page that shows, a status bar and a command palette. A page is the group it is
+  group with a search at its top, the page that shows, a status bar and a command palette. A page is the group it is
   in, its title, what the component is for, and framed demos, each with how it is written
   (`common.rs`). The pages began as those of the V gallery; each is compared with pictures
   the gallery drew before (12, "Snapshots").

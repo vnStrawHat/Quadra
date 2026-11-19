@@ -139,3 +139,40 @@ fn a_place_of_a_sidebar_is_chosen_by_a_click_or_the_arrows_and_the_sidebar_folds
     assert_eq!(h.tree.rect(side).width, 40.0);
     assert!(tree.contains("TreeItem \"Inbox\"") && !tree.contains("Text \"Notes\""), "{tree}");
 }
+
+#[test]
+fn a_sidebars_search_keeps_the_places_it_names_and_enter_chooses_the_first() {
+    let (chosen, query) = (signal("inbox"), signal(String::new()));
+    let mut h = mount(move || {
+        let places = sidebar(chosen)
+            .search(query)
+            .group("", [NavItem::new("inbox", "Inbox").icon(icons::BELL)])
+            .group("Notes", [NavItem::new("today", "Today"), NavItem::new("all", "All notes")]);
+        row().grow(1.0).child(places).child(div().grow(1.0))
+    });
+    let shown = |h: &Harness| {
+        let rows = h.query(|n| n.semantics.role == Role::TreeItem);
+        rows.into_iter()
+            .filter(|&id| h.tree.rect(id).height > 0.0)
+            .map(|id| h.tree.meaning(id).name)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(shown(&h), ["Inbox", "Today", "All notes"]);
+    let field = h.get_by_role(Role::TextInput, "Search").node();
+    let frame = h.tree.parent(field).expect("the field's frame");
+    assert_eq!(h.tree.rect(frame).height, 28.0);
+    h.get_by_role(Role::TextInput, "Search").type_text("NOTE");
+    settle(&mut h);
+    assert_eq!(shown(&h), ["All notes"], "any case");
+    assert!(h.has_text("Notes"), "its group's title stays");
+    h.key(Key::Enter, Mods::NONE);
+    settle(&mut h);
+    assert_eq!(chosen.get_untracked(), "all");
+    query.set("inb".into());
+    settle(&mut h);
+    assert_eq!(shown(&h), ["Inbox"]);
+    assert!(!h.has_text("Notes"), "a group with no place kept has no title");
+    query.set("zzz".into());
+    settle(&mut h);
+    assert!(shown(&h).is_empty() && h.has_text("No results"));
+}

@@ -328,7 +328,7 @@ As built so far:
   8 from the top and the sides; small, 28 tall, the search icon, "Search…"; not there while
   folded) that keeps the places whose names hold the query (any case), and the titles of
   the groups that keep one; with none, `No results` in `text_3`. Enter in the field chooses
-  the first place kept.
+  the first place kept, and the arrows, Home and End go among the places kept alone.
 - **`slider(value)`** holds a number between two ends (`.range(min, max, step)`; 0 to 100
   by 1 unless told): a track of 4 px, filled with the accent up to a knob of 12 px, in a
   box of 20 px, 200 wide unless told. A press on the track takes the value there, a drag

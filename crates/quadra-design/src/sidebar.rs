@@ -85,8 +85,6 @@ impl View for Sidebar {
         let (chosen, width, folded) = (self.chosen, self.width, memo(self.folded));
         // What is words is not there while the sidebar is folded.
         let words = move || if folded.get() { Display::None } else { Display::Flex };
-        let ids: Vec<&'static str> =
-            self.groups.iter().flat_map(|(_, items)| items.iter().map(|i| i.id)).collect();
         // The names the query keeps; all of them without a query.
         let query = self.query;
         let names: Vec<(&'static str, String)> = (self.groups.iter())
@@ -128,7 +126,8 @@ impl View for Sidebar {
         let side = column().shrink(0.0).width(move || Length::Px(if folded.get() { 40.0 } else { width }));
         let side = side.bg(token::PANEL).border_right(1.0).border_color(token::LINE_STRONG);
         let side = side.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
-        list::places(side, ids, chosen).child(scroll(signal(0.0), places)).mount(cx)
+        // The arrows go among the places the search keeps.
+        list::places(side, move || kept.get(), chosen).child(scroll(signal(0.0), places)).mount(cx)
     }
 }
 

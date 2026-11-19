@@ -109,11 +109,16 @@ where
 }
 
 /// The box of a few places of which `chosen` holds the one chosen, by its id: a sidebar. It
-/// takes the focus; the arrows move the choice along `ids` and stop at the ends, Home and End
-/// go to them. A tree to a reader.
-pub fn places<T: Copy + PartialEq + 'static>(frame: Div, ids: Vec<T>, chosen: Signal<T>) -> Div {
+/// takes the focus; the arrows move the choice along the places `ids` gives (those that show,
+/// asked at each key) and stop at the ends, Home and End go to them. A tree to a reader.
+pub fn places<T: Copy + PartialEq + 'static>(
+    frame: Div,
+    ids: impl Fn() -> Vec<T> + 'static,
+    chosen: Signal<T>,
+) -> Div {
     let ids = Rc::new(ids);
     let go = move |to: fn(Option<usize>, usize) -> usize| {
+        let ids = quadra_reactive::untrack(|| ids());
         let (at, last) = (ids.iter().position(|id| *id == chosen.get_untracked()), ids.len().checked_sub(1));
         if let Some(last) = last {
             chosen.set(ids[to(at, last)]);

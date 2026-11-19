@@ -175,4 +175,17 @@ fn a_sidebars_search_keeps_the_places_it_names_and_enter_chooses_the_first() {
     query.set("zzz".into());
     settle(&mut h);
     assert!(shown(&h).is_empty() && h.has_text("No results"));
+    // The arrows go among the places kept: "n" keeps Inbox and All notes, not Today.
+    query.set("n".into());
+    chosen.set("inbox");
+    settle(&mut h);
+    assert_eq!(shown(&h), ["Inbox", "All notes"]);
+    h.get_by_role(Role::TreeItem, "Inbox").click();
+    settle(&mut h);
+    h.key(Key::Down, Mods::NONE);
+    settle(&mut h);
+    assert_eq!(chosen.get_untracked(), "all", "Today is passed over");
+    h.key(Key::Home, Mods::NONE);
+    settle(&mut h);
+    assert_eq!(chosen.get_untracked(), "inbox");
 }

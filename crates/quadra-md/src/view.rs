@@ -14,7 +14,7 @@ use std::path::Path;
 use std::rc::Rc;
 
 use quadra_design::{fonts, icon, icons, size, token};
-use quadra_layout::{Align as Across, Justify, Length};
+use quadra_layout::{Align as Across, Justify};
 use quadra_reactive::signal;
 use quadra_text::find_urls;
 use quadra_tree::Role;
@@ -232,9 +232,8 @@ fn block(kind: &Kind, on_link: &Option<OnLink>, base: Option<&Path>) -> Div {
         }
         Kind::Rule => column().child(div().height(1.0).bg(token::LINE_STRONG)),
         Kind::Table { align, rows } => {
-            // One wider than the page, its columns at their least, scrolls sideways.
-            let table = Table { align: align.clone(), rows: rows.clone(), on_link: on_link.clone() };
-            column().child(scroll_x(signal(0.0), row().min_width(Length::Fill).child(table)))
+            // One whose longest words are wider than the page scrolls sideways.
+            column().child(Table { align: align.clone(), rows: rows.clone(), on_link: on_link.clone() })
         }
     }
 }

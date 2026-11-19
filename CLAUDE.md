@@ -18,8 +18,8 @@ implementation is its reference. Its specs, its tests and its own measurements
    `docs(specs): ...`, `refactor: ...`, `test: ...`, `chore: ...`, `perf: ...`; `!` or a
    `BREAKING CHANGE:` footer for breaking API changes). Scopes are crate names without the
    `quadra-` prefix (prim, reactive, layout, text, render, platform, tree, view, async, a11y,
-   app, native, shell, testing, headless, design, code, md, data, viz, term), the app `oneterm`,
-   or specs, tools.
+   app, native, shell, testing, headless, design, code, md, data, viz, term), the apps `oneterm`
+   and `markdown`, or specs, tools.
 4. **Never test the real clipboard.**
 5. **Commit each finished part** once `tools/check.sh prod` exits 0, then go on with the
    next; **push only when the user asks**.
@@ -123,9 +123,10 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `apps/oneterm` | 1Term, the terminal app (specs/19) |
 | `apps/oneterm/ssh` | 1Term's SSH and SFTP over `russh` |
 | `apps/oneterm/complete` | 1Term's command completion (specs/20) |
+| `apps/markdown` | Markdown, the app that reads and edits `.md` files (specs/21) |
 | `examples/gallery` | Every kit component on a page: the kit's acceptance test |
 | `examples/plain` | A second kit over the headless components |
 | `bench/compare` | The comparison bench's four scenes |
 | `bench/runner` | The comparison bench's runner: measures an app from outside |
 | `bench/doomfire` | Terminal throughput by the fire demo |
-| `bench/shots`, `bench/oneterm-shots` | The gallery's and 1Term's screens drawn to pictures |
+| `bench/shots`, `bench/oneterm-shots`, `bench/markdown-shots` | The gallery's, 1Term's and Markdown's screens drawn to pictures |

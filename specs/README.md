@@ -35,6 +35,7 @@ tests and Quadra's own measurements (`docs/benchmarks.md`) are the reference.
 | [18-term.md](18-term.md) | The terminal: a session over the `oneterm-vt` engine, its view, input and delivery |
 | [19-1term.md](19-1term.md) | 1Term, the terminal app: phases, window, tabs and spaces, signals, settings, lock |
 | [20-complete.md](20-complete.md) | 1Term's command completion: families, catalogs, the line at the cursor, ranking, history, redaction |
+| [21-markdown.md](21-markdown.md) | Markdown, the app that reads and edits `.md` files: layouts, files, panes that scroll by headings, the toolbar, the logo |
 
 Reading order: 00, 01, 02, 03, 04, 05, then the rest.
 

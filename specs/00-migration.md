@@ -157,7 +157,8 @@ user's own terminal engine, `oneterm-vt` (18): the parser, grid, limits and corp
 engine's and tested there; Quadra writes the view, the input and the delivery.
 
 **After Quadra**: the apps, each from its spec. 1Term (after the user's own OneTerm, redesigned
-by the user) is first, from 2026-11-15 (19); Notes, Folio and Cluster follow. Decisions that
+by the user) is first, from 2026-11-15 (19); Markdown, an app to read and edit `.md` files, from
+2026-11-19 (21); Notes, Folio and Cluster follow. Decisions that
 belong to an app, such as 1Term's SSH engine, are taken when its phase starts.
 
 ## Risks

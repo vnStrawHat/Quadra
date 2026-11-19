@@ -93,32 +93,39 @@ pub(super) fn follow_top(
 /// Keeps `at` the fractional line at the top of the view as `scroll_y` moves (the line, and
 /// how far down its rows the view stands), and scrolls the view there when `at` is set: after
 /// a layout, when the rows are those of the editor's width. Until it has been there once,
-/// the view's moves are not told: an editor built again starts where `at` says.
+/// the view's moves are not told: an editor built again starts where `at` says. Nor are they
+/// while a position asked for waits for its layout: the caret scrolled into view by the same
+/// change does not undo it.
 pub(super) fn follow_position(
     cx: &mut MountCx,
     widget: Rc<Cell<Option<NodeId>>>,
     scroll_y: Signal<f32>,
     at: Signal<f64>,
 ) {
-    let there = Rc::new(Cell::new(false));
-    let (writer, slot, arrived) = (cx.handle.clone(), widget.clone(), there.clone());
+    // Not there yet, a position waiting, and `at` set by the view's own move.
+    let (waits, echo) = (Rc::new(Cell::new(true)), Rc::new(Cell::new(false)));
+    let (writer, slot, waiting, told) = (cx.handle.clone(), widget.clone(), waits.clone(), echo.clone());
     cx.handle.bind(move || {
         at.get();
-        let (slot, arrived) = (slot.clone(), arrived.clone());
+        if told.take() {
+            return; // the view is there already
+        }
+        waiting.set(true);
+        let (slot, waiting) = (slot.clone(), waiting.clone());
         writer.with(move |tree| {
             tree.after_layout(move |tree| {
                 go_to(tree, &slot, scroll_y, at.get_untracked());
-                arrived.set(true);
+                waiting.set(false);
             })
         });
     });
     let writer = cx.handle.clone();
     cx.handle.bind(move || {
         scroll_y.get();
-        let (slot, there) = (widget.clone(), there.clone());
+        let (slot, waits, echo) = (widget.clone(), waits.clone(), echo.clone());
         writer.with(move |tree| {
             let Some(w) = slot.get().and_then(|id| tree.widget_mut::<EditorWidget>(id)) else { return };
-            if !there.get() {
+            if waits.get() {
                 return;
             }
             w.sync_rows();
@@ -129,6 +136,7 @@ pub(super) fn follow_position(
             let into = (y - rows.start as f32 * w.line_px) / (rows.len().max(1) as f32 * w.line_px);
             let now = line as f64 + f64::from(into.clamp(0.0, 1.0));
             if (now - at.get_untracked()).abs() > 1e-4 {
+                echo.set(true);
                 at.set(now);
             }
         });

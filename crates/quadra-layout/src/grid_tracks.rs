@@ -97,22 +97,29 @@ impl LayoutTree {
                 }
             }
         }
-        // fr tracks share the space left over, never below what they already have.
+        // fr tracks share the space left over, never below what they already have: one whose
+        // size is more than its share keeps it and is left out, and the others share again.
         if let Some(space) = ax.inner {
-            let mut used = ax.gap * tracks.len().saturating_sub(1) as f32;
-            let mut shares = 0.0;
-            for (track, size) in tracks.iter().zip(&sizes) {
-                match track.max {
-                    TrackSize::Fr(share) => shares += share,
-                    _ => used += size,
+            let gaps = ax.gap * tracks.len().saturating_sub(1) as f32;
+            let share_of = |k: usize| match tracks[k].max {
+                TrackSize::Fr(share) => Some(share),
+                _ => None,
+            };
+            let mut flexible: Vec<usize> = (0..tracks.len()).filter(|&k| share_of(k).is_some()).collect();
+            loop {
+                let used: f32 = (0..tracks.len()).filter(|k| !flexible.contains(k)).map(|k| sizes[k]).sum();
+                let shares: f32 = flexible.iter().filter_map(|&k| share_of(k)).sum();
+                if shares <= 0.0 {
+                    break;
                 }
-            }
-            if shares > 0.0 {
-                let unit = (space - used).max(0.0) / shares;
-                for (track, size) in tracks.iter().zip(&mut sizes) {
-                    if let TrackSize::Fr(share) = track.max {
-                        *size = size.max(unit * share);
+                let unit = (space - gaps - used).max(0.0) / shares;
+                let before = flexible.len();
+                flexible.retain(|&k| sizes[k] <= unit * share_of(k).unwrap_or(0.0));
+                if flexible.len() == before {
+                    for &k in &flexible {
+                        sizes[k] = unit * share_of(k).unwrap_or(0.0);
                     }
+                    break;
                 }
             }
         }

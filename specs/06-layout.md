@@ -13,6 +13,9 @@ changed node and climbs only as far as the change is felt.
   `minmax`, `repeat`, `repeat_fill`, placement by line, span or named area; absolute children
   with insets; lengths as pixels, percentages, `auto` or `fill`. Not supported: subgrid,
   masonry, baseline alignment, `order`.
+- **Fractions** share the space left after the other tracks. One whose size is already more
+  than its share keeps its size and is left out, and the others share what is left again,
+  until none is: the tracks then fill the grid and no more (CSS's "find the size of an fr").
 - Leaves with content (text, image, a custom widget) report an intrinsic size through
   `Widget::measure` (04).
 

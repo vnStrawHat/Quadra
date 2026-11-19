@@ -38,6 +38,19 @@ fn fixed_and_fr_columns() {
 }
 
 #[test]
+fn an_fr_column_held_at_its_least_leaves_the_rest_to_the_others() {
+    // Shares 1 and 9 of 400 are 40 and 360; the first is at least 100, so the second has 300.
+    let mut t = LayoutTree::new();
+    let ids: Vec<_> = (0..2).map(|_| t.insert(tall(20.0))).collect();
+    let least = quadra_layout::TrackSize::Px(100.0);
+    let columns = vec![Track::minmax(least, quadra_layout::TrackSize::Fr(1.0)), Track::fr(9.0)];
+    let root = node(&mut t, grid_root(columns, 400.0), &ids);
+    t.layout(root, fill(400.0, 1000.0), &mut NoMeasure);
+    assert_eq!(t.rect(ids[0]), rect(0.0, 0.0, 100.0, 20.0));
+    assert_eq!(t.rect(ids[1]), rect(100.0, 0.0, 300.0, 20.0));
+}
+
+#[test]
 fn an_automatic_row_is_as_tall_as_its_tallest_item() {
     let mut t = LayoutTree::new();
     let a = t.insert(Style::default()); // auto height: stretched to the row

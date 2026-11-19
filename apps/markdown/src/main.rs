@@ -10,7 +10,7 @@
 use std::path::PathBuf;
 
 use markdown::{MdApp, Prefs, keymap};
-use quadra::{AppDirs, Feature, WindowOptions};
+use quadra::{AppDirs, WindowOptions};
 
 fn main() -> quadra::Result<()> {
     let mut app = quadra::app()?;
@@ -26,8 +26,7 @@ fn main() -> quadra::Result<()> {
     let first = quadra_design::system_theme(&app.appearance());
     let mut app =
         quadra_design::install(app, &first)?.theme_by(move |seen| markdown::theme(prefs.theme.get(), seen));
-    // The source reads as it is typed: `##`, `|---|` and `->` are not drawn as one sign.
-    app.font_features(quadra_design::fonts::MONO, &[Feature::off(b"calt"), Feature::off(b"liga")]);
+    markdown::plain_code(&mut app);
     let app = quadra_shell::install(app);
     let options = WindowOptions::new("Markdown")
         .size(1280.0, 860.0)

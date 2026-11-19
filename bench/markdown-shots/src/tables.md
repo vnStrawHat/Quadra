@@ -7,6 +7,7 @@
 | retries | 3 | How many times a request is sent again before the app gives up and says why, with the reason the server gave if it gave one |
 | timeout | 30 s | The time to wait for an answer |
 | proxy | none | An address such as `http://proxy.example.com:8080`, or none to connect directly |
+| `retries_after_failure` | `false` | Code in a cell is measured in the code face it is drawn in, beside prose that wraps |
 
 ## A word longer than its column
 

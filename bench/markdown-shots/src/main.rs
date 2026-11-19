@@ -73,6 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let text = DirectWrite::new().map_err(AppError::Text)?;
         let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
         let mut app = quadra_design::install(app, &quadra_design::dark())?.keymap(keymap());
+        markdown::plain_code(&mut app);
         let built: Rc<RefCell<Option<Model>>> = Rc::default();
         let document = if scene.starts_with("tables") { tables.clone() } else { sample.clone() };
         let (tell, file) = (built.clone(), (*scene != "empty").then_some(document));

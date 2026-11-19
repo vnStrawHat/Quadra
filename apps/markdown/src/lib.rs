@@ -57,6 +57,13 @@ impl Action for ToggleOutline {
     const NAME: &'static str = "markdown::ToggleOutline";
 }
 
+/// The code face without its ligatures, in every window: the source reads as it is typed
+/// (`##`, `|---|` and `->` are not drawn as one sign). Called before text is shown.
+pub fn plain_code(app: &mut quadra::App) {
+    let off = [quadra::Feature::off(b"calt"), quadra::Feature::off(b"liga")];
+    app.font_features(quadra_design::fonts::MONO, &off);
+}
+
 /// The app's keys, the kit's and the editor's.
 pub fn keymap() -> Keymap {
     let mut map = quadra_design::keymap();

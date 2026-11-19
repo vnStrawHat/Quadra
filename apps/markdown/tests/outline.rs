@@ -140,3 +140,25 @@ fn the_last_heading_chosen_stays_chosen_where_the_panes_end() {
     frames(&mut h);
     assert_eq!(selected(&h), ["Title"]);
 }
+
+#[test]
+fn the_outline_is_reached_by_tab_and_moved_by_the_arrows() {
+    let (mut h, m) = app("keys");
+    let tree = |h: &Harness| h.query(|n| n.focused && n.semantics.role == Role::Tree).len() == 1;
+    for _ in 0..12 {
+        if tree(&h) {
+            break;
+        }
+        h.key(Key::Tab, Mods::NONE);
+        frames(&mut h);
+    }
+    assert!(tree(&h), "Tab reaches the outline");
+    h.key(Key::Down, Mods::NONE);
+    frames(&mut h);
+    h.key(Key::Down, Mods::NONE);
+    frames(&mut h);
+    assert_eq!(selected(&h), [LONG]);
+    // The preview went to it.
+    let top = m.places.with_untracked(|p| p.iter().find(|it| it.line == 10).map(|it| it.top + 24.0).unwrap());
+    assert!((m.preview_y.get_untracked() - top).abs() < 1.0);
+}

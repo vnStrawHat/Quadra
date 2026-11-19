@@ -155,6 +155,7 @@ impl<R: Renderer> App<R> {
                     WindowRequest::Close if w.tree.may_close() => closed.push(w.window.id()),
                     WindowRequest::Close => {}
                     WindowRequest::CloseNow => closed.push(w.window.id()),
+                    WindowRequest::Title(title) => w.window.set_title(&title),
                 }
             }
             if all || w.tree.needs_frame() {

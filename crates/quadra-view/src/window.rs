@@ -54,6 +54,11 @@ impl Window {
         self.handle.ask_window(WindowRequest::CloseNow);
     }
 
+    /// What the OS shows as the window's title: its frame, the taskbar.
+    pub fn set_title(&self, title: impl Into<String>) {
+        self.handle.ask_window(WindowRequest::Title(title.into()));
+    }
+
     /// How many frames the window has made (`Handle::frames`).
     pub fn frames(&self) -> u64 {
         self.handle.frames()

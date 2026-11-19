@@ -22,7 +22,7 @@ pub struct WindowState {
 }
 
 /// What a view asks of its window. The app does it after the handler that asked.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WindowRequest {
     Minimize,
     /// Maximize, or put back as it was.
@@ -31,6 +31,8 @@ pub enum WindowRequest {
     Close,
     /// Close, asking nothing: what a view does once the user said what to do.
     CloseNow,
+    /// What the OS shows as its title: its frame, the taskbar.
+    Title(String),
 }
 
 impl Tree {

@@ -87,7 +87,17 @@ pub fn breadcrumb_page() -> Div {
     page(
         "Breadcrumb",
         "Where the view sits in a hierarchy. Every part but the last is a link.",
-        [demo("Resource path", way, "breadcrumb([\"cluster\", \"default\", \"api\"], |i| ..)")],
+        [
+            demo("Resource path", way, "breadcrumb([\"cluster\", \"default\", \"api\"], |i| ..)"),
+            demo(
+                "In a narrow bar",
+                div()
+                    .width(340.0)
+                    .min_width(0.0)
+                    .child(breadcrumb(["cluster-prod", "Workloads", "Deployments", "api-gateway"], |_| ())),
+                "one line: the middle parts are cut first, the first and the last kept",
+            ),
+        ],
     )
 }
 

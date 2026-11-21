@@ -321,7 +321,10 @@ As built so far:
   filled; a toggled button that is an icon alone takes no fill anywhere) and
   `status_divider()`. `breadcrumb(parts, pick)` is the way to where the user is: mono,
   muted names with a mark between them, 8 px from each, each a link that gives `pick` its
-  index, but the last: where the user is, in the text's colour, which reads first.
+  index, but the last: where the user is, in the text's colour, which reads first. It
+  keeps one line: with less room than it needs (a parent of `min_width(0)` is enough for
+  it to shrink) its middle parts give way first, each cut with an ellipsis down to 24 px,
+  and the first and the last stay whole while they fit, then are cut too.
 - **A status** (`status.rs`: running, pending, failed, succeeded, terminating, unknown) has
   a role of the theme for its colour and a shape of its own in a box of 12 px
   (`status_mark`): a filled square of 7 px, a hollow one (a 2 px border), a filled

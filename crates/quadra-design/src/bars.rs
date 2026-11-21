@@ -90,14 +90,18 @@ pub fn breadcrumb<S: Into<String>>(
 
 impl View for Breadcrumb {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let mut way = row().align_items(Align::Center).gap(8.0).font_family(fonts::MONO);
+        let mut way = row().align_items(Align::Center).gap(8.0).font_family(fonts::MONO).min_width(0.0);
         way = way.text_color(token::TEXT_2);
         let last = self.parts.len().saturating_sub(1);
         for (i, part) in self.parts.into_iter().enumerate() {
             if i > 0 {
-                way = way.child(text("\u{203A}").color(token::TEXT_3));
+                way = way.child(row().shrink(0.0).child(text("\u{203A}").color(token::TEXT_3)));
             }
-            let crumb = div().child(text(part));
+            // One line: the middle parts give way first (shrink is weighed by width), down to
+            // an ellipsis; the ends only once those are as narrow as they go.
+            let middle = i > 0 && i < last;
+            let (shrink, least) = if middle { (1e6, 24.0) } else { (1.0, 0.0) };
+            let crumb = row().shrink(shrink).min_width(least).child(text(part).ellipsis());
             way = way.child(match i < last {
                 true => {
                     let pick = self.pick.clone();

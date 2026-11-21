@@ -996,6 +996,10 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   wheel without Ctrl goes on to what is around. `.fit()` shows all of it when its box is
   first laid out, and a double click on it fits it again: `fitted(bounds, size)` is that
   view (16 px of margin, never past a zoom of 1).
+- `.still()` is a diagram in a page that scrolls: no drag, no zoom, no fit by a double
+  click, no capture of the pointer; every wheel goes on to the page. Clicks and hover are as
+  before. Without a `.view(..)` it shows its drawing at zoom 1 with 16 px around it, and
+  without a height it is as tall as that.
 - `.on_click(|hit| ..)` is told a click on a node (`Hit::Node(id)`) or on a link
   (`Hit::Link(i)`, within 5 px of its line); `.on_hover(|hit| ..)` what the pointer is over,
   `None` when nothing. A press that becomes a drag (past 3 px) clicks nothing.

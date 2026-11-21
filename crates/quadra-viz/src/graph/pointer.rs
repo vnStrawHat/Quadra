@@ -22,14 +22,15 @@ pub(super) type Shared = (Rc<RefCell<Option<Hit>>>, Rc<Cell<bool>>);
 pub(super) type Told = (Option<Rc<dyn Fn(Hit)>>, Option<Rc<dyn Fn(Option<Hit>)>>);
 
 /// The pointer on the graph: a drag pans, the wheel with Ctrl zooms about the pointer, a
-/// double click fits; a click or the pointer near a link tells of it.
+/// double click fits; a click or the pointer near a link tells of it. A still graph only
+/// tells.
 pub(super) fn pointer(
     all: Div,
     view: Signal<GraphView>,
     routes: Routes,
     (click, hover): Told,
     (last, moved): Shared,
-    bounds: Rect,
+    (bounds, still): (Rect, bool),
 ) -> Div {
     // Within 5 px of the line as it shows: the pointer taken back to the plane.
     let link_at = move |at: Point| {
@@ -39,13 +40,16 @@ pub(super) fn pointer(
     };
     let held = Rc::new(Cell::new(None::<(Point, Point)>));
     let (press, drag, up) = (held.clone(), held.clone(), held);
-    let (fresh, dragged, still) = (moved.clone(), moved.clone(), moved);
+    let (fresh, dragged, held_still) = (moved.clone(), moved.clone(), moved);
     let (near, tap) = (link_at.clone(), link_at);
-    let all = all.on_pointer(PointerKind::Down, move |e| {
-        e.capture_pointer();
-        press.set(Some((e.at, view.get_untracked().pan)));
-        fresh.set(false);
-    });
+    let all = match still {
+        true => all,
+        false => all.on_pointer(PointerKind::Down, move |e| {
+            e.capture_pointer();
+            press.set(Some((e.at, view.get_untracked().pan)));
+            fresh.set(false);
+        }),
+    };
     let all = all.on_pointer(PointerKind::Move, move |e: &mut PointerEvent| match drag.get() {
         Some((from, pan)) => {
             let (dx, dy) = (e.at.x - from.x, e.at.y - from.y);
@@ -66,8 +70,8 @@ pub(super) fn pointer(
     });
     let all = all.on_pointer(PointerKind::Up, move |_| up.set(None));
     let all = all.on_pointer(PointerKind::Click, move |e| match e.clicks {
-        2 => view.set(fitted(bounds, e.size)),
-        _ if !still.get() => {
+        2 if !still => view.set(fitted(bounds, e.size)),
+        _ if !held_still.get() => {
             if let (Some(k), Some(f)) = (tap(e.local), &click) {
                 f(Hit::Link(k));
             }
@@ -75,7 +79,7 @@ pub(super) fn pointer(
         _ => {}
     });
     all.on_pointer(PointerKind::Wheel, move |e| {
-        if e.mods.contains(Mods::CTRL) {
+        if e.mods.contains(Mods::CTRL) && !still {
             e.stop();
             let v = view.get_untracked();
             let zoom = (v.zoom * 2f32.powf(e.delta.y / 400.0)).clamp(0.25, 4.0);

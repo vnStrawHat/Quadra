@@ -42,8 +42,10 @@ pub struct Graph {
     view: Option<Signal<GraphView>>,
     click: Option<Rc<dyn Fn(Hit)>>,
     hover: Option<Rc<dyn Fn(Option<Hit>)>>,
-    height: Length,
+    /// `None`: 360 px, or as tall as its drawing when still.
+    height: Option<Length>,
     fit: bool,
+    still: bool,
     /// How its links run: along which axis, and whether straight.
     lines: (LinkAxis, bool),
 }
@@ -54,7 +56,8 @@ pub fn graph(nodes: impl IntoIterator<Item = Node>, links: impl IntoIterator<Ite
     let style: Styles = Rc::new(|_| LinkStyle::default());
     let (groups, view, click, hover) = (Vec::new(), None, None, None);
     let lines = (LinkAxis::Auto, false);
-    Graph { nodes, links, groups, style, view, click, hover, height: Length::Px(360.0), fit: false, lines }
+    let (height, fit, still) = (None, false, false);
+    Graph { nodes, links, groups, style, view, click, hover, height, fit, still, lines }
 }
 
 impl Graph {
@@ -92,19 +95,26 @@ impl Graph {
     }
 
     pub fn height(mut self, px: f32) -> Self {
-        self.height = Length::Px(px);
+        self.height = Some(Length::Px(px));
         self
     }
 
     /// As tall as the box it is in, following it: a view under a toolbar.
     pub fn fill(mut self) -> Self {
-        self.height = Length::Fill;
+        self.height = Some(Length::Fill);
         self
     }
 
     /// All of it in view when its box is first laid out.
     pub fn fit(mut self) -> Self {
         self.fit = true;
+        self
+    }
+
+    /// A diagram that does not move: no pan, no zoom, every wheel to the page; clicks and
+    /// hover as before.
+    pub fn still(mut self) -> Self {
+        self.still = true;
         self
     }
 
@@ -174,9 +184,13 @@ fn placed(face: Div, view: Signal<GraphView>, r: Rect) -> Div {
 
 impl View for Graph {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let view = self.view.unwrap_or_else(|| signal(GraphView::default()));
         let (rects, routes) = self.plane();
         let (frames, bounds, routes) = (self.frames(&rects), self.bounds(), Rc::new(routes));
+        // Still, its drawing at zoom 1 with 16 px around it, as tall as that.
+        let drawing = GraphView { pan: Point::new(16.0 - bounds.x, 16.0 - bounds.y), zoom: 1.0 };
+        let view =
+            self.view.unwrap_or_else(|| signal(if self.still { drawing } else { GraphView::default() }));
+        let height = self.height.unwrap_or(Length::Px(if self.still { bounds.height + 32.0 } else { 360.0 }));
         // A frame's title in the plane as its nodes are: its band never under the title.
         let frames = frames.into_iter().map(|(title, r)| {
             let words = div().padding_x(8.0).padding_y(4.0).text_size(size::TEXT_SM.size).child(text(title));
@@ -222,8 +236,8 @@ impl View for Graph {
         let world = div().absolute().left(0.0).top(0.0).right(0.0).bottom(0.0).cut_to_parent();
         let world =
             world.children(frames.collect::<Vec<_>>()).child(drawn).children(nodes.collect::<Vec<_>>());
-        let all = div().width(Length::Fill).height(self.height).shrink(0.0).role(Role::Group).child(world);
-        let all = pointer::pointer(all, view, routes, (self.click, self.hover), shared, bounds);
+        let all = div().width(Length::Fill).height(height).shrink(0.0).role(Role::Group).child(world);
+        let all = pointer::pointer(all, view, routes, (self.click, self.hover), shared, (bounds, self.still));
         let fit = self.fit;
         all.on_mount(move |tree, id| {
             let (size, done) = (tree.size_signal(id), Cell::new(!fit));

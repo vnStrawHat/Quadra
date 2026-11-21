@@ -10,7 +10,7 @@ use quadra_prim::{Point, Rect, Size};
 use quadra_reactive::{Signal, signal};
 use quadra_render::{Instance, Kind};
 use quadra_testing::Harness;
-use quadra_tree::{PointerInput, Role};
+use quadra_tree::{PointerInput, PointerKind, Role};
 use quadra_view::{div, text};
 use quadra_viz::{GraphView, Hit, Link, LinkAxis, LinkStyle, Node, graph};
 
@@ -240,4 +240,36 @@ fn a_node_writes_its_own_svg_and_a_graph_fills_its_box() {
     tall.set(300.0);
     h.frame();
     assert_eq!(h.tree.window_rect(group).height, 300.0);
+}
+
+#[test]
+fn a_still_graph_does_not_move_and_its_page_keeps_the_wheel() {
+    let (hits, wheels) = (signal(Vec::new()), signal(0));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let g = graph([node("a", 0.0, 0.0), node("b", 200.0, 100.0)], [Link::new("a", "b")]).still();
+        let g = g.on_click(move |hit| hits.update(|all| all.push(hit)));
+        let page = div().width(800.0).child(g);
+        page.on_pointer(PointerKind::Wheel, move |_| wheels.update(|n| *n += 1))
+    });
+    h.frame();
+    // Its drawing at zoom 1, 16 px in, as tall as it is.
+    let a_node = h.get_by_role(Role::Button, "a").node();
+    let a = h.tree.window_rect(a_node);
+    let all = h.tree.window_rect(h.query(|n| n.semantics.role == Role::Group)[0]);
+    assert_eq!((a.origin(), all.height), (Point::new(16.0, 16.0), 140.0 + 32.0));
+    // A drag, a double click and the wheel with Ctrl move nothing; the wheel goes to the page.
+    h.pointer(PointerInput::Down, 500.0, 150.0);
+    h.pointer(PointerInput::Move, 540.0, 160.0);
+    h.pointer(PointerInput::Up, 540.0, 160.0);
+    h.click(500.0, 150.0);
+    h.click(500.0, 150.0);
+    h.tree.wheel(Point::new(0.0, 4.0), false, Point::new(500.0, 150.0), Mods::CTRL);
+    h.frame();
+    assert_eq!(h.tree.window_rect(a_node), a);
+    assert_eq!(wheels.get_untracked(), 1);
+    // A click on a node is told as before.
+    h.get_by_role(Role::Button, "b").click();
+    assert_eq!(hits.get_untracked(), vec![Hit::Node("b".into())]);
 }

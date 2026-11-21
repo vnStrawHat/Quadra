@@ -8,22 +8,28 @@ use quadra_reactive::Signal;
 use quadra_tree::{Role, Side, State};
 use quadra_view::{Div, by_text, column, div, rich_text, row, show, span, text};
 
-use super::{Command, HEAD, ROW};
+use super::{Command, Look};
 use crate::display::{chosen_mark, key_label};
 use crate::size::TEXT_SM;
-use crate::{icon, icons, status_label, token};
+use crate::{fonts, icon, icons, status_label, status_mark, token};
 
 /// The parts of the palette's rows over `all`, `on` the one the arrows are on.
-pub(super) fn parts(all: Rc<Vec<Command>>, query: Signal<String>, on: Signal<usize>, none: Rc<str>) -> Parts {
+pub(super) fn parts(
+    all: Rc<Vec<Command>>,
+    query: Signal<String>,
+    on: Signal<usize>,
+    none: Rc<str>,
+    look: Look,
+) -> Parts {
     let known = all.clone();
     let empty =
         move || div().padding_x(12.0).padding_y(4.0).child(text(none.to_string()).color(token::TEXT_2));
     Parts {
         list: Rc::new(|| column().grow(1.0).padding_y(4.0)),
         line: Some(Rc::new(|| div().padding_x(4.0))),
-        row: Rc::new(move |k, i| face(&all[i], &query.get_untracked(), k, on)),
+        row: Rc::new(move |k, i| face(&all[i], &query.get_untracked(), k, on, look)),
         empty: Some(Rc::new(empty)),
-        head: Some(Rc::new(move |before, i| heading(&known, before, i).map(head))),
+        head: Some(Rc::new(move |before, i| heading(&known, before, i).map(|group| head(group, look)))),
     }
 }
 
@@ -34,18 +40,19 @@ pub(super) fn heading(all: &[Command], before: Option<usize>, i: usize) -> Optio
     (before.and_then(|b| all[b].group.as_ref()) != Some(&group)).then_some(group)
 }
 
-fn head(group: Rc<str>) -> Div {
+fn head(group: Rc<str>, look: Look) -> Div {
     let words = text(group.to_string()).color(token::TEXT_3).size(TEXT_SM.size);
-    let line = row().align_items(Align::Center).height(by_text(HEAD)).padding_x(12.0);
+    let line = row().align_items(Align::Center).height(by_text(look.head)).padding_x(12.0);
     line.role(Role::Heading).label(group.to_string()).child(words)
 }
 
 /// A row as wide as the palette: the lead, the title with the letters that matched, the
 /// detail; at its end the state, the keys, "Enter" while the arrows are on it, the check of
-/// the current one. The title gives way first.
-fn face(command: &Command, query: &str, k: usize, on: Signal<usize>) -> Div {
+/// the current one. The title gives way first. Dense, the state's mark is first and its word
+/// muted at the end, and the check has its slot on every row.
+fn face(command: &Command, query: &str, k: usize, on: Signal<usize>, look: Look) -> Div {
     let hits = fuzzy_hits(query, &command.title).unwrap_or_default();
-    let line = row().align_items(Align::Center).gap(8.0).grow(1.0).height(by_text(ROW)).padding_x(8.0);
+    let line = row().align_items(Align::Center).gap(8.0).grow(1.0).height(by_text(look.row)).padding_x(8.0);
     let line = line.radius(4.0).label(command.title.clone());
     let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
     let line = line.child(chosen_mark(Side::Left, move || on.get() == k));
@@ -53,7 +60,12 @@ fn face(command: &Command, query: &str, k: usize, on: Signal<usize>) -> Div {
         Some(lead) => line.child(lead().shrink(0.0)),
         None => line,
     };
-    let line = line.child(marked(&command.title, &hits));
+    let line = match &command.status {
+        Some((status, _)) if look.dense => line.child(status_mark(*status)),
+        _ => line,
+    };
+    let title = marked(&command.title, &hits);
+    let line = line.child(if command.mono { title.font_family(fonts::MONO) } else { title });
     let line = match &command.detail {
         Some(detail) => line.child(text(detail.clone()).color(token::TEXT_2).ellipsis()),
         None => line,
@@ -62,16 +74,28 @@ fn face(command: &Command, query: &str, k: usize, on: Signal<usize>) -> Div {
     let part = || row().align_items(Align::Center).shrink(0.0).padding_left(8.0);
     let small = |words: String| text(words).color(token::TEXT_2).size(TEXT_SM.size);
     let mut end = row().align_items(Align::Center).shrink(0.0);
-    if let Some((status, words)) = &command.status {
-        end = end.child(part().child(status_label(*status, words)));
+    match &command.status {
+        Some((_, words)) if look.dense => {
+            end = end.child(part().child(small(words.clone()).color(token::TEXT_3)))
+        }
+        Some((status, words)) => end = end.child(part().child(status_label(*status, words))),
+        None => {}
     }
     if let Some(keys) = &command.keys {
         end = end.child(part().child(small(key_label(keys))));
     }
-    let enter = move || part().child(small(key_label("enter")));
-    end = end.child(show(move || on.get() == k, enter).container(row().shrink(0.0)));
-    if command.current {
-        end = end.child(part().child(icon(icons::CHECK).size(14.0).color(token::ACCENT)));
+    if look.enter {
+        let enter = move || part().child(small(key_label("enter")));
+        end = end.child(show(move || on.get() == k, enter).container(row().shrink(0.0)));
+    }
+    let check = |side: f32| icon(icons::CHECK).size(side).color(token::ACCENT);
+    match (command.current, look.dense) {
+        (current, true) => {
+            let slot = row().size(12.0, 12.0);
+            end = end.child(part().child(if current { slot.child(check(12.0)) } else { slot }));
+        }
+        (true, false) => end = end.child(part().child(check(14.0))),
+        (false, false) => {}
     }
     line.child(div().grow(1.0)).child(end)
 }

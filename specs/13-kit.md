@@ -844,6 +844,13 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   hangs it 4 px under a control, its start at the control's, instead of under the top of
   the window (a click on the opener does not open it again), and `.width(px)` makes it
   other than 608 px (280 for a picker under a control).
+- A picker of names (clusters, resources) takes `Command::mono()`, its title in the mono
+  face. `.dense()` makes rows of 23 px and headings of 20; in it a row's state is its mark
+  first (where the lead goes) and its word muted at the end, and the end keeps a 12 px slot
+  for the check, so the words line up. `.hint(false)` leaves "Enter" off the row the arrows
+  are on (a picker that only chooses). `.footnote(words)` puts muted words under the rows,
+  wrapped, over a line; `.foot_hints([(keys, does)], |n| words)` is the foot with each key
+  a `key_hint` (a chip and what it does) instead of the plain words of `.foot`.
 
 ## Crates
 

@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use quadra_design::{Command, Status, Tone, badge, button, command_palette, dark};
+use quadra_design::{Command, Status, Tone, badge, button, command_palette, dark, key_label, token};
 use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
@@ -138,4 +138,34 @@ fn a_picker_hangs_under_its_opener_its_current_row_first_each_title_on_one_line(
     assert!(lowest > 0.0 && lowest <= row.bottom(), "{lowest} under {row:?}");
     let state = h.get_by_text("unreachable").node();
     assert!(row.contains(h.tree.window_rect(state).center()));
+}
+
+#[test]
+fn a_dense_picker_has_mono_names_muted_states_a_footnote_and_keys_as_hints() {
+    let open = signal(true);
+    let mut h = harness();
+    h.mount(move || {
+        let commands = || {
+            vec![
+                Command::new("prod-cluster", || ()).mono().status(Status::Running, "connected").current(),
+                Command::new("staging", || ()).mono().status(Status::Failed, "unreachable"),
+            ]
+        };
+        let picker = command_palette(open, commands).dense().hint(false).width(280.0);
+        let picker = picker.footnote("Every view shows the selected cluster only.");
+        div().child(picker.foot_hints([("enter", "open"), ("escape", "close")], |n| format!("{n} clusters")))
+    });
+    settle(&mut h);
+    let rows = h.query(|n| n.semantics.role == Role::ListItem);
+    assert_eq!(rows.iter().map(|&row| h.tree.window_rect(row).height).collect::<Vec<_>>(), [23.0, 23.0]);
+    // "Enter" only in the foot, a key as a key; the names in mono; the states' words muted.
+    let enter = key_label("enter");
+    assert_eq!(h.query(|n| n.semantics.name == enter).len(), 1);
+    for said in ["open", "close", "2 clusters", "Every view shows the selected cluster only."] {
+        assert!(h.has_text(said), "{said} is not said:\n{}", h.semantics());
+    }
+    let name = h.query(|n| n.semantics.role == Role::Text && n.semantics.name == "prod-cluster")[0];
+    assert_eq!(h.tree.inherited(name).style.family, quadra_design::fonts::MONO.into());
+    let word = h.get_by_text("unreachable").node();
+    assert_eq!(h.tree.inherited(word).color, dark().theme().resolve(token::TEXT_3.into()));
 }

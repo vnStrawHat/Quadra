@@ -157,7 +157,7 @@ pub fn palette_page(gallery: Gallery) -> Div {
             demo(
                 "A picker under a control",
                 cluster_picker(),
-                "command_palette(open, clusters).under(&opener).width(280.0)",
+                "command_palette(open, clusters).under(&opener).width(280.0).dense().hint(false).footnote(..)",
             ),
         ],
     )
@@ -173,13 +173,18 @@ fn cluster_picker() -> Div {
             ("dev-eu-west-1", Status::Failed, "unreachable"),
         ];
         let command = |(name, status, words): (&'static str, Status, &str)| {
-            let command = Command::new(name, move || using.set(name)).status(status, words);
+            let command = Command::new(name, move || using.set(name)).mono().status(status, words);
             if name == using.get_untracked() { command.current() } else { command }
         };
         all.into_iter().map(command).collect()
     };
-    let opener = button(move || using.get().to_string()).icon(icons::SERVER).on_click(move || open.set(true));
+    let opener = button(move || using.get().to_string()).icon(icons::SERVER).test_id("cluster-open");
+    let opener = opener.on_click(move || open.set(true));
     let picker = command_palette(open, clusters).under(&at).width(280.0).placeholder("Switch cluster…");
-    let picker = picker.foot("Enter switch · Esc close", |n| format!("{n} clusters"));
+    let picker = picker
+        .dense()
+        .hint(false)
+        .footnote("Every view, search result and notification shows the selected cluster only.");
+    let picker = picker.foot_hints([("enter", "switch"), ("escape", "close")], |n| format!("{n} clusters"));
     line().child(div().node_ref(&at).child(opener)).child(picker)
 }

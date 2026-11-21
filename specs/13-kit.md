@@ -412,7 +412,10 @@ As built so far:
   has a title, a width (140 px; `.width(..)`), and how it shows its cells: text, numbers
   (`.numeric()`: at the right in the mono face, sorted as numbers), `CellKind::Status`
   (the word with its mark and colour) or `CellKind::Age` (seconds as 45s, 12m, 3h, 6d; a
-  cell that says no number, an object with no such time, shows nothing). A column of
+  cell that says no number, an object with no such time, shows nothing). A cell is one
+  line: what does not fit its column ends with "…" where the column ends (the word of a
+  status too), and follows the column made wider; the whole value is still what is copied.
+  A column of
   numbers or ages puts the cells that say no number after all the others, whichever way it
   is sorted. A
   click on a title sorts by its column from the least, another from the most, with an

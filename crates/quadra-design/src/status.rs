@@ -69,10 +69,10 @@ pub fn status_mark(status: Status) -> Div {
     around.child(mark)
 }
 
-/// A status as its mark and its name, in its colour. `words` takes the name's place unless
-/// it is empty.
+/// A status as its mark and its name, in its colour, on one line that ends with "…" where it
+/// does not fit. `words` takes the name's place unless it is empty.
 pub fn status_label(status: Status, words: &str) -> Div {
     let words = if words.is_empty() { status.name() } else { words };
-    let line = row().align_items(Align::Center).gap(6.0).child(status_mark(status));
-    line.child(text(words.to_string()).color(status.color()))
+    let line = row().align_items(Align::Center).gap(6.0).min_width(0.0).child(status_mark(status));
+    line.child(text(words.to_string()).color(status.color()).ellipsis())
 }

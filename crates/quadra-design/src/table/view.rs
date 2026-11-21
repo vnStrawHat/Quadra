@@ -142,10 +142,10 @@ fn line(
             c,
             match (&at.shows, at.kind) {
                 (Some(shows), _) => cell.child(shows(memo(row_of), memo(value))),
-                (None, CellKind::Text) => cell.child(text(value)),
-                (None, CellKind::Age) => {
-                    cell.child(text(move || value().trim().parse().map(age_text).unwrap_or_default()))
-                }
+                // One line, cut with "…" where the column ends.
+                (None, CellKind::Text) => cell.child(text(value).ellipsis()),
+                (None, CellKind::Age) => cell
+                    .child(text(move || value().trim().parse().map(age_text).unwrap_or_default()).ellipsis()),
                 (None, CellKind::Status) => cell.child(dynamic(move || {
                     let word = value();
                     status_label(Status::of(&word), &word)

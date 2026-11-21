@@ -88,3 +88,30 @@ fn an_age_that_is_no_number_shows_nothing_and_sorts_after_every_age() {
     // Those with no age stay last, in the order turned as ties are.
     assert_eq!(sorted(&mut h), ["job-a", "job-c", "job-d", "job-b"]);
 }
+
+#[test]
+fn a_cell_is_one_line_cut_where_its_column_ends() {
+    let long = "registry.example.com/platform/api-gateway:2026.11.21-8e77d10";
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let columns = [
+            Column::new("Image").width(120.0),
+            Column::new("Status").kind(CellKind::Status).width(90.0),
+            Column::new("Next"),
+        ];
+        let cell = move |_: usize, c: usize| [long, "CrashLoopBackOff", "after"][c].to_string();
+        quadra_design::root().child(table(columns, || 2, cell))
+    });
+    h.frame();
+    // The letters painted: none under the two rows (a header of 28, rows of 26), so nothing
+    // is painted over what comes after.
+    let layers = h.renderer.steps().iter().filter_map(|step| match step {
+        quadra_render::Step::Layer { id, world } => Some((h.tree.scene().layer(*id), world.transform.ty)),
+        quadra_render::Step::Run { .. } => None,
+    });
+    let glyphs = layers.flat_map(|(layer, y)| layer.instances().iter().map(move |i| (i, y)));
+    let glyphs = glyphs.filter(|(i, _)| i.flags & quadra_render::FLAG_GLYPH != 0);
+    let lowest = glyphs.map(|(i, y)| i.bounds[1] + i.bounds[3] + y).fold(0.0f32, f32::max);
+    assert!(lowest > 0.0 && lowest <= 28.0 + 2.0 * 26.0, "{lowest}");
+}

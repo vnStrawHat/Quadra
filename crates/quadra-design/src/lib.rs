@@ -63,7 +63,7 @@ pub use dialog::{Dialog, Drawer, confirm, dialog, drawer};
 pub use diff::{Diff, DiffMode, Step, diff, diff_ids, diff_lines};
 pub use display::{
     Tone, avatar, badge, card, card_head, chosen_mark, divider, heading, kbd, key_hint, key_label, label,
-    tag, vdivider,
+    plain_badge, tag, vdivider,
 };
 pub use field::{Field, Rule, Textarea, field, textarea, validate};
 pub use hover_card::{HoverCard, hover_card};

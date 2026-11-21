@@ -4,7 +4,8 @@
 use std::rc::Rc;
 
 use quadra_design::{
-    Tone, accordion, avatar, badge, card, card_head, dark, divider, heading, key_label, split, tag,
+    Tone, accordion, avatar, badge, card, card_head, dark, divider, heading, key_label, plain_badge, split,
+    tag,
 };
 use quadra_platform::{Key, Mods};
 use quadra_reactive::{Signal, signal};
@@ -31,6 +32,7 @@ fn what_shows_is_sized_and_named_by_the_design_language() {
     let mut h = mount(|| {
         let about = card().child(card_head("Ada Lovelace", "Notes on the engine")).child(divider());
         let chips = column().child(badge("beta", Tone::Info)).child(tag("v1.2"));
+        let chips = chips.child(plain_badge("Deployment", Tone::Info));
         column().child(heading("People", 1)).child(avatar("Ada Lovelace", 32.0)).child(chips).child(about)
     });
     let tree = h.semantics();
@@ -44,6 +46,14 @@ fn what_shows_is_sized_and_named_by_the_design_language() {
     let (beta, version) = (h.tree.parent(beta).unwrap(), h.tree.parent(version).unwrap());
     assert_eq!((h.tree.rect(beta).height, h.tree.rect(version).height), (16.0, 18.0));
     assert!(h.tree.rect(beta).width < 60.0 && h.tree.rect(version).width < 60.0);
+    // A plain badge: 16 px, the UI face, no border, 5 px each side of its words.
+    let words = h.get_by_text("Deployment").node();
+    let kind = h.tree.parent(words).unwrap();
+    let (style, inherited) = (h.tree.paint_style(kind), h.tree.inherited(words));
+    assert_eq!((h.tree.rect(kind).height, style.border_color), (16.0, quadra_prim::Color::TRANSPARENT));
+    assert_eq!((h.tree.rect(words).x, &*inherited.style.family), (5.0, quadra_design::fonts::UI));
+    let beta = h.get_by_text("beta").node();
+    assert_ne!(&*h.tree.inherited(beta).style.family, quadra_design::fonts::UI);
     let face = h.get_by_role(Role::Image, "Ada Lovelace").node();
     assert_eq!(h.tree.rect(face).size(), quadra_prim::Size::new(32.0, 32.0));
 

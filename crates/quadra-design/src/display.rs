@@ -63,6 +63,16 @@ pub fn badge(words: impl Into<String>, tone: Tone) -> Div {
     row().child(chip.child(text(words.into())))
 }
 
+/// A badge of a word, not of code (the kind of an object: "Deployment"): the UI face, no
+/// border, its tone at 16 % behind it, 5 px each side, radius 4.
+pub fn plain_badge(words: impl Into<String>, tone: Tone) -> Div {
+    let tone = tone.role();
+    let chip = row().align_items(Align::Center).shrink(0.0).height(by_text(16.0)).padding_x(5.0).radius(4.0);
+    let chip = chip.font_family(fonts::UI).bg(tone.alpha(0.16)).text_color(tone);
+    let chip = chip.text_size(size::TEXT_XS.size).line_height(size::TEXT_XS.line_height());
+    row().child(chip.child(text(words.into())))
+}
+
 /// A chip of 18 px on the raised plane: a name among others.
 pub fn tag(words: impl Into<String>) -> Div {
     let chip = chip(18.0).border_color(token::LINE_STRONG).bg(token::RAISED).text_color(token::TEXT);

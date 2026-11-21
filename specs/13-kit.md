@@ -280,7 +280,9 @@ As built so far:
   `heading(words, level)` (23, 18, 16 px, then the size of text; regular weight; lines of
   1.618 of the size), `label`
   (12 px, muted), `badge(words, tone)` and `tag(words)` (chips of 16 and 18 px in 10 px mono
-  text; a badge is a faint tint of its tone), `kbd("ctrl-s")` and `key_label` (shortcuts are
+  text; a badge is a faint tint of its tone), `plain_badge(words, tone)` (a word, not code:
+  the kind of an object; 16 px, the UI face, no border, its tone at 16 % behind it, 5 px
+  each side), `kbd("ctrl-s")` and `key_label` (shortcuts are
   written "Ctrl-Shift-P", the modifiers in the order Ctrl, Win, Alt, Shift), `avatar(name,
   side)` (the initials on a colour that is the name's own; images later), `card()` with
   `card_head(title, more)`, `divider()` and `vdivider()`.

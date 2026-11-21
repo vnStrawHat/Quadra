@@ -4,8 +4,8 @@
 use quadra::{Align, AnyView, Div, column, div, row, text};
 use quadra_design::{
     Status, Tone, alert, avatar, badge, button, card, card_head, copyable, description_list, empty_state,
-    fonts, icons, kbd, meter, progress, progress_busy, size, skeleton, spinner, status_label, status_mark,
-    tag, token,
+    fonts, icons, kbd, meter, plain_badge, progress, progress_busy, size, skeleton, spinner, status_label,
+    status_mark, tag, token,
 };
 
 use crate::common::{demo, framed, hint, line, mono, page, stack};
@@ -93,6 +93,11 @@ pub fn badge_page() -> Div {
                 "Kinds",
                 line().children(kinds.map(|(name, hue)| badge(name, Tone::Hue(hue)))),
                 "badge(\"Service\", Tone::Hue(token::HUE_BLUE))",
+            ),
+            demo(
+                "Kinds as words, not code",
+                line().children(kinds.map(|(name, hue)| plain_badge(name, Tone::Hue(hue)))),
+                "plain_badge(\"Service\", Tone::Hue(token::HUE_BLUE))",
             ),
         ],
     )

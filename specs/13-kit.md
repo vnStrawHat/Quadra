@@ -316,7 +316,7 @@ As built so far:
   and are buttons to a reader.
 - **The bars** (`bars.rs`). `toolbar()` is a box of 45 px on the canvas with a line under
   it, its children 4 px apart. `statusbar().left(view).right(view)` is the strip of 30 px
-  at the bottom of a window, in 12 px text; in it stand `status_item(icon, words)`,
+  at the bottom of a window, in 12 px text, under a `LINE` as the toolbar is over one; in it stand `status_item(icon, words)`,
   `status_button(icon, name, on)` (an icon toggle: muted, the accent while on, never
   filled; a toggled button that is an icon alone takes no fill anywhere) and
   `status_divider()`. `breadcrumb(parts, pick)` is the way to where the user is: mono,
@@ -633,7 +633,10 @@ an app that is not a workbench does not name it.
   is the leftmost column, 40 px wide with its line: a tool is 40 px high, a ghost icon of
   28 px, in the accent while `active` holds its id (a click writes it), its title in a
   tooltip at its right. A count stands in the corner of the icon while it is not zero, "99+"
-  over ninety-nine. The footer's tools are kept at the bottom.
+  over ninety-nine: 9 px in the accent, ringed by the panel. `.badge_tone(Tone::Danger)` (or
+  `Warning`) makes it a count of problems that wait: a pill of 14 px in that colour behind
+  the dark text on it, 10 px, 3 px each side, 5 px from the top and 4 from the right of the
+  cell, with no ring. The footer's tools are kept at the bottom.
 - `panel_header(title)` is the title strip of a panel: 28 px on the panel's plane over a
   line, the title muted; what is added to it stands at its end (icon buttons of 18 px).
 - `tab_strip(tabs, active)` shows the open views of a pane: 32 px on the plane of tabs. The

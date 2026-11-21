@@ -46,7 +46,7 @@ impl Statusbar {
 impl View for Statusbar {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let bar = row().align_items(Align::Center).gap(12.0).padding_x(8.0).height(by_text(30.0)).shrink(0.0);
-        let bar = bar.bg(token::STATUS_BG).border_top(1.0).border_color(token::LINE_STRONG);
+        let bar = bar.bg(token::STATUS_BG).border_top(1.0).border_color(token::LINE);
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());
         let bar = bar.role(Role::Group).test_id("statusbar");
         bar.children(self.left).child(div().grow(1.0)).children(self.right).mount(cx)

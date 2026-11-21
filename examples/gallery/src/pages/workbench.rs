@@ -4,8 +4,8 @@
 use quadra::{Div, column, div, dynamic, memo, row, signal};
 use quadra_design::work::{Activity, Axis, Pane, Tab, activity_bar, dock, panel_header, panes, tab_strip};
 use quadra_design::{
-    SettingsGroup, SettingsPage, Size, Variant, button, dialog, icon_button, icons, number_input, segmented,
-    select, settings, settings_group, switch, token, tooltip,
+    SettingsGroup, SettingsPage, Size, Tone, Variant, button, dialog, icon_button, icons, number_input,
+    segmented, select, settings, settings_group, switch, token, tooltip,
 };
 
 use crate::common::{demo, framed, hint, line, mono, page, stack};
@@ -13,7 +13,7 @@ use crate::common::{demo, framed, hint, line, mono, page, stack};
 pub fn activity_page() -> Div {
     let active = signal("workloads");
     let tools = [
-        Activity::new("workloads", icons::LAYERS, "Workloads"),
+        Activity::new("workloads", icons::LAYERS, "Workloads").badge(|| 3).badge_tone(Tone::Danger),
         Activity::new("config", icons::FILE, "Config"),
         Activity::new("search", icons::SEARCH, "Search"),
         Activity::new("events", icons::BELL, "Events").badge(|| 12),

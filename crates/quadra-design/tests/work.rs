@@ -241,3 +241,35 @@ fn the_tab_that_becomes_active_is_scrolled_to_in_a_strip_too_short_for_all() {
     wait(&mut h, 0);
     assert!(shows(&mut h, "New"));
 }
+
+#[test]
+fn a_count_of_problems_is_a_pill_of_their_colour_in_the_corner_of_the_cell() {
+    use quadra_design::{Tone, statusbar, token};
+
+    let mut h = mounted(|| {
+        let tools = [
+            Activity::new("pods", icons::FILE, "Pods").badge(|| 4).badge_tone(Tone::Danger),
+            Activity::new("inbox", icons::BELL, "Inbox").badge(|| 2),
+        ];
+        let bar = row().height(200.0).child(activity_bar(signal("pods"), tools));
+        quadra_design::root().child(column().child(bar).child(statusbar()))
+    });
+    let theme = dark().theme();
+    let pill = |h: &mut Harness, words: &str| {
+        let words = h.get_by_text(words).node();
+        h.tree.parent(words).unwrap()
+    };
+    // In the error colour, behind the dark text on it, 5 px down and 4 px in from the cell.
+    let (pods, problems) = (h.get_by_role(Role::Tab, "Pods").node(), pill(&mut h, "4"));
+    let (cell, at) = (h.tree.window_rect(pods), h.tree.window_rect(problems));
+    assert_eq!(h.tree.paint_style(problems).background, theme.resolve(token::ERROR.into()));
+    assert_eq!((at.y - cell.y, cell.right() - at.right(), at.height), (5.0, 4.0, 14.0));
+    let four = h.get_by_text("4").node();
+    assert_eq!(h.tree.inherited(four).color, theme.resolve(token::TEXT_ON_ACCENT.into()));
+    // Any other count stays in the accent, on the corner of the icon.
+    let unread = pill(&mut h, "2");
+    assert_eq!(h.tree.paint_style(unread).background, theme.resolve(token::ACCENT.into()));
+    // The status bar's rule is the line the toolbar has.
+    let bar = h.get_by_test_id("statusbar").node();
+    assert_eq!(h.tree.paint_style(bar).border_color, theme.resolve(token::LINE.into()));
+}

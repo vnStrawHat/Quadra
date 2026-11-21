@@ -333,9 +333,12 @@ As built so far:
   groups under muted titles, on the panel's plane with a strong line at its right, 240 px
   wide unless told. `chosen` holds the id of the chosen place: a click writes it, and with
   the focus in the sidebar the arrows, Home and End move it. A place is a row of 26 px,
-  filled when chosen. While `.folded(|| ..)` says so it is 40 px wide and shows the icons
-  alone; the places keep their names for a reader. `.head(view)` is above the places, and
-  what does not fit scrolls. `.search(query)` puts a search field at its top (full width,
+  12 px in from each side, its icon of 14 px, 6 px between its parts, filled when chosen;
+  the groups' titles start 12 px in. While `.folded(|| ..)` says so it is 40 px wide and shows the icons
+  alone; the places keep their names for a reader. `.head(view)` is a strip above the
+  places that does not scroll (the area's name, a small button at its end): 28 px, 12 px
+  muted text, 12 px in at its start and 4 at its end, a `LINE` under it, not there while
+  folded; the places that do not fit scroll under it. `.search(query)` puts a search field at its top (full width,
   8 from the top and the sides; small, 28 tall, the search icon, "Search…"; not there while
   folded) that keeps the places whose names hold the query (any case), and the titles of
   the groups that keep one; with none, `No results` in `text_3`. Enter in the field chooses

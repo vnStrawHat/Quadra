@@ -14,7 +14,7 @@ use quadra_prim::{Color, Size};
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_view::{View, column, div, row};
+use quadra_view::{View, column, div, row, text};
 
 fn mount<V: View + 'static>(build: impl FnOnce() -> V + 'static) -> Harness {
     let mut h = Harness::new();
@@ -252,4 +252,34 @@ fn a_place_shows_its_count_and_the_foot_stays_under_the_places() {
     settle(&mut h);
     let foot = h.query(|n| n.semantics.name == "Filter by pod name");
     assert!(!h.has_text("421") && foot.is_empty(), "{}", h.semantics());
+}
+
+#[test]
+fn a_sidebars_head_is_a_strip_that_does_not_scroll_and_its_places_are_inset_12_px() {
+    let chosen = signal("p0");
+    let ids: Vec<&'static str> = (0..40).map(|i| &*format!("p{i}").leak()).collect();
+    let mut h = mount(move || {
+        let items = ids.iter().map(|&id| NavItem::new(id, id).icon(icons::FILE));
+        let head = row().child(text("Workloads")).child(div().grow(1.0)).child(button("R"));
+        let places = sidebar(chosen).head(head).group("", items.collect::<Vec<_>>());
+        row().grow(1.0).child(places)
+    });
+    // 28 px at the top, the area's name 12 px in, in 12 px muted text, a line under it.
+    let name = h.get_by_text("Workloads").node();
+    let strip = h.tree.parent(h.tree.parent(h.tree.parent(name).unwrap()).unwrap()).unwrap();
+    let (at, words) = (h.tree.window_rect(strip), h.tree.window_rect(name));
+    let theme = dark().theme();
+    assert_eq!((at.y, at.height, words.x), (0.0, 28.0, 12.0));
+    assert_eq!(h.tree.inherited(name).style.size, 12.0);
+    assert_eq!(h.tree.paint_style(strip).border_color, theme.resolve(token::LINE.into()));
+    // A place: its icon of 14 px 12 px in; the first 4 px under the strip.
+    let first = h.get_by_role(Role::TreeItem, "p0").node();
+    let glyph = h.tree.children(first)[0];
+    let (row_at, glyph) = (h.tree.window_rect(first), h.tree.window_rect(glyph));
+    assert_eq!((row_at.y, glyph.x, glyph.width), (28.0 + 4.0, 12.0, 14.0));
+    // The places scroll under it; it stays.
+    h.wheel(100.0, 300.0, -10.0);
+    settle(&mut h);
+    let first = h.get_by_role(Role::TreeItem, "p0").node();
+    assert!(h.tree.window_rect(first).y < 28.0 && h.tree.window_rect(strip).y == 0.0);
 }

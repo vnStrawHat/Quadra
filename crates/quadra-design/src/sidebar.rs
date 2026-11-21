@@ -88,7 +88,8 @@ impl Sidebar {
         self
     }
 
-    /// Something above the places: the name of a project.
+    /// A strip above the places that does not scroll: the name of the area and a small
+    /// button at its end (Refresh). 28 px, 12 px muted text, over a line.
     pub fn head(mut self, view: impl View + 'static) -> Self {
         self.head = Some(AnyView::new(view));
         self
@@ -127,14 +128,11 @@ impl View for Sidebar {
         if let Some(query) = query {
             places = places.child(search(query, kept, chosen).display(move || shown(true)));
         }
-        if let Some(head) = self.head {
-            places = places.child(head);
-        }
         for (title, items) in self.groups {
             let of: Vec<&'static str> = items.iter().map(|i| i.id).collect();
             if !title.is_empty() {
                 let title =
-                    div().padding_left(10.0).padding_top(12.0).padding_bottom(4.0).child(label(title));
+                    div().padding_left(12.0).padding_top(12.0).padding_bottom(4.0).child(label(title));
                 let any = move || kept.with(|kept| of.iter().any(|id| kept.contains(id)));
                 places = places.child(title.display(move || shown(any())));
             }
@@ -148,7 +146,7 @@ impl View for Sidebar {
             }
         }
         let none =
-            div().padding_x(10.0).padding_y(8.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
+            div().padding_x(12.0).padding_y(8.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
         let none = none.display(move || shown(kept.with(Vec::is_empty))).child(text("No results"));
         places = places.child(none);
         let side = column().shrink(0.0).width(move || Length::Px(if folded.get() { 40.0 } else { width }));
@@ -156,7 +154,22 @@ impl View for Sidebar {
         let side = side.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
         let places = column().grow(1.0).min_height(0.0).child(scroll(signal(0.0), places));
         // The arrows go among the places the search keeps.
-        let side = list::places(side, move || kept.get(), chosen).child(places);
+        let side = list::places(side, move || kept.get(), chosen);
+        let side = match self.head {
+            Some(view) => {
+                let strip = row().align_items(Align::Center).shrink(0.0).height(by_text(28.0));
+                let strip =
+                    strip.padding_left(12.0).padding_right(4.0).border_bottom(1.0).border_color(token::LINE);
+                let strip = strip.text_size(size::TEXT_SM.size).text_color(token::TEXT_2);
+                side.child(
+                    strip
+                        .display(move || shown(true))
+                        .child(column().grow(1.0).align_items(Align::Stretch).child(view)),
+                )
+            }
+            None => side,
+        };
+        let side = side.child(places);
         let side = match self.foot {
             Some(view) => {
                 let foot = row().shrink(0.0).padding(8.0).border_top(1.0).border_color(token::LINE);
@@ -168,7 +181,8 @@ impl View for Sidebar {
     }
 }
 
-/// The row of a place: 26 px, its icon, its label and its count; filled when chosen, with
+/// The row of a place: 26 px, 12 px in from each side, its icon of 14 px, its label and its
+/// count, 6 px apart; filled when chosen, with
 /// the accent's mark at its left and its icon in the accent.
 fn place(
     item: NavItem,
@@ -178,8 +192,7 @@ fn place(
     counts: Option<Counts>,
 ) -> Div {
     let id = item.id;
-    let line =
-        row().align_items(Align::Center).gap(6.0).height(by_text(26.0)).padding_left(10.0).padding_right(8.0);
+    let line = row().align_items(Align::Center).gap(6.0).height(by_text(26.0)).padding_x(12.0);
     let line = line.justify(move || if folded() { Justify::Center } else { Justify::Start });
     let (name, count) = (item.label.clone(), counts.clone());
     let line = line.cursor(Cursor::Pointer).label(move || match count.as_ref().and_then(|of| of(id)) {
@@ -191,7 +204,7 @@ fn place(
     let line = line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
     let tone = move || Paint::from(if on() { token::ACCENT_TEXT } else { token::TEXT_2 });
     let line = match item.icon {
-        Some(body) => line.child(div().text_color(tone).child(icon(body).size(16.0))),
+        Some(body) => line.child(div().text_color(tone).child(icon(body).size(14.0))),
         None => line,
     };
     let line = line.child(div().grow(1.0).min_width(0.0).display(words).child(text(item.label)));

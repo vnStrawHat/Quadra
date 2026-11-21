@@ -15,6 +15,13 @@ use crate::shell::Gallery;
 pub fn sidebar_page() -> Div {
     let place = signal("pods");
     let places = sidebar(place)
+        .head(
+            row()
+                .align_items(quadra::Align::Center)
+                .child(quadra::text("prod-cluster"))
+                .child(div().grow(1.0))
+                .child(icon_button(icons::REFRESH_CW, "Refresh").size(Size::Xs)),
+        )
         .group(
             "Workloads",
             [

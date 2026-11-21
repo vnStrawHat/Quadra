@@ -157,3 +157,39 @@ fn a_row_is_activated_by_a_double_click_or_enter_and_not_by_the_arrows_or_its_bu
     h.frame();
     assert_eq!((opened.get_untracked(), pressed.get_untracked()), (vec![2, 4], 3));
 }
+
+#[test]
+fn a_dense_table_has_a_lower_header_in_small_muted_words_and_12_px_between_words() {
+    use quadra_design::token;
+
+    let chosen = signal(vec![0usize]);
+    let mut h = Harness::new();
+    let theme = dark().theme();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let columns = [Column::new("Name").width(120.0), Column::new("Restarts").width(80.0).numeric()];
+        let cell = |r: usize, c: usize| if c == 0 { format!("pod-{r}") } else { r.to_string() };
+        quadra_design::root().child(table(columns, || 3, cell).dense().selected(chosen))
+    });
+    h.frame();
+    // The header: 26 px, its titles 12 px in the second text colour, the first 12 px in.
+    let title = h.get_by_text("Name").node();
+    let head = h.query(|n| n.semantics.role == Role::Row)[0];
+    assert_eq!(h.tree.window_rect(head).height, 26.0);
+    assert_eq!(h.tree.inherited(title).style.size, 12.0);
+    assert_eq!(h.tree.inherited(title).color, theme.resolve(token::TEXT_2.into()));
+    let words = h.tree.children(title)[0];
+    assert_eq!(h.tree.window_rect(words).x, 12.0);
+    // A row: its first words 12 px in; the next column's start where the first column ends,
+    // its words 12 px after.
+    let cell = h.get_by_text("pod-1").node();
+    let (words, next) = (h.tree.children(cell)[0], h.tree.children(h.tree.parent(cell).unwrap())[1]);
+    let (cell, words, next) = (h.tree.window_rect(cell), h.tree.window_rect(words), h.tree.window_rect(next));
+    assert_eq!((words.x, cell.width, next.x - cell.x), (12.0, 120.0, 120.0));
+    // The selected row's bar runs along all of its left edge.
+    let rows = h.query(|n| n.semantics.role == Role::Row);
+    let first = h.tree.window_rect(rows[1]);
+    let bar = *h.tree.children(rows[1]).last().unwrap();
+    let bar = h.tree.window_rect(bar);
+    assert_eq!((bar.x, bar.y, bar.width, bar.height), (first.x, first.y, 2.0, first.height - 1.0));
+}

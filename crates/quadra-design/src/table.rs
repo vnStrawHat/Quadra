@@ -141,6 +141,7 @@ pub struct Table {
     column: Option<Signal<usize>>,
     changes: Option<Signal<Vec<usize>>>,
     activate: Option<Activate>,
+    dense: bool,
 }
 
 /// A table of `rows` rows: `cell(row, column)` is what a cell says. Both are asked again
@@ -154,13 +155,21 @@ pub fn table(
     let (rows, cell) = (Rc::new(rows), Rc::new(cell));
     let (chosen, key, hidden, column, changes) = (None, None, None, None, None);
     let (row_height, pinned, activate) = (26.0, 0, None);
-    Table { columns, rows, cell, chosen, key, row_height, hidden, pinned, column, changes, activate }
+    let dense = false;
+    Table { columns, rows, cell, chosen, key, row_height, hidden, pinned, column, changes, activate, dense }
 }
 
 impl Table {
     /// The signal that holds the selected rows, as they are numbered in the data, ascending.
     pub fn selected(mut self, rows: Signal<Vec<usize>>) -> Self {
         self.chosen = Some(rows);
+        self
+    }
+
+    /// Denser metrics: a header of 26 px with its titles in 12 px muted text, and 12 px from a
+    /// row's start to its first words and between the columns' words (8 and 16 otherwise).
+    pub fn dense(mut self) -> Self {
+        self.dense = true;
         self
     }
 
@@ -229,6 +238,7 @@ impl View for Table {
         }
         let clipboard = use_context::<Rc<dyn Clipboard>>();
         let pinned = self.pinned.min(columns.len());
-        view::build(sheet, columns, (self.row_height, pinned), clipboard).mount(cx)
+        let look = view::Look::of(self.dense);
+        view::build(sheet, columns, (self.row_height, pinned, look), clipboard).mount(cx)
     }
 }

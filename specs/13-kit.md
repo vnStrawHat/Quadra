@@ -423,7 +423,12 @@ As built so far:
 - **`table(columns, rows, cell)`** (`table.rs`, `table/view.rs`) shows `rows()` rows of
   cells under a header; `cell(row, column)` is what a cell says, and both are asked again
   when what they read changes. Rows are 26 px with a seam under each and are mounted as
-  they show (`uniform_list`); the header is 28 px on the plane of table heads. A `Column`
+  they show (`uniform_list`); the header is 28 px on the plane of table heads. A cell has
+  8 px at each side of its words. A selected row is tinted, with a bar of 2 px in the accent
+  along all of its left edge: a row is a band, not a place in a list. `.dense()` makes the
+  header 26 px with its titles in 12 px `text_2`, and puts 12 px from a row's start to its
+  first words and between the columns' words (6 px at each side of a cell, and 6 at each
+  end of a row and of the header); a column's width holds its words and that room. A `Column`
   has a title, a width (140 px; `.width(..)`), and how it shows its cells: text, numbers
   (`.numeric()`: at the right in the mono face, sorted as numbers), `CellKind::Status`
   (the word with its mark and colour) or `CellKind::Age` (seconds as 45s, 12m, 3h, 6d; a

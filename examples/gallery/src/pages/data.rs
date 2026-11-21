@@ -43,7 +43,7 @@ pub fn table_page() -> Div {
             demo(
                 "Cells that show views, rows that open",
                 volumes(),
-                "Column::new(\"Used\").view(|row, says| ..), table(..).on_activate(|row| ..)",
+                "Column::new(\"Used\").view(|row, says| ..), table(..).dense().on_activate(|row| ..)",
             ),
         ],
     )
@@ -73,7 +73,8 @@ fn volumes() -> Div {
         _ => String::new(),
     };
     let opened = signal(None::<usize>);
-    let volumes = table(columns, || VOLUMES.len(), cell).on_activate(move |row| opened.set(Some(row)));
+    let volumes =
+        table(columns, || VOLUMES.len(), cell).dense().on_activate(move |row| opened.set(Some(row)));
     let said = hint(move || match opened.get() {
         Some(row) => format!("Opened {}", VOLUMES[row].0),
         None => "Double click a volume, or press Enter on one".to_string(),

@@ -10,13 +10,14 @@ use quadra_design::{
 
 use crate::common::{demo, framed, hint, line, mono, page, stack};
 
-const STATES: [Status; 6] = [
+const STATES: [Status; 7] = [
     Status::Running,
     Status::Pending,
     Status::Failed,
     Status::Succeeded,
     Status::Terminating,
     Status::Unknown,
+    Status::None,
 ];
 
 pub fn status_page() -> Div {

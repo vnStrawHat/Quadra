@@ -324,7 +324,9 @@ As built so far:
   index, but the last: where the user is, in the text's colour, which reads first.
 - **A status** (`status.rs`: running, pending, failed, succeeded, terminating, unknown) has
   a role of the theme for its colour and a shape of its own in a box of 12 px
-  (`status_mark`): a dot, a ring, a triangle, a check, a dash, a square. `status_label` is
+  (`status_mark`): a filled square of 7 px, a hollow one (a 2 px border), a filled
+  triangle, a check, a dash, a filled diamond. `Status::None` is the box with nothing in it,
+  so labels with a mark and without one line up. `status_label` is
   the mark and the name, `Status::of(word)` the status a word names: besides the six, the
   reasons a container is in its state as a cluster writes them: `Error`, `OOMKilled`,
   `Evicted`, any `…BackOff`, `Err…` or `…Error` are failed; `ContainerCreating`,

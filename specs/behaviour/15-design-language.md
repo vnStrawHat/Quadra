@@ -27,7 +27,8 @@ is a pixel at 100 % scale; the OS text-size setting scales text only.
 5. **Small type, generous leading.** 14 px UI text at a golden-ratio line height (1.618)
    and a sans with open shapes; code in a programming face at 15 px.
 6. **Shortcuts are plain text.** `Ctrl-Shift-P`, muted, after the label. No key caps.
-7. **Status at a glance, never by color alone.** Workload status keeps a shape per state.
+7. **Status at a glance, never by color alone.** Workload status keeps a shape per state:
+   the squares of running and pending differ by their fill, not their colour alone.
 8. **Instant states, functional motion.** Hover and press change at once. Only overlays and
    toasts animate (150 ms, quintic ease-out); reduced motion turns that off.
 9. **Hue means kind.** Seven hues tell kinds apart: the state of a file under version
@@ -100,12 +101,13 @@ Icons take a text color (`text`, `text_2` for decoration, `accent_text` when tog
 
   | Status | Shape | Color |
   |---|---|---|
-  | `running` | dot | ok |
-  | `pending` | ring | warn |
-  | `failed` | triangle | error |
+  | `running` | filled square | ok |
+  | `pending` | hollow square | warn |
+  | `failed` | filled triangle | error |
   | `succeeded` | check | cyan (syntax type) |
   | `terminating` | dash | violet (syntax keyword) |
-  | `unknown` | square | `text_3` |
+  | `unknown` | filled diamond | `text_3` |
+  | `none` | nothing, its room kept | |
 
 - **Hues** (principle 9): kinds, each with a shape, letter or label beside it. The light
   ones are darker, readable as text on `#FAFAFA` (4.3:1 and more). A badge takes one as its

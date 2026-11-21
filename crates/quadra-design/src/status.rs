@@ -17,6 +17,8 @@ pub enum Status {
     Terminating,
     #[default]
     Unknown,
+    /// No mark, its room kept: what needs no attention lines up with what does.
+    None,
 }
 
 impl Status {
@@ -43,29 +45,35 @@ impl Status {
     }
 
     pub fn name(self) -> &'static str {
-        ["Running", "Pending", "Failed", "Succeeded", "Terminating", "Unknown"][self as usize]
+        ["Running", "Pending", "Failed", "Succeeded", "Terminating", "Unknown", "None"][self as usize]
     }
 
     /// The role of the theme that is the status's colour.
     pub fn color(self) -> Token {
         use token::*;
-        [RUNNING, PENDING, FAILED, SUCCEEDED, TERMINATING, UNKNOWN][self as usize]
+        [RUNNING, PENDING, FAILED, SUCCEEDED, TERMINATING, UNKNOWN, UNKNOWN][self as usize]
     }
 }
 
-/// The shape of a status in a box of 12 px: a dot, a ring, a triangle, a check, a dash, a
-/// square.
+/// A filled triangle and a filled diamond, in the 24 units of an icon.
+const TRIANGLE: &str = r#"<path d="M12 3.5 21.5 20H2.5Z" fill="currentColor" stroke="none"/>"#;
+const DIAMOND: &str = r#"<path d="M12 2.5 21.5 12 12 21.5 2.5 12Z" fill="currentColor" stroke="none"/>"#;
+
+/// The shape of a status in a box of 12 px: a filled square, a hollow one, a filled
+/// triangle, a check, a dash, a filled diamond; nothing for `None`.
 pub fn status_mark(status: Status) -> Div {
     let tone = status.color();
+    let square = || div().size(7.0, 7.0).radius(1.0);
+    let around = row().align_items(Align::Center).justify(Justify::Center).shrink(0.0).size(12.0, 12.0);
     let mark = match status {
-        Status::Running => AnyView::new(div().size(8.0, 8.0).radius(4.0).bg(tone)),
-        Status::Pending => AnyView::new(div().size(8.0, 8.0).radius(4.0).border(2.0).border_color(tone)),
-        Status::Failed => AnyView::new(icon(icons::TRIANGLE_ALERT).size(12.0).color(tone)),
+        Status::Running => AnyView::new(square().bg(tone)),
+        Status::Pending => AnyView::new(square().border(2.0).border_color(tone)),
+        Status::Failed => AnyView::new(icon(TRIANGLE).size(12.0).color(tone)),
         Status::Succeeded => AnyView::new(icon(icons::CHECK).size(12.0).color(tone)),
         Status::Terminating => AnyView::new(div().size(8.0, 2.0).radius(1.0).bg(tone)),
-        Status::Unknown => AnyView::new(div().size(7.0, 7.0).radius(1.0).bg(tone)),
+        Status::Unknown => AnyView::new(icon(DIAMOND).size(12.0).color(tone)),
+        Status::None => return around,
     };
-    let around = row().align_items(Align::Center).justify(Justify::Center).shrink(0.0).size(12.0, 12.0);
     around.child(mark)
 }
 

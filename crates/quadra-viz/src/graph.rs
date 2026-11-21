@@ -130,9 +130,14 @@ impl Graph {
         self
     }
 
-    /// The drawing as SVG, at its own size.
+    /// The drawing as SVG, at its own size, on the theme's canvas.
     pub fn to_svg(&self, theme: &Theme) -> String {
-        svg::write(self, theme)
+        svg::write(self, theme, Some(quadra_design::token::CANVAS.into()))
+    }
+
+    /// The drawing as SVG on `ground`, or on nothing.
+    pub fn to_svg_on(&self, theme: &Theme, ground: Option<quadra_tree::Paint>) -> String {
+        svg::write(self, theme, ground)
     }
 
     /// The nodes' boxes, and each link's place and line (none for an id no node has).

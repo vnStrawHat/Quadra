@@ -40,13 +40,16 @@ fn path(points: &[Point]) -> String {
     d
 }
 
-pub fn write(graph: &Graph, theme: &Theme) -> String {
+pub fn write(graph: &Graph, theme: &Theme, ground: Option<Paint>) -> String {
     let (rects, routes) = graph.plane();
     let b = graph.bounds();
     let (x, y, w, h) = (b.x - 16.0, b.y - 16.0, b.width + 32.0, b.height + 32.0);
     let mut out = format!(
         r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="{x} {y} {w} {h}" font-family="sans-serif">"#
     );
+    if let Some((fill, _)) = ground.map(|paint| color(theme, paint)) {
+        _ = write!(out, r#"<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{fill}"/>"#);
+    }
     let (line, (muted, _)) = (color(theme, token::LINE_STRONG.into()), color(theme, token::TEXT_3.into()));
     for (title, r) in graph.frames(&rects) {
         _ = write!(

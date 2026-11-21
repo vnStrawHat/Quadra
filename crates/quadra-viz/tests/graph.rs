@@ -142,8 +142,23 @@ fn the_drawing_is_svg_with_its_frames_links_and_nodes() {
     {
         assert!(svg.contains(part), "{part} is not in {svg}");
     }
-    // A frame and two nodes; a link and its head.
-    assert_eq!((svg.matches("<rect").count(), svg.matches("<path").count()), (3, 2));
+    // The ground, a frame and two nodes; a link and its head.
+    assert_eq!((svg.matches("<rect").count(), svg.matches("<path").count()), (4, 2));
+    // The ground first, over all of it, in the canvas; another, or none.
+    let canvas = dark().theme().resolve(token::CANVAS.into());
+    let hex = |c: quadra_prim::Color| {
+        let b = |v: f32| (v * 255.0).round() as u8;
+        format!("#{:02x}{:02x}{:02x}", b(c.r), b(c.g), b(c.b))
+    };
+    let open = svg.find('>').unwrap() + 1;
+    let first = format!(r#"<rect x="-28" y="-40" width="356" height="108" fill="{}"/>"#, hex(canvas));
+    assert!(svg[open..].starts_with(&first), "{svg}");
+    let panel = dark().theme().resolve(token::PANEL.into());
+    assert!(
+        g.to_svg_on(&dark().theme(), Some(token::PANEL.into()))
+            .contains(&format!(r#"fill="{}"/>"#, hex(panel)))
+    );
+    assert_eq!(g.to_svg_on(&dark().theme(), None).matches("<rect").count(), 3);
 }
 
 #[test]
@@ -227,7 +242,7 @@ fn a_node_writes_its_own_svg_and_a_graph_fills_its_box() {
     let nodes = [node("a", 0.0, 0.0), node("b", 200.0, 0.0).svg(own)];
     let svg = graph(nodes, [Link::new("a", "b")]).to_svg(&dark().theme());
     assert!(svg.contains(r#"<g id="pod"><rect x="200" y="0"/><text>Pod</text></g>"#), "{svg}");
-    assert_eq!(svg.matches("<rect").count(), 2, "a's box and b's own");
+    assert_eq!(svg.matches("<rect").count(), 3, "the ground, a's box and b's own");
     // As tall as its box, following it.
     let tall = signal(500.0f32);
     let mut h = Harness::new();

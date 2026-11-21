@@ -1007,7 +1007,11 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   16 px around): the frames with their titles, the links as paths (their colour, width,
   dashes, heads), and each node as a box with its label; its words escaped. A node given
   `Node::svg(|rect| ..)` writes what that gives for its box in the plane instead, so an
-  export can carry what its face shows (a kind's chip, a mark, a second line).
+  export can carry what its face shows (a kind's chip, a mark, a second line). Its first
+  shape is the ground, a rectangle over the whole drawing in the theme's `canvas`, so a
+  file of the dark theme reads on its dark ground as in the app;
+  `to_svg_on(&theme, Some(paint))` takes another (`panel`, the plane it stands on), `None`
+  none (an export put on a ground of its own).
 - `.fill()` makes the graph as tall as the box it is in, following it (a view under a
   toolbar), where `.height(px)` fixes it; a `.fit()` fits to the height it gets. A raster
   capture of the view is not the graph's.

@@ -69,7 +69,8 @@ fn a_table_sorts_selects_by_the_pointer_and_the_keys_and_copies() {
     let counts = ["3", "10", "2"];
     let chosen = signal(Vec::new());
     let mut h = mounted(move || {
-        let col = |counts| Column { width: 60.0, least: 20.0, sortable: true, counts, restless: false };
+        let col =
+            |counts| Column { width: 60.0, least: 20.0, sortable: true, counts, restless: false, fill: 0.0 };
         let cell = move |row: usize, c: usize| if c == 0 { names[row] } else { counts[row] }.to_string();
         let sheet = table::sheet(vec![col(false), col(true)], Rc::new(|| 3), Rc::new(cell), Some(chosen));
         let title = |c: usize| sheet.title(div().width(60.0).label(["Name", "Count"][c]), c);

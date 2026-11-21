@@ -13,7 +13,7 @@ pub fn table_page() -> Div {
     let columns = [
         Column::new("#").numeric().width(90.0),
         Column::new("Tên").width(280.0),
-        Column::new("Thành phố").width(280.0),
+        Column::new("Thành phố").width(200.0).fill(),
         Column::new("Điểm").numeric().width(90.0),
     ];
     let cell = |row: usize, column: usize| match column {
@@ -65,7 +65,7 @@ fn volumes() -> Div {
         row().align_items(Align::Center).gap(8.0).child(bar).child(value)
     });
     let open = Column::new("").width(90.0).unsorted().view(|_, _| button("Open").size(Size::Sm));
-    let columns = [Column::new("Name").mono().width(200.0), used, Column::new("Note").muted(), open];
+    let columns = [Column::new("Name").mono().width(200.0), used, Column::new("Note").muted().fill(), open];
     let cell = |row: usize, column: usize| match column {
         0 => VOLUMES[row].0.to_string(),
         1 => VOLUMES[row].1.to_string(),

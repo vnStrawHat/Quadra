@@ -6,6 +6,7 @@ use quadra_headless::table::Sheet;
 use quadra_layout::{Align, Display, Justify, Length, Overflow};
 use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Signal, memo, signal};
+use quadra_tree::PointerKind;
 use quadra_tree::{Paint, Role, State as On};
 use quadra_view::{
     AnyView, Div, View, by_text, column, div, dynamic, row, scroll_x, sideways_bar, text, uniform_list,
@@ -47,7 +48,18 @@ fn header(state: &Sheet, columns: &[Column], (pinned, sx): (usize, Signal<f32>))
         let title = state.title(title, c);
         let grip = div().width(GRIP).shrink(0.0).cursor(Cursor::ResizeHorizontal);
         let grip = state.grip(grip.hover(|s| s.bg(token::BORDER_FOCUSED)), c);
-        let whole = row().shrink(0.0).width(move || Length::Px(widths.with(|all| all[c])));
+        let (fills, whole) =
+            (state.fills, row().shrink(0.0).width(move || Length::Px(widths.with(|all| all[c]))));
+        // A press on the edge of a column that fills makes it fixed at the width it has, which
+        // the drag starts from: before the grip's handler, while the press goes down to it.
+        let whole = whole.grow(move || fills.with(|all| all[c])).on_mount(move |tree, id| {
+            tree.on_pointer_capture(id, PointerKind::Down, move |e| {
+                if fills.with_untracked(|all| all[c] > 0.0) && e.local.x >= e.size.width - GRIP {
+                    widths.update(|all| all[c] = e.size.width);
+                    fills.update(|all| all[c] = 0.0);
+                }
+            })
+        });
         titles.push(shown(state, c, whole.child(title).child(grip)));
     }
     split(head, titles, pinned, sx)
@@ -114,10 +126,8 @@ fn line(
     let line = line
         .hover(|s| s.bg(token::RAISED_HOVER.alpha(0.6)))
         .when(On::SELECTED, |s| s.bg(token::ACCENT.alpha(0.1)));
-    let mut line = state.row(line, place);
-    if let Some(live) = state.live {
-        line = line.child(super::live::tints(live, state, place));
-    }
+    let line = state.row(line, place);
+    let changed = state.live.map(|live| super::live::changed(live, state, place));
     let mut cells = Vec::new();
     for (c, at) in columns.iter().enumerate() {
         let (widths, says, row_of) = (state.widths, state.cell.clone(), data.clone());
@@ -129,6 +139,13 @@ fn line(
         };
         let cell = state.cell(cell.height(Length::Fill).outline(ring), place, c);
         let cell = cell.overflow_x(Overflow::Hidden).width(move || Length::Px(widths.with(|all| all[c])));
+        let fills = state.fills;
+        let cell = cell.grow(move || fills.with(|all| all[c]));
+        // Under what it says, the tint of a change.
+        let cell = match (changed, state.live) {
+            (Some(changed), Some(live)) => cell.child(super::live::tint(live, changed, c)),
+            _ => cell,
+        };
         // Numbers are in the mono face at the right of their cells, so columns line up.
         let cell = match at.counts() {
             true => cell.justify(Justify::End).padding_right(16.0).font_family(fonts::MONO),

@@ -36,6 +36,7 @@ pub struct Column {
     sortable: bool,
     numeric: bool,
     kind: CellKind,
+    fill: f32,
     mono: bool,
     muted: bool,
     shows: Option<Shows>,
@@ -46,7 +47,8 @@ impl Column {
     pub fn new(title: impl Into<String>) -> Column {
         let (title, kind) = (title.into(), CellKind::Text);
         let (mono, muted, shows) = (false, false, None);
-        Column { title, width: 140.0, least: 48.0, sortable: true, numeric: false, kind, mono, muted, shows }
+        let (width, least, fill) = (140.0, 48.0, 0.0);
+        Column { title, width, least, sortable: true, numeric: false, kind, fill, mono, muted, shows }
     }
 
     pub fn width(mut self, px: f32) -> Self {
@@ -62,6 +64,17 @@ impl Column {
 
     pub fn kind(mut self, kind: CellKind) -> Self {
         self.kind = kind;
+        self
+    }
+
+    /// Takes the room left in the table, never narrower than its width.
+    pub fn fill(self) -> Self {
+        self.fill_by(1.0)
+    }
+
+    /// Takes the room left by `weight`, of the weights of the columns that fill.
+    pub fn fill_by(mut self, weight: f32) -> Self {
+        self.fill = weight.max(0.0);
         self
     }
 
@@ -101,7 +114,8 @@ impl Column {
     /// What the headless crate knows of it: an age is sorted as a number, and changes all the time.
     fn base(&self) -> table::Column {
         let (width, least, sortable, counts) = (self.width, self.least, self.sortable, self.counts());
-        table::Column { width, least, sortable, counts, restless: self.kind == CellKind::Age }
+        let (restless, fill) = (self.kind == CellKind::Age, self.fill);
+        table::Column { width, least, sortable, counts, restless, fill }
     }
 }
 

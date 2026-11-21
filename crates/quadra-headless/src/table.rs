@@ -36,6 +36,8 @@ pub struct Column {
     pub counts: bool,
     /// Its cells change all the time (an age): a live table does not mark their changes.
     pub restless: bool,
+    /// Its weight in the room left to the columns that fill it; 0: as wide as it is.
+    pub fill: f32,
 }
 
 pub type Rows = Rc<dyn Fn() -> usize>;
@@ -50,6 +52,8 @@ pub struct Sheet {
     pub rows: Rows,
     pub cell: Cells,
     pub widths: Signal<Vec<f32>>,
+    /// Each column's weight in the room left: 0, as wide as its width (a drag makes it so).
+    pub fills: Signal<Vec<f32>>,
     /// The column the rows are sorted by, and whether from the most.
     pub sort: Signal<Option<(usize, bool)>>,
     /// The data row at each place of the table; empty: as the data has them.
@@ -99,6 +103,7 @@ pub fn sheet(columns: Vec<Column>, rows: Rows, cell: Cells, chosen: Option<Signa
         Rc::new(order)
     });
     let widths = signal(columns.iter().map(|column| column.width).collect());
+    let fills = signal(columns.iter().map(|column| column.fill).collect());
     let chosen = chosen.unwrap_or_else(|| signal(Vec::new()));
     let (cursor, anchor, focused, hidden) = (signal(None), signal(None), signal(false), signal(Vec::new()));
     let (live, column, activate) = (None, None, None);
@@ -107,6 +112,7 @@ pub fn sheet(columns: Vec<Column>, rows: Rows, cell: Cells, chosen: Option<Signa
         rows,
         cell,
         widths,
+        fills,
         sort,
         order,
         chosen,

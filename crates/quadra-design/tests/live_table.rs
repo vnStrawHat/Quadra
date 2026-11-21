@@ -109,11 +109,11 @@ fn what_is_chosen_stays_with_its_rows_when_the_data_changes() {
     assert!(chosen.get_untracked().is_empty());
 }
 
-/// The tints of the row at a place: the row's first child holds them in a box.
+/// The tints of the row at a place: each cell's first child holds its tint while it has one.
 fn tints(h: &Harness, place: usize) -> Vec<NodeId> {
     let rows = h.query(|n| n.semantics.role == Role::Row);
-    let held = h.tree.children(h.tree.children(rows[1 + place])[0])[0];
-    h.tree.children(held).to_vec()
+    let cells = h.tree.children(rows[1 + place]).iter().filter(|&&c| h.tree.meaning(c).role == Role::Cell);
+    cells.flat_map(|&cell| h.tree.children(h.tree.children(cell)[0]).to_vec()).collect()
 }
 
 #[test]

@@ -13,7 +13,8 @@ use crate::token;
 
 /// A table of one column: `count()` rows, `says(row)` what copying a row gives.
 pub fn one_column(count: impl Fn() -> usize + 'static, says: impl Fn(usize) -> String + 'static) -> Sheet {
-    let column = Column { width: 0.0, least: 0.0, sortable: false, counts: false, restless: false };
+    let column =
+        Column { width: 0.0, least: 0.0, sortable: false, counts: false, restless: false, fill: 0.0 };
     sheet(vec![column], Rc::new(count), Rc::new(move |row, _| says(row)), None)
 }
 

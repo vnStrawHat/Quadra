@@ -426,7 +426,14 @@ As built so far:
   status too), and follows the column made wider; the whole value is still what is copied.
   A column of
   numbers or ages puts the cells that say no number after all the others, whichever way it
-  is sorted. A
+  is sorted. `.fill()` (`.fill_by(weight)` when several do) makes a column take the room
+  left: the table's width less the other columns that show goes to the filling ones by
+  weight, each never narrower than its width, so the last column ends at the table's edge
+  at any width; a hidden column gives them its room, and when there is no room left
+  nothing fills and the table scrolls sideways. Dragging the edge of a filling column
+  makes it fixed at the width dragged to, and the others take the change. With columns
+  pinned, the others keep their widths. The tint of a cell that changed is on the cell
+  itself, wherever the cell is. A
   click on a title sorts by its column from the least, another from the most, with an
   arrow in the accent; the order is worked out again when the data changes. The 5 px at
   the edge of a title are dragged to make the column wider, never under 48 px. A click

@@ -939,6 +939,33 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   more samples than the plot has pixel columns, a peak between two edges is drawn.
 - To a reader the plot of a line chart is an image named by what its lines say: each
   series, its least and its most, and its last value (`cpu: 90 to 190m, last 140m`).
+- **`graph(nodes, links)`** (`graph.rs`, `graph/links.rs`, `graph/svg.rs`) is a canvas of
+  nodes and the links between them, 360 px tall unless told (`.height(px)`), cut to its
+  box. A `Node::new(id, at, size, label, || view)` is a view at a point of the graph's own
+  plane, as large as `size` (the app places them: a layered layout is the app's, or later
+  the kit's); to a reader a button named by its label. A `Link::new(from, to)` is a curve
+  from the edge of one node to the edge of the other, leaving and arriving along the axis
+  they are further apart on (a cubic, flattened, stroked as the diagrams' lines are), with
+  a head at its end. `.link_style(|i| LinkStyle { color, width, dash, arrow })` styles
+  each link (by default 1.5 px in `text_3` with a head, solid; `dash` is the length of a
+  dash and of a gap); it is read again when what it reads changes, so lighting a chain
+  repaints the links and builds nothing. `.group(title, [ids])` draws a frame around those
+  nodes, 12 px out from them and 24 above for its title, in `line_strong`, its title in 12
+  px `text_3`.
+- **Pan and zoom** are a `GraphView { pan, zoom }` in a signal (`.view(signal)`, read and
+  written): a node's box is at `at * zoom + pan`, `size * zoom` large, so the pointer and a
+  reader find it where it shows, and its view is drawn at its own size scaled by `zoom`. A
+  drag on the graph pans it; the wheel with Ctrl zooms it about the pointer (0.25 to 4); a
+  wheel without Ctrl goes on to what is around. `.fit()` shows all of it when its box is
+  first laid out, and a double click on it fits it again: `fitted(bounds, size)` is that
+  view (16 px of margin, never past a zoom of 1).
+- `.on_click(|hit| ..)` is told a click on a node (`Hit::Node(id)`) or on a link
+  (`Hit::Link(i)`, within 5 px of its line); `.on_hover(|hit| ..)` what the pointer is over,
+  `None` when nothing.
+- `Graph::to_svg(&theme)` writes the drawing as SVG at its own size (the nodes' bounds and
+  16 px around): the frames with their titles, the links as paths (their colour, width,
+  dashes, heads), and each node as a box with its label; its words escaped. A raster
+  capture of the view is not the graph's.
 
 ## Data (`quadra-data`)
 

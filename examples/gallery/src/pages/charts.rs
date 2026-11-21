@@ -1,9 +1,12 @@
-//! Charts: the sparkline, the line chart and the bar chart.
+//! Charts: the sparkline, the line chart, the bar chart and the graph.
 
-use quadra::{Align, Div, div, row, text};
-use quadra_viz::{Bar, Series, bar_chart, line_chart, series_color, sparkline};
+use quadra::{Align, Div, Point, Size, div, row, signal, text};
+use quadra_design::{Status, Tone, plain_badge, status_mark, token};
+use quadra_viz::{
+    Bar, Graph, Hit, Link, LinkStyle, Node, Series, bar_chart, graph, line_chart, series_color, sparkline,
+};
 
-use crate::common::{demo, framed, mono, page, stack};
+use crate::common::{demo, framed, hint, mono, page, stack};
 
 /// Samples of something that goes up and down around `base`.
 fn wave(n: usize, phase: f64, base: f64, amp: f64) -> Vec<f64> {
@@ -93,5 +96,65 @@ pub fn bar_chart_page() -> Div {
                 "bar_chart(bars).upright(180.0)",
             ),
         ],
+    )
+}
+
+/// A topology: an ingress, its services, their workloads; the link a policy denies dashed in
+/// the error colour, the chain the pointer is on in the accent.
+fn topology(lit: quadra::Signal<Option<Hit>>) -> Graph {
+    let node = |id: &'static str, kind: &'static str, status: Status, (x, y): (f32, f32)| {
+        let face = move || {
+            let line = row().align_items(Align::Center).gap(6.0).height(40.0).padding_x(10.0);
+            let line = line.bg(token::PANEL).radius(6.0).border(1.0).border_color(token::LINE_STRONG);
+            line.child(status_mark(status)).child(plain_badge(kind, Tone::Primary)).child(text(id))
+        };
+        Node::new(id, Point::new(x, y), Size::new(190.0, 40.0), id, face)
+    };
+    let nodes = [
+        node("shop", "Ingress", Status::Running, (0.0, 80.0)),
+        node("api", "Service", Status::Running, (260.0, 20.0)),
+        node("web", "Service", Status::Running, (260.0, 140.0)),
+        node("api-7c9f", "Pod", Status::Running, (520.0, 0.0)),
+        node("api-x2kq", "Pod", Status::Failed, (520.0, 60.0)),
+        node("web-5d8b", "Pod", Status::Pending, (520.0, 160.0)),
+    ];
+    let ends =
+        [("shop", "api"), ("shop", "web"), ("api", "api-7c9f"), ("api", "api-x2kq"), ("web", "web-5d8b")];
+    let links = ends.map(|(a, b)| Link::new(a, b));
+    let style = move |k: usize| {
+        let on = match lit.get() {
+            Some(Hit::Link(at)) => at == k,
+            Some(Hit::Node(id)) => ends[k].0 == &*id || ends[k].1 == &*id,
+            None => false,
+        };
+        match (k, on) {
+            (_, true) => LinkStyle { color: token::ACCENT.into(), width: 2.0, ..LinkStyle::default() },
+            (3, false) => LinkStyle { color: token::ERROR.into(), dash: 4.0, ..LinkStyle::default() },
+            _ => LinkStyle::default(),
+        }
+    };
+    let g = graph(nodes, links).link_style(style).group("payments", ["api", "api-7c9f", "api-x2kq"]);
+    g.height(320.0).fit()
+}
+
+pub fn graph_page() -> Div {
+    let lit = signal(None);
+    let svg = topology(lit).to_svg(&quadra_design::dark().theme()).len();
+    let shown = topology(lit).on_hover(move |hit| lit.set(hit));
+    let told = move || match lit.get() {
+        Some(Hit::Node(id)) => format!("On {id}"),
+        Some(Hit::Link(k)) => format!("On link {k}"),
+        None => {
+            format!("Drag to pan, Ctrl and the wheel to zoom, a double click fits. The SVG: {svg} bytes.")
+        }
+    };
+    page(
+        "Graph",
+        "Nodes that are views at points, links between them, frames around groups; pan, zoom, fit and SVG.",
+        [demo(
+            "A topology",
+            stack().child(framed(shown)).child(hint(told)),
+            "graph(nodes, links).link_style(|i| ..).group(\"payments\", ids).fit().to_svg(&theme)",
+        )],
     )
 }

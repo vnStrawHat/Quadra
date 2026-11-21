@@ -100,6 +100,7 @@ pub const PAGES: &[PageInfo] = &[
     info("sparkline", "Sparkline", "Charts", icons::GAUGE),
     info("line-chart", "Line chart", "Charts", icons::GAUGE),
     info("bar-chart", "Bar chart", "Charts", icons::SLIDERS_HORIZONTAL),
+    info("graph", "Graph", "Charts", icons::NETWORK),
     info("stress", "Stress", "Performance", icons::GAUGE),
 ];
 
@@ -185,6 +186,7 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "sparkline" => charts::sparkline_page(),
         "line-chart" => charts::line_chart_page(),
         "bar-chart" => charts::bar_chart_page(),
+        "graph" => charts::graph_page(),
         "stress" => data::stress_page(),
         _ => overview::start_page(),
     }

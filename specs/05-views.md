@@ -312,8 +312,9 @@ locale at the window root; a subtree can provide its own.
   `.bold()`, `.weight(..)`, `.italic()`, `.size(px)`, `.family(name)`, `.color(..)` (a
   colour, or a role of the theme), `.background(..)` (a fill behind the span, as high as
   its line, on every line it is on), `.strike()` (a line through it, in its colour),
-  `.link(target)`. It wraps as one text does (08); `.ellipsis()` makes it one line, cut
-  as a text is. A link is underlined, in its own colour;
+  `.link(target)`. It wraps as one text does (08); `.ellipsis()` makes it one line whose
+  letters are cut as a text's are (its fills, strikes, link lines and boxes are not: it is
+  for spans that differ in colour and face). A link is underlined, in its own colour;
   the pointer is a hand over it, and a click on it gives its target to
   `.on_link(|target| ..)`. With `.ctrl_links()` on the text, for content its user did not
   write, a link is one only while Ctrl is held: the hand shows then, and the click counts

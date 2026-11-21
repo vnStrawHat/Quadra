@@ -202,3 +202,35 @@ fn a_limit_is_a_dashed_line_the_scale_reaches_and_live_times_follow_the_samples(
     h.frame();
     assert!(h.has_text("12:03") && h.has_text("cpu 130m") && h.has_text("limit 1km"), "{}", h.semantics());
 }
+
+#[test]
+fn a_bare_chart_fills_its_box_and_its_legend_names_the_limit_beside_a_note() {
+    let mut h = harness();
+    h.mount(|| {
+        let used = Series::new("used", vec![20.0, 35.0, 30.0]);
+        let chart = line_chart([used]).time(NOON, 15_000).offset(7 * 3600).limit("limit", 80.0).top(100.0);
+        let chart = chart.bare().height(70.0).legend_note(|| "since 19:00".to_string());
+        div().width(300.0).child(chart)
+    });
+    h.frame();
+    // The plot is all of the box: no values at its left, no times under it.
+    let plot = h.query(|n| n.semantics.role == Role::Image)[0];
+    assert_eq!(h.tree.window_rect(plot), quadra_prim::Rect::new(0.0, 0.0, 300.0, 70.0));
+    assert!(!h.has_text("100") && !h.has_text("19:00"));
+    // The legend: the series, then the limit, then the note at the end of the row.
+    assert!(h.has_text("used") && h.has_text("limit") && h.has_text("since 19:00"));
+    assert!(text_at(&mut h, "limit").x > text_at(&mut h, "used").x);
+    assert!((text_at(&mut h, "since 19:00").right() - 300.0).abs() < 0.5);
+    // The time under the pointer is local: seven hours ahead of noon UTC.
+    h.pointer(PointerInput::Move, 10.0, 30.0);
+    h.frame();
+    assert!(h.has_text("19:00"), "{}", h.semantics());
+}
+
+#[test]
+fn a_fixed_top_is_the_top_of_the_scale() {
+    let mut h = harness();
+    h.mount(|| div().width(452.0).child(line_chart([Series::new("cpu", vec![10.0, 30.0])]).top(100.0)));
+    h.frame();
+    assert!(h.has_text("100") && h.has_text("75") && !h.has_text("40"));
+}

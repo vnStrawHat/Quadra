@@ -907,7 +907,15 @@ What the charts are and look like is behaviour/19, "Charts". As built:
 - `.limit(name, value)` draws a line at `value` across the plot, dashed, 1 px in `text_2`
   (a container's limit, a node's allocatable): the top of the scale reaches it however far
   under it the series are; the box under the pointer and a reader say it after the series
-  (`limit 2000m`). `value` is a constant or something reactive.
+  (`limit 2000m`). `value` is a constant or something reactive. With a legend, the limit's
+  name follows the series', beside a short dashed line.
+- `.bare()` leaves out the values at the left and the times under the plot: the plot fills
+  the box (a small chart beside the numbers it shows; the values are in the box under the
+  pointer). `.legend_note(|| words)` puts muted mono words at the right end of the
+  legend's row ("since 09:12, when this view was opened"), and shows the legend.
+  `.offset(seconds)` writes the times in the user's time, that many seconds ahead of UTC
+  (`quadra_app::utc_offset()`). `.top(value)` fixes the top of the scale (100 for
+  percentages) instead of rounding it up from the values.
 - The pointer over the plot shows a hairline at the nearest sample and a box with the time
   and each series' value there, a swatch of its colour before it. The box is to the right
   of the hairline in the left half of the plot and to its left in the right half. It is

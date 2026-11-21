@@ -57,13 +57,18 @@ pub struct LineChart {
     unit: Rc<str>,
     height: f32,
     legend: bool,
+    note: Option<Read<String>>,
+    bare: bool,
+    offset_ms: i64,
+    top: Option<f64>,
 }
 
 /// A chart of lines over the same samples, as wide as the box it is in and 200 px tall.
 pub fn line_chart(series: impl IntoIterator<Item = Series>) -> LineChart {
     let series = series.into_iter().collect();
-    let (start_ms, limit, unit) = (None, None, "".into());
-    LineChart { series, start_ms, step_ms: 1000, limit, unit, height: 200.0, legend: false }
+    let (start_ms, limit, unit, note, top) = (None, None, "".into(), None, None);
+    let (step_ms, height, legend, bare, offset_ms) = (1000, 200.0, false, false, 0);
+    LineChart { series, start_ms, step_ms, limit, unit, height, legend, note, bare, offset_ms, top }
 }
 
 impl LineChart {
@@ -93,9 +98,37 @@ impl LineChart {
         self
     }
 
-    /// The name of each series beside a swatch of its colour, in a row under the chart.
+    /// The name of each series beside a swatch of its colour, in a row under the chart; then
+    /// the limit's, beside a short dashed line.
     pub fn legend(mut self) -> Self {
         self.legend = true;
+        self
+    }
+
+    /// Muted mono words at the right end of the legend's row ("since 09:12"), which shows.
+    pub fn legend_note(mut self, words: impl Fn() -> String + 'static) -> Self {
+        (self.note, self.legend) = (Some(Rc::new(words) as Read<String>), true);
+        self
+    }
+
+    /// No values at the left and no times under it: the plot fills the box, and what is
+    /// said of it is in the box under the pointer (a small chart beside its numbers).
+    pub fn bare(mut self) -> Self {
+        self.bare = true;
+        self
+    }
+
+    /// The seconds the user's clock is ahead of UTC (`quadra_app::utc_offset()`): the times
+    /// are written in local time.
+    pub fn offset(mut self, seconds: i64) -> Self {
+        self.offset_ms = seconds * 1000;
+        self
+    }
+
+    /// A fixed top of the scale (100 for percentages) instead of one rounded up from the
+    /// values.
+    pub fn top(mut self, value: f64) -> Self {
+        self.top = Some(value);
         self
     }
 }
@@ -103,6 +136,13 @@ impl LineChart {
 /// A swatch of a colour and a name after it.
 fn named(name: &str, paint: Paint) -> Div {
     let swatch = div().size(8.0, 8.0).shrink(0.0).radius(2.0).bg(paint);
+    row().shrink(0.0).align_items(Align::Center).gap(6.0).child(swatch).child(text(name.to_string()))
+}
+
+/// The swatch of the limit, a short dashed line, and its name after it.
+fn dashed(name: &str) -> Div {
+    let swatch = div().width(12.0).height(1.0).shrink(0.0).border_top(1.0).border_color(token::TEXT_2);
+    let swatch = swatch.border_style(BorderStyle::Dashed);
     row().shrink(0.0).align_items(Align::Center).gap(6.0).child(swatch).child(text(name.to_string()))
 }
 
@@ -163,7 +203,16 @@ impl View for LineChart {
             lines.push((series.name, paint, read));
         }
         let legend = self.legend.then(|| {
-            row().wrap(true).gap(16.0).padding_top(8.0).children(lines.iter().map(|l| named(&l.0, l.1)))
+            let legend = row().wrap(true).gap(16.0).padding_top(8.0).align_items(Align::Center);
+            let legend = legend.children(lines.iter().map(|l| named(&l.0, l.1)));
+            let legend = legend.children(limit.iter().map(|(name, _)| dashed(name)));
+            let note = self
+                .note
+                .map(|note| row().font_family(fonts::MONO).child(text(move || note()).color(token::TEXT_3)));
+            match note {
+                Some(note) => legend.child(div().grow(1.0)).child(note),
+                None => legend,
+            }
         });
         let (said, limited, unit) = (lines.clone(), limit.clone(), self.unit.clone());
         let names = move || summary(&said, &limited, &unit);
@@ -171,14 +220,15 @@ impl View for LineChart {
         let first = all.first().cloned();
         let count = memo(move || first.as_ref().map_or(0, |read| read().len()));
         // The top reaches the limit, however far under it the series are.
-        let reach = limit.as_ref().map(|(_, value)| value.clone());
+        let (reach, top) = (limit.as_ref().map(|(_, value)| value.clone()), self.top);
         let max = memo(move || {
             let most = all.iter().map(|read| max_of(&read())).fold(0.0, f64::max);
-            nice_max(reach.as_ref().map_or(most, |value| most.max(value())))
+            top.unwrap_or_else(|| nice_max(reach.as_ref().map_or(most, |value| most.max(value()))))
         });
         // The time of a sample, from the first sample's as it is now.
+        let offset = self.offset_ms;
         let time = start.map(|start| {
-            Rc::new(move |i: usize| hh_mm(start() + i as i64 * step)) as Rc<dyn Fn(usize) -> String>
+            Rc::new(move |i: usize| hh_mm(start() + i as i64 * step + offset)) as Rc<dyn Fn(usize) -> String>
         });
         let hover = Hover { at: signal(None), count, time: time.clone() };
 
@@ -203,7 +253,11 @@ impl View for LineChart {
         let area = if alone { 0.12 } else { 0.0 };
         let plots = plots.into_iter().map(|(values, paint)| filling(values, max.into_prop(), paint, area));
         let at = hover.at;
-        let field = div().absolute().left(AXIS_W).top(6.0).right(8.0).bottom(AXIS_H);
+        // Bare, the plot fills the box: no scale, no times.
+        let bare = self.bare;
+        let (left, top, right, bottom) = if bare { (0.0, 0.0, 0.0, 0.0) } else { (AXIS_W, 6.0, 8.0, AXIS_H) };
+        let field = div().absolute().left(left).top(top).right(right).bottom(bottom);
+        let scale: Vec<Div> = if bare { Vec::new() } else { scale.collect() };
         let field = field.role(Role::Image).label(names).children(grid).children(scale).children(rule);
         let field = field.children(plots).child(hover.hair()).child(hover.values(lines, limit, self.unit));
         let field = field.on_pointer(PointerKind::Leave, move |_| at.set(None));
@@ -215,7 +269,7 @@ impl View for LineChart {
         });
 
         // The times of the first, the middle and the last sample.
-        let times = time.into_iter().flat_map(|time| {
+        let times = time.into_iter().filter(|_| !bare).flat_map(|time| {
             (0..3).map(move |k| {
                 let time = time.clone();
                 text(move || match count.get() {

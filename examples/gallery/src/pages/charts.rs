@@ -41,6 +41,9 @@ pub fn line_chart_page() -> Div {
     let twelve = (0..12)
         .map(|i| Series::new(format!("node-{i}"), wave(120, i as f64 * 0.7, 40.0 + i as f64 * 15.0, 12.0)));
     let twelve = line_chart(twelve).time(START, 1000).height(220.0).legend();
+    let bare = line_chart([Series::new("used", wave(120, 0.4, 120.0, 40.0))]).time(START, 1000);
+    let bare = bare.limit("limit", 250.0).unit("m").bare().height(70.0);
+    let bare = bare.legend_note(|| "since 09:12, when this view was opened".to_string());
     let about = "Up to 8 series on a time axis, a y axis rounded up to 1, 2, 2.5 or 5 times a power of \
                  ten, and a crosshair with the values under the mouse.";
     page(
@@ -51,6 +54,11 @@ pub fn line_chart_page() -> Div {
                 "One series (with area) and its limit",
                 framed(div().padding(12.0).child(one)),
                 "line_chart([Series::new(\"cpu\", values)]).time(start_ms, 1000).limit(\"limit\", 250.0)",
+            ),
+            demo(
+                "Bare, beside its numbers",
+                framed(div().padding(12.0).width(520.0).child(bare)),
+                "line_chart(series).limit(\"limit\", 250.0).bare().legend_note(|| since)",
             ),
             demo(
                 "Five series",

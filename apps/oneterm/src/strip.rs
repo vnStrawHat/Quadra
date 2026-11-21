@@ -83,7 +83,7 @@ fn tab_button(model: &Model, tab: Tab) -> impl View + use<> {
             moves.move_tab(dragged.0, to.unwrap_or(usize::MAX));
         })
         .child(active_fill(on, 0.0, true))
-        .child(crate::marks::tab_icon(tab, 14.0, on))
+        .child(crate::marks::tab_icon(tab, 14.0, on, quadra_design::token::TEXT_3))
         .child(div().min_width(0.0).child(title(model, tab)))
         .child(crate::marks::tab_mark(tab))
         .child(close_button(model, tab, on))

@@ -117,3 +117,35 @@ fn a_header_names_the_shell_until_the_program_gives_a_title() {
     a.feed(0, b"\x1b]0;C:\\WINDOWS\\System32\\cmd.exe - ls\x07");
     assert!(a.says("cmd.exe - ls") && !a.says("Command Prompt"), "the title, its path shortened");
 }
+
+#[test]
+fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_word_under_its_icon() {
+    let mut a = app();
+    a.key(Key::T, Mods::CTRL);
+    a.key(Key::T, Mods::CTRL);
+    let fold =
+        a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Collapse tabs to icons");
+    a.h.tree.act(fold[0], &quadra::SemanticAction::Click);
+    a.h.settle();
+    a.feed(0, b"\x1b]7501;state=blocked:id=deploy\x07");
+    a.feed(1, b"\x1b]9;4;1;64\x07");
+    let theme = a.h.tree.theme().clone();
+    let word = |a: &App, said: &str| {
+        let node = a.h.query(|n| n.semantics.role == Role::Text && n.semantics.name == said)[0];
+        (a.h.tree.window_rect(node), a.h.tree.inherited(node).color)
+    };
+    let (blocked, warn) = word(&a, "blocked");
+    let (part, accent) = word(&a, "64%");
+    let (idle, purple) = word(&a, "idle");
+    assert_eq!(warn, theme.resolve(quadra_design::token::WARN.into()));
+    assert_eq!(accent, theme.resolve(quadra_design::token::ACCENT.into()));
+    assert_eq!(purple, theme.resolve(quadra_design::token::HUE_PURPLE.into()));
+    // Under the icon of a tab of 46 px, in a rail of 56.
+    let tabs = a.h.query(|n| n.semantics.role == Role::Tab);
+    let first = a.h.tree.window_rect(tabs[0]);
+    assert_eq!((first.width, first.height), (55.0, 46.0), "56 with the line at its right");
+    assert!(first.contains(blocked.center()) && blocked.y > first.y + 16.0);
+    assert!(a.h.tree.window_rect(tabs[1]).contains(part.center()));
+    assert!(a.h.tree.window_rect(tabs[2]).contains(idle.center()));
+    assert!(a.says("Terminal, blocked, needs permission"));
+}

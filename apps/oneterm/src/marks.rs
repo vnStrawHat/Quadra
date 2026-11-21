@@ -1,7 +1,7 @@
 //! How signals look (specs/19, "Signals"): a tab's signal at the end of its row, its icon, the
 //! seam bar of its progress, the second line of its row, a space header's signal.
 
-use quadra::{Align, AnyView, Display, Length, Role, View, div, dynamic, row, text};
+use quadra::{Align, AnyView, Display, Length, Role, View, by_text, div, dynamic, row, text};
 use quadra_design::{fonts, icon, icons, spinner, token};
 use quadra_term::ProgramState;
 use quadra_term::vt::Progress;
@@ -67,16 +67,23 @@ pub(crate) fn tab_mark(tab: Tab) -> impl View {
     })
 }
 
-/// The badge of a tab's icon in the folded rail: its state's icon or a bell, at the box's top
-/// right; a progress is the seam bar, idle nothing.
-pub(crate) fn tab_badge(tab: Tab) -> impl View {
-    let face = dynamic(move || match state_icon(tab.status(), 12.0) {
-        Some(_) if tab.status() == ProgramState::Working && part_of(tab).is_some() => AnyView::new(div()),
-        Some(face) => AnyView::new(face),
-        None if tab.bells() > 0 => AnyView::new(bell(12.0)),
-        None => AnyView::new(div()),
+/// The word under a tab's icon in the folded rail, in its state's colour: blocked, error and
+/// done, else its progress in mono, else working, else a bell that rang unseen, else idle.
+pub(crate) fn tab_word(tab: Tab) -> impl View {
+    let word = dynamic(move || {
+        let (said, color, mono) = match (tab.status(), part_of(tab)) {
+            (ProgramState::Blocked, _) => ("blocked".to_string(), token::WARN, false),
+            (ProgramState::Error, _) => ("error".to_string(), token::ERROR, false),
+            (ProgramState::Done, _) => ("done".to_string(), token::OK, false),
+            (_, Some(n)) => (format!("{n}%"), token::ACCENT, true),
+            (ProgramState::Working, _) => ("working".to_string(), token::ACCENT, false),
+            _ if tab.bells() > 0 => ("bell".to_string(), token::ERROR, false),
+            _ => ("idle".to_string(), token::HUE_PURPLE, false),
+        };
+        let word = row().text_color(color).child(text(said));
+        AnyView::new(if mono { word.font_family(fonts::MONO) } else { word })
     });
-    div().absolute().top(5.0).right(7.0).child(face)
+    word.container(row().height(by_text(14.0)).align_items(Align::Center).text_size(10.0).shrink(0.0))
 }
 
 /// What a reader hears of a tab in the folded rail: its title, then its signal.
@@ -95,12 +102,12 @@ pub(crate) fn tab_said(tab: Tab) -> String {
 }
 
 /// The tab's icon of `px`: a server for a tab with a remote space, a terminal else; in the
-/// accent while it shows, the third text colour else.
-pub(crate) fn tab_icon(tab: Tab, px: f32, on: impl Fn() -> bool + 'static) -> impl View {
+/// accent while it shows, `off` else.
+pub(crate) fn tab_icon(tab: Tab, px: f32, on: impl Fn() -> bool + 'static, off: quadra::Token) -> impl View {
     dynamic(move || {
         let remote = tab.spaces.with(|spaces| spaces.iter().any(|it| it.remote.is_some()));
         let body = if remote { icons::SERVER } else { icons::SQUARE_TERMINAL };
-        AnyView::new(icon(body).size(px).color(if on() { token::ACCENT } else { token::TEXT_3 }))
+        AnyView::new(icon(body).size(px).color(if on() { token::ACCENT } else { off }))
     })
 }
 

@@ -92,11 +92,14 @@ count in mono at the right) of rows of 26 px (radius 6) under a line from the ch
 name, the address in mono at the right. The switch to horizontal tabs is in the settings.
 
 Collapsed (Collapse tabs to icons, in the heading or the status bar, or the setting) the rail is
-48 px: Expand tabs at the top, then a box of 40 px a tab with its icon and its signal as a badge
-at the box's top right (the state's icon or a bell, 12 px; the progress is the seam bar), a
-strong line under each, the active one on the pressed editor colour with the accent bar, the title and signal as its name and tooltip
-(`neo-gateway deploy, blocked, needs permission`), then New terminal (`+`, the `+` menu at its
-right).
+56 px: Expand tabs at the top, then a box of 46 px a tab: its icon of 16 px (the secondary text
+colour, the accent while it shows) and 2 px under it its signal as one word of 10 px on a line
+of 14 in the state's colour: `blocked` in warn, `error` in error, `done` in ok, its progress
+(`64%`, mono) or `working` in the accent, `bell` in error when one rang unseen, else `idle` in
+purple; a progress also has the seam bar. A strong line under each, the active one on the
+pressed editor colour, a pixel wider, with the accent bar; the title and signal are its name
+and tooltip (`neo-gateway deploy, blocked, needs permission`). Then New terminal (`+` in a box
+of 40, the `+` menu at its right).
 
 Click selects; middle closes; double-click renames; the right button opens the tab menu (Rename,
 Duplicate, Close, Close others, Close to the right: the tabs after it, asked first as a close

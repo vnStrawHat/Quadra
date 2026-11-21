@@ -1,6 +1,6 @@
-//! The rail collapsed (specs/19, "Rail"): 48 px, Expand tabs, a box of 40 px a tab (its icon,
-//! its signal as a badge, the one that shows on the editor colour with the accent bar), then
-//! New terminal as a `+`.
+//! The rail collapsed (specs/19, "Rail"): 56 px, Expand tabs, a box of 46 px a tab (its icon,
+//! its signal as a coloured word under it, the one that shows on the editor colour with the
+//! accent bar), then New terminal as a `+`.
 
 use quadra::{Align, NodeRef, Role, Side, Signal, View, by_text, column, each, row, signal};
 use quadra_design::{icon, icon_button, icons, menu_beside, token, tooltip};
@@ -33,7 +33,7 @@ pub(crate) fn narrow(model: &Model, folded: Signal<bool>) -> impl View + use<> {
             .child(icon(icons::PLUS).size(16.0)),
     );
     column()
-        .width(48.0)
+        .width(56.0)
         .shrink(0.0)
         .bg(token::PANEL)
         .border_right(1.0)
@@ -60,21 +60,27 @@ fn boxed() -> quadra::Div {
         .border_color(token::LINE_STRONG)
 }
 
-/// A tab as its icon in a box of 40 px with its signal as a badge, the one that shows on the
-/// pressed editor colour with the accent bar; its title and signal are its name and tooltip.
+/// A tab as its icon in a box of 46 px with its signal as a word under it, the one that shows
+/// on the pressed editor colour with the accent bar; its title and signal are its name and
+/// tooltip.
 fn face(model: &Model, tab: Tab) -> impl View + use<> {
     let (active, shows) = (model.active(), model.clone());
     let on = move || active.get() == tab.id;
+    let column =
+        column().height(46.0).shrink(0.0).align_items(Align::Center).justify(quadra::Justify::Center);
     tooltip(
         move || marks::tab_said(tab),
-        boxed()
+        column
+            .gap(2.0)
+            .border_bottom(1.0)
+            .border_color(token::LINE_STRONG)
             .role(Role::Tab)
             .label(move || marks::tab_said(tab))
             .selected(on)
             .on_click(move |_| shows.show(tab.id))
             .child(crate::rail::active_fill(on, 1.0, false))
-            .child(marks::tab_icon(tab, 16.0, on))
-            .child(marks::tab_badge(tab))
+            .child(marks::tab_icon(tab, 16.0, on, token::TEXT_2))
+            .child(marks::tab_word(tab))
             .child(marks::progress_bar(tab, -1.0)),
     )
 }

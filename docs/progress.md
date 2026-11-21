@@ -418,6 +418,14 @@ and rows; the expanded view's panes, columns and transfers; Quick connect; the l
 others brought to the new names. Open: Windows Hello, the machine's RAM and network rates (no
 framework service yet), a transfer queue, selects in the input's look.
 
+### 1Term's collapsed tabs, option H (2026-11-21)
+
+The canvas's "H · tab icon and a coloured state word" (specs/19, "Rail"): the folded rail is
+56 px, a tab 46 px: its icon of 16 (`text_2`, the accent while it shows) and under it its
+signal as one word of 10 px in the state's colour (`blocked`, `error`, `done`, the progress in
+mono or `working`, `bell`, `idle` in purple), the seam bar for a progress. `marks::tab_word`
+replaces the badge. Test: `apps/oneterm/tests/signals.rs`; picture: scene `collapsed`.
+
 ### Performance (2026-11-16)
 
 - **The comparison bench's runner in Rust** (`bench/runner`, `tools/bench.sh compare`), over

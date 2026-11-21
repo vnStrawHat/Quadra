@@ -72,6 +72,7 @@ struct Animation {
     frames: u32,
     /// How many of the first frames are not presented, as when a draw fails.
     unshown: u32,
+    guard: Option<TimerId>,
     gave_up: bool,
 }
 
@@ -92,9 +93,12 @@ impl PlatformHandler for Animation {
         }
     }
 
-    fn timer(&mut self, _: TimerId) {
-        self.gave_up = true;
-        self.platform.quit();
+    fn timer(&mut self, id: TimerId) {
+        // The guard ends it; the other timer only sends messages, as a busy app does.
+        if Some(id) == self.guard {
+            self.gave_up = true;
+            self.platform.quit();
+        }
     }
 
     fn wake(&mut self) {}
@@ -126,11 +130,16 @@ fn paced(unshown: u32) {
         scene: scene_with_a_quad(),
         frames: 0,
         unshown,
+        guard: None,
         gave_up: false,
     };
     let guard = p.set_timer(Duration::from_secs(5), false);
+    // Messages every 20 ms: a wait for the swap chain is woken often, and still ends.
+    let busy = p.set_timer(Duration::from_millis(20), true);
+    animation.guard = Some(guard);
     p.run(&mut animation).unwrap();
     p.cancel_timer(guard);
+    p.cancel_timer(busy);
     assert!(!animation.gave_up, "the swap chain never took a frame: {} drawn", animation.frames);
     assert_eq!(animation.frames, 5);
 }

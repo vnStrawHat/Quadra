@@ -135,7 +135,8 @@ an app from them. It is the one place where the three may know each other:
   present gives one back, so a wait not followed by a present would leave the window waiting
   for ever, drawing nothing while its input and its work go on. So a minimized window is not
   waited for nor drawn (the app draws nothing at a size of zero); its request stays until it
-  is restored. And a wait that lasts 100 ms draws anyway: that present gives back a frame a
+  is restored. And a window that has waited 100 ms draws anyway, timed from when it began
+  to wait, however many messages wake the loop meanwhile: that present gives back a frame a
   failed draw took.
 - **Device start-up.** The window opens, the first frame is drawn on the software device and
   blitted, and the swap chain is attached when the hardware device is ready (07).

@@ -26,10 +26,9 @@ use crate::pacing::Pacing;
 use crate::window::{self, WindowState};
 
 const INFINITE: u32 = u32::MAX;
-/// What `MsgWaitForMultipleObjectsEx` returns when its time is up.
-const WAIT_TIMEOUT: u32 = 0x102;
-/// How long a window waits for its swap chain before it draws anyway: a frame is never so
-/// slow, and a draw that failed took a frame no present gave back.
+/// How long a window waits for its swap chain before it draws anyway, however many messages
+/// come meanwhile: a frame is never so slow, and a draw that failed took a frame no present
+/// gave back.
 const STUCK_MS: u32 = 100;
 /// Posted to the message window: turn the loop (a quit), and a waker fired.
 const WM_TURN: u32 = WM_APP;
@@ -157,10 +156,15 @@ impl WinPlatform {
         // SAFETY: the windows are alive: their states are.
         let wants =
             |w: &Rc<WindowState>| w.frame_requested.get() && !unsafe { IsIconic(w.hwnd.get()) }.as_bool();
-        let (mut waiting, mut handles) = (Vec::new(), Vec::new());
+        let (mut waiting, mut handles, now) = (Vec::new(), Vec::new(), std::time::Instant::now());
+        let mut left = STUCK_MS;
         for window in asked.iter().filter(|w| wants(w)) {
+            let since = *window.waiting_since.get().get_or_insert(now);
+            window.waiting_since.set(Some(since));
+            let waited = now.saturating_duration_since(since).as_millis().min(STUCK_MS as u128) as u32;
             match s.pacing.get(window.hwnd.get()) {
-                Some(handle) if handles.len() < 63 => {
+                Some(handle) if handles.len() < 63 && waited < STUCK_MS => {
+                    left = left.min(STUCK_MS - waited);
                     waiting.push(window);
                     handles.push(handle);
                 }
@@ -174,16 +178,15 @@ impl WinPlatform {
         let again = asked.iter().any(|w| wants(w) && !waiting.iter().any(|x| Rc::ptr_eq(x, w)));
         let timeout = match (again, waiting.is_empty()) {
             (true, _) => 0,
-            (false, false) => STUCK_MS,
+            (false, false) => left.max(1),
             (false, true) => INFINITE,
         };
         // SAFETY: the handles are swap chain waitables kept alive by their surfaces.
         let woke =
             unsafe { MsgWaitForMultipleObjectsEx(Some(&handles), timeout, QS_ALLINPUT, MWMO_INPUTAVAILABLE) };
+        // A wait that times out draws at the next pass, its window having waited long enough.
         if let Some(window) = waiting.get(woke.0 as usize) {
             window.frame_now();
-        } else if woke.0 == WAIT_TIMEOUT && timeout == STUCK_MS {
-            waiting.iter().for_each(|window| window.frame_now());
         }
     }
 }

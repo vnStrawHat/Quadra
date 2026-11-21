@@ -38,19 +38,19 @@ pub(crate) struct WindowState {
     /// The client size in device pixels.
     pub size: Cell<(i32, i32)>,
     pub frame_requested: Cell<bool>,
+    /// Since when the window has waited for its swap chain, while it does.
+    pub waiting_since: Cell<Option<std::time::Instant>>,
     pub tracking_leave: Cell<bool>,
     /// The user is dragging the window or its border: the OS runs its own loop.
     pub in_size_move: Cell<bool>,
     pub high_surrogate: Cell<u16>,
-    /// Where the candidates of an input method go: the caret, in device pixels. `None`: the
-    /// focus is on nothing that takes text, and the input method is off.
+    /// Where an input method's candidates go: the caret, in device pixels; `None`: it is off.
     pub caret: Cell<Option<RECT>>,
     /// The shape the pointer has over the content.
     pub cursor: Cell<HCURSOR>,
     /// The bridge to assistive technology, from when the window exists.
     pub access: OnceCell<Access>,
-    /// The app draws the title bar (`frame.rs`); whether the window's borders resize it; and
-    /// whether the app's maximize button is held down.
+    /// The app draws the title bar (`frame.rs`), whether its borders resize, whether Maximize is held.
     pub custom_frame: bool,
     pub resizable: bool,
     pub frame_down: Cell<bool>,
@@ -70,6 +70,7 @@ impl WindowState {
 
     pub fn frame_now(&self) {
         self.frame_requested.set(false);
+        self.waiting_since.set(None);
         self.shared.deliver(Delivery::Frame(self.id));
     }
 }
@@ -148,6 +149,7 @@ pub(crate) fn open(shared: &Rc<Shared>, options: &WindowOptions) -> Result<WinWi
         scale: Cell::new(1.0),
         size: Cell::new((0, 0)),
         frame_requested: Cell::new(false),
+        waiting_since: Cell::new(None),
         tracking_leave: Cell::new(false),
         in_size_move: Cell::new(false),
         high_surrogate: Cell::new(0),

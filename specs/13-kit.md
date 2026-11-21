@@ -173,7 +173,8 @@ As built so far:
   `.clearable()` has a cross at its end while it holds text, and a click on it empties it.
   A tooltip takes `.meta(words)`, a smaller muted line under its text. `key_hint(keys,
   does)` is the keys in a small tinted box, then what they do, in small mono italics.
-  `confirm(open, title, message, yes, on_yes)` is a dialog with Cancel and one answer.
+  `confirm(open, title, message, yes, on_yes)` is a dialog with Cancel and one answer;
+  `.danger()` puts the answer in the colour of errors, for what destroys something.
   `menu_button(label, || items)` is a ghost button that opens a menu under itself, and
   `menubar([..])` a bar of 32 px of them.
 - **Icons.** `icon(icons::CHECK)` shows one of the kit's Lucide outlines (`quadra_design::icons`,
@@ -752,7 +753,9 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   a title of 16 px with a quiet cross of 22 px at its end, the body in the second text
   colour, and, when it has actions, a seam and the buttons at the right of its foot. A
   button runs what it was given and closes the dialog; the cross, Escape and a press outside
-  give it up.
+  give it up. `.disabled(|| ..)` and `.danger()` apply to the last action given, as
+  `.shortcut(..)` does: a disabled one can be neither pressed nor reached with the keys
+  while what it reads says so (Add while there is nothing to add).
 - Elevation is a paint value of a box (`.elevation(1)`): a level above the window casts the
   shadows of the design language (behaviour/15) under the box, two for the level of menus,
   popovers and tooltips, four for that of dialogs. A change of level is a paint change.

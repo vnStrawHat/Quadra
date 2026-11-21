@@ -11,7 +11,9 @@ use quadra_platform::Cursor;
 use quadra_prim::{Ease, Point};
 use quadra_reactive::{Signal, on_cleanup};
 use quadra_tree::NodeId;
-use quadra_view::{AnyView, Div, MountCx, NodeRef, Place, View, column, div, row, show, text, timeline};
+use quadra_view::{
+    AnyView, Div, IntoProp, MountCx, NodeRef, Place, Prop, View, column, div, row, show, text, timeline,
+};
 
 use crate::button::{Variant, button};
 use crate::icon::icon;
@@ -20,11 +22,20 @@ use crate::{icons, size, token};
 
 type Act = Rc<dyn Fn()>;
 
+/// A button at the foot: its label and look, what it does, its key, and when it is off.
+struct Action {
+    label: String,
+    variant: Variant,
+    act: Act,
+    key: Option<&'static str>,
+    off: Option<Rc<dyn Fn() -> bool>>,
+}
+
 pub struct Dialog<F> {
     open: Signal<bool>,
     title: String,
     body: F,
-    actions: Vec<(String, Variant, Act, Option<&'static str>)>,
+    actions: Vec<Action>,
 }
 
 /// A dialog shown while `open` is true: a title over what `body` builds, each time it opens.
@@ -40,14 +51,34 @@ impl<F> Dialog<F> {
     /// A button at the foot of the dialog, from the left to the right in the order given.
     /// Pressing it runs `f` and closes the dialog.
     pub fn action(mut self, label: impl Into<String>, variant: Variant, f: impl Fn() + 'static) -> Self {
-        self.actions.push((label.into(), variant, Rc::new(f), None));
+        let (label, act) = (label.into(), Rc::new(f));
+        self.actions.push(Action { label, variant, act, key: None, off: None });
         self
     }
 
     /// The key that does what the last action does, shown after its label (`Enter`).
     pub fn shortcut(mut self, key: &'static str) -> Self {
         if let Some(last) = self.actions.last_mut() {
-            last.3 = Some(key);
+            last.key = Some(key);
+        }
+        self
+    }
+
+    /// The last action is off while `off` says so: it can be neither pressed nor reached.
+    pub fn disabled<M>(mut self, off: impl IntoProp<bool, M>) -> Self {
+        if let Some(last) = self.actions.last_mut() {
+            last.off = Some(match off.into_prop() {
+                Prop::Value(off) => Rc::new(move || off),
+                Prop::Reactive(read) => Rc::from(read),
+            });
+        }
+        self
+    }
+
+    /// The last action destroys something: in the colour of errors.
+    pub fn danger(mut self) -> Self {
+        if let Some(last) = self.actions.last_mut() {
+            last.variant = Variant::Danger;
         }
         self
     }
@@ -202,9 +233,13 @@ pub fn confirm(
     message: impl Into<String>,
     yes: impl Into<String>,
     on_yes: impl Fn() + 'static,
-) -> impl View {
+) -> Dialog<Box<dyn Fn() -> AnyView>> {
     let message = message.into();
-    let ask = dialog(open, title, move || text(message.clone()));
+    let ask = dialog(
+        open,
+        title,
+        Box::new(move || AnyView::new(text(message.clone()))) as Box<dyn Fn() -> AnyView>,
+    );
     ask.action("Cancel", Variant::Secondary, || {}).action(yes, Variant::Primary, on_yes)
 }
 
@@ -225,11 +260,15 @@ where
             }
             let mut foot = row().gap(4.0).padding(8.0).justify(Justify::End);
             foot = foot.border_top(1.0).border_color(token::LINE);
-            for (label, variant, act, key) in actions.iter() {
-                let press = base::answer(open, act.clone());
-                let face = button(label.clone()).variant(*variant).on_click(press);
-                foot = foot.child(match key {
+            for at in actions.iter() {
+                let press = base::answer(open, at.act.clone());
+                let face = button(at.label.clone()).variant(at.variant).on_click(press);
+                let face = match at.key {
                     Some(key) => face.shortcut(key),
+                    None => face,
+                };
+                foot = foot.child(match at.off.clone() {
+                    Some(off) => face.disabled(move || off()),
                     None => face,
                 });
             }

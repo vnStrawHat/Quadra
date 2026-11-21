@@ -182,3 +182,45 @@ fn a_tooltip_at_the_right_points_left_at_the_middle_of_its_view() {
     assert_eq!(arrow.right(), tip.x + 1.0, "{arrow:?} {tip:?}");
     assert!((arrow.center().y - view.center().y).abs() <= 1.0, "{arrow:?} {view:?}");
 }
+
+#[test]
+fn an_action_is_off_while_it_says_so_and_a_confirm_can_destroy() {
+    let (open, sure, name, added, deleted) =
+        (signal(true), signal(false), signal(String::new()), signal(0), signal(0));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+    h.mount(move || {
+        let add = dialog(open, "Add a cluster", || text("A name first"))
+            .action("Cancel", Variant::Ghost, || {})
+            .action("Add", Variant::Primary, move || added.update(|n| *n += 1))
+            .disabled(move || name.with(String::is_empty));
+        let ask = quadra_design::confirm(sure, "Delete pod?", "It goes.", "Delete", move || deleted.set(1))
+            .danger();
+        quadra_design::root().child(add).child(ask)
+    });
+    h.frame();
+    // Off: a press does nothing and the keys do not reach it.
+    let tree = h.semantics();
+    assert!(tree.contains("Button \"Add\" [disabled]"), "{tree}");
+    let add = h.get_by_role(Role::Button, "Add").node();
+    let at = h.tree.window_rect(add).center();
+    h.click(at.x, at.y);
+    h.frame();
+    assert!(open.get_untracked() && added.get_untracked() == 0);
+    h.key(Key::Tab, Mods::NONE);
+    assert_ne!(h.tree.focused(), Some(add));
+    // On once there is a name: it does what it says.
+    name.set("prod".into());
+    h.frame();
+    h.click(at.x, at.y);
+    h.frame();
+    assert!(!open.get_untracked() && added.get_untracked() == 1);
+
+    // A confirm that destroys still answers as one does.
+    sure.set(true);
+    h.frame();
+    h.get_by_role(Role::Button, "Delete").click();
+    h.frame();
+    assert!(!sure.get_untracked() && deleted.get_untracked() == 1);
+}

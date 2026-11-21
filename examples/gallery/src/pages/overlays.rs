@@ -212,7 +212,8 @@ pub fn confirm_page() -> Div {
         button("Delete pod").variant(Variant::Danger).test_id("cf-open").on_click(move || open.set(true));
     let sure = confirm(open, "Delete pod?", "api-7d9f8c6b5-x2k4p will be terminated.", "Delete", move || {
         answer.set("deleted")
-    });
+    })
+    .danger();
     let said = hint(move || format!("Answer: {}", answer.get()));
     page(
         "Confirm",
@@ -220,7 +221,7 @@ pub fn confirm_page() -> Div {
         [demo(
             "Delete",
             line().child(ask).child(said).child(sure),
-            "confirm(open, \"Delete pod?\", message, \"Delete\", || ..)",
+            "confirm(open, \"Delete pod?\", message, \"Delete\", || ..).danger()",
         )],
     )
 }

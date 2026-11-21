@@ -208,3 +208,15 @@ fn links_run_side_to_side_and_straight_when_told() {
     let across = across.to_svg(&dark().theme());
     assert!(across.contains("<path d=\"M100.0 20.0 L140.0 220.0\""), "{across}");
 }
+
+#[test]
+fn a_pan_paints_only_the_links_and_a_zoom_draws_the_faces_again() {
+    let mut p = page(false);
+    p.view.set(GraphView { pan: Point::new(30.0, 10.0), zoom: 1.0 });
+    let (panned, _) = p.h.frame();
+    // The links, and the three boxes that moved: none of what they hold.
+    assert_eq!(panned.nodes_painted, 4, "{panned:?}");
+    p.view.set(GraphView { pan: Point::new(30.0, 10.0), zoom: 0.75 });
+    let (zoomed, _) = p.h.frame();
+    assert!(zoomed.nodes_painted >= 4 + 3 * 2, "{zoomed:?}");
+}

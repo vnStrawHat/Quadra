@@ -32,6 +32,8 @@ pub(crate) struct LayerState {
     pub culls: bool,
     /// The part of the layer, in its own space, that is painted when it culls.
     pub band: Option<Rect>,
+    /// Painted at the scale it shows rather than scaled by its transform (`.sharp_scale()`).
+    pub sharp: bool,
     /// The node's range in its own layer (`len` with its subtree, `own` its own instances).
     /// The node's `start`, `len` and `own` describe its marker in the parent's layer.
     pub len: u32,
@@ -52,6 +54,7 @@ impl LayerState {
             marked: false,
             culls: false,
             band: None,
+            sharp: false,
             len: 0,
             own: 0,
         }
@@ -88,6 +91,26 @@ impl Tree {
         let node = &mut self.nodes[id.index as usize];
         (node.len, node.own) = (0, 0);
         self.mark(id, flag::PAINT | flag::SUBTREE | flag::RELIST);
+    }
+
+    /// Makes a node a layer painted at the scale its pose shows, not scaled by its transform:
+    /// its text is rasterized at the size it is seen. A change of the scale paints it again.
+    pub fn sharp_scale(&mut self, id: NodeId) {
+        self.make_layer(id, false);
+        let Some(state) = self.get_mut(id).and_then(|n| n.layer.as_mut()) else { return };
+        if !std::mem::replace(&mut state.sharp, true) && state.pose.scale != 1.0 {
+            self.mark(id, flag::PAINT | flag::SUBTREE);
+            self.recompose.push(id);
+        }
+    }
+
+    /// Device pixels per logical pixel in a layer's own space: the window's, times the
+    /// layer's scale when it is painted at it.
+    // ponytail: a layer inside a sharp one is placed and drawn at the window's scale; fold
+    // the outer scale in when sharp layers hold layers of their own.
+    pub(crate) fn paint_scale(&self, id: NodeId) -> f32 {
+        let sharp = self.get(id).and_then(|n| n.layer.as_ref()).filter(|state| state.sharp);
+        self.scale * sharp.map_or(1.0, |state| state.pose.scale)
     }
 
     /// Makes a layer that is cut to its parent paint only what is near the part that shows:
@@ -231,20 +254,28 @@ impl Tree {
         });
         let mut transform = Affine::translate(x, y);
         let (turn, k) = (state.turn + pose.rotate, pose.scale);
+        // A sharp layer is painted at its scale already: only the move that keeps its middle.
+        let (drawn, grow) = if state.sharp { (k, 1.0) } else { (1.0, k) };
         if turn != 0.0 || k != 1.0 {
             let size = self.layout.rect(node.layout).size();
             let middle = Point::new(size.width * s / 2.0, size.height * s / 2.0);
+            let (mx, my) = (middle.x * (1.0 - k), middle.y * (1.0 - k));
+            // Whole device pixels when it is not turned, so its glyphs stay on the grid.
+            let (mx, my) = if state.sharp && turn == 0.0 { (mx.round(), my.round()) } else { (mx, my) };
             // Turned, then scaled, both about the middle: the middle stays where it is.
-            let grown = Affine::translate(middle.x * (1.0 - k), middle.y * (1.0 - k)).then(Affine::scale(k));
+            let grown = Affine::translate(mx, my).then(Affine::scale(grow));
             transform = transform.then(Affine::rotate_about(turn, middle)).then(grown);
         }
         let backdrop = (state.backdrop > 0.0).then(|| {
             let size = self.layout.rect(node.layout).size();
-            Backdrop { size: Size::new(size.width * s, size.height * s), blur: state.backdrop * s }
+            Backdrop {
+                size: Size::new(size.width * s * drawn, size.height * s * drawn),
+                blur: state.backdrop * s,
+            }
         });
         let mask = state.clip.as_ref().and_then(|clip| self.mask_of(clip)).map(|mask| {
             let size = self.layout.rect(node.layout).size();
-            Mask { size: Size::new(size.width * s, size.height * s), ..mask }
+            Mask { size: Size::new(size.width * s * drawn, size.height * s * drawn), ..mask }
         });
         LayerConstants { transform, scissor, opacity: state.opacity * pose.opacity, backdrop, mask }
     }

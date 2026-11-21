@@ -204,6 +204,15 @@ impl Graph {
     }
 }
 
+/// `content` at the size of `r` in the plane, scaled about the middle of the box `placed`
+/// gives `r` and drawn again at the zoom, its letters sharp.
+fn at_zoom(view: Signal<GraphView>, r: Rect, content: Div) -> Div {
+    let zoom = move || view.get().zoom;
+    let face = column().align_items(Align::Stretch).absolute().width(r.width).height(r.height);
+    let face = face.left(move || r.width * (zoom() - 1.0) / 2.0).top(move || r.height * (zoom() - 1.0) / 2.0);
+    face.scale(zoom).sharp_scale().child(content)
+}
+
 /// The box of `r` as the view shows it, bound to the view.
 fn placed(face: Div, view: Signal<GraphView>, r: Rect) -> Div {
     let at = move |side: fn(Rect) -> f32| move || side(view.get().rect(r));
@@ -216,10 +225,11 @@ impl View for Graph {
         let view = self.view.unwrap_or_else(|| signal(GraphView::default()));
         let (rects, routes) = self.plane();
         let (frames, bounds, routes) = (self.frames(&rects), self.bounds(), Rc::new(routes));
+        // A frame's title in the plane as its nodes are: its band never under the title.
         let frames = frames.into_iter().map(|(title, r)| {
-            let frame = div().border(1.0).border_color(token::LINE_STRONG).radius(6.0).padding_x(8.0);
-            let frame = frame.padding_y(4.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
-            placed(frame, view, r).child(text(title))
+            let words = div().padding_x(8.0).padding_y(4.0).text_size(size::TEXT_SM.size).child(text(title));
+            let frame = div().border(1.0).border_color(token::LINE_STRONG).radius(6.0);
+            placed(frame, view, r).child(at_zoom(view, r, words.text_color(token::TEXT_3)))
         });
         let drawn = LinksView { view, routes: routes.clone(), style: self.style.clone() };
         let (click, hover) = (self.click.clone(), self.hover.clone());
@@ -227,14 +237,7 @@ impl View for Graph {
         let (over, moved) = (Rc::new(RefCell::new(None)), Rc::new(Cell::new(false)));
         let shared = (over.clone(), moved.clone());
         let nodes = self.nodes.into_iter().zip(rects.iter().copied()).map(|(node, r)| {
-            // Its view at its own size, scaled about the middle of its box.
-            // ponytail: its letters are drawn at their size and scaled, soft past a zoom of 1;
-            // text drawn at the zoom when graphs are read zoomed in.
-            let zoom = move || view.get().zoom;
-            let face =
-                column().align_items(Align::Stretch).absolute().width(r.width).height(r.height).scale(zoom);
-            let face = face.left(move || r.width * (zoom() - 1.0) / 2.0);
-            let face_of = face.top(move || r.height * (zoom() - 1.0) / 2.0).child((node.face)());
+            let face_of = at_zoom(view, r, (node.face)());
             let (id, told, came, left) = (node.id, click.clone(), hover.clone(), hover.clone());
             let (pressed, keyed, on, told_key) = (id.clone(), id.clone(), id, told.clone());
             let (came_over, left_over, dragged) = (over.clone(), over.clone(), moved.clone());

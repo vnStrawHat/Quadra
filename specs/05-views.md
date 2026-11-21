@@ -90,6 +90,11 @@ others: constants, reactive, or what a state changes (`.hover(|s| s.scale(1.06))
   out: a box that lifts under the pointer does not leave it.
 - A translation is in whole device pixels. What is scaled is drawn from what was painted
   at the box's own size: text is not shaped or rasterized again.
+- `.sharp_scale()` makes a scaled box draw what it holds again at the scale it shows: its
+  text rasterized at the size it is seen, as sharp as at 1 and no thin stroke lost below it
+  (a graph's nodes, read zoomed in and out). Each change of its scale paints it again, so
+  it is for a scale that settles, not one that animates; a layer inside it is placed and
+  drawn as though it were not sharp.
 
 `.transition(ms)` makes the changes of what can ease go there over that time, along
 `Ease::Out`; `.transition_with(ms, ease)` says the curve. What can ease: the background, the

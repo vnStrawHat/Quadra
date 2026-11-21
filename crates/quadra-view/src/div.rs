@@ -164,6 +164,12 @@ impl Div {
         self.on_mount(move |tree, id| tree.set_key_context(id, context))
     }
 
+    /// Draws what the box holds again at the scale it shows (`.scale(..)`), its text as sharp
+    /// as at 1: for a scale that settles (a zoom), since each change paints the box again.
+    pub fn sharp_scale(self) -> Self {
+        self.on_mount(|tree, id| tree.sharp_scale(id))
+    }
+
     /// Lets the box have the focus: a click on it focuses it, and Tab stops at it.
     pub fn focusable(self) -> Self {
         self.on_mount(|tree, id| tree.set_focusable(id, true))

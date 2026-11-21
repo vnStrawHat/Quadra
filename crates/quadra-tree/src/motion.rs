@@ -180,8 +180,13 @@ impl Tree {
         }
         self.make_layer(id, false);
         if let Some(layer) = self.nodes[id.index as usize].layer.as_mut() {
+            // A sharp layer is painted at its scale: another scale paints it again.
+            let repaint = layer.sharp && layer.pose.scale != pose.scale;
             layer.pose = pose;
             self.recompose.push(id);
+            if repaint {
+                self.mark(id, crate::node::flag::PAINT | crate::node::flag::SUBTREE);
+            }
         }
     }
 

@@ -88,7 +88,7 @@ impl Tree {
             let culled = culled || outside(band, rect);
             if !culled {
                 let theme = self.theme_at(id).clone();
-                let how = (self.scale, band, self.text_at(), &*theme);
+                let how = (self.paint_scale(root), band, self.text_at(), &*theme);
                 paint_own(&mut self.nodes, i, &self.layout, rect, how, fonts, out);
                 // The room a shown node keeps holds empty instances after what it painted.
                 if shown {

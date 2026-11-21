@@ -986,8 +986,10 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   px `text_3`.
 - **Pan and zoom** are a `GraphView { pan, zoom }` in a signal (`.view(signal)`, read and
   written): a node's box is at `at * zoom + pan`, `size * zoom` large, so the pointer and a
-  reader find it where it shows, and its view is drawn at its own size scaled by `zoom`. A
-  drag on the graph pans it; the wheel with Ctrl zooms it about the pointer (0.25 to 4); a
+  reader find it where it shows, and its view is laid out at its own size and drawn again at
+  `zoom` (`.sharp_scale()`, 05), its letters as sharp as at 1 and no hyphen lost below it; a
+  group's title is in the plane as the nodes are, so its band holds it at any zoom. A pan
+  moves what was painted; a zoom paints the faces again. A drag on the graph pans it; the wheel with Ctrl zooms it about the pointer (0.25 to 4); a
   wheel without Ctrl goes on to what is around. `.fit()` shows all of it when its box is
   first laid out, and a double click on it fits it again: `fitted(bounds, size)` is that
   view (16 px of margin, never past a zoom of 1).

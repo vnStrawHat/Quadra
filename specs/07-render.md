@@ -139,6 +139,9 @@ Limits and choices:
 
 - Translations are rounded to whole device pixels. Under a rotation or a scale, glyphs are drawn
   from the tiles of their layout size and sampled; text is crisp again when the transform ends.
+  A layer marked sharp (`.sharp_scale()`) is painted at the window's scale times its own, and its
+  transform keeps only the move that holds its middle: its glyphs are rasterized at the size
+  they show, and a change of its scale paints the layer again.
   Zoom is a style change (font size), not a transform.
 - Opacity multiplies each instance's alpha; overlapping children of a faded layer show through
   each other. Compositing a group through a texture is on the After-v1 list (behaviour/13).

@@ -252,7 +252,7 @@ impl Tree {
         self.scratch.clear();
         self.patches.clear();
         let origin = self.layout.rect(self.nodes[i].layout).origin();
-        let text_at = self.text_at();
+        let (text_at, scale) = (self.text_at(), self.paint_scale(root));
         let theme = crate::theme::theme_in(&self.nodes, &self.themes, &self.theme, root);
         let mut painter = Painter {
             nodes: &mut self.nodes,
@@ -264,7 +264,7 @@ impl Tree {
             moved: &mut self.recompose,
             fonts,
             root,
-            scale: self.scale,
+            scale,
             text_at,
             theme,
             themes: &self.themes,

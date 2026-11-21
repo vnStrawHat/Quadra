@@ -25,7 +25,8 @@ pub fn button_page() -> Div {
         .child(button("Pull").icon(icons::DOWNLOAD))
         .child(button("Save").icon(icons::SAVE).variant(Variant::Primary))
         .child(button("Restart").icon(icons::REFRESH_CW).variant(Variant::Outline))
-        .child(button("Logs").icon(icons::EXTERNAL_LINK).variant(Variant::Ghost));
+        .child(button("Logs").icon(icons::EXTERNAL_LINK).variant(Variant::Ghost))
+        .child(button("Open role").icon_end(icons::CHEVRON_RIGHT).variant(Variant::Ghost));
     let states = line()
         .child(button("Disabled").disabled(true))
         .child(button("Disabled").variant(Variant::Primary).disabled(true))

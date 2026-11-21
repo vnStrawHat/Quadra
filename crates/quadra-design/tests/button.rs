@@ -216,3 +216,26 @@ fn a_label_names_a_button_apart_from_its_words() {
     h.get_by_role(Role::Button, "Reset Lock");
     assert!(h.query(|n| n.semantics.name == "Reset Copy").is_empty());
 }
+
+#[test]
+fn an_icon_after_the_label_is_sized_and_spaced_as_one_before_it() {
+    use quadra_design::icons;
+
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(|| {
+        let open = button("Open role").size(Size::Sm).icon_end(icons::CHEVRON_RIGHT).test_id("open");
+        quadra_design::root().child(row().child(open))
+    });
+    h.frame();
+    // The reader hears the label alone; the chevron is 14 px, 4 px after the label and 4 px
+    // before the border.
+    assert!(h.semantics().contains("Button \"Open role\" #open"));
+    let button = h.get_by_test_id("open").node();
+    let (label, chevron) = (h.tree.children(button)[0], h.tree.children(button)[1]);
+    let (at, label, chevron) = (h.tree.rect(button), h.tree.rect(label), h.tree.rect(chevron));
+    assert_eq!((chevron.width, chevron.height), (14.0, 14.0));
+    assert!(
+        (chevron.x - label.right() - 4.0).abs() < 0.01 && (at.width - chevron.right() - 5.0).abs() < 0.01
+    );
+}

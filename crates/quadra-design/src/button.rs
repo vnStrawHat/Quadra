@@ -51,7 +51,8 @@ pub struct Button {
     /// Without one the button is its icon, and `name` is what a reader calls it.
     label: Option<Prop<String>>,
     name: Option<Prop<String>>,
-    icon: Option<&'static str>,
+    /// Before the label, and after it.
+    icons: [Option<&'static str>; 2],
     variant: Variant,
     size: Size,
     disabled: Prop<bool>,
@@ -75,7 +76,7 @@ pub fn button<M>(label: impl IntoProp<String, M>) -> Button {
     Button {
         label: Some(label.into_prop()),
         name: None,
-        icon: None,
+        icons: [None; 2],
         variant: Variant::default(),
         size: Size::default(),
         disabled: Prop::Value(false),
@@ -89,8 +90,7 @@ pub fn button<M>(label: impl IntoProp<String, M>) -> Button {
     }
 }
 
-/// The colours of a variant: its fill, its label, its fill under the pointer and while
-/// pressed, its border, and its icon. Transparent: there is none, or the icon is the label's.
+/// A variant's fill, label, fills under the pointer and pressed, border, icon (clear: the label's).
 fn colors(variant: Variant) -> [Paint; 6] {
     use token::*;
     let none = Paint::default();
@@ -126,8 +126,7 @@ impl Button {
         self
     }
 
-    /// Makes the button one that is on or off, which its owner says: its label turns the
-    /// accent while it is on, and it is told to a reader as pressed or not.
+    /// On or off as its owner says: its label in the accent while on, pressed or not to a reader.
     pub fn toggled<M>(mut self, on: impl IntoProp<bool, M>) -> Self {
         self.toggled = Some(on.into_prop());
         self
@@ -139,8 +138,7 @@ impl Button {
         self
     }
 
-    /// While `loading` is true the button shows a spinner before its label and its click
-    /// does nothing: what it started is under way.
+    /// While `loading` is true: a spinner before its label, and its click does nothing.
     pub fn loading<M>(mut self, loading: impl IntoProp<bool, M>) -> Self {
         self.loading = Some(loading.into_prop());
         self
@@ -152,8 +150,7 @@ impl Button {
         self
     }
 
-    /// What a reader calls it when that is not its label: "Reset Copy" for one of a few
-    /// "Reset". A constant or words that change; drawn nowhere.
+    /// What a reader calls it if not its label ("Reset Copy" of a few "Reset"); drawn nowhere.
     pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
         self.name = Some(name.into_prop());
         self
@@ -173,7 +170,13 @@ impl Button {
 
     /// An icon before the label: one of [`crate::icons`].
     pub fn icon(mut self, body: &'static str) -> Self {
-        self.icon = Some(body);
+        self.icons[0] = Some(body);
+        self
+    }
+
+    /// An icon after the label, as one before it is: a chevron to where the button leads.
+    pub fn icon_end(mut self, body: &'static str) -> Self {
+        self.icons[1] = Some(body);
         self
     }
 
@@ -267,23 +270,20 @@ impl Button {
             }
             None => face,
         };
-        // The icon is 14 px, 16 in the two larger sizes, in the colour of the label, or of
+        // An icon is 14 px, 16 in the two larger sizes, in the colour of the label, or of
         // the tint while the button is not disabled.
-        let face = match self.icon {
-            Some(body) => {
-                let glyph = icon(body).size(if small { 14.0 } else { 16.0 });
-                match mark == Paint::default() {
-                    true => face.child(glyph),
-                    false => {
-                        let color = move || if off.get() { token::TEXT_DISABLED.into() } else { mark };
-                        face.child(div().text_color(color).child(glyph))
-                    }
-                }
+        let glyph = move |face: Div, body: Option<&'static str>| {
+            let Some(body) = body else { return face };
+            let glyph = icon(body).size(if small { 14.0 } else { 16.0 });
+            if mark == Paint::default() {
+                return face.child(glyph);
             }
-            None => face,
+            let color = move || if off.get() { token::TEXT_DISABLED.into() } else { mark };
+            face.child(div().text_color(color).child(glyph))
         };
+        let face = glyph(face, self.icons[0]);
         let face = match self.label {
-            Some(label) => face.child(text(label)),
+            Some(label) => glyph(face.child(text(label)), self.icons[1]),
             None => face,
         };
         match self.shortcut {

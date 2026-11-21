@@ -188,7 +188,8 @@ As built so far:
   colours of its own (art, a logo) is shown in them: rasterized once a size into the colour
   atlas (`Svg::render_rgba`, `Fonts::image`), the shapes without a colour in the text's. A
   button takes
-  `.icon(body)` before its label (14 px, 16 in the two larger sizes), and
+  `.icon(body)` before its label (14 px, 16 in the two larger sizes), `.icon_end(body)`
+  one after it, the same size, 4 px from it (a chevron to where the button leads), and
   `icon_button(body, name)` is a ghost of 22 px with the icon alone, named for a reader.
 - **`input(value)`**: the field of `quadra-view` in a frame (the field's fill, a hairline
   border, 8 by 6 px around a line of text, at least 32 high, 240 wide unless told):

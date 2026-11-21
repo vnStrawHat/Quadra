@@ -319,7 +319,10 @@ As built so far:
 - **A status** (`status.rs`: running, pending, failed, succeeded, terminating, unknown) has
   a role of the theme for its colour and a shape of its own in a box of 12 px
   (`status_mark`): a dot, a ring, a triangle, a check, a dash, a square. `status_label` is
-  the mark and the name, `Status::of(word)` the status a word names.
+  the mark and the name, `Status::of(word)` the status a word names: besides the six, the
+  reasons a container is in its state as a cluster writes them: `Error`, `OOMKilled`,
+  `Evicted`, any `…BackOff`, `Err…` or `…Error` are failed; `ContainerCreating`,
+  `PodInitializing` and `Init:<n>/<m>` pending; `Init:` before a reason is that reason's.
 - **`sidebar(chosen)`** is the places of an app (`NavItem::new(id, label).icon(..)`) in
   groups under muted titles, on the panel's plane with a strong line at its right, 240 px
   wide unless told. `chosen` holds the id of the chosen place: a click writes it, and with

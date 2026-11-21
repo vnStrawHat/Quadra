@@ -96,9 +96,15 @@ fn a_status_has_a_shape_a_name_and_a_colour() {
     let failed = h.get_by_text("Failed").node();
     assert_eq!(h.tree.text_values(failed).color, Some(dark().theme().resolve(token::FAILED.into())));
     assert_eq!(
-        ["Running", "Completed", "CrashLoopBackOff", "Evicted"].map(Status::of),
+        ["Running", "Completed", "CrashLoopBackOff", "Restarted"].map(Status::of),
         [Status::Running, Status::Succeeded, Status::Failed, Status::Unknown]
     );
+    // The reasons a container is down, as a cluster writes them.
+    let failed = ["OOMKilled", "ImagePullBackOff", "ErrImagePull", "CreateContainerConfigError", "Evicted"];
+    assert_eq!(failed.map(Status::of), [Status::Failed; 5]);
+    let pending = ["ContainerCreating", "PodInitializing", "Init:0/2"];
+    assert_eq!(pending.map(Status::of), [Status::Pending; 3]);
+    assert_eq!(["Init:CrashLoopBackOff", "Init:Error"].map(Status::of), [Status::Failed; 2]);
 }
 
 #[test]

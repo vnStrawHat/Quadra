@@ -20,15 +20,24 @@ pub enum Status {
 }
 
 impl Status {
-    /// The status a word names (`Running`, `Completed`, `CrashLoopBackOff`); any other is
-    /// unknown.
+    /// The status a word names (`Running`, `Completed`), or a reason a container is in its
+    /// state names (`OOMKilled`, `ImagePullBackOff`, `ContainerCreating`, `Init:0/2`); any
+    /// other is unknown.
     pub fn of(word: &str) -> Status {
         match word {
             "Running" => Status::Running,
-            "Pending" => Status::Pending,
-            "Failed" | "Error" | "CrashLoopBackOff" => Status::Failed,
+            "Pending" | "ContainerCreating" | "PodInitializing" => Status::Pending,
+            "Failed" | "OOMKilled" | "Evicted" => Status::Failed,
             "Succeeded" | "Completed" => Status::Succeeded,
             "Terminating" => Status::Terminating,
+            // `Init:0/2` counts the init containers done; `Init:Error` is the reason of one.
+            _ if let Some(reason) = word.strip_prefix("Init:") => match reason.contains('/') {
+                true => Status::Pending,
+                false => Status::of(reason),
+            },
+            _ if word.ends_with("BackOff") || word.starts_with("Err") || word.ends_with("Error") => {
+                Status::Failed
+            }
             _ => Status::Unknown,
         }
     }

@@ -37,6 +37,7 @@ type Wanted = Box<dyn Fn() -> Option<usize>>;
 pub struct ListView {
     region: Region,
     wanted: Rc<RefCell<Option<Wanted>>>,
+    ends: Rc<Cell<Option<Signal<f32>>>>,
 }
 
 impl ListView {
@@ -50,6 +51,12 @@ impl ListView {
     /// all of it, mounted and measured or not. Scrolling away afterwards is not undone.
     pub fn reveal(self, row: impl Fn() -> Option<usize> + 'static) -> Self {
         *self.wanted.borrow_mut() = Some(Box::new(row));
+        self
+    }
+
+    /// Writes into `out` how far the list scrolls at most, as its rows' heights are known.
+    pub fn end(self, out: Signal<f32>) -> Self {
+        self.ends.set(Some(out));
         self
     }
 }
@@ -96,7 +103,8 @@ fn list<V: View + 'static>(
     row: impl Fn(Signal<usize>) -> V + 'static,
 ) -> ListView {
     let wanted: Rc<RefCell<Option<Wanted>>> = Rc::default();
-    let asked = wanted.clone();
+    let (asked, ends) = (wanted.clone(), Rc::new(Cell::new(None)));
+    let told: Rc<Cell<Option<Signal<f32>>>> = ends.clone();
     let bind = move |viewport: NodeId, cx: &mut MountCx| {
         let owner = Scope::current();
         let tree = &mut *cx.tree;
@@ -144,6 +152,11 @@ fn list<V: View + 'static>(
             Scrolled { scroll: scroll_y, top, end, view: size, sideways: false },
         );
         cx.tree.set_children(viewport, &[content, thumb]);
+        if let Some(out) = told.get() {
+            cx.handle.bind(move || {
+                out.try_set(end.get());
+            });
+        }
         if let Some(wanted) = asked.borrow_mut().take() {
             // Asked again when heights are found out, until the row shows whole and measured:
             // the rows on the way to it were only estimated.
@@ -217,5 +230,5 @@ fn list<V: View + 'static>(
             });
         });
     };
-    ListView { region: Region::new(div().grow(1.0), bind), wanted }
+    ListView { region: Region::new(div().grow(1.0), bind), wanted, ends }
 }

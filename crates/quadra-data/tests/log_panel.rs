@@ -32,7 +32,7 @@ fn a_level_is_read_from_the_words_and_filters_with_the_text() {
     let log = Log::new();
     log.append(lines());
     let levels: Vec<Level> = (0..10).map(|i| log.level(i)).collect();
-    let said = [Level::Info, Level::Warn, Level::Error, Level::Error, Level::Info, Level::None];
+    let said = [Level::Info, Level::Warn, Level::Error, Level::Fatal, Level::Info, Level::None];
     let said = [&said[..], &[Level::Error, Level::Warn, Level::Error, Level::Info]].concat();
     assert_eq!(levels, said);
     log.set_level(Level::Warn);
@@ -97,14 +97,20 @@ fn a_panel_has_no_bar_its_own_size_a_ground_local_times_and_lines_in_their_level
     assert_eq!(ground.background, theme.resolve(token::CANVAS.into()));
     let (frame, row) = (h.tree.window_rect(table), h.tree.window_rect(first));
     assert_eq!(row.y - frame.y, 6.0);
-    // The time at the ground's edge, a line's text two letters (9 px each) after it.
+    // The time at the ground's edge, the level column two letters (9 px each) after it, of
+    // seven letters, then a line's text.
     let time = h.query(|n| n.semantics.role == Role::Text && n.semantics.name == "19:00:00.000")[0];
     let (time, text) = (h.tree.window_rect(time), h.tree.window_rect(first));
-    assert_eq!((time.x - frame.x, text.x - time.x), (12.0, 14.0 * 9.0));
+    assert_eq!((time.x - frame.x, text.x - time.x), (12.0, (14.0 + 7.0) * 9.0));
+    let word = h.query(|n| n.semantics.role == Role::Text && n.semantics.name == "INFO")[0];
+    assert_eq!(h.tree.window_rect(word).x - time.x, 14.0 * 9.0);
+    assert!(h.has_text("WARN") && h.has_text("FATAL"));
     // Each line in its level's colour; the escape sequence's blue wins; no level, the text.
     let near = |a: [f32; 4], b: [f32; 4]| a.iter().zip(b).all(|(x, y)| (x - y).abs() < 0.01);
     assert!(near(ink(&h, "19:00:00.000"), color(token::TEXT_2)));
-    assert!(near(ink(&h, "INFO started on :8080"), color(token::OK)));
+    assert!(near(ink(&h, "INFO"), color(token::OK)), "info's word in ok");
+    assert!(near(ink(&h, "FATAL"), color(token::ERROR)));
+    assert!(near(ink(&h, "INFO started on :8080"), color(token::TEXT)), "info says in the text's colour");
     assert!(near(ink(&h, r#"{"msg":"slow disk","level":"warn"}"#), color(token::WARN)));
     assert!(near(ink(&h, "FATAL out of memory"), color(token::ERROR)));
     assert!(near(ink(&h, "INFO in blue, as it says"), color(token::ANSI[4])));

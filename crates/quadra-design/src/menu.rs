@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use quadra_layout::Align;
 use quadra_prim::Point;
-use quadra_reactive::{Signal, signal};
+use quadra_reactive::{Signal, on_cleanup, signal};
 use quadra_tree::NodeId;
 use quadra_view::{AnyView, Div, MountCx, NodeRef, Place, View, by_text, div, row};
 
@@ -146,6 +146,7 @@ where
 pub struct ContextMenu<V, F> {
     of: V,
     items: F,
+    open: Option<Signal<bool>>,
 }
 
 /// Gives a view a menu that opens at the pointer on a click with the other button. `items`
@@ -155,7 +156,16 @@ where
     V: View + 'static,
     F: Fn() -> Vec<MenuItem> + 'static,
 {
-    ContextMenu { of, items }
+    ContextMenu { of, items, open: None }
+}
+
+impl<V, F> ContextMenu<V, F> {
+    /// Writes true into `open` as the menu opens and false as it closes, however it closes:
+    /// what it was opened on can show that it is.
+    pub fn while_open(mut self, open: Signal<bool>) -> Self {
+        self.open = Some(open);
+        self
+    }
 }
 
 impl<V, F> View for ContextMenu<V, F>
@@ -164,13 +174,22 @@ where
     F: Fn() -> Vec<MenuItem> + 'static,
 {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (of, items) = (self.of.mount(cx), Rc::new(self.items));
+        let (of, items, shown) = (self.of.mount(cx), Rc::new(self.items), self.open);
         quadra_headless::menu::on_context(cx, of, move |tree, owner, at| {
             // Under the pointer by the gap of a popup: the pointer is then over none of its rows.
             // No items, no menu: the app's setting may turn it off.
             let (place, items) = (Place::At(Point::new(at.x, at.y + 4.0)), items());
             if !items.is_empty() {
-                open_now(tree, owner, place, move |close| rows(items, Ends { done: close, leave: None }))
+                open_now(tree, owner, place, move |close| {
+                    // In the popup's scope: it ends as the popup closes.
+                    if let Some(shown) = shown {
+                        shown.try_set(true);
+                        on_cleanup(move || {
+                            shown.try_set(false);
+                        });
+                    }
+                    rows(items, Ends { done: close, leave: None })
+                })
             }
         });
         of

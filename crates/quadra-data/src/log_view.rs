@@ -5,21 +5,25 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use quadra_design::rows::{one_column, selectable, sideways};
-use quadra_design::{Size, Variant, button, fonts, input, token, tooltip};
-use quadra_layout::{Align, Overflow};
+use quadra_design::{MenuItem, context_menu, fonts, token};
+use quadra_layout::Align;
 use quadra_platform::Clipboard;
 use quadra_reactive::{Signal, effect, memo, signal, use_context};
-use quadra_tree::{NodeId, Token};
+use quadra_tree::{NodeId, Paint};
 use quadra_view::{
-    Div, MountCx, View, by_text, column, div, dynamic, rich_text, row, span, text, uniform_list,
+    AnyView, MountCx, View, by_text, column, div, dynamic, row, text, uniform_list, virtual_list,
 };
 
-use crate::ansi::{plain, runs};
 use crate::log::{Level, Log};
 
+mod bar;
 mod look;
+mod options;
+mod row;
 
-use look::{Look, paint, tone};
+use bar::{Filter, bar};
+use look::Look;
+use row::{Colors, as_text, line};
 
 /// The width of a letter of the mono face, for each px of its size. It grows with the text
 /// scale (`by_text`).
@@ -27,16 +31,30 @@ const LETTER: f32 = 0.6;
 /// A place past the end of any list: the list keeps it at its end, which is following.
 const FOLLOWING: f32 = f32::MAX;
 
+type Menu = Rc<dyn Fn(usize) -> Vec<MenuItem>>;
+type Note = Signal<Option<(usize, String)>>;
+
 pub struct LogView {
     log: Log,
     look: Look,
     bar: bool,
+    /// What the app's switches say, when they are reactive.
+    stamps: Option<Box<dyn Fn() -> bool>>,
+    wraps: Option<Box<dyn Fn() -> bool>>,
+    /// Rows may be of different heights.
+    wrapping: bool,
+    follow: Option<Signal<bool>>,
+    header: Option<Rc<dyn Fn() -> String>>,
+    empty: Option<String>,
+    menu: Option<Menu>,
+    notes: Option<Note>,
+    colors: Colors,
 }
 
 /// The lines of a log, with the time of each before it.
 pub fn log_view(log: &Log) -> LogView {
     let look = Look {
-        timestamps: true,
+        timestamps: signal(true),
         time: token::TEXT_3,
         offset: 0,
         size: 12.0,
@@ -44,146 +62,74 @@ pub fn log_view(log: &Log) -> LogView {
         levels: false,
         millis: true,
         ground: false,
+        wrap: signal(false),
     };
-    LogView { log: log.clone(), look, bar: true }
-}
-
-impl LogView {
-    /// Whether the time of each line is before it.
-    pub fn timestamps(mut self, shown: bool) -> Self {
-        self.look.timestamps = shown;
-        self
+    let colors: Colors = Rc::new(|source| token::HUES[source as usize % token::HUES.len()].into());
+    LogView {
+        log: log.clone(),
+        look,
+        bar: true,
+        stamps: None,
+        wraps: None,
+        wrapping: false,
+        follow: None,
+        header: None,
+        empty: None,
+        menu: None,
+        notes: None,
+        colors,
     }
-
-    /// Whether the bar is over the lines: an app with tools of its own filters the `Log`.
-    pub fn bar(mut self, shown: bool) -> Self {
-        self.bar = shown;
-        self
-    }
-
-    /// The size of the text and the height of a row: 12 on 18 unless told.
-    pub fn text(mut self, size: f32, row: f32) -> Self {
-        (self.look.size, self.look.row) = (size, row);
-        self
-    }
-
-    /// The lines on the canvas, a radius of 6, 6 by 12 px in.
-    pub fn ground(mut self) -> Self {
-        self.look.ground = true;
-        self
-    }
-
-    /// The time to the millisecond (`09:12:41.208`, unless told), or to the second.
-    pub fn millis(mut self, shown: bool) -> Self {
-        self.look.millis = shown;
-        self
-    }
-
-    pub fn time_color(mut self, color: Token) -> Self {
-        self.look.time = color;
-        self
-    }
-
-    /// The time shown at this offset from UTC, in seconds: the app's local time.
-    pub fn offset(mut self, seconds: i64) -> Self {
-        self.look.offset = seconds * 1000;
-        self
-    }
-
-    /// Each line in its level's colour, where its own escape sequences say none.
-    pub fn levels(mut self) -> Self {
-        self.look.levels = true;
-        self
-    }
-}
-
-/// The row of the line at a place of the listing; what it says moved left by `sx`.
-fn line(log: &Log, place: usize, look: Look, sx: Signal<f32>) -> Div {
-    let Some((_, at_ms, raw, faint)) = log.line(place) else { return div() };
-    let (fade, (said, pens)) = (if faint { 0.4 } else { 1.0 }, runs(&raw));
-    let base = if look.levels { tone(log.level(place)) } else { token::TEXT };
-    let mut from = 0;
-    let spans = pens.into_iter().map(|(end, pen)| {
-        let run = span(&said[std::mem::replace(&mut from, end)..end]).color(paint(pen, fade, base));
-        if pen.bold { run.bold() } else { run }
-    });
-    let spans: Vec<_> = spans.collect();
-    let letter = by_text(LETTER * look.size)();
-    let (pad, time) = look.lead(letter);
-    let line = row().grow(1.0).height(by_text(look.row)).align_items(Align::Center).padding_left(pad);
-    let line = match (look.timestamps, at_ms) {
-        (false, _) => line,
-        (true, 0) => line.child(div().width(time).shrink(0.0)),
-        (true, at) => {
-            let said = text(look.when(at)).color(look.time.alpha(fade));
-            line.child(div().width(time).shrink(0.0).child(said))
-        }
-    };
-    if spans.is_empty() {
-        return line;
-    }
-    // A long line is cut at the edge and scrolls sideways; the times stay.
-    // As wide as the line at least (a byte is a cell or more of it): it never wraps.
-    let wide = said.len() as f32 * letter + 8.0;
-    let words = div().absolute().top(0.0).left(move || -sx.get()).width(wide).cut_to_parent();
-    let words = words.child(rich_text(spans));
-    line.child(div().width(0.0).grow(1.0).height(by_text(look.row)).overflow_x(Overflow::Hidden).child(words))
-}
-
-/// A line as copying gives it: its time, when they show, and what it says.
-fn as_text(log: &Log, place: usize, look: Look) -> String {
-    let Some((_, at_ms, raw, _)) = log.line(place) else { return String::new() };
-    match (look.timestamps, at_ms) {
-        (true, at) if at != 0 => format!("{} {}", look.when(at), plain(&raw)),
-        _ => plain(&raw).into_owned(),
-    }
-}
-
-/// A small button of the bar that is on or off, with what it does when the pointer rests.
-fn toggle(
-    label: &str,
-    tip: &str,
-    on: impl Fn() -> bool + 'static,
-    click: impl FnMut() + 'static,
-) -> impl View {
-    tooltip(tip, button(label.to_string()).variant(Variant::Ghost).size(Size::Sm).toggled(on).on_click(click))
 }
 
 impl View for LogView {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (log, look) = (self.log, self.look);
-        let (query, pattern, dim) = (signal(String::new()), signal(false), signal(false));
-        let graver = signal(false);
+        let LogView {
+            log, look, stamps, wraps, wrapping, follow, header, empty, menu, notes, colors, ..
+        } = self;
+        if let Some(stamps) = stamps {
+            effect(move || look.timestamps.set(stamps()));
+        }
+        if let Some(wraps) = wraps {
+            effect(move || look.wrap.set(wraps()));
+        }
+        let filter = Filter {
+            query: signal(String::new()),
+            pattern: signal(false),
+            dim: signal(false),
+            graver: signal(false),
+        };
         let (changed, wrong) = log.signals();
         let (filtered, leveled) = (log.clone(), log.clone());
         // Whether the pattern is one is the log's to say: the bar reads it there. Without
         // the bar, the app filters.
         if self.bar {
             effect(move || {
-                filtered.set_filter(&query.get(), pattern.get(), dim.get());
+                filtered.set_filter(&filter.query.get(), filter.pattern.get(), filter.dim.get());
             });
-            effect(move || leveled.set_level(if graver.get() { Level::Warn } else { Level::None }));
+            effect(move || leveled.set_level(if filter.graver.get() { Level::Warn } else { Level::None }));
         }
 
-        // Where the list is; past its end, it follows.
-        let scroll = signal(FOLLOWING);
-        let follows = memo(move || scroll.get() == FOLLOWING);
-        let (seen, mounted): (Rc<Cell<Option<Signal<quadra_prim::Size>>>>, _) =
-            (Rc::default(), signal(false));
-        let (count, view, row_px) = (log.clone(), seen.clone(), by_text(look.row));
-        let end = move || {
-            mounted.get();
-            let height = view.get().map_or(0.0, |size| size.get().height);
-            (count.listed() as f32 * row_px() - height).max(0.0)
-        };
-        // Scrolled down to the end, or with nothing to scroll: it follows again.
-        let (to_end, before) = (end.clone(), Cell::new(FOLLOWING));
+        // Where the list is; past its end, it follows. The app's switch moves it there, or
+        // to the end it is at.
+        let (scroll, end, follow) =
+            (signal(FOLLOWING), signal(0.0f32), follow.unwrap_or_else(|| signal(true)));
         effect(move || {
-            let (at, end) = (scroll.get(), to_end());
+            let (on, at) = (follow.get(), scroll.get_untracked());
+            if on && at != FOLLOWING {
+                scroll.set(FOLLOWING);
+            } else if !on && at == FOLLOWING {
+                scroll.set(end.get_untracked());
+            }
+        });
+        // Scrolled down to the end, or with nothing to scroll: it follows again.
+        let before = Cell::new(FOLLOWING);
+        effect(move || {
+            let (at, end) = (scroll.get(), end.get());
             if at < FOLLOWING && (end == 0.0 || (at > before.get() && at >= end - 1.0)) {
                 scroll.set(FOLLOWING);
             }
             before.set(at);
+            follow.set(scroll.get_untracked() == FOLLOWING);
         });
 
         // Rows selected and copied as a table's are; other lines at the places, none.
@@ -195,74 +141,77 @@ impl View for LogView {
             chosen.set(Vec::new());
         });
         let (sx, widest, letter) = (signal(0.0f32), log.clone(), by_text(LETTER * look.size));
-        let reach = move |width: f32| {
-            let letter = letter();
-            let (pad, time) = look.lead(letter);
-            widest.widest() as f32 * letter + 16.0 - (width - pad - time)
+        effect(move || {
+            if look.wrap.get() {
+                sx.set(0.0);
+            }
+        });
+        let reach = move |width: f32| match look.wrap.get_untracked() {
+            true => 0.0,
+            false => widest.widest() as f32 * letter() + 16.0 - (width - look.before(&widest, letter())),
         };
         let (rows, counted, picks) = (log.clone(), log.clone(), sheet.clone());
-        let list = uniform_list(
-            move || counted.listed(),
-            look.row,
-            scroll,
-            move |place| {
-                let rows = rows.clone();
-                // Built again for another place, and when other lines are listed: lines that
-                // come change neither.
-                let built = dynamic(move || {
-                    changed.get();
-                    line(&rows, place.get(), look, sx)
-                });
-                let face = selectable(&picks, div().height(by_text(look.row)), place);
-                built.container(sideways(face, sx, reach.clone()))
-            },
-        );
-        let viewport = div().grow(1.0).on_mount(move |tree, id| {
-            seen.set(Some(tree.size_signal(id)));
-            mounted.set(true);
-        });
-        let list = list.container(viewport);
+        let build = move |place: Signal<usize>| {
+            let (rows, colors, menu, open) = (rows.clone(), colors.clone(), menu.clone(), signal(false));
+            let noted = memo(move || {
+                let mine = |n: &Option<(usize, String)>| {
+                    n.as_ref().filter(|n| n.0 == place.get()).map(|n| n.1.clone())
+                };
+                notes.and_then(|notes| notes.with(mine))
+            });
+            // Built again for another place, and when other lines are listed: lines that
+            // come change neither.
+            let built = dynamic(move || {
+                changed.get();
+                line(&rows, place.get(), look, sx, noted.get(), &colors)
+            });
+            let face = selectable(&picks, div().min_height(by_text(look.row)), place);
+            let face = face.bg(move || if open.get() { token::ACCENT.alpha(0.12) } else { Paint::default() });
+            let view = built.container(sideways(face, sx, reach.clone()));
+            match menu {
+                Some(items) => {
+                    let items = move || items(place.get_untracked());
+                    AnyView::new(context_menu(view, items).while_open(open))
+                }
+                None => AnyView::new(view),
+            }
+        };
+        let count = move || counted.listed();
+        let list = match wrapping {
+            false => uniform_list(count, look.row, scroll, build),
+            true => virtual_list(count, look.row, scroll, build),
+        };
+        let list = list.end(end).container(div().grow(1.0));
 
+        // A row of words in `text_3` that is no line: the header, and why none shows.
+        let pad = if look.ground { 0.0 } else { 8.0 };
+        let words =
+            move || row().height(by_text(look.row)).shrink(0.0).align_items(Align::Center).padding_left(pad);
+        let words = move || words().text_color(token::TEXT_3);
         let (all, shown) = (log.clone(), log.clone());
-        let counts = text(move || match (wrong.get(), query.with(String::is_empty) || dim.get()) {
-            (true, _) => "Bad pattern".to_string(),
-            (_, true) => format!("{} lines", all.len()),
-            _ => format!("{} of {}", shown.listed(), all.len()),
+        let why = memo(move || match (shown.listed(), all.is_empty()) {
+            (0, true) => empty.clone(),
+            (0, false) => Some("No line matches what is set in the bar above".to_string()),
+            _ => None,
         });
-        let follow = move || scroll.set(if scroll.get_untracked() == FOLLOWING { end() } else { FOLLOWING });
-        let bar = row().align_items(Align::Center).gap(4.0).padding_x(8.0).height(by_text(45.0)).shrink(0.0);
-        let bar = bar.border_bottom(1.0).border_color(token::LINE);
-        let bar = bar.child(input(query).placeholder("Filter").width(240.0).invalid(wrong));
-        let bar = bar.child(toggle(
-            ".*",
-            "Regular expression",
-            move || pattern.get(),
-            move || pattern.update(|on| *on = !*on),
-        ));
-        let bar = bar.child(toggle(
-            "Dim",
-            "Dim other lines instead of hiding them",
-            move || dim.get(),
-            move || dim.update(|on| *on = !*on),
-        ));
-        let bar =
-            bar.child(div().grow(1.0)).child(div().text_size(12.0).text_color(token::TEXT_3).child(counts));
-        let bar = bar.child(toggle(
-            "Warn",
-            "Only warnings and errors",
-            move || graver.get(),
-            move || graver.update(|on| *on = !*on),
-        ));
-        let bar = bar.child(toggle("Follow", "Keep the newest line in view", move || follows.get(), follow));
+        let none = dynamic(move || match why.get() {
+            Some(said) => words().child(text(said)),
+            None => div(),
+        });
+
         let lines = column().grow(1.0).font_family(fonts::MONO).text_size(look.size);
         let lines = lines.line_height(look.row / look.size);
         let lines = match look.ground {
             true => lines.bg(token::CANVAS).radius(6.0).padding_x(12.0).padding_y(6.0),
             false => lines,
         };
+        let lines = match header {
+            Some(said) => lines.child(words().child(text(move || said()))),
+            None => lines,
+        };
         let lines = sheet.frame(lines, use_context::<Rc<dyn Clipboard>>()).label("Log".to_string());
         let all = column().grow(1.0);
-        let all = if self.bar { all.child(bar) } else { all };
-        all.child(lines.child(list)).mount(cx)
+        let all = if self.bar { all.child(bar(&log, filter, wrong, follow)) } else { all };
+        all.child(lines.child(none).child(list)).mount(cx)
     }
 }

@@ -3,7 +3,7 @@
 
 use std::ops::Range;
 
-use quadra_prim::{Color, Rect};
+use quadra_prim::{Color, Corners, Rect};
 use quadra_render::Quad;
 use quadra_text::Paragraph;
 
@@ -15,6 +15,7 @@ pub(super) struct Marks {
     ranges: Vec<Range<usize>>,
     current: Option<usize>,
     fills: (Color, Color),
+    radius: f32,
 }
 
 impl Marks {
@@ -24,7 +25,8 @@ impl Marks {
             let background = if self.current == Some(k) { self.fills.1 } else { self.fills.0 };
             for part in paragraph.spans(range.clone(), 0.0) {
                 let bounds = Rect::new(cx.rect.x + part.x, cx.rect.y + part.y, part.width, part.height);
-                cx.quad(Quad { bounds, background, ..Quad::default() });
+                let radii = Corners::all(self.radius);
+                cx.quad(Quad { bounds, background, radii, ..Quad::default() });
             }
         }
     }
@@ -45,11 +47,16 @@ impl RichText {
         fill: Color,
         chosen: Color,
     ) -> bool {
-        let marks = Marks { ranges, current, fills: (fill, chosen) };
+        let marks = Marks { ranges, current, fills: (fill, chosen), radius: self.marks.radius };
         let same = marks.ranges == self.marks.ranges && marks.current == self.marks.current;
         let same = same && (marks.ranges.is_empty() || marks.fills == self.marks.fills);
         self.marks = marks;
         !same
+    }
+
+    /// Rounds the corners of its marks.
+    pub fn round_marks(&mut self, radius: f32) {
+        self.marks.radius = radius;
     }
 
     /// Where the first part of a range of its text is from the node's corner, once shaped.

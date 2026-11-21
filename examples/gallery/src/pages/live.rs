@@ -78,15 +78,22 @@ fn requests(from: usize, n: usize) -> Vec<(i64, String)> {
     (from..from + n).map(|k| (1_793_966_400_000 + k as i64 * 250, line(k))).collect()
 }
 
-/// A container's log: a level in words, `level=`, or a JSON field.
+/// Two containers' logs, merged in time order: a level in words, `level=`, or a JSON field.
 fn panel_log() -> Log {
     let log = Log::new();
     let at = 1_793_966_400_000;
-    log.append([
-        (at, "INFO listening on :8080"),
-        (at + 1200, "level=warn msg=\"slow response\" ms=812"),
-        (at + 2400, r#"{"level":"error","msg":"upstream refused"}"#),
-        (at + 3600, "GET /healthz 200"),
+    log.append_from(
+        0,
+        [
+            (at, "INFO listening on :8080"),
+            (at + 1200, "level=warn msg=\"slow response\" ms=812"),
+            (at + 2400, r#"{"level":"error","msg":"upstream refused"}"#),
+            (at + 3600, "GET /healthz 200"),
+        ],
+    );
+    log.append_from(1, [
+        (at + 600, "DEBUG a pool of 8 connections"),
+        (at + 3000, "WARN a checkpoint took 4.2 s, longer than the 2 s it is given: the writes of the last minute wait"),
     ]);
     log
 }
@@ -112,11 +119,17 @@ pub fn log_view_page() -> Div {
                 "log.append(lines)  // and log_view(&log) follows",
             ),
             demo(
-                "A panel of the app's own, coloured by level",
-                column()
-                    .height(200.0)
-                    .child(log_view(&panel_log()).bar(false).text(15.0, 24.0).ground().levels()),
-                "log_view(&log).bar(false).text(15.0, 24.0).ground().levels().offset(local)  // log.set_level(Level::Warn)",
+                "A panel of the app's own: two containers, levels, long lines wrapped",
+                column().height(260.0).child(
+                    log_view(&panel_log())
+                        .bar(false)
+                        .text(15.0, 24.0)
+                        .ground()
+                        .levels()
+                        .wrap(true)
+                        .header(|| "api, db · current run · 6 lines".to_string()),
+                ),
+                "log_view(&log).bar(false).ground().levels().wrap(on).header(..)  // log.append_from(source, lines)",
             ),
         ],
     )

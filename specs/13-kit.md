@@ -761,7 +761,8 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   adds no node around the view (as the tooltip): the popup is opened by hand, from the
   handler (`popup::open_now`), and goes with the scope of the view if it is still open then.
   The items are asked for as it opens; none, and nothing opens (an app's setting turns the
-  menu off so, without mounting the view again).
+  menu off so, without mounting the view again). `.while_open(signal)` is written true as it
+  opens and false as it closes, however it closes: what it was opened on can show it.
 - The width a popup is said to have is that of its plane, border and all: what it holds
   asks for 2 px less (`popup::EDGE`). A menu is 200 px at least so.
 - The region a popup is shown in is not displayed (`.display(Display::None)`): where the
@@ -1069,6 +1070,10 @@ What these are and look like is behaviour/19. As built:
   milliseconds since 1970, or none: `log.append(lines)`, `log.push(at_ms, text)`,
   `log.clear()`. The lines are packed in one buffer of bytes with an offset and a time
   each (a line of 100 bytes costs about 112), up to 4 GB of text; a million lines are held.
+  A line goes after the last one whose time is not later (one with no time at the end), so
+  that streams that come interleaved read in time order: `log.append_from(source, lines)`
+  gives each line its source (a container, a pod: the app's number), `log.source(place)`
+  reads it and `log.sources()` says how many there are.
 - A line may colour itself with the escape sequences terminals know (SGR): the sixteen
   colours, which are the theme's (`token::ANSI`, a theme file's `terminal.ansi`), the 256
   and the 16 million, bold and faint; other sequences are dropped. Only the lines that
@@ -1084,8 +1089,10 @@ What these are and look like is behaviour/19. As built:
   (`regex-lite`, whatever the case too). Lines that do not match are not listed, and the
   bar says `n of m`; with `Dim` they are all listed, the others faint. A filter is matched
   against what a line says, without its escape sequences. A new filter reads every line
-  once (a byte search for a text); lines that come are tested as they come. A pattern
-  that is not one filters nothing, and the bar says so.
+  once (a text is searched as an escaped pattern); lines that come are tested as they
+  come. A pattern that is not one filters nothing, and the bar says so. `log.marks(place)`
+  says where the match is in a line, and each match shown has a ground of the accent at
+  32 %.
 - Lines are selected as a table's rows are (a click, Shift and Ctrl, the arrows) and Ctrl-C
   copies them, each its time and what it says without escape sequences; other lines
   listed select none. A long line is cut at the edge, and the wheel turned sideways, or
@@ -1094,23 +1101,45 @@ What these are and look like is behaviour/19. As built:
   `sideways`. To a reader the log is a table named "Log".
 - `Log::new().limit(n)` holds at most `n` lines: past that the oldest go, an eighth of the
   limit at a time (the buffer is moved once for all of them).
-- A line's **level** (`Level`: none, debug, info, warn, error) is read once, when it is
-  appended, from its words: a level's name in capitals (`INFO`, `WARN`, `ERROR`, `FATAL`),
+- A line's **level** is read once, when it is
+  appended (`Level`: none, debug, info, warn, error, fatal), from its words: a level's
+  name in capitals (`INFO`, `WARN`, `ERROR`, `FATAL`),
   as the line's first word in any case (`error: bucket not found`, `Warning: ...`), or in
   any case after `level`, `lvl` or `severity` (`level=warn`, a JSON line's
   `"level": "error"`); the first one found. A line that starts as klog's do (`E1121
-  10:02:03.123456`: a letter and the month and day) is of that letter: I info, W warn, E and
-  F error. `log.set_level(Level::Warn)` lists only the
-  lines of that level or graver, with the text filter (dimmed with it under `Dim`); the
-  bar's `Warn` does that.
+  10:02:03.123456`: a letter and the month and day) is of that letter: I info, W warn, E
+  error, F fatal. `log.set_levels(&[..])` lists only the lines of those levels (fatal
+  counted as error; none: every level), with the text filter (dimmed with it under `Dim`);
+  `log.set_level(least)` those of that level or graver, which the bar's `Warn` does.
+  `log.has_levels()` says whether any line has one.
 - For a panel of the app's own: `.bar(false)` leaves the bar out (the app filters through
   the `Log`); `.text(size, line)` sets the size and the row (15 on 24); `.ground()` puts the
   lines on `canvas`, a radius of 6, 6 by 12 px in, the time at that edge and a line's text
   two letters after it; `.millis(false)` writes the time to the second (`02:01:41`, a job's
   output), in the copy too; `.time_color(token)` colours the time
   (`text_3` unless told), and `.offset(seconds)` shows it at that offset from UTC (an
-  app's local time), in the copy too; `.levels()` colours a line by its level, info in
-  `ok`, warn in `warn`, error in `error`, where its own escape sequences say no colour.
+  app's local time), in the copy too. `.levels()` puts a column of seven letters between
+  the time and what a line says, while a line has a level: its word (`INFO`, `WARN`,
+  `ERROR`, `FATAL`, `DEBUG`) in its colour, info `ok`, warn `warn`, error and fatal
+  `error`, debug `text_3`; what a warn, error or fatal line says is in its colour, a debug
+  line's in `text_2`, an info line's in the text's, where its own escape sequences say no
+  colour.
+- `.timestamps(..)` may be reactive: the rows change, the list and where it is stay.
+  `.wrap(..)` (reactive) lets a long line go on to the rows under it, each line as tall as
+  it needs (a `virtual_list`; the wheel no longer moves the lines sideways). With two
+  sources or more, a dot of 8 px in the source's colour stands before the time
+  (`.source_colors(|source| paint)`, the hues unless told).
+- `.follow(signal)` is following, read and written: the app's switch turns it on (to the
+  end) and off; scrolling away writes it off and coming back to the end on.
+  `.header(|| words)` is a first row in `text_3` that is not a line: no time, never
+  filtered, selected or copied ("container api · previous run · 11 lines"). With no line
+  listed, one row in `text_3` says why: `.empty(words)` when the log has none, "No line
+  matches what is set in the bar above" when the filter hides them all.
+- `.line_menu(|place| items)` opens a menu at the pointer on a click with the other button
+  on a line (`Copy line`, `Copy message only`: the app's); the line is tinted while it is
+  open (`ContextMenu::while_open`). `.notes(signal)` puts a short word at the end of a
+  line, 12 px in the accent, for
+  the line of that place (`Some((place, "Copied"))`); the app clears it.
 
 ## Markdown (`quadra-md`)
 

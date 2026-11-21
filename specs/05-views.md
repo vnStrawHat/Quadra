@@ -242,6 +242,8 @@ that says how far the list is scrolled, and what builds a row from its index.
   as little as shows all of it. A row far away is only estimated to be where the list first
   scrolls to, so the list asks again as heights are found out, until the row shows whole and
   measured; then it lets go, and scrolling away is not undone.
+- `.end(signal)` writes into `signal` how far the list scrolls at most (its rows' heights
+  less the viewport's, as known so far): what an app that follows the end compares with.
 - `uniform_list(count, row_height, scroll_y, row)` is the same with one fixed row height, no
   measuring and no memory a row.
 - A row recycled for another index must not keep state of the old one in node state. The list
@@ -341,7 +343,7 @@ locale at the window root; a subtree can provide its own.
   - Ranges of its text can be marked apart from the selection, under it, by whoever finds
     across texts (`text`, `mark(ranges, current, fill, chosen)`, the current one in the
     second fill; `rect_of(range)`, where a range's first part is, to scroll to): a
-    document's find does.
+    document's find does. `round_marks(radius)` rounds their corners (a log's matches, 2).
   - **Links for the keyboard and a reader**: a text with links is a box that holds it and a
     node for each link, in the order of the text, without a size of its own. That node
     takes the focus (Tab reaches the links in order, as it reaches any control), is a link

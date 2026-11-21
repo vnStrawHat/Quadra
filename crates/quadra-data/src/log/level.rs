@@ -11,6 +11,7 @@ pub enum Level {
     Info,
     Warn,
     Error,
+    Fatal,
 }
 
 const NAMES: [(&str, Level); 11] = [
@@ -21,13 +22,19 @@ const NAMES: [(&str, Level); 11] = [
     ("warning", Level::Warn),
     ("error", Level::Error),
     ("err", Level::Error),
-    ("fatal", Level::Error),
-    ("critical", Level::Error),
-    ("crit", Level::Error),
-    ("panic", Level::Error),
+    ("fatal", Level::Fatal),
+    ("critical", Level::Fatal),
+    ("crit", Level::Fatal),
+    ("panic", Level::Fatal),
 ];
 
 impl Level {
+    /// Its word in a log's level column: `INFO`, `WARN`, `ERROR`, `FATAL`, `DEBUG`; none
+    /// for `None`.
+    pub fn word(self) -> &'static str {
+        ["", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"][self as usize]
+    }
+
     /// The first level a line names: in capitals (`WARN`), as its first word in any case
     /// (`error: ...`), or in any case after `level`, `lvl` or `severity` (`level=warn`,
     /// `"level":"error"`); a line that starts as klog's (`E1121 ...`) by its letter.
@@ -59,7 +66,8 @@ fn klog(word: &str) -> Option<Level> {
     match letter {
         "I" => Some(Level::Info),
         "W" => Some(Level::Warn),
-        "E" | "F" => Some(Level::Error),
+        "E" => Some(Level::Error),
+        "F" => Some(Level::Fatal),
         _ => None,
     }
 }

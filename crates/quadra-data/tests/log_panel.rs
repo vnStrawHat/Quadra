@@ -20,6 +20,10 @@ fn lines() -> Vec<(i64, &'static str)> {
         (AT + 3000, "FATAL out of memory"),
         (AT + 4000, "\u{1b}[34mINFO\u{1b}[0m in blue, as it says"),
         (AT + 5000, "an error in passing, with no level"),
+        (AT + 6000, "error: bucket not found"),
+        (AT + 7000, "Warning: disk at 91%"),
+        (AT + 8000, "E1121 10:02:03.123456    1 reflector.go:138] failed to list"),
+        (AT + 9000, "I1121 10:02:04.000001    1 leader.go:42] became leader"),
     ]
 }
 
@@ -27,11 +31,12 @@ fn lines() -> Vec<(i64, &'static str)> {
 fn a_level_is_read_from_the_words_and_filters_with_the_text() {
     let log = Log::new();
     log.append(lines());
-    let levels: Vec<Level> = (0..6).map(|i| log.level(i)).collect();
+    let levels: Vec<Level> = (0..10).map(|i| log.level(i)).collect();
     let said = [Level::Info, Level::Warn, Level::Error, Level::Error, Level::Info, Level::None];
+    let said = [&said[..], &[Level::Error, Level::Warn, Level::Error, Level::Info]].concat();
     assert_eq!(levels, said);
     log.set_level(Level::Warn);
-    assert_eq!(log.listed(), 3);
+    assert_eq!(log.listed(), 6);
     log.set_filter("memory", false, false);
     assert_eq!((log.listed(), log.line(0).map(|l| l.0)), (1, Some(3)));
     // Lines that come are tested as they come; Dim keeps them, faint.
@@ -40,10 +45,10 @@ fn a_level_is_read_from_the_words_and_filters_with_the_text() {
     assert_eq!(log.listed(), 2);
     log.set_filter("", false, true);
     log.set_level(Level::Error);
-    assert_eq!((log.listed(), log.line(0).unwrap().3, log.line(2).unwrap().3), (8, true, false));
+    assert_eq!((log.listed(), log.line(0).unwrap().3, log.line(2).unwrap().3), (12, true, false));
     log.set_level(Level::None);
     log.set_filter("", false, false);
-    assert_eq!(log.listed(), 8);
+    assert_eq!(log.listed(), 12);
 }
 
 /// The colour of the glyphs of the text that says `words`, in the window.
@@ -92,6 +97,10 @@ fn a_panel_has_no_bar_its_own_size_a_ground_local_times_and_lines_in_their_level
     assert_eq!(ground.background, theme.resolve(token::CANVAS.into()));
     let (frame, row) = (h.tree.window_rect(table), h.tree.window_rect(first));
     assert_eq!(row.y - frame.y, 6.0);
+    // The time at the ground's edge, a line's text two letters (9 px each) after it.
+    let time = h.query(|n| n.semantics.role == Role::Text && n.semantics.name == "19:00:00.000")[0];
+    let (time, text) = (h.tree.window_rect(time), h.tree.window_rect(first));
+    assert_eq!((time.x - frame.x, text.x - time.x), (12.0, 14.0 * 9.0));
     // Each line in its level's colour; the escape sequence's blue wins; no level, the text.
     let near = |a: [f32; 4], b: [f32; 4]| a.iter().zip(b).all(|(x, y)| (x - y).abs() < 0.01);
     assert!(near(ink(&h, "19:00:00.000"), color(token::TEXT_2)));
@@ -113,9 +122,27 @@ fn the_bar_lists_only_warnings_and_errors_by_its_warn() {
     h.frame();
     h.get_by_role(Role::Button, "Warn").click();
     h.frame();
-    assert_eq!(log.listed(), 3);
+    assert_eq!(log.listed(), 6);
     assert!(h.has_text("FATAL out of memory") && !h.has_text("INFO started on :8080"));
     h.get_by_role(Role::Button, "Warn").click();
     h.frame();
-    assert_eq!(log.listed(), 6);
+    assert_eq!(log.listed(), 10);
+}
+
+#[test]
+fn a_time_may_be_to_the_second() {
+    let log = Log::new();
+    log.push(AT + 41_208, "step 3/7");
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+    let shown = log.clone();
+    h.mount(move || quadra_design::root().child(log_view(&shown).bar(false).ground().millis(false)));
+    h.frame();
+    while h.frame_if_needed().is_some() {}
+    assert!(h.has_text("12:00:41") && !h.has_text("12:00:41.208"));
+    // Copied as it shows.
+    h.click(200.0, 12.0);
+    h.key(quadra_platform::Key::C, quadra_platform::Mods::CTRL);
+    assert_eq!(h.clipboard.read_text().as_deref(), Some("12:00:41 step 3/7"));
 }

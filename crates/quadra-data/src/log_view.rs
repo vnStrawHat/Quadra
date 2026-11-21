@@ -8,51 +8,44 @@ use quadra_design::rows::{one_column, selectable, sideways};
 use quadra_design::{Size, Variant, button, fonts, input, token, tooltip};
 use quadra_layout::{Align, Overflow};
 use quadra_platform::Clipboard;
-use quadra_prim::Color;
 use quadra_reactive::{Signal, effect, memo, signal, use_context};
-use quadra_tree::{NodeId, Paint, Token};
+use quadra_tree::{NodeId, Token};
 use quadra_view::{
     Div, MountCx, View, by_text, column, div, dynamic, rich_text, row, span, text, uniform_list,
 };
 
-use crate::ansi::{Ink, Pen, plain, runs};
-use crate::log::{Level, Log, clock};
+use crate::ansi::{plain, runs};
+use crate::log::{Level, Log};
 
-/// The width of a letter of the mono face, for each px of its size. What a time takes
-/// before its line is twelve letters and 20 px of gaps (`gutter`). Both grow with the text
+mod look;
+
+use look::{Look, paint, tone};
+
+/// The width of a letter of the mono face, for each px of its size. It grows with the text
 /// scale (`by_text`).
 const LETTER: f32 = 0.6;
-
-fn gutter(letter: f32) -> f32 {
-    12.0 * letter + 20.0
-}
 /// A place past the end of any list: the list keeps it at its end, which is following.
 const FOLLOWING: f32 = f32::MAX;
-
-/// How the rows look: whether the time shows, its colour and its offset from UTC in ms,
-/// the size of the text and the row, and whether a line takes its level's colour.
-#[derive(Clone, Copy)]
-struct Look {
-    timestamps: bool,
-    time: Token,
-    offset: i64,
-    size: f32,
-    row: f32,
-    levels: bool,
-}
 
 pub struct LogView {
     log: Log,
     look: Look,
     bar: bool,
-    ground: bool,
 }
 
 /// The lines of a log, with the time of each before it.
 pub fn log_view(log: &Log) -> LogView {
-    let look =
-        Look { timestamps: true, time: token::TEXT_3, offset: 0, size: 12.0, row: 18.0, levels: false };
-    LogView { log: log.clone(), look, bar: true, ground: false }
+    let look = Look {
+        timestamps: true,
+        time: token::TEXT_3,
+        offset: 0,
+        size: 12.0,
+        row: 18.0,
+        levels: false,
+        millis: true,
+        ground: false,
+    };
+    LogView { log: log.clone(), look, bar: true }
 }
 
 impl LogView {
@@ -76,7 +69,13 @@ impl LogView {
 
     /// The lines on the canvas, a radius of 6, 6 by 12 px in.
     pub fn ground(mut self) -> Self {
-        self.ground = true;
+        self.look.ground = true;
+        self
+    }
+
+    /// The time to the millisecond (`09:12:41.208`, unless told), or to the second.
+    pub fn millis(mut self, shown: bool) -> Self {
+        self.look.millis = shown;
         self
     }
 
@@ -98,26 +97,6 @@ impl LogView {
     }
 }
 
-/// The colour of a line of a level.
-fn tone(level: Level) -> Token {
-    match level {
-        Level::Info => token::OK,
-        Level::Warn => token::WARN,
-        Level::Error => token::ERROR,
-        Level::None | Level::Debug => token::TEXT,
-    }
-}
-
-/// The colour a pen writes in; `fade` is how much of it a faint line keeps.
-fn paint(pen: Pen, fade: f32, base: Token) -> Paint {
-    let fade = if pen.faint { fade * 0.6 } else { fade };
-    match pen.ink {
-        Ink::Text => base.alpha(fade),
-        Ink::Palette(n) => token::ANSI[n as usize % 16].alpha(fade),
-        Ink::Rgb(r, g, b) => Paint::Color(Color::rgb(u32::from_be_bytes([0, r, g, b])).alpha(fade)),
-    }
-}
-
 /// The row of the line at a place of the listing; what it says moved left by `sx`.
 fn line(log: &Log, place: usize, look: Look, sx: Signal<f32>) -> Div {
     let Some((_, at_ms, raw, faint)) = log.line(place) else { return div() };
@@ -129,14 +108,15 @@ fn line(log: &Log, place: usize, look: Look, sx: Signal<f32>) -> Div {
         if pen.bold { run.bold() } else { run }
     });
     let spans: Vec<_> = spans.collect();
-    let line = row().grow(1.0).height(by_text(look.row)).align_items(Align::Center).padding_left(8.0);
     let letter = by_text(LETTER * look.size)();
+    let (pad, time) = look.lead(letter);
+    let line = row().grow(1.0).height(by_text(look.row)).align_items(Align::Center).padding_left(pad);
     let line = match (look.timestamps, at_ms) {
         (false, _) => line,
-        (true, 0) => line.child(div().width(gutter(letter) - 8.0).shrink(0.0)),
+        (true, 0) => line.child(div().width(time).shrink(0.0)),
         (true, at) => {
-            let time = text(clock(at + look.offset)).color(look.time.alpha(fade));
-            line.child(div().width(gutter(letter) - 8.0).shrink(0.0).child(time))
+            let said = text(look.when(at)).color(look.time.alpha(fade));
+            line.child(div().width(time).shrink(0.0).child(said))
         }
     };
     if spans.is_empty() {
@@ -154,7 +134,7 @@ fn line(log: &Log, place: usize, look: Look, sx: Signal<f32>) -> Div {
 fn as_text(log: &Log, place: usize, look: Look) -> String {
     let Some((_, at_ms, raw, _)) = log.line(place) else { return String::new() };
     match (look.timestamps, at_ms) {
-        (true, at) if at != 0 => format!("{} {}", clock(at + look.offset), plain(&raw)),
+        (true, at) if at != 0 => format!("{} {}", look.when(at), plain(&raw)),
         _ => plain(&raw).into_owned(),
     }
 }
@@ -217,7 +197,8 @@ impl View for LogView {
         let (sx, widest, letter) = (signal(0.0f32), log.clone(), by_text(LETTER * look.size));
         let reach = move |width: f32| {
             let letter = letter();
-            widest.widest() as f32 * letter + 16.0 - (width - gutter(letter))
+            let (pad, time) = look.lead(letter);
+            widest.widest() as f32 * letter + 16.0 - (width - pad - time)
         };
         let (rows, counted, picks) = (log.clone(), log.clone(), sheet.clone());
         let list = uniform_list(
@@ -275,7 +256,7 @@ impl View for LogView {
         let bar = bar.child(toggle("Follow", "Keep the newest line in view", move || follows.get(), follow));
         let lines = column().grow(1.0).font_family(fonts::MONO).text_size(look.size);
         let lines = lines.line_height(look.row / look.size);
-        let lines = match self.ground {
+        let lines = match look.ground {
             true => lines.bg(token::CANVAS).radius(6.0).padding_x(12.0).padding_y(6.0),
             false => lines,
         };

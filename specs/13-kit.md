@@ -1096,13 +1096,18 @@ What these are and look like is behaviour/19. As built:
   limit at a time (the buffer is moved once for all of them).
 - A line's **level** (`Level`: none, debug, info, warn, error) is read once, when it is
   appended, from its words: a level's name in capitals (`INFO`, `WARN`, `ERROR`, `FATAL`),
-  or in any case after `level`, `lvl` or `severity` (`level=warn`, a JSON line's
-  `"level": "error"`); the first one found. `log.set_level(Level::Warn)` lists only the
+  as the line's first word in any case (`error: bucket not found`, `Warning: ...`), or in
+  any case after `level`, `lvl` or `severity` (`level=warn`, a JSON line's
+  `"level": "error"`); the first one found. A line that starts as klog's do (`E1121
+  10:02:03.123456`: a letter and the month and day) is of that letter: I info, W warn, E and
+  F error. `log.set_level(Level::Warn)` lists only the
   lines of that level or graver, with the text filter (dimmed with it under `Dim`); the
   bar's `Warn` does that.
 - For a panel of the app's own: `.bar(false)` leaves the bar out (the app filters through
   the `Log`); `.text(size, line)` sets the size and the row (15 on 24); `.ground()` puts the
-  lines on `canvas`, a radius of 6, 6 by 12 px in; `.time_color(token)` colours the time
+  lines on `canvas`, a radius of 6, 6 by 12 px in, the time at that edge and a line's text
+  two letters after it; `.millis(false)` writes the time to the second (`02:01:41`, a job's
+  output), in the copy too; `.time_color(token)` colours the time
   (`text_3` unless told), and `.offset(seconds)` shows it at that offset from UTC (an
   app's local time), in the copy too; `.levels()` colours a line by its level, info in
   `ok`, warn in `warn`, error in `error`, where its own escape sequences say no colour.

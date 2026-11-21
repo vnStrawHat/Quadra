@@ -13,7 +13,7 @@ use quadra_tree::Paint;
 
 pub use bar_chart::{Bar, BarChart, bar_chart};
 pub use geometry::{Span, hh_mm, line_spans, max_of, nice_max, short, value_at};
-pub use graph::{Graph, GraphView, Hit, Link, LinkStyle, Node, fitted, graph};
+pub use graph::{Graph, GraphView, Hit, Link, LinkAxis, LinkStyle, Node, fitted, graph};
 pub use line_chart::{LineChart, Series, line_chart};
 pub use plot::{Plot, Sparkline, sparkline};
 

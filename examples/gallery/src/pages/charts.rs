@@ -3,7 +3,8 @@
 use quadra::{Align, Div, Point, Size, div, row, signal, text};
 use quadra_design::{Status, Tone, plain_badge, status_mark, token};
 use quadra_viz::{
-    Bar, Graph, Hit, Link, LinkStyle, Node, Series, bar_chart, graph, line_chart, series_color, sparkline,
+    Bar, Graph, Hit, Link, LinkAxis, LinkStyle, Node, Series, bar_chart, graph, line_chart, series_color,
+    sparkline,
 };
 
 use crate::common::{demo, framed, hint, mono, page, stack};
@@ -156,6 +157,37 @@ fn topology(lit: quadra::Signal<Option<Hit>>) -> Graph {
     g.height(320.0).fit()
 }
 
+/// A storage map: claims, their volumes, the classes: columns 40 px apart, links side to side.
+fn storage() -> Graph {
+    let box_of = |id: &'static str, (x, y): (f32, f32)| {
+        let face = move || {
+            let line = row().align_items(Align::Center).height(28.0).padding_x(8.0).bg(token::PANEL);
+            line.radius(4.0).border(1.0).border_color(token::LINE_STRONG).child(mono(id))
+        };
+        Node::new(id, Point::new(x, y), Size::new(120.0, 28.0), id, face)
+    };
+    let nodes = [
+        box_of("data-pg-0", (0.0, 0.0)),
+        box_of("data-pg-1", (0.0, 40.0)),
+        box_of("cache", (0.0, 120.0)),
+        box_of("pv-3f1c", (160.0, 0.0)),
+        box_of("pv-8e77", (160.0, 40.0)),
+        box_of("pv-c2ab", (160.0, 120.0)),
+        box_of("ssd", (320.0, 20.0)),
+        box_of("standard", (320.0, 120.0)),
+    ];
+    let ends = [
+        ("data-pg-0", "pv-3f1c"),
+        ("data-pg-1", "pv-8e77"),
+        ("cache", "pv-c2ab"),
+        ("pv-3f1c", "ssd"),
+        ("pv-8e77", "ssd"),
+        ("pv-c2ab", "standard"),
+    ];
+    let links = ends.map(|(a, b)| Link::new(a, b));
+    graph(nodes, links).axis(LinkAxis::Across).straight().height(200.0).fit()
+}
+
 pub fn graph_page() -> Div {
     let lit = signal(None);
     let svg = topology(lit).to_svg(&quadra_design::dark().theme()).len();
@@ -170,10 +202,17 @@ pub fn graph_page() -> Div {
     page(
         "Graph",
         "Nodes that are views at points, links between them, frames around groups; pan, zoom, fit and SVG.",
-        [demo(
-            "A topology",
-            stack().child(framed(shown)).child(hint(told)),
-            "graph(nodes, links).link_style(|i| ..).group(\"payments\", ids).fit().to_svg(&theme)",
-        )],
+        [
+            demo(
+                "A topology",
+                stack().child(framed(shown)).child(hint(told)),
+                "graph(nodes, links).link_style(|i| ..).group(\"payments\", ids).fit().to_svg(&theme)",
+            ),
+            demo(
+                "Columns near each other",
+                framed(storage()),
+                "graph(nodes, links).axis(LinkAxis::Across).straight()",
+            ),
+        ],
     )
 }

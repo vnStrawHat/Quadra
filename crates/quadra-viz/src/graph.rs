@@ -6,6 +6,9 @@ mod links;
 mod pointer;
 mod svg;
 
+pub use self::links::LinkAxis;
+pub use self::pointer::{GraphView, fitted};
+
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -76,40 +79,6 @@ impl Default for LinkStyle {
     }
 }
 
-/// Where the graph's plane shows in its box: a point `p` of it is at `p * zoom + pan`.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct GraphView {
-    pub pan: Point,
-    pub zoom: f32,
-}
-
-impl Default for GraphView {
-    fn default() -> Self {
-        GraphView { pan: Point::ZERO, zoom: 1.0 }
-    }
-}
-
-impl GraphView {
-    pub fn point(self, p: Point) -> Point {
-        Point::new(p.x * self.zoom + self.pan.x, p.y * self.zoom + self.pan.y)
-    }
-
-    pub fn rect(self, r: Rect) -> Rect {
-        let at = self.point(r.origin());
-        Rect::new(at.x, at.y, r.width * self.zoom, r.height * self.zoom)
-    }
-}
-
-/// The view that shows all of `bounds` in a box of `size`: 16 px of margin, its middle in
-/// the box's, never larger than it is.
-pub fn fitted(bounds: Rect, size: Size) -> GraphView {
-    let zoom = ((size.width - 32.0) / bounds.width).min((size.height - 32.0) / bounds.height);
-    let zoom = zoom.clamp(0.25, 1.0);
-    let middle = bounds.center();
-    let pan = Point::new(size.width / 2.0 - middle.x * zoom, size.height / 2.0 - middle.y * zoom);
-    GraphView { pan, zoom }
-}
-
 /// What the pointer is on: a node, by its id, or a link, by its place.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Hit {
@@ -129,6 +98,8 @@ pub struct Graph {
     hover: Option<Rc<dyn Fn(Option<Hit>)>>,
     height: f32,
     fit: bool,
+    /// How its links run: along which axis, and whether straight.
+    lines: (LinkAxis, bool),
 }
 
 /// A graph of `nodes` and the `links` between them, as wide as its box and 360 px tall.
@@ -136,7 +107,8 @@ pub fn graph(nodes: impl IntoIterator<Item = Node>, links: impl IntoIterator<Ite
     let (nodes, links) = (nodes.into_iter().collect(), links.into_iter().collect());
     let style: Styles = Rc::new(|_| LinkStyle::default());
     let (groups, view, click, hover) = (Vec::new(), None, None, None);
-    Graph { nodes, links, groups, style, view, click, hover, height: 360.0, fit: false }
+    let lines = (LinkAxis::Auto, false);
+    Graph { nodes, links, groups, style, view, click, hover, height: 360.0, fit: false, lines }
 }
 
 impl Graph {
@@ -184,6 +156,18 @@ impl Graph {
         self
     }
 
+    /// The axis its links run along: side to side for a map in columns.
+    pub fn axis(mut self, axis: LinkAxis) -> Self {
+        self.lines.0 = axis;
+        self
+    }
+
+    /// Its links straight from stop to stop, not curves: columns near each other.
+    pub fn straight(mut self) -> Self {
+        self.lines.1 = true;
+        self
+    }
+
     /// The drawing as SVG, at its own size.
     pub fn to_svg(&self, theme: &Theme) -> String {
         svg::write(self, theme)
@@ -195,7 +179,7 @@ impl Graph {
             self.nodes.iter().map(|n| Rect::new(n.at.x, n.at.y, n.size.width, n.size.height)).collect();
         let of: HashMap<&str, usize> = self.nodes.iter().enumerate().map(|(i, n)| (&*n.id, i)).collect();
         let line = |(k, l): (usize, &Link)| {
-            Some((k, route(rects[*of.get(&*l.from)?], rects[*of.get(&*l.to)?], &l.through)))
+            Some((k, route(rects[*of.get(&*l.from)?], rects[*of.get(&*l.to)?], &l.through, self.lines)))
         };
         let routes = self.links.iter().enumerate().filter_map(line).collect();
         (rects, routes)

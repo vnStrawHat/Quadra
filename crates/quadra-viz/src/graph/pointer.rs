@@ -5,13 +5,13 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use quadra_platform::Mods;
-use quadra_prim::{Point, Rect};
+use quadra_prim::{Point, Rect, Size};
 use quadra_reactive::Signal;
 use quadra_tree::{PointerEvent, PointerKind};
 use quadra_view::Div;
 
+use super::Hit;
 use super::links::distance;
-use super::{GraphView, Hit, fitted};
 
 /// Each link's place and its line in the graph's plane.
 pub(super) type Routes = Rc<Vec<(usize, Vec<Point>)>>;
@@ -85,4 +85,38 @@ pub(super) fn pointer(
             view.set(GraphView { pan, zoom });
         }
     })
+}
+
+/// Where the graph's plane shows in its box: a point `p` of it is at `p * zoom + pan`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GraphView {
+    pub pan: Point,
+    pub zoom: f32,
+}
+
+impl Default for GraphView {
+    fn default() -> Self {
+        GraphView { pan: Point::ZERO, zoom: 1.0 }
+    }
+}
+
+impl GraphView {
+    pub fn point(self, p: Point) -> Point {
+        Point::new(p.x * self.zoom + self.pan.x, p.y * self.zoom + self.pan.y)
+    }
+
+    pub fn rect(self, r: Rect) -> Rect {
+        let at = self.point(r.origin());
+        Rect::new(at.x, at.y, r.width * self.zoom, r.height * self.zoom)
+    }
+}
+
+/// The view that shows all of `bounds` in a box of `size`: 16 px of margin, its middle in
+/// the box's, never larger than it is.
+pub fn fitted(bounds: Rect, size: Size) -> GraphView {
+    let zoom = ((size.width - 32.0) / bounds.width).min((size.height - 32.0) / bounds.height);
+    let zoom = zoom.clamp(0.25, 1.0);
+    let middle = bounds.center();
+    let pan = Point::new(size.width / 2.0 - middle.x * zoom, size.height / 2.0 - middle.y * zoom);
+    GraphView { pan, zoom }
 }

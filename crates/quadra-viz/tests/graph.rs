@@ -12,7 +12,7 @@ use quadra_render::{Instance, Kind};
 use quadra_testing::Harness;
 use quadra_tree::{PointerInput, Role};
 use quadra_view::{div, text};
-use quadra_viz::{GraphView, Hit, Link, LinkStyle, Node, graph};
+use quadra_viz::{GraphView, Hit, Link, LinkAxis, LinkStyle, Node, graph};
 
 struct Page {
     h: Harness,
@@ -195,4 +195,16 @@ fn a_link_through_points_passes_them_past_the_column_it_skips() {
     let svg = graph([node("a", 0.0, 0.0), node("c", 400.0, 0.0)], [Link::new("a", "c").through([around])]);
     let svg = svg.to_svg(&dark().theme());
     assert!(svg.contains("L250.0 100.0") && svg.contains("<path d=\"M100.0 20.0"), "{svg}");
+}
+
+#[test]
+fn links_run_side_to_side_and_straight_when_told() {
+    let nodes = || [node("claim", 0.0, 0.0), node("volume", 140.0, 200.0)];
+    // Further apart down than across: by itself the link leaves the bottom.
+    let auto = graph(nodes(), [Link::new("claim", "volume")]).to_svg(&dark().theme());
+    assert!(auto.contains("<path d=\"M50.0 40.0"), "{auto}");
+    // Across, from its side to the other's; straight, one piece.
+    let across = graph(nodes(), [Link::new("claim", "volume")]).axis(LinkAxis::Across).straight();
+    let across = across.to_svg(&dark().theme());
+    assert!(across.contains("<path d=\"M100.0 20.0 L140.0 220.0\""), "{across}");
 }

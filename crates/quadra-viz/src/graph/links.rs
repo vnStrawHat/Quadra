@@ -20,12 +20,26 @@ const OPEN: f32 = 0.5;
 /// The dashes of one link, past which it is drawn whole.
 const MOST_DASHES: usize = 2_000;
 
-/// The curve from the edge of `from` through the points `through` to the edge of `to`, along
-/// the axis the nodes' middles are further apart on, in the plane the rects are in: a cubic
-/// from one stop to the next, square to the axis at each.
-pub fn route(from: Rect, to: Rect, through: &[Point]) -> Vec<Point> {
+/// The axis a graph's links run along: the one their nodes' middles are further apart on
+/// (`Auto`), side to side (`Across`), or top to bottom (`Down`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum LinkAxis {
+    #[default]
+    Auto,
+    Across,
+    Down,
+}
+
+/// The line from the edge of `from` through the points `through` to the edge of `to`, along
+/// `axis`, in the plane the rects are in: a cubic from one stop to the next, square to the
+/// axis at each, or straight from stop to stop.
+pub fn route(from: Rect, to: Rect, through: &[Point], (axis, straight): (LinkAxis, bool)) -> Vec<Point> {
     let (a, b) = (from.center(), to.center());
-    let across = (b.x - a.x).abs() >= (b.y - a.y).abs();
+    let across = match axis {
+        LinkAxis::Auto => (b.x - a.x).abs() >= (b.y - a.y).abs(),
+        LinkAxis::Across => true,
+        LinkAxis::Down => false,
+    };
     // It leaves toward its first stop and arrives from its last.
     let (first, last) = (through.first().copied().unwrap_or(b), through.last().copied().unwrap_or(a));
     let start = match across {
@@ -41,6 +55,9 @@ pub fn route(from: Rect, to: Rect, through: &[Point]) -> Vec<Point> {
         false => Point::new(b.x, to.bottom()),
     };
     let stops: Vec<Point> = std::iter::once(start).chain(through.iter().copied()).chain([end]).collect();
+    if straight {
+        return stops;
+    }
     let mut line = vec![start];
     for pair in stops.windows(2) {
         let (s, e) = (pair[0], pair[1]);
@@ -211,9 +228,9 @@ mod tests {
     #[test]
     fn a_link_leaves_and_arrives_at_the_edges_and_a_dashed_one_is_in_pieces() {
         let (a, b) = (Rect::new(0.0, 0.0, 100.0, 40.0), Rect::new(200.0, 100.0, 100.0, 40.0));
-        let line = route(a, b, &[]);
+        let line = route(a, b, &[], (LinkAxis::Auto, false));
         assert_eq!((line[0], *line.last().unwrap()), (Point::new(100.0, 20.0), Point::new(200.0, 120.0)));
-        let below = route(a, Rect::new(0.0, 300.0, 100.0, 40.0), &[]);
+        let below = route(a, Rect::new(0.0, 300.0, 100.0, 40.0), &[], (LinkAxis::Auto, false));
         assert_eq!((below[0], *below.last().unwrap()), (Point::new(50.0, 40.0), Point::new(50.0, 300.0)));
         let straight = [Point::new(0.0, 0.0), Point::new(100.0, 0.0)];
         let pieces = dashes(&straight, 10.0);

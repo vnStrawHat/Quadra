@@ -968,7 +968,10 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   its way, in order (a layered layout's points in the columns a link skips, so it runs past
   their nodes): it leaves toward the first, arrives from the last, and is a cubic from one
   stop to the next, square to the axis at each; its hit, dashes, head and SVG follow that
-  line, and a fit takes the points in. `.link_style(|i| LinkStyle { color, width, dash, arrow })` styles
+  line, and a fit takes the points in. `.axis(LinkAxis::Across)` (or `Down`) makes every
+  link run along that axis, leaving and entering its nodes at their sides (a map in
+  columns), where `Auto` takes the axis the nodes' middles are further apart on;
+  `.straight()` draws links straight from stop to stop (columns 40 px apart). `.link_style(|i| LinkStyle { color, width, dash, arrow })` styles
   each link (by default 1.5 px in `text_3` with a head, solid; `dash` is the length of a
   dash and of a gap); it is read again when what it reads changes, so lighting a chain
   repaints the links and builds nothing. `.group(title, [ids])` draws a frame around those

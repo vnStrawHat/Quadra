@@ -3,10 +3,12 @@
 //! wheel with Ctrl, fitted to its box; and the drawing as SVG.
 
 mod links;
+mod parts;
 mod pointer;
 mod svg;
 
 pub use self::links::LinkAxis;
+pub use self::parts::{Link, LinkStyle, Node};
 pub use self::pointer::{GraphView, fitted};
 
 use std::cell::{Cell, RefCell};
@@ -16,68 +18,12 @@ use std::rc::Rc;
 use quadra_design::{size, token};
 use quadra_layout::{Align, Length, Overflow};
 use quadra_platform::{Key, Mods};
-use quadra_prim::{Point, Rect, Size};
+use quadra_prim::{Point, Rect};
 use quadra_reactive::{Signal, effect, signal};
-use quadra_tree::{NodeId, Paint, PointerKind, Role, Theme};
+use quadra_tree::{NodeId, PointerKind, Role, Theme};
 use quadra_view::{Div, MountCx, View, column, div, text};
 
 use self::links::{LinksView, route};
-
-/// A view at a point of the graph's plane, as large as its size, named by its label.
-pub struct Node {
-    id: Rc<str>,
-    at: Point,
-    size: Size,
-    label: String,
-    face: Rc<dyn Fn() -> Div>,
-}
-
-impl Node {
-    pub fn new(
-        id: impl Into<Rc<str>>,
-        at: Point,
-        size: Size,
-        label: impl Into<String>,
-        face: impl Fn() -> Div + 'static,
-    ) -> Node {
-        Node { id: id.into(), at, size, label: label.into(), face: Rc::new(face) }
-    }
-}
-
-/// A link from the node `from` to the node `to`, by their ids.
-pub struct Link {
-    from: Rc<str>,
-    to: Rc<str>,
-    through: Vec<Point>,
-}
-
-impl Link {
-    pub fn new(from: impl Into<Rc<str>>, to: impl Into<Rc<str>>) -> Link {
-        Link { from: from.into(), to: to.into(), through: Vec::new() }
-    }
-
-    /// Points of the plane the link passes, in order: past the columns it skips.
-    pub fn through(mut self, points: impl IntoIterator<Item = Point>) -> Self {
-        self.through = points.into_iter().collect();
-        self
-    }
-}
-
-/// How a link is drawn: its colour, its width, its dashes (the length of a dash and of a
-/// gap; 0 is solid), and a head at its end.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct LinkStyle {
-    pub color: Paint,
-    pub width: f32,
-    pub dash: f32,
-    pub arrow: bool,
-}
-
-impl Default for LinkStyle {
-    fn default() -> Self {
-        LinkStyle { color: token::TEXT_3.into(), width: 1.5, dash: 0.0, arrow: true }
-    }
-}
 
 /// What the pointer is on: a node, by its id, or a link, by its place.
 #[derive(Clone, Debug, PartialEq)]
@@ -96,7 +42,7 @@ pub struct Graph {
     view: Option<Signal<GraphView>>,
     click: Option<Rc<dyn Fn(Hit)>>,
     hover: Option<Rc<dyn Fn(Option<Hit>)>>,
-    height: f32,
+    height: Length,
     fit: bool,
     /// How its links run: along which axis, and whether straight.
     lines: (LinkAxis, bool),
@@ -108,7 +54,7 @@ pub fn graph(nodes: impl IntoIterator<Item = Node>, links: impl IntoIterator<Ite
     let style: Styles = Rc::new(|_| LinkStyle::default());
     let (groups, view, click, hover) = (Vec::new(), None, None, None);
     let lines = (LinkAxis::Auto, false);
-    Graph { nodes, links, groups, style, view, click, hover, height: 360.0, fit: false, lines }
+    Graph { nodes, links, groups, style, view, click, hover, height: Length::Px(360.0), fit: false, lines }
 }
 
 impl Graph {
@@ -146,7 +92,13 @@ impl Graph {
     }
 
     pub fn height(mut self, px: f32) -> Self {
-        self.height = px;
+        self.height = Length::Px(px);
+        self
+    }
+
+    /// As tall as the box it is in, following it: a view under a toolbar.
+    pub fn fill(mut self) -> Self {
+        self.height = Length::Fill;
         self
     }
 

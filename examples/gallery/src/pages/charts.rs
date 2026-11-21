@@ -119,7 +119,24 @@ fn topology(lit: quadra::Signal<Option<Hit>>) -> Graph {
             let line = line.bg(token::PANEL).radius(6.0).border(1.0).border_color(token::LINE_STRONG);
             line.child(status_mark(status)).child(plain_badge(kind, Tone::Primary)).child(text(id))
         };
-        Node::new(id, Point::new(x, y), Size::new(190.0, 40.0), id, face)
+        // The export draws what the face shows: the box, the kind, the name.
+        let svg = move |r: quadra::Rect| {
+            let (x, y, mid) = (r.x, r.y, r.y + r.height / 2.0);
+            let frame = format!(
+                r##"<rect x="{x}" y="{y}" width="{}" height="{}" rx="6" fill="#21252b" stroke="#464b57"/>"##,
+                r.width, r.height
+            );
+            let kind = format!(
+                r##"<text x="{}" y="{mid}" font-size="10" fill="#74ade8" dominant-baseline="middle">{kind}</text>"##,
+                x + 24.0
+            );
+            let name = format!(
+                r##"<text x="{}" y="{mid}" font-size="14" fill="#dce0e5" dominant-baseline="middle">{id}</text>"##,
+                x + 80.0
+            );
+            frame + &kind + &name
+        };
+        Node::new(id, Point::new(x, y), Size::new(190.0, 40.0), id, face).svg(svg)
     };
     let nodes = [
         node("shop", "Ingress", Status::Running, (0.0, 80.0)),

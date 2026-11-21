@@ -75,6 +75,10 @@ pub fn write(graph: &Graph, theme: &Theme) -> String {
     }
     let ((fill, _), (text, _)) = (color(theme, token::PANEL.into()), color(theme, token::TEXT.into()));
     for (node, r) in graph.nodes.iter().zip(&rects) {
+        if let Some(own) = &node.svg {
+            out.push_str(&own(*r));
+            continue;
+        }
         _ = write!(
             out,
             r#"<rect x="{}" y="{}" width="{}" height="{}" rx="4" fill="{fill}" stroke="{}"/>"#,

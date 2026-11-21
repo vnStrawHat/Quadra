@@ -220,3 +220,24 @@ fn a_pan_paints_only_the_links_and_a_zoom_draws_the_faces_again() {
     let (zoomed, _) = p.h.frame();
     assert!(zoomed.nodes_painted >= 4 + 3 * 2, "{zoomed:?}");
 }
+
+#[test]
+fn a_node_writes_its_own_svg_and_a_graph_fills_its_box() {
+    let own = |r: Rect| format!(r#"<g id="pod"><rect x="{}" y="{}"/><text>Pod</text></g>"#, r.x, r.y);
+    let nodes = [node("a", 0.0, 0.0), node("b", 200.0, 0.0).svg(own)];
+    let svg = graph(nodes, [Link::new("a", "b")]).to_svg(&dark().theme());
+    assert!(svg.contains(r#"<g id="pod"><rect x="200" y="0"/><text>Pod</text></g>"#), "{svg}");
+    assert_eq!(svg.matches("<rect").count(), 2, "a's box and b's own");
+    // As tall as its box, following it.
+    let tall = signal(500.0f32);
+    let mut h = Harness::new();
+    h.mount(move || {
+        div().width(800.0).height(move || tall.get()).child(graph([node("a", 0.0, 0.0)], []).fill())
+    });
+    h.frame();
+    let group = h.query(|n| n.semantics.role == Role::Group)[0];
+    assert_eq!(h.tree.window_rect(group).height, 500.0);
+    tall.set(300.0);
+    h.frame();
+    assert_eq!(h.tree.window_rect(group).height, 300.0);
+}

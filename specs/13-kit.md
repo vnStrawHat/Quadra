@@ -998,7 +998,11 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   `None` when nothing. A press that becomes a drag (past 3 px) clicks nothing.
 - `Graph::to_svg(&theme)` writes the drawing as SVG at its own size (the nodes' bounds and
   16 px around): the frames with their titles, the links as paths (their colour, width,
-  dashes, heads), and each node as a box with its label; its words escaped. A raster
+  dashes, heads), and each node as a box with its label; its words escaped. A node given
+  `Node::svg(|rect| ..)` writes what that gives for its box in the plane instead, so an
+  export can carry what its face shows (a kind's chip, a mark, a second line).
+- `.fill()` makes the graph as tall as the box it is in, following it (a view under a
+  toolbar), where `.height(px)` fixes it; a `.fit()` fits to the height it gets. A raster
   capture of the view is not the graph's.
 
 ## Data (`quadra-data`)

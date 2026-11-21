@@ -52,14 +52,16 @@ fn header(state: &Sheet, columns: &[Column], (pinned, sx): (usize, Signal<f32>))
             (state.fills, row().shrink(0.0).width(move || Length::Px(widths.with(|all| all[c]))));
         // A press on the edge of a column that fills makes it fixed at the width it has, which
         // the drag starts from: before the grip's handler, while the press goes down to it.
-        let whole = whole.grow(move || fills.with(|all| all[c])).on_mount(move |tree, id| {
-            tree.on_pointer_capture(id, PointerKind::Down, move |e| {
-                if fills.with_untracked(|all| all[c] > 0.0) && e.local.x >= e.size.width - GRIP {
-                    widths.update(|all| all[c] = e.size.width);
-                    fills.update(|all| all[c] = 0.0);
-                }
-            })
-        });
+        let whole = whole.grow(move || if pinned > 0 { 0.0 } else { fills.with(|all| all[c]) }).on_mount(
+            move |tree, id| {
+                tree.on_pointer_capture(id, PointerKind::Down, move |e| {
+                    if fills.with_untracked(|all| all[c] > 0.0) && e.local.x >= e.size.width - GRIP {
+                        widths.update(|all| all[c] = e.size.width);
+                        fills.update(|all| all[c] = 0.0);
+                    }
+                })
+            },
+        );
         titles.push(shown(state, c, whole.child(title).child(grip)));
     }
     split(head, titles, pinned, sx)
@@ -140,7 +142,7 @@ fn line(
         let cell = state.cell(cell.height(Length::Fill).outline(ring), place, c);
         let cell = cell.overflow_x(Overflow::Hidden).width(move || Length::Px(widths.with(|all| all[c])));
         let fills = state.fills;
-        let cell = cell.grow(move || fills.with(|all| all[c]));
+        let cell = cell.grow(move || if pinned > 0 { 0.0 } else { fills.with(|all| all[c]) });
         // Under what it says, the tint of a change.
         let cell = match (changed, state.live) {
             (Some(changed), Some(live)) => cell.child(super::live::tint(live, changed, c)),

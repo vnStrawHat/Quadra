@@ -66,3 +66,19 @@ fn columns_that_fill_share_the_room_left_by_weight_until_one_is_dragged() {
     assert!((dragged.width - (name.width - 50.0)).abs() < 0.5, "{dragged:?} from {name:?}");
     assert!((taken.width - (message.width + 50.0)).abs() < 0.5 && (age.right() - all.right()).abs() < 0.5);
 }
+
+#[test]
+fn with_columns_pinned_a_column_that_fills_keeps_its_width() {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let columns = [Column::new("Name").width(100.0).fill(), Column::new("Message").width(100.0).fill()];
+        quadra_design::root().child(table(columns, || 3, |r, c| format!("{r}-{c}")).pinned(1))
+    });
+    h.frame();
+    // Their titles, and the grip of 5 px at the edge of each: the pinned one too.
+    for name in ["Name", "Message"] {
+        let title = h.get_by_role(Role::Cell, name).node();
+        assert_eq!(h.tree.window_rect(title).width + 5.0, 100.0, "{name}");
+    }
+}

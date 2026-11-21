@@ -77,7 +77,18 @@ fn the_bars_have_their_heights_and_the_breadcrumb_its_links() {
     settle(&mut h);
     assert_eq!(look(&mut h), (Color::TRANSPARENT, Some(theme.resolve(token::TEXT_2.into()))));
 
-    // A name on the way is a link; the last one is where the user is.
+    // A name on the way is a link, muted; the last one is where the user is, in the text's
+    // colour. 8 px between a name and a mark.
+    let color = |h: &mut Harness, name: &str| {
+        let node = h.get_by_text(name).node();
+        h.tree.inherited(node).color
+    };
+    let (muted, plain) = (theme.resolve(token::TEXT_2.into()), theme.resolve(token::TEXT.into()));
+    assert_eq!((color(&mut h, "notes"), color(&mut h, "today.md")), (muted, plain));
+    let notes = h.get_by_text("notes").node();
+    let mark = h.query(|n| n.semantics.name == "\u{203A}")[1];
+    let (notes, mark) = (h.tree.window_rect(notes), h.tree.window_rect(mark));
+    assert!((mark.x - notes.right() - 8.0).abs() < 0.01, "{notes:?} {mark:?}");
     h.get_by_role(Role::Link, "notes").click();
     h.get_by_text("today.md").click();
     assert_eq!(*picked.borrow(), [1]);

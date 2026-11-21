@@ -90,7 +90,7 @@ pub fn breadcrumb<S: Into<String>>(
 
 impl View for Breadcrumb {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let mut way = row().align_items(Align::Center).gap(4.0).font_family(fonts::MONO);
+        let mut way = row().align_items(Align::Center).gap(8.0).font_family(fonts::MONO);
         way = way.text_color(token::TEXT_2);
         let last = self.parts.len().saturating_sub(1);
         for (i, part) in self.parts.into_iter().enumerate() {
@@ -104,7 +104,7 @@ impl View for Breadcrumb {
                     let link = crumb.role(Role::Link).cursor(Cursor::Pointer);
                     link.hover(|s| s.text_color(token::TEXT)).on_click(move |_| pick(i))
                 }
-                false => crumb,
+                false => crumb.text_color(token::TEXT), // where the user is reads first
             });
         }
         way.mount(cx)

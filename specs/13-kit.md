@@ -318,8 +318,8 @@ As built so far:
   `status_button(icon, name, on)` (an icon toggle: muted, the accent while on, never
   filled; a toggled button that is an icon alone takes no fill anywhere) and
   `status_divider()`. `breadcrumb(parts, pick)` is the way to where the user is: mono,
-  muted names with a mark between them, each a link that gives `pick` its index, but the
-  last.
+  muted names with a mark between them, 8 px from each, each a link that gives `pick` its
+  index, but the last: where the user is, in the text's colour, which reads first.
 - **A status** (`status.rs`: running, pending, failed, succeeded, terminating, unknown) has
   a role of the theme for its colour and a shape of its own in a box of 12 px
   (`status_mark`): a dot, a ring, a triangle, a check, a dash, a square. `status_label` is

@@ -46,10 +46,39 @@ fn marks_come_at_other_sizes_and_in_a_row_told_as_counts() {
     let marks = h.tree.children(dots).to_vec();
     let (first, second) = (h.tree.window_rect(marks[0]), h.tree.window_rect(marks[1]));
     assert_eq!((marks.len(), first.size(), second.x - first.right()), (10, Size::new(8.0, 8.0), 3.0));
-    // A mark of 10 px before a word: its square scaled with it.
+    // A mark of 10 px before a word: the shape drawn for 10, a square of 7, not the 12 px
+    // mark made smaller; at 8 a square of 5.6.
     let label = h.get_by_text("Running").node();
     let mark = h.tree.children(h.tree.parent(label).unwrap())[0];
     let square = h.tree.children(mark)[0];
-    assert_eq!(h.tree.window_rect(mark).size(), Size::new(10.0, 10.0));
-    assert!((h.tree.window_rect(square).width - 70.0 / 12.0).abs() < 1e-4);
+    assert_eq!(
+        (h.tree.window_rect(mark).size(), h.tree.window_rect(square).size()),
+        (Size::new(10.0, 10.0), Size::new(7.0, 7.0))
+    );
+    let check = h.tree.children(marks[0])[0];
+    assert_eq!(h.tree.window_rect(check).size(), Size::new(8.0, 8.0), "the check fills its box");
+}
+
+#[test]
+fn small_marks_are_drawn_for_their_box() {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(|| {
+        let at = |status, side| quadra_design::status_mark_sized(status, side);
+        row()
+            .child(at(Status::Pending, 10.0))
+            .child(at(Status::Terminating, 10.0))
+            .child(at(Status::Running, 8.0))
+    });
+    h.frame();
+    let row = h.tree.root().unwrap();
+    let shape = |i: usize| h.tree.children(h.tree.children(row)[i])[0];
+    let (hollow, dash, small) = (shape(0), shape(1), shape(2));
+    assert_eq!(h.tree.window_rect(hollow).size(), Size::new(7.0, 7.0));
+    assert!((h.tree.layout_style(hollow).border.top - 1.5).abs() < 1e-4);
+    assert!(
+        (h.tree.window_rect(dash).width - 8.0).abs() < 1e-4
+            && (h.tree.window_rect(dash).height - 2.0).abs() < 1e-4
+    );
+    assert!((h.tree.window_rect(small).width - 5.6).abs() < 1e-4);
 }

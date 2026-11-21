@@ -59,24 +59,44 @@ impl Status {
 const TRIANGLE: &str = r#"<path d="M12 3.5 21.5 20H2.5Z" fill="currentColor" stroke="none"/>"#;
 const DIAMOND: &str = r#"<path d="M12 2.5 21.5 12 12 21.5 2.5 12Z" fill="currentColor" stroke="none"/>"#;
 
+/// The shapes of a mark drawn for a box of 10, in the 24 units of an icon (its 10 units
+/// times 2.4): fuller in their box than the 12 px mark's.
+const SMALL_TRIANGLE: &str = r#"<path d="M12 1.92 23.04 21.6H.96Z" fill="currentColor" stroke="none"/>"#;
+const SMALL_DIAMOND: &str =
+    r#"<path d="M12 1.44 22.56 12 12 22.56 1.44 12Z" fill="currentColor" stroke="none"/>"#;
+const SMALL_CHECK: &str =
+    r#"<path d="M2.88 12.96 9.36 19.2 21.12 4.8" fill="none" stroke="currentColor" stroke-width="3.84"/>"#;
+
 /// The shape of a status in a box of 12 px: a filled square, a hollow one, a filled
 /// triangle, a check, a dash, a filled diamond; nothing for `None`.
 pub fn status_mark(status: Status) -> Div {
     status_mark_sized(status, 12.0)
 }
 
-/// A status's mark in a box of `side` px, its shape scaled with it.
+/// A status's mark in a box of `side` px: from 12 up the 12 px mark scaled with it, below 12
+/// the shapes drawn for a box of 10, as parts of the box.
 pub fn status_mark_sized(status: Status, side: f32) -> Div {
-    let (tone, k) = (status.color(), side / 12.0);
-    let square = || div().size(7.0 * k, 7.0 * k).radius(k);
+    let tone = status.color();
+    // The square, its hollow border, the dash, the corners; and the shapes' bodies.
+    let ((square, border, dash, round), (triangle, check, diamond)) = match side < 12.0 {
+        true => (
+            (0.7 * side, 0.15 * side, (0.8 * side, 0.2 * side), 0.1 * side),
+            (SMALL_TRIANGLE, SMALL_CHECK, SMALL_DIAMOND),
+        ),
+        false => {
+            let k = side / 12.0;
+            ((7.0 * k, 2.0 * k, (8.0 * k, 2.0 * k), k), (TRIANGLE, icons::CHECK, DIAMOND))
+        }
+    };
+    let square = || div().size(square, square).radius(round);
     let around = row().align_items(Align::Center).justify(Justify::Center).shrink(0.0).size(side, side);
     let mark = match status {
         Status::Running => AnyView::new(square().bg(tone)),
-        Status::Pending => AnyView::new(square().border(2.0 * k).border_color(tone)),
-        Status::Failed => AnyView::new(icon(TRIANGLE).size(side).color(tone)),
-        Status::Succeeded => AnyView::new(icon(icons::CHECK).size(side).color(tone)),
-        Status::Terminating => AnyView::new(div().size(8.0 * k, 2.0 * k).radius(k).bg(tone)),
-        Status::Unknown => AnyView::new(icon(DIAMOND).size(side).color(tone)),
+        Status::Pending => AnyView::new(square().border(border).border_color(tone)),
+        Status::Failed => AnyView::new(icon(triangle).size(side).color(tone)),
+        Status::Succeeded => AnyView::new(icon(check).size(side).color(tone)),
+        Status::Terminating => AnyView::new(div().size(dash.0, dash.1).radius(round).bg(tone)),
+        Status::Unknown => AnyView::new(icon(diamond).size(side).color(tone)),
         Status::None => return around,
     };
     around.child(mark)

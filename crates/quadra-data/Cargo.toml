@@ -21,4 +21,5 @@ quadra-view = { path = "../quadra-view" }
 regex-lite = "0.1"
 
 [dev-dependencies]
+quadra-render = { path = "../quadra-render" }
 quadra-testing = { path = "../quadra-testing" }

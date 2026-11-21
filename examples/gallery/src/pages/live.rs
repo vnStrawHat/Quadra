@@ -78,6 +78,19 @@ fn requests(from: usize, n: usize) -> Vec<(i64, String)> {
     (from..from + n).map(|k| (1_793_966_400_000 + k as i64 * 250, line(k))).collect()
 }
 
+/// A container's log: a level in words, `level=`, or a JSON field.
+fn panel_log() -> Log {
+    let log = Log::new();
+    let at = 1_793_966_400_000;
+    log.append([
+        (at, "INFO listening on :8080"),
+        (at + 1200, "level=warn msg=\"slow response\" ms=812"),
+        (at + 2400, r#"{"level":"error","msg":"upstream refused"}"#),
+        (at + 3600, "GET /healthz 200"),
+    ]);
+    log
+}
+
 pub fn log_view_page() -> Div {
     let (log, sent) = (Log::new(), signal(200));
     log.append(requests(0, 200));
@@ -88,15 +101,24 @@ pub fn log_view_page() -> Div {
     });
     let about = "An append-only log with ANSI colors, timestamps and follow mode: scroll up to stop \
                  following, back to the bottom (or Follow) to resume. The filter hides or dims other \
-                 lines; .* makes it a regular expression.";
+                 lines; .* makes it a regular expression; Warn lists only warnings and errors.";
     page(
         "Log view",
         about,
-        [demo(
-            "Requests",
-            stack().child(add).child(framed(column().height(340.0).child(log_view(&log)))),
-            "log.append(lines)  // and log_view(&log) follows",
-        )],
+        [
+            demo(
+                "Requests",
+                stack().child(add).child(framed(column().height(340.0).child(log_view(&log)))),
+                "log.append(lines)  // and log_view(&log) follows",
+            ),
+            demo(
+                "A panel of the app's own, coloured by level",
+                column()
+                    .height(200.0)
+                    .child(log_view(&panel_log()).bar(false).text(15.0, 24.0).ground().levels()),
+                "log_view(&log).bar(false).text(15.0, 24.0).ground().levels().offset(local)  // log.set_level(Level::Warn)",
+            ),
+        ],
     )
 }
 

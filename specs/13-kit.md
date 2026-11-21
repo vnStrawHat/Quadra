@@ -1089,6 +1089,18 @@ What these are and look like is behaviour/19. As built:
   `sideways`. To a reader the log is a table named "Log".
 - `Log::new().limit(n)` holds at most `n` lines: past that the oldest go, an eighth of the
   limit at a time (the buffer is moved once for all of them).
+- A line's **level** (`Level`: none, debug, info, warn, error) is read once, when it is
+  appended, from its words: a level's name in capitals (`INFO`, `WARN`, `ERROR`, `FATAL`),
+  or in any case after `level`, `lvl` or `severity` (`level=warn`, a JSON line's
+  `"level": "error"`); the first one found. `log.set_level(Level::Warn)` lists only the
+  lines of that level or graver, with the text filter (dimmed with it under `Dim`); the
+  bar's `Warn` does that.
+- For a panel of the app's own: `.bar(false)` leaves the bar out (the app filters through
+  the `Log`); `.text(size, line)` sets the size and the row (15 on 24); `.ground()` puts the
+  lines on `canvas`, a radius of 6, 6 by 12 px in; `.time_color(token)` colours the time
+  (`text_3` unless told), and `.offset(seconds)` shows it at that offset from UTC (an
+  app's local time), in the copy too; `.levels()` colours a line by its level, info in
+  `ok`, warn in `warn`, error in `error`, where its own escape sequences say no colour.
 
 ## Markdown (`quadra-md`)
 

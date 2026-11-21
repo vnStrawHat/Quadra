@@ -7,6 +7,8 @@ pub(crate) struct Store {
     ends: Vec<u32>,
     /// When each was written, in milliseconds since 1970; 0: it does not say.
     times: Vec<i64>,
+    /// How grave each is, read as it came.
+    levels: Vec<super::Level>,
     /// The bytes of the longest line yet: how far the view may scroll sideways.
     pub(super) widest: usize,
 }
@@ -22,6 +24,7 @@ impl Store {
             self.bytes.push_str(text);
             self.ends.push(end);
             self.times.push(at_ms);
+            self.levels.push(super::Level::of(text));
             self.widest = self.widest.max(text.len());
         }
     }
@@ -37,6 +40,7 @@ impl Store {
         self.ends.drain(..k);
         self.ends.iter_mut().for_each(|end| *end -= cut);
         self.times.drain(..k);
+        self.levels.drain(..k);
     }
 
     pub fn line(&self, i: usize) -> &str {
@@ -46,5 +50,9 @@ impl Store {
 
     pub fn time(&self, i: usize) -> i64 {
         self.times[i]
+    }
+
+    pub fn level(&self, i: usize) -> super::Level {
+        self.levels[i]
     }
 }

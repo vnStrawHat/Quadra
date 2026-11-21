@@ -9,8 +9,10 @@ use regex_lite::{Regex, RegexBuilder};
 
 use crate::ansi::plain;
 
+mod level;
 mod store;
 
+pub use level::Level;
 pub(crate) use store::Store;
 
 /// What a filter looks for in what a line says.
@@ -37,13 +39,19 @@ struct Listing {
     matcher: Matcher,
     /// The lines that do not match are listed too, faint.
     dim: bool,
+    /// The least grave a line may be to match.
+    least: Level,
     /// The lines that match, when only those are listed.
     index: Vec<u32>,
 }
 
 impl Listing {
     fn indexed(&self) -> bool {
-        !self.dim && !matches!(self.matcher, Matcher::All)
+        !self.dim && (!matches!(self.matcher, Matcher::All) || self.least > Level::None)
+    }
+
+    fn accepts(&self, line: &str, level: Level) -> bool {
+        level >= self.least && self.matcher.matches(line)
     }
 }
 
@@ -73,7 +81,7 @@ impl Default for Log {
 
 impl Log {
     pub fn new() -> Log {
-        let listing = Listing { matcher: Matcher::All, dim: false, index: Vec::new() };
+        let listing = Listing { matcher: Matcher::All, dim: false, least: Level::None, index: Vec::new() };
         Log(Rc::new(Inner {
             store: RefCell::default(),
             listing: RefCell::new(listing),
@@ -98,7 +106,7 @@ impl Log {
         for (at_ms, text) in lines {
             let (i, text) = (store.len() as u32, text.as_ref());
             store.push(at_ms, text);
-            if listing.indexed() && listing.matcher.matches(text) {
+            if listing.indexed() && listing.accepts(text, store.level(i as usize)) {
                 listing.index.push(i);
             }
         }
@@ -155,19 +163,37 @@ impl Log {
             (_, false) => Ok(Matcher::Text(query.to_lowercase())),
             (_, true) => RegexBuilder::new(query).case_insensitive(true).build().map(Matcher::Pattern),
         };
-        let (store, good) = (self.0.store.borrow(), built.is_ok());
-        let mut listing = Listing { matcher: built.unwrap_or(Matcher::All), dim, index: Vec::new() };
-        if listing.indexed() {
-            let matching = (0..store.len()).filter(|&i| listing.matcher.matches(store.line(i)));
-            listing.index = matching.map(|i| i as u32).collect();
-        }
-        let listed = if listing.indexed() { listing.index.len() } else { store.len() };
-        drop(store);
-        *self.0.listing.borrow_mut() = listing;
-        self.0.listed.set(listed);
+        let good = built.is_ok();
+        let mut listing = self.0.listing.borrow_mut();
+        (listing.matcher, listing.dim) = (built.unwrap_or(Matcher::All), dim);
+        drop(listing);
+        self.relist();
         self.0.wrong.set(!good);
-        self.0.changed.update(|n| *n += 1);
         good
+    }
+
+    /// Lists only the lines of `least` or graver (`Level::Warn`: warnings and errors), with
+    /// the text filter; `Level::None` lists every level.
+    pub fn set_level(&self, least: Level) {
+        self.0.listing.borrow_mut().least = least;
+        self.relist();
+    }
+
+    /// Reads every line once against the filter.
+    fn relist(&self) {
+        let (store, mut listing) = (self.0.store.borrow(), self.0.listing.borrow_mut());
+        let index: Vec<u32> = match listing.indexed() {
+            true => (0..store.len())
+                .filter(|&i| listing.accepts(store.line(i), store.level(i)))
+                .map(|i| i as u32)
+                .collect(),
+            false => Vec::new(),
+        };
+        listing.index = index;
+        let listed = if listing.indexed() { listing.index.len() } else { store.len() };
+        drop((store, listing));
+        self.0.listed.set(listed);
+        self.0.changed.update(|n| *n += 1);
     }
 
     /// The line at a place of the listing: its number, when it was written, what it holds,
@@ -176,7 +202,18 @@ impl Log {
         let (store, listing) = (self.0.store.borrow(), self.0.listing.borrow());
         let i = if listing.indexed() { *listing.index.get(place)? as usize } else { place };
         let text = (i < store.len()).then(|| store.line(i))?;
-        Some((i, store.time(i), text.to_string(), listing.dim && !listing.matcher.matches(text)))
+        Some((i, store.time(i), text.to_string(), listing.dim && !listing.accepts(text, store.level(i))))
+    }
+
+    /// The level of the line at a place of the listing.
+    pub fn level(&self, place: usize) -> Level {
+        let (store, listing) = (self.0.store.borrow(), self.0.listing.borrow());
+        let i = if listing.indexed() {
+            listing.index.get(place).map_or(usize::MAX, |&i| i as usize)
+        } else {
+            place
+        };
+        if i < store.len() { store.level(i) } else { Level::None }
     }
 
     /// The bytes of the longest line it has held.

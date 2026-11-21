@@ -13,7 +13,7 @@ mod yaml_view;
 
 pub use ansi::{Ink, Pen};
 pub use json::parse_json;
-pub use log::{Log, clock};
+pub use log::{Level, Log, clock};
 pub use log_view::{LogView, log_view};
 pub use value::{ParseError, Value};
 pub use value_view::{ValueView, value_view};

@@ -234,3 +234,31 @@ fn a_fixed_top_is_the_top_of_the_scale() {
     h.frame();
     assert!(h.has_text("100") && h.has_text("75") && !h.has_text("40"));
 }
+
+#[test]
+fn a_sign_follows_the_scale_and_a_dashed_series_leaves_its_gaps_clear() {
+    let mut h = harness();
+    h.mount(|| {
+        let series = [
+            Series::new("CPU", vec![10.0, 40.0, 30.0]),
+            Series::new("Memory", vec![20.0, 25.0, 60.0]).dashed(),
+        ];
+        div().width(452.0).child(line_chart(series).unit("%").top(100.0).legend().height(126.0))
+    });
+    h.frame();
+    for said in ["100%", "75%", "0%"] {
+        assert!(h.has_text(said), "{said} is not said:\n{}", h.semantics());
+    }
+    // 400 columns a plot: CPU's all drawn, Memory's with every gap clear.
+    let lines = drawn(&h, Kind::Line);
+    let clear = lines.iter().filter(|line| line.color[3] == 0.0).count();
+    assert_eq!(lines.len(), 800);
+    assert!((100..200).contains(&clear), "{clear} columns clear");
+    // A unit that is a word stays out of the scale.
+    let mut h = harness();
+    h.mount(|| {
+        div().width(452.0).child(line_chart([Series::new("a", vec![0.0, 180.0])]).unit("m").height(126.0))
+    });
+    h.frame();
+    assert!(h.has_text("200") && !h.has_text("200m"));
+}

@@ -1,6 +1,8 @@
 //! The plot (specs/13, "Charts"): a line over a box, drawn a device pixel column at a time,
 //! and the sparkline, which is a plot by itself.
 
+use std::rc::Rc;
+
 use quadra_design::token;
 use quadra_layout::{Known, Length, Position};
 use quadra_prim::{Color, Rect, Size};
@@ -12,6 +14,9 @@ use crate::geometry::{line_spans, max_of};
 
 /// How thick a line is, in logical pixels.
 const THICK: f32 = 1.5;
+/// A dashed line's dash and gap, in logical pixels along the line.
+const DASH: f32 = 5.0;
+const GAP: f32 = 3.0;
 
 /// The widget: values spread over the width of its box, the value `top` at the box's top.
 pub struct Plot {
@@ -22,11 +27,12 @@ pub struct Plot {
     color: Color,
     /// How opaque the area under the line is; 0 is no area.
     area: f32,
+    dashed: bool,
 }
 
 impl Plot {
     pub fn new(values: Vec<f64>, paint: Paint, area: f32) -> Plot {
-        Plot { values, top: 0.0, paint, color: Color::TRANSPARENT, area }
+        Plot { values, top: 0.0, paint, color: Color::TRANSPARENT, area, dashed: false }
     }
 
     /// Replaces the values; false when they are equal. The caller has the node painted.
@@ -68,11 +74,17 @@ impl Widget for Plot {
             let bounds = Rect::new(left + x as f32, from, 1.0, floor - from);
             cx.push(Quad { bounds, background: area, ..Quad::default() }.instance(&cx.clip));
         }
+        // A dashed line leaves the columns of a gap clear, by how far along the line they are.
+        let (mut along, period) = (0.0, (DASH + GAP) * s);
         for (x, span) in spans.iter().enumerate() {
             // A pixel more above and below: the edges of the line are in it.
             let bounds = Rect::new(left + x as f32, top + span.top - 1.0, 1.0, span.bottom - span.top + 2.0);
-            let mode = LineMode::Column { rise: span.bottom - span.top - span.thick };
-            cx.push(Line { bounds, color: self.color, thickness: span.thick, mode }.instance(&cx.clip));
+            let rise = span.bottom - span.top - span.thick;
+            let on = !self.dashed || along % period < DASH * s;
+            along += 1f32.hypot(rise);
+            let color = if on { self.color } else { Color::TRANSPARENT };
+            let mode = LineMode::Column { rise };
+            cx.push(Line { bounds, color, thickness: span.thick, mode }.instance(&cx.clip));
         }
     }
 
@@ -88,6 +100,7 @@ pub(crate) struct PlotView {
     pub top: Prop<f64>,
     pub paint: Paint,
     pub area: f32,
+    pub dashed: bool,
 }
 
 /// Writes something into a mounted plot, and has it painted when that changed it.
@@ -100,7 +113,8 @@ fn write(tree: &mut Tree, id: NodeId, f: impl FnOnce(&mut Plot) -> bool) {
 impl View for PlotView {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let style = Style { layout: self.layout, ..Style::default() };
-        let id = cx.tree.insert_widget(style, Box::new(Plot::new(Vec::new(), self.paint, self.area)));
+        let plot = Plot { dashed: self.dashed, ..Plot::new(Vec::new(), self.paint, self.area) };
+        let id = cx.tree.insert_widget(style, Box::new(plot));
         match self.values {
             Prop::Value(values) => write(cx.tree, id, |plot| plot.set_values(values)),
             Prop::Reactive(read) => {
@@ -133,7 +147,7 @@ pub(crate) fn filling(values: Prop<Vec<f64>>, top: Prop<f64>, paint: Paint, area
         height: Length::Fill,
         ..Default::default()
     };
-    PlotView { layout, values, top, paint, area }
+    PlotView { layout, values, top, paint, area, dashed: false }
 }
 
 /// A trend in a line of text: a line over a faint area.
@@ -144,7 +158,7 @@ pub fn sparkline<M>(values: impl IntoProp<Vec<f64>, M>) -> Sparkline {
     let (width, height) = (Length::Px(120.0), Length::Px(24.0));
     let layout = quadra_layout::Style { width, height, shrink: 0.0, ..Default::default() };
     let (values, top, paint) = (values.into_prop(), Prop::Value(0.0), token::SERIES[0].into());
-    Sparkline(PlotView { layout, values, top, paint, area: 0.12 }, String::new())
+    Sparkline(PlotView { layout, values, top, paint, area: 0.12, dashed: false }, String::new())
 }
 
 impl Sparkline {
@@ -177,5 +191,35 @@ impl View for Sparkline {
         let id = self.0.mount(cx);
         cx.tree.update_semantics(id, |says| (says.role, says.name) = (Role::Image, self.1));
         id
+    }
+}
+
+/// Reads the values of a series.
+// ponytail: a read copies the values (a property gives no reference); a chart of very many
+// samples wants its series as signals read in place.
+pub(crate) type Values = Rc<dyn Fn() -> Vec<f64>>;
+/// Reads one value: a limit, the time of the first sample.
+pub(crate) type Read<T> = Rc<dyn Fn() -> T>;
+
+/// A property read again whenever wanted.
+pub(crate) fn reader<T: Clone + 'static>(prop: Prop<T>) -> Read<T> {
+    match prop {
+        Prop::Value(value) => Rc::new(move || value.clone()),
+        Prop::Reactive(read) => Rc::from(read),
+    }
+}
+
+/// A property as what the plot takes and as something to read again.
+pub(crate) fn shared(values: Prop<Vec<f64>>) -> (Prop<Vec<f64>>, Values) {
+    match values {
+        Prop::Value(values) => {
+            let again = values.clone();
+            (Prop::Value(values), Rc::new(move || again.clone()))
+        }
+        Prop::Reactive(read) => {
+            let read: Values = Rc::from(read);
+            let again = read.clone();
+            (Prop::Reactive(Box::new(move || again())), read)
+        }
     }
 }

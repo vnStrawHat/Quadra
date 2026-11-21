@@ -47,6 +47,11 @@ pub fn line_chart_page() -> Div {
     let bare = line_chart([Series::new("used", wave(120, 0.4, 120.0, 40.0))]).time(START, 1000);
     let bare = bare.limit("limit", 250.0).unit("m").bare().height(70.0);
     let bare = bare.legend_note(|| "since 09:12, when this view was opened".to_string());
+    let health = [
+        Series::new("CPU", wave(120, 0.2, 55.0, 15.0)),
+        Series::new("Memory", wave(120, 1.1, 70.0, 8.0)).dashed(),
+    ];
+    let health = line_chart(health).time(START, 1000).unit("%").top(100.0).height(180.0).legend();
     let about = "Up to 8 series on a time axis, a y axis rounded up to 1, 2, 2.5 or 5 times a power of \
                  ten, and a crosshair with the values under the mouse.";
     page(
@@ -62,6 +67,11 @@ pub fn line_chart_page() -> Div {
                 "Bare, beside its numbers",
                 framed(div().padding(12.0).width(520.0).child(bare)),
                 "line_chart(series).limit(\"limit\", 250.0).bare().legend_note(|| since)",
+            ),
+            demo(
+                "Of what can be allocated",
+                framed(div().padding(12.0).child(health)),
+                "Series::new(\"Memory\", values).dashed(), .unit(\"%\").top(100.0): a sign on the scale",
             ),
             demo(
                 "Five series",

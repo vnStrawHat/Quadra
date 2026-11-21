@@ -14,19 +14,13 @@ use quadra_view::{Div, IntoProp, MountCx, Prop, View, column, div, row, text};
 
 use self::hover::Hover;
 use crate::geometry::{hh_mm, max_of, nice_max, short};
-use crate::plot::filling;
+use crate::plot::{PlotView, Read, Values, filling, reader, shared};
 use crate::series_color;
 
 /// What the values at the left and the times under the plot take, in pixels.
 const AXIS_W: f32 = 44.0;
 const AXIS_H: f32 = 20.0;
 
-/// Reads the values of a series.
-// ponytail: a read copies the values (a property gives no reference); a chart of very many
-// samples wants its series as signals read in place.
-type Values = Rc<dyn Fn() -> Vec<f64>>;
-/// Reads one value: a limit, the time of the first sample.
-type Read<T> = Rc<dyn Fn() -> T>;
 /// A limit: its name and its value.
 type Limit = (String, Read<f64>);
 
@@ -34,17 +28,24 @@ pub struct Series {
     name: String,
     values: Prop<Vec<f64>>,
     color: Option<Paint>,
+    dashed: bool,
 }
 
 impl Series {
     /// A line of the chart: `values` is a constant or something reactive.
     pub fn new<M>(name: impl Into<String>, values: impl IntoProp<Vec<f64>, M>) -> Series {
-        Series { name: name.into(), values: values.into_prop(), color: None }
+        Series { name: name.into(), values: values.into_prop(), color: None, dashed: false }
     }
 
     /// A colour of its own, or a role of the theme: its place in the series unless told.
     pub fn color(mut self, color: impl Into<Paint>) -> Self {
         self.color = Some(color.into());
+        self
+    }
+
+    /// Its line in dashes, so it reads apart from a solid one without colour.
+    pub fn dashed(mut self) -> Self {
+        self.dashed = true;
         self
     }
 }
@@ -139,9 +140,9 @@ fn named(name: &str, paint: Paint) -> Div {
     row().shrink(0.0).align_items(Align::Center).gap(6.0).child(swatch).child(text(name.to_string()))
 }
 
-/// The swatch of the limit, a short dashed line, and its name after it.
-fn dashed(name: &str) -> Div {
-    let swatch = div().width(12.0).height(1.0).shrink(0.0).border_top(1.0).border_color(token::TEXT_2);
+/// The swatch of a limit or a dashed series, a short dashed line, and its name after it.
+fn dashed(name: &str, paint: Paint) -> Div {
+    let swatch = div().width(12.0).height(1.0).shrink(0.0).border_top(1.0).border_color(paint);
     let swatch = swatch.border_style(BorderStyle::Dashed);
     row().shrink(0.0).align_items(Align::Center).gap(6.0).child(swatch).child(text(name.to_string()))
 }
@@ -164,29 +165,6 @@ fn summary(lines: &[(String, Paint, Values)], limit: &Option<Limit>, unit: &str)
     lines.iter().map(says).chain(limit).collect::<Vec<_>>().join("; ")
 }
 
-/// A property read again whenever wanted.
-fn reader<T: Clone + 'static>(prop: Prop<T>) -> Read<T> {
-    match prop {
-        Prop::Value(value) => Rc::new(move || value.clone()),
-        Prop::Reactive(read) => Rc::from(read),
-    }
-}
-
-/// A property as what the plot takes and as something to read again.
-fn shared(values: Prop<Vec<f64>>) -> (Prop<Vec<f64>>, Values) {
-    match values {
-        Prop::Value(values) => {
-            let again = values.clone();
-            (Prop::Value(values), Rc::new(move || again.clone()))
-        }
-        Prop::Reactive(read) => {
-            let read: Values = Rc::from(read);
-            let again = read.clone();
-            (Prop::Reactive(Box::new(move || again())), read)
-        }
-    }
-}
-
 fn shown(shown: bool) -> Display {
     if shown { Display::Flex } else { Display::None }
 }
@@ -199,13 +177,17 @@ impl View for LineChart {
         for (i, series) in self.series.into_iter().enumerate() {
             let paint = series.color.unwrap_or(series_color(i));
             let (values, read) = shared(series.values);
-            plots.push((values, paint));
+            plots.push((values, paint, series.dashed));
             lines.push((series.name, paint, read));
         }
         let legend = self.legend.then(|| {
             let legend = row().wrap(true).gap(16.0).padding_top(8.0).align_items(Align::Center);
-            let legend = legend.children(lines.iter().map(|l| named(&l.0, l.1)));
-            let legend = legend.children(limit.iter().map(|(name, _)| dashed(name)));
+            let swatch = |(l, p): (&(String, Paint, Values), &(_, _, bool))| match p.2 {
+                true => dashed(&l.0, l.1),
+                false => named(&l.0, l.1),
+            };
+            let legend = legend.children(lines.iter().zip(&plots).map(swatch));
+            let legend = legend.children(limit.iter().map(|(name, _)| dashed(name, token::TEXT_2.into())));
             let note = self
                 .note
                 .map(|note| row().font_family(fonts::MONO).child(text(move || note()).color(token::TEXT_3)));
@@ -237,8 +219,12 @@ impl View for LineChart {
             let rule = div().absolute().left(0.0).right(0.0).top(Length::Pct(k as f32 * 25.0)).height(1.0);
             rule.bg(if k == 4 { token::LINE_STRONG } else { token::LINE })
         });
+        // A unit that is a sign follows the scale's values; a word would crowd them.
+        let sign: Rc<str> =
+            if self.unit.chars().any(char::is_alphabetic) { "".into() } else { self.unit.clone() };
         let scale = (0..5).map(|k| {
-            let value = text(move || short(max.get() * (4 - k) as f64 / 4.0));
+            let sign = sign.clone();
+            let value = text(move || format!("{}{sign}", short(max.get() * (4 - k) as f64 / 4.0)));
             let label = row().absolute().right(Length::Pct(100.0)).top(Length::Pct(k as f32 * 25.0));
             label.height(0.0).padding_right(6.0).align_items(Align::Center).child(value)
         });
@@ -251,7 +237,10 @@ impl View for LineChart {
             rule.border_color(token::TEXT_2).border_style(BorderStyle::Dashed)
         });
         let area = if alone { 0.12 } else { 0.0 };
-        let plots = plots.into_iter().map(|(values, paint)| filling(values, max.into_prop(), paint, area));
+        let plots = plots.into_iter().map(|(values, paint, dashed)| PlotView {
+            dashed,
+            ..filling(values, max.into_prop(), paint, area)
+        });
         let at = hover.at;
         // Bare, the plot fills the box: no scale, no times.
         let bare = self.bare;

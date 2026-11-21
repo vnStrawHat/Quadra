@@ -904,8 +904,13 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   10 px. `.time(start_ms, step_ms)` puts the times of the first, the middle and the last
   sample under the plot; `start_ms` is a constant or something reactive, so the times of a
   live chart that drops its oldest sample follow its samples, under the plot and in the box
-  under the pointer. `.unit(..)` follows a value where one is said; `.height(px)`, 200
-  unless told. One series has an area under it; several have none.
+  under the pointer. `.unit(..)` follows a value where one is said, and the values of the
+  scale too when it is a sign with no letters ("%": "100%", not "2000m"); `.height(px)`,
+  200 unless told. One series has an area under it; several have none.
+  `Series::new(..).dashed()` draws its line in dashes of 5 px and gaps of 3, measured along
+  the line so that steep parts are no denser (the plot leaves the columns of a gap
+  clear); with a legend, its swatch is a short dashed line in its colour, as the limit's
+  is in `text_2`, so two lines read apart without colour.
 - `.limit(name, value)` draws a line at `value` across the plot, dashed, 1 px in `text_2`
   (a container's limit, a node's allocatable): the top of the scale reaches it however far
   under it the series are; the box under the pointer and a reader say it after the series

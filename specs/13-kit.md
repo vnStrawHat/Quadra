@@ -411,7 +411,10 @@ As built so far:
   they show (`uniform_list`); the header is 28 px on the plane of table heads. A `Column`
   has a title, a width (140 px; `.width(..)`), and how it shows its cells: text, numbers
   (`.numeric()`: at the right in the mono face, sorted as numbers), `CellKind::Status`
-  (the word with its mark and colour) or `CellKind::Age` (seconds as 45s, 12m, 3h, 6d). A
+  (the word with its mark and colour) or `CellKind::Age` (seconds as 45s, 12m, 3h, 6d; a
+  cell that says no number, an object with no such time, shows nothing). A column of
+  numbers or ages puts the cells that say no number after all the others, whichever way it
+  is sorted. A
   click on a title sorts by its column from the least, another from the most, with an
   arrow in the accent; the order is worked out again when the data changes. The 5 px at
   the edge of a title are dragged to make the column wider, never under 48 px. A click

@@ -144,7 +144,7 @@ fn line(
                 (Some(shows), _) => cell.child(shows(memo(row_of), memo(value))),
                 (None, CellKind::Text) => cell.child(text(value)),
                 (None, CellKind::Age) => {
-                    cell.child(text(move || age_text(value().trim().parse().unwrap_or(0))))
+                    cell.child(text(move || value().trim().parse().map(age_text).unwrap_or_default()))
                 }
                 (None, CellKind::Status) => cell.child(dynamic(move || {
                     let word = value();

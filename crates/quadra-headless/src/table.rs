@@ -73,16 +73,22 @@ pub fn sheet(columns: Vec<Column>, rows: Rows, cell: Cells, chosen: Option<Signa
     let order = memo(move || {
         let Some((column, down)) = sort.get() else { return Rc::new(Vec::new()) };
         let mut order: Vec<usize> = (0..count()).collect();
+        let mut blank = Vec::new();
         if by[column].counts {
             let keys: Vec<f64> =
-                order.iter().map(|&row| says(row, column).trim().parse().unwrap_or(0.0)).collect();
+                order.iter().map(|&row| says(row, column).trim().parse().unwrap_or(f64::NAN)).collect();
             order.sort_by(|&a, &b| keys[a].total_cmp(&keys[b]));
+            blank = keys.iter().map(|key| key.is_nan()).collect();
         } else {
             let keys: Vec<String> = order.iter().map(|&row| says(row, column).to_lowercase()).collect();
             order.sort_by(|&a, &b| keys[a].cmp(&keys[b]));
         }
         if down {
             order.reverse();
+        }
+        // What says no number comes after every number, whichever way.
+        if !blank.is_empty() {
+            order.sort_by_key(|&row| blank[row]);
         }
         Rc::new(order)
     });

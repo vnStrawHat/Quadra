@@ -5,7 +5,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use quadra_design::{Column, button, dark, table};
+use quadra_design::{CellKind, Column, button, dark, table};
 use quadra_platform::Mods;
 use quadra_prim::Point;
 use quadra_reactive::signal;
@@ -60,4 +60,31 @@ fn a_cell_shows_a_view_bound_to_its_row_and_a_button_in_it_does_not_select_the_r
     names.update(|all| all.iter_mut().for_each(|name| name.push_str("-long")));
     h.frame();
     assert!(h.has_text("12 bytes") && built.get() == first, "{}", h.semantics());
+}
+
+#[test]
+fn an_age_that_is_no_number_shows_nothing_and_sorts_after_every_age() {
+    let jobs = [("job-a", "120"), ("job-b", ""), ("job-c", "30"), ("job-d", "-")];
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+    h.mount(move || {
+        let columns = [Column::new("Job"), Column::new("Age").kind(CellKind::Age)];
+        let cell = move |r: usize, c: usize| if c == 0 { jobs[r].0 } else { jobs[r].1 }.to_string();
+        quadra_design::root().child(table(columns, || 4, cell))
+    });
+    h.frame();
+    assert!(h.has_text("2m") && h.has_text("30s") && !h.has_text("0s"), "{}", h.semantics());
+    // The jobs from the top, after a click on the title of the ages.
+    let sorted = |h: &mut Harness| {
+        h.get_by_role(Role::Cell, "Age").click();
+        h.frame();
+        let mut names = ["job-a", "job-b", "job-c", "job-d"];
+        let y = |h: &Harness, name: &str| h.tree.window_rect(h.query(|n| n.semantics.name == name)[0]).y;
+        names.sort_by(|a, b| y(h, a).total_cmp(&y(h, b)));
+        names
+    };
+    assert_eq!(sorted(&mut h), ["job-c", "job-a", "job-b", "job-d"]);
+    // Those with no age stay last, in the order turned as ties are.
+    assert_eq!(sorted(&mut h), ["job-a", "job-c", "job-d", "job-b"]);
 }

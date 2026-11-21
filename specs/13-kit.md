@@ -404,7 +404,13 @@ As built so far:
   progress bar with its percentage to a reader. `progress_busy()` is the bar for what has
   no end in sight: a third of it crosses the track every 1.4 s. `spinner()` is an open ring
   that turns once in 0.9 s, in the colour of the text around it, a progress bar named
-  `Loading` unless `.label(..)` names it. `skeleton(width, height)`
+  `Loading` unless `.label(..)` names it. `meter(used)` (`meter.rs`) says how full something
+  is, a measure and not a task under way: the same track, 200 by 6 unless told
+  (`.width`, `.height`: 4 in a table's row), filled as far as `used`; `.mark(at)` is a tick
+  at a second value over the fill (2 px in the text's colour with a ring of the panel's, a
+  pixel past the track above and below), and `.warn_at(part)` fills it in the colour of
+  warnings from there and of errors past 1. A reader hears both values, by the names of
+  `.names(..)` ("used 43%, requested 61%"). `skeleton(width, height)`
   is a block that stands for what is on its way, and pulses. In the three that move, what
   moves is a layer and each frame writes one constant of it (an offset, a turn, an
   opacity): nothing is laid out, painted or uploaded, at the exact place of every frame.

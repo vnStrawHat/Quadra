@@ -4,8 +4,8 @@
 use quadra::{Align, AnyView, Div, column, div, row, text};
 use quadra_design::{
     Status, Tone, alert, avatar, badge, button, card, card_head, copyable, description_list, empty_state,
-    fonts, icons, kbd, progress, progress_busy, size, skeleton, spinner, status_label, status_mark, tag,
-    token,
+    fonts, icons, kbd, meter, progress, progress_busy, size, skeleton, spinner, status_label, status_mark,
+    tag, token,
 };
 
 use crate::common::{demo, framed, hint, line, mono, page, stack};
@@ -169,6 +169,25 @@ pub fn progress_page() -> Div {
                 "progress(0.7).width(320.0)",
             ),
             demo("Indeterminate", progress_busy().width(320.0), "progress_busy()"),
+            demo(
+                "A meter, with a mark",
+                stack()
+                    .child(
+                        row()
+                            .align_items(Align::Center)
+                            .gap(12.0)
+                            .child(meter(0.43).mark(0.61).width(320.0))
+                            .child(mono("CPU 43%, requested 61%".to_string())),
+                    )
+                    .child(
+                        row()
+                            .align_items(Align::Center)
+                            .gap(12.0)
+                            .child(meter(0.91).mark(0.7).warn_at(0.85).width(320.0))
+                            .child(mono("memory 91%".to_string())),
+                    ),
+                "meter(used).mark(requested).warn_at(0.85)",
+            ),
         ],
     )
 }

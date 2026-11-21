@@ -1,7 +1,7 @@
 //! What shows data: the table, the tree, and a thousand cells to move the pointer over.
 
 use quadra::{Align, Div, Justify, Signal, column, div, row, signal, text, virtual_list};
-use quadra_design::{Column, Size, TreeNode, button, fonts, icons, progress, size, table, token, tree};
+use quadra_design::{Column, Size, TreeNode, button, fonts, icons, meter, size, table, token, tree};
 
 use crate::common::{demo, framed, hint, line, page, stack};
 
@@ -60,7 +60,7 @@ fn volumes() -> Div {
     ];
     let used = Column::new("Used").width(200.0).view(|_, says| {
         let part = move || says.get().parse::<f32>().unwrap_or(0.0) / 100.0;
-        let bar = progress(part).width(120.0);
+        let bar = meter(part).warn_at(0.85).height(4.0).width(120.0);
         let value = div().font_family(fonts::MONO).child(text(move || format!("{}%", says.get())));
         row().align_items(Align::Center).gap(8.0).child(bar).child(value)
     });

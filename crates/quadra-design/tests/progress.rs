@@ -58,3 +58,31 @@ fn what_moves_is_composed_and_neither_laid_out_nor_painted() {
     assert_eq!(xs, [-70.0 + 270.0 * 0.25, -70.0 + 270.0 * 0.5, -70.0 + 270.0 * 0.75, -70.0].map(f32::round));
     assert!(h.frame_if_needed().is_some()); // while they are there, every frame is drawn
 }
+
+#[test]
+fn a_meter_says_its_value_and_its_mark_and_warns_near_the_top() {
+    let (used, requested) = (signal(0.43f32), signal(0.61f32));
+    let mut h = mount(move || {
+        let cpu = quadra_design::meter(move || used.get()).mark(move || requested.get());
+        column().child(cpu.names("used", "requested").warn_at(0.85).height(4.0))
+    });
+    assert!(h.semantics().contains("ProgressBar = \"used 43%, requested 61%\""), "{}", h.semantics());
+    let bar = h.query(|n| n.semantics.role == Role::ProgressBar)[0];
+    let (fill, holder) = (h.tree.children(bar)[0], h.tree.children(bar)[1]);
+    assert_eq!((h.tree.rect(bar).size(), h.tree.rect(fill).width), (Size::new(200.0, 4.0), 86.0));
+    // The tick is centred on the mark, a pixel past the track above and below.
+    let tick = h.tree.window_rect(h.tree.children(holder)[0]);
+    let track = h.tree.window_rect(bar);
+    assert_eq!((tick.center().x - track.x, tick.height), (122.0, 6.0));
+    // The fill warns from 85 %, and is an error past all of it.
+    let tones: Vec<_> = [0.43, 0.9, 1.2]
+        .into_iter()
+        .map(|part| {
+            used.set(part);
+            h.frame();
+            h.tree.paint_style(fill).background
+        })
+        .collect();
+    assert!(tones[0] != tones[1] && tones[1] != tones[2] && tones[0] != tones[2], "{tones:?}");
+    assert_eq!(h.tree.rect(fill).width, 200.0);
+}

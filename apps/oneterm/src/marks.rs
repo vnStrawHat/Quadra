@@ -1,8 +1,8 @@
 //! How signals look (specs/19, "Signals"): a tab's signal at the end of its row, its icon, the
 //! seam bar of its progress, the second line of its row, a space header's signal.
 
-use quadra::{Align, AnyView, Display, Length, Role, View, by_text, div, dynamic, row, text};
-use quadra_design::{fonts, icon, icons, spinner, token};
+use quadra::{Align, AnyView, Display, Length, Role, View, by_text, div, dynamic, row, show, text};
+use quadra_design::{fonts, icon, icons, progress_busy, spinner, token};
 use quadra_term::ProgramState;
 use quadra_term::vt::Progress;
 
@@ -143,6 +143,14 @@ pub(crate) fn progress_bar(tab: Tab, bottom: f32) -> impl View {
         .bg(token::LINE_STRONG)
         .display(move || if part_of(tab).is_some() { Display::Flex } else { Display::None })
         .child(fill)
+}
+
+/// The kit's busy bar along a tab's lower seam, `bottom` px from its bottom edge, `wide` px
+/// long, while it works with no progress to tell.
+pub(crate) fn busy_bar(tab: Tab, bottom: f32, wide: f32) -> impl View {
+    let working = move || tab.status() == ProgramState::Working && part_of(tab).is_none();
+    let bar = move || progress_busy().width(wide).height(2.0).track(token::LINE_STRONG);
+    show(working, bar).container(div().absolute().left(0.0).bottom(bottom).height(2.0))
 }
 
 /// What a space's header says at its right: its progress in the accent, its state's icon and

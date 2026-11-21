@@ -424,7 +424,9 @@ The canvas's "H · tab icon and a coloured state word" (specs/19, "Rail"): the f
 56 px, a tab 46 px: its icon of 16 (`text_2`, the accent while it shows) and under it its
 signal as one word of 10 px in the state's colour (`blocked`, `error`, `done`, the progress in
 mono or `working`, `bell`, `idle` in purple), the seam bar for a progress. `marks::tab_word`
-replaces the badge. Test: `apps/oneterm/tests/signals.rs`; picture: scene `collapsed`.
+replaces the badge. Working with no progress makes the seam the kit's busy bar
+(`progress_busy()` gains `.height(px)` and `.track(token)`). Test: `apps/oneterm/tests/signals.rs`,
+`quadra-design/tests/progress.rs`; picture: scene `collapsed`.
 
 ### Performance (2026-11-16)
 

@@ -60,6 +60,18 @@ fn what_moves_is_composed_and_neither_laid_out_nor_painted() {
 }
 
 #[test]
+fn a_busy_bar_may_be_a_seam() {
+    let mut h = mount(|| {
+        column().child(progress_busy().width(55.0).height(2.0).track(quadra_design::token::LINE_STRONG))
+    });
+    let bar = h.get_by_role(Role::ProgressBar, "Busy").node();
+    let piece = h.tree.children(bar)[0];
+    let line = dark().theme().resolve(quadra_design::token::LINE_STRONG.into());
+    assert_eq!((h.tree.rect(bar).size(), h.tree.rect(piece).height), (Size::new(55.0, 2.0), 2.0));
+    assert_eq!((h.tree.paint_style(bar).background, h.tree.paint_style(piece).radii.top_left), (line, 0.0));
+}
+
+#[test]
 fn a_meter_says_its_value_and_its_mark_and_warns_near_the_top() {
     let (used, requested) = (signal(0.43f32), signal(0.61f32));
     let mut h = mount(move || {

@@ -420,7 +420,9 @@ As built so far:
 - **What is under way** (`progress.rs`). `progress(part)` is a bar of 6 px on the chrome
   plane, filled with the accent as far as `part` (0 to 1, a constant or reactive), and a
   progress bar with its percentage to a reader. `progress_busy()` is the bar for what has
-  no end in sight: a third of it crosses the track every 1.4 s. `spinner()` is an open ring
+  no end in sight: a third of it crosses the track every 1.4 s; `.height(px)` makes it thinner
+  (its corners half its height, none at 2 px: a seam) and `.track(token)` its track another
+  colour (`line_strong` under a seam). `spinner()` is an open ring
   that turns once in 0.9 s, in the colour of the text around it, a progress bar named
   `Loading` unless `.label(..)` names it. `meter(used)` (`meter.rs`) says how full something
   is, a measure and not a task under way: a track in `line_strong`, 200 by 6 unless told

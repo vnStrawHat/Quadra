@@ -96,7 +96,9 @@ Collapsed (Collapse tabs to icons, in the heading or the status bar, or the sett
 colour, the accent while it shows) and 2 px under it its signal as one word of 10 px on a line
 of 14 in the state's colour: `blocked` in warn, `error` in error, `done` in ok, its progress
 (`64%`, mono) or `working` in the accent, `bell` in error when one rang unseen, else `idle` in
-purple; a progress also has the seam bar. A strong line under each, the active one on the
+purple; a progress also has the seam bar, and working with no progress makes the seam the
+kit's busy bar (`progress_busy()`, 2 px on `line_strong`), a piece of accent that crosses it
+again and again. A strong line under each, the active one on the
 pressed editor colour, a pixel wider, with the accent bar; the title and signal are its name
 and tooltip (`neo-gateway deploy, blocked, needs permission`). Then New terminal (`+` in a box
 of 40, the `+` menu at its right).

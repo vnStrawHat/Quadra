@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use quadra_layout::{Length, Overflow};
 use quadra_prim::Point;
-use quadra_tree::{NodeId, RangeValue, Role};
+use quadra_tree::{NodeId, RangeValue, Role, Token};
 use quadra_view::{Div, IntoProp, MountCx, Prop, View, div, each_frame};
 
 use crate::icon::icon;
@@ -39,12 +39,14 @@ const TURN: f32 = 0.9;
 
 pub struct Busy {
     width: f32,
+    height: f32,
+    track: Token,
 }
 
 /// A progress bar for what has no end in sight: a third of it, in the accent, crosses the
 /// track again and again.
 pub fn progress_busy() -> Busy {
-    Busy { width: 200.0 }
+    Busy { width: 200.0, height: 6.0, track: token::CHROME }
 }
 
 impl Busy {
@@ -52,13 +54,27 @@ impl Busy {
         self.width = px;
         self
     }
+
+    /// Thinner: its corners are half its height, none at 2 px (a seam).
+    pub fn height(mut self, px: f32) -> Self {
+        self.height = px;
+        self
+    }
+
+    /// The colour of its track: `chrome` unless told.
+    pub fn track(mut self, color: Token) -> Self {
+        self.track = color;
+        self
+    }
 }
 
 impl View for Busy {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (whole, part) = (self.width, self.width * 0.35);
-        let piece = div().size(part, 6.0).radius(3.0).bg(token::ACCENT).mount(cx);
-        let bar = track().width(whole).role(Role::ProgressBar).label("Busy".to_string()).mount(cx);
+        let (whole, part, high) = (self.width, self.width * 0.35, self.height);
+        let round = if high > 2.0 { high / 2.0 } else { 0.0 };
+        let piece = div().size(part, high).radius(round).bg(token::ACCENT).mount(cx);
+        let bar = track().size(whole, high).radius(round).bg(self.track);
+        let bar = bar.role(Role::ProgressBar).label("Busy".to_string()).mount(cx);
         cx.tree.set_children(bar, &[piece]);
         cx.tree.make_layer(piece, true);
         let (handle, since) = (cx.handle.clone(), cx.handle.now());

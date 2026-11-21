@@ -81,6 +81,7 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
             .child(crate::rail::active_fill(on, 1.0, false))
             .child(marks::tab_icon(tab, 16.0, on, token::TEXT_2))
             .child(marks::tab_word(tab))
-            .child(marks::progress_bar(tab, -1.0)),
+            .child(marks::progress_bar(tab, -1.0))
+            .child(marks::busy_bar(tab, -1.0, 55.0)),
     )
 }

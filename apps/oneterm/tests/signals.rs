@@ -148,4 +148,14 @@ fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_word_under_its_icon() {
     assert!(a.h.tree.window_rect(tabs[1]).contains(part.center()));
     assert!(a.h.tree.window_rect(tabs[2]).contains(idle.center()));
     assert!(a.says("Terminal, blocked, needs permission"));
+    // Working with no progress: the seam is the kit's busy bar; with one, the bar of its part.
+    let busy = |a: &App| a.h.query(|n| n.semantics.role == Role::ProgressBar && n.semantics.name == "Busy");
+    assert!(busy(&a).is_empty());
+    a.feed(2, b"\x1b]7501;state=working:id=build\x07");
+    let seam = busy(&a);
+    assert_eq!(seam.len(), 1);
+    let (bar, tab) = (a.h.tree.window_rect(seam[0]), a.h.tree.window_rect(tabs[2]));
+    assert_eq!((bar.width, bar.height, bar.bottom()), (55.0, 2.0, tab.bottom()), "over the line under it");
+    a.feed(2, b"\x1b]9;4;1;30\x07");
+    assert!(busy(&a).is_empty() && a.says("30%"));
 }

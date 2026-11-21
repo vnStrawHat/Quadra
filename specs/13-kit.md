@@ -334,6 +334,12 @@ As built so far:
   folded) that keeps the places whose names hold the query (any case), and the titles of
   the groups that keep one; with none, `No results` in `text_3`. Enter in the field chooses
   the first place kept, and the arrows, Home and End go among the places kept alone.
+  `.counts(|id| -> Option<usize>)` puts a count at the right end of each place it gives one
+  (12 px mono in `text_3`, live as what it reads changes, not there while folded); a reader
+  hears it after the name ("Pods, 420"), and the search reads the name alone. `.foot(view)`
+  is under the places, outside their scroll, over a line, in a row (a `.fill()` field takes
+  its width): a filter box of the view that
+  shows, in reach while the places or the content scroll; not there while folded.
 - **`slider(value)`** holds a number between two ends (`.range(min, max, step)`; 0 to 100
   by 1 unless told): a track of 4 px, filled with the accent up to a knob of 12 px, in a
   box of 20 px, 200 wide unless told. A press on the track takes the value there, a drag

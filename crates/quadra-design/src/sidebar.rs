@@ -6,11 +6,13 @@ use quadra_layout::{Align, Display, Justify, Length};
 use quadra_platform::Cursor;
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{NodeId, Paint, Side, State};
+use std::rc::Rc;
+
 use quadra_view::{AnyView, Div, MountCx, View, by_text, column, div, row, scroll, text};
 
 use crate::display::{chosen_mark, label};
 use crate::icon::icon;
-use crate::{icons, input, size, token};
+use crate::{fonts, icons, input, size, token};
 
 /// A place: what it is known by, what it is called, and its icon if it has one.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -32,6 +34,7 @@ impl NavItem {
 }
 
 type Folded = Box<dyn Fn() -> bool>;
+type Counts = Rc<dyn Fn(&'static str) -> Option<usize>>;
 
 pub struct Sidebar {
     groups: Vec<(String, Vec<NavItem>)>,
@@ -39,13 +42,25 @@ pub struct Sidebar {
     folded: Folded,
     width: f32,
     head: Option<AnyView>,
+    foot: Option<AnyView>,
     query: Option<Signal<String>>,
+    counts: Option<Counts>,
 }
 
 /// A sidebar with no places yet: `chosen` holds the id of the chosen one, and a click or the
 /// arrows write it.
 pub fn sidebar(chosen: Signal<&'static str>) -> Sidebar {
-    Sidebar { groups: Vec::new(), chosen, folded: Box::new(|| false), width: 240.0, head: None, query: None }
+    let folded = Box::new(|| false);
+    Sidebar {
+        groups: Vec::new(),
+        chosen,
+        folded,
+        width: 240.0,
+        head: None,
+        foot: None,
+        query: None,
+        counts: None,
+    }
 }
 
 impl Sidebar {
@@ -76,6 +91,19 @@ impl Sidebar {
     /// Something above the places: the name of a project.
     pub fn head(mut self, view: impl View + 'static) -> Self {
         self.head = Some(AnyView::new(view));
+        self
+    }
+
+    /// Something under the places, outside their scroll, over a line: a filter box.
+    pub fn foot(mut self, view: impl View + 'static) -> Self {
+        self.foot = Some(AnyView::new(view));
+        self
+    }
+
+    /// A count at the end of each place `counts` gives one for, by the place's id: live as
+    /// what it reads changes.
+    pub fn counts(mut self, counts: impl Fn(&'static str) -> Option<usize> + 'static) -> Self {
+        self.counts = Some(Rc::new(counts));
         self
     }
 }
@@ -112,7 +140,7 @@ impl View for Sidebar {
             }
             for item in items {
                 let id = item.id;
-                let row = place(item, chosen, words, move || folded.get());
+                let row = place(item, chosen, words, move || folded.get(), self.counts.clone());
                 places = places.child(row.display(move || match kept.with(|kept| kept.contains(&id)) {
                     true => Display::Flex,
                     false => Display::None,
@@ -126,24 +154,38 @@ impl View for Sidebar {
         let side = column().shrink(0.0).width(move || Length::Px(if folded.get() { 40.0 } else { width }));
         let side = side.bg(token::PANEL).border_right(1.0).border_color(token::LINE_STRONG);
         let side = side.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
+        let places = column().grow(1.0).min_height(0.0).child(scroll(signal(0.0), places));
         // The arrows go among the places the search keeps.
-        list::places(side, move || kept.get(), chosen).child(scroll(signal(0.0), places)).mount(cx)
+        let side = list::places(side, move || kept.get(), chosen).child(places);
+        let side = match self.foot {
+            Some(view) => {
+                let foot = row().shrink(0.0).padding(8.0).border_top(1.0).border_color(token::LINE);
+                side.child(foot.display(move || shown(true)).child(view))
+            }
+            None => side,
+        };
+        side.mount(cx)
     }
 }
 
-/// The row of a place: 26 px, its icon and its label; filled when chosen, with the accent's
-/// mark at its left and its icon in the accent.
+/// The row of a place: 26 px, its icon, its label and its count; filled when chosen, with
+/// the accent's mark at its left and its icon in the accent.
 fn place(
     item: NavItem,
     chosen: Signal<&'static str>,
-    words: impl Fn() -> Display + 'static,
+    words: impl Fn() -> Display + Copy + 'static,
     folded: impl Fn() -> bool + 'static,
+    counts: Option<Counts>,
 ) -> Div {
     let id = item.id;
     let line =
         row().align_items(Align::Center).gap(6.0).height(by_text(26.0)).padding_left(10.0).padding_right(8.0);
     let line = line.justify(move || if folded() { Justify::Center } else { Justify::Start });
-    let line = line.cursor(Cursor::Pointer).label(item.label.clone());
+    let (name, count) = (item.label.clone(), counts.clone());
+    let line = line.cursor(Cursor::Pointer).label(move || match count.as_ref().and_then(|of| of(id)) {
+        Some(n) => format!("{name}, {n}"),
+        None => name.clone(),
+    });
     let on = move || chosen.get() == id;
     let line = list::place(line, id, chosen);
     let line = line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
@@ -152,7 +194,21 @@ fn place(
         Some(body) => line.child(div().text_color(tone).child(icon(body).size(16.0))),
         None => line,
     };
-    line.child(div().display(words).child(text(item.label))).child(chosen_mark(Side::Left, on))
+    let line = line.child(div().grow(1.0).min_width(0.0).display(words).child(text(item.label)));
+    let line = match counts {
+        Some(of) => {
+            let (said, there) = (of.clone(), of);
+            let count =
+                div().font_family(fonts::MONO).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
+            let count = count.display(move || match there(id) {
+                Some(_) => words(),
+                None => Display::None,
+            });
+            line.child(count.child(text(move || said(id).map(|n| n.to_string()).unwrap_or_default())))
+        }
+        None => line,
+    };
+    line.child(chosen_mark(Side::Left, on))
 }
 
 /// The field at the top: Enter chooses the first place kept.

@@ -28,6 +28,20 @@ pub fn sidebar_page() -> Div {
                 NavItem::new("maps", "Config maps").icon(icons::FILE),
                 NavItem::new("secrets", "Secrets").icon(icons::LOCK),
             ],
+        )
+        .counts(|id| match id {
+            "pods" => Some(420),
+            "deploy" => Some(96),
+            "jobs" => Some(12),
+            "secrets" => Some(148),
+            _ => None,
+        })
+        .foot(
+            quadra_design::input(signal(String::new()))
+                .small()
+                .fill()
+                .icon(icons::SEARCH)
+                .placeholder("Filter by pod name"),
         );
     let said = div().grow(1.0).padding(16.0).child(hint(move || format!("Selected: {}", place.get())));
     page(
@@ -35,8 +49,8 @@ pub fn sidebar_page() -> Div {
         "Sections of places. The current place is two tones up, the hovered one a tone.",
         [demo(
             "Cluster navigation",
-            framed(row().height(260.0).child(places).child(said)),
-            "sidebar(place).group(\"Workloads\", [NavItem::new(\"pods\", \"Pods\")])",
+            framed(row().height(300.0).child(places).child(said)),
+            "sidebar(place).group(\"Workloads\", [NavItem::new(\"pods\", \"Pods\")]).counts(|id| ..).foot(filter)",
         )],
     )
 }

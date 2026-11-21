@@ -195,3 +195,50 @@ fn a_sidebars_search_keeps_the_places_it_names_and_enter_chooses_the_first() {
     settle(&mut h);
     assert_eq!(chosen.get_untracked(), "inbox");
 }
+
+#[test]
+fn a_place_shows_its_count_and_the_foot_stays_under_the_places() {
+    let (chosen, folded, pods, query) =
+        (signal("pods"), signal(false), signal(420usize), signal(String::new()));
+    let mut h = mount(move || {
+        let items = [
+            NavItem::new("pods", "Pods"),
+            NavItem::new("secrets", "Secrets"),
+            NavItem::new("events", "Events"),
+        ];
+        let places = sidebar(chosen)
+            .search(query)
+            .group("", items)
+            .counts(move |id| match id {
+                "pods" => Some(pods.get()),
+                "secrets" => Some(148),
+                _ => None,
+            })
+            .foot(quadra_design::input(signal(String::new())).label("Filter by pod name"))
+            .folded(move || folded.get());
+        row().grow(1.0).child(places).child(div().grow(1.0))
+    });
+    // The count is part of the place's name for a reader; a place without one has none.
+    let tree = h.semantics();
+    assert!(tree.contains("TreeItem \"Pods, 420\"") && tree.contains("TreeItem \"Events\""), "{tree}");
+    assert!(h.has_text("148"));
+    pods.set(421);
+    settle(&mut h);
+    assert!(h.semantics().contains("TreeItem \"Pods, 421\"") && h.has_text("421"));
+    // The search reads the name alone.
+    query.set("42".into());
+    settle(&mut h);
+    assert!(h.has_text("No results"));
+    query.set(String::new());
+    settle(&mut h);
+    // The foot is at the bottom of the sidebar, under the places.
+    let side = h.query(|n| n.semantics.role == Role::Tree)[0];
+    let field = h.get_by_role(Role::TextInput, "Filter by pod name").node();
+    let (side, field) = (h.tree.window_rect(side), h.tree.window_rect(field));
+    assert!(field.y > side.y + side.height - 60.0, "{field:?} in {side:?}");
+    // Folded: no count, no foot.
+    folded.set(true);
+    settle(&mut h);
+    let foot = h.query(|n| n.semantics.name == "Filter by pod name");
+    assert!(!h.has_text("421") && foot.is_empty(), "{}", h.semantics());
+}

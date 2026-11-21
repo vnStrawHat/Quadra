@@ -20,29 +20,44 @@ const OPEN: f32 = 0.5;
 /// The dashes of one link, past which it is drawn whole.
 const MOST_DASHES: usize = 2_000;
 
-/// The curve from the edge of `from` to the edge of `to`, along the axis their middles are
-/// further apart on, in the plane the rects are in.
-pub fn route(from: Rect, to: Rect) -> Vec<Point> {
+/// The curve from the edge of `from` through the points `through` to the edge of `to`, along
+/// the axis the nodes' middles are further apart on, in the plane the rects are in: a cubic
+/// from one stop to the next, square to the axis at each.
+pub fn route(from: Rect, to: Rect, through: &[Point]) -> Vec<Point> {
     let (a, b) = (from.center(), to.center());
     let across = (b.x - a.x).abs() >= (b.y - a.y).abs();
-    let (start, end) = match across {
-        true if b.x >= a.x => (Point::new(from.right(), a.y), Point::new(to.x, b.y)),
-        true => (Point::new(from.x, a.y), Point::new(to.right(), b.y)),
-        false if b.y >= a.y => (Point::new(a.x, from.bottom()), Point::new(b.x, to.y)),
-        false => (Point::new(a.x, from.y), Point::new(b.x, to.bottom())),
+    // It leaves toward its first stop and arrives from its last.
+    let (first, last) = (through.first().copied().unwrap_or(b), through.last().copied().unwrap_or(a));
+    let start = match across {
+        true if first.x >= a.x => Point::new(from.right(), a.y),
+        true => Point::new(from.x, a.y),
+        false if first.y >= a.y => Point::new(a.x, from.bottom()),
+        false => Point::new(a.x, from.y),
     };
-    // The handles pull half the way along the axis, so the curve leaves and arrives square.
-    let (c1, c2) = match across {
-        true => {
-            let pull = (end.x - start.x) / 2.0;
-            (Point::new(start.x + pull, start.y), Point::new(end.x - pull, end.y))
-        }
-        false => {
-            let pull = (end.y - start.y) / 2.0;
-            (Point::new(start.x, start.y + pull), Point::new(end.x, end.y - pull))
-        }
+    let end = match across {
+        true if b.x >= last.x => Point::new(to.x, b.y),
+        true => Point::new(to.right(), b.y),
+        false if b.y >= last.y => Point::new(b.x, to.y),
+        false => Point::new(b.x, to.bottom()),
     };
-    (0..=PIECES).map(|k| cubic([start, c1, c2, end], k as f32 / PIECES as f32)).collect()
+    let stops: Vec<Point> = std::iter::once(start).chain(through.iter().copied()).chain([end]).collect();
+    let mut line = vec![start];
+    for pair in stops.windows(2) {
+        let (s, e) = (pair[0], pair[1]);
+        // The handles pull half the way along the axis.
+        let (c1, c2) = match across {
+            true => {
+                let pull = (e.x - s.x) / 2.0;
+                (Point::new(s.x + pull, s.y), Point::new(e.x - pull, e.y))
+            }
+            false => {
+                let pull = (e.y - s.y) / 2.0;
+                (Point::new(s.x, s.y + pull), Point::new(e.x, e.y - pull))
+            }
+        };
+        line.extend((1..=PIECES).map(|k| cubic([s, c1, c2, e], k as f32 / PIECES as f32)));
+    }
+    line
 }
 
 fn cubic([a, b, c, d]: [Point; 4], t: f32) -> Point {
@@ -157,8 +172,7 @@ impl Widget for Links {
 /// and the styles.
 pub struct LinksView {
     pub view: Signal<GraphView>,
-    pub rects: Rc<Vec<Rect>>,
-    pub ends: Rc<Vec<(usize, usize, usize)>>,
+    pub routes: Rc<Vec<(usize, Vec<Point>)>>,
     pub style: Styles,
 }
 
@@ -171,15 +185,15 @@ impl View for LinksView {
             ..Default::default()
         };
         let id = cx.tree.insert_widget(Style { layout, ..Style::default() }, Box::new(Links::default()));
-        let (writer, LinksView { view, rects, ends, style }) = (cx.handle.clone(), self);
+        let (writer, LinksView { view, routes, style }) = (cx.handle.clone(), self);
         cx.handle.bind(move || {
             let v = view.get();
-            let line = |&(k, a, b): &(usize, usize, usize)| {
-                let points = route(rects[a], rects[b]).into_iter().map(|p| v.point(p)).collect();
+            let line = |(k, plane): &(usize, Vec<Point>)| {
+                let (k, points) = (*k, plane.iter().map(|&p| v.point(p)).collect());
                 let style = style(k);
                 (points, LinkStyle { width: style.width * v.zoom.max(0.5), ..style })
             };
-            let lines: Vec<_> = ends.iter().map(line).collect();
+            let lines: Vec<_> = routes.iter().map(line).collect();
             writer.with(move |tree| {
                 if tree.widget_mut::<Links>(id).is_some_and(|links| links.set(lines)) {
                     tree.mark_paint(id);
@@ -197,9 +211,9 @@ mod tests {
     #[test]
     fn a_link_leaves_and_arrives_at_the_edges_and_a_dashed_one_is_in_pieces() {
         let (a, b) = (Rect::new(0.0, 0.0, 100.0, 40.0), Rect::new(200.0, 100.0, 100.0, 40.0));
-        let line = route(a, b);
+        let line = route(a, b, &[]);
         assert_eq!((line[0], *line.last().unwrap()), (Point::new(100.0, 20.0), Point::new(200.0, 120.0)));
-        let below = route(a, Rect::new(0.0, 300.0, 100.0, 40.0));
+        let below = route(a, Rect::new(0.0, 300.0, 100.0, 40.0), &[]);
         assert_eq!((below[0], *below.last().unwrap()), (Point::new(50.0, 40.0), Point::new(50.0, 300.0)));
         let straight = [Point::new(0.0, 0.0), Point::new(100.0, 0.0)];
         let pieces = dashes(&straight, 10.0);

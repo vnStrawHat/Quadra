@@ -7,7 +7,7 @@ use quadra_design::token;
 use quadra_prim::Point;
 use quadra_tree::{Paint, Theme};
 
-use super::links::{head, route};
+use super::links::head;
 use super::{Graph, LinkStyle};
 
 /// Words as SVG's text and attributes take them.
@@ -41,7 +41,7 @@ fn path(points: &[Point]) -> String {
 }
 
 pub fn write(graph: &Graph, theme: &Theme) -> String {
-    let (rects, ends) = graph.plane();
+    let (rects, routes) = graph.plane();
     let b = graph.bounds();
     let (x, y, w, h) = (b.x - 16.0, b.y - 16.0, b.width + 32.0, b.height + 32.0);
     let mut out = format!(
@@ -62,14 +62,14 @@ pub fn write(graph: &Graph, theme: &Theme) -> String {
             r.y + 16.0
         );
     }
-    for &(k, from, to) in &ends {
-        let LinkStyle { color: paint, width, dash, arrow } = (graph.style)(k);
-        let ((stroke, alpha), points) = (color(theme, paint), route(rects[from], rects[to]));
+    for (k, points) in &routes {
+        let LinkStyle { color: paint, width, dash, arrow } = (graph.style)(*k);
+        let (stroke, alpha) = color(theme, paint);
         let dashes = if dash > 0.0 { format!(r#" stroke-dasharray="{dash} {dash}""#) } else { String::new() };
         let look =
             format!(r#"fill="none" stroke="{stroke}" stroke-opacity="{alpha}" stroke-width="{width}""#);
-        _ = write!(out, r#"<path d="{}" {look}{dashes}/>"#, path(&points));
-        if let Some(head) = head(&points, width).filter(|_| arrow) {
+        _ = write!(out, r#"<path d="{}" {look}{dashes}/>"#, path(points));
+        if let Some(head) = head(points, width).filter(|_| arrow) {
             _ = write!(out, r#"<path d="{}" {look}/>"#, path(&head));
         }
     }

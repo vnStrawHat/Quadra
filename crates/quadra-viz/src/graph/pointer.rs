@@ -10,11 +10,11 @@ use quadra_reactive::Signal;
 use quadra_tree::{PointerEvent, PointerKind};
 use quadra_view::Div;
 
-use super::links::{distance, route};
+use super::links::distance;
 use super::{GraphView, Hit, fitted};
 
-/// Each link's place and its two nodes.
-pub(super) type Ends = Rc<Vec<(usize, usize, usize)>>;
+/// Each link's place and its line in the graph's plane.
+pub(super) type Routes = Rc<Vec<(usize, Vec<Point>)>>;
 
 /// What the pointer is over, and whether a press has become a drag.
 pub(super) type Shared = (Rc<RefCell<Option<Hit>>>, Rc<Cell<bool>>);
@@ -26,20 +26,16 @@ pub(super) type Told = (Option<Rc<dyn Fn(Hit)>>, Option<Rc<dyn Fn(Option<Hit>)>>
 pub(super) fn pointer(
     all: Div,
     view: Signal<GraphView>,
-    (rects, ends): (Rc<Vec<Rect>>, Ends),
+    routes: Routes,
     (click, hover): Told,
     (last, moved): Shared,
     bounds: Rect,
 ) -> Div {
-    // ponytail: every link is routed again at each move; cache the routes for graphs of
-    // thousands of links.
+    // Within 5 px of the line as it shows: the pointer taken back to the plane.
     let link_at = move |at: Point| {
         let v = view.get_untracked();
-        let near = |&&(_, a, b): &&(usize, usize, usize)| {
-            let line: Vec<Point> = route(rects[a], rects[b]).into_iter().map(|p| v.point(p)).collect();
-            distance(&line, at) <= 5.0
-        };
-        ends.iter().find(near).map(|&(k, ..)| k)
+        let at = Point::new((at.x - v.pan.x) / v.zoom, (at.y - v.pan.y) / v.zoom);
+        routes.iter().find(|(_, line)| distance(line, at) * v.zoom <= 5.0).map(|&(k, _)| k)
     };
     let held = Rc::new(Cell::new(None::<(Point, Point)>));
     let (press, drag, up) = (held.clone(), held.clone(), held);

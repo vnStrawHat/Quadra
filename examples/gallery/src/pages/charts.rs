@@ -118,9 +118,18 @@ fn topology(lit: quadra::Signal<Option<Hit>>) -> Graph {
         node("api-x2kq", "Pod", Status::Failed, (520.0, 60.0)),
         node("web-5d8b", "Pod", Status::Pending, (520.0, 160.0)),
     ];
-    let ends =
-        [("shop", "api"), ("shop", "web"), ("api", "api-7c9f"), ("api", "api-x2kq"), ("web", "web-5d8b")];
-    let links = ends.map(|(a, b)| Link::new(a, b));
+    let ends = [
+        ("shop", "api"),
+        ("shop", "web"),
+        ("api", "api-7c9f"),
+        ("api", "api-x2kq"),
+        ("web", "web-5d8b"),
+        ("shop", "web-5d8b"),
+    ];
+    // The last skips the column of the services: it passes under web.
+    let under =
+        |k: usize| if k == 5 { vec![Point::new(260.0, 215.0), Point::new(450.0, 215.0)] } else { Vec::new() };
+    let links = (0..ends.len()).map(|k| Link::new(ends[k].0, ends[k].1).through(under(k)));
     let style = move |k: usize| {
         let on = match lit.get() {
             Some(Hit::Link(at)) => at == k,

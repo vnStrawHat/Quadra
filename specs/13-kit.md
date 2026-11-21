@@ -949,7 +949,11 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   Space clicks. A `Link::new(from, to)` is a curve
   from the edge of one node to the edge of the other, leaving and arriving along the axis
   they are further apart on (a cubic, flattened, stroked as the diagrams' lines are), with
-  a head at its end. `.link_style(|i| LinkStyle { color, width, dash, arrow })` styles
+  a head at its end. `Link::new(from, to).through([points])` passes points of the plane on
+  its way, in order (a layered layout's points in the columns a link skips, so it runs past
+  their nodes): it leaves toward the first, arrives from the last, and is a cubic from one
+  stop to the next, square to the axis at each; its hit, dashes, head and SVG follow that
+  line, and a fit takes the points in. `.link_style(|i| LinkStyle { color, width, dash, arrow })` styles
   each link (by default 1.5 px in `text_3` with a head, solid; `dash` is the length of a
   dash and of a gap); it is read again when what it reads changes, so lighting a chain
   repaints the links and builds nothing. `.group(title, [ids])` draws a frame around those

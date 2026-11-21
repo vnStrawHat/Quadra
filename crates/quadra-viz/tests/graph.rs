@@ -174,3 +174,25 @@ fn the_pointer_from_a_link_onto_a_node_is_on_the_node_and_a_drag_from_a_node_cli
     h.key(Key::Enter, Mods::NONE);
     assert_eq!(hits.get_untracked(), vec![Hit::Node("pod".into())]);
 }
+
+#[test]
+fn a_link_through_points_passes_them_past_the_column_it_skips() {
+    let hits = signal(Vec::new());
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    // Three columns: the link from a to c skips b by a point below it.
+    let around = Point::new(250.0, 100.0);
+    h.mount(move || {
+        let nodes = [node("a", 0.0, 0.0), node("b", 200.0, 0.0), node("c", 400.0, 0.0)];
+        let g = graph(nodes, [Link::new("a", "c").through([around])]).height(400.0);
+        div().width(800.0).child(g.on_click(move |hit| hits.update(|all| all.push(hit))))
+    });
+    h.frame();
+    // Through the point, and nowhere across b.
+    h.click(around.x, around.y);
+    h.click(250.0, 20.0);
+    assert_eq!(hits.get_untracked(), vec![Hit::Link(0), Hit::Node("b".into())]);
+    let svg = graph([node("a", 0.0, 0.0), node("c", 400.0, 0.0)], [Link::new("a", "c").through([around])]);
+    let svg = svg.to_svg(&dark().theme());
+    assert!(svg.contains("L250.0 100.0") && svg.contains("<path d=\"M100.0 20.0"), "{svg}");
+}

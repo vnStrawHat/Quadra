@@ -18,7 +18,7 @@ use quadra_reactive::{Signal, effect, signal};
 use quadra_tree::{NodeId, Paint, PointerKind, Role, Theme};
 use quadra_view::{Div, MountCx, View, column, div, text};
 
-use self::links::LinksView;
+use self::links::{LinksView, route};
 
 /// A view at a point of the graph's plane, as large as its size, named by its label.
 pub struct Node {
@@ -45,11 +45,18 @@ impl Node {
 pub struct Link {
     from: Rc<str>,
     to: Rc<str>,
+    through: Vec<Point>,
 }
 
 impl Link {
     pub fn new(from: impl Into<Rc<str>>, to: impl Into<Rc<str>>) -> Link {
-        Link { from: from.into(), to: to.into() }
+        Link { from: from.into(), to: to.into(), through: Vec::new() }
+    }
+
+    /// Points of the plane the link passes, in order: past the columns it skips.
+    pub fn through(mut self, points: impl IntoIterator<Item = Point>) -> Self {
+        self.through = points.into_iter().collect();
+        self
     }
 }
 
@@ -182,14 +189,16 @@ impl Graph {
         svg::write(self, theme)
     }
 
-    /// The nodes' boxes, and each link's place and its two nodes: a link to an id no node
-    /// has is left out.
-    fn plane(&self) -> (Vec<Rect>, Vec<(usize, usize, usize)>) {
-        let rects = self.nodes.iter().map(|n| Rect::new(n.at.x, n.at.y, n.size.width, n.size.height));
+    /// The nodes' boxes, and each link's place and line (none for an id no node has).
+    fn plane(&self) -> (Vec<Rect>, Vec<(usize, Vec<Point>)>) {
+        let rects: Vec<Rect> =
+            self.nodes.iter().map(|n| Rect::new(n.at.x, n.at.y, n.size.width, n.size.height)).collect();
         let of: HashMap<&str, usize> = self.nodes.iter().enumerate().map(|(i, n)| (&*n.id, i)).collect();
-        let ends = self.links.iter().enumerate();
-        let ends = ends.filter_map(|(k, l)| Some((k, *of.get(&*l.from)?, *of.get(&*l.to)?))).collect();
-        (rects.collect(), ends)
+        let line = |(k, l): (usize, &Link)| {
+            Some((k, route(rects[*of.get(&*l.from)?], rects[*of.get(&*l.to)?], &l.through)))
+        };
+        let routes = self.links.iter().enumerate().filter_map(line).collect();
+        (rects, routes)
     }
 
     /// Each group's title and frame: 12 px out from its nodes, 24 above them for its title.
@@ -206,7 +215,8 @@ impl Graph {
     pub fn bounds(&self) -> Rect {
         let (rects, _) = self.plane();
         let frames = self.frames(&rects).into_iter().map(|(_, r)| r);
-        rects.into_iter().chain(frames).reduce(|a, b| a.union(b)).unwrap_or_default()
+        let points = self.links.iter().flat_map(|l| &l.through).map(|p| Rect::new(p.x, p.y, 0.0, 0.0));
+        rects.into_iter().chain(frames).chain(points).reduce(|a, b| a.union(b)).unwrap_or_default()
     }
 }
 
@@ -220,15 +230,14 @@ fn placed(face: Div, view: Signal<GraphView>, r: Rect) -> Div {
 impl View for Graph {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let view = self.view.unwrap_or_else(|| signal(GraphView::default()));
-        let (rects, ends) = self.plane();
-        let (frames, bounds) = (self.frames(&rects), self.bounds());
-        let (rects, ends) = (Rc::new(rects), Rc::new(ends));
+        let (rects, routes) = self.plane();
+        let (frames, bounds, routes) = (self.frames(&rects), self.bounds(), Rc::new(routes));
         let frames = frames.into_iter().map(|(title, r)| {
             let frame = div().border(1.0).border_color(token::LINE_STRONG).radius(6.0).padding_x(8.0);
             let frame = frame.padding_y(4.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
             placed(frame, view, r).child(text(title))
         });
-        let drawn = LinksView { view, rects: rects.clone(), ends: ends.clone(), style: self.style.clone() };
+        let drawn = LinksView { view, routes: routes.clone(), style: self.style.clone() };
         let (click, hover) = (self.click.clone(), self.hover.clone());
         // What the pointer is over and whether it drags, shared by the nodes and the box.
         let (over, moved) = (Rc::new(RefCell::new(None)), Rc::new(Cell::new(false)));
@@ -275,7 +284,7 @@ impl View for Graph {
         let world =
             world.children(frames.collect::<Vec<_>>()).child(drawn).children(nodes.collect::<Vec<_>>());
         let all = div().width(Length::Fill).height(self.height).shrink(0.0).role(Role::Group).child(world);
-        let all = pointer::pointer(all, view, (rects, ends), (self.click, self.hover), shared, bounds);
+        let all = pointer::pointer(all, view, routes, (self.click, self.hover), shared, bounds);
         let fit = self.fit;
         all.on_mount(move |tree, id| {
             let (size, done) = (tree.size_signal(id), Cell::new(!fit));

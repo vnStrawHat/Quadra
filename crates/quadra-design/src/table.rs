@@ -10,9 +10,9 @@ use std::rc::Rc;
 use quadra_headless::live::Key;
 use quadra_headless::table::{self, Cells, Rows};
 use quadra_platform::Clipboard;
-use quadra_reactive::{Signal, use_context};
+use quadra_reactive::{Memo, Signal, use_context};
 use quadra_tree::NodeId;
-use quadra_view::{MountCx, View};
+use quadra_view::{AnyView, MountCx, View};
 
 /// How a column shows what its cells say.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -25,7 +25,10 @@ pub enum CellKind {
     Age,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+/// What builds a cell's view from its row, as the data numbers it, and what it says.
+pub(crate) type Shows = Rc<dyn Fn(Memo<usize>, Memo<String>) -> AnyView>;
+
+#[derive(Clone)]
 pub struct Column {
     title: String,
     width: f32,
@@ -33,13 +36,17 @@ pub struct Column {
     sortable: bool,
     numeric: bool,
     kind: CellKind,
+    mono: bool,
+    muted: bool,
+    shows: Option<Shows>,
 }
 
 impl Column {
     /// A column of text, 140 px wide, that a click on its title sorts.
     pub fn new(title: impl Into<String>) -> Column {
         let (title, kind) = (title.into(), CellKind::Text);
-        Column { title, width: 140.0, least: 48.0, sortable: true, numeric: false, kind }
+        let (mono, muted, shows) = (false, false, None);
+        Column { title, width: 140.0, least: 48.0, sortable: true, numeric: false, kind, mono, muted, shows }
     }
 
     pub fn width(mut self, px: f32) -> Self {
@@ -55,6 +62,29 @@ impl Column {
 
     pub fn kind(mut self, kind: CellKind) -> Self {
         self.kind = kind;
+        self
+    }
+
+    /// Names and images: in the mono face, at the left.
+    pub fn mono(mut self) -> Self {
+        self.mono = true;
+        self
+    }
+
+    /// Notes: in the quiet text.
+    pub fn muted(mut self) -> Self {
+        self.muted = true;
+        self
+    }
+
+    /// What a cell shows, built once for each row that is mounted from the row as the data
+    /// numbers it and what the cell says: memos, which follow a reused row and a change.
+    /// What the cell says is still what sorts, is copied and is compared.
+    pub fn view<V: View + 'static>(
+        mut self,
+        view: impl Fn(Memo<usize>, Memo<String>) -> V + 'static,
+    ) -> Self {
+        self.shows = Some(Rc::new(move |row, says| AnyView::new(view(row, says))));
         self
     }
 

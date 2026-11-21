@@ -1,7 +1,7 @@
 //! What shows data: the table, the tree, and a thousand cells to move the pointer over.
 
 use quadra::{Align, Div, Justify, Signal, column, div, row, signal, text, virtual_list};
-use quadra_design::{Column, TreeNode, fonts, icons, size, table, token, tree};
+use quadra_design::{Column, Size, TreeNode, button, fonts, icons, progress, size, table, token, tree};
 
 use crate::common::{demo, framed, hint, line, page, stack};
 
@@ -40,8 +40,38 @@ pub fn table_page() -> Div {
                 framed(wide()).height(240.0),
                 "table(..).pinned(1).hidden(columns)",
             ),
+            demo(
+                "Cells that show views",
+                framed(volumes()).height(160.0),
+                "Column::new(\"Used\").view(|row, says| ..)",
+            ),
         ],
     )
+}
+
+/// Volumes: a mono name, a bar of the space used, a muted note and a button in a row.
+fn volumes() -> quadra_design::Table {
+    const VOLUMES: [(&str, u32, &str); 4] = [
+        ("data-postgres-0", 42, "ssd, 50 Gi"),
+        ("data-redis-0", 88, "ssd, 8 Gi"),
+        ("logs-loki-0", 97, "hdd, 200 Gi"),
+        ("cache-web-1", 12, "ssd, 4 Gi"),
+    ];
+    let used = Column::new("Used").width(200.0).view(|_, says| {
+        let part = move || says.get().parse::<f32>().unwrap_or(0.0) / 100.0;
+        let bar = progress(part).width(120.0);
+        let value = div().font_family(fonts::MONO).child(text(move || format!("{}%", says.get())));
+        row().align_items(Align::Center).gap(8.0).child(bar).child(value)
+    });
+    let open = Column::new("").width(90.0).unsorted().view(|_, _| button("Open").size(Size::Sm));
+    let columns = [Column::new("Name").mono().width(200.0), used, Column::new("Note").muted(), open];
+    let cell = |row: usize, column: usize| match column {
+        0 => VOLUMES[row].0.to_string(),
+        1 => VOLUMES[row].1.to_string(),
+        2 => VOLUMES[row].2.to_string(),
+        _ => String::new(),
+    };
+    table(columns, || VOLUMES.len(), cell)
 }
 
 /// Twelve months of figures beside the city they are of: the city stays while the months

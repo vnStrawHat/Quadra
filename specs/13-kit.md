@@ -420,6 +420,16 @@ As built so far:
   with an arrow grows the selection, and Ctrl-C copies the selected rows as lines of cells
   with tabs between (key context `action::TABLE`). The selection is of rows as the data
   numbers them, in a signal the caller may own (`.selected(..)`).
+- **What a cell shows** (`table.rs`): what a cell says stays what it is, what sorts, what
+  is copied and what live data compares; a column may show it otherwise.
+  `.view(|row, says| view)` builds a cell's view once for each row that is mounted: `row`
+  is the row as the data numbers it and `says` what the cell says, both memos, so a row
+  reused by the scroll or a cell that changes binds to them and is not built again (a
+  status with a note after it, a bar of a share, the marks of a workload's pods, buttons).
+  `.mono()` puts a column in the mono face and `.muted()` in the quiet text, at the left,
+  for names and images, and for notes. A button in a cell takes its press: the row is not
+  selected by it (a pressed control ends the click's dispatch, as anywhere); something else
+  that acts on a click there calls `e.stop()`.
 - **Live data** (`table/live.rs`): `.keys(|row| ..)` says what each row is known by. When
   the data changes, the selection, the row the keys are on and the one a range starts from
   are put where their keys are now (a row that has gone is not selected any more), under

@@ -5,7 +5,7 @@ use std::rc::Rc;
 use quadra_headless::table::Sheet;
 use quadra_layout::{Align, Display, Justify, Length, Overflow};
 use quadra_platform::{Clipboard, Cursor};
-use quadra_reactive::{Signal, signal};
+use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{Paint, Role, State as On};
 use quadra_view::{
     AnyView, Div, View, by_text, column, div, dynamic, row, scroll_x, sideways_bar, text, uniform_list,
@@ -134,13 +134,19 @@ fn line(
             true => cell.justify(Justify::End).padding_right(16.0).font_family(fonts::MONO),
             false => cell,
         };
+        let cell = if at.mono { cell.font_family(fonts::MONO) } else { cell };
+        let cell = if at.muted { cell.text_color(token::TEXT_3) } else { cell };
+        let row_of = data.clone();
         cells.push(shown(
             state,
             c,
-            match at.kind {
-                CellKind::Text => cell.child(text(value)),
-                CellKind::Age => cell.child(text(move || age_text(value().trim().parse().unwrap_or(0)))),
-                CellKind::Status => cell.child(dynamic(move || {
+            match (&at.shows, at.kind) {
+                (Some(shows), _) => cell.child(shows(memo(row_of), memo(value))),
+                (None, CellKind::Text) => cell.child(text(value)),
+                (None, CellKind::Age) => {
+                    cell.child(text(move || age_text(value().trim().parse().unwrap_or(0))))
+                }
+                (None, CellKind::Status) => cell.child(dynamic(move || {
                     let word = value();
                     status_label(Status::of(&word), &word)
                 })),

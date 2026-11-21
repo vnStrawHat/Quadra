@@ -65,7 +65,12 @@ impl Press {
                 (click.borrow_mut())()
             }
         };
-        face.on_click(move |_| press(&click)).on_action::<Confirm>(move |_| press(&by_key))
+        // A press it takes is its own: what it stands in (a row) is not clicked by it.
+        let face = face.on_click(move |e| {
+            press(&click);
+            e.stop();
+        });
+        face.on_action::<Confirm>(move |_| press(&by_key))
     }
 }
 

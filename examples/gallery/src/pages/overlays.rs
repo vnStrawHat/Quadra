@@ -146,12 +146,47 @@ pub fn drawer_page() -> Div {
         sides = sides.child(opener).child(drawer(open, edge, "Pod api-7d9f8c", body).size(reach));
     }
     let about = "A panel over the window along an edge, for details and settings. Escape or a click \
-                 outside closes it.";
+                 outside closes it; beside a list, it stays while the list is in use.";
     page(
         "Drawer",
         about,
-        [demo("Sides", sides, "drawer(open, Edge::Right, \"Pod api-7d9f8c\", || body).size(360.0)")],
+        [
+            demo("Sides", sides, "drawer(open, Edge::Right, \"Pod api-7d9f8c\", || body).size(360.0)"),
+            demo(
+                "Beside a list",
+                inspector(body),
+                "drawer(open, Edge::Right, \"Pod\", body).beside().head(|| row)",
+            ),
+        ],
     )
+}
+
+/// A list of pods with the drawer of the one pressed beside it: the next press shows the next.
+fn inspector<V: quadra::View + 'static>(body: impl Fn() -> V + 'static) -> Div {
+    let (open, shown) = (signal(false), signal("api-7d9f8c"));
+    let pods = ["api-7d9f8c", "web-5c2b1a", "worker-8e4d0f"].map(|name| {
+        let pick = button(name).variant(Variant::Ghost).on_click(move || {
+            shown.set(name);
+            open.set(true);
+        });
+        div().child(pick)
+    });
+    let list = column().grow(1.0).padding(8.0).gap(2.0).children(pods);
+    let head = move || {
+        let kind = div().text_color(token::TEXT_3).child(text("Pod"));
+        let name = div().font_family(quadra_design::fonts::MONO).child(text(move || shown.get()));
+        let restart = button("Restart").size(Size::Sm);
+        row()
+            .align_items(Align::Center)
+            .gap(8.0)
+            .child(kind)
+            .child(name)
+            .child(div().grow(1.0))
+            .child(restart)
+    };
+    let drawer = drawer(open, Edge::Right, "Pod", body).beside().head(head).size(340.0);
+    let frame = row().height(240.0).border(1.0).border_color(token::LINE).radius(token::RADIUS_MD);
+    frame.child(list).child(drawer)
 }
 
 pub fn dialog_page() -> Div {

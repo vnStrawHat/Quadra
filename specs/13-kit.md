@@ -718,6 +718,15 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   the window (360 at first). Escape, the cross and a press outside give it up. A popup
   that lies along an edge has the length of the window on that axis (`Length::Fill` on the
   root of the overlay, which is laid out in the window's size).
+- `.beside()` puts the drawer in the layout where it stands, next to the content (an
+  inspector beside a list), not over the window: nothing outside closes it and the focus is
+  not kept in it, so what is beside it stays in use (a press on the next row shows that
+  row's object in it). It keeps the rest: it slides in, it is a dialog named by its title to
+  a reader, the focus goes into it when it opens, Escape gives it up while the focus is in
+  it, and when it closes the focus goes back to what had it, unless it went elsewhere. It
+  is on the window's plane (`panel`), its line on the content's side, `.size(px)` wide
+  (tall at the bottom). `.head(|| view)` takes the place of the title, before the cross:
+  a row of the app's (a kind, a name, a state, actions).
 - `dialog(open, "Delete the file?", || body).action("Cancel", Variant::Ghost, f)..`: a popup
   440 px wide with its border, centred, 80 px under the top of the window (`Place::Top`),
   with no backdrop:

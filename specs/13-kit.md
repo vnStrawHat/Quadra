@@ -425,7 +425,10 @@ As built so far:
   arrows, the page keys, Home and End move the row the keys are on and select it, Shift
   with an arrow grows the selection, and Ctrl-C copies the selected rows as lines of cells
   with tabs between (key context `action::TABLE`). The selection is of rows as the data
-  numbers them, in a signal the caller may own (`.selected(..)`).
+  numbers them, in a signal the caller may own (`.selected(..)`). `.on_activate(|row| ..)`
+  opens what a row names, as a list does: a double click on the row, or Enter on the row
+  the keys are on, gives it the row as the data numbers it; the arrows only move. A button
+  in a cell keeps its press and its Enter to itself.
 - **What a cell shows** (`table.rs`): what a cell says stays what it is, what sorts, what
   is copied and what live data compares; a column may show it otherwise.
   `.view(|row, says| view)` builds a cell's view once for each row that is mounted: `row`

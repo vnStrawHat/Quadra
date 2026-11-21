@@ -6,7 +6,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use quadra_design::{CellKind, Column, button, dark, table};
-use quadra_platform::Mods;
+use quadra_platform::{Key, Mods};
 use quadra_prim::Point;
 use quadra_reactive::signal;
 use quadra_testing::Harness;
@@ -114,4 +114,46 @@ fn a_cell_is_one_line_cut_where_its_column_ends() {
     let glyphs = glyphs.filter(|(i, _)| i.flags & quadra_render::FLAG_GLYPH != 0);
     let lowest = glyphs.map(|(i, y)| i.bounds[1] + i.bounds[3] + y).fold(0.0f32, f32::max);
     assert!(lowest > 0.0 && lowest <= 28.0 + 2.0 * 26.0, "{lowest}");
+}
+
+#[test]
+fn a_row_is_activated_by_a_double_click_or_enter_and_not_by_the_arrows_or_its_buttons() {
+    let (opened, pressed) = (signal(Vec::<usize>::new()), signal(0));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+    h.mount(move || {
+        let copy =
+            Column::new("").view(move |_, _| button("Copy").on_click(move || pressed.update(|n| *n += 1)));
+        let columns = [Column::new("Pod"), copy];
+        let cell = |r: usize, c: usize| if c == 0 { format!("pod-{r}") } else { String::new() };
+        let pods = table(columns, || 5, cell).on_activate(move |row| opened.update(|all| all.push(row)));
+        quadra_design::root().child(pods)
+    });
+    h.frame();
+    let center =
+        |h: &Harness, name: &str| h.tree.window_rect(h.query(|n| n.semantics.name == name)[0]).center();
+
+    // A double click on a row opens it; the arrows only move, and Enter opens where they are.
+    let at = center(&h, "pod-2");
+    h.click(at.x, at.y);
+    h.click(at.x, at.y);
+    h.frame();
+    assert_eq!(opened.get_untracked(), [2]);
+    h.key(Key::Down, Mods::NONE);
+    h.key(Key::Down, Mods::NONE);
+    h.frame();
+    assert_eq!(opened.get_untracked(), [2]);
+    h.key(Key::Enter, Mods::NONE);
+    h.frame();
+    assert_eq!(opened.get_untracked(), [2, 4]);
+
+    // A double click on a button in a row, and Enter on it, are the button's.
+    let copy = h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Copy")[1];
+    let at = h.tree.window_rect(copy).center();
+    h.click(at.x, at.y);
+    h.click(at.x, at.y);
+    h.key(Key::Enter, Mods::NONE);
+    h.frame();
+    assert_eq!((opened.get_untracked(), pressed.get_untracked()), (vec![2, 4], 3));
 }

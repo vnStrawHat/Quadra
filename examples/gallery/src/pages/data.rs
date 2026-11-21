@@ -41,16 +41,17 @@ pub fn table_page() -> Div {
                 "table(..).pinned(1).hidden(columns)",
             ),
             demo(
-                "Cells that show views",
-                framed(volumes()).height(160.0),
-                "Column::new(\"Used\").view(|row, says| ..)",
+                "Cells that show views, rows that open",
+                volumes(),
+                "Column::new(\"Used\").view(|row, says| ..), table(..).on_activate(|row| ..)",
             ),
         ],
     )
 }
 
-/// Volumes: a mono name, a bar of the space used, a muted note and a button in a row.
-fn volumes() -> quadra_design::Table {
+/// Volumes: a mono name, a bar of the space used, a muted note and a button in a row. A
+/// double click or Enter opens one.
+fn volumes() -> Div {
     const VOLUMES: [(&str, u32, &str); 4] = [
         ("data-postgres-0", 42, "ssd, 50 Gi"),
         ("data-redis-0", 88, "ssd, 8 Gi"),
@@ -71,7 +72,13 @@ fn volumes() -> quadra_design::Table {
         2 => VOLUMES[row].2.to_string(),
         _ => String::new(),
     };
-    table(columns, || VOLUMES.len(), cell)
+    let opened = signal(None::<usize>);
+    let volumes = table(columns, || VOLUMES.len(), cell).on_activate(move |row| opened.set(Some(row)));
+    let said = hint(move || match opened.get() {
+        Some(row) => format!("Opened {}", VOLUMES[row].0),
+        None => "Double click a volume, or press Enter on one".to_string(),
+    });
+    stack().child(framed(volumes).height(160.0)).child(said)
 }
 
 /// Twelve months of figures beside the city they are of: the city stays while the months

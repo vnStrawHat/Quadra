@@ -15,7 +15,9 @@ use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_tree::{PointerKind, Role};
 use quadra_view::Div;
 
-use crate::action::{Copy, ExtendNext, ExtendPrevious, MoveFirst, MoveLast, MoveNext, MovePrevious, TABLE};
+use crate::action::{
+    Confirm, Copy, ExtendNext, ExtendPrevious, MoveFirst, MoveLast, MoveNext, MovePrevious, TABLE,
+};
 use crate::action::{MoveInto, MoveOut, PageNext, PagePrevious};
 pub use crate::live::{FLASH, Live};
 
@@ -38,6 +40,8 @@ pub struct Column {
 
 pub type Rows = Rc<dyn Fn() -> usize>;
 pub type Cells = Rc<dyn Fn(usize, usize) -> String>;
+/// What opens a row, given as the data numbers it.
+pub type Activate = Rc<dyn Fn(usize)>;
 
 /// A mounted table: its data, and what the user did to it.
 #[derive(Clone)]
@@ -60,6 +64,8 @@ pub struct Sheet {
     /// With a cursor on cells, the column of the cell the keys are on: the left and right
     /// arrows move it, a click on a cell puts it there, and the key for copying copies it.
     pub column: Option<Signal<usize>>,
+    /// What a double click on a row, or Enter on the row the keys are on, does with it.
+    pub activate: Option<Activate>,
     /// What a table of live data keeps.
     pub live: Option<Live>,
 }
@@ -95,8 +101,23 @@ pub fn sheet(columns: Vec<Column>, rows: Rows, cell: Cells, chosen: Option<Signa
     let widths = signal(columns.iter().map(|column| column.width).collect());
     let chosen = chosen.unwrap_or_else(|| signal(Vec::new()));
     let (cursor, anchor, focused, hidden) = (signal(None), signal(None), signal(false), signal(Vec::new()));
-    let (live, column) = (None, None);
-    Sheet { columns, rows, cell, widths, sort, order, chosen, cursor, anchor, focused, hidden, live, column }
+    let (live, column, activate) = (None, None, None);
+    Sheet {
+        columns,
+        rows,
+        cell,
+        widths,
+        sort,
+        order,
+        chosen,
+        cursor,
+        anchor,
+        focused,
+        hidden,
+        live,
+        column,
+        activate,
+    }
 }
 
 impl Sheet {
@@ -224,7 +245,12 @@ impl Sheet {
     pub fn row(&self, face: Div, place: Signal<usize>) -> Div {
         let pick = self.clone();
         let face = face.role(Role::Row).selected(self.selected(place));
-        face.on_click(move |e| pick.pick(place.get_untracked(), e.mods))
+        face.on_click(move |e| {
+            pick.pick(place.get_untracked(), e.mods);
+            if let (2, Some(activate)) = (e.clicks, &pick.activate) {
+                activate(pick.data(place.get_untracked()));
+            }
+        })
     }
 
     /// The frame of the table: a table to a reader, with the focus and the keys. The key for
@@ -251,6 +277,12 @@ impl Sheet {
         let (right, left) = (self.clone(), self.clone());
         let frame = frame.on_action::<MoveInto>(move |_| right.step_column(1));
         let frame = frame.on_action::<MoveOut>(move |_| left.step_column(-1));
+        let opens = self.clone();
+        let frame = frame.on_action::<Confirm>(move |_| {
+            if let (Some(activate), Some(place)) = (&opens.activate, opens.cursor.get_untracked()) {
+                activate(opens.data(place));
+            }
+        });
         let copies = self.clone();
         frame.on_action::<Copy>(move |_| {
             let text = copies.copy_text();

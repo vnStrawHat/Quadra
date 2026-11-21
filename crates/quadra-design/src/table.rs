@@ -8,7 +8,7 @@ mod view;
 use std::rc::Rc;
 
 use quadra_headless::live::Key;
-use quadra_headless::table::{self, Cells, Rows};
+use quadra_headless::table::{self, Activate, Cells, Rows};
 use quadra_platform::Clipboard;
 use quadra_reactive::{Memo, Signal, use_context};
 use quadra_tree::NodeId;
@@ -126,6 +126,7 @@ pub struct Table {
     pinned: usize,
     column: Option<Signal<usize>>,
     changes: Option<Signal<Vec<usize>>>,
+    activate: Option<Activate>,
 }
 
 /// A table of `rows` rows: `cell(row, column)` is what a cell says. Both are asked again
@@ -138,7 +139,8 @@ pub fn table(
     let columns = columns.into_iter().collect();
     let (rows, cell) = (Rc::new(rows), Rc::new(cell));
     let (chosen, key, hidden, column, changes) = (None, None, None, None, None);
-    Table { columns, rows, cell, chosen, key, row_height: 26.0, hidden, pinned: 0, column, changes }
+    let (row_height, pinned, activate) = (26.0, 0, None);
+    Table { columns, rows, cell, chosen, key, row_height, hidden, pinned, column, changes, activate }
 }
 
 impl Table {
@@ -184,6 +186,13 @@ impl Table {
         self
     }
 
+    /// What opens a row, given as the data numbers it: a double click on the row, or Enter on
+    /// the row the keys are on. The arrows only move.
+    pub fn on_activate(mut self, f: impl Fn(usize) + 'static) -> Self {
+        self.activate = Some(Rc::new(f));
+        self
+    }
+
     /// With live data, the source says which rows (as the data numbers them) it changed,
     /// setting `rows` after each change: the cells of those are read, not of every row.
     pub fn changes(mut self, rows: Signal<Vec<usize>>) -> Self {
@@ -200,7 +209,7 @@ impl View for Table {
         if let Some(hidden) = self.hidden {
             sheet.hidden = hidden;
         }
-        sheet.column = self.column;
+        (sheet.column, sheet.activate) = (self.column, self.activate);
         if let Some(key) = self.key {
             quadra_headless::live::watch(&mut sheet, key, self.changes, cx.handle.clone());
         }

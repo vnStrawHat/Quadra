@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use quadra_design::dark;
+use quadra_design::{dark, token};
 use quadra_reactive::signal;
 use quadra_render::{Instance, Kind};
 use quadra_testing::Harness;
@@ -217,6 +217,12 @@ fn a_bare_chart_fills_its_box_and_its_legend_names_the_limit_beside_a_note() {
     let plot = h.query(|n| n.semantics.role == Role::Image)[0];
     assert_eq!(h.tree.window_rect(plot), quadra_prim::Rect::new(0.0, 0.0, 300.0, 70.0));
     assert!(!h.has_text("100") && !h.has_text("19:00"));
+    // No grid: one faint rule along its bottom.
+    let theme = dark().theme();
+    let (line, strong) = (theme.resolve(token::LINE.into()), theme.resolve(token::LINE_STRONG.into()));
+    let fills: Vec<_> =
+        h.tree.children(plot).iter().map(|&part| h.tree.paint_style(part).background).collect();
+    assert_eq!((fills.iter().filter(|&&c| c == line).count(), fills.contains(&strong)), (1, false));
     // The legend: the series, then the limit, then the note at the end of the row.
     assert!(h.has_text("used") && h.has_text("limit") && h.has_text("since 19:00"));
     assert!(text_at(&mut h, "limit").x > text_at(&mut h, "used").x);

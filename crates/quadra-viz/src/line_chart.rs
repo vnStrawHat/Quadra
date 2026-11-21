@@ -187,7 +187,7 @@ impl View for LineChart {
                 false => named(&l.0, l.1),
             };
             let legend = legend.children(lines.iter().zip(&plots).map(swatch));
-            let legend = legend.children(limit.iter().map(|(name, _)| dashed(name, token::TEXT_2.into())));
+            let legend = legend.children(limit.iter().map(|(name, _)| dashed(name, token::TEXT_3.into())));
             let note = self
                 .note
                 .map(|note| row().font_family(fonts::MONO).child(text(move || note()).color(token::TEXT_3)));
@@ -215,9 +215,11 @@ impl View for LineChart {
         let hover = Hover { at: signal(None), count, time: time.clone() };
 
         // The plot's box: the grid, a plot a series over it, and what follows the pointer.
-        let grid = (0..5).map(|k| {
+        // Bare, it has no grid: one rule, faint, along its bottom.
+        let bare = self.bare;
+        let grid = (0..5).filter(|&k| !bare || k == 4).map(move |k| {
             let rule = div().absolute().left(0.0).right(0.0).top(Length::Pct(k as f32 * 25.0)).height(1.0);
-            rule.bg(if k == 4 { token::LINE_STRONG } else { token::LINE })
+            rule.bg(if k == 4 && !bare { token::LINE_STRONG } else { token::LINE })
         });
         // A unit that is a sign follows the scale's values; a word would crowd them.
         let sign: Rc<str> =
@@ -234,7 +236,7 @@ impl View for LineChart {
             let top =
                 move || Length::Pct(((1.0 - value() / max.get().max(f64::MIN_POSITIVE)) * 100.0) as f32);
             let rule = div().absolute().left(0.0).right(0.0).top(top).height(1.0).border_top(1.0);
-            rule.border_color(token::TEXT_2).border_style(BorderStyle::Dashed)
+            rule.border_color(token::TEXT_3).border_style(BorderStyle::Dashed)
         });
         let area = if alone { 0.12 } else { 0.0 };
         let plots = plots.into_iter().map(|(values, paint, dashed)| PlotView {
@@ -243,7 +245,6 @@ impl View for LineChart {
         });
         let at = hover.at;
         // Bare, the plot fills the box: no scale, no times.
-        let bare = self.bare;
         let (left, top, right, bottom) = if bare { (0.0, 0.0, 0.0, 0.0) } else { (AXIS_W, 6.0, 8.0, AXIS_H) };
         let field = div().absolute().left(left).top(top).right(right).bottom(bottom);
         let scale: Vec<Div> = if bare { Vec::new() } else { scale.collect() };

@@ -79,6 +79,54 @@ impl Value {
         }
     }
 
+    /// The value with what is at `paths` left out: `.metadata.managedFields`, or the same
+    /// without its first dot.
+    pub fn without<S: AsRef<str>>(&self, paths: &[S]) -> Value {
+        let dotted = |p: &str| if p.starts_with(['.', '[']) { p.to_string() } else { format!(".{p}") };
+        let paths: Vec<String> = paths.iter().map(|p| dotted(p.as_ref())).collect();
+        self.left(&paths, "")
+    }
+
+    fn left(&self, paths: &[String], path: &str) -> Value {
+        let keep = |at: &String| !paths.contains(at);
+        match self {
+            Value::Map(pairs) => Value::Map(
+                pairs
+                    .iter()
+                    .map(|(key, value)| (key, format!("{path}{}", step(key)), value))
+                    .filter(|(_, at, _)| keep(at))
+                    .map(|(key, at, value)| (key.clone(), value.left(paths, &at)))
+                    .collect(),
+            ),
+            Value::List(items) => Value::List(
+                items
+                    .iter()
+                    .enumerate()
+                    .map(|(i, value)| (format!("{path}[{i}]"), value))
+                    .filter(|(at, _)| keep(at))
+                    .map(|(at, value)| value.left(paths, &at))
+                    .collect(),
+            ),
+            scalar => scalar.clone(),
+        }
+    }
+
+    /// The paths of what holds things, down to `levels` levels: what a view opens.
+    pub fn holders(&self, levels: usize) -> std::collections::HashSet<String> {
+        let mut all = std::collections::HashSet::new();
+        let mut walk = vec![(self, String::new(), 0usize)];
+        while let Some((value, path, depth)) = walk.pop() {
+            for (_, step, inside) in value.inside() {
+                let at = format!("{path}{step}");
+                if depth < levels && !inside.inside().is_empty() {
+                    all.insert(at.clone());
+                    walk.push((inside, at, depth + 1));
+                }
+            }
+        }
+        all
+    }
+
     /// What the value holds, each with how it is called there and the step to it in a path.
     pub(crate) fn inside(&self) -> Vec<(String, String, &Value)> {
         match self {

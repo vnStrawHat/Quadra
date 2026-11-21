@@ -3,9 +3,12 @@
 //! scalars, block scalars, comments, and the first document. Anchors and tags are skipped.
 
 mod flow;
+mod write;
 
 use crate::value::{DEEPEST, ParseError, Value};
 use flow::inline;
+pub(crate) use write::scalar;
+pub use write::to_yaml;
 
 #[derive(Clone, Copy)]
 struct Line<'a> {
@@ -118,14 +121,17 @@ impl<'a> Reader<'a> {
             if item.is_empty() {
                 self.at += 1;
                 items.push(self.value_after(indent, "", depth)?);
-            } else if split_key(item).is_some() {
-                // "- key: value" starts a mapping at the column of the key.
+            } else if split_key(item).is_some() || is_item(item) {
+                // "- key: value" starts a mapping at the column of the key, "- - x" a sequence.
                 let column = indent + line.text.len() - after.len();
                 self.lines[self.at] = Line { indent: column, text: item, ..line };
                 if depth >= DEEPEST {
                     return self.wrong("nested too deep");
                 }
-                items.push(self.mapping(column, depth + 1)?);
+                items.push(match is_item(item) {
+                    true => self.sequence(column, depth + 1)?,
+                    false => self.mapping(column, depth + 1)?,
+                });
             } else {
                 self.at += 1;
                 items.push(inline(item));

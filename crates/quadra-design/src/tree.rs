@@ -33,6 +33,8 @@ pub struct TreeNode {
     pub color: Option<Paint>,
     /// What follows the label, and its colour.
     pub detail: Option<(String, Paint)>,
+    /// What follows the detail while it is closed: what is not seen, in short.
+    pub folded: Option<(String, Paint)>,
     /// It holds things that are given when it opens (`Tree::on_open`).
     pub lazy: bool,
 }
@@ -58,10 +60,15 @@ impl TreeNode {
         self
     }
 
-    /// Something after the label: a value, a count. Of what holds things it shows only
-    /// while that is closed: it says in short what is not seen.
+    /// Something after the label: a value, a mark.
     pub fn detail(mut self, text: impl Into<String>, color: impl Into<Paint>) -> Self {
         self.detail = Some((text.into(), color.into()));
+        self
+    }
+
+    /// What it says after its detail while it is closed: in short what is not seen (`{3}`).
+    pub fn folded(mut self, text: impl Into<String>, color: impl Into<Paint>) -> Self {
+        self.folded = Some((text.into(), color.into()));
         self
     }
 
@@ -80,6 +87,7 @@ pub struct Look {
     icon: Option<&'static str>,
     color: Option<Paint>,
     detail: Option<(String, Paint)>,
+    folded: Option<(String, Paint)>,
 }
 
 impl Branch for TreeNode {
@@ -93,14 +101,13 @@ impl Branch for TreeNode {
         &self.children
     }
 
-    /// The detail of what holds things shows only while that is closed.
     fn lazy(&self) -> bool {
         self.lazy && self.children.is_empty()
     }
 
     fn row(&self, open: bool) -> Look {
-        let detail = self.detail.clone().filter(|_| !open);
-        Look { label: self.label.clone(), icon: self.icon, color: self.color, detail }
+        let (detail, folded) = (self.detail.clone(), self.folded.clone().filter(|_| !open));
+        Look { label: self.label.clone(), icon: self.icon, color: self.color, detail, folded }
     }
 }
 
@@ -184,10 +191,14 @@ fn line(at: &Shown<Look>, (height, indent): (f32, f32), on: impl Fn() -> bool + 
         None => label,
     };
     let line = line.child(div().padding_left(4.0).child(label));
-    match &at.row.detail {
-        Some((detail, color)) => {
-            line.child(div().padding_left(6.0).child(text(detail.clone()).color(*color)))
-        }
+    let after =
+        |(words, color): &(String, Paint)| div().padding_left(6.0).child(text(words.clone()).color(*color));
+    let line = match &at.row.detail {
+        Some(detail) => line.child(after(detail)),
+        None => line,
+    };
+    match &at.row.folded {
+        Some(folded) => line.child(after(folded)),
         None => line,
     }
 }

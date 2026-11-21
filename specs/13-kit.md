@@ -522,8 +522,9 @@ As built so far:
   Enter and Space open and close (key context `action::TREE`). The ids of the open things
   are a signal the caller may own (`.open(..)`). To a reader: a tree of items, expanded or
   collapsed. A label may have a colour of its own (`.color(..)`), and a thing a detail
-  after its label, in a colour (`.detail(text, colour)`): of what holds things it shows
-  only while that is closed, and says in short what is not seen. `.row_height(px)` and
+  after its label, in a colour (`.detail(text, colour)`), and after that what it shows
+  only while it is closed (`.folded(text, colour)`), which says in short what is not
+  seen. `.row_height(px)` and
   `.indent(px)` are for a denser tree; the key for copying is bound in a tree, for what is
   around it to handle. A thing may hold what is not given yet (`TreeNode::lazy()`): it shows
   as closed, and opening it tells the tree's `.on_open(|id| ..)`, which gives its children
@@ -1027,7 +1028,8 @@ What these are and look like is behaviour/19. As built:
   `["app.kubernetes.io/name"]`, so no two things of a value have the same path.
 - **`parse_json(text)`** reads JSON whole: an error says its line. **`parse_yaml(text)`**
   reads the YAML that manifests are written in: mappings and sequences by indentation
-  (a sequence may sit at the indentation of its key), `- ` items that hold maps, flow
+  (a sequence may sit at the indentation of its key), `- ` items that hold maps or
+  sequences (`- - x`), flow
   `{}` and `[]` on one line, plain, single- and double-quoted scalars, `|` and `>` block
   scalars, comments, and the first document of a file. Anchors and tags are skipped;
   aliases are not resolved. Neither reader goes deeper than 128 levels: what does is an
@@ -1035,10 +1037,29 @@ What these are and look like is behaviour/19. As built:
 - **`value_view(value)`** shows a value as the kit's tree (rows that open and close, the
   arrows, one selected): a row is a key in the colour of properties in code, or the place
   in a list in the faint text, then the value in the colour of its kind in code (text,
-  number, constant); what holds things says how many while it is closed. Rows are in the
+  number, constant); what holds things says how many while it is closed (`.folded`). Rows are in the
   mono face, 24 px, a level 16 px in; the first two levels start open, and a value that
   changes keeps open what is still there. Over the rows a bar says the path of the
   selected row, and `Copy path`, or the key for copying, puts it on the clipboard.
+- **`to_yaml(&value)`** writes a value as block YAML, two spaces a level: `key: value`,
+  `- ` items (a map in a list starts on the dash's line), `{}` and `[]` for what holds
+  nothing. A text is plain wherever YAML reads it back as the same text, and in double
+  quotes otherwise (empty; a word YAML takes for nothing, a truth or a number; a leading
+  indicator or space; `: ` or ` #` inside; a line break or another control character).
+  What it writes, `parse_yaml` reads back as the same value. `value.without(paths)` is the
+  value with what is at those paths left out (`.metadata.managedFields`, or without the
+  first dot); `value.holders(levels)` the paths of what holds things down to `levels`.
+- **`yaml_view(value)`** shows a value as YAML lines that fold, on the kit's tree: a line a
+  key, `key: value`, the key in the colour of properties in code and a scalar in that of
+  its kind, written as `to_yaml` writes it; list items as `- `, a map in a list on the
+  dash's line when its first value is a scalar (`- name: web`). What holds things has a
+  chevron, and while it is closed ends in `{n}` or `[n]` in `text_3`. 15 px mono, lines of
+  24 px, 18 px a level, on a `canvas` block with a radius of 6. `.open(levels)` says how
+  many levels start open (1, the top); `.folds(signal)` takes the app's set of open paths,
+  so its own buttons fold and unfold all (`holders(usize::MAX)`, an empty set);
+  `.omit(paths)` leaves paths out of the lines and of what the key for copying puts on the
+  clipboard, which is the YAML of the whole value. A value that changes keeps open what is
+  still there.
 - **A log** (`Log`) is what an app appends lines to, each with the time it was written, in
   milliseconds since 1970, or none: `log.append(lines)`, `log.push(at_ms, text)`,
   `log.clear()`. The lines are packed in one buffer of bytes with an offset and a time

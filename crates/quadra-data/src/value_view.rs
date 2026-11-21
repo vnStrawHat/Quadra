@@ -16,7 +16,7 @@ use crate::value::Value;
 
 /// The colour of a value on its row: that of its kind in code, and the faint text for what
 /// holds things.
-fn tone(value: &Value) -> Paint {
+pub(crate) fn tone(value: &Value) -> Paint {
     match value {
         Value::Text(_) => token::SYNTAX_STRING.into(),
         Value::Number(_) => token::SYNTAX_NUMBER.into(),
@@ -37,7 +37,11 @@ fn rows(value: &Value, path: &str, open: usize, opened: &mut HashSet<String>) ->
         // A key is a property of code; a place in a list is not.
         let key: Paint =
             if label.ends_with(':') { token::SYNTAX_PROPERTY.into() } else { token::TEXT_3.into() };
-        TreeNode::new(path, label).color(key).detail(inside.summary(), tone(inside)).children(children)
+        let row = TreeNode::new(path, label).color(key).children(children);
+        match inside {
+            Value::List(_) | Value::Map(_) => row.folded(inside.summary(), tone(inside)),
+            _ => row.detail(inside.summary(), tone(inside)),
+        }
     };
     value.inside().into_iter().map(row).collect()
 }

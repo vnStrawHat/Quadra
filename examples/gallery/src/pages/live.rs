@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 use quadra::{Div, column, signal};
-use quadra_data::{Log, Value, log_view, parse_json, value_view};
+use quadra_data::{Log, Value, log_view, parse_json, value_view, yaml_view};
 use quadra_design::{CellKind, Column, button, table};
 
 use crate::common::{demo, framed, page, stack};
@@ -107,14 +107,21 @@ const VALUE: &str = r#"{"name": "web", "replicas": 3, "ready": true, "selector":
 
 pub fn value_viewer_page() -> Div {
     let value = Rc::new(parse_json(VALUE).unwrap_or(Value::Null));
-    let about = "A collapsible tree of a JSON or YAML value. Click or press right and left to open and close; ctrl-c or Copy path copies the selected path.";
+    let about = "A collapsible tree of a JSON or YAML value. Click or press right and left to open and close; ctrl-c or Copy path copies the selected path. The same value as YAML lines that fold copies as YAML.";
     page(
         "Value viewer",
         about,
-        [demo(
-            "Deployment (JSON)",
-            framed(column().height(340.0).child(value_view(value))),
-            "value_view(Rc::new(parse_json(text)?))  // or parse_yaml",
-        )],
+        [
+            demo(
+                "Deployment (JSON)",
+                framed(column().height(340.0).child(value_view(value.clone()))),
+                "value_view(Rc::new(parse_json(text)?))  // or parse_yaml",
+            ),
+            demo(
+                "As YAML lines that fold",
+                column().height(300.0).child(yaml_view(value).open(1).omit(["selector"])),
+                "yaml_view(value).open(1).omit([\"metadata.managedFields\"])  // to_yaml(&value) to copy",
+            ),
+        ],
     )
 }

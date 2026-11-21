@@ -167,3 +167,30 @@ fn a_label_names_a_group_a_select_and_a_slider() {
     h.frame();
     h.get_by_role(Role::Slider, "Line height");
 }
+
+#[test]
+fn a_hint_is_under_an_option_and_describes_it() {
+    let lock = signal(0);
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+    h.mount(move || {
+        let after = radio_group(["After 1 min", "After 5 min"], lock).hints(["the default", ""]);
+        quadra_design::root().child(after)
+    });
+    h.frame();
+    // Named by its label alone, the hint under it where the label starts.
+    let option = h.get_by_role(Role::Radio, "After 1 min").node();
+    let label = h.query(|n| n.semantics.role == Role::Text && n.semantics.name == "After 1 min")[0];
+    let hint = h.get_by_text("the default").node();
+    let (label, hint) = (h.tree.window_rect(label), h.tree.window_rect(hint));
+    assert!(hint.y >= label.bottom() && (hint.x - label.x).abs() < 0.5, "{hint:?} under {label:?}");
+    assert!(h.tree.window_rect(option).contains(hint.center()));
+    // A click on the hint chooses its option, as one on the label does.
+    h.get_by_role(Role::Radio, "After 5 min").click();
+    h.frame();
+    assert_eq!(lock.get_untracked(), 1);
+    h.click(hint.center().x, hint.center().y);
+    h.frame();
+    assert_eq!(lock.get_untracked(), 0);
+}

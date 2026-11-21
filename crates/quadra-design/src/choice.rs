@@ -6,13 +6,16 @@ use quadra_platform::Cursor;
 use quadra_prim::Corners;
 use quadra_reactive::Signal;
 use quadra_tree::{NodeId, Paint, State};
-use quadra_view::{AnyView, Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
+use quadra_view::{
+    AnyView, Div, IntoProp, MountCx, NodeRef, Prop, View, by_text, column, div, row, show, text,
+};
 
 use crate::button::Size;
 use crate::{size, token};
 
 pub struct Choice {
     options: Vec<String>,
+    hints: Vec<String>,
     chosen: Signal<usize>,
     segmented: bool,
     horizontal: bool,
@@ -25,6 +28,7 @@ pub struct Choice {
 pub fn radio_group<S: Into<String>>(options: impl IntoIterator<Item = S>, chosen: Signal<usize>) -> Choice {
     Choice {
         options: options.into_iter().map(Into::into).collect(),
+        hints: Vec::new(),
         chosen,
         segmented: false,
         horizontal: false,
@@ -58,6 +62,13 @@ impl Choice {
         self
     }
 
+    /// A muted line under each option of a radio group that says more of it, in their
+    /// order ("" for none): under its label, and to a reader its description, not its name.
+    pub fn hints<S: Into<String>>(mut self, hints: impl IntoIterator<Item = S>) -> Self {
+        self.hints = hints.into_iter().map(Into::into).collect();
+        self
+    }
+
     /// What a reader calls the group, a constant or words that change.
     pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
         self.label = Some(name.into_prop());
@@ -66,7 +77,7 @@ impl Choice {
 
     /// An option of a radio group: a ring of 12 px, of the accent with a dot of 6 in it when
     /// chosen.
-    fn radio(label: String, on: impl Fn() -> bool + Copy + 'static) -> Div {
+    fn radio(label: String, hint: Option<&String>, on: impl Fn() -> bool + Copy + 'static) -> Div {
         let dot = || div().size(6.0, 6.0).radius(3.0).bg(token::ACCENT);
         let edge = move || if on() { token::ACCENT } else { token::LINE_STRONG };
         let ring = div()
@@ -76,7 +87,13 @@ impl Choice {
             .border(1.0)
             .border_color(move || Paint::from(edge()));
         let ring = ring.bg(token::CANVAS).align_items(Align::Center).justify(Justify::Center);
-        row().align_items(Align::Center).gap(6.0).child(ring.child(show(on, dot))).child(text(label))
+        let line = row().align_items(Align::Center).gap(6.0).child(ring.child(show(on, dot)));
+        let Some(hint) = hint.filter(|hint| !hint.is_empty()) else { return line.child(text(label)) };
+        // Under the label, past the ring and its gap; the option is named by its label alone.
+        let told = NodeRef::new();
+        let under = div().padding_left(18.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
+        let under = under.node_ref(&told).child(text(hint.clone()));
+        column().gap(2.0).label(label.clone()).described_by(&told).child(line.child(text(label))).child(under)
     }
 
     /// A cell of a segmented control: tinted, with an accent label, when chosen.
@@ -106,7 +123,7 @@ impl Choice {
                 // The frame does not cut what it holds: the cells at its ends are rounded as
                 // its inside is, so a chosen one's fill stays in it.
                 true => self.cell(label).radii(ends(i, count)),
-                false => Choice::radio(label, on),
+                false => Choice::radio(label, self.hints.get(i), on),
             };
             parts.push(AnyView::new(quadra_headless::radio(option.cursor(Cursor::Pointer), i, chosen)));
         }

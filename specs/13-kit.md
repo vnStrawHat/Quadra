@@ -173,6 +173,8 @@ As built so far:
   `.clearable()` has a cross at its end while it holds text, and a click on it empties it.
   A tooltip takes `.meta(words)`, a smaller muted line under its text. `key_hint(keys,
   does)` is the keys in a small tinted box, then what they do, in small mono italics.
+  A radio group takes `.hints([..])`, a muted line of 12 px under each option's label (""
+  for none), which a reader hears as the option's description, not its name.
   `confirm(open, title, message, yes, on_yes)` is a dialog with Cancel and one answer;
   `.danger()` puts the answer in the colour of errors, for what destroys something.
   `menu_button(label, || items)` is a ghost button that opens a menu under itself, and

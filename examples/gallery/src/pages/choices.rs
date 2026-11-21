@@ -77,6 +77,15 @@ pub fn radio_page() -> Div {
             ),
             demo("Horizontal", radio_group(["Nhỏ", "Vừa", "Lớn"], size).horizontal(), ".horizontal()"),
             demo("Disabled", radio_group(["Read", "Write"], signal(0)).horizontal().disabled(true), ""),
+            demo(
+                "With hints",
+                radio_group(["After 1 min", "After 5 min", "Never"], signal(0)).hints([
+                    "the default",
+                    "",
+                    "the lock waits for you",
+                ]),
+                ".hints([\"the default\", \"\", ..])",
+            ),
         ],
     )
 }

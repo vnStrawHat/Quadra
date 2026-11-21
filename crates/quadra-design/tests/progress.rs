@@ -70,10 +70,13 @@ fn a_meter_says_its_value_and_its_mark_and_warns_near_the_top() {
     let bar = h.query(|n| n.semantics.role == Role::ProgressBar)[0];
     let (fill, holder) = (h.tree.children(bar)[0], h.tree.children(bar)[1]);
     assert_eq!((h.tree.rect(bar).size(), h.tree.rect(fill).width), (Size::new(200.0, 4.0), 86.0));
-    // The tick is centred on the mark, a pixel past the track above and below.
+    // The tick is centred on the mark, past the track by half its height above and below;
+    // the track in the strong line's colour.
     let tick = h.tree.window_rect(h.tree.children(holder)[0]);
     let track = h.tree.window_rect(bar);
-    assert_eq!((tick.center().x - track.x, tick.height), (122.0, 6.0));
+    assert_eq!((tick.center().x - track.x, tick.height), (122.0, 8.0));
+    let strong = quadra_design::dark().theme().resolve(quadra_design::token::LINE_STRONG.into());
+    assert_eq!(h.tree.paint_style(bar).background, strong);
     // The fill warns from 85 %, and is an error past all of it.
     let tones: Vec<_> = [0.43, 0.9, 1.2]
         .into_iter()
@@ -85,4 +88,17 @@ fn a_meter_says_its_value_and_its_mark_and_warns_near_the_top() {
         .collect();
     assert!(tones[0] != tones[1] && tones[1] != tones[2] && tones[0] != tones[2], "{tones:?}");
     assert_eq!(h.tree.rect(fill).width, 200.0);
+}
+
+#[test]
+fn a_meter_that_fills_its_box_follows_it() {
+    let width = signal(300.0f32);
+    let mut h =
+        mount(move || column().width(move || width.get()).child(quadra_design::meter(0.5).mark(0.7).fill()));
+    let bar = h.query(|n| n.semantics.role == Role::ProgressBar)[0];
+    assert_eq!(h.tree.rect(bar).size(), Size::new(300.0, 6.0));
+    width.set(420.0);
+    h.frame();
+    let (bar_px, fill) = (h.tree.rect(bar).width, h.tree.rect(h.tree.children(bar)[0]).width);
+    assert_eq!((bar_px, fill), (420.0, 210.0));
 }

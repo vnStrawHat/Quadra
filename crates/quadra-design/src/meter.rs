@@ -23,7 +23,7 @@ pub struct Meter {
     used: Read,
     mark: Option<Read>,
     warn: Option<f32>,
-    width: f32,
+    width: Length,
     height: f32,
     names: (String, String),
 }
@@ -32,7 +32,8 @@ pub struct Meter {
 /// bar of 6 px, 200 wide unless told, filled with the accent.
 pub fn meter<M>(used: impl IntoProp<f32, M>) -> Meter {
     let names = ("used".to_string(), "mark".to_string());
-    Meter { used: reader(used.into_prop()), mark: None, warn: None, width: 200.0, height: 6.0, names }
+    let width = Length::Px(200.0);
+    Meter { used: reader(used.into_prop()), mark: None, warn: None, width, height: 6.0, names }
 }
 
 impl Meter {
@@ -56,7 +57,13 @@ impl Meter {
     }
 
     pub fn width(mut self, px: f32) -> Self {
-        self.width = px;
+        self.width = Length::Px(px);
+        self
+    }
+
+    /// As wide as the box it is in, following it as the box changes.
+    pub fn fill(mut self) -> Self {
+        self.width = Length::Fill;
         self
     }
 
@@ -88,14 +95,15 @@ impl View for Meter {
             None => format!("{} {}%", names.0, percent(said())),
         };
         let range = move || RangeValue { value: used() as f64, max: 1.0, ..RangeValue::default() };
-        let track = div().size(width, height).shrink(0.0).radius(round).bg(token::CHROME);
+        let track = div().width(width).height(height).radius(round).bg(token::LINE_STRONG);
+        let track = if matches!(width, Length::Px(_)) { track.shrink(0.0) } else { track };
         let track = track.role(Role::ProgressBar).value(says).range(range).child(fill);
         let track = match mark {
             Some(at) => {
-                // A holder of no width at the value, the tick centred on it, a pixel past the
-                // track above and below.
+                // A holder of no width at the value, the tick centred on it, past the track by
+                // half its height above and below.
                 let left = move || Length::Pct(at().clamp(0.0, 1.0) * 100.0);
-                let tick = div().absolute().left(-2.0).top(-1.0).bottom(-1.0).width(4.0);
+                let tick = div().absolute().left(-2.0).top(-round).bottom(-round).width(4.0);
                 let tick = tick.bg(token::TEXT).border(1.0).border_color(token::PANEL);
                 track.child(div().absolute().top(0.0).bottom(0.0).width(0.0).left(left).child(tick))
             }

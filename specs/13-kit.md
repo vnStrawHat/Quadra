@@ -416,10 +416,11 @@ As built so far:
   no end in sight: a third of it crosses the track every 1.4 s. `spinner()` is an open ring
   that turns once in 0.9 s, in the colour of the text around it, a progress bar named
   `Loading` unless `.label(..)` names it. `meter(used)` (`meter.rs`) says how full something
-  is, a measure and not a task under way: the same track, 200 by 6 unless told
-  (`.width`, `.height`: 4 in a table's row), filled as far as `used`; `.mark(at)` is a tick
-  at a second value over the fill (2 px in the text's colour with a ring of the panel's, a
-  pixel past the track above and below), and `.warn_at(part)` fills it in the colour of
+  is, a measure and not a task under way: a track in `line_strong`, 200 by 6 unless told
+  (`.width`, `.height`: 4 in a table's row; `.fill()` as wide as its box, which it follows),
+  filled as far as `used`; `.mark(at)` is a tick at a second value over the fill (2 px in
+  the text's colour with a ring of the panel's, past the track by half its height above and
+  below: 12 px tall on a bar of 6, a mark across it and not a notch), and `.warn_at(part)` fills it in the colour of
   warnings from there and of errors past 1. A reader hears both values, by the names of
   `.names(..)` ("used 43%, requested 61%"). `skeleton(width, height)`
   is a block that stands for what is on its way, and pulses. In the three that move, what

@@ -191,8 +191,9 @@ pub fn progress_page() -> Div {
                             .gap(12.0)
                             .child(meter(0.91).mark(0.7).warn_at(0.85).width(320.0))
                             .child(mono("memory 91%".to_string())),
-                    ),
-                "meter(used).mark(requested).warn_at(0.85)",
+                    )
+                    .child(meter(0.62).mark(0.8).fill()),
+                "meter(used).mark(requested).warn_at(0.85); .fill(): as wide as its box",
             ),
         ],
     )

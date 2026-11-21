@@ -158,3 +158,19 @@ fn a_palette_picks_other_things_with_words_of_its_own() {
     h.frame();
     assert_eq!((took.get_untracked(), open.get_untracked()), ("lib.rs".to_string(), false));
 }
+
+#[test]
+fn a_space_before_a_matched_run_keeps_its_width() {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(|| {
+        let marked = quadra_view::row().child(quadra_design::marked("Pod node", &[4, 5, 6, 7]));
+        let plain = quadra_view::row().child(quadra_view::text("Pod node"));
+        quadra_view::column().child(marked).child(plain)
+    });
+    h.frame();
+    // The marked line, then the plain one: as wide as each other.
+    let lines = h.query(|n| n.semantics.name == "Pod node");
+    let [marked, plain] = [0, 1].map(|i| h.tree.window_rect(lines[i]).width);
+    assert!(plain > 0.0 && (marked - plain).abs() < 0.5, "{marked} against {plain}");
+}

@@ -10,7 +10,9 @@ pub use quadra_headless::pick::{fuzzy, fuzzy_hits};
 use quadra_layout::{Align, Length};
 use quadra_reactive::{Signal, memo, signal};
 use quadra_tree::{NodeId, State};
-use quadra_view::{Div, MountCx, Place, View, by_text, column, div, row, scroll, text, text_input};
+use quadra_view::{
+    Div, MountCx, Place, View, by_text, column, div, rich_text, row, scroll, span, text, text_input,
+};
 
 use crate::display::key_label;
 use crate::popup::{EDGE, listing, popup};
@@ -70,21 +72,24 @@ impl<F> Palette<F> {
     }
 }
 
-/// A text with the characters at `hits` in the accent: where a query matched it.
+/// A text with the characters at `hits` in the accent: where a query matched it. One
+/// paragraph with a span a run, so a space at the end of a run keeps its width.
 pub fn marked(words: &str, hits: &[usize]) -> Div {
-    let mut line = row();
-    let (mut run, mut on) = (String::new(), false);
+    let (mut spans, mut run, mut on) = (Vec::new(), String::new(), false);
+    let mut end = |run: String, on: bool| {
+        let piece = span(run);
+        spans.push(if on { piece.color(token::ACCENT_TEXT) } else { piece });
+    };
     for (i, c) in words.chars().enumerate() {
         let hit = hits.contains(&i);
         if hit != on && !run.is_empty() {
-            let piece = text(std::mem::take(&mut run));
-            line = line.child(if on { piece.color(token::ACCENT_TEXT) } else { piece });
+            end(std::mem::take(&mut run), on);
         }
         on = hit;
         run.push(c);
     }
-    let piece = text(run);
-    line.child(if on { piece.color(token::ACCENT_TEXT) } else { piece })
+    end(run, on);
+    row().child(rich_text(spans))
 }
 
 /// The palette while `open` is true. `commands` is asked each time it opens.

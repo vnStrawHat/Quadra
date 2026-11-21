@@ -774,7 +774,8 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   title in order, whatever their case and accents (`fuzzy_hits`; "hai ph" finds "Hải
   Phòng"); letters at the start and one after another count for more (`fuzzy`), and the
   best match is first and highlighted. The letters that matched are in the accent
-  (`marked`: a row of texts). The arrows go round the matches with the focus still in the
+  (`marked`: one paragraph with a span a run, so a space at the end of a run keeps its
+  width and the line reads as one text). The arrows go round the matches with the focus still in the
   query, Enter or a click runs one after the palette has closed and given the focus back.
 - A drawer slides in from its edge over 200 ms (a timeline on its page: past the edge, then
   its place; composed only). A toast, or a card that lasts, waits while the pointer is on it

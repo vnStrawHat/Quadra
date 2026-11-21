@@ -182,5 +182,14 @@ fn lines_are_selected_and_copied_and_a_long_one_scrolls_sideways() {
     let y = h.tree.window_rect(h.query(|n| n.semantics.name == "12:01:40.000")[0]).y + 9.0;
     h.tree.wheel(quadra_prim::Point::new(0.0, -1.0), false, quadra_prim::Point::new(300.0, y), Mods::SHIFT);
     settle(&mut h);
-    assert!(line(&h) < x && time(&h) == at, "{x} -> {}", line(&h));
+    let shifted = line(&h);
+    assert!(shifted < x && time(&h) == at, "{x} -> {shifted}");
+    // The wheel tilted to the right (negative, as the platform gives it) shows more of the
+    // right; to the left, back.
+    h.tree.wheel(quadra_prim::Point::new(-1.0, 0.0), false, quadra_prim::Point::new(300.0, y), Mods::NONE);
+    settle(&mut h);
+    assert!(line(&h) < shifted, "{shifted} -> {}", line(&h));
+    h.tree.wheel(quadra_prim::Point::new(1.0, 0.0), false, quadra_prim::Point::new(300.0, y), Mods::NONE);
+    settle(&mut h);
+    assert_eq!(line(&h), shifted);
 }

@@ -1,6 +1,7 @@
 //! Keyboard and mouse: from Win32 messages to platform events.
 
 use quadra_platform::{Cursor, Key, Mods, MouseButton};
+use quadra_prim::Point;
 use windows::Win32::Foundation::{LPARAM, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::GetKeyState;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -89,6 +90,12 @@ pub(crate) fn wheel_lines(wparam: WPARAM) -> f32 {
     hi(wparam.0 as isize) as f32 / 120.0
 }
 
+/// The delta of a wheel's turn, positive towards the start on both axes: Windows gives a
+/// tilt to the right as positive, the other way from the vertical wheel's sign.
+pub(crate) fn wheel_delta(sideways: bool, lines: f32) -> Point {
+    if sideways { Point::new(-lines, 0.0) } else { Point::new(0.0, lines) }
+}
+
 /// A position packed in a message, in device pixels.
 pub(crate) fn position(lparam: LPARAM) -> (i32, i32) {
     (lo(lparam.0), hi(lparam.0))
@@ -130,4 +137,17 @@ pub(crate) fn system_cursor(cursor: Cursor) -> HCURSOR {
     };
     // SAFETY: loading a cursor of the system by its id; they are shared and never freed.
     unsafe { LoadCursorW(None, id) }.unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_wheel_is_positive_towards_the_start_on_both_axes() {
+        // A notch away from the user: up. A tilt to the right (+120): to the right, negative.
+        let notch = WPARAM(120 << 16);
+        assert_eq!(wheel_delta(false, wheel_lines(notch)), Point::new(0.0, 1.0));
+        assert_eq!(wheel_delta(true, wheel_lines(notch)), Point::new(-1.0, 0.0));
+    }
 }

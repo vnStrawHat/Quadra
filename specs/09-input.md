@@ -36,7 +36,10 @@ The path is the target and its ancestors.
 - **Wheel** bubbles until a scroll container consumes it; what it cannot consume continues up.
   A line of the wheel is 40 logical pixels; a touchpad reports pixels. The event carries how
   far to scroll, and a container takes off it what it scrolled, so a list at its end hands
-  the rest to the page around it within the same event.
+  the rest to the page around it within the same event. On both axes a positive delta is
+  towards the start of the content: up, and left. Windows says the other way sideways (a
+  positive `WM_MOUSEHWHEEL` is a tilt, or a swipe, to the right), so its delta is turned
+  there, once, and a tilt to the right shows the right part of what is wider.
 - Every dispatch runs in a batch (03). Handlers write signals; nothing is redrawn until the
   frame.
 

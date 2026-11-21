@@ -16,7 +16,7 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 
 use crate::a11y::WM_SEMANTIC;
 use crate::ime;
-use crate::input::{button_of, char_text, current_mods, hi, key_from_vk, position, wheel_lines};
+use crate::input::{button_of, char_text, current_mods, hi, key_from_vk, position, wheel_delta, wheel_lines};
 use crate::window::WindowState;
 
 /// Not among the window messages of the bindings: it is declared with the common controls.
@@ -237,9 +237,7 @@ impl WindowState {
                 let mut at = POINT { x, y };
                 // SAFETY: the point is valid; wheel positions arrive in screen coordinates.
                 let _ = unsafe { ScreenToClient(hwnd, &mut at) };
-                let lines = wheel_lines(wparam);
-                let delta =
-                    if msg == WM_MOUSEWHEEL { Point::new(0.0, lines) } else { Point::new(lines, 0.0) };
+                let delta = wheel_delta(msg == WM_MOUSEHWHEEL, wheel_lines(wparam));
                 self.emit(PlatformEvent::Wheel {
                     delta,
                     precise: false,

@@ -140,7 +140,8 @@ impl Widget for Text {
         self.tiles.clear();
         match &self.ellipsis {
             Some(Some(dots)) if paragraph.size().width > cx.rect.width + 0.5 => {
-                cut(cx, paragraph, dots, self.color, &mut self.tiles)
+                let color = self.color;
+                cut(cx, paragraph, dots, (|_| color, color), &mut self.tiles)
             }
             _ => paint_glyphs(cx, paragraph, cx.rect.origin(), self.color, &mut self.tiles),
         }
@@ -165,8 +166,14 @@ impl Widget for Text {
 }
 
 /// Paints the one line of a paragraph as far as there is room for it and an ellipsis after
-/// it, at the node's corner.
-fn cut(cx: &mut PaintCx, paragraph: &Paragraph, dots: &Word, color: Color, tiles: &mut Vec<GlyphTile>) {
+/// it, at the node's corner: each glyph in the colour of its run, the ellipsis in `plain`.
+pub(crate) fn cut(
+    cx: &mut PaintCx,
+    paragraph: &Paragraph,
+    dots: &Word,
+    (color, plain): (impl Fn(usize) -> Color, Color),
+    tiles: &mut Vec<GlyphTile>,
+) {
     let Some(line) = paragraph.lines().first() else { return };
     let (scale, origin) = (cx.scale, cx.rect.origin());
     let baseline = ((origin.y + line.baseline) * scale).round();
@@ -174,14 +181,14 @@ fn cut(cx: &mut PaintCx, paragraph: &Paragraph, dots: &Word, color: Color, tiles
     let room = cx.rect.width - dots.width;
     let mut end = 0.0f32;
     for g in glyphs.iter().filter(|g| g.x - start + g.advance <= room) {
-        let (_, size) = paragraph.run_at(g.cluster as usize);
+        let (run, size) = paragraph.run_at(g.cluster as usize);
         let pen = Point::new((origin.x + g.x - start) * scale, baseline - (g.y * scale).round());
-        tiles.extend(paint_glyph(cx, (g.face, g.id), size * scale, pen, color));
+        tiles.extend(paint_glyph(cx, (g.face, g.id), size * scale, pen, color(run)));
         end = end.max(g.x - start + g.advance);
     }
     for g in &dots.glyphs {
         let pen = Point::new((origin.x + end + g.x) * scale, baseline - (g.y * scale).round());
-        tiles.extend(paint_glyph(cx, (g.face, g.id), paragraph.style().size * scale, pen, color));
+        tiles.extend(paint_glyph(cx, (g.face, g.id), paragraph.style().size * scale, pen, plain));
     }
 }
 

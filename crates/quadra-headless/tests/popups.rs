@@ -95,6 +95,7 @@ fn typing_narrows_what_is_found_and_the_best_match_is_first() {
         let found = Found::new(memo(move || pick::best(&query.get(), known.iter().map(String::as_str))));
         let (labels, matches) = (texts.clone(), found.matches);
         let parts = Parts {
+            head: None,
             list: Rc::new(column),
             line: None,
             row: Rc::new(move |_, i| div().height(20.0).label(labels[i].clone())),
@@ -128,6 +129,7 @@ fn a_combobox_opens_as_it_is_typed_into_and_takes_an_option() {
         let options = Rc::new(vec!["Hà Nội".to_string(), "Hải Phòng".to_string()]);
         let labels = options.clone();
         let parts = Parts {
+            head: None,
             list: Rc::new(column),
             line: None,
             row: Rc::new(move |_, i| div().height(20.0).label(labels[i].clone())),

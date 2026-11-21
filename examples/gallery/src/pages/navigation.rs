@@ -4,8 +4,9 @@
 use quadra::Token;
 use quadra::{Div, column, div, dynamic, row, signal};
 use quadra_design::{
-    MenuItem, NavItem, Size, Status, breadcrumb, button, icon, icon_button, icons, kbd, menu_button, menubar,
-    sidebar, status_item, status_label, statusbar, token, toolbar, tooltip, vdivider,
+    Command, MenuItem, NavItem, Size, Status, breadcrumb, button, command_palette, icon, icon_button, icons,
+    kbd, menu_button, menubar, sidebar, status_item, status_label, statusbar, token, toolbar, tooltip,
+    vdivider,
 };
 
 use crate::common::{demo, framed, hint, line, page};
@@ -134,6 +135,34 @@ pub fn palette_page(gallery: Gallery) -> Div {
     page(
         "Command palette",
         "Fuzzy search over every command, with or without diacritics. Ctrl-K opens it anywhere.",
-        [demo("Open", line().child(open).child(kbd("ctrl-k")), "command_palette(open, || commands)")],
+        [
+            demo("Open", line().child(open).child(kbd("ctrl-k")), "command_palette(open, || commands)"),
+            demo(
+                "A picker under a control",
+                cluster_picker(),
+                "command_palette(open, clusters).under(&opener).width(280.0)",
+            ),
+        ],
     )
+}
+
+/// The clusters to switch to, hung under the name of the one in use.
+fn cluster_picker() -> Div {
+    let (open, at, using) = (signal(false), quadra::NodeRef::new(), signal("prod-cluster"));
+    let clusters = move || {
+        let all = [
+            ("prod-cluster", Status::Running, "connected"),
+            ("staging", Status::Running, "connected"),
+            ("dev-eu-west-1", Status::Failed, "unreachable"),
+        ];
+        let command = |(name, status, words): (&'static str, Status, &str)| {
+            let command = Command::new(name, move || using.set(name)).status(status, words);
+            if name == using.get_untracked() { command.current() } else { command }
+        };
+        all.into_iter().map(command).collect()
+    };
+    let opener = button(move || using.get().to_string()).icon(icons::SERVER).on_click(move || open.set(true));
+    let picker = command_palette(open, clusters).under(&at).width(280.0).placeholder("Switch cluster…");
+    let picker = picker.foot("Enter switch · Esc close", |n| format!("{n} clusters"));
+    line().child(div().node_ref(&at).child(opener)).child(picker)
 }

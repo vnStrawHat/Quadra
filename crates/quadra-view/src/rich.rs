@@ -99,14 +99,22 @@ pub struct RichTextView {
     on_link: Option<OnLink>,
     on_hover: Option<OnHover>,
     ctrl: bool,
+    one_line: bool,
 }
 
 /// A paragraph of spans, wrapped as one text.
 pub fn rich_text(spans: impl IntoIterator<Item = Span>) -> RichTextView {
-    RichTextView { spans: spans.into_iter().collect(), on_link: None, on_hover: None, ctrl: false }
+    let spans = spans.into_iter().collect();
+    RichTextView { spans, on_link: None, on_hover: None, ctrl: false, one_line: false }
 }
 
 impl RichTextView {
+    /// One line, cut with an ellipsis where its box ends: a title in a narrow row.
+    pub fn ellipsis(mut self) -> Self {
+        self.one_line = true;
+        self
+    }
+
     /// Runs `f` with the target of a link when it is clicked.
     pub fn on_link(mut self, f: impl Fn(&str) + 'static) -> Self {
         self.on_link = Some(Rc::new(f));
@@ -223,6 +231,7 @@ impl View for RichTextView {
             spans.push(RichSpan { end: text.len(), shaping, color, background, strike, link });
         }
         let rich = RichText::new(text, spans);
+        let rich = if self.one_line { rich.one_line() } else { rich };
         let rich = boxes.into_iter().fold(rich, |rich, (span, inline)| rich.with_box(span, inline));
         let boxes = rich.links();
         let id = cx.tree.insert_widget(Style::default(), Box::new(rich));

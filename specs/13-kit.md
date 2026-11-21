@@ -812,6 +812,19 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
 - A picker of other things (files, branches, symbols) is the palette of commands whose
   doing is to take each: `.placeholder(..)` and `.empty(..)` give it its own words, and
   `Command::detail(..)` muted words after a title that the query does not search.
+- The query row starts with the search icon; `.note(|| ..)` puts muted words at its end
+  (where it searches: "in prod-cluster"). `Command::group(heading)` puts rows under
+  headings of 24 px, small and muted, which are no rows: the arrows pass them by. The rows
+  of a group stay together, best match first, the groups in the order of their first
+  commands. A row is: the chosen mark, `Command::lead(|| view)` (a badge of its kind), the
+  title on one line (cut with an ellipsis: it gives way first), the detail; at its end
+  `Command::status(status, words)` (a `status_label`), the keys, "Enter" on the row the
+  arrows are on, and a check on the `Command::current()` row, which comes first with its
+  group. `.foot(keys, |n| words)` is a line of 28 px under the rows, over a line: the keys
+  at its start, what the count of matches says at its end ("6 results"). `.under(&opener)`
+  hangs it 4 px under a control, its start at the control's, instead of under the top of
+  the window (a click on the opener does not open it again), and `.width(px)` makes it
+  other than 608 px (280 for a picker under a control).
 
 ## Crates
 

@@ -1,25 +1,28 @@
 //! The command palette (specs/behaviour/15, "Picker / command palette"): what the app can
-//! do, found by typing a few letters of it. A query over the rows that match, hung under the
-//! top of the window.
+//! do, found by typing a few letters of it. A query over the rows that match, in groups
+//! under headings, hung under the top of the window or under the control that opens it.
 
+use std::collections::HashMap;
 use std::rc::Rc;
 
+use quadra_headless::pick::Found;
 pub(crate) use quadra_headless::pick::best;
-use quadra_headless::pick::{Found, Parts};
 pub use quadra_headless::pick::{fuzzy, fuzzy_hits};
 use quadra_layout::{Align, Length};
-use quadra_reactive::{Signal, memo, signal};
-use quadra_tree::{NodeId, State};
-use quadra_view::{
-    Div, MountCx, Place, View, by_text, column, div, rich_text, row, scroll, span, text, text_input,
-};
+use quadra_reactive::{Memo, Signal, memo, signal};
+use quadra_tree::NodeId;
+use quadra_view::{Div, MountCx, NodeRef, Place, View, by_text, column, div, row, scroll, text, text_input};
 
-use crate::display::key_label;
-use crate::popup::{EDGE, listing, popup};
-use crate::token;
+use crate::popup::{EDGE, below, listing, popup};
+use crate::size::TEXT_SM;
+use crate::{Status, icon, icons, token};
 
-/// The height of a row, and the most of the list that shows.
+mod face;
+pub use face::marked;
+
+/// The height of a row, of a group's heading, and the most of the list that shows.
 const ROW: f32 = 28.0;
+const HEAD: f32 = 24.0;
 const MOST: f32 = 347.0;
 
 /// Something the app can do: what it is called, the keys that do it too, and the doing.
@@ -28,12 +31,17 @@ pub struct Command {
     title: String,
     keys: Option<String>,
     detail: Option<String>,
+    group: Option<Rc<str>>,
+    lead: Option<Rc<dyn Fn() -> Div>>,
+    status: Option<(Status, String)>,
+    current: bool,
     run: Rc<dyn Fn()>,
 }
 
 impl Command {
     pub fn new(title: impl Into<String>, run: impl Fn() + 'static) -> Command {
-        Command { title: title.into(), keys: None, detail: None, run: Rc::new(run) }
+        let (keys, detail, group, lead, status) = (None, None, None, None, None);
+        Command { title: title.into(), keys, detail, group, lead, status, current: false, run: Rc::new(run) }
     }
 
     /// The binding that runs it, as bindings are written: "ctrl-shift-p".
@@ -47,7 +55,34 @@ impl Command {
         self.detail = Some(words.into());
         self
     }
+
+    /// The heading it is under. The commands of a group stay together, in the order given;
+    /// the groups come in the order of their first commands.
+    pub fn group(mut self, heading: impl Into<String>) -> Self {
+        self.group = Some(Rc::from(heading.into()));
+        self
+    }
+
+    /// What goes before the title (`badge("Node", Tone::Neutral)`), built for each row.
+    pub fn lead(mut self, part: impl Fn() -> Div + 'static) -> Self {
+        self.lead = Some(Rc::new(part));
+        self
+    }
+
+    /// A state at the end of its row, with its mark: `status_label`'s.
+    pub fn status(mut self, status: Status, words: impl Into<String>) -> Self {
+        self.status = Some((status, words.into()));
+        self
+    }
+
+    /// What is chosen now: first, with a check at the end of its row.
+    pub fn current(mut self) -> Self {
+        self.current = true;
+        self
+    }
 }
+
+type Foot = (String, Rc<dyn Fn(usize) -> String>);
 
 /// The palette: of commands, or of anything else to pick (files, branches, symbols) as
 /// commands whose doing is to take it, with words of its own for the query and for no match.
@@ -56,6 +91,10 @@ pub struct Palette<F> {
     commands: F,
     ask: String,
     none: String,
+    note: Option<Rc<dyn Fn() -> String>>,
+    foot: Option<Foot>,
+    under: Option<NodeRef>,
+    width: f32,
 }
 
 impl<F> Palette<F> {
@@ -70,26 +109,32 @@ impl<F> Palette<F> {
         self.none = words.into();
         self
     }
-}
 
-/// A text with the characters at `hits` in the accent: where a query matched it. One
-/// paragraph with a span a run, so a space at the end of a run keeps its width.
-pub fn marked(words: &str, hits: &[usize]) -> Div {
-    let (mut spans, mut run, mut on) = (Vec::new(), String::new(), false);
-    let mut end = |run: String, on: bool| {
-        let piece = span(run);
-        spans.push(if on { piece.color(token::ACCENT_TEXT) } else { piece });
-    };
-    for (i, c) in words.chars().enumerate() {
-        let hit = hits.contains(&i);
-        if hit != on && !run.is_empty() {
-            end(std::mem::take(&mut run), on);
-        }
-        on = hit;
-        run.push(c);
+    /// Muted words at the end of the query: where it searches ("in prod-cluster").
+    pub fn note(mut self, words: impl Fn() -> String + 'static) -> Self {
+        self.note = Some(Rc::new(words));
+        self
     }
-    end(run, on);
-    row().child(rich_text(spans))
+
+    /// A line under the rows: `keys` at its start ("Enter open · Esc close"), and at its end
+    /// what `count` says of the number of matches ("6 results").
+    pub fn foot(mut self, keys: impl Into<String>, count: impl Fn(usize) -> String + 'static) -> Self {
+        self.foot = Some((keys.into(), Rc::new(count)));
+        self
+    }
+
+    /// Hung under `opener`, a control (the name in a title bar), instead of under the top of
+    /// the window; a click on the opener does not open it again.
+    pub fn under(mut self, opener: &NodeRef) -> Self {
+        self.under = Some(opener.clone());
+        self
+    }
+
+    /// Its width: 608 px unless told (280 under a control).
+    pub fn width(mut self, px: f32) -> Self {
+        self.width = px;
+        self
+    }
 }
 
 /// The palette while `open` is true. `commands` is asked each time it opens.
@@ -97,79 +142,85 @@ pub fn command_palette<F>(open: Signal<bool>, commands: F) -> Palette<F>
 where
     F: Fn() -> Vec<Command> + 'static,
 {
-    Palette { open, commands, ask: "Type a command…".into(), none: "No commands".into() }
+    let (ask, none) = ("Type a command…".into(), "No commands".into());
+    Palette { open, commands, ask, none, note: None, foot: None, under: None, width: 608.0 }
 }
 
 impl<F: Fn() -> Vec<Command> + 'static> View for Palette<F> {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let Palette { open, commands, ask, none } = self;
-        palette(open, commands, ask, Rc::from(none)).mount(cx)
+        palette(self).mount(cx)
     }
 }
 
-fn palette<F>(open: Signal<bool>, commands: F, ask: String, none: Rc<str>) -> impl View + use<F>
-where
-    F: Fn() -> Vec<Command> + 'static,
-{
-    popup(open, listing(Place::Top(80.0)), None, move || {
+/// The commands that match, the best first, the order given deciding ties; the rows of a
+/// group together, the groups in the order of their first commands; the current one first.
+fn order(all: Rc<Vec<Command>>, query: Signal<String>) -> Memo<Vec<usize>> {
+    let mut firsts = HashMap::new();
+    let rank: Vec<usize> = all
+        .iter()
+        .enumerate()
+        .map(|(i, command)| *firsts.entry(command.group.clone()).or_insert(i))
+        .collect();
+    let lead = all.iter().position(|command| command.current).map(|i| rank[i]);
+    memo(move || {
+        let mut found = best(&query.get(), all.iter().map(|command| command.title.as_str()));
+        found.sort_by_key(|&i| (Some(rank[i]) != lead, rank[i], !all[i].current));
+        found
+    })
+}
+
+fn palette<F: Fn() -> Vec<Command> + 'static>(p: Palette<F>) -> impl View + use<F> {
+    let Palette { open, commands, ask, none, note, foot, under, width } = p;
+    let (none, place) = (Rc::<str>::from(none), under.as_ref().map_or(Place::Top(80.0), below));
+    popup(open, listing(place), under, move || {
         let (all, query) = (Rc::new(commands()), signal(String::new()));
-        // The commands that match, the best first; the order they were given in decides ties.
-        let known = all.clone();
-        let found =
-            Found::new(memo(move || best(&query.get(), known.iter().map(|command| command.title.as_str()))));
+        let found = Found::new(order(all.clone(), query));
+        let (on, matches) = (found.on, found.matches);
         let run = {
-            let (all, matches) = (all.clone(), found.matches);
+            let all = all.clone();
             move |k: usize| {
                 let Some(command) = matches.get().get(k).map(|&i| all[i].clone()) else { return };
                 open.set(false); // the focus is back where it was before the command acts
                 (command.run)();
             }
         };
-        let on = found.on;
-        // As wide as the palette: a row is filled, and its keys are at its end.
-        let face = move |k: usize, i: usize| {
-            let command = &all[i];
-            let hits = fuzzy_hits(&query.get_untracked(), &command.title).unwrap_or_default();
-            let line =
-                row().align_items(Align::Center).gap(8.0).grow(1.0).height(by_text(ROW)).padding_x(8.0);
-            let line = line.radius(4.0).label(command.title.clone());
-            let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
-            let line =
-                line.child(crate::display::chosen_mark(quadra_tree::Side::Left, move || on.get() == k));
-            let line = line.child(marked(&command.title, &hits));
-            let line = match &command.detail {
-                Some(detail) => line.child(text(detail.clone()).color(token::TEXT_2).ellipsis()),
-                None => line,
-            };
-            let line = line.child(div().grow(1.0));
-            match &command.keys {
-                Some(keys) => {
-                    line.child(text(key_label(keys)).color(token::TEXT_2).size(crate::size::TEXT_SM.size))
-                }
-                None => line,
-            }
-        };
-        let parts = Parts {
-            list: Rc::new(|| column().grow(1.0).padding_y(4.0)),
-            line: Some(Rc::new(|| div().padding_x(4.0))),
-            row: Rc::new(face),
-            empty: Some(Rc::new({
-                let none = none.clone();
-                move || {
-                    div().padding_x(12.0).padding_y(4.0).child(text(none.to_string()).color(token::TEXT_2))
-                }
-            })),
-        };
         // Another query: the best match is the one to take.
-        let rows = found.rows(parts, |_| 0, run.clone());
-        let (enter, submit, matches) = (run.clone(), run, found.matches);
+        let rows = found.rows(face::parts(all.clone(), query, on, none.clone()), |_| 0, run.clone());
+        let (enter, submit) = (run.clone(), run);
         let field = text_input(query).placeholder(&ask).on_submit(move |_| submit(on.get_untracked()));
-        let ask = row().align_items(Align::Center).height(by_text(37.0)).padding_x(12.0);
-        let ask = ask.border_bottom(1.0).border_color(token::LINE).child(div().grow(1.0).child(field));
-        let row_px = by_text(ROW);
-        let tall = move || Length::Px((matches.get().len().max(1) as f32 * row_px() + 8.0).min(MOST));
+        let ask = row().align_items(Align::Center).gap(8.0).height(by_text(37.0)).padding_x(12.0);
+        let ask = ask.border_bottom(1.0).border_color(token::LINE);
+        let ask = ask.child(icon(icons::SEARCH).size(14.0).color(token::TEXT_3));
+        let ask = ask.child(div().grow(1.0).child(field));
+        let ask = match note.clone() {
+            Some(note) => ask.child(row().shrink(0.0).child(text(move || note()).color(token::TEXT_3))),
+            None => ask,
+        };
+        // As tall as the rows and the headings, up to the most.
+        let (row_px, head_px) = (by_text(ROW), by_text(HEAD));
+        let tall = move || {
+            let heads = matches.with(|found| {
+                let before = |k: usize| k.checked_sub(1).map(|b| found[b]);
+                (0..found.len()).filter(|&k| face::heading(&all, before(k), found[k]).is_some()).count()
+            });
+            let rows = matches.get().len().max(1) as f32 * row_px() + heads as f32 * head_px();
+            Length::Px((rows + 8.0).min(MOST))
+        };
         let list = scroll(signal(0.0), rows).container(div().height(tall));
-        let panel = column().width(608.0 - EDGE).selection_color(token::SELECTION);
-        found.keys(panel, enter).child(ask).child(list)
+        let panel = column().width(width - EDGE).selection_color(token::SELECTION);
+        let panel = found.keys(panel, enter).child(ask).child(list);
+        match foot.clone() {
+            Some(foot) => panel.child(foot_line(foot, matches)),
+            None => panel,
+        }
     })
+}
+
+/// The line under the rows: the keys, and the count of the matches at its end.
+fn foot_line((keys, count): Foot, matches: Memo<Vec<usize>>) -> Div {
+    let small = |line: quadra_view::TextView| line.color(token::TEXT_3).size(TEXT_SM.size);
+    let says = row().shrink(0.0).child(small(text(move || count(matches.with(Vec::len)))));
+    let line = row().align_items(Align::Center).gap(8.0).height(by_text(28.0)).padding_x(12.0);
+    let line = line.border_top(1.0).border_color(token::LINE);
+    line.child(small(text(keys).ellipsis())).child(div().grow(1.0)).child(says)
 }

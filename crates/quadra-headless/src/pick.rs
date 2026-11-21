@@ -49,6 +49,9 @@ pub fn best<'a>(query: &str, texts: impl Iterator<Item = &'a str>) -> Vec<usize>
     scored.into_iter().map(|(_, i)| i).collect()
 }
 
+/// What goes before a row, given the text above it and its own.
+pub type Head = Rc<dyn Fn(Option<usize>, usize) -> Option<Div>>;
+
 /// The parts of the rows of what is found, from the look.
 #[derive(Clone)]
 pub struct Parts {
@@ -60,6 +63,9 @@ pub struct Parts {
     pub row: Rc<dyn Fn(usize, usize) -> Div>,
     /// What the rows say when nothing matches.
     pub empty: Option<Rc<dyn Fn() -> Div>>,
+    /// What goes before the row of text `i` after the row of text `before` (a heading of
+    /// a group), if anything: no row of the list, and nothing the arrows stop at.
+    pub head: Option<Head>,
 }
 
 /// What a query found: its matches, and the one of them the arrows are on.
@@ -106,6 +112,10 @@ impl Found {
             *found.refs.borrow_mut() = matches.iter().map(|_| NodeRef::new()).collect();
             let mut list = (parts.list)().role(Role::List);
             for (k, &i) in matches.iter().enumerate() {
+                let before = k.checked_sub(1).map(|b| matches[b]);
+                if let Some(head) = parts.head.as_ref().and_then(|head| head(before, i)) {
+                    list = list.child(head);
+                }
                 let take = take.clone();
                 let face = (parts.row)(k, i).role(Role::ListItem).selected(move || on.get() == k);
                 let face = face.node_ref(&found.refs.borrow()[k]).on_click(move |_| take(k));

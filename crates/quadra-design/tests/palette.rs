@@ -74,11 +74,19 @@ fn a_query_finds_the_commands_that_match_it_whatever_the_case_and_the_accents() 
     let field = p.h.get_by_role(Role::TextInput, "Type a command…").node();
     assert_eq!((panel.width, panel.y, p.h.tree.focused()), (608.0, 80.0, Some(field)));
     assert_eq!(p.rows(), ["[Save file]", "Open folder", "H\u{1EA3}i Ph\u{F2}ng weather", "Toggle sidebar"]);
-    // A row is 28 px, across the palette less its border and 4 px at each side; its keys are 8 px in from its end.
-    let (row, keys) = (p.h.get_by_role(Role::ListItem, "Save file").node(), p.h.get_by_text("Ctrl-S").node());
+    // A row is 28 px, across the palette less its border and 4 px at each side; its keys are
+    // 8 px in from its end, and on the row the arrows are on, "Enter" after them.
+    let (row, keys) =
+        (p.h.get_by_role(Role::ListItem, "Toggle sidebar").node(), p.h.get_by_text("Ctrl-B").node());
     let (row, keys) = (p.h.tree.window_rect(row), p.h.tree.window_rect(keys));
-    assert_eq!((row.width, row.height, keys.right()), (598.0, 28.0, row.right() - 8.0));
-    assert!(p.h.has_text("Ctrl-B"));
+    assert_eq!((row.width, row.height, (keys.right() - row.right() + 8.0).abs() < 0.01), (598.0, 28.0, true));
+    let (save, enter) =
+        (p.h.get_by_role(Role::ListItem, "Save file").node(), p.h.get_by_text("Enter").node());
+    let (save, enter) = (p.h.tree.window_rect(save), p.h.tree.window_rect(enter));
+    assert!(
+        (enter.right() - save.right() + 8.0).abs() < 0.01
+            && p.h.query(|n| n.semantics.name == "Enter").len() == 1
+    );
 
     assert_eq!(p.ask("SV"), ["[Save file]"]);
     assert_eq!(p.ask("hai ph"), ["[H\u{1EA3}i Ph\u{F2}ng weather]"]);

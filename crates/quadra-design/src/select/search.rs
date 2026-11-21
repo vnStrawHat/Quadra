@@ -49,6 +49,7 @@ pub(super) fn searched(
         }
     };
     let parts = Parts {
+        head: None,
         list: Rc::new(|| column().grow(1.0).padding_y(4.0)),
         line: Some(Rc::new(|| div().padding_x(4.0))),
         row: Rc::new(face),

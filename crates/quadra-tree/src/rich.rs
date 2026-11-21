@@ -11,7 +11,7 @@ use quadra_text::{Paragraph, Shaping, TextStyle};
 
 use crate::fonts::GlyphTile;
 use crate::inherit::Inherited;
-use crate::text::paint_runs;
+use crate::text::{cut, paint_runs};
 use crate::theme::{Paint, Theme};
 use crate::widget::{MeasureCx, PaintCx, Widget};
 
@@ -44,6 +44,8 @@ pub struct RichText {
     /// The link the keyboard is on, by its number among the links: outlined.
     focused: Option<usize>,
     marks: marks::Marks,
+    /// One line, cut where its box ends with an ellipsis, shaped at measure.
+    ellipsis: Option<Option<std::rc::Rc<quadra_text::Word>>>,
 }
 
 impl RichText {
@@ -69,7 +71,14 @@ impl RichText {
             selection,
             focused: None,
             marks: marks::Marks::default(),
+            ellipsis: None,
         }
+    }
+
+    /// One line, cut with an ellipsis where its box ends.
+    pub fn one_line(mut self) -> Self {
+        self.ellipsis = Some(None);
+        self
     }
 
     /// Puts the keyboard's outline on a link, by its number among the links, or on none;
@@ -161,7 +170,12 @@ impl Widget for RichText {
                 none.insert(Paragraph::rich(cx.text, self.text.as_str(), self.style.clone(), runs))
             }
         };
-        paragraph.wrap(cx.text, known.width.unwrap_or(avail.width))
+        let width = known.width.unwrap_or(avail.width);
+        let Some(dots) = &mut self.ellipsis else { return paragraph.wrap(cx.text, width) };
+        let face = cx.text.face_for(&self.style);
+        *dots = Some(cx.text.word("\u{2026}", face, self.style.size));
+        let whole = paragraph.wrap(cx.text, f32::INFINITY);
+        Size::new(whole.width.min(width), whole.height)
     }
 
     fn paint(&mut self, cx: &mut PaintCx) {
@@ -231,7 +245,12 @@ impl Widget for RichText {
             }
         }
         self.tiles.clear();
-        paint_runs(cx, paragraph, cx.rect.origin(), color, &mut self.tiles);
+        match &self.ellipsis {
+            Some(Some(dots)) if paragraph.size().width > cx.rect.width + 0.5 => {
+                cut(cx, paragraph, dots, (color, text), &mut self.tiles)
+            }
+            _ => paint_runs(cx, paragraph, cx.rect.origin(), color, &mut self.tiles),
+        }
     }
 
     fn inherit(&mut self, inherited: &Inherited) {

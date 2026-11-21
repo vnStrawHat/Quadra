@@ -5,7 +5,7 @@ use quadra_design::{dark, icons, light};
 
 use crate::pages::{
     actions, charts, choices, data, diagram, diff, display, editor, fields, image, layout, live, markdown,
-    math, motion, navigation, overlays, overview, pickers, rich, workbench,
+    math, motion, navigation, overlays, overview, pickers, rich, status, workbench,
 };
 use crate::shell::Gallery;
 
@@ -131,7 +131,7 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "select" => fields::select_page(),
         "date-picker" => fields::date_page(),
         "field" => fields::field_page(gallery),
-        "status" => display::status_page(),
+        "status" => status::status_page(),
         "badge" => display::badge_page(),
         "tag" => display::tag_page(),
         "kbd" => display::kbd_page(),

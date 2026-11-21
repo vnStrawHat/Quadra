@@ -1,61 +1,13 @@
-//! What shows and does nothing: status, badges, tags, keys, avatars, what is under way,
+//! What shows and does nothing: badges, tags, keys, avatars, what is under way,
 //! cards, alerts, empty places and lists of terms.
 
 use quadra::{Align, AnyView, Div, column, div, row, text};
 use quadra_design::{
-    Status, Tone, alert, avatar, badge, button, card, card_head, copyable, description_list, empty_state,
-    fonts, icons, kbd, meter, plain_badge, progress, progress_busy, size, skeleton, spinner, status_label,
-    status_mark, tag, token,
+    Tone, alert, avatar, badge, button, card, card_head, copyable, description_list, empty_state, fonts,
+    icons, kbd, meter, plain_badge, progress, progress_busy, size, skeleton, spinner, tag, token,
 };
 
 use crate::common::{demo, framed, hint, line, mono, page, stack};
-
-const STATES: [Status; 7] = [
-    Status::Running,
-    Status::Pending,
-    Status::Failed,
-    Status::Succeeded,
-    Status::Terminating,
-    Status::Unknown,
-    Status::None,
-];
-
-pub fn status_page() -> Div {
-    let pods = [
-        ("api-7d9f8c6b5-x2k4p", "Running", "0", "3d"),
-        ("worker-5c6d7f8-9qwer", "ContainerCreating", "0", "14m"),
-        ("migrate-28417-hk2zd", "CrashLoopBackOff", "5", "2m"),
-        ("cron-backup-28417-1", "Completed", "0", "1h"),
-        ("web-6b7c8d9e0-old01", "Terminating", "1", "6d"),
-    ];
-    let head = row().align_items(Align::Center).height(28.0).padding_x(12.0).bg(token::PANEL);
-    let head = head.border_bottom(1.0).border_color(token::LINE).text_size(size::TEXT_SM.size);
-    let head = head.text_color(token::TEXT_2).child(div().width(260.0).child(text("Name")));
-    let head = head.child(div().width(200.0).child(text("Status")));
-    let head = head.child(div().width(80.0).child(text("Restarts"))).child(text("Age"));
-    let mut table = column().border(1.0).border_color(token::LINE).child(head);
-    for (i, (name, state, restarts, age)) in pods.into_iter().enumerate() {
-        let line = row().align_items(Align::Center).height(28.0).padding_x(12.0);
-        let line = line.border_bottom(1.0).border_color(token::LINE).hover(|s| s.bg(token::PANEL_HOVER));
-        let line = line.child(div().width(260.0).child(mono(name).text_color(token::TEXT)));
-        let line = line.child(div().width(200.0).child(status_label(STATES[i], state)));
-        table = table.child(line.child(div().width(80.0).child(mono(restarts))).child(mono(age)));
-    }
-    let about = "Workload state as a color and a shape, so it reads in grayscale and for color-blind users.";
-    page(
-        "Status",
-        about,
-        [
-            demo(
-                "States",
-                line().children(STATES.map(|state| status_label(state, ""))),
-                "status_label(Status::Failed, \"CrashLoopBackOff\")",
-            ),
-            demo("In a table", table, ""),
-            demo("Marks only", line().children(STATES.map(status_mark)), "status_mark(Status::Running)"),
-        ],
-    )
-}
 
 pub fn badge_page() -> Div {
     let tones = [

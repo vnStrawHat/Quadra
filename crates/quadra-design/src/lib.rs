@@ -91,7 +91,7 @@ pub use settings::{Settings, SettingsGroup, SettingsPage, settings, settings_gro
 pub use sidebar::{NavItem, Sidebar, sidebar};
 pub use slider::{Slider, slider};
 pub use split::{Split, split};
-pub use status::{Status, status_label, status_mark};
+pub use status::{Status, status_dots, status_label, status_label_sized, status_mark, status_mark_sized};
 pub use table::{CellKind, Column, Table, age_text, table};
 pub use tabs::{Tabs, tabs};
 pub use theme::{KitTheme, Mode, ThemeError, dark, high_contrast, light, system_theme, theme_from_json};

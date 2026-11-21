@@ -20,4 +20,5 @@ pub mod overlays;
 pub mod overview;
 pub mod pickers;
 pub mod rich;
+pub mod status;
 pub mod workbench;

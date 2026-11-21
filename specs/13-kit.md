@@ -328,7 +328,13 @@ As built so far:
 - **A status** (`status.rs`: running, pending, failed, succeeded, terminating, unknown) has
   a role of the theme for its colour and a shape of its own in a box of 12 px
   (`status_mark`): a filled square of 7 px, a hollow one (a 2 px border), a filled
-  triangle, a check, a dash, a filled diamond. `Status::None` is the box with nothing in it,
+  triangle, a check, a dash, a filled diamond. `status_mark_sized(status, px)` and
+  `status_label_sized(status, words, px)` draw the box and its shape at another size
+  together (8 px in a row of a table, 10 before a status word in a cell or a list).
+  `status_dots(statuses, px)` is a row of marks, `px / 2.5` apart rounded (3 at 8 px, 4 at
+  10): the last runs of a job, the pods of a workload; to a reader an image named by a
+  count a status in the order they first come ("8 succeeded, 2 failed"), `None` not
+  counted. `Status::None` is the box with nothing in it,
   so labels with a mark and without one line up. `status_label` is
   the mark and the name, `Status::of(word)` the status a word names: besides the six, the
   reasons a container is in its state as a cluster writes them: `Error`, `OOMKilled`,

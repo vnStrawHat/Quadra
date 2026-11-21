@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use quadra_design::{Status, dark, status_mark};
+use quadra_design::{Status, dark, status_dots, status_label_sized, status_mark};
 use quadra_prim::Size;
 use quadra_testing::Harness;
 use quadra_tree::Role;
@@ -31,4 +31,25 @@ fn running_and_pending_are_squares_told_apart_by_their_fill_and_none_keeps_its_r
     // None: the 12 px box of a mark, empty.
     assert_eq!(h.tree.window_rect(marks[2]).size(), Size::new(12.0, 12.0));
     assert!(h.tree.children(marks[2]).is_empty());
+}
+
+#[test]
+fn marks_come_at_other_sizes_and_in_a_row_told_as_counts() {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(|| {
+        let runs = [[Status::Succeeded; 8].as_slice(), &[Status::Failed; 2]].concat();
+        row().child(status_dots(runs, 8.0)).child(status_label_sized(Status::Running, "Running", 10.0))
+    });
+    h.frame();
+    let dots = h.get_by_role(Role::Image, "8 succeeded, 2 failed").node();
+    let marks = h.tree.children(dots).to_vec();
+    let (first, second) = (h.tree.window_rect(marks[0]), h.tree.window_rect(marks[1]));
+    assert_eq!((marks.len(), first.size(), second.x - first.right()), (10, Size::new(8.0, 8.0), 3.0));
+    // A mark of 10 px before a word: its square scaled with it.
+    let label = h.get_by_text("Running").node();
+    let mark = h.tree.children(h.tree.parent(label).unwrap())[0];
+    let square = h.tree.children(mark)[0];
+    assert_eq!(h.tree.window_rect(mark).size(), Size::new(10.0, 10.0));
+    assert!((h.tree.window_rect(square).width - 70.0 / 12.0).abs() < 1e-4);
 }

@@ -826,8 +826,14 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   changes paints its own plot. All share the top, the largest value of any rounded up to 1,
   2, 2.5 or 5 times a power of ten: four grid lines with their values at the left, in mono
   10 px. `.time(start_ms, step_ms)` puts the times of the first, the middle and the last
-  sample under the plot; `.unit(..)` follows a value where one is said; `.height(px)`, 200
+  sample under the plot; `start_ms` is a constant or something reactive, so the times of a
+  live chart that drops its oldest sample follow its samples, under the plot and in the box
+  under the pointer. `.unit(..)` follows a value where one is said; `.height(px)`, 200
   unless told. One series has an area under it; several have none.
+- `.limit(name, value)` draws a line at `value` across the plot, dashed, 1 px in `text_2`
+  (a container's limit, a node's allocatable): the top of the scale reaches it however far
+  under it the series are; the box under the pointer and a reader say it after the series
+  (`limit 2000m`). `value` is a constant or something reactive.
 - The pointer over the plot shows a hairline at the nearest sample and a box with the time
   and each series' value there, a swatch of its colour before it. The box is to the right
   of the hairline in the left half of the plot and to its left in the right half. It is

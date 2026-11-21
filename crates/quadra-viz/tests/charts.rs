@@ -169,3 +169,36 @@ fn upright_bars_stand_on_one_line_and_a_legend_names_the_series() {
     let ninth = quadra_viz::series_color(8);
     assert_eq!(ninth, quadra_design::token::SERIES[0].alpha(0.6));
 }
+
+#[test]
+fn a_limit_is_a_dashed_line_the_scale_reaches_and_live_times_follow_the_samples() {
+    let (values, first, limit) = (signal(vec![100.0, 120.0, 110.0]), signal(NOON), signal(2000.0));
+    let mut h = harness();
+    h.mount(move || {
+        let chart = line_chart([Series::new("cpu", values)]).time(first, 60_000).limit("limit", limit);
+        // The plot is 400 by 100, at (44, 6).
+        div().width(452.0).child(chart.unit("m").height(126.0))
+    });
+    h.frame();
+    // The top reaches the limit, far over the samples; a reader hears it after the series.
+    assert!(h.has_text("2k") && h.has_text("1k"), "{}", h.semantics());
+    h.get_by_role(Role::Image, "cpu: 100 to 120m, last 110m; limit 2km");
+    // The line is dashed, at the limit's height: the top of the plot under a top of 2000.
+    let dashed =
+        drawn(&h, Kind::Quad).into_iter().filter(|q| q.flags & quadra_render::FLAG_DASHED != 0).count();
+    assert_eq!(dashed, 1);
+    limit.set(1000.0);
+    h.frame();
+    assert!(h.has_text("1k") && !h.has_text("2k"));
+
+    // Live: the oldest sample goes, a new one comes, and the times move with them.
+    assert!(h.has_text("12:00") && h.has_text("12:02"));
+    values.set(vec![120.0, 110.0, 130.0]);
+    first.set(NOON + 60_000);
+    h.frame();
+    assert!(h.has_text("12:01") && h.has_text("12:03") && !h.has_text("12:00"), "{}", h.semantics());
+    // The box under the pointer says the time of the sample there, and the limit.
+    h.pointer(PointerInput::Move, 44.0 + 395.0, 50.0);
+    h.frame();
+    assert!(h.has_text("12:03") && h.has_text("cpu 130m") && h.has_text("limit 1km"), "{}", h.semantics());
+}

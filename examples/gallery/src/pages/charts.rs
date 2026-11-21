@@ -36,7 +36,7 @@ pub fn line_chart_page() -> Div {
     let one = line_chart([Series::new("cpu", wave(120, 0.0, 140.0, 50.0))]);
     let pods = (0..5)
         .map(|i| Series::new(format!("pod-{i}"), wave(120, i as f64 * 1.3, 60.0 + i as f64 * 40.0, 25.0)));
-    let one = one.time(START, 1000).unit("m").height(180.0);
+    let one = one.time(START, 1000).limit("limit", 250.0).unit("m").height(180.0);
     let many = line_chart(pods).time(START, 1000).unit("m").height(220.0);
     let twelve = (0..12)
         .map(|i| Series::new(format!("node-{i}"), wave(120, i as f64 * 0.7, 40.0 + i as f64 * 15.0, 12.0)));
@@ -48,9 +48,9 @@ pub fn line_chart_page() -> Div {
         about,
         [
             demo(
-                "One series (with area)",
+                "One series (with area) and its limit",
                 framed(div().padding(12.0).child(one)),
-                "line_chart([Series::new(\"cpu\", values)]).time(start_ms, 1000)",
+                "line_chart([Series::new(\"cpu\", values)]).time(start_ms, 1000).limit(\"limit\", 250.0)",
             ),
             demo(
                 "Five series",

@@ -137,6 +137,7 @@ whose every cell changes every frame, costs what the V build's costs.
 | Issue | Status |
 |---|---|
 | #2 the reasons a container is down | Done (2026-11-21): `Status::of` names the reasons a cluster writes (`OOMKilled`, `Evicted`, `…BackOff`, `Err…`, `…Error` failed; `ContainerCreating`, `PodInitializing`, `Init:n/m` pending; `Init:<reason>` that reason's). `tests/bars.rs` |
+| #5 a line chart's limit and live times | Done (2026-11-21): `LineChart::limit(name, value)`, a dashed line across the plot that the scale reaches, said after the series in the box and to a reader; `.time(start, step)` takes the first sample's time as a prop, so a live chart's times follow its samples. The hover in `line_chart/hover.rs`. `quadra-viz/tests/charts.rs`, the gallery's Line chart page |
 | #4 a sidebar's counts and foot | Done (2026-11-21): `Sidebar::counts(|id| ..)`, a live muted count at the end of a place and after its name for a reader, not there while folded, not read by the search; `Sidebar::foot(view)` under the places, outside their scroll. `tests/bars.rs`, the gallery's Sidebar page |
 
 ### Markdown, the app (specs/21, from 2026-11-19)

@@ -2,14 +2,17 @@
 //! the scale; the pointer over the plot writes a signal, which a hairline and a box of the
 //! values there are bound to.
 
+mod hover;
+
 use std::rc::Rc;
 
 use quadra_design::{fonts, token};
 use quadra_layout::{Align, Display, Justify, Length};
-use quadra_reactive::{Memo, Signal, memo, signal, untrack};
-use quadra_tree::{NodeId, Paint, PointerEvent, PointerKind, Role};
+use quadra_reactive::{memo, signal, untrack};
+use quadra_tree::{BorderStyle, NodeId, Paint, PointerEvent, PointerKind, Role};
 use quadra_view::{Div, IntoProp, MountCx, Prop, View, column, div, row, text};
 
+use self::hover::Hover;
 use crate::geometry::{hh_mm, max_of, nice_max, short};
 use crate::plot::filling;
 use crate::series_color;
@@ -22,6 +25,10 @@ const AXIS_H: f32 = 20.0;
 // ponytail: a read copies the values (a property gives no reference); a chart of very many
 // samples wants its series as signals read in place.
 type Values = Rc<dyn Fn() -> Vec<f64>>;
+/// Reads one value: a limit, the time of the first sample.
+type Read<T> = Rc<dyn Fn() -> T>;
+/// A limit: its name and its value.
+type Limit = (String, Read<f64>);
 
 pub struct Series {
     name: String,
@@ -44,8 +51,9 @@ impl Series {
 
 pub struct LineChart {
     series: Vec<Series>,
-    start_ms: i64,
+    start_ms: Option<Prop<i64>>,
     step_ms: i64,
+    limit: Option<(String, Prop<f64>)>,
     unit: Rc<str>,
     height: f32,
     legend: bool,
@@ -54,14 +62,23 @@ pub struct LineChart {
 /// A chart of lines over the same samples, as wide as the box it is in and 200 px tall.
 pub fn line_chart(series: impl IntoIterator<Item = Series>) -> LineChart {
     let series = series.into_iter().collect();
-    LineChart { series, start_ms: 0, step_ms: 1000, unit: "".into(), height: 200.0, legend: false }
+    let (start_ms, limit, unit) = (None, None, "".into());
+    LineChart { series, start_ms, step_ms: 1000, limit, unit, height: 200.0, legend: false }
 }
 
 impl LineChart {
     /// When the first sample was taken, in milliseconds since 1970, and how far apart
     /// samples are: the times of the first, the middle and the last are under the plot.
-    pub fn time(mut self, start_ms: i64, step_ms: i64) -> Self {
-        (self.start_ms, self.step_ms) = (start_ms, step_ms);
+    /// `start_ms` is a constant or something reactive: a live chart's first sample.
+    pub fn time<M>(mut self, start_ms: impl IntoProp<i64, M>, step_ms: i64) -> Self {
+        (self.start_ms, self.step_ms) = (Some(start_ms.into_prop()), step_ms);
+        self
+    }
+
+    /// A dashed line at `value` across the plot, named `name` where the values are said; the
+    /// scale reaches it. `value` is a constant or something reactive.
+    pub fn limit<M>(mut self, name: impl Into<String>, value: impl IntoProp<f64, M>) -> Self {
+        self.limit = Some((name.into(), value.into_prop()));
         self
     }
 
@@ -89,8 +106,9 @@ fn named(name: &str, paint: Paint) -> Div {
     row().shrink(0.0).align_items(Align::Center).gap(6.0).child(swatch).child(text(name.to_string()))
 }
 
-/// What a reader is told of the lines: each series, its least and its most, and its last.
-fn summary(lines: &[(String, Paint, Values)], unit: &str) -> String {
+/// What a reader is told of the lines: each series, its least and its most, and its last;
+/// then the limit.
+fn summary(lines: &[(String, Paint, Values)], limit: &Option<Limit>, unit: &str) -> String {
     let says = |(name, _, read): &(String, Paint, Values)| {
         let values = read();
         let least = values.iter().copied().fold(f64::INFINITY, f64::min);
@@ -102,7 +120,16 @@ fn summary(lines: &[(String, Paint, Values)], unit: &str) -> String {
             None => format!("{name}: no values"),
         }
     };
-    lines.iter().map(says).collect::<Vec<_>>().join("; ")
+    let limit = limit.iter().map(|(name, value)| format!("{name} {}{unit}", short(value())));
+    lines.iter().map(says).chain(limit).collect::<Vec<_>>().join("; ")
+}
+
+/// A property read again whenever wanted.
+fn reader<T: Clone + 'static>(prop: Prop<T>) -> Read<T> {
+    match prop {
+        Prop::Value(value) => Rc::new(move || value.clone()),
+        Prop::Reactive(read) => Rc::from(read),
+    }
 }
 
 /// A property as what the plot takes and as something to read again.
@@ -124,70 +151,10 @@ fn shown(shown: bool) -> Display {
     if shown { Display::Flex } else { Display::None }
 }
 
-/// What the chart knows of the pointer: the sample it is nearest to.
-#[derive(Clone)]
-struct Hover {
-    at: Signal<Option<usize>>,
-    /// How many samples the first series has.
-    count: Memo<usize>,
-    /// The time of a sample as text; nothing for a chart that was given no times.
-    time: Option<Rc<dyn Fn(usize) -> String>>,
-}
-
-impl Hover {
-    /// How far along the plot the sample under the pointer is, from 0 to 100.
-    fn along(&self) -> f32 {
-        let last = self.count.get().saturating_sub(1).max(1);
-        self.at.get().unwrap_or(0) as f32 * 100.0 / last as f32
-    }
-
-    /// The hairline at the sample.
-    fn hair(&self) -> Div {
-        let (at, along) = (self.at, self.clone());
-        let hair = div().absolute().top(0.0).bottom(0.0).width(1.0).bg(token::TEXT_3);
-        hair.left(move || Length::Pct(along.along())).display(move || shown(at.get().is_some()))
-    }
-
-    /// The box of the values at the sample: at the right of the hairline in the left half
-    /// of the plot, at its left in the right half.
-    fn values(&self, lines: Vec<(String, Paint, Values)>, unit: Rc<str>) -> Div {
-        let at = self.at;
-        let plane = column().padding_y(5.0).padding_right(12.0).radius(token::RADIUS_MD).elevation(1);
-        let plane =
-            plane.bg(token::RAISED).border(1.0).border_color(token::LINE_STRONG).text_color(token::TEXT);
-        let plane = match self.time.clone() {
-            Some(time) => {
-                let time = text(move || at.get().map(|i| time(i)).unwrap_or_default());
-                plane.child(div().padding_left(18.0).child(time))
-            }
-            None => plane,
-        };
-        let rows = lines.into_iter().map(|(name, paint, read)| {
-            let unit = unit.clone();
-            let says = move || {
-                let value = at.get().map(|i| read().get(i).copied().unwrap_or(0.0));
-                value.map(|value| format!("{name} {}{unit}", short(value))).unwrap_or_default()
-            };
-            let swatch = div().size(6.0, 6.0).shrink(0.0).radius(1.0).bg(paint);
-            row().align_items(Align::Center).gap(4.0).padding_left(8.0).child(swatch).child(text(says))
-        });
-        let (left, right) = (self.clone(), self.clone());
-        let place = row().absolute().top(4.0).padding_x(12.0);
-        let place = place.left(move || match left.along() {
-            along if along <= 50.0 => Length::Pct(along),
-            _ => Length::Auto,
-        });
-        let place = place.right(move || match right.along() {
-            along if along > 50.0 => Length::Pct(100.0 - along),
-            _ => Length::Auto,
-        });
-        place.display(move || shown(at.get().is_some())).child(plane.children(rows))
-    }
-}
-
 impl View for LineChart {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (start, step, alone) = (self.start_ms, self.step_ms, self.series.len() == 1);
+        let (start, step, alone) = (self.start_ms.map(reader), self.step_ms, self.series.len() == 1);
+        let limit: Option<Limit> = self.limit.map(|(name, value)| (name, reader(value)));
         let (mut plots, mut lines) = (Vec::new(), Vec::new());
         for (i, series) in self.series.into_iter().enumerate() {
             let paint = series.color.unwrap_or(series_color(i));
@@ -198,14 +165,22 @@ impl View for LineChart {
         let legend = self.legend.then(|| {
             row().wrap(true).gap(16.0).padding_top(8.0).children(lines.iter().map(|l| named(&l.0, l.1)))
         });
-        let (said, unit) = (lines.clone(), self.unit.clone());
-        let names = move || summary(&said, &unit);
+        let (said, limited, unit) = (lines.clone(), limit.clone(), self.unit.clone());
+        let names = move || summary(&said, &limited, &unit);
         let all: Vec<Values> = lines.iter().map(|line| line.2.clone()).collect();
         let first = all.first().cloned();
         let count = memo(move || first.as_ref().map_or(0, |read| read().len()));
-        let max = memo(move || nice_max(all.iter().map(|read| max_of(&read())).fold(0.0, f64::max)));
-        let time = move |i: usize| hh_mm(start + i as i64 * step);
-        let hover = Hover { at: signal(None), count, time: (start > 0).then(|| Rc::new(time) as _) };
+        // The top reaches the limit, however far under it the series are.
+        let reach = limit.as_ref().map(|(_, value)| value.clone());
+        let max = memo(move || {
+            let most = all.iter().map(|read| max_of(&read())).fold(0.0, f64::max);
+            nice_max(reach.as_ref().map_or(most, |value| most.max(value())))
+        });
+        // The time of a sample, from the first sample's as it is now.
+        let time = start.map(|start| {
+            Rc::new(move |i: usize| hh_mm(start() + i as i64 * step)) as Rc<dyn Fn(usize) -> String>
+        });
+        let hover = Hover { at: signal(None), count, time: time.clone() };
 
         // The plot's box: the grid, a plot a series over it, and what follows the pointer.
         let grid = (0..5).map(|k| {
@@ -217,12 +192,20 @@ impl View for LineChart {
             let label = row().absolute().right(Length::Pct(100.0)).top(Length::Pct(k as f32 * 25.0));
             label.height(0.0).padding_right(6.0).align_items(Align::Center).child(value)
         });
+        // The limit: a dashed line at its height, over the grid and under the plots.
+        let rule = limit.as_ref().map(|(_, value)| {
+            let value = value.clone();
+            let top =
+                move || Length::Pct(((1.0 - value() / max.get().max(f64::MIN_POSITIVE)) * 100.0) as f32);
+            let rule = div().absolute().left(0.0).right(0.0).top(top).height(1.0).border_top(1.0);
+            rule.border_color(token::TEXT_2).border_style(BorderStyle::Dashed)
+        });
         let area = if alone { 0.12 } else { 0.0 };
         let plots = plots.into_iter().map(|(values, paint)| filling(values, max.into_prop(), paint, area));
         let at = hover.at;
         let field = div().absolute().left(AXIS_W).top(6.0).right(8.0).bottom(AXIS_H);
-        let field = field.role(Role::Image).label(names).children(grid).children(scale).children(plots);
-        let field = field.child(hover.hair()).child(hover.values(lines, self.unit));
+        let field = field.role(Role::Image).label(names).children(grid).children(scale).children(rule);
+        let field = field.children(plots).child(hover.hair()).child(hover.values(lines, limit, self.unit));
         let field = field.on_pointer(PointerKind::Leave, move |_| at.set(None));
         let field = field.on_pointer(PointerKind::Move, move |e: &mut PointerEvent| {
             // The nearest sample: the same one again changes nothing, and costs no frame.
@@ -232,10 +215,13 @@ impl View for LineChart {
         });
 
         // The times of the first, the middle and the last sample.
-        let times = (0..3).filter(|_| start > 0).map(|k| {
-            text(move || match count.get() {
-                0 | 1 => String::new(),
-                n => time((n - 1) * k / 2),
+        let times = time.into_iter().flat_map(|time| {
+            (0..3).map(move |k| {
+                let time = time.clone();
+                text(move || match count.get() {
+                    0 | 1 => String::new(),
+                    n => time((n - 1) * k / 2),
+                })
             })
         });
         let times = row().absolute().left(AXIS_W).right(8.0).bottom(0.0).height(AXIS_H).children(times);

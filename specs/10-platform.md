@@ -131,7 +131,12 @@ an app from them. It is the one place where the three may know each other:
 
 - **Frame pacing.** The swap chain's frame-latency waitable is waited on in the message loop
   together with messages. The platform trait has no method for it; the native crate hands the
-  handle from its renderer to its loop.
+  handle from its renderer to its loop. A wait takes a frame from the waitable and only a
+  present gives one back, so a wait not followed by a present would leave the window waiting
+  for ever, drawing nothing while its input and its work go on. So a minimized window is not
+  waited for nor drawn (the app draws nothing at a size of zero); its request stays until it
+  is restored. And a wait that lasts 100 ms draws anyway: that present gives back a frame a
+  failed draw took.
 - **Device start-up.** The window opens, the first frame is drawn on the software device and
   blitted, and the swap chain is attached when the hardware device is ready (07).
 - **Device loss and display changes** reach both the renderer and the windows.

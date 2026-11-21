@@ -15,8 +15,8 @@ use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::HiDpi::{DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, SetProcessDpiAwarenessContext};
 use windows::Win32::UI::WindowsAndMessaging::{
     DefWindowProcW, DestroyWindow, DispatchMessageW, GWLP_USERDATA, GetWindowLongPtrW, HWND_MESSAGE,
-    KillTimer, MSG, MWMO_INPUTAVAILABLE, MsgWaitForMultipleObjectsEx, PM_REMOVE, PeekMessageW, PostMessageW,
-    QS_ALLINPUT, SetTimer, SetWindowLongPtrW, TranslateMessage, WM_APP, WM_QUIT, WM_TIMER,
+    IsIconic, KillTimer, MSG, MWMO_INPUTAVAILABLE, MsgWaitForMultipleObjectsEx, PM_REMOVE, PeekMessageW,
+    PostMessageW, QS_ALLINPUT, SetTimer, SetWindowLongPtrW, TranslateMessage, WM_APP, WM_QUIT, WM_TIMER,
 };
 use windows::core::w;
 
@@ -26,6 +26,11 @@ use crate::pacing::Pacing;
 use crate::window::{self, WindowState};
 
 const INFINITE: u32 = u32::MAX;
+/// What `MsgWaitForMultipleObjectsEx` returns when its time is up.
+const WAIT_TIMEOUT: u32 = 0x102;
+/// How long a window waits for its swap chain before it draws anyway: a frame is never so
+/// slow, and a draw that failed took a frame no present gave back.
+const STUCK_MS: u32 = 100;
 /// Posted to the message window: turn the loop (a quit), and a waker fired.
 const WM_TURN: u32 = WM_APP;
 const WM_WAKE: u32 = WM_APP + 1;
@@ -147,8 +152,13 @@ impl WinPlatform {
         let s = &self.0;
         s.windows.borrow_mut().retain(|w| w.strong_count() > 0);
         let asked: Vec<Rc<WindowState>> = s.windows.borrow().iter().filter_map(Weak::upgrade).collect();
+        // A minimized window draws nothing: waiting for it would take a frame no present
+        // gives back, and its swap chain would keep it waiting once it is restored.
+        // SAFETY: the windows are alive: their states are.
+        let wants =
+            |w: &Rc<WindowState>| w.frame_requested.get() && !unsafe { IsIconic(w.hwnd.get()) }.as_bool();
         let (mut waiting, mut handles) = (Vec::new(), Vec::new());
-        for window in asked.iter().filter(|w| w.frame_requested.get()) {
+        for window in asked.iter().filter(|w| wants(w)) {
             match s.pacing.get(window.hwnd.get()) {
                 Some(handle) if handles.len() < 63 => {
                     waiting.push(window);
@@ -161,14 +171,19 @@ impl WinPlatform {
             return;
         }
         // A frame that asked for the next one, in a window that waits for nothing: no sleep.
-        let again =
-            asked.iter().any(|w| w.frame_requested.get() && !waiting.iter().any(|x| Rc::ptr_eq(x, w)));
-        let timeout = if again { 0 } else { INFINITE };
+        let again = asked.iter().any(|w| wants(w) && !waiting.iter().any(|x| Rc::ptr_eq(x, w)));
+        let timeout = match (again, waiting.is_empty()) {
+            (true, _) => 0,
+            (false, false) => STUCK_MS,
+            (false, true) => INFINITE,
+        };
         // SAFETY: the handles are swap chain waitables kept alive by their surfaces.
         let woke =
             unsafe { MsgWaitForMultipleObjectsEx(Some(&handles), timeout, QS_ALLINPUT, MWMO_INPUTAVAILABLE) };
         if let Some(window) = waiting.get(woke.0 as usize) {
             window.frame_now();
+        } else if woke.0 == WAIT_TIMEOUT && timeout == STUCK_MS {
+            waiting.iter().for_each(|window| window.frame_now());
         }
     }
 }

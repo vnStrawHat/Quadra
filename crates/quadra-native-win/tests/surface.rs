@@ -70,6 +70,8 @@ struct Animation {
     surface: SurfaceId,
     scene: Scene,
     frames: u32,
+    /// How many of the first frames are not presented, as when a draw fails.
+    unshown: u32,
     gave_up: bool,
 }
 
@@ -79,7 +81,9 @@ impl PlatformHandler for Animation {
     fn frame(&mut self, window: WindowId) {
         assert_eq!(window, self.window.id());
         self.renderer.draw(self.surface, &mut self.scene, Color::WHITE).unwrap();
-        self.renderer.present(self.surface).unwrap();
+        if self.frames >= self.unshown {
+            self.renderer.present(self.surface).unwrap();
+        }
         self.frames += 1;
         if self.frames == 5 {
             self.platform.quit();
@@ -98,6 +102,17 @@ impl PlatformHandler for Animation {
 
 #[test]
 fn frames_are_given_as_the_swap_chain_takes_them() {
+    paced(0);
+}
+
+/// A frame not presented takes a frame from the swap chain that no present gives back: the
+/// loop does not wait for it for ever, which would leave the window drawing nothing.
+#[test]
+fn frames_go_on_after_one_that_was_not_presented() {
+    paced(1);
+}
+
+fn paced(unshown: u32) {
     let p = WinPlatform::new().unwrap();
     let window = p.open_window(&WindowOptions::new("paced").size(120.0, 80.0).hidden()).unwrap();
     let mut renderer = D3d11Renderer::for_platform(&p, true).unwrap();
@@ -110,6 +125,7 @@ fn frames_are_given_as_the_swap_chain_takes_them() {
         surface,
         scene: scene_with_a_quad(),
         frames: 0,
+        unshown,
         gave_up: false,
     };
     let guard = p.set_timer(Duration::from_secs(5), false);

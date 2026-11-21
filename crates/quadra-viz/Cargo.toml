@@ -1,6 +1,6 @@
 [package]
 name = "quadra-viz"
-description = "Quadra's charts: a plot drawn a pixel column at a time, the sparkline, the line chart and the bar chart"
+description = "Quadra's charts: a plot drawn a pixel column at a time, the sparkline, the line chart, the bar chart and the graph"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

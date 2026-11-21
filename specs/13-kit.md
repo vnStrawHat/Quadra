@@ -943,7 +943,8 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   nodes and the links between them, 360 px tall unless told (`.height(px)`), cut to its
   box. A `Node::new(id, at, size, label, || view)` is a view at a point of the graph's own
   plane, as large as `size` (the app places them: a layered layout is the app's, or later
-  the kit's); to a reader a button named by its label. A `Link::new(from, to)` is a curve
+  the kit's); to a reader a button named by its label, which Tab reaches and Enter or
+  Space clicks. A `Link::new(from, to)` is a curve
   from the edge of one node to the edge of the other, leaving and arriving along the axis
   they are further apart on (a cubic, flattened, stroked as the diagrams' lines are), with
   a head at its end. `.link_style(|i| LinkStyle { color, width, dash, arrow })` styles
@@ -961,7 +962,7 @@ What the charts are and look like is behaviour/19, "Charts". As built:
   view (16 px of margin, never past a zoom of 1).
 - `.on_click(|hit| ..)` is told a click on a node (`Hit::Node(id)`) or on a link
   (`Hit::Link(i)`, within 5 px of its line); `.on_hover(|hit| ..)` what the pointer is over,
-  `None` when nothing.
+  `None` when nothing. A press that becomes a drag (past 3 px) clicks nothing.
 - `Graph::to_svg(&theme)` writes the drawing as SVG at its own size (the nodes' bounds and
   16 px around): the frames with their titles, the links as paths (their colour, width,
   dashes, heads), and each node as a box with its label; its words escaped. A raster

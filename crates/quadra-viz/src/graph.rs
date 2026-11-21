@@ -6,12 +6,13 @@ mod links;
 mod pointer;
 mod svg;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use quadra_design::{size, token};
 use quadra_layout::{Align, Length, Overflow};
+use quadra_platform::{Key, Mods};
 use quadra_prim::{Point, Rect, Size};
 use quadra_reactive::{Signal, effect, signal};
 use quadra_tree::{NodeId, Paint, PointerKind, Role, Theme};
@@ -229,6 +230,9 @@ impl View for Graph {
         });
         let drawn = LinksView { view, rects: rects.clone(), ends: ends.clone(), style: self.style.clone() };
         let (click, hover) = (self.click.clone(), self.hover.clone());
+        // What the pointer is over and whether it drags, shared by the nodes and the box.
+        let (over, moved) = (Rc::new(RefCell::new(None)), Rc::new(Cell::new(false)));
+        let shared = (over.clone(), moved.clone());
         let nodes = self.nodes.into_iter().zip(rects.iter().copied()).map(|(node, r)| {
             // Its view at its own size, scaled about the middle of its box.
             // ponytail: its letters are drawn at their size and scaled, soft past a zoom of 1;
@@ -239,25 +243,39 @@ impl View for Graph {
             let face = face.left(move || r.width * (zoom() - 1.0) / 2.0);
             let face_of = face.top(move || r.height * (zoom() - 1.0) / 2.0).child((node.face)());
             let (id, told, came, left) = (node.id, click.clone(), hover.clone(), hover.clone());
-            let (pressed, over) = (id.clone(), id);
+            let (pressed, keyed, on, told_key) = (id.clone(), id.clone(), id, told.clone());
+            let (came_over, left_over, dragged) = (over.clone(), over.clone(), moved.clone());
             // Its box cuts what is under the pointer: the view's own box, larger while zoomed out,
             // is not hit past it.
             let face = placed(div(), view, r).overflow_x(Overflow::Hidden).role(Role::Button);
-            let face = face.label(node.label).child(face_of);
+            let face = face.label(node.label).child(face_of).focusable();
+            // Enter and Space do what a click does: a node is reached by Tab.
+            let face = face.on_key_down(move |e| {
+                if matches!(e.key, Key::Enter | Key::Space) && e.mods == Mods::NONE {
+                    e.stop();
+                    told_key.iter().for_each(|f| f(Hit::Node(keyed.clone())));
+                }
+            });
             let face = face.on_click(move |e| {
                 e.stop();
-                told.iter().for_each(|f| f(Hit::Node(pressed.clone())));
+                if !dragged.get() {
+                    told.iter().for_each(|f| f(Hit::Node(pressed.clone())));
+                }
             });
             let face = face.on_pointer(PointerKind::Enter, move |_| {
-                came.iter().for_each(|f| f(Some(Hit::Node(over.clone()))))
+                *came_over.borrow_mut() = Some(Hit::Node(on.clone()));
+                came.iter().for_each(|f| f(Some(Hit::Node(on.clone()))))
             });
-            face.on_pointer(PointerKind::Leave, move |_| left.iter().for_each(|f| f(None)))
+            face.on_pointer(PointerKind::Leave, move |_| {
+                *left_over.borrow_mut() = None;
+                left.iter().for_each(|f| f(None))
+            })
         });
         let world = div().absolute().left(0.0).top(0.0).right(0.0).bottom(0.0).cut_to_parent();
         let world =
             world.children(frames.collect::<Vec<_>>()).child(drawn).children(nodes.collect::<Vec<_>>());
         let all = div().width(Length::Fill).height(self.height).shrink(0.0).role(Role::Group).child(world);
-        let all = pointer::pointer(all, view, (rects, ends), (self.click, self.hover), bounds);
+        let all = pointer::pointer(all, view, (rects, ends), (self.click, self.hover), shared, bounds);
         let fit = self.fit;
         all.on_mount(move |tree, id| {
             let (size, done) = (tree.size_signal(id), Cell::new(!fit));

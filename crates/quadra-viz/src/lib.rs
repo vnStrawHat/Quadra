@@ -1,6 +1,7 @@
 //! Quadra's charts (specs/13, "Charts"): the plot, a line drawn a device pixel column at a
 //! time with the coverage of each pixel worked out by the shader, and what is built on it:
-//! the sparkline, the line chart, and the bar chart, which is views alone.
+//! the sparkline, the line chart, and the bar chart, which is views alone; and the graph of
+//! nodes and links.
 
 mod bar_chart;
 mod geometry;

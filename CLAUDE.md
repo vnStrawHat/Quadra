@@ -115,7 +115,7 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-testing` | The test harness: no OS, no GPU, fixed text |
 | `quadra-headless` | Components without a look: state, keys, focus, semantics |
 | `quadra-design` | The kit: the design language, themes, the components' look |
-| `quadra-viz` | Charts: sparkline, line and bar |
+| `quadra-viz` | Charts: sparkline, line and bar; the graph of nodes and links |
 | `quadra-data` | JSON and YAML values as a tree, the log view |
 | `quadra-md` | Markdown: parser, outline, view, formulas, diagrams |
 | `quadra-code` | The code editor: buffer, tokenizers, highlighter, find |

@@ -1729,6 +1729,7 @@ version = "0.1.0"
 dependencies = [
  "quadra-design",
  "quadra-layout",
+ "quadra-platform",
  "quadra-prim",
  "quadra-reactive",
  "quadra-render",

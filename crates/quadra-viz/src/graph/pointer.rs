@@ -16,6 +16,9 @@ use super::{GraphView, Hit, fitted};
 /// Each link's place and its two nodes.
 pub(super) type Ends = Rc<Vec<(usize, usize, usize)>>;
 
+/// What the pointer is over, and whether a press has become a drag.
+pub(super) type Shared = (Rc<RefCell<Option<Hit>>>, Rc<Cell<bool>>);
+
 pub(super) type Told = (Option<Rc<dyn Fn(Hit)>>, Option<Rc<dyn Fn(Option<Hit>)>>);
 
 /// The pointer on the graph: a drag pans, the wheel with Ctrl zooms about the pointer, a
@@ -25,6 +28,7 @@ pub(super) fn pointer(
     view: Signal<GraphView>,
     (rects, ends): (Rc<Vec<Rect>>, Ends),
     (click, hover): Told,
+    (last, moved): Shared,
     bounds: Rect,
 ) -> Div {
     // ponytail: every link is routed again at each move; cache the routes for graphs of
@@ -37,8 +41,7 @@ pub(super) fn pointer(
         };
         ends.iter().find(near).map(|&(k, ..)| k)
     };
-    let (held, moved, last) =
-        (Rc::new(Cell::new(None::<(Point, Point)>)), Rc::new(Cell::new(false)), Rc::new(RefCell::new(None)));
+    let held = Rc::new(Cell::new(None::<(Point, Point)>));
     let (press, drag, up) = (held.clone(), held.clone(), held);
     let (fresh, dragged, still) = (moved.clone(), moved.clone(), moved);
     let (near, tap) = (link_at.clone(), link_at);
@@ -55,6 +58,8 @@ pub(super) fn pointer(
                 view.update(|v| v.pan = Point::new(pan.x + dx, pan.y + dy));
             }
         }
+        // Over a node, the node tells of it.
+        None if matches!(*last.borrow(), Some(Hit::Node(_))) => {}
         None => {
             let now = near(e.local).map(Hit::Link);
             if *last.borrow() != now {

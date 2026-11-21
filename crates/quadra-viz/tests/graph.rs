@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use quadra_design::{dark, token};
-use quadra_platform::Mods;
+use quadra_platform::{Key, Mods};
 use quadra_prim::{Point, Rect, Size};
 use quadra_reactive::{Signal, signal};
 use quadra_render::{Instance, Kind};
@@ -144,4 +144,33 @@ fn the_drawing_is_svg_with_its_frames_links_and_nodes() {
     }
     // A frame and two nodes; a link and its head.
     assert_eq!((svg.matches("<rect").count(), svg.matches("<path").count()), (3, 2));
+}
+
+#[test]
+fn the_pointer_from_a_link_onto_a_node_is_on_the_node_and_a_drag_from_a_node_clicks_nothing() {
+    let (told, hits, view) =
+        (signal(Vec::<Option<Hit>>::new()), signal(Vec::new()), signal(GraphView::default()));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let nodes = [node("svc", 200.0, 0.0), node("pod", 200.0, 200.0)];
+        let g = graph(nodes, [Link::new("svc", "pod")]).view(view).height(400.0);
+        let g = g.on_hover(move |hit| told.update(|all| all.push(hit)));
+        div().width(800.0).child(g.on_click(move |hit| hits.update(|all| all.push(hit))))
+    });
+    h.frame();
+    // Along the link at x = 250, then onto the node it ends at, then on in the node.
+    for y in [120.0, 215.0, 225.0] {
+        h.pointer(PointerInput::Move, 250.0, y);
+    }
+    assert_eq!(told.get_untracked(), vec![Some(Hit::Link(0)), Some(Hit::Node("pod".into()))]);
+    // A drag that starts on a node pans, and clicks nothing.
+    h.pointer(PointerInput::Down, 250.0, 20.0);
+    h.pointer(PointerInput::Move, 280.0, 20.0);
+    h.pointer(PointerInput::Up, 280.0, 20.0);
+    assert_eq!((view.get_untracked().pan, hits.get_untracked()), (Point::new(30.0, 0.0), Vec::new()));
+    // The press focused svc; Tab goes on to the next node, and Enter is its click.
+    h.key(Key::Tab, Mods::NONE);
+    h.key(Key::Enter, Mods::NONE);
+    assert_eq!(hits.get_untracked(), vec![Hit::Node("pod".into())]);
 }

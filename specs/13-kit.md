@@ -172,7 +172,8 @@ As built so far:
   `.indeterminate(..)` says some of what it stands for is checked. An input with
   `.clearable()` has a cross at its end while it holds text, and a click on it empties it.
   A tooltip takes `.meta(words)`, a smaller muted line under its text. `key_hint(keys,
-  does)` is the keys in a small tinted box, then what they do, in small mono italics.
+  does)` is the keys in a small tinted box (4 px either side), then 6 px after it what they
+  do, in small mono italics in `text_2`: a hint read as the way to use a panel.
   A radio group takes `.hints([..])`, a muted line of 12 px under each option's label (""
   for none), which a reader hears as the option's description, not its name.
   `confirm(open, title, message, yes, on_yes)` is a dialog with Cancel and one answer;
@@ -838,13 +839,15 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
 - A picker of other things (files, branches, symbols) is the palette of commands whose
   doing is to take each: `.placeholder(..)` and `.empty(..)` give it its own words, and
   `Command::detail(..)` muted words after a title that the query does not search.
-- The query row starts with the search icon; `.note(|| ..)` puts muted words at its end
-  (where it searches: "in prod-cluster"). `Command::group(heading)` puts rows under
+- The query row starts with the search icon; `.note(|| ..)` puts words at its end, mono, 12
+  px, `text_2` (where it searches: "in prod-cluster"). `Command::group(heading)` puts rows under
   headings of 24 px, small and muted, which are no rows: the arrows pass them by. The rows
   of a group stay together, best match first, the groups in the order of their first
   commands. A row is: the chosen mark, `Command::lead(|| view)` (a badge of its kind), the
-  title on one line (cut with an ellipsis: it gives way first), the detail; at its end
-  `Command::status(status, words)` (a `status_label`), the keys, "Enter" on the row the
+  title on one line (cut with an ellipsis: it gives way first), then right after it
+  `Command::status(status, words)` as its 10 px mark and one muted 12 px phrase of the
+  state's words and the detail ("NotReady · 23 pods"), or the detail alone; at its end the
+  keys, "Enter" on the row the
   arrows are on, and a check on the `Command::current()` row, which comes first with its
   group. `.foot(keys, |n| words)` is a line of 28 px under the rows, over a line: the keys
   at its start, what the count of matches says at its end ("6 results"). `.under(&opener)`

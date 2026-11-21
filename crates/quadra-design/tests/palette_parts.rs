@@ -73,10 +73,26 @@ fn rows_come_in_groups_under_headings_with_their_parts_a_note_and_a_line_under_t
     let all = ["# Resources", "[worker-07]", "api-server", "# Commands for this node", "Cordon", "Drain"];
     assert_eq!(lines(&mut h), all);
     for words in
-        ["Node", "Pod", "NotReady", "23 pods", "Ctrl-Shift-C", "in prod-cluster", "Enter open · Esc close"]
+        ["Node", "Pod", "NotReady · 23 pods", "Ctrl-Shift-C", "in prod-cluster", "Enter open · Esc close"]
     {
         assert!(h.has_text(words), "{words}");
     }
+    // The state right after the title, muted; the note in the query mono and in text_2.
+    let theme = dark().theme();
+    let title = h.query(|n| n.semantics.role == Role::Text && n.semantics.name == "worker-07")[0];
+    let state = h.get_by_text("NotReady · 23 pods").node();
+    let (title_at, state_at) = (h.tree.window_rect(title), h.tree.window_rect(state));
+    assert!(
+        state_at.x > title_at.right() && state_at.x - title_at.right() < 30.0,
+        "{title_at:?} {state_at:?}"
+    );
+    assert_eq!(h.tree.inherited(state).color, theme.resolve(token::TEXT_2.into()));
+    let note = h.get_by_text("in prod-cluster").node();
+    let note = h.tree.inherited(note);
+    assert_eq!(
+        (note.style.family, note.color),
+        (quadra_design::fonts::MONO.into(), theme.resolve(token::TEXT_2.into()))
+    );
     assert!(h.has_text("4 results"));
     // The arrows pass the headings by; Enter runs the row they are on.
     h.key(Key::Down, Mods::NONE);

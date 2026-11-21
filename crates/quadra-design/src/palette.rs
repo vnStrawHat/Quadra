@@ -248,7 +248,10 @@ fn palette<F: Fn() -> Vec<Command> + 'static>(p: Palette<F>) -> impl View + use<
         let ask = ask.child(icon(icons::SEARCH).size(14.0).color(token::TEXT_3));
         let ask = ask.child(div().grow(1.0).child(field));
         let ask = match note.clone() {
-            Some(note) => ask.child(row().shrink(0.0).child(text(move || note()).color(token::TEXT_3))),
+            Some(note) => {
+                let words = text(move || note()).color(token::TEXT_2).size(TEXT_SM.size);
+                ask.child(row().shrink(0.0).font_family(crate::fonts::MONO).child(words))
+            }
             None => ask,
         };
         // As tall as the rows and the headings, up to the most.

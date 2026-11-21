@@ -120,11 +120,11 @@ pub fn kbd(keys: &str) -> TextView {
 /// A hint: the keys in a small box tinted toward the accent, then what they do, in small
 /// mono italics in the colour of what is off.
 pub fn key_hint(keys: &str, does: impl Into<String>) -> Div {
-    let key = div().padding_x(2.0).radius(token::RADIUS_MD).border(1.0).border_color(token::TEXT.alpha(0.16));
+    let key = div().padding_x(4.0).radius(token::RADIUS_MD).border(1.0).border_color(token::TEXT.alpha(0.16));
     let key =
         key.bg(token::ACCENT_TEXT.alpha(0.1)).text_size(size::TEXT_XS.size).child(text(key_label(keys)));
-    let hint = row().align_items(Align::Center).gap(4.0).font_family(fonts::MONO).italic(true);
-    let hint = hint.text_color(token::TEXT_DISABLED).text_size(size::TEXT_SM.size);
+    let hint = row().align_items(Align::Center).gap(6.0).font_family(fonts::MONO).italic(true);
+    let hint = hint.text_color(token::TEXT_2).text_size(size::TEXT_SM.size);
     hint.child(key).child(text(does.into()))
 }
 

@@ -66,6 +66,10 @@ fn an_input_is_emptied_by_its_cross_and_a_tooltip_says_more() {
         column().child(field).child(hint)
     });
     assert!(h.has_text("Ctrl-K") && h.has_text("to search"));
+    // A hint is read as the way to use a panel: in text_2, not faint.
+    let does = h.get_by_text("to search").node();
+    let text_2 = dark().theme().resolve(quadra_design::token::TEXT_2.into());
+    assert_eq!(h.tree.inherited(does).color, text_2);
     h.get_by_role(Role::Button, "Clear").click();
     h.frame();
     assert!(query.get_untracked().is_empty() && !h.semantics().contains("Button \"Clear\""));

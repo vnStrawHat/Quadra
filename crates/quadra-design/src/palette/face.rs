@@ -11,7 +11,7 @@ use quadra_view::{Div, by_text, column, div, rich_text, row, show, span, text};
 use super::{Command, Look};
 use crate::display::{chosen_mark, key_label};
 use crate::size::TEXT_SM;
-use crate::{fonts, icon, icons, status_label, status_mark, token};
+use crate::{fonts, icon, icons, status_mark, status_mark_sized, token};
 
 /// The parts of the palette's rows over `all`, `on` the one the arrows are on.
 pub(super) fn parts(
@@ -66,20 +66,22 @@ fn face(command: &Command, query: &str, k: usize, on: Signal<usize>, look: Look)
     };
     let title = marked(&command.title, &hits);
     let line = line.child(if command.mono { title.font_family(fonts::MONO) } else { title });
-    let line = match &command.detail {
-        Some(detail) => line.child(text(detail.clone()).color(token::TEXT_2).ellipsis()),
-        None => line,
+    let small = |words: String| text(words).color(token::TEXT_2).size(TEXT_SM.size);
+    // Not dense, the state follows the title: its mark, then its words and the detail as one.
+    let line = match (&command.status, &command.detail) {
+        (Some((status, words)), detail) if !look.dense => {
+            let phrase = detail.as_ref().map_or(words.clone(), |detail| format!("{words} · {detail}"));
+            let state = row().align_items(Align::Center).gap(6.0).shrink(0.0);
+            line.child(state.child(status_mark_sized(*status, 10.0)).child(small(phrase)))
+        }
+        (_, Some(detail)) => line.child(text(detail.clone()).color(token::TEXT_2).ellipsis()),
+        _ => line,
     };
     // At the end, each part 8 px after the one before: "Enter" takes no room while hidden.
     let part = || row().align_items(Align::Center).shrink(0.0).padding_left(8.0);
-    let small = |words: String| text(words).color(token::TEXT_2).size(TEXT_SM.size);
     let mut end = row().align_items(Align::Center).shrink(0.0);
-    match &command.status {
-        Some((_, words)) if look.dense => {
-            end = end.child(part().child(small(words.clone()).color(token::TEXT_3)))
-        }
-        Some((status, words)) => end = end.child(part().child(status_label(*status, words))),
-        None => {}
+    if let Some((_, words)) = command.status.as_ref().filter(|_| look.dense) {
+        end = end.child(part().child(small(words.clone()).color(token::TEXT_3)));
     }
     if let Some(keys) = &command.keys {
         end = end.child(part().child(small(key_label(keys))));

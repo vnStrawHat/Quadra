@@ -83,6 +83,9 @@ fn the_bells_stand_in_the_title_bar_between_search_and_lock() {
         let (lock, settings) = (a.rect("Lock"), a.rect("Settings"));
         assert!(bells.y >= 0.0 && bells.bottom() <= 38.0, "in the title bar: {bells:?}");
         assert!(search.right() <= bells.x && bells.right() <= lock.x && lock.right() <= settings.x);
+        // Lock says the minutes before it locks (10 unless told), in the title bar alone.
+        let minutes = a.h.get_by_text("10m").node();
+        assert!(lock.contains(a.h.tree.window_rect(minutes).center()), "in Lock");
         if !vertical {
             let hosts = a.rect("SSH hosts");
             assert!(search.right() <= hosts.x && hosts.right() <= bells.x, "SSH hosts before the bells");

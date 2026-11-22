@@ -1,7 +1,7 @@
 //! The window's title bar (specs/19, "Window"): 38 px with the app's mark ("Locked" after it
 //! while locked), icon buttons of 22 px (Search, SSH hosts with the tabs in a strip, the bells
-//! and notices with their count, Lock, Settings), then the window's buttons; in the settings,
-//! Done.
+//! and notices with their count, Lock with the minutes before it locks, Settings), then the
+//! window's buttons; in the settings, Done.
 
 use quadra::{Align, NodeRef, Role, Side, View, div, row, signal, text};
 use quadra_design::{button, fonts, icon, icon_button, icons, searched_menu, titlebar, token, tooltip};
@@ -44,10 +44,8 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
     let collapse = div()
         .display(shown(move || expanded.get()))
         .child(button("Collapse SFTP").icon(icons::WINDOW_RESTORE).on_click(move || expanded.set(false)));
-    let locks = div().display(shown(move || lock.can_lock())).child(tooltip(
-        "Lock 1Term now",
-        icon_button(icons::LOCK, "Lock").muted().on_click(move || lock.lock_now()),
-    ));
+    let locks =
+        div().display(shown(move || lock.can_lock())).child(tooltip("Lock 1Term now", lock_button(&seen)));
     // Locked, what would open something is not displayed; in the settings, only Done.
     let buttons = row()
         .align_items(Align::Center)
@@ -78,6 +76,32 @@ fn search(model: &Model) -> impl View + use<> {
             crate::rail::new_menu(&making, typed)
         }),
     )
+}
+
+/// Lock: its icon and the minutes before it locks (`9m`), muted; a click locks now.
+fn lock_button(model: &Model) -> impl View + use<> {
+    let lock = model.lock();
+    row()
+        .align_items(Align::Center)
+        .justify(quadra::Justify::Center)
+        .gap(4.0)
+        .padding_x(4.0)
+        .min_width(22.0)
+        .height(22.0)
+        .radius(4.0)
+        .text_color(token::TEXT_2)
+        .hover(|s| s.bg(token::PANEL_HOVER))
+        .role(Role::Button)
+        .label("Lock")
+        .on_click(move |_| lock.lock_now())
+        .child(icon(icons::LOCK).size(14.0))
+        .child(
+            div()
+                .font_family(fonts::MONO)
+                .text_size(12.0)
+                .display(shown(move || lock.left().is_some()))
+                .child(text(move || lock.left().map(|n| format!("{n}m")).unwrap_or_default())),
+        )
 }
 
 /// The bells not heard and the notices not seen, one count after a bell, in the error colour

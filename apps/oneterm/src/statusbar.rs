@@ -1,8 +1,8 @@
 //! The status bar (specs/19, "Window"): 30 px on the chrome plane, 12 px, its groups parted by
-//! rules of 1×14: the rail's fold; the focused space's directory (a click copies it), git, the
-//! host and its latency; at the right the progress, 1Term's processor and memory (details in a
-//! card under the pointer), the lock's minutes, the clock and the SFTP panel. Locked, only a
-//! lock and "Locked, details hidden", the progress and the clock show.
+//! rules of 1×14: the rail's fold; the focused space's directory (a click copies it); git; a
+//! remote space's host and its latency; at the right the progress, 1Term's processor and memory
+//! (details in a tooltip), the clock and the SFTP panel. Locked, only a lock and "Locked,
+//! details hidden", the progress and the clock show.
 
 use std::rc::Rc;
 use std::time::Duration;
@@ -79,9 +79,9 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
             .display(shown(move || n(counts()) > 0))
             .child(text(move || format!("{sign}{}", n(counts()))))
     };
+    let git_shown = move || prefs.show_git.get() && repo.with(Option::is_some);
     let git = part()
         .label("Git")
-        .display(shown(move || prefs.show_git.get() && repo.with(Option::is_some)))
         .child(icon(icons::GIT_BRANCH).size(14.0).color(token::OK))
         .child(value(move || repo.get().map(|it| it.branch).unwrap_or_default()))
         .child(count(token::HUE_GREEN, "\u{2191}", |it| it.0))
@@ -101,12 +101,6 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
             value(move || said.get())
         }),
     );
-    let left = move || lock.left();
-    let locks = part()
-        .label("Lock")
-        .display(shown(move || open() && left().is_some()))
-        .child(icon(icons::LOCK).size(14.0).color(token::HUE_PURPLE))
-        .child(div().font_family(fonts::MONO).child(text(move || format!("{}m", left().unwrap_or(0)))));
     let time = value(move || clock.get()).label("Clock").display(shown(move || prefs.show_clock.get()));
     let hidden = part()
         .display(shown(move || !open()))
@@ -118,8 +112,9 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         part().gap(12.0),
         vec![
             (when(move || open() && vertical.get()), part().child(fold)),
-            (when(open), part().gap(12.0).child(place).child(git)),
-            (when(open), host(model)),
+            (when(open), place),
+            (when(move || open() && git_shown()), git),
+            (host_shown(model, open), host(model)),
         ],
     );
     let right_side = groups(
@@ -127,10 +122,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         vec![
             (metered, meter),
             (when(move || open() && shows()), using),
-            (
-                when(move || (open() && left().is_some()) || prefs.show_clock.get()),
-                part().gap(12.0).child(locks).child(time),
-            ),
+            (when(move || prefs.show_clock.get()), time),
             (when(open), part().child(sftp(model))),
         ],
     );
@@ -166,31 +158,27 @@ fn sftp(model: &Model) -> impl View + use<> {
         })
 }
 
-/// The focused space's host and its latency, `prod-api-01 124 ms`, or `local shell`.
+/// Whether the host group shows: unlocked, a remote space focused.
+fn host_shown(model: &Model, open: impl Fn() -> bool + 'static) -> When {
+    let of = model.clone();
+    when(move || {
+        open() && of.active_tab().and_then(|tab| tab.focused()).is_some_and(|it| it.remote.is_some())
+    })
+}
+
+/// The focused remote space's host and its latency, `prod-api-01 124 ms`.
 fn host(model: &Model) -> quadra::Div {
     let (model, of) = (model.clone(), model.clone());
     let remote = move || of.active_tab().and_then(|tab| tab.focused()).and_then(|space| space.remote);
-    let (link, is_remote, is_local) = (model.clone(), remote.clone(), remote.clone());
-    let name = move || match remote() {
-        Some(remote) => model.host_name(&remote),
-        None => "local shell".into(),
-    };
+    let link = model.clone();
+    let name = move || remote().map(|remote| model.host_name(&remote)).unwrap_or_default();
     let note = move || {
         let space = link.active_tab().and_then(|tab| tab.focused());
         space.filter(|it| it.remote.is_some()).map(|it| it.session.link_note().get()).unwrap_or_default()
     };
     part()
         .label("Host")
-        .child(
-            div()
-                .display(shown(move || is_remote().is_some()))
-                .child(icon(icons::SERVER).size(14.0).color(token::INFO)),
-        )
-        .child(
-            div()
-                .display(shown(move || is_local().is_none()))
-                .child(icon(icons::SQUARE_TERMINAL).size(14.0).color(token::CYAN)),
-        )
+        .child(icon(icons::SERVER).size(14.0).color(token::INFO))
         .child(text(name))
         .child(div().font_family(fonts::MONO).child(text(note)))
 }

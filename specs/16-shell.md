@@ -89,6 +89,15 @@ its private working set (`memory`, what the task manager shows as its memory), w
 peak working set and private bytes (the commit) in bytes (`GetProcessMemoryInfo` with
 `PROCESS_MEMORY_COUNTERS_EX2`); and its count of threads (the process's entry in a Toolhelp
 snapshot of the processes, `CreateToolhelp32Snapshot`, closed at once; 0 when not found).
+
+`shell_process(pid) -> Option<ShellProcess>`: a shell's process and what it runs, for a
+terminal to say. `ShellProcess { path, running }`: the full path of the process `pid`
+(`QueryFullProcessImageNameW`), and the command line of the newest process it started
+(its children in a Toolhelp snapshot, the console hosts `conhost.exe` and `OpenConsole.exe`
+left out, the newest by `GetProcessTimes`; its command line by `NtQueryInformationProcess`
+with `ProcessCommandLineInformation`), `None` when it runs nothing. `None` when `pid` cannot
+be opened (gone, or not ours to read). Read once a call, on the caller's thread: a snapshot
+and a few handles, closed at once.
 `None` where the OS has no reading. A status bar takes two readings and divides the processor
 time between them by the uptime between them and the count of processors.
 

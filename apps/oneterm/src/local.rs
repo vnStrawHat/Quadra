@@ -46,6 +46,9 @@ pub fn local_shell(launch: Launch) -> Session {
         );
         match spawned {
             Ok(pty) => {
+                if let Some(pid) = pty.pid() {
+                    starts.keep(Rc::new(crate::complete::ShellPid(pid)));
+                }
                 let pty = Rc::new(pty);
                 let (resizes, closes) = (pty.clone(), pty.clone());
                 let link = Link::new(move |bytes| pty.write(bytes))

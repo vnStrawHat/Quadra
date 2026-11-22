@@ -71,6 +71,32 @@ pub(crate) fn program(session: &quadra_term::Session) -> Option<String> {
     Some(name.to_string_lossy().into_owned())
 }
 
+/// The process of a local session's shell, kept on the session once it started.
+pub(crate) struct ShellPid(pub(crate) u32);
+
+/// What a local session's shell runs, read from the OS now: the program's file name and the
+/// command line of the newest process it started (`pwsh.exe · npm run dev`), or with none its
+/// full path. Without its process (a test's session), the program it was started as.
+pub(crate) fn running(session: &quadra_term::Session) -> Option<String> {
+    let found = session.kept::<ShellPid>().and_then(|pid| read_process(pid.0));
+    let Some(found) = found else { return session.kept::<Started>().map(|it| it.0.clone()) };
+    let name = std::path::Path::new(&found.path).file_name().map(|it| it.to_string_lossy().into_owned());
+    match (found.running, name) {
+        (Some(command), Some(name)) => Some(format!("{name} \u{B7} {command}")),
+        _ => Some(found.path),
+    }
+}
+
+#[cfg(windows)]
+fn read_process(pid: u32) -> Option<quadra_shell::ShellProcess> {
+    quadra_shell::shell_process(pid)
+}
+
+#[cfg(not(windows))]
+fn read_process(_: u32) -> Option<quadra_shell::ShellProcess> {
+    None
+}
+
 /// Makes sessions as `make` does, each kept with what it was started as and read by its shell.
 pub(crate) fn tagged(make: NewSession) -> NewSession {
     Rc::new(move |launch: crate::Launch| {

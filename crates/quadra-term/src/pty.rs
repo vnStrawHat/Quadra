@@ -38,6 +38,8 @@ enum Command {
 pub struct Pty {
     commands: Sender<Command>,
     poller: Arc<Poller>,
+    /// The shell's process, when the OS said it.
+    pid: Option<u32>,
 }
 
 impl Pty {
@@ -65,6 +67,7 @@ impl Pty {
             cell_height: 0,
         };
         let console = PseudoConsole::spawn(&spawn, size)?;
+        let pid = console.child_pid();
         let poller = Arc::new(Poller::new()?);
         let readable = Event::readable(PTY_READ_WRITE_TOKEN);
         let mut console = Registered::new(console, poller.clone(), readable, PollMode::Level)?;
@@ -76,7 +79,12 @@ impl Pty {
                 exited(code);
             }
         })?;
-        Ok(Pty { commands, poller })
+        Ok(Pty { commands, poller, pid })
+    }
+
+    /// The shell's process id, for what reads what it runs.
+    pub fn pid(&self) -> Option<u32> {
+        self.pid
     }
 
     pub fn write(&self, bytes: &[u8]) {

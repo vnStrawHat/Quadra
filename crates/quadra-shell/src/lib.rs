@@ -39,12 +39,22 @@ pub struct Usage {
     pub threads: u32,
 }
 
+/// A shell's process and what it runs (specs/16): its full path, and the command line of the
+/// newest process it started, none while it runs nothing.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ShellProcess {
+    pub path: String,
+    pub running: Option<String>,
+}
+
 /// Reads what the app's process uses: the OS's ([`install`]) or a test's ([`FakeShell`]).
 pub trait Meter {
     fn usage(&self) -> Option<Usage>;
 }
 #[cfg(windows)]
 pub use win::console;
+#[cfg(windows)]
+pub use win::shell_process;
 #[cfg(windows)]
 pub use win::{WinShell, crash_reports, hash_password, process_usage, single_instance, verify_password};
 #[cfg(windows)]

@@ -125,11 +125,14 @@ fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_word_under_its_icon() {
     a.key(Key::T, Mods::CTRL);
     let fold =
         a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Collapse tabs to icons");
+    // Expanded, an idle tab says so in the colour the folded rail gives it.
+    let theme = a.h.tree.theme().clone();
+    let idle = a.h.query(|n| n.semantics.role == Role::Text && n.semantics.name == "idle")[0];
+    assert_eq!(a.h.tree.inherited(idle).color, theme.resolve(quadra_design::token::HUE_PURPLE.into()));
     a.h.tree.act(fold[0], &quadra::SemanticAction::Click);
     a.h.settle();
     a.feed(0, b"\x1b]7501;state=blocked:id=deploy\x07");
     a.feed(1, b"\x1b]9;4;1;64\x07");
-    let theme = a.h.tree.theme().clone();
     let word = |a: &App, said: &str| {
         let node = a.h.query(|n| n.semantics.role == Role::Text && n.semantics.name == said)[0];
         (a.h.tree.window_rect(node), a.h.tree.inherited(node).color)

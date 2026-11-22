@@ -54,7 +54,9 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
   14 px icons, in this order: Search tabs, hosts and commands (M4; the `+` menu under it), the
   bells and notices (M3: a bell and one count of bells not heard and notices not seen in mono,
   `3 bells and notices`, both in the error colour while the count is above 0, else the muted
-  colour; 22 px high, 4 px at its sides; a click marks the notices seen), Lock 1Term now (M6),
+  colour; 22 px high, 4 px at its sides; a click marks the notices seen), Lock 1Term now (M6:
+  while a lock is set, a lock icon and the minutes left before it locks in mono, `9m`, both
+  muted, 22 px high, 4 px at its sides; the icon alone in a box of 22 when none is set),
   Open settings (M5); in the horizontal variant SSH hosts between Search and the bells, so the
   bells, Lock and Settings stand where they do with the rail. Then the window buttons, 36 px
   wide, 8 px after. In the settings only Done shows; locked, only "Locked" after the name, in
@@ -63,15 +65,14 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
   on the right.
 - **Status bar** (the chrome plane, a line over it, 12 px, groups split by 1×14 px lines):
   first Collapse tabs to icons (the rail's fold, an icon button in the accent); then the active
-  space's cwd after a folder icon (a click copies it), git branch and changes after a branch
-  icon (M4: `main ↑2 M1`), the host and its latency after a server icon (P2; `local shell` after
-  a terminal icon for a local space); then right the OSC 9;4 meter (M3: `build`, a 56 px line,
-  the percentage), CPU and memory (M4), the lock's minutes after a lock icon (M6: `9m`), the
-  clock `2026-11-16 20:45:07` (24 h, the local time, again each second; in mono, so only its
+  space's cwd after a folder icon (a click copies it); git branch and changes after a branch
+  icon (M4: `main ↑2 M1`), a group of its own; the host and its latency after a server icon
+  (P2; a remote space only: a local one shows nothing there); then right the OSC 9;4 meter
+  (M3: `build`, a 56 px line, the percentage), CPU and memory (M4), the `2026-11-16 20:45:07` (24 h, the local time, again each second; in mono, so only its
   text is painted again), and last Toggle SFTP panel. Labels are the secondary colour, values
   the text colour, numbers in mono. The icons have the kit's roles (the canvas leaves them in
-  the label colour): the folder `warn`, the branch `ok`, the server `info`, the terminal `cyan`,
-  the lock `hue_purple`.
+  the label colour): the folder `warn`, the branch `ok`, the server `info`, the lock
+  `hue_purple`. The minutes before the lock are in the title bar (Lock 1Term now).
 
 ## Rail (vertical tabs)
 
@@ -96,14 +97,18 @@ Collapsed (Collapse tabs to icons, in the heading or the status bar, or the sett
 colour, the accent while it shows) and 2 px under it its signal as one word of 10 px on a line
 of 14 in the state's colour: `blocked` in warn, `error` in error, `done` in ok, its progress
 (`64%`, mono) or `working` in the accent, `bell` in error when one rang unseen, else `idle` in
-purple; a progress also has the seam bar, and working with no progress makes the seam the
+purple (the colours of the signals expanded, an idle one purple there too); a progress also has the seam bar, and working with no progress makes the seam the
 kit's busy bar (`progress_busy()`, 2 px on `line_strong`), a piece of accent that crosses it
 again and again. A strong line under each, the active one on the
 pressed editor colour, a pixel wider, with the accent bar; the title and signal are its name
 and tooltip (`neo-gateway deploy, blocked, needs permission`). The tooltip shows at the tab's
-right, and under its words, smaller and muted, where the focused space is and what it runs:
-its working directory (`D:\quadra`; none while the shell has said none) and its shell's
-program (`cmd.exe`, `pwsh.exe`, `ssh deploy@staging-db-01`). Then New terminal (`+` in a box
+right, in two lines, the focused space's (its title and signal are the tab's name): its
+working directory (`D:\quadra`; while the shell has said none, the program it was started
+as, `cmd.exe`), then, smaller and muted, the shell's program and the command it runs, the newest
+process the shell started, as its command line (`pwsh.exe · npm run dev`), or with none
+running the shell's full path (`C:\Program Files\PowerShell\7\pwsh.exe`; `ssh
+deploy@staging-db-01` for a remote space). The command is read from the OS when the tooltip
+shows (`quadra_shell::shell_process`, specs/16), never while it does not. Then New terminal (`+` in a box
 of 40, the `+` menu at its right).
 
 Click selects; middle closes; double-click renames; the right button opens the tab menu (Rename,
@@ -237,7 +242,7 @@ all on but where it says. A change applies at once (`Engine::set_config`).
 
 | Signal | Tab | Space header | Bar | Else |
 |---|---|---|---|---|
-| OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else `idle` in the third text colour | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
+| OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else `idle` in purple, as the folded rail's | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
 | OSC 9;4 progress | the percentage in mono and the accent at the end, a 2 px accent bar along the row's lower seam | the percentage | `build`, a 56 px line and the percentage | |
 | BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the title bar's count | |
 | OSC 9, 777, 99 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and the sequence: `OSC 9`, `OSC 777` or `OSC 99`), 6 s or until dismissed (setting) |

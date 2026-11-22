@@ -442,6 +442,16 @@ card, holding the card's two columns (the kit's tooltip `.content(|| view)`), an
 a reader as `1Term: CPU 3%, RAM 182 MB`. The kit's tooltip `.meta(..)` may change and holds a
 line for each line of its words.
 
+### 1Term: what a folded tab runs, the bars tidied (2026-11-22)
+
+A folded tab's tooltip is two lines: the focused space's directory, then the shell's program
+and the command it runs (`pwsh.exe · npm run dev`), or with none its full path. The command
+is read from the OS when the tooltip shows: `quadra_shell::shell_process(pid)` (the newest
+child of the shell but the console hosts, its command line by `NtQueryInformationProcess`),
+the pid from `Pty::pid` kept on the session. An idle tab is purple expanded too, as folded.
+The status bar drops `local shell` (the host group is a remote space's), puts git in a group
+of its own after the directory, and the lock's minutes moved into Lock in the title bar.
+
 ### Status marks a step up, tabs without a hover box (2026-11-22)
 
 A status mark (and a status label's) is 14 px unless told, a step up from 12 beside 14 px

@@ -38,6 +38,9 @@ fn bell(px: f32) -> quadra::Div {
         .child(icon(icons::BELL).size(px).color(token::ERROR))
 }
 
+/// Idle's colour, folded or not.
+const IDLE: quadra::Token = token::HUE_PURPLE;
+
 /// The part done of a tab's progress, when the settings show it on tabs.
 fn part_of(tab: Tab) -> Option<u8> {
     tab.progress().filter(|_| tab.prefs.progress_tab.get()).and_then(percent)
@@ -61,7 +64,7 @@ pub(crate) fn tab_mark(tab: Tab) -> impl View {
             None => match state_icon(state, 14.0) {
                 Some(face) => AnyView::new(face),
                 None if tab.bells() > 0 => AnyView::new(bell(14.0)),
-                None => AnyView::new(div().text_size(12.0).text_color(token::TEXT_3).child(text("idle"))),
+                None => AnyView::new(div().text_size(12.0).text_color(IDLE).child(text("idle"))),
             },
         }
     })
@@ -78,7 +81,7 @@ pub(crate) fn tab_word(tab: Tab) -> impl View {
             (_, Some(n)) => (format!("{n}%"), token::ACCENT, true),
             (ProgramState::Working, _) => ("working".to_string(), token::ACCENT, false),
             _ if tab.bells() > 0 => ("bell".to_string(), token::ERROR, false),
-            _ => ("idle".to_string(), token::HUE_PURPLE, false),
+            _ => ("idle".to_string(), IDLE, false),
         };
         let word = row().text_color(color).child(text(said));
         AnyView::new(if mono { word.font_family(fonts::MONO) } else { word })
@@ -101,20 +104,34 @@ pub(crate) fn tab_said(tab: Tab) -> String {
     format!("{}, {signal}", tab.title())
 }
 
-/// What a tab's tooltip says under its words: the focused space's working directory (none
-/// while its shell said none), and the program it runs (`cmd.exe`, `ssh deploy@db`).
-pub(crate) fn tab_where(tab: Tab) -> String {
+/// The first line of a folded tab's tooltip: the focused space's working directory, empty
+/// while its shell said none.
+pub(crate) fn tab_dir(tab: Tab) -> String {
+    tab.focused().map(|space| space.session.cwd().get()).unwrap_or_default()
+}
+
+/// The program the focused space's shell was started as (`cmd.exe`), `ssh deploy@db` for a
+/// remote one: the first line of a folded tab's tooltip while there is no directory.
+pub(crate) fn tab_program(tab: Tab) -> String {
     let Some(space) = tab.focused() else { return String::new() };
-    let dir = Some(space.session.cwd().get()).filter(|dir| !dir.is_empty());
-    let program = match (&space.remote, &space.edit) {
+    match (&space.remote, &space.edit) {
         (_, Some(_)) => None,
         (Some(remote), None) => Some(format!("ssh {}", remote.target.label())),
         (None, None) => crate::complete::program(&space.session),
-    };
-    [dir, program].into_iter().flatten().collect::<Vec<_>>().join(
-        "
-",
-    )
+    }
+    .unwrap_or_default()
+}
+
+/// The second line of a folded tab's tooltip, read when it shows: what the focused space's
+/// shell runs (`pwsh.exe · npm run dev`), or its full path; `ssh deploy@db` for a remote one.
+pub(crate) fn tab_runs(tab: Tab) -> String {
+    let Some(space) = tab.focused() else { return String::new() };
+    match (&space.remote, &space.edit) {
+        (_, Some(_)) => None,
+        (Some(remote), None) => Some(format!("ssh {}", remote.target.label())),
+        (None, None) => crate::complete::running(&space.session),
+    }
+    .unwrap_or_default()
 }
 
 /// The tab's icon of `px`: a server for a tab with a remote space, a terminal else; in the

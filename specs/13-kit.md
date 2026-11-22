@@ -196,7 +196,8 @@ As built so far:
   one after it, the same size, 4 px from it (a chevron to where the button leads), and
   `icon_button(body, name)` is a ghost of 22 px with the icon alone, named for a reader.
 - **`input(value)`**: the field of `quadra-view` in a frame (the field's fill, a hairline
-  border, 8 by 6 px around a line of text, at least 32 high, 240 wide unless told):
+  border, 8 px either side of a line of text, 28 high (the md control height) and 240 wide
+  unless told):
   `.placeholder(..)`, `.password()`, `.icon(body)` before the text, `.invalid(..)`,
   `.disabled(..)`, `.width(..)`, `.on_submit(..)`, `.test_id(..)`. The border is where the
   focus shows; a value that is not accepted has the colour of errors with the focus or
@@ -264,8 +265,9 @@ As built so far:
   (`MoveNext`, `MovePrevious` in the key context `action::CHOICE`), round the ends. The
   group is one stop of Tab. Radios are rings of 12 px with a dot; segmented cells belong to
   one outlined control, the chosen one tinted with an accent label, the end cells rounded as
-  its inside (`.radii(Corners)` on a box: a box does not cut what it holds to its corners) (`.size(..)`: 22 px with
-  12 px labels, or 28 and 32 with 14).
+  its inside (`.radii(Corners)` on a box: a box does not cut what it holds to its corners)
+  (`.size(..)`: the group 28 high with 14 px labels unless told, 22 with 12 px labels, or
+  32).
 - **`tabs(labels, chosen)`** is the names of a few pages in a row, with the index of the
   chosen one in a signal; the caller shows its page. A tab is 28 px tall with 8 px beside
   its label, muted until the pointer is over it; the chosen one has the accent's label. A
@@ -406,7 +408,7 @@ As built so far:
   builder (`.rows(..)`, `.width(..)`, `.placeholder(..)`).
 - **`number_input(value)`** is an input that holds a number (`.range(..)`, `.step(..)`,
   `.decimals(..)`), 140 px with a pair of chevrons inside it at its end that step it, or
-  with `.stepper()` one frame of 128 by 32: a minus, the value in the middle (the field is
+  with `.stepper()` one frame of 128 by 28: a minus, the value in the middle (the field is
   `text_input(..).fit()`: as wide as its text), a plus. The up and down arrows step
   it too (key context `action::NUMBER`). A number typed, with a point or a comma, is the
   value; what is no number changes nothing and shows as not accepted; a value written from
@@ -415,7 +417,7 @@ As built so far:
   (`.step(0.1)` shows one).
 - **`key_input(value)`** records a keystroke into `value` (`quadra_headless::keys`): the
   keys as `key_label` writes them, "Press keys…" while it records, "Not bound" while
-  `value` is empty. `.label(..)` names it to a reader, `.width(..)` (160 px). Escape gives up;
+  `value` is empty. `.label(..)` names it to a reader, `.width(..)` (160 px); 28 high. Escape gives up;
   Backspace or Delete alone unbinds; no binding of the app runs while it records.
 - **`field(label, control)`** puts a control under its label, 12 px, with `.required()` a
   mark after it; under the control is `.help(words)` or, while it is not empty, what

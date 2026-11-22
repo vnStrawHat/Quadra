@@ -122,7 +122,7 @@ impl Input {
         self
     }
 
-    /// A fixed height, the text centred in it (32 unless told; 28 and 22 in bars).
+    /// A fixed height, the text centred in it (the md control height, 28, unless told).
     pub fn height(mut self, px: f32) -> Self {
         self.height = Some(px);
         self
@@ -200,7 +200,7 @@ impl Input {
         };
         let frame = match self.height {
             Some(px) => frame.height(by_text(px)),
-            None => frame.min_height(32.0).padding_y(6.0),
+            None => frame.height(by_text(size::H_MD)),
         };
         let frame = if self.mono { frame.font_family(fonts::MONO) } else { frame };
         let frame = if self.small { frame.text_size(size::TEXT_SM.size) } else { frame };

@@ -119,11 +119,11 @@ fn a_number_input_holds_a_number_typed_or_stepped() {
     settle(&mut h);
     assert!(h.semantics().contains("TextInput = \"4\""), "{}", h.semantics());
 
-    // The stepper is one frame of 128 by 32 with a button at each end.
+    // The stepper is one frame of 128 by 28 with a button at each end.
     let (mut h, count) = numbers(true);
     let minus = h.get_by_role(Role::Button, "Decrement").node();
     let frame = h.tree.parent(minus).unwrap();
-    assert_eq!(h.tree.rect(frame).size(), Size::new(128.0, 32.0));
+    assert_eq!(h.tree.rect(frame).size(), Size::new(128.0, 28.0));
     h.get_by_role(Role::Button, "Decrement").click();
     settle(&mut h);
     assert!(count.get_untracked() == 2.0 && h.semantics().contains("= \"2\""));

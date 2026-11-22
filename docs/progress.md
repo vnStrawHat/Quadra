@@ -442,6 +442,15 @@ card, holding the card's two columns (the kit's tooltip `.content(|| view)`), an
 a reader as `1Term: CPU 3%, RAM 182 MB`. The kit's tooltip `.meta(..)` may change and holds a
 line for each line of its words.
 
+### One height for the controls of one line (2026-11-22)
+
+Every control of one line is the md control height, 28 with its border, unless told: a text
+input and what is built on one (combobox, colour, path and number inputs, the stepper), the
+key input, a segmented group (was 22, its cells now 26 inside the border), beside buttons,
+selects and the date and time pickers that were 28 already. A text input was 37 (at least 32
+and its padding), the key input and the stepper 32; the Browse button of a path picker is md.
+Measured on each control mounted with its defaults (specs/behaviour/15, Control heights).
+
 ### The move loop keeps drawing (2026-11-22)
 
 Holding the caption froze the content: the OS's move loop turns inside `DefWindowProc` from

@@ -103,9 +103,9 @@ pub fn segmented_page() -> Div {
             ),
             demo("Time range", line().child(segmented(["5m", "1h", "24h", "7d"], range)), ""),
             demo(
-                "Medium",
-                line().child(segmented(["All", "Installed", "Not Installed"], filter).size(Size::Md)),
-                ".size(Size::Md)",
+                "Small",
+                line().child(segmented(["All", "Installed", "Not Installed"], filter).size(Size::Sm)),
+                ".size(Size::Sm)",
             ),
         ],
     )

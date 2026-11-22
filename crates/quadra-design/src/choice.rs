@@ -32,7 +32,7 @@ pub fn radio_group<S: Into<String>>(options: impl IntoIterator<Item = S>, chosen
         chosen,
         segmented: false,
         horizontal: false,
-        size: Size::Sm,
+        size: Size::Md,
         disabled: Prop::Value(false),
         label: None,
     }
@@ -50,8 +50,8 @@ impl Choice {
         self
     }
 
-    /// The height of the cells of a segmented control: 22 px with 12 px labels at the two
-    /// smaller sizes, 28 or 32 with 14 px labels.
+    /// The height of a segmented control with its border: the md control height (28) with
+    /// 14 px labels unless told, 22 with 12 px labels at the two smaller sizes, or 32.
     pub fn size(mut self, size: Size) -> Self {
         self.size = size;
         self
@@ -100,7 +100,8 @@ impl Choice {
     fn cell(&self, label: String) -> Div {
         let small = matches!(self.size, Size::Xs | Size::Sm);
         let cell = row().align_items(Align::Center).justify(Justify::Center).shrink(0.0);
-        let cell = cell.height(by_text(self.size.height())).padding_x(if small { 8.0 } else { 12.0 });
+        // Inside the group's border: the group is the control's height.
+        let cell = cell.height(by_text(self.size.height() - 2.0)).padding_x(if small { 8.0 } else { 12.0 });
         let cell = match small {
             true => cell.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height()),
             false => cell,

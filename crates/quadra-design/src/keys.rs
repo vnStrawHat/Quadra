@@ -46,7 +46,8 @@ impl KeyInput {
             AnyView::new(words)
         });
         let frame = row().align_items(Align::Center).justify(Justify::Center).width(self.width);
-        let frame = frame.height(by_text(32.0)).padding_x(8.0).radius(token::RADIUS_LG).border(1.0);
+        let frame =
+            frame.height(by_text(crate::size::H_MD)).padding_x(8.0).radius(token::RADIUS_LG).border(1.0);
         let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG).cursor(Cursor::Pointer);
         let frame = frame.focus(|s| s.border_color(token::BORDER_FOCUSED));
         let frame = match self.label {

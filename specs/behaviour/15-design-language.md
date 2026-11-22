@@ -160,7 +160,11 @@ diff tints) and the terminal's 16 ANSI colors.
 - **Spacing:** 1, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32. Padding is usually 4 (rows, bars),
   6 (list rows) or 8 (fields, tooltips).
 - **Control heights (`Size`):** xs 18, sm 22, md 28, lg 32 (`h_xs` ... `h_lg`). Comfortable
-  density adds 4. Compact is the default and is the reference density.
+  density adds 4. Compact is the default and is the reference density. Every control of one
+  line is md, 28 tall with its border, unless told: a button, a text input and what is built
+  on one (combobox, colour, path and number inputs), the key input, select, date and time
+  pickers, a segmented group. An icon button is sm, 22; checkboxes, switches and sliders are
+  their own shapes.
 - **UI scale:** `ui_scale` (1) multiplies the control heights and the paddings of the
   components a design language sizes in rem (a UI font-size setting). `text_step` 1 is for
   a type scale whose md is body text (16): components then take their text one step down
@@ -284,15 +288,17 @@ same rule: no backdrop, an outside click closes them.
   `press`) with a 12 check in `text_2` at the end of the chosen one; at most 280 tall, then
   it scrolls; "No match" in `text_2` when none is left.
 - **Segmented control:** an outlined group (1 px `line_strong`, radius 6) of cells split by
-  1 px dividers; sm cells 22 tall with 12 labels, md and lg 28 / 32 with 14; the chosen
+  1 px dividers; the group is the control height with its border (md unless told: 28, its
+  cells 26), sm 22 with 12 labels, md and lg with 14; the chosen
   cell `accent_tint` with an `accent_text` label. The cells at the ends are rounded as the
   group's inside (radius 5 on their outer corners), so a chosen end cell's fill stays inside
   the rounded border.
 - **Text input:** `input_bg` fill (default `canvas`), 1 px `line_strong`, radius 6, padding 8 × 6, 14 text in the
   editor foreground (`code.editor.foreground`: `#ACB2BE` / `#242529`), placeholder
   `text_3`; focused: `border_focused`; invalid: an `error` border, focused or not, and
-  the form field shows the message under it in 12 px `error`. No hover style. `height`
-  fixes a single-line input's height (the cards settings use 32; bars 28 and 22). A find
+  the form field shows the message under it in 12 px `error`. No hover style. A single-line
+  input is the md control height, 28, the text centred in it; `height` fixes another (the
+  cards settings use 32; bars 22). A find
   bar's row is 26: its fields 26 with 14 px text (the query with a 14 `search` icon), its
   icon buttons 22 in the middle of the row; the plane 4 around it, nothing under the last
   row but that. `.prefix(words)`

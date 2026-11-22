@@ -138,7 +138,9 @@ fn a_radio_group_and_a_segmented_control_hold_one_of_a_few() {
         (0, tint, none)
     );
     let list = p.node(Role::Radio, "List");
-    assert_eq!(p.h.tree.rect(list).height, 22.0); // a small cell, around a 12 px label
+    // The group is the md control height, 28 with its border: a cell is 26 inside it.
+    assert_eq!(p.h.tree.rect(list).height, 26.0);
+    assert_eq!(p.h.tree.rect(p.h.tree.parent(list).unwrap()).height, 28.0);
     assert_eq!(p.h.tree.inherited(p.h.tree.children(list)[0]).color, p.theme.color(token::ACCENT_TEXT));
 }
 

@@ -32,8 +32,8 @@ fn the_frame_shows_the_focus_and_what_is_not_accepted() {
         h.tree.parent(field).unwrap()
     };
     let (search, secret_frame) = (frame_of(&mut h, "search"), frame_of(&mut h, "secret"));
-    // 240 wide; a line of 23 px, 6 above and below, and the border.
-    assert_eq!(h.tree.rect(search).size(), quadra_prim::Size::new(240.0, 37.0));
+    // 240 wide and the md control height, as a button and a select are.
+    assert_eq!(h.tree.rect(search).size(), quadra_prim::Size::new(240.0, 28.0));
     let look = |h: &Harness, frame: NodeId| {
         let paint = h.tree.paint_style(frame);
         (paint.background, paint.border_color)

@@ -10,7 +10,7 @@ use quadra_reactive::Signal;
 use quadra_tree::NodeId;
 use quadra_view::{IntoProp, MountCx, Prop, View, row};
 
-use crate::button::{Size, Variant, button};
+use crate::button::{Variant, button};
 use crate::icons;
 use crate::input::input;
 
@@ -100,7 +100,7 @@ impl View for PathPicker {
             true => (icons::FOLDER, "Browse for a folder"),
             false => (icons::FILE, "Browse for a file"),
         };
-        let pick = button("Browse\u{2026}").icon(icon).variant(Variant::Secondary).size(Size::Lg).label(name);
+        let pick = button("Browse\u{2026}").icon(icon).variant(Variant::Secondary).label(name);
         let pick = pick.on_click(move || {
             if let Some(chosen) = browse(&value.get_untracked()) {
                 value.set(chosen.display().to_string());

@@ -25,11 +25,12 @@ fn running_and_pending_are_squares_told_apart_by_their_fill_and_none_keeps_its_r
         (h.tree.window_rect(inner).size(), h.tree.paint_style(inner))
     };
     let ((running, filled), (pending, hollow)) = (shape(&mut h, marks[0]), shape(&mut h, marks[1]));
-    assert_eq!((running, pending), (Size::new(7.0, 7.0), Size::new(7.0, 7.0)));
+    // A step up from 12: the square of 7 scaled to the 14 px box, on whole pixels.
+    assert_eq!((running, pending), (Size::new(8.0, 8.0), Size::new(8.0, 8.0)));
     assert!(filled.background.a > 0.0 && filled.border_color.a == 0.0, "{filled:?}");
     assert!(hollow.background.a == 0.0 && hollow.border_color.a > 0.0, "{hollow:?}");
-    // None: the 12 px box of a mark, empty.
-    assert_eq!(h.tree.window_rect(marks[2]).size(), Size::new(12.0, 12.0));
+    // None: the 14 px box of a mark, empty.
+    assert_eq!(h.tree.window_rect(marks[2]).size(), Size::new(14.0, 14.0));
     assert!(h.tree.children(marks[2]).is_empty());
 }
 

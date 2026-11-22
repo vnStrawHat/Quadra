@@ -67,14 +67,17 @@ const SMALL_DIAMOND: &str =
 const SMALL_CHECK: &str =
     r#"<path d="M2.88 12.96 9.36 19.2 21.12 4.8" fill="none" stroke="currentColor" stroke-width="3.84"/>"#;
 
-/// The shape of a status in a box of 12 px: a filled square, a hollow one, a filled
-/// triangle, a check, a dash, a filled diamond; nothing for `None`.
+/// The shape of a status in a box of 14 px, beside 14 px text: a filled square, a hollow
+/// one, a filled triangle, a check, a dash, a filled diamond; nothing for `None`.
 pub fn status_mark(status: Status) -> Div {
-    status_mark_sized(status, 12.0)
+    status_mark_sized(status, MARK)
 }
 
-/// A status's mark in a box of `side` px: from 12 up the 12 px mark scaled with it, below 12
-/// the shapes drawn for a box of 10, as parts of the box.
+/// The box of a mark unless told.
+const MARK: f32 = 14.0;
+
+/// A status's mark in a box of `side` px: from 12 up the 12 px mark scaled with it, its
+/// edges on whole pixels; below 12 the shapes drawn for a box of 10, as parts of the box.
 pub fn status_mark_sized(status: Status, side: f32) -> Div {
     let tone = status.color();
     // The square, its hollow border, the dash, the corners; and the shapes' bodies.
@@ -84,8 +87,8 @@ pub fn status_mark_sized(status: Status, side: f32) -> Div {
             (SMALL_TRIANGLE, SMALL_CHECK, SMALL_DIAMOND),
         ),
         false => {
-            let k = side / 12.0;
-            ((7.0 * k, 2.0 * k, (8.0 * k, 2.0 * k), k), (TRIANGLE, icons::CHECK, DIAMOND))
+            let px = |of: f32| (of * side / 12.0).round();
+            ((px(7.0), px(2.0), (px(8.0), px(2.0)), px(1.0)), (TRIANGLE, icons::CHECK, DIAMOND))
         }
     };
     let square = || div().size(square, square).radius(round);
@@ -105,7 +108,7 @@ pub fn status_mark_sized(status: Status, side: f32) -> Div {
 /// A status as its mark and its name, in its colour, on one line that ends with "…" where it
 /// does not fit. `words` takes the name's place unless it is empty.
 pub fn status_label(status: Status, words: &str) -> Div {
-    status_label_sized(status, words, 12.0)
+    status_label_sized(status, words, MARK)
 }
 
 /// A status label whose mark is `side` px.

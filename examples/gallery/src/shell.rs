@@ -8,7 +8,8 @@ use quadra::{
 };
 use quadra_design::{
     Command, MenuItem, NavItem, Notices, Status, Tone, command_palette, dark, icon_button, icons, light,
-    notices, sidebar, status_button, status_divider, status_item, status_label, statusbar, titlebar, tooltip,
+    notices, sidebar, status_button, status_divider, status_item, status_label_sized, statusbar, titlebar,
+    tooltip,
 };
 
 use crate::registry::{PAGES, make};
@@ -115,7 +116,7 @@ impl Gallery {
             .left(tooltip("Pages", pages))
             .left(tooltip("Commands", search).keys("Ctrl-K"))
             .left(status_divider())
-            .left(status_label(Status::Running, "Ready"))
+            .left(status_label_sized(Status::Running, "Ready", 12.0))
             .left(status_item(Some(icons::LAYERS), move || title().to_string()))
             .right(status_item(None, format!("{} pages", PAGES.len())))
             .right(status_item(Some(icons::PALETTE), move || format!("{} \u{B7} compact", name())))

@@ -332,9 +332,12 @@ As built so far:
   it to shrink) its middle parts give way first, each cut with an ellipsis down to 24 px,
   and the first and the last stay whole while they fit, then are cut too.
 - **A status** (`status.rs`: running, pending, failed, succeeded, terminating, unknown) has
-  a role of the theme for its colour and a shape of its own in a box of 12 px
-  (`status_mark`): a filled square of 7 px, a hollow one (a 2 px border), a filled
-  triangle, a check, a dash, a filled diamond. `status_mark_sized(status, px)` and
+  a role of the theme for its colour and a shape of its own in a box of 14 px
+  (`status_mark`, `status_label`: a step up from 12, beside 14 px text): a filled square of
+  8 px, a hollow one (a 2 px border), a filled triangle, a check, a dash of 9 by 2, a
+  filled diamond. From 12 px up the shapes are the 12 px mark's (a square of 7, a dash of 8
+  by 2) scaled with the box, their edges on whole pixels; a status bar's label in 12 px text
+  keeps a 12 px mark. `status_mark_sized(status, px)` and
   `status_label_sized(status, words, px)` draw the box and its shape at another size
   together (8 px in a row of a table, 10 before a status word in a cell or a list). Below
   12 px the shapes are those of a mark drawn for 10, as parts of the box: a square of 0.7

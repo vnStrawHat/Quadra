@@ -442,6 +442,14 @@ card, holding the card's two columns (the kit's tooltip `.content(|| view)`), an
 a reader as `1Term: CPU 3%, RAM 182 MB`. The kit's tooltip `.meta(..)` may change and holds a
 line for each line of its words.
 
+### Status marks a step up, tabs without a hover box (2026-11-22)
+
+A status mark (and a status label's) is 14 px unless told, a step up from 12 beside 14 px
+text: the 12 px shapes scaled, their edges on whole pixels (a square of 8, a dash of 9 by 2).
+The gallery's status bars keep a 12 px mark beside their 12 px text. An underlined tab under
+the pointer no longer fills a rounded box that sat on the line under the row: its label lights
+up; a pill tab still fills.
+
 ### Badges and tags in 12 px text (2026-11-22)
 
 A badge and a plain badge are 20 px tall, a tag 22 (the sm control height), all in 12 px

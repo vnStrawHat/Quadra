@@ -5,7 +5,7 @@ use quadra::Token;
 use quadra::{Div, column, div, dynamic, row, signal};
 use quadra_design::{
     Command, MenuItem, NavItem, Size, Status, breadcrumb, button, command_palette, icon, icon_button, icons,
-    kbd, menu_button, menubar, sidebar, status_item, status_label, statusbar, token, toolbar, tooltip,
+    kbd, menu_button, menubar, sidebar, status_item, status_label_sized, statusbar, token, toolbar, tooltip,
     vdivider,
 };
 
@@ -121,7 +121,7 @@ pub fn menubar_page() -> Div {
 
 pub fn statusbar_page() -> Div {
     let bar = statusbar()
-        .left(status_label(Status::Running, "Connected"))
+        .left(status_label_sized(Status::Running, "Connected", 12.0))
         .left(status_item(Some(icons::LAYERS), "cluster-prod"))
         .left(status_item(None, "default"))
         .right(status_item(None, "Ln 12, Col 4"))
@@ -135,7 +135,7 @@ pub fn statusbar_page() -> Div {
         [demo(
             "Window footer",
             framed(column().child(div().height(60.0)).child(bar)),
-            "statusbar().left(status_label(Status::Running, \"Connected\")).right(status_item(None, \"UTF-8\"))",
+            "statusbar().left(status_label_sized(Status::Running, \"Connected\", 12.0)).right(status_item(None, \"UTF-8\"))",
         )],
     )
 }

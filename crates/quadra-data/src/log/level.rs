@@ -37,24 +37,32 @@ impl Level {
 
     /// The first level a line names: in capitals (`WARN`), as its first word in any case
     /// (`error: ...`), or in any case after `level`, `lvl` or `severity` (`level=warn`,
-    /// `"level":"error"`); a line that starts as klog's (`E1121 ...`) by its letter.
+    /// `"level":"error"`); a line that starts as klog's (`E1121 ...`) by its letter. A JSON
+    /// line's `level` field comes before the words of its message.
     pub(crate) fn of(line: &str) -> Level {
         let said = plain(line);
         if let Some(level) = said.split_whitespace().next().and_then(klog) {
             return level;
         }
-        // The first word is told by its place, as a word after `level` is.
-        let mut told = true;
-        for word in said.split(|c: char| !c.is_ascii_alphanumeric()).filter(|w| !w.is_empty()) {
-            let named = NAMES.iter().find(|(name, _)| name.eq_ignore_ascii_case(word));
-            if let Some(&(_, level)) = named.filter(|_| told || word.bytes().all(|b| b.is_ascii_uppercase()))
-            {
-                return level;
-            }
-            told = ["level", "lvl", "severity"].iter().any(|key| key.eq_ignore_ascii_case(word));
-        }
-        Level::None
+        let keyed = said.trim_start().starts_with('{').then(|| named(&said, false)).flatten();
+        keyed.or_else(|| named(&said, true)).unwrap_or(Level::None)
     }
+}
+
+/// The first level named after `level`, `lvl` or `severity`; with `loose`, also as the first
+/// word, or in capitals anywhere.
+fn named(said: &str, loose: bool) -> Option<Level> {
+    // The first word is told by its place, as a word after `level` is.
+    let mut told = loose;
+    for word in said.split(|c: char| !c.is_ascii_alphanumeric()).filter(|w| !w.is_empty()) {
+        let named = NAMES.iter().find(|(name, _)| name.eq_ignore_ascii_case(word));
+        let capitals = loose && word.bytes().all(|b| b.is_ascii_uppercase());
+        if let Some(&(_, level)) = named.filter(|_| told || capitals) {
+            return Some(level);
+        }
+        told = ["level", "lvl", "severity"].iter().any(|key| key.eq_ignore_ascii_case(word));
+    }
+    None
 }
 
 /// klog's first word: the level's letter, then the month and the day (`E1121`).

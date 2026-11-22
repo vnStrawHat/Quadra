@@ -29,6 +29,23 @@ impl LogView {
         self
     }
 
+    /// A JSON line as its message and `key=value` for its other fields, its level and time
+    /// left out; off, as it came.
+    pub fn fields<M>(mut self, shown: impl IntoProp<bool, M>) -> Self {
+        match shown.into_prop() {
+            Prop::Value(shown) => self.look.fields.set(shown),
+            Prop::Reactive(shown) => self.fielded = Some(shown),
+        }
+        self
+    }
+
+    /// As tall as its rows, up to `rows` of them, scrolling past that; wrapped lines count
+    /// as the rows they take.
+    pub fn fit(mut self, rows: usize) -> Self {
+        self.fit = Some(rows);
+        self
+    }
+
     /// Whether the bar is over the lines: an app with tools of its own filters the `Log`.
     pub fn bar(mut self, shown: bool) -> Self {
         self.bar = shown;

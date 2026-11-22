@@ -33,11 +33,15 @@ const OVERSCAN: usize = 2;
 /// Which row a list is asked to show, if any.
 type Wanted = Box<dyn Fn() -> Option<usize>>;
 
+/// Where a list writes how far it scrolls, and how tall its rows are.
+type Told = (Option<Signal<f32>>, Option<Signal<f32>>);
+
 /// A virtual list, as a view.
 pub struct ListView {
     region: Region,
     wanted: Rc<RefCell<Option<Wanted>>>,
-    ends: Rc<Cell<Option<Signal<f32>>>>,
+    /// Where the list writes how far it scrolls, and how tall its rows are.
+    ends: Rc<Cell<Told>>,
 }
 
 impl ListView {
@@ -56,7 +60,13 @@ impl ListView {
 
     /// Writes into `out` how far the list scrolls at most, as its rows' heights are known.
     pub fn end(self, out: Signal<f32>) -> Self {
-        self.ends.set(Some(out));
+        self.ends.set((Some(out), self.ends.get().1));
+        self
+    }
+
+    /// Writes into `out` the height of all its rows, as they are known.
+    pub fn extent(self, out: Signal<f32>) -> Self {
+        self.ends.set((self.ends.get().0, Some(out)));
         self
     }
 }
@@ -103,8 +113,8 @@ fn list<V: View + 'static>(
     row: impl Fn(Signal<usize>) -> V + 'static,
 ) -> ListView {
     let wanted: Rc<RefCell<Option<Wanted>>> = Rc::default();
-    let (asked, ends) = (wanted.clone(), Rc::new(Cell::new(None)));
-    let told: Rc<Cell<Option<Signal<f32>>>> = ends.clone();
+    let (asked, ends) = (wanted.clone(), Rc::new(Cell::new((None, None))));
+    let told: Rc<Cell<Told>> = ends.clone();
     let bind = move |viewport: NodeId, cx: &mut MountCx| {
         let owner = Scope::current();
         let tree = &mut *cx.tree;
@@ -152,9 +162,15 @@ fn list<V: View + 'static>(
             Scrolled { scroll: scroll_y, top, end, view: size, sideways: false },
         );
         cx.tree.set_children(viewport, &[content, thumb]);
-        if let Some(out) = told.get() {
+        let (to_end, to_extent) = told.get();
+        if let Some(out) = to_end {
             cx.handle.bind(move || {
                 out.try_set(end.get());
+            });
+        }
+        if let Some(out) = to_extent {
+            cx.handle.bind(move || {
+                out.try_set(extent.get());
             });
         }
         if let Some(wanted) = asked.borrow_mut().take() {

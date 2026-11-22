@@ -7,12 +7,14 @@ use std::rc::Rc;
 
 use quadra_reactive::{Signal, signal};
 
+mod fields;
 mod level;
 mod listing;
 mod store;
 #[cfg(test)]
 mod tests;
 
+pub(crate) use fields::as_fields;
 pub use level::Level;
 use listing::{Listing, bit, matcher};
 pub(crate) use store::Store;
@@ -75,11 +77,25 @@ impl Log {
     /// Adds lines of one source (a stream: a container, a pod), each after the last line
     /// whose time is not later, so that streams that come interleaved read in time order.
     pub fn append_from<T: AsRef<str>>(&self, source: u8, lines: impl IntoIterator<Item = (i64, T)>) {
+        self.add(source, lines.into_iter().map(|(at_ms, text)| (at_ms, None, text)));
+    }
+
+    /// As [`Log::append_from`], each line with the level the app gives it: what it says is
+    /// not read for one (a JSON line shown as its message and fields).
+    pub fn append_leveled<T: AsRef<str>>(
+        &self,
+        source: u8,
+        lines: impl IntoIterator<Item = (i64, Level, T)>,
+    ) {
+        self.add(source, lines.into_iter().map(|(at_ms, level, text)| (at_ms, Some(level), text)));
+    }
+
+    fn add<T: AsRef<str>>(&self, source: u8, lines: impl Iterator<Item = (i64, Option<Level>, T)>) {
         let (mut store, mut listing) = (self.0.store.borrow_mut(), self.0.listing.borrow_mut());
         let mut between = false;
-        for (at_ms, text) in lines {
+        for (at_ms, level, text) in lines {
             let text = text.as_ref();
-            let Some(i) = store.push(at_ms, text, source) else { continue };
+            let Some(i) = store.push(at_ms, text, source, level) else { continue };
             between |= i + 1 < store.len();
             if listing.indexed() {
                 // The places after it move one down; it is listed if it matches.
@@ -226,6 +242,11 @@ impl Log {
     pub fn marks(&self, place: usize) -> Vec<Range<usize>> {
         let Some(i) = self.at(place) else { return Vec::new() };
         self.0.listing.borrow().marks(self.0.store.borrow().line(i))
+    }
+
+    /// Where the filter's text or pattern is in a text shown for a line.
+    pub(crate) fn marks_in(&self, text: &str) -> Vec<Range<usize>> {
+        self.0.listing.borrow().marks(text)
     }
 
     /// The bytes of the longest line it has held.

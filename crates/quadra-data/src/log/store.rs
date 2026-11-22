@@ -28,7 +28,8 @@ impl Store {
     /// the end), and says where. Past 4 GB of text nothing is added.
     // ponytail: a line far older than the newest moves the bytes after it; a store kept by
     // arrival with an order of its own when streams come hours apart.
-    pub fn push(&mut self, at_ms: i64, text: &str, source: u8) -> Option<usize> {
+    /// `level`: the app's, or none to read it from the words.
+    pub fn push(&mut self, at_ms: i64, text: &str, source: u8, level: Option<Level>) -> Option<usize> {
         u32::try_from(self.bytes.len() + text.len()).ok()?;
         let mut i = self.len();
         while at_ms != 0 && i > 0 && self.times[i - 1] > at_ms {
@@ -39,7 +40,7 @@ impl Store {
         self.bytes.insert_str(from as usize, text);
         self.ends[i..].iter_mut().for_each(|end| *end += grown);
         self.ends.insert(i, from + grown);
-        let level = Level::of(text);
+        let level = level.unwrap_or_else(|| Level::of(text));
         self.times.insert(i, at_ms);
         self.levels.insert(i, level);
         self.sources.insert(i, source);

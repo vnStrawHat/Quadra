@@ -27,6 +27,7 @@ pub(super) fn line(
     colors: &Colors,
 ) -> Div {
     let Some((_, at_ms, raw, faint)) = log.line(place) else { return div() };
+    let raw = look.shown(raw);
     let (fade, (said, pens), level) = (if faint { 0.4 } else { 1.0 }, runs(&raw), log.level(place));
     let base = if look.levels { tone(level) } else { token::TEXT };
     let mut from = 0;
@@ -74,7 +75,7 @@ pub(super) fn line(
     if spans.is_empty() {
         return line;
     }
-    let marks = log.marks(place);
+    let marks = log.marks_in(&said);
     // ponytail: the accent is read as the row is built; a theme that changes shows it on
     // the rows built after.
     let marked = move |tree: &mut quadra_tree::Tree, id| {
@@ -99,6 +100,7 @@ pub(super) fn line(
 /// A line as copying gives it: its time, when they show, and what it says.
 pub(super) fn as_text(log: &Log, place: usize, look: Look) -> String {
     let Some((_, at_ms, raw, _)) = log.line(place) else { return String::new() };
+    let raw = quadra_reactive::untrack(|| look.shown(raw));
     match (look.timestamps.get_untracked(), at_ms) {
         (true, at) if at != 0 => format!("{} {}", look.when(at), plain(&raw)),
         _ => plain(&raw).into_owned(),

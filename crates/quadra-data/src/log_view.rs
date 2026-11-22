@@ -41,6 +41,9 @@ pub struct LogView {
     /// What the app's switches say, when they are reactive.
     stamps: Option<Box<dyn Fn() -> bool>>,
     wraps: Option<Box<dyn Fn() -> bool>>,
+    fielded: Option<Box<dyn Fn() -> bool>>,
+    /// As tall as its rows, up to this many.
+    fit: Option<usize>,
     /// Rows may be of different heights.
     wrapping: bool,
     follow: Option<Signal<bool>>,
@@ -63,6 +66,7 @@ pub fn log_view(log: &Log) -> LogView {
         millis: true,
         ground: false,
         wrap: signal(false),
+        fields: signal(false),
     };
     let colors: Colors = Rc::new(|source| token::HUES[source as usize % token::HUES.len()].into());
     LogView {
@@ -71,6 +75,8 @@ pub fn log_view(log: &Log) -> LogView {
         bar: true,
         stamps: None,
         wraps: None,
+        fielded: None,
+        fit: None,
         wrapping: false,
         follow: None,
         header: None,
@@ -84,8 +90,24 @@ pub fn log_view(log: &Log) -> LogView {
 impl View for LogView {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let LogView {
-            log, look, stamps, wraps, wrapping, follow, header, empty, menu, notes, colors, ..
+            log,
+            look,
+            stamps,
+            wraps,
+            fielded,
+            fit,
+            wrapping,
+            follow,
+            header,
+            empty,
+            menu,
+            notes,
+            colors,
+            ..
         } = self;
+        if let Some(fielded) = fielded {
+            effect(move || look.fields.set(fielded()));
+        }
         if let Some(stamps) = stamps {
             effect(move || look.timestamps.set(stamps()));
         }
@@ -181,7 +203,13 @@ impl View for LogView {
             false => uniform_list(count, look.row, scroll, build),
             true => virtual_list(count, look.row, scroll, build),
         };
-        let list = list.end(end).container(div().grow(1.0));
+        // Its rows' height, up to the most it is given, or all there is.
+        let (extent, row_px) = (signal(0.0f32), by_text(look.row));
+        let holder = match fit {
+            Some(rows) => div().shrink(0.0).height(move || extent.get().min(rows as f32 * row_px())),
+            None => div().grow(1.0),
+        };
+        let list = list.end(end).extent(extent).container(holder);
 
         // A row of words in `text_3` that is no line: the header, and why none shows.
         let pad = if look.ground { 0.0 } else { 8.0 };
@@ -199,7 +227,8 @@ impl View for LogView {
             None => div(),
         });
 
-        let lines = column().grow(1.0).font_family(fonts::MONO).text_size(look.size);
+        let grows = if fit.is_some() { 0.0 } else { 1.0 };
+        let lines = column().grow(grows).font_family(fonts::MONO).text_size(look.size);
         let lines = lines.line_height(look.row / look.size);
         let lines = match look.ground {
             true => lines.bg(token::CANVAS).radius(6.0).padding_x(12.0).padding_y(6.0),
@@ -210,7 +239,7 @@ impl View for LogView {
             None => lines,
         };
         let lines = sheet.frame(lines, use_context::<Rc<dyn Clipboard>>()).label("Log".to_string());
-        let all = column().grow(1.0);
+        let all = column().grow(grows);
         let all = if self.bar { all.child(bar(&log, filter, wrong, follow)) } else { all };
         all.child(lines.child(none).child(list)).mount(cx)
     }

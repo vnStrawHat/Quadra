@@ -1073,7 +1073,9 @@ What these are and look like is behaviour/19. As built:
   A line goes after the last one whose time is not later (one with no time at the end), so
   that streams that come interleaved read in time order: `log.append_from(source, lines)`
   gives each line its source (a container, a pod: the app's number), `log.source(place)`
-  reads it and `log.sources()` says how many there are.
+  reads it and `log.sources()` says how many there are. `log.append_leveled(source,
+  lines)` takes each line's level from the app (`(at_ms, Level, text)`): what it says is
+  not read for one.
 - A line may colour itself with the escape sequences terminals know (SGR): the sixteen
   colours, which are the theme's (`token::ANSI`, a theme file's `terminal.ansi`), the 256
   and the 16 million, bold and faint; other sequences are dropped. Only the lines that
@@ -1111,7 +1113,8 @@ What these are and look like is behaviour/19. As built:
   error, F fatal. `log.set_levels(&[..])` lists only the lines of those levels (fatal
   counted as error; none: every level), with the text filter (dimmed with it under `Dim`);
   `log.set_level(least)` those of that level or graver, which the bar's `Warn` does.
-  `log.has_levels()` says whether any line has one.
+  `log.has_levels()` says whether any line has one. A JSON line (`{` first) takes its
+  level from its `level`, `lvl` or `severity` field before any word of its message.
 - For a panel of the app's own: `.bar(false)` leaves the bar out (the app filters through
   the `Log`); `.text(size, line)` sets the size and the row (15 on 24); `.ground()` puts the
   lines on `canvas`, a radius of 6, 6 by 12 px in, the time at that edge and a line's text
@@ -1129,6 +1132,13 @@ What these are and look like is behaviour/19. As built:
   it needs (a `virtual_list`; the wheel no longer moves the lines sideways). With two
   sources or more, a dot of 8 px in the source's colour stands before the time
   (`.source_colors(|source| paint)`, the hues unless told).
+- `.fit(rows)` makes the view as tall as its rows, up to `rows` of them, and scrolls past
+  that (wrapped lines counted as the rows they take), instead of filling its container.
+  `.fields(..)` (reactive) shows a JSON line as its message (`msg` or `message`) and then
+  `key=value` for its other fields, a map's as `key.inner=value`, its level and time left
+  out (`level`, `lvl`, `severity`, `time`, `ts`, `timestamp`, `@timestamp`); a value with
+  a space or a quote in double quotes. The filter's marks and the copy follow what shows;
+  the filter itself reads the line as it came. Off, the line shows as it came.
 - `.follow(signal)` is following, read and written: the app's switch turns it on (to the
   end) and off; scrolling away writes it off and coming back to the end on.
   `.header(|| words)` is a first row in `text_3` that is not a line: no time, never

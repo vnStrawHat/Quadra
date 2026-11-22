@@ -244,6 +244,8 @@ that says how far the list is scrolled, and what builds a row from its index.
   measured; then it lets go, and scrolling away is not undone.
 - `.end(signal)` writes into `signal` how far the list scrolls at most (its rows' heights
   less the viewport's, as known so far): what an app that follows the end compares with.
+  `.extent(signal)` writes the height of all its rows, as known so far: what a list as tall
+  as its rows, up to a most, is given as its height.
 - `uniform_list(count, row_height, scroll_y, row)` is the same with one fixed row height, no
   measuring and no memory a row.
 - A row recycled for another index must not keep state of the old one in node state. The list

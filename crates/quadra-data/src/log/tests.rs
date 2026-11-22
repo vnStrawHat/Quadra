@@ -14,7 +14,7 @@ fn entries(from: usize, n: usize) -> Vec<(i64, String)> {
 fn lines_are_packed_and_read_back() {
     let mut store = Store::default();
     for (at, text) in [(5, "one"), (6, ""), (7, "thrée")] {
-        store.push(at, text, 0);
+        store.push(at, text, 0, None);
     }
     assert_eq!((store.len(), store.line(0), store.line(1), store.line(2)), (3, "one", "", "thrée"));
     assert_eq!((store.time(2), clock(1_793_966_400_000 + 3_723_045)), (7, "13:02:03.045".to_string()));
@@ -99,4 +99,15 @@ fn levels_are_a_set_fatal_counted_as_error_and_matches_are_marked() {
     log.set_filter("gone", false, false);
     assert_eq!((log.marks(0).len(), log.marks(0).first()), (1, Some(&(6..10))));
     assert_eq!(log.marks(1), vec![7..11, 13..17]);
+}
+
+#[test]
+fn a_level_given_on_append_wins_and_a_json_line_says_its_own() {
+    let log = Log::new();
+    log.append_leveled(0, [(1, Level::Info, "Error budget is fine"), (2, Level::Warn, "plain")]);
+    assert_eq!((log.level(0), log.level(1)), (Level::Info, Level::Warn));
+    // A JSON line: its level field before a word in capitals in its message.
+    log.push(3, r#"{"msg":"ERROR budget is fine","level":"info"}"#);
+    log.push(4, r#"{"msg":"no level field","note":"WARN"}"#);
+    assert_eq!((log.level(2), log.level(3)), (Level::Info, Level::Warn));
 }

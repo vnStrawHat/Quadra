@@ -6,7 +6,7 @@ use quadra_reactive::Signal;
 use quadra_tree::{Paint, Token};
 
 use crate::ansi::{Ink, Pen};
-use crate::log::{Level, Log, clock};
+use crate::log::{Level, Log, as_fields, clock};
 
 /// How the rows look: whether the time shows, its colour and its offset from UTC in ms,
 /// the size of the text and the row, and whether a line takes its level's colour.
@@ -24,6 +24,8 @@ pub(super) struct Look {
     pub(super) ground: bool,
     /// A long line goes on to the rows under it.
     pub(super) wrap: Signal<bool>,
+    /// A JSON line shows as its message and fields.
+    pub(super) fields: Signal<bool>,
 }
 
 /// The room of a source's dot, and of the level column in letters.
@@ -31,6 +33,14 @@ pub(super) const DOT: f32 = 16.0;
 pub(super) const COLUMN: f32 = 7.0;
 
 impl Look {
+    /// What a line shows: as it came, or a JSON line as its message and fields.
+    pub(super) fn shown(self, raw: String) -> String {
+        match self.fields.get() {
+            true => as_fields(&raw).unwrap_or(raw),
+            false => raw,
+        }
+    }
+
     /// The time of `ms` as a line shows it.
     pub(super) fn when(self, ms: i64) -> String {
         let said = clock(ms + self.offset);

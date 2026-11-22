@@ -9,7 +9,7 @@ use quadra_platform::{Key, Mods};
 use quadra_prim::Color;
 use quadra_reactive::{Signal, signal};
 use quadra_testing::Harness;
-use quadra_tree::Role;
+use quadra_tree::{PointerInput, Role};
 use quadra_view::{column, div, text};
 
 struct Page {
@@ -74,6 +74,16 @@ fn tabs_are_chosen_by_a_click_or_the_arrows() {
         (p.fill(Role::Tab, "Grid"), p.fill(Role::Tab, "Files")),
         (colour(token::ACCENT_TINT), Color::TRANSPARENT)
     );
+
+    // Under the pointer an underlined tab is not filled (a box would sit on the line), its
+    // label lights up; a pill fills.
+    for (name, fill) in [("Search", Color::TRANSPARENT), ("List", colour(token::PANEL_HOVER))] {
+        let at = p.h.get_by_role(Role::Tab, name).node();
+        let at = p.h.tree.window_rect(at).center();
+        p.h.pointer(PointerInput::Move, at.x, at.y);
+        p.settle();
+        assert_eq!(p.fill(Role::Tab, name), fill, "{name}");
+    }
 
     p.h.get_by_role(Role::Tab, "History").click();
     p.settle();

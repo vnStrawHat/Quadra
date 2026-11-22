@@ -270,7 +270,8 @@ As built so far:
   32).
 - **`tabs(labels, chosen)`** is the names of a few pages in a row, with the index of the
   chosen one in a signal; the caller shows its page. A tab is 28 px tall with 8 px beside
-  its label, muted until the pointer is over it; the chosen one has the accent's label. A
+  its label, muted until the pointer is over it, with no fill (a box would sit on the line
+  under the row; a pill tab fills `panel_hover`); the chosen one has the accent's label. A
   line runs under the row, or with `.pill()` the chosen tab is tinted and there is none.
   The row is one stop of Tab and the arrows go round it, as in a radio group (the same
   code: `choice::chooser`). To a reader: a tab list of tabs, one selected.

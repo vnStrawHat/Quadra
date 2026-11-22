@@ -38,7 +38,12 @@ impl Tabs {
             row().align_items(Align::Center).shrink(0.0).height(by_text(Size::Md.height())).padding_x(8.0);
         let tab = tab.radius(token::RADIUS_MD).cursor(Cursor::Pointer);
         let tab = tab.text_color(if pill { token::TEXT } else { token::TEXT_2 });
-        let tab = tab.hover(|s| s.bg(token::PANEL_HOVER).text_color(token::TEXT));
+        // Over the line under the row a fill would sit as a box on it: the label alone lights
+        // up. A pill is a box already, and fills.
+        let tab = match pill {
+            true => tab.hover(|s| s.bg(token::PANEL_HOVER)),
+            false => tab.hover(|s| s.text_color(token::TEXT)),
+        };
         // The chosen one has the accent's label whatever the pointer does.
         let on = move |s: Refine| {
             let s = s.text_color(token::ACCENT_TEXT);

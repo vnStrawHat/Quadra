@@ -3,6 +3,9 @@
 #   prod: also builds and tests in release.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# Text is read as UTF-8 whatever shell runs the gate: a shell that is not a login one has
+# no locale, and Git Bash's grep 3.0 aborts on `-i -F -f` without a UTF-8 one.
+export LC_ALL=C.UTF-8
 fail=0
 say() { echo "$*"; fail=1; }
 files() { find . \( -name target -o -name .git -o -name .tmp -o -name .cache -o -name .private \) -prune -o -type f "$@" -print; }

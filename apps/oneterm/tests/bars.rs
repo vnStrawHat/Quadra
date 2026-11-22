@@ -113,7 +113,7 @@ fn the_clock_says_the_date_and_the_time_and_only_its_text_is_painted_again_each_
 }
 
 #[test]
-fn ram_is_the_private_working_set_and_the_card_has_the_details() {
+fn ram_is_the_private_working_set_and_its_tooltip_has_the_details() {
     let mut a = app(true);
     assert!(a.h.has_text("182 MB") && a.h.has_text("0%"));
     // 1 s of processor in 2 s of life, over the cores.
@@ -127,14 +127,17 @@ fn ram_is_the_private_working_set_and_the_card_has_the_details() {
     let at = a.h.tree.window_rect(ram);
     a.h.pointer(PointerInput::Move, at.x + 2.0, at.y + 2.0);
     a.wait(500);
-    for words in ["Private working set", "182.5 MB", "Working set", "240.0 MB", "Commit (private bytes)"] {
-        assert!(a.h.has_text(words), "{words}: {}", a.h.semantics());
+    let said = [
+        "1Term: CPU {cpu}, RAM 182 MB",
+        "Working set 240.0 MB \u{b7} Peak 300.0 MB",
+        "Commit 410.0 MB \u{b7} Threads 23",
+        "CPU time 0:00:01 \u{b7} Uptime 0:00:12",
+    ];
+    for words in said.map(|it| it.replace("{cpu}", &cpu)) {
+        assert!(a.h.has_text(&words), "{words}: {}", a.h.semantics());
     }
-    for words in ["Peak working set", "300.0 MB", "410.0 MB", "CPU time", "0:00:01", "Threads", "23"] {
-        assert!(a.h.has_text(words), "{words}");
-    }
-    assert!(a.h.has_text("Uptime") && a.h.has_text("0:00:12"));
-    let card = a.h.tree.window_rect(a.h.tree.overlays().next().expect("the card"));
+    assert!(!a.h.query(|n| n.semantics.role == Role::Tooltip).is_empty());
+    let card = a.h.tree.window_rect(a.h.tree.overlays().next().expect("the tooltip"));
     // The status bar is the window's last 30 px.
     assert!(card.bottom() <= 700.0 - 30.0, "over the status bar: {card:?}");
 }

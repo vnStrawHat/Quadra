@@ -11,7 +11,7 @@ use quadra_tree::{Along, Anchor, NodeId, Role, Side, Tree};
 use quadra_vector::Svg;
 use std::rc::Rc;
 
-use quadra_view::{Div, IntoProp, MountCx, Prop, View, div, drawing, row, text};
+use quadra_view::{Div, IntoProp, MountCx, Prop, View, column, div, drawing, dynamic, row, text};
 
 use crate::popup::{hang, surface};
 use crate::token;
@@ -33,7 +33,7 @@ pub fn tip(words: &str) -> Div {
 pub struct Tooltip<V> {
     tip: Prop<String>,
     keys: Option<String>,
-    meta: Option<String>,
+    meta: Option<Rc<dyn Fn() -> String>>,
     side: Side,
     of: V,
 }
@@ -60,9 +60,13 @@ impl<V> Tooltip<V> {
         self
     }
 
-    /// A line under the text that says more, smaller and muted.
-    pub fn meta(mut self, words: impl Into<String>) -> Self {
-        self.meta = Some(words.into());
+    /// Lines under the text that say more, smaller and muted: one for each line of `words`,
+    /// which may change (a closure or a signal).
+    pub fn meta<M>(mut self, words: impl IntoProp<String, M>) -> Self {
+        self.meta = Some(match words.into_prop() {
+            Prop::Value(said) => Rc::new(move || said.clone()),
+            Prop::Reactive(said) => Rc::from(said),
+        });
         self
     }
 }
@@ -108,7 +112,11 @@ impl<V: View + 'static> View for Tooltip<V> {
             });
             match &words.2 {
                 Some(meta) => {
-                    let more = text(meta.clone()).size(12.0).color(token::TEXT_2);
+                    let meta = meta.clone();
+                    let more = dynamic(move || {
+                        let line = |said: &str| text(said.to_string()).size(12.0).color(token::TEXT_2);
+                        meta().lines().fold(column(), |lines, said| lines.child(line(said)))
+                    });
                     bubble.child(div().padding_x(8.0).padding_bottom(4.0).child(more))
                 }
                 None => bubble,

@@ -1,12 +1,12 @@
 //! What 1Term's process uses (specs/19, "M4 in detail"): read every 2 s from the context's
-//! `Meter` (the OS's where there is none), the status bar's CPU and RAM, and the card of
+//! `Meter` (the OS's where there is none), the status bar's CPU and RAM, and the tooltip of
 //! details under the pointer.
 
 use std::rc::Rc;
 use std::time::Duration;
 
-use quadra::{AnyView, Signal, View, column, div, interval, row, text, time, use_context};
-use quadra_design::{description_list, fonts, hover_card, token};
+use quadra::{Signal, View, interval, time, use_context};
+use quadra_design::tooltip;
 use quadra_shell::{Meter, Usage};
 
 /// The local time the status bar's clock shows: the system's, or a test's.
@@ -63,42 +63,30 @@ fn hms(d: Duration) -> String {
     format!("{}:{:02}:{:02}", s / 3600, s / 60 % 60, s % 60)
 }
 
-/// A value of the card, in mono, following the readings.
-fn value(seen: Signal<Option<Reading>>, of: impl Fn(&Reading) -> String + 'static) -> AnyView {
-    let words = move || seen.with(|it| it.as_ref().map(&of).unwrap_or_default());
-    AnyView::new(div().font_family(fonts::MONO).text_color(token::TEXT).child(text(words)))
-}
-
-/// A column of the card: its heading, then terms and values.
-fn group(title: &'static str, items: Vec<(&'static str, AnyView)>) -> quadra::Div {
-    let heading = div().font_weight(600).text_color(token::TEXT_2).child(text(title));
-    column().gap(8.0).child(heading).child(description_list(items))
-}
-
-/// `of` with the card of details: memory | processor.
-pub(crate) fn card(of: quadra::Div, seen: Signal<Option<Reading>>) -> impl View + use<> {
-    hover_card(of, move || {
-        let mb = |f: fn(&Usage) -> u64| value(seen, move |r| format!("{:.1} MB", f(&r.usage) as f64 / MB));
-        let memory = vec![
-            ("Private working set", mb(|u| u.memory)),
-            ("Working set", mb(|u| u.working_set)),
-            ("Commit (private bytes)", mb(|u| u.private_bytes)),
-            ("Peak working set", mb(|u| u.peak_working_set)),
-        ];
-        let processor = vec![
-            ("CPU usage", value(seen, |r| format!("{}%", r.cpu))),
-            ("CPU time", value(seen, |r| hms(r.usage.cpu))),
-            ("Threads", value(seen, |r| r.usage.threads.to_string())),
-            ("Uptime", value(seen, |r| hms(r.usage.uptime))),
-        ];
-        let line = div().width(1.0).shrink(0.0).bg(token::LINE);
-        row()
-            .gap(16.0)
-            .text_size(12.0)
-            .child(group("Memory", memory))
-            .child(line)
-            .child(group("Processor", processor))
-    })
+/// `of` with the tooltip of details, following the readings while it shows: what 1Term uses,
+/// then its memory and processor time in three short lines.
+pub(crate) fn tip(of: quadra::Div, seen: Signal<Option<Reading>>) -> impl View + use<> {
+    let said = move || {
+        let mb = |r: &Reading| r.usage.memory / (1024 * 1024);
+        seen.with(|it| it.map(|r| format!("1Term: CPU {}%, RAM {} MB", r.cpu, mb(&r))).unwrap_or_default())
+    };
+    let more = move || {
+        let mb = |bytes: u64| format!("{:.1} MB", bytes as f64 / MB);
+        let lines = |r: &Reading| {
+            let u = r.usage;
+            format!(
+                "Working set {} \u{b7} Peak {}\nCommit {} \u{b7} Threads {}\nCPU time {} \u{b7} Uptime {}",
+                mb(u.working_set),
+                mb(u.peak_working_set),
+                mb(u.private_bytes),
+                u.threads,
+                hms(u.cpu),
+                hms(u.uptime)
+            )
+        };
+        seen.with(|it| it.as_ref().map(lines).unwrap_or_default())
+    };
+    tooltip(said, of).meta(more)
 }
 
 #[cfg(test)]

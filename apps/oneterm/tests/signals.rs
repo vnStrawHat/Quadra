@@ -159,3 +159,24 @@ fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_word_under_its_icon() {
     a.feed(2, b"\x1b]9;4;1;30\x07");
     assert!(busy(&a).is_empty() && a.says("30%"));
 }
+
+#[test]
+fn a_folded_tab_s_tooltip_at_its_right_says_where_its_shell_is_and_what_it_runs() {
+    let mut a = app();
+    let fold =
+        a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Collapse tabs to icons");
+    a.h.tree.act(fold[0], &quadra::SemanticAction::Click);
+    a.h.settle();
+    a.feed(0, b"\x1b]7;file:///D:/work/api\x07");
+    let cwd = a.made.borrow()[0].cwd().get_untracked();
+    assert!(cwd.contains("work"), "{cwd}");
+    let tab = a.h.tree.window_rect(a.h.query(|n| n.semantics.role == Role::Tab)[0]);
+    let at = tab.center();
+    a.h.pointer(quadra_tree::PointerInput::Move, at.x, at.y);
+    a.h.advance(std::time::Duration::from_millis(500));
+    a.h.settle();
+    // Its words, then where the shell is and the program it started (the OS's shell).
+    assert!(a.says("Terminal, idle") && a.says(&cwd) && a.says("cmd.exe"), "{}", a.h.semantics());
+    let tip = a.h.tree.window_rect(a.h.tree.overlays().next().expect("the tooltip"));
+    assert!(tip.x >= tab.right(), "at the tab's right: {tip:?} {tab:?}");
+}

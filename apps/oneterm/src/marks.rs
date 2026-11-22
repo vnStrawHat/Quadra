@@ -101,6 +101,22 @@ pub(crate) fn tab_said(tab: Tab) -> String {
     format!("{}, {signal}", tab.title())
 }
 
+/// What a tab's tooltip says under its words: the focused space's working directory (none
+/// while its shell said none), and the program it runs (`cmd.exe`, `ssh deploy@db`).
+pub(crate) fn tab_where(tab: Tab) -> String {
+    let Some(space) = tab.focused() else { return String::new() };
+    let dir = Some(space.session.cwd().get()).filter(|dir| !dir.is_empty());
+    let program = match (&space.remote, &space.edit) {
+        (_, Some(_)) => None,
+        (Some(remote), None) => Some(format!("ssh {}", remote.target.label())),
+        (None, None) => crate::complete::program(&space.session),
+    };
+    [dir, program].into_iter().flatten().collect::<Vec<_>>().join(
+        "
+",
+    )
+}
+
 /// The tab's icon of `px`: a server for a tab with a remote space, a terminal else; in the
 /// accent while it shows, `off` else.
 pub(crate) fn tab_icon(tab: Tab, px: f32, on: impl Fn() -> bool + 'static, off: quadra::Token) -> impl View {

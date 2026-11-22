@@ -100,7 +100,10 @@ purple; a progress also has the seam bar, and working with no progress makes the
 kit's busy bar (`progress_busy()`, 2 px on `line_strong`), a piece of accent that crosses it
 again and again. A strong line under each, the active one on the
 pressed editor colour, a pixel wider, with the accent bar; the title and signal are its name
-and tooltip (`neo-gateway deploy, blocked, needs permission`). Then New terminal (`+` in a box
+and tooltip (`neo-gateway deploy, blocked, needs permission`). The tooltip shows at the tab's
+right, and under its words, smaller and muted, where the focused space is and what it runs:
+its working directory (`D:\quadra`; none while the shell has said none) and its shell's
+program (`cmd.exe`, `pwsh.exe`, `ssh deploy@staging-db-01`). Then New terminal (`+` in a box
 of 40, the `+` menu at its right).
 
 Click selects; middle closes; double-click renames; the right button opens the tab menu (Rename,
@@ -300,10 +303,10 @@ the icon's place. The title bar's Search opens the same menu under itself with a
   or a test's `FakeShell`; with none, `process_usage`; 16), read every 2 s (`CPU 3%`, `RAM
   182 MB`, the private working set): the processor time between two readings over the time the
   process lived between them and the count of processors. The pointer resting on CPU and RAM
-  shows the kit's hover card (over the status bar, where there is room) of two columns split by
-  a line: "Memory" (Private working set, Working set, Commit (private bytes), Peak working set,
-  in MB with one decimal, `182.4 MB`) and "Processor" (CPU usage `3%`, CPU time and Uptime as
-  `h:mm:ss`, Threads), values in mono, following the readings while it shows. The canvas's
+  shows the kit's tooltip above them: `1Term: CPU 3%, RAM 182 MB`, then smaller and muted
+  three short lines, `Working set 190.2 MB · Peak 240.8 MB`, `Commit 175.0 MB · Threads 24`
+  and `CPU time 0:01:02 · Uptime 1:02:03` (MB with one decimal, `h:mm:ss`), following the
+  readings while it shows. The canvas's
   machine-wide memory and network rates wait for a framework service that reads them.
 - **The meter** shows the progress of the tab that shows, else of the first tab that reports
   one; its label is the OSC 7501 id of the space that reports it (`build`; none without one),

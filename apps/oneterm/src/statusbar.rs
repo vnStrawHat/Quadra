@@ -93,7 +93,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         .display(shown(move || prefs.show_usage.get()))
         .child(part().child(text("CPU")).child(value(cpu)))
         .child(part().child(text("RAM")).child(value(ram)));
-    let using = part().gap(12.0).label("Usage").child(crate::usage::card(meters, usage)).child(
+    let using = part().gap(12.0).label("Usage").child(crate::usage::tip(meters, usage)).child(
         part().display(shown(move || prefs.show_fps.get())).child({
             let said = fps(prefs.show_fps);
             value(move || said.get())

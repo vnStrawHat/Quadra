@@ -64,6 +64,13 @@ fn profile(started: &str) -> quadra_term::ShellProfile {
     }
 }
 
+/// The file name of the program a local session was started as: `cmd.exe`, `pwsh.exe`.
+pub(crate) fn program(session: &quadra_term::Session) -> Option<String> {
+    let started = session.kept::<Started>()?;
+    let name = std::path::Path::new(&started.0).file_name()?;
+    Some(name.to_string_lossy().into_owned())
+}
+
 /// Makes sessions as `make` does, each kept with what it was started as and read by its shell.
 pub(crate) fn tagged(make: NewSession) -> NewSession {
     Rc::new(move |launch: crate::Launch| {

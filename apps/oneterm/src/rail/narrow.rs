@@ -84,4 +84,6 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
             .child(marks::progress_bar(tab, -1.0))
             .child(marks::busy_bar(tab, -1.0, 55.0)),
     )
+    .side(Side::Right)
+    .meta(move || marks::tab_where(tab))
 }

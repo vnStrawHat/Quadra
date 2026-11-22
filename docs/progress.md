@@ -433,6 +433,15 @@ replaces the badge. Working with no progress makes the seam the kit's busy bar
 (`progress_busy()` gains `.height(px)` and `.track(token)`). Test: `apps/oneterm/tests/signals.rs`,
 `quadra-design/tests/progress.rs`; picture: scene `collapsed`.
 
+### 1Term's tooltips: folded tabs and usage (2026-11-22)
+
+A folded tab's tooltip shows at its right, and under its words the focused space's working
+directory and its shell's program (`cmd.exe`, `pwsh.exe`, `ssh user@host`; `marks::tab_where`,
+`complete::program`). CPU and RAM in the status bar show the kit's tooltip instead of the hover
+card: `1Term: CPU 3%, RAM 182 MB` and three short lines of details. The kit's tooltip
+`.meta(..)` may change and holds a line for each line of its words. Tests:
+`apps/oneterm/tests/signals.rs`, `apps/oneterm/tests/bars.rs`, `quadra-design/tests/small.rs`.
+
 ### Performance (2026-11-16)
 
 - **The comparison bench's runner in Rust** (`bench/runner`, `tools/bench.sh compare`), over

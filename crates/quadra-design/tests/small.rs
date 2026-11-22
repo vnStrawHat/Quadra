@@ -61,8 +61,10 @@ fn an_input_is_emptied_by_its_cross_and_a_tooltip_says_more() {
     let query = signal("notes".to_string());
     let mut h = mount(move || {
         let hint = key_hint("ctrl-k", "to search");
-        let field =
-            tooltip("Find a note", input(query).placeholder("Search").clearable()).meta("In every folder");
+        let field = tooltip("Find a note", input(query).placeholder("Search").clearable()).meta(
+            "In every folder
+And in the trash",
+        );
         column().child(field).child(hint)
     });
     assert!(h.has_text("Ctrl-K") && h.has_text("to search"));
@@ -73,11 +75,13 @@ fn an_input_is_emptied_by_its_cross_and_a_tooltip_says_more() {
     h.get_by_role(Role::Button, "Clear").click();
     h.frame();
     assert!(query.get_untracked().is_empty() && !h.semantics().contains("Button \"Clear\""));
-    // The second line of the tooltip is under the first.
+    // The lines of its meta are under its words, one text a line.
     h.pointer(PointerInput::Move, 100.0, 15.0);
     h.advance(Duration::from_millis(500));
     h.frame();
-    assert!(h.has_text("Find a note") && h.has_text("In every folder"));
+    assert!(h.has_text("Find a note") && h.has_text("In every folder") && h.has_text("And in the trash"));
+    let (first, second) = (h.get_by_text("In every folder").node(), h.get_by_text("And in the trash").node());
+    assert!(h.tree.window_rect(second).y > h.tree.window_rect(first).y);
 }
 
 #[test]

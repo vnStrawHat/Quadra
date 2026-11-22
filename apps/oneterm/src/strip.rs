@@ -4,7 +4,7 @@
 //! its bottom), New terminal after the last, and "Vertical tabs" at the end.
 
 use quadra::{Align, MouseButton, PointerKind, Role, Signal, State, View, by_text, div, each, row, text};
-use quadra_design::{context_menu, icon, icons, menu_icon_button, token, tooltip};
+use quadra_design::{context_menu, icon, icons, searched_icon_button, token, tooltip};
 
 use crate::model::{Model, Tab};
 use crate::rail::{Dragged, active_fill, close_button, new_menu, tab_menu, title};
@@ -17,7 +17,10 @@ pub(crate) fn strip(model: &Model) -> impl View + use<> {
         |tab| tab.id,
         move |tab: Signal<Tab>| tab_button(&shown, tab.get_untracked()),
     );
-    let new = menu_icon_button(icons::PLUS, "New terminal", move || new_menu(&making, "")).muted();
+    let new = searched_icon_button(icons::PLUS, "New terminal", crate::rail::ASK, move |typed: &str| {
+        new_menu(&making, typed)
+    })
+    .muted();
     row()
         .align_items(Align::Stretch)
         .height(by_text(33.0))

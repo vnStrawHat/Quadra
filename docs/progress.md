@@ -442,6 +442,15 @@ card, holding the card's two columns (the kit's tooltip `.content(|| view)`), an
 a reader as `1Term: CPU 3%, RAM 182 MB`. The kit's tooltip `.meta(..)` may change and holds a
 line for each line of its words.
 
+### 1Term: the rail without lines, no search in the title bar (2026-11-22)
+
+The rail's tabs, expanded and folded, have no line between them and fill `panel_hover` at
+half under the pointer; a progress bar runs along a row's bottom edge. The folded rail's New
+terminal is the expanded one's dashed box. The title bar's Search is gone: every `+` menu (the
+rail's, folded or not, and the strip's) has the search field now, Quick connect by a typed
+target with it. A terminal's padding is 5 at the top and the left by default, and its cursor
+blinks.
+
 ### 1Term: what a folded tab runs, the bars tidied (2026-11-22)
 
 A folded tab's tooltip is two lines: the focused space's directory, then the shell's program

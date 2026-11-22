@@ -1,10 +1,10 @@
 //! The window's title bar (specs/19, "Window"): 38 px with the app's mark ("Locked" after it
-//! while locked), icon buttons of 22 px (Search, SSH hosts with the tabs in a strip, the bells
+//! while locked), icon buttons of 22 px (SSH hosts with the tabs in a strip, the bells
 //! and notices with their count, Lock with the minutes before it locks, Settings), then the
 //! window's buttons; in the settings, Done.
 
-use quadra::{Align, NodeRef, Role, Side, View, div, row, signal, text};
-use quadra_design::{button, fonts, icon, icon_button, icons, searched_menu, titlebar, token, tooltip};
+use quadra::{Align, Role, View, div, row, text};
+use quadra_design::{button, fonts, icon, icon_button, icons, titlebar, token, tooltip};
 
 use crate::locked::shown;
 use crate::model::Model;
@@ -53,7 +53,6 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .padding_right(8.0)
         .display(shown(move || !lock.locked.get() && !settings.get()))
         .child(collapse)
-        .child(search(&seen))
         .child(panel)
         .child(bells(&seen))
         .child(locks)
@@ -63,19 +62,6 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .display(shown(move || settings.get()))
         .child(button("Done").on_click(move || open.set(false)));
     titlebar("").height(38.0).control(mark).control(div().grow(1.0)).control(buttons).control(done)
-}
-
-/// Search: the `+` menu under the title bar's button, with a field that narrows it.
-fn search(model: &Model) -> impl View + use<> {
-    let (open, opener, making) = (signal(false), NodeRef::new(), model.clone());
-    let face = icon_button(icons::SEARCH, "Search tabs, hosts and commands")
-        .muted()
-        .on_click(move || open.update(|on| *on = !*on));
-    div().child(div().node_ref(&opener).child(tooltip("Search tabs, hosts and commands", face))).child(
-        searched_menu(open, &opener, Side::Below, crate::rail::ASK, move |typed: &str| {
-            crate::rail::new_menu(&making, typed)
-        }),
-    )
 }
 
 /// Lock: its icon and the minutes before it locks (`9m`), muted; a click locks now.

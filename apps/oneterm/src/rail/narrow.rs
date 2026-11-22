@@ -3,7 +3,7 @@
 //! accent bar), then New terminal as a `+`.
 
 use quadra::{Align, NodeRef, Role, Side, Signal, View, by_text, column, each, row, signal};
-use quadra_design::{icon, icon_button, icons, menu_beside, token, tooltip};
+use quadra_design::{icon, icon_button, icons, searched_menu, token, tooltip};
 
 use crate::marks;
 use crate::model::{Model, Tab};
@@ -21,16 +21,29 @@ pub(crate) fn narrow(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         .justify(quadra::Justify::Center)
         .child(tooltip("Expand tabs", expand));
     let (open, opener, making) = (signal(false), NodeRef::new(), model.clone());
+    // The expanded rail's dashed box, 4 px from the row's seams and 6 from its sides.
+    let dashed = row()
+        .grow(1.0)
+        .align_items(Align::Center)
+        .justify(quadra::Justify::Center)
+        .radius(6.0)
+        .border(1.0)
+        .border_style(quadra::BorderStyle::Dashed)
+        .border_color(token::LINE_STRONG)
+        .hover(|s| s.bg(token::PANEL_HOVER))
+        .role(Role::Button)
+        .label("New terminal")
+        .node_ref(&opener)
+        .on_click(move |_| open.update(|open| *open = !*open))
+        .child(icon(icons::PLUS).size(16.0));
     let new = tooltip(
         "New terminal  Ctrl-T",
         boxed()
+            .align_items(Align::Stretch)
+            .padding_x(6.0)
+            .padding_y(4.0)
             .text_color(token::TEXT_3)
-            .hover(|s| s.bg(token::PANEL_HOVER))
-            .role(Role::Button)
-            .label("New terminal")
-            .node_ref(&opener)
-            .on_click(move |_| open.update(|open| *open = !*open))
-            .child(icon(icons::PLUS).size(16.0)),
+            .child(dashed),
     );
     column()
         .width(56.0)
@@ -46,7 +59,9 @@ pub(crate) fn narrow(model: &Model, folded: Signal<bool>) -> impl View + use<> {
                 .child(rows.container(column().role(Role::TabList).label("Tabs")))
                 .child(new),
         )
-        .child(menu_beside(open, &opener, Side::Right, 4.0, move || crate::rail::new_menu(&making, "")))
+        .child(searched_menu(open, &opener, Side::Right, crate::rail::ASK, move |typed: &str| {
+            crate::rail::new_menu(&making, typed)
+        }))
 }
 
 /// A box of 40 px the rail's width, a line under it, what it holds in its middle.
@@ -78,8 +93,7 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
         first,
         column
             .gap(2.0)
-            .border_bottom(1.0)
-            .border_color(token::LINE_STRONG)
+            .hover(|s| s.bg(token::PANEL_HOVER.alpha(0.5)))
             .role(Role::Tab)
             .label(move || marks::tab_said(tab))
             .selected(on)
@@ -87,8 +101,8 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
             .child(crate::rail::active_fill(on, 1.0, false))
             .child(marks::tab_icon(tab, 16.0, on, token::TEXT_2))
             .child(marks::tab_word(tab))
-            .child(marks::progress_bar(tab, -1.0))
-            .child(marks::busy_bar(tab, -1.0, 55.0)),
+            .child(marks::progress_bar(tab, 0.0))
+            .child(marks::busy_bar(tab, 0.0, 55.0)),
     )
     .side(Side::Right)
     .meta(second)

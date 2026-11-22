@@ -8,7 +8,7 @@ use quadra::{
     by_text, column, div, dynamic, each, row, signal, text,
 };
 use quadra_design::{
-    MenuItem, context_menu, fonts, icon, icon_button, icons, input, menu_beside, token, tooltip,
+    MenuItem, context_menu, fonts, icon, icon_button, icons, input, searched_menu, token, tooltip,
 };
 
 mod menu;
@@ -74,7 +74,7 @@ fn full(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         .on_click(move |_| open.update(|open| *open = !*open))
         .child(dashed);
     // The menu stands at the rail's right, over its edge as a popup of the row.
-    let menu = menu_beside(open, &opener, Side::Right, -8.0, move || new_menu(&making, ""));
+    let menu = searched_menu(open, &opener, Side::Right, ASK, move |typed: &str| new_menu(&making, typed));
     let strip = column()
         .border_top(1.0)
         .border_color(token::LINE_STRONG)
@@ -225,8 +225,7 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
         .gap(10.0)
         .padding_left(14.0)
         .padding_right(8.0)
-        .border_bottom(1.0)
-        .border_color(token::LINE_STRONG)
+        .hover(|s| s.bg(token::PANEL_HOVER.alpha(0.5)))
         .text_color(move || if on() { token::TEXT } else { token::TEXT_2 })
         .when(State::SELECTED, |s| s.font_weight(600))
         .drop_target(|s| s.bg(token::ACCENT_TINT))
@@ -254,6 +253,6 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
         .child(words)
         .child(marks::tab_mark(tab))
         .child(close_button(model, tab, on))
-        .child(marks::progress_bar(tab, -1.0));
+        .child(marks::progress_bar(tab, 0.0));
     context_menu(face, move || tab_menu(&menu, tab.id))
 }

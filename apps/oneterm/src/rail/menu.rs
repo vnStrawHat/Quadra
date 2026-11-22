@@ -1,6 +1,6 @@
 //! The `+` menu (specs/19, "The `+` menu"): Local shell, the other shells found, Quick
-//! connect, Split current space, the recent targets, the hosts by group, Add SSH host. Under
-//! the title bar's Search it has a field, and what is typed narrows it.
+//! connect, Split current space, the recent targets, the hosts by group, Add SSH host, under a
+//! field: what is typed narrows it.
 
 use quadra_design::{MenuItem, icons};
 

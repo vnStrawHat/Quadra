@@ -118,7 +118,7 @@ impl Prefs {
             ui_text: s.value("appearance.ui_text_percent", 100.0),
             look: LookPrefs::of(s),
             cursor: s.choice("terminal.cursor", &CURSORS),
-            blink: s.value("terminal.cursor_blink", false),
+            blink: s.value("terminal.cursor_blink", true),
             scrollback: s.value("terminal.scrollback", 10_000.0),
             context_menu: s.value("mouse.context_menu", true),
             copy_on_select: s.value("mouse.copy_on_select", true),

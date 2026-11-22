@@ -51,14 +51,15 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
 
 - **Title bar** (the chrome plane, a line under it): the terminal glyph in the accent and
   "1Term" (13 px, semibold), 12 px from the left edge; then, right, icon buttons of 22 px with
-  14 px icons, in this order: Search tabs, hosts and commands (M4; the `+` menu under it), the
+  14 px icons, in this order: the
   bells and notices (M3: a bell and one count of bells not heard and notices not seen in mono,
   `3 bells and notices`, both in the error colour while the count is above 0, else the muted
   colour; 22 px high, 4 px at its sides; a click marks the notices seen), Lock 1Term now (M6:
   while a lock is set, a lock icon and the minutes left before it locks in mono, `9m`, both
   muted, 22 px high, 4 px at its sides; the icon alone in a box of 22 when none is set),
-  Open settings (M5); in the horizontal variant SSH hosts between Search and the bells, so the
-  bells, Lock and Settings stand where they do with the rail. Then the window buttons, 36 px
+  Open settings (M5); in the horizontal variant SSH hosts before the bells, so the bells,
+  Lock and Settings stand where they do with the rail. No search there: the `+` menu and its
+  search are the rail's and the keys'. Then the window buttons, 36 px
   wide, 8 px after. In the settings only Done shows; locked, only "Locked" after the name, in
   the secondary colour.
 - **Body**: the rail (248 px, vertical tabs), the workspace, and from P2 the SFTP dock (300 px)
@@ -79,13 +80,13 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
 248 px on the panel colour (the setting, 140 to 400), a line on its right. A heading of 28 px
 ("Tabs", 12 px semibold, the secondary colour) with the count (mono, regular, the third text
 colour) and Collapse tabs to icons at its right; then, under a strong line, the tabs as the kit's tab rules turned on their side: a row of 36 px a tab, the full
-width, a strong line under each, 14 px from the left: an icon (a terminal, or a server when a space is
+width, no line between them (`panel_hover` at half under the pointer), 14 px from the left: an icon (a terminal, or a server when a space is
 remote; the third text colour unless active), the title, and at the end the tab's signal
 (below). The active row is 52 px, the editor colour pressed (`press` over `canvas`) and one
 pixel wider (over the rail's line), its title semibold, an accent bar of 3 px on its left, a
 second line in 12 px and the secondary colour (`2 ssh · 1 local · 3 spaces`), and Close tab at
 its end. A tab with a progress has a
-2 px accent bar along the row's lower seam, as long as the progress. Then "New terminal" as one
+2 px accent bar along the row's bottom edge, as long as the progress. Then "New terminal" as one
 more row: in it, 4 px from its seams and 6 from its sides, a box of a dashed 1 px strong line
 (radius 6, the hover fill inside it) with a `+` 14 px from the rail's edge and `Ctrl-T` at its end; it opens the `+` menu at the rail's right. From P2 the SSH hosts follow: a heading "SSH hosts"
 with Add SSH host, the filter ("Filter hosts", 28 px), then groups (a chevron, the name, the
@@ -99,8 +100,8 @@ of 14 in the state's colour: `blocked` in warn, `error` in error, `done` in ok, 
 (`64%`, mono) or `working` in the accent, `bell` in error when one rang unseen, else `idle` in
 purple (the colours of the signals expanded, an idle one purple there too); a progress also has the seam bar, and working with no progress makes the seam the
 kit's busy bar (`progress_busy()`, 2 px on `line_strong`), a piece of accent that crosses it
-again and again. A strong line under each, the active one on the
-pressed editor colour, a pixel wider, with the accent bar; the title and signal are its name
+again and again. No line between them (`panel_hover` at half under the pointer), the active
+one on the pressed editor colour, a pixel wider, with the accent bar; the title and signal are its name
 and tooltip (`neo-gateway deploy, blocked, needs permission`). The tooltip shows at the tab's
 right, in two lines, the focused space's (its title and signal are the tab's name): its
 working directory (`D:\quadra`; while the shell has said none, the program it was started
@@ -108,8 +109,10 @@ as, `cmd.exe`), then, smaller and muted, the shell's program and the command it 
 process the shell started, as its command line (`pwsh.exe · npm run dev`), or with none
 running the shell's full path (`C:\Program Files\PowerShell\7\pwsh.exe`; `ssh
 deploy@staging-db-01` for a remote space). The command is read from the OS when the tooltip
-shows (`quadra_shell::shell_process`, specs/16), never while it does not. Then New terminal (`+` in a box
-of 40, the `+` menu at its right).
+shows (`quadra_shell::shell_process`, specs/16), never while it does not. Then New terminal: a row of 40
+under a strong line, in it, 4 px from its seams and 6 from its sides, the expanded rail's box
+of a dashed 1 px strong line (radius 6, the hover fill inside it) around the `+`; the `+` menu
+at its right.
 
 Click selects; middle closes; double-click renames; the right button opens the tab menu (Rename,
 Duplicate, Close, Close others, Close to the right: the tabs after it, asked first as a close
@@ -280,8 +283,8 @@ Quick connect… (a bolt, `Ctrl-Shift-K`), Split current space (`Ctrl-D`, Split 
 Recent (up to 3, how long ago: `2 min ago`, `yesterday`), the saved hosts under their groups'
 headings (the address in mono: the host, its port when not 22, `· jump` for a host reached
 through another); a line, Add SSH host…. A host's row has the 10 px square of its colour tag in
-the icon's place. The title bar's Search opens the same menu under itself with a field over it
-("Search hosts, or type user@host…", 360 wide; M4 in detail).
+the icon's place. It has a field over it ("Search hosts, or type user@host…", 360 wide; M4 in
+detail), the focus in it as it opens.
 
 ## M4 in detail
 
@@ -294,8 +297,8 @@ the icon's place. The title bar's Search opens the same menu under itself with a
   `TERM_PROGRAM_VERSION` its version) and, while Force links is on, adds `FORCE_HYPERLINK=1`:
   1Term opens OSC 8 links, and programs that know terminals by name (1Term is on no list)
   show links on it; off, a program that writes links even into a pipe or a file does not.
-- **The `+` menu** has no search field; the title bar's Search shows it with one
-  (`searched_menu`): what is typed keeps the shells, recent targets and hosts whose
+- **The `+` menu** has a search field wherever it opens, the rail's New terminal (expanded
+  or folded) or the strip's `+` (`searched_menu`): what is typed keeps the shells, recent targets and hosts whose
   names or addresses hold it (whatever the case), and a typed target (`Target::parse`) is a
   row `Connect to user@host`: first when it names a user (`@`), else after the hosts found.
   Enter takes the first row.
@@ -348,7 +351,7 @@ it (37 of the user's terminal's palettes as files of the kit's theme format, `ap
 `.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
 chosen from the families of the machine in a select with a search, the first "The kit's mono" for none; fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
 Nerd Font"; size, 15; weight, Normal and Thin to Black; line height, 1.2; the cell's width, 0 for the advance of `0`, up to
-48 px; the padding a side, 0 on all four, each 0 to 64 px, the only room between the grid and the space's edges; ligatures, on; grayscale smoothing, on (no coloured fringes; off, as Windows smooths); semantic
+48 px; the padding a side, 5 at the top and the left and 0 at the right and the bottom, each 0 to 64 px, the only room between the grid and the space's edges; ligatures, on; grayscale smoothing, on (no coloured fringes; off, as Windows smooths); semantic
 highlighting, on: text in the default colour coloured by what it means, in the colour theme's ANSI colours;
 the reference's Auto and On do the same, so it is a switch) and colours over the theme's
 (foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_picker`, its swatch and
@@ -546,11 +549,11 @@ thread never waits on the network.
   passphrase once it opened the key. What leaves 1Term's hands is not: a password given to
   `russh` to send, the text fields' own copies while typing.
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
-  Quick connect, and Add SSH host. Its field is the title bar's Search's.
+  Quick connect, and Add SSH host, under its search field.
 - **Latency**: the engine pings the server (an SSH ping, a request that wants a reply) every
   5 s once the shell is open and keeps the last time it took; the app reads it every 2 s into
   the session's `link_note` (`124 ms`). The space's header shows it at its right, the status
-  bar shows the focused space's host (its name, else `user@host`) and it, or `local shell`.
+  bar shows the focused space's host (its name, else `user@host`) and it.
 - **A tab's second line** counts its spaces by kind: `2 ssh · 1 local · 3 spaces`; an
   editor's space is not counted.
 

@@ -117,7 +117,7 @@ fn the_new_menu_searches_hosts_and_connects_to_a_typed_target() {
     a.add("prod-api-01", "Production", "trung@10.20.1.14");
     a.add("home-nas", "Personal", "admin@nas.local");
     let open = |a: &mut App| {
-        a.h.get_by_role(Role::Button, "Search tabs, hosts and commands").click();
+        a.h.get_by_role(Role::Button, "New terminal").click();
         a.h.settle();
         let field = a.h.get_by_role(Role::TextInput, "Search hosts, or type user@host…").node();
         assert_eq!(a.h.tree.focused(), Some(field), "the focus is in the field");

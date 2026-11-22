@@ -159,7 +159,10 @@ As behaviour/02 notes it (first written for the V implementation):
   borders that resize are added, as the content covers the caption, so the minimum is the
   content the user sees.
 - The modal move and resize loop: frames keep being drawn while the user drags a border, and
-  content stays in step with the window edge.
+  content stays in step with the window edge. The loop turns from the press on the caption (or
+  a border, or the window menu's Move and Size) until the button is up, also while the
+  pointer holds still: through all of it a timer of the window draws what is pending, paced
+  as the frame loop is, so a terminal's output and an animation go on.
 - Custom titlebar: the app draws it; the OS keeps resizing, snapping and the snap layouts
   over the maximize button through `hit_test`. `WM_NCCALCSIZE` gives the caption's room to
   the content (less the border a maximized window hangs over the screen by); `WM_NCHITTEST`

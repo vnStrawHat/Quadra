@@ -21,6 +21,8 @@ use crate::window::WindowState;
 
 /// Not among the window messages of the bindings: it is declared with the common controls.
 const WM_MOUSELEAVE: u32 = 0x02A3;
+/// The window's timer that draws frames while the OS's move and resize loop turns.
+const MODAL_TIMER: usize = 0x5144;
 
 pub(crate) unsafe extern "system" fn window_proc(
     hwnd: HWND,
@@ -113,6 +115,24 @@ impl WindowState {
             WM_ENTERSIZEMOVE | WM_EXITSIZEMOVE => {
                 self.in_size_move.set(msg == WM_ENTERSIZEMOVE);
                 None
+            }
+            // The OS's move and resize loop turns inside the default procedure from the press
+            // until the button is up, the pointer still or not; ours does not turn meanwhile,
+            // so a timer of the window draws what is pending.
+            WM_SYSCOMMAND if matches!((wparam.0 & 0xFFF0) as u32, SC_MOVE | SC_SIZE) => {
+                self.in_size_move.set(true);
+                // SAFETY: the window is alive; the timer is the window's, killed below.
+                unsafe { SetTimer(Some(hwnd), MODAL_TIMER, USER_TIMER_MINIMUM, None) };
+                // SAFETY: the arguments are those of this message.
+                let result = unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) };
+                // SAFETY: the timer was set above on this window.
+                let _ = unsafe { KillTimer(Some(hwnd), MODAL_TIMER) };
+                self.in_size_move.set(false);
+                Some(result)
+            }
+            WM_TIMER if wparam.0 == MODAL_TIMER => {
+                self.frame_if_modal(hwnd);
+                done
             }
             WM_DPICHANGED => {
                 self.scale.set(hi(wparam.0 as isize) as f32 / 96.0);

@@ -172,7 +172,9 @@ As built so far:
   `.indeterminate(..)` says some of what it stands for is checked. An input with
   `.clearable()` has a cross at its end while it holds text, and a click on it empties it.
   A tooltip takes `.meta(words)`, smaller muted lines under its text: a line for each line
-  of `words`, which may change (a closure or a signal) while it shows. `key_hint(keys,
+  of `words`, which may change (a closure or a signal) while it shows. `.content(|| view)`
+  shows a view in the bubble instead of its words (12 px in, no most width), built each time
+  it shows: details laid out as a card's are; the words are then what a reader is told. `key_hint(keys,
   does)` is the keys in a small tinted box (4 px either side), then 6 px after it what they
   do, in small mono italics in `text_2`: a hint read as the way to use a panel.
   A radio group takes `.hints([..])`, a muted line of 12 px under each option's label (""

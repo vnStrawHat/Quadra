@@ -89,6 +89,8 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
     let usage = crate::usage::follow();
     let (cpu, ram) = (crate::usage::cpu(usage), crate::usage::ram(usage));
     let meters = part()
+        .role(Role::Group)
+        .label("CPU and memory")
         .gap(12.0)
         .display(shown(move || prefs.show_usage.get()))
         .child(part().child(text("CPU")).child(value(cpu)))

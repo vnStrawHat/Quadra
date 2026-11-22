@@ -127,16 +127,21 @@ fn ram_is_the_private_working_set_and_its_tooltip_has_the_details() {
     let at = a.h.tree.window_rect(ram);
     a.h.pointer(PointerInput::Move, at.x + 2.0, at.y + 2.0);
     a.wait(500);
-    let said = [
-        "1Term: CPU {cpu}, RAM 182 MB",
-        "Working set 240.0 MB \u{b7} Peak 300.0 MB",
-        "Commit 410.0 MB \u{b7} Threads 23",
-        "CPU time 0:00:01 \u{b7} Uptime 0:00:12",
-    ];
-    for words in said.map(|it| it.replace("{cpu}", &cpu)) {
-        assert!(a.h.has_text(&words), "{words}: {}", a.h.semantics());
+    for words in ["Private working set", "182.5 MB", "Working set", "240.0 MB", "Commit (private bytes)"] {
+        assert!(a.h.has_text(words), "{words}: {}", a.h.semantics());
     }
+    for words in ["Peak working set", "300.0 MB", "410.0 MB", "CPU time", "0:00:01", "Threads", "23"] {
+        assert!(a.h.has_text(words), "{words}");
+    }
+    assert!(a.h.has_text("Uptime") && a.h.has_text("0:00:12"));
+    // In a tooltip; a reader is told what 1Term uses.
     assert!(!a.h.query(|n| n.semantics.role == Role::Tooltip).is_empty());
+    let told = format!("1Term: CPU {cpu}, RAM 182 MB");
+    assert!(
+        !a.h.query(|n| n.semantics.description.as_deref() == Some(told.as_str())).is_empty(),
+        "{}",
+        a.h.semantics()
+    );
     let card = a.h.tree.window_rect(a.h.tree.overlays().next().expect("the tooltip"));
     // The status bar is the window's last 30 px.
     assert!(card.bottom() <= 700.0 - 30.0, "over the status bar: {card:?}");

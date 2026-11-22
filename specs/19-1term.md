@@ -303,10 +303,11 @@ the icon's place. The title bar's Search opens the same menu under itself with a
   or a test's `FakeShell`; with none, `process_usage`; 16), read every 2 s (`CPU 3%`, `RAM
   182 MB`, the private working set): the processor time between two readings over the time the
   process lived between them and the count of processors. The pointer resting on CPU and RAM
-  shows the kit's tooltip above them: `1Term: CPU 3%, RAM 182 MB`, then smaller and muted
-  three short lines, `Working set 190.2 MB · Peak 240.8 MB`, `Commit 175.0 MB · Threads 24`
-  and `CPU time 0:01:02 · Uptime 1:02:03` (MB with one decimal, `h:mm:ss`), following the
-  readings while it shows. The canvas's
+  shows the kit's tooltip above them (`.content`), holding two columns split by a line:
+  "Memory" (Private working set, Working set, Commit (private bytes), Peak working set, in MB
+  with one decimal, `182.4 MB`) and "Processor" (CPU usage `3%`, CPU time and Uptime as
+  `h:mm:ss`, Threads), values in mono, following the readings while it shows; a reader is
+  told `1Term: CPU 3%, RAM 182 MB`. The canvas's
   machine-wide memory and network rates wait for a framework service that reads them.
 - **The meter** shows the progress of the tab that shows, else of the first tab that reports
   one; its label is the OSC 7501 id of the space that reports it (`build`; none without one),

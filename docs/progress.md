@@ -438,8 +438,17 @@ replaces the badge. Working with no progress makes the seam the kit's busy bar
 A folded tab's tooltip shows at its right, and under its words the focused space's working
 directory and its shell's program (`cmd.exe`, `pwsh.exe`, `ssh user@host`; `marks::tab_where`,
 `complete::program`). CPU and RAM in the status bar show the kit's tooltip instead of the hover
-card: `1Term: CPU 3%, RAM 182 MB` and three short lines of details. The kit's tooltip
-`.meta(..)` may change and holds a line for each line of its words. Tests:
+card, holding the card's two columns (the kit's tooltip `.content(|| view)`), and are told to
+a reader as `1Term: CPU 3%, RAM 182 MB`. The kit's tooltip `.meta(..)` may change and holds a
+line for each line of its words.
+
+### The move loop keeps drawing (2026-11-22)
+
+Holding the caption froze the content: the OS's move loop turns inside `DefWindowProc` from
+the press until the button is up, and frames were drawn there only on `WM_SIZE` and
+`WM_PAINT`. `SC_MOVE` and `SC_SIZE` now run with a timer of the window that draws what is
+pending, paced as the frame loop (specs/10). Seen on a real 1Term: its clock was drawn again
+inside the loop, and was not before. Tests:
 `apps/oneterm/tests/signals.rs`, `apps/oneterm/tests/bars.rs`, `quadra-design/tests/small.rs`.
 
 ### Performance (2026-11-16)

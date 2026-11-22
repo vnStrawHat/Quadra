@@ -11,7 +11,7 @@ use quadra_tree::{Along, Anchor, NodeId, Role, Side, Tree};
 use quadra_vector::Svg;
 use std::rc::Rc;
 
-use quadra_view::{Div, IntoProp, MountCx, Prop, View, column, div, drawing, dynamic, row, text};
+use quadra_view::{AnyView, Div, IntoProp, MountCx, Prop, View, column, div, drawing, dynamic, row, text};
 
 use crate::popup::{hang, surface};
 use crate::token;
@@ -35,13 +35,15 @@ pub struct Tooltip<V> {
     keys: Option<String>,
     meta: Option<Rc<dyn Fn() -> String>>,
     side: Side,
+    /// A view in the bubble instead of the words.
+    content: Option<Rc<dyn Fn() -> AnyView>>,
     of: V,
 }
 
 /// Gives a view a tooltip: `tip` shows above it once the pointer has rested on it. It may
 /// change (a closure or a signal): the bubble and what a reader is told follow.
 pub fn tooltip<V: View + 'static, M>(tip: impl IntoProp<String, M>, of: V) -> Tooltip<V> {
-    Tooltip { tip: tip.into_prop(), keys: None, meta: None, side: Side::Above, of }
+    Tooltip { tip: tip.into_prop(), keys: None, meta: None, side: Side::Above, content: None, of }
 }
 
 impl<V> Tooltip<V> {
@@ -57,6 +59,13 @@ impl<V> Tooltip<V> {
     /// at the edge of the window.
     pub fn side(mut self, side: Side) -> Self {
         self.side = side;
+        self
+    }
+
+    /// A view in the bubble instead of the words, built each time it shows; the words are
+    /// then what a reader is told.
+    pub fn content<W: View + 'static>(mut self, build: impl Fn() -> W + 'static) -> Self {
+        self.content = Some(Rc::new(move || AnyView::new(build())));
         self
     }
 
@@ -96,7 +105,7 @@ impl<V: View + 'static> View for Tooltip<V> {
         };
 
         // The bubble is an overlay opened by hand, above the view and centred on it.
-        let words = (tip, self.keys, self.meta);
+        let (words, content) = ((tip, self.keys, self.meta), self.content);
         let anchor = Anchor::Beside { node: of, side: self.side, along: Along::Center, gap: 6.0 };
         hang(cx, of, shown, anchor, move || {
             let said = words.0.clone();
@@ -106,7 +115,11 @@ impl<V: View + 'static> View for Tooltip<V> {
                 None => line,
             };
             let placed = signal(None);
-            let bubble = tip_bubble(line).child(arrow(placed));
+            let bubble = match &content {
+                Some(build) => surface(1).role(Role::Tooltip).padding(12.0).child(build()),
+                None => tip_bubble(line),
+            };
+            let bubble = bubble.child(arrow(placed));
             let bubble = bubble.on_mount(move |tree, id| {
                 tree.after_layout(move |tree| placed.set(arrow_place(tree, id, of)));
             });

@@ -442,6 +442,11 @@ card, holding the card's two columns (the kit's tooltip `.content(|| view)`), an
 a reader as `1Term: CPU 3%, RAM 182 MB`. The kit's tooltip `.meta(..)` may change and holds a
 line for each line of its words.
 
+### Badges and tags in 12 px text (2026-11-22)
+
+A badge and a plain badge are 20 px tall, a tag 22 (the sm control height), all in 12 px
+text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
+
 ### One height for the controls of one line (2026-11-22)
 
 Every control of one line is the md control height, 28 with its border, unless told: a text

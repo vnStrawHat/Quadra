@@ -41,17 +41,19 @@ fn what_shows_is_sized_and_named_by_the_design_language() {
     {
         assert!(tree.contains(line), "{line} is not in:\n{tree}");
     }
-    // A badge is 16 px tall, a tag 18, and each as wide as its text, not as the column.
+    // A badge is 20 px tall, a tag 22, in 12 px text, and each as wide as its text, not as the column.
     let (beta, version) = (h.get_by_text("beta").node(), h.get_by_text("v1.2").node());
     let (beta, version) = (h.tree.parent(beta).unwrap(), h.tree.parent(version).unwrap());
-    assert_eq!((h.tree.rect(beta).height, h.tree.rect(version).height), (16.0, 18.0));
+    assert_eq!((h.tree.rect(beta).height, h.tree.rect(version).height), (20.0, 22.0));
+    let said = h.get_by_text("beta").node();
+    assert_eq!(h.tree.inherited(said).style.size, 12.0);
     assert!(h.tree.rect(beta).width < 60.0 && h.tree.rect(version).width < 60.0);
-    // A plain badge: 16 px, the UI face, no border, 5 px each side of its words.
+    // A plain badge: 20 px, the UI face, no border, 6 px each side of its words.
     let words = h.get_by_text("Deployment").node();
     let kind = h.tree.parent(words).unwrap();
     let (style, inherited) = (h.tree.paint_style(kind), h.tree.inherited(words));
-    assert_eq!((h.tree.rect(kind).height, style.border_color), (16.0, quadra_prim::Color::TRANSPARENT));
-    assert_eq!((h.tree.rect(words).x, &*inherited.style.family), (5.0, quadra_design::fonts::UI));
+    assert_eq!((h.tree.rect(kind).height, style.border_color), (20.0, quadra_prim::Color::TRANSPARENT));
+    assert_eq!((h.tree.rect(words).x, &*inherited.style.family), (6.0, quadra_design::fonts::UI));
     let beta = h.get_by_text("beta").node();
     assert_ne!(&*h.tree.inherited(beta).style.family, quadra_design::fonts::UI);
     let face = h.get_by_role(Role::Image, "Ada Lovelace").node();

@@ -55,35 +55,35 @@ impl Tone {
     }
 }
 
-/// A chip of 16 px: 10 px mono text in a faint tint of its tone.
+/// A chip of 20 px: 12 px mono text in a faint tint of its tone.
 pub fn badge(words: impl Into<String>, tone: Tone) -> Div {
     let tone = tone.role();
-    let chip = chip(16.0).border_color(tone.alpha(0.2)).bg(tone.alpha(0.1)).text_color(tone);
+    let chip = chip(20.0).border_color(tone.alpha(0.2)).bg(tone.alpha(0.1)).text_color(tone);
     // The row around keeps the chip as wide as its text where it would be stretched.
     row().child(chip.child(text(words.into())))
 }
 
 /// A badge of a word, not of code (the kind of an object: "Deployment"): the UI face, no
-/// border, its tone at 16 % behind it, 5 px each side, radius 4.
+/// border, its tone at 16 % behind it, 6 px each side, radius 4.
 pub fn plain_badge(words: impl Into<String>, tone: Tone) -> Div {
     let tone = tone.role();
-    let chip = row().align_items(Align::Center).shrink(0.0).height(by_text(16.0)).padding_x(5.0).radius(4.0);
+    let chip = row().align_items(Align::Center).shrink(0.0).height(by_text(20.0)).padding_x(6.0).radius(4.0);
     let chip = chip.font_family(fonts::UI).bg(tone.alpha(0.16)).text_color(tone);
-    let chip = chip.text_size(size::TEXT_XS.size).line_height(size::TEXT_XS.line_height());
+    let chip = chip.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());
     row().child(chip.child(text(words.into())))
 }
 
-/// A chip of 18 px on the raised plane: a name among others.
+/// A chip of 22 px, the sm control height, on the raised plane: a name among others.
 pub fn tag(words: impl Into<String>) -> Div {
-    let chip = chip(18.0).border_color(token::LINE_STRONG).bg(token::RAISED).text_color(token::TEXT);
+    let chip = chip(size::H_SM).border_color(token::LINE_STRONG).bg(token::RAISED).text_color(token::TEXT);
     row().child(chip.child(text(words.into())))
 }
 
 fn chip(height: f32) -> Div {
     let chip =
-        row().align_items(Align::Center).shrink(0.0).height(by_text(height)).padding_x(4.0).border(1.0);
+        row().align_items(Align::Center).shrink(0.0).height(by_text(height)).padding_x(6.0).border(1.0);
     let chip = chip.radius(token::RADIUS_MD).font_family(fonts::MONO);
-    chip.text_size(size::TEXT_XS.size).line_height(size::TEXT_XS.line_height())
+    chip.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height())
 }
 
 /// A binding as the kit shows shortcuts: "ctrl-shift-p" is "Ctrl-Shift-P", the modifiers in

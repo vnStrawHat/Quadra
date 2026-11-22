@@ -137,8 +137,8 @@ diff tints) and the terminal's 16 ANSI colors.
 
 | Role | Face | Size / line height |
 |---|---|---|
-| `text_xs`: badges, hints | UI | 10 / 16 |
-| `text_sm`: meta, status bar, small buttons | UI | 12 / 19 |
+| `text_xs`: hints, counts | UI | 10 / 16 |
+| `text_sm`: meta, status bar, small buttons, badges and tags | UI | 12 / 19 |
 | `text_md`: body, controls, menus, tabs | UI | 14 / 23 |
 | `text_lg`: large labels | UI | 16 / 26 |
 | `text_xl`: dialog and page headlines | UI | 18 / 26 |

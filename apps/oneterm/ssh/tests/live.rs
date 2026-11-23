@@ -126,6 +126,27 @@ fn a_user_not_given_is_asked() {
 }
 
 #[test]
+fn an_account_with_no_password_is_let_in_and_an_empty_one_goes_by_its_prompts() {
+    let ((port, _), dir) = (serve(8), folder("empty"));
+    learn_known_hosts_path("127.0.0.1", port, key(8).public_key(), dir.join("known_hosts")).unwrap();
+    // `none` lets it in: nothing is asked.
+    let mut o = options(port, &dir, Auth::Password);
+    o.target.user = "open".into();
+    let c = connect(o);
+    c.wait_for("welcome");
+    assert!(!c.told.lock().unwrap().iter().any(|it| matches!(it, Event::Ask(_))));
+    // A server of PAM: the password, empty, as the answer to its prompt; a wrong one is asked again.
+    let mut o = options(port, &dir, Auth::Auto);
+    o.target.user = "pam".into();
+    let c = connect(o);
+    assert!(matches!(c.ask(), Ask::Password { again: false, .. }));
+    c.answer(Some("wrong"));
+    assert!(matches!(c.ask(), Ask::Password { again: true, .. }));
+    c.answer(Some(""));
+    c.wait_for("welcome");
+}
+
+#[test]
 fn a_cancel_gives_up_a_server_that_never_speaks() {
     let dir = folder("silent");
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();

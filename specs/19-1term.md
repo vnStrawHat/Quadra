@@ -451,11 +451,15 @@ thread never waits on the network.
   file; a changed key is never asked: it fails with `the host key of 'host' has changed`, the
   key sent and its fingerprint, and the line and file of the key known, to remove there. A
   certificate fails (`the host gave a certificate, which 1Term does not check yet`).
-- **Authentication**, by the option `Auth`: `Auto` (the default) tries the agent
+- **Authentication**, by the option `Auth`: first `none`, as OpenSSH does (a server that needs
+  nothing of the user, an account with no password, lets it in unasked). Then `Auto` (the
+  default) tries the agent
   (`\\.\pipe\openssh-ssh-agent`, at most 6 keys), then `~/.ssh/id_ed25519`, `id_ecdsa`,
   `id_rsa` where they are (a passphrase is asked, three times; a file that does not open is
   passed over), then the password, three times; `Agent`, `Key(path)` and `Password` try only
-  theirs (a key file that cannot be read or opened fails with why). After the third wrong
+  theirs (a key file that cannot be read or opened fails with why). The password, empty too,
+  goes by the `password` method, or by `keyboard-interactive` when the server offers that and
+  not `password` (a server of PAM): each of its prompts is answered with the password. After the third wrong
   password: `permission denied`. An RSA key signs with the hash the server names in
   `server-sig-algs`.
 - **The Connect dialogs** (the kit's dialog, `apps/oneterm/src/asking.rs`): a remote space

@@ -1,10 +1,11 @@
-//! Proving who the user is (specs/19, "M7 in detail"): the agent, the usual key files, the
-//! password, by the option `Auth`.
+//! Proving who the user is (specs/19, "M7 in detail"): `none` first, then the agent, the usual
+//! key files, the password (by `password` or `keyboard-interactive`), by the option `Auth`.
 
 use std::path::Path;
 use std::sync::Arc;
 
-use russh::client::{AuthResult, Handle, Handler};
+use russh::MethodKind;
+use russh::client::{AuthResult, Handle, Handler, KeyboardInteractiveAuthResponse};
 use russh::keys::agent::AgentIdentity;
 use russh::keys::agent::client::AgentClient;
 use russh::keys::{HashAlg, PrivateKeyWithHashAlg, load_secret_key};
@@ -27,6 +28,15 @@ pub(crate) async fn authenticate<H: Handler>(
     // RSA signs with the hash the server names, SHA-512 when it names none.
     let rsa = handle.best_supported_rsa_hash().await.ok().flatten().unwrap_or(Some(HashAlg::Sha512));
     let auth = &hop.auth;
+    // As OpenSSH: `none` first. A server that needs nothing of this user (an account with no
+    // password) lets it in; else it says what it takes.
+    let offered = match handle.authenticate_none(user).await.map_err(|e| e.to_string())? {
+        AuthResult::Success => return Ok(()),
+        AuthResult::Failure { remaining_methods, .. } => remaining_methods,
+    };
+    // A server of PAM takes the password as answers to its prompts.
+    let interactive =
+        offered.contains(&MethodKind::KeyboardInteractive) && !offered.contains(&MethodKind::Password);
     if matches!(auth, Auth::Auto | Auth::Agent) && agent(handle, user, &options.agent, rsa).await {
         return Ok(());
     }
@@ -48,13 +58,41 @@ pub(crate) async fn authenticate<H: Handler>(
     if matches!(auth, Auth::Auto | Auth::Password) {
         for again in [false, true, true] {
             let ask = Ask::Password { target: hop.target.label(), again };
-            let password = prompt.ask(ask).await.ok_or(CANCELLED)?;
-            if handle.authenticate_password(user, password).await.map_err(|e| e.to_string())?.success() {
+            let password = zeroize::Zeroizing::new(prompt.ask(ask).await.ok_or(CANCELLED)?);
+            let signed_in = match interactive {
+                true => answer_prompts(handle, user, &password).await,
+                false => handle.authenticate_password(user, password.as_str()).await.map(|it| it.success()),
+            };
+            if signed_in.map_err(|e| e.to_string())? {
                 return Ok(());
             }
         }
     }
     Err("permission denied".into())
+}
+
+/// `keyboard-interactive`, each prompt answered with the password (an empty one too).
+/// ponytail: a second factor asked as a prompt gets the password too; ask each prompt of the
+/// user when a server needs that.
+async fn answer_prompts<H: Handler>(
+    handle: &mut Handle<H>,
+    user: &str,
+    password: &str,
+) -> Result<bool, russh::Error> {
+    let mut said = handle.authenticate_keyboard_interactive_start(user, None).await?;
+    // A server asks again after answers (an empty request before success is usual); a few
+    // rounds at most.
+    for _ in 0..4 {
+        match said {
+            KeyboardInteractiveAuthResponse::Success => return Ok(true),
+            KeyboardInteractiveAuthResponse::Failure { .. } => return Ok(false),
+            KeyboardInteractiveAuthResponse::InfoRequest { prompts, .. } => {
+                let answers = vec![password.to_string(); prompts.len()];
+                said = handle.authenticate_keyboard_interactive_respond(answers).await?;
+            }
+        }
+    }
+    Ok(false)
 }
 
 /// Each key the agent holds, six at most.

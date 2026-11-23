@@ -479,6 +479,10 @@ box's middle. Each kind of shell has an icon of its own (`shell_icons.rs`: Comma
 PowerShell, Git Bash, WSL, Nushell, a bash), on its tabs and in the `+` menu; Nushell, MSYS2
 and Cygwin are found too, and `CHERE_INVOKING=1` keeps a login bash where it starts.
 
+SSH signs in as OpenSSH does: `none` first, so an account with no password is let in unasked;
+the password, empty too, goes by `keyboard-interactive` when the server offers that and not
+`password` (PAM), each prompt answered with it (`oneterm-ssh/tests/live.rs`).
+
 ### Status marks a step up, tabs without a hover box (2026-11-22)
 
 A status mark (and a status label's) is 14 px unless told, a step up from 12 beside 14 px

@@ -1,8 +1,8 @@
 //! How signals look (specs/19, "Signals"): a tab's signal at the end of its row, its icon, the
 //! seam bar of its progress, the second line of its row, a space header's signal.
 
-use quadra::{Align, AnyView, Display, Length, Role, View, by_text, div, dynamic, row, show, text};
-use quadra_design::{fonts, icon, icons, progress_busy, spinner, token};
+use quadra::{Align, AnyView, Display, Length, Role, View, div, dynamic, row, text};
+use quadra_design::{fonts, icon, icons, spinner, token};
 use quadra_term::ProgramState;
 use quadra_term::vt::Progress;
 
@@ -39,7 +39,7 @@ fn bell(px: f32) -> quadra::Div {
 }
 
 /// The part done of a tab's progress, when the settings show it on tabs.
-fn part_of(tab: Tab) -> Option<u8> {
+pub(crate) fn part_of(tab: Tab) -> Option<u8> {
     tab.progress().filter(|_| tab.prefs.progress_tab.get()).and_then(percent)
 }
 
@@ -66,33 +66,6 @@ pub(crate) fn tab_mark(tab: Tab) -> impl View {
             },
         }
     })
-}
-
-/// The word under a tab's icon in the folded rail, in its state's colour: blocked, error and
-/// done, else its progress in mono, else working, else a bell that rang unseen, else none.
-pub(crate) fn tab_word(tab: Tab) -> impl View {
-    let word = dynamic(move || {
-        let (said, color, mono) = word_of(tab);
-        let word = row().text_color(color).child(text(said));
-        AnyView::new(if mono { word.font_family(fonts::MONO) } else { word })
-    });
-    // No word, no line: the icon stands in the box's middle.
-    let shown = move || if word_of(tab).0.is_empty() { Display::None } else { Display::Flex };
-    let line = row().height(by_text(14.0)).align_items(Align::Center).text_size(10.0).shrink(0.0);
-    word.container(line.display(shown))
-}
-
-/// The folded rail's word of a tab, its colour, and whether it is mono.
-fn word_of(tab: Tab) -> (String, quadra::Token, bool) {
-    match (tab.status(), part_of(tab)) {
-        (ProgramState::Blocked, _) => ("blocked".to_string(), token::WARN, false),
-        (ProgramState::Error, _) => ("error".to_string(), token::ERROR, false),
-        (ProgramState::Done, _) => ("done".to_string(), token::OK, false),
-        (_, Some(n)) => (format!("{n}%"), token::ACCENT, true),
-        (ProgramState::Working, _) => ("working".to_string(), token::ACCENT, false),
-        _ if tab.bells() > 0 => ("bell".to_string(), token::ERROR, false),
-        _ => (String::new(), token::TEXT_2, false),
-    }
 }
 
 /// What a reader hears of a tab in the folded rail: its title, then its signal if it has one.
@@ -188,14 +161,6 @@ pub(crate) fn progress_bar(tab: Tab, bottom: f32) -> impl View {
         .bg(token::LINE_STRONG)
         .display(move || if part_of(tab).is_some() { Display::Flex } else { Display::None })
         .child(fill)
-}
-
-/// The kit's busy bar along a tab's lower seam, `bottom` px from its bottom edge, `wide` px
-/// long, while it works with no progress to tell.
-pub(crate) fn busy_bar(tab: Tab, bottom: f32, wide: f32) -> impl View {
-    let working = move || tab.status() == ProgramState::Working && part_of(tab).is_none();
-    let bar = move || progress_busy().width(wide).height(2.0).track(token::LINE_STRONG);
-    show(working, bar).container(div().absolute().left(0.0).bottom(bottom).height(2.0))
 }
 
 /// What a space's header says at its right: its progress in the accent, its state's icon and

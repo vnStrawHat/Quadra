@@ -1,11 +1,14 @@
-//! The rail collapsed (specs/19, "Rail"): 56 px, Expand tabs, a box of 46 px a tab (its icon,
-//! its signal as a coloured word under it, the one that shows on the editor colour with the
-//! accent bar; the middle button closes it), then New terminal as a `+`.
+//! The rail collapsed (specs/19, "Rail"; the canvas's option I): 48 px, Expand tabs, a box of
+//! 44 px a tab (its icon, its signal as a coloured line under it, the one that shows on the
+//! editor colour with a short accent bar; the middle button closes it), then New terminal as
+//! a `+`.
 
 use quadra::{
-    Align, MouseButton, NodeRef, PointerKind, Role, Side, Signal, View, by_text, column, each, row, signal,
+    Align, AnyView, Display, MouseButton, NodeRef, PointerKind, Role, Side, Signal, View, by_text, column,
+    div, dynamic, each, row, signal,
 };
-use quadra_design::{icon, icon_button, icons, searched_menu, token, tooltip};
+use quadra_design::{icon, icon_button, icons, progress_busy, searched_menu, token, tooltip};
+use quadra_term::ProgramState;
 
 use crate::marks;
 use crate::model::{Model, Tab};
@@ -23,16 +26,11 @@ pub(crate) fn narrow(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         .justify(quadra::Justify::Center)
         .child(tooltip("Expand tabs", expand));
     let (open, opener, making) = (signal(false), NodeRef::new(), model.clone());
-    // The expanded rail's dashed box, 4 px from the row's seams and 6 from its sides.
-    let dashed = row()
+    let new = row()
         .grow(1.0)
         .align_items(Align::Center)
         .justify(quadra::Justify::Center)
-        .radius(6.0)
-        .border(1.0)
-        .border_style(quadra::BorderStyle::Dashed)
-        .border_color(token::LINE_STRONG)
-        .hover(|s| s.bg(token::PANEL_HOVER))
+        .hover(|s| s.bg(token::PANEL_HOVER.alpha(0.5)))
         .role(Role::Button)
         .label("New terminal")
         .node_ref(&opener)
@@ -40,15 +38,10 @@ pub(crate) fn narrow(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         .child(icon(icons::PLUS).size(16.0));
     let new = tooltip(
         "New terminal  Ctrl-T",
-        boxed()
-            .align_items(Align::Stretch)
-            .padding_x(6.0)
-            .padding_y(4.0)
-            .text_color(token::TEXT_3)
-            .child(dashed),
+        boxed().align_items(Align::Stretch).text_color(token::TEXT_2).child(new),
     );
     column()
-        .width(56.0)
+        .width(48.0)
         .shrink(0.0)
         .bg(token::PANEL)
         .border_right(1.0)
@@ -77,24 +70,40 @@ fn boxed() -> quadra::Div {
         .border_color(token::LINE_STRONG)
 }
 
-/// A tab as its icon in a box of 46 px with its signal as a word under it, the one that shows
-/// on the pressed editor colour with the accent bar; its title and signal are its name. Its
-/// tooltip is two lines: where its shell is, and what it runs (read when it shows).
+/// A tab as its icon in a box of 44 px with its signal as a line of 22 by 4 under it, the one
+/// that shows on the pressed editor colour with a short accent bar; its title and signal are
+/// its name. Its tooltip is two lines: where its shell is, and what it runs (read when it
+/// shows).
 fn face(model: &Model, tab: Tab) -> impl View + use<> {
     let (active, shows, closes) = (model.active(), model.clone(), model.clone());
     let on = move || active.get() == tab.id;
-    let column =
-        column().height(46.0).shrink(0.0).align_items(Align::Center).justify(quadra::Justify::Center);
+    let column = column()
+        .height(44.0)
+        .shrink(0.0)
+        .gap(6.0)
+        .align_items(Align::Center)
+        .justify(quadra::Justify::Center)
+        .border_bottom(1.0)
+        .border_color(token::LINE_STRONG);
     // While the shell has said no directory, the program it was started as.
     let first = move || match marks::tab_dir(tab) {
         dir if dir.is_empty() => marks::tab_program(tab),
         dir => dir,
     };
     let second = move || marks::tab_runs(tab);
+    // The one that shows: the pressed colour a pixel past the rail's line, the bar floating.
+    let fill = div()
+        .absolute()
+        .left(0.0)
+        .top(0.0)
+        .bottom(0.0)
+        .right(-1.0)
+        .bg(token::PRESS)
+        .display(move || if on() { Display::Flex } else { Display::None })
+        .child(div().absolute().left(0.0).top(8.0).bottom(8.0).width(3.0).radius(1.5).bg(token::ACCENT));
     tooltip(
         first,
         column
-            .gap(2.0)
             .hover(|s| s.bg(token::PANEL_HOVER.alpha(0.5)))
             .role(Role::Tab)
             .label(move || marks::tab_said(tab))
@@ -105,12 +114,55 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
                     closes.close_tab(tab.id);
                 }
             })
-            .child(crate::rail::active_fill(on, 1.0, false))
+            .child(fill)
             .child(marks::tab_icon(tab, 16.0, on, token::TEXT_2))
-            .child(marks::tab_word(tab))
-            .child(marks::progress_bar(tab, 0.0))
-            .child(marks::busy_bar(tab, 0.0, 55.0)),
+            .child(state_line(tab)),
     )
     .side(Side::Right)
     .meta(second)
+}
+
+/// What a folded tab's line is.
+#[derive(Clone, Copy, PartialEq)]
+enum Line {
+    None,
+    Solid(quadra::Token),
+    /// The accent filled to the part, or the error colour for a progress that failed.
+    Part(u8, quadra::Token),
+    Busy,
+    Bell,
+}
+
+fn line_of(tab: Tab) -> Line {
+    let failed = matches!(tab.progress(), Some(quadra_term::vt::Progress::Error(_)));
+    match (tab.status(), marks::part_of(tab)) {
+        (ProgramState::Blocked, _) => Line::Solid(token::WARN),
+        (ProgramState::Error, _) => Line::Solid(token::ERROR),
+        (ProgramState::Done, _) => Line::Solid(token::OK),
+        (_, Some(n)) => Line::Part(n, if failed { token::ERROR } else { token::ACCENT }),
+        (ProgramState::Working, _) => Line::Busy,
+        _ if tab.bells() > 0 => Line::Bell,
+        _ => Line::None,
+    }
+}
+
+/// The signal's line, 22 by 4 with round ends; none leaves the icon in the box's middle.
+fn state_line(tab: Tab) -> impl View {
+    let line = quadra::memo(move || line_of(tab));
+    let bar = || div().width(22.0).height(4.0).shrink(0.0).radius(2.0);
+    dynamic(move || {
+        AnyView::new(match line.get() {
+            Line::None => div().display(Display::None),
+            Line::Solid(color) => bar().bg(color),
+            Line::Part(n, color) => {
+                let fill = div().height(4.0).radius(2.0).width(f32::from(n) * 0.22).bg(color);
+                bar().bg(token::LINE_STRONG).child(fill)
+            }
+            Line::Busy => div().child(progress_busy().width(22.0).height(4.0).track(token::LINE_STRONG)),
+            Line::Bell => {
+                let piece = || div().width(9.0).height(4.0).radius(2.0).bg(token::ERROR);
+                row().width(22.0).height(4.0).gap(4.0).child(piece()).child(piece())
+            }
+        })
+    })
 }

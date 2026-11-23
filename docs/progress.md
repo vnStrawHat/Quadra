@@ -508,6 +508,12 @@ Port, Username and Jump host, Auth method and its password or passphrase, `Delet
 once more. The kit's dialog has `.head(..)`, `.aside(..)` and `.shown(..)`; `bench/oneterm-shots`
 draws `host-connect` and `host-edit`.
 
+The folded rail is the canvas's option I (2026-11-23, specs/19 "Rail"): 48 px, tabs of 44 with a
+line between them, the icon and under it the signal as a coloured line of 22 by 4 (warn, error,
+ok; the progress as a meter; the busy bar while working; a bell as two red pieces), the one
+that shows with a short floating accent bar, New terminal a plain `+` (`rail/narrow.rs`;
+`tests/signals.rs`, `tests/rail.rs`).
+
 The setting Card when blocked is gone: a program blocked or failed (OSC 7501) shows on its tab
 and header only, with no card.
 

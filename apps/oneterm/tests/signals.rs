@@ -116,45 +116,34 @@ fn a_header_names_the_shell_until_the_program_gives_a_title() {
 }
 
 #[test]
-fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_word_under_its_icon() {
+fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_line_under_its_icon() {
     let mut a = app();
     a.key(Key::T, Mods::CTRL);
     a.key(Key::T, Mods::CTRL);
     let fold =
         a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Collapse tabs to icons");
-    // A tab whose program said no state shows none, expanded or folded.
-    let theme = a.h.tree.theme().clone();
-    assert!(!a.says("idle"));
     a.h.tree.act(fold[0], &quadra::SemanticAction::Click);
     a.h.settle();
     a.feed(0, b"\x1b]7501;state=blocked:id=deploy\x07");
     a.feed(1, b"\x1b]9;4;1;64\x07");
-    let word = |a: &App, said: &str| {
-        let node = a.h.query(|n| n.semantics.role == Role::Text && n.semantics.name == said)[0];
-        (a.h.tree.window_rect(node), a.h.tree.inherited(node).color)
-    };
-    let (blocked, warn) = word(&a, "blocked");
-    let (part, accent) = word(&a, "64%");
-    assert_eq!(warn, theme.resolve(quadra_design::token::WARN.into()));
-    assert_eq!(accent, theme.resolve(quadra_design::token::ACCENT.into()));
-    // Under the icon of a tab of 46 px, in a rail of 56.
+    // Tabs of 44 px in a rail of 48; each says its signal in its name.
     let tabs = a.h.query(|n| n.semantics.role == Role::Tab);
     let first = a.h.tree.window_rect(tabs[0]);
-    assert_eq!((first.width, first.height), (55.0, 46.0), "56 with the line at its right");
-    assert!(first.contains(blocked.center()) && blocked.y > first.y + 16.0);
-    assert!(a.h.tree.window_rect(tabs[1]).contains(part.center()));
-    assert!(!a.says("idle"), "the third said nothing");
+    assert_eq!((first.width, first.height), (47.0, 44.0), "48 with the line at its right");
     assert!(a.says("Terminal, blocked, needs permission"));
-    // Working with no progress: the seam is the kit's busy bar; with one, the bar of its part.
+    assert!(a.says("Terminal, working, 64 percent"));
+    assert_eq!(a.h.query(|n| n.semantics.role == Role::Tab && n.semantics.name == "Terminal").len(), 1);
+    // Working with no progress: the line is the kit's busy bar, 22 by 4 under the icon.
     let busy = |a: &App| a.h.query(|n| n.semantics.role == Role::ProgressBar && n.semantics.name == "Busy");
     assert!(busy(&a).is_empty());
     a.feed(2, b"\x1b]7501;state=working:id=build\x07");
-    let seam = busy(&a);
-    assert_eq!(seam.len(), 1);
-    let (bar, tab) = (a.h.tree.window_rect(seam[0]), a.h.tree.window_rect(tabs[2]));
-    assert_eq!((bar.width, bar.height, bar.bottom()), (55.0, 2.0, tab.bottom()), "over the line under it");
+    let line = busy(&a);
+    assert_eq!(line.len(), 1);
+    let (bar, tab) = (a.h.tree.window_rect(line[0]), a.h.tree.window_rect(tabs[2]));
+    assert_eq!((bar.width, bar.height), (22.0, 4.0));
+    assert!(tab.contains(bar.center()) && bar.y > tab.y + 22.0, "under the icon");
     a.feed(2, b"\x1b]9;4;1;30\x07");
-    assert!(busy(&a).is_empty() && a.says("30%"));
+    assert!(busy(&a).is_empty() && a.says("Terminal, working, 30 percent"));
 }
 
 #[test]

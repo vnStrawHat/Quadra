@@ -172,9 +172,15 @@ fn a_user_not_given_is_asked() {
     assert_eq!(a.h.query(filled).len(), 1, "the OS's user filled in");
     a.sign_in("tester");
     a.wait(|a| a.screen().contains("welcome") && a.no_dialog(), "the shell");
+    // The status bar: what crossed the network each second; the server's OSC 7 (echoed back
+    // by the test server) is its directory.
+    a.wait(|a| a.shows("\u{2193} ") && a.shows(" B/s \u{2191} "), "the network");
+    let session = a.sessions.borrow().last().unwrap().clone();
+    session.write(b"\x1b]7;file://srv/home/tester/src\x07");
+    a.wait(|a| a.h.has_text("/home/tester/src"), "the remote directory");
     // The space's header says the user answered (a tab of two spaces has headers).
     a.h.key(Key::D, Mods::CTRL);
-    let header = format!("tester@127.0.0.1:{port} ");
+    let header = format!("tester@127.0.0.1:{port}:/home/tester/src");
     a.wait(|a| a.h.query(|n| n.semantics.name.starts_with(&header)).len() == 1, "the header");
 }
 

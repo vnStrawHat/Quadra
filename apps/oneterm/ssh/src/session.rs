@@ -48,9 +48,9 @@ pub(crate) async fn run(
 async fn reach(
     options: &Options,
     prompt: &Arc<Prompt>,
-    shared: &Shared,
+    shared: &Arc<Shared>,
 ) -> Result<(Link, Vec<Link>), String> {
-    let mut reaching = pin!(crate::route::reach(options, prompt));
+    let mut reaching = pin!(crate::route::reach(options, prompt, &shared.traffic));
     let mut cancelled = pin!(shared.cancel.notified());
     poll_fn(|cx| match reaching.as_mut().poll(cx) {
         Poll::Ready(done) => Poll::Ready(done),

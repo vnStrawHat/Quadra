@@ -13,6 +13,7 @@ mod session;
 mod target;
 #[cfg(feature = "testing")]
 pub mod testing;
+mod traffic;
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -157,6 +158,8 @@ pub struct Ssh {
 pub(crate) struct Shared {
     /// The last ping's time in microseconds; 0 before the first.
     latency: AtomicU32,
+    /// The bytes over the network.
+    pub(crate) traffic: Arc<traffic::Traffic>,
     /// The connection, once the shell is open.
     handle: Mutex<Option<Arc<russh::client::Handle<hostkey::Checker>>>>,
     files: Mutex<Option<Files>>,
@@ -197,6 +200,12 @@ impl Ssh {
     pub fn latency(&self) -> Option<Duration> {
         let micros = self.shared.latency.load(Ordering::Relaxed);
         (micros > 0).then(|| Duration::from_micros(micros.into()))
+    }
+
+    /// The bytes received and sent over the network so far, the connecting's too.
+    pub fn traffic(&self) -> (u64, u64) {
+        let traffic = &self.shared.traffic;
+        (traffic.received.load(Ordering::Relaxed), traffic.sent.load(Ordering::Relaxed))
     }
 
     /// Bytes typed: the shell's input; dropped before the shell is open.

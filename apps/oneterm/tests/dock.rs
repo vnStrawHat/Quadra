@@ -135,10 +135,29 @@ fn the_expanded_view_moves_files_between_its_panes_and_compares() {
     a.h.get_by_role(Role::Button, "Compare").click();
     a.wait(|a| a.h.has_text("older"), "the comparison");
 
+    // `..` goes up on a double click alone, in both panes.
+    let ups =
+        |a: &App| a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Parent folder");
+    let click = |a: &mut App, node, times| {
+        let at = a.h.tree.window_rect(node).center();
+        for _ in 0..times {
+            a.h.click(at.x, at.y);
+        }
+        a.h.settle();
+    };
+    for up in ups(&a) {
+        click(&mut a, up, 1);
+    }
+    a.h.advance(Duration::from_millis(600));
+    assert!(both(&a) && ups(&a).len() == 2, "one click goes nowhere\n{}", a.h.semantics());
+    let remote_up = *ups(&a).last().unwrap();
+    click(&mut a, remote_up, 2);
+    a.wait(|a| a.entry("home") && !a.h.has_text("older"), "the remote pane up");
+
     a.h.get_by_role(Role::Button, "Zoom out").click();
     a.h.settle();
     assert!(!a.pane("Local") && !a.h.semantics().contains("SFTP expanded"), "the dock again");
-    assert!(a.entry("config.yaml"), "the dock again");
+    assert!(a.entry("home"), "the dock again, at the folder it went up to");
 }
 
 fn drop_on_dock(a: &mut App, path: &Path) {

@@ -483,6 +483,13 @@ SSH signs in as OpenSSH does: `none` first, so an account with no password is le
 the password, empty too, goes by `keyboard-interactive` when the server offers that and not
 `password` (PAM), each prompt answered with it (`oneterm-ssh/tests/live.rs`).
 
+A local shell gets the user's environment as the registry says it now
+(`quadra_shell::user_environment`, `CreateEnvironmentBlock`): a variable set after 1Term
+started is in it. In the expanded SFTP view `..` goes up on a double click, as in the dock.
+The status bar has no host group; a remote space shows its network instead, before CPU and
+memory: `↓ 12 KB/s ↑ 1.1 KB/s`, the first hop's socket counted (`traffic.rs`). A server's
+OSC 7 sets the status bar's directory (`asking.rs`).
+
 ### Status marks a step up, tabs without a hover box (2026-11-22)
 
 A status mark (and a status label's) is 14 px unless told, a step up from 12 beside 14 px

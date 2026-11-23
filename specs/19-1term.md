@@ -67,10 +67,11 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
 - **Status bar** (the chrome plane, a line over it, 12 px, groups split by 1×14 px lines):
   first Collapse tabs to icons (the rail's fold, an icon button in the accent); then the active
   space's cwd after a folder icon (a click copies it); git branch and changes after a branch
-  icon (M4: `main ↑2 M1`), a group of its own; the host and its latency after a server icon
-  (P2; a remote space only: a local one shows nothing there); a red dot of 8 px that blinks
+  icon (M4: `main ↑2 M1`), a group of its own; a red dot of 8 px that blinks
   each half second while the focused space logs; then right the OSC 9;4 meter
-  (M3: `build`, a 56 px line, the percentage), CPU and memory (M4), the `2026-11-16 20:45:07` (24 h, the local time, again each second; in mono, so only its
+  (M3: `build`, a 56 px line, the percentage), a remote space's network (P2; a local one shows
+  nothing there): what came and went in the last second, `↓ 12 KB/s ↑ 1.1 KB/s`, counted on
+  the connection's socket, jump hosts' traffic in it; CPU and memory (M4), the `2026-11-16 20:45:07` (24 h, the local time, again each second; in mono, so only its
   text is painted again), and last Toggle SFTP panel. Labels are the secondary colour, values
   the text colour, numbers in mono. The icons have the kit's roles (the canvas leaves them in
   the label colour): the folder `warn`, the branch `ok`, the server `info`, the lock
@@ -304,7 +305,9 @@ detail), the focus in it as it opens.
   (MSYS2, Cygwin, zsh, fish) a box with `$`, anything else the terminal square. The default
   shell is Command Prompt until settings (M5) name another. With no tab left (the last one
   closed, however it went) the window stays: the workspace says `Ctrl+T opens a terminal`. A split starts in the focused
-  space's directory. A local shell's environment names the terminal (`TERM_PROGRAM=1Term`,
+  space's directory. A local shell's environment is the user's as the registry says it at
+  that moment (`CreateEnvironmentBlock`, as Windows Terminal does: a variable set after 1Term
+  started is in it), over 1Term's own. It names the terminal (`TERM_PROGRAM=1Term`,
   `TERM_PROGRAM_VERSION` its version) and, while Force links is on, adds `FORCE_HYPERLINK=1`:
   1Term opens OSC 8 links, and programs that know terminals by name (1Term is on no list)
   show links on it; off, a program that writes links even into a pipe or a file does not.
@@ -567,8 +570,7 @@ thread never waits on the network.
   Quick connect, and Add SSH host, under its search field.
 - **Latency**: the engine pings the server (an SSH ping, a request that wants a reply) every
   5 s once the shell is open and keeps the last time it took; the app reads it every 2 s into
-  the session's `link_note` (`124 ms`). The space's header shows it at its right, the status
-  bar shows the focused space's host (its name, else `user@host`) and it.
+  the session's `link_note` (`124 ms`). The space's header shows it at its right.
 - **A tab's second line** counts its spaces by kind: `2 ssh · 1 local · 3 spaces`; an
   editor's space is not counted.
 

@@ -1,6 +1,7 @@
 //! The status bar (specs/19, "Window"): 30 px on the chrome plane, 12 px, its groups parted by
 //! rules of 1×14: the rail's fold; the focused space's directory (a click copies it); git; a
-//! remote space's host and its latency; a red dot that blinks while it logs; at the right the progress, 1Term's processor and memory
+//! red dot that blinks while it logs; at the right the progress, a remote space's network,
+//! 1Term's processor and memory
 //! (details in a tooltip), the clock and the SFTP panel. Locked, only a lock and "Locked,
 //! details hidden", the progress and the clock show.
 
@@ -115,7 +116,6 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
             (when(move || open() && vertical.get()), part().child(fold)),
             (when(open), place),
             (when(move || open() && git_shown()), git),
-            (host_shown(model, open), host(model)),
             (when(move || open() && rec.get().0), recording(rec)),
         ],
     );
@@ -123,6 +123,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         part().gap(12.0),
         vec![
             (metered, meter),
+            (remote_shown(model, open), network(model)),
             (when(move || open() && shows()), using),
             (when(move || prefs.show_clock.get()), time),
             (when(open), part().child(sftp(model))),
@@ -160,29 +161,23 @@ fn sftp(model: &Model) -> impl View + use<> {
         })
 }
 
-/// Whether the host group shows: unlocked, a remote space focused.
-fn host_shown(model: &Model, open: impl Fn() -> bool + 'static) -> When {
+/// Whether the network shows: unlocked, a remote space focused.
+fn remote_shown(model: &Model, open: impl Fn() -> bool + 'static) -> When {
     let of = model.clone();
     when(move || {
         open() && of.active_tab().and_then(|tab| tab.focused()).is_some_and(|it| it.remote.is_some())
     })
 }
 
-/// The focused remote space's host and its latency, `prod-api-01 124 ms`.
-fn host(model: &Model) -> quadra::Div {
-    let (model, of) = (model.clone(), model.clone());
-    let remote = move || of.active_tab().and_then(|tab| tab.focused()).and_then(|space| space.remote);
-    let link = model.clone();
-    let name = move || remote().map(|remote| model.host_name(&remote)).unwrap_or_default();
-    let note = move || {
-        let space = link.active_tab().and_then(|tab| tab.focused());
-        space.filter(|it| it.remote.is_some()).map(|it| it.session.link_note().get()).unwrap_or_default()
+/// What the focused remote space's connection received and sent in the last second.
+fn network(model: &Model) -> quadra::Div {
+    let model = model.clone();
+    let rate = move || {
+        let space = model.active_tab().and_then(|tab| tab.focused());
+        let conn = space.and_then(|it| it.session.kept::<crate::remote::Conn>());
+        conn.map(|it| it.traffic.get()).unwrap_or_default()
     };
-    part()
-        .label("Host")
-        .child(icon(icons::SERVER).size(14.0).color(token::INFO))
-        .child(text(name))
-        .child(div().font_family(fonts::MONO).child(text(note)))
+    part().label("Network").child(value(rate))
 }
 
 /// The progress of the tab that shows, else of the first that reports one: the id of what

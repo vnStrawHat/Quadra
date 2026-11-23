@@ -26,13 +26,18 @@ pub fn local_shell(launch: Launch) -> Session {
     // its size only at start reads the real one. ponytail: the closure holds the session until
     // then, so a space never shown keeps its session alive with it.
     let program = launch.shell.map(|shell| (shell.program.display().to_string(), shell.args));
-    let mut env: Vec<(String, String)> = vec![
+    // The user's variables as they are now (one set after 1Term started too), then 1Term's.
+    #[cfg(windows)]
+    let mut env = quadra_shell::user_environment();
+    #[cfg(not(windows))]
+    let mut env = Vec::new();
+    env.extend([
         ("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into()),
         ("TERM_PROGRAM".into(), "1Term".into()),
         ("TERM_PROGRAM_VERSION".into(), env!("CARGO_PKG_VERSION").into()),
         // A login bash (MSYS2, Cygwin, Git's) stays in the directory it starts in.
         ("CHERE_INVOKING".into(), "1".into()),
-    ];
+    ]);
     if launch.force_links {
         // Programs that know terminals by name show OSC 8 links here too.
         env.push(("FORCE_HYPERLINK".into(), "1".into()));

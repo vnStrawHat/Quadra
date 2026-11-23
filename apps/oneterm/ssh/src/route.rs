@@ -10,6 +10,7 @@ use tokio::net::TcpStream;
 use crate::auth::CANCELLED;
 use crate::hostkey::Checker;
 use crate::prompt::{Ask, Event, Prompt};
+use crate::traffic::{Counted, Traffic};
 use crate::{Hop, Options};
 
 const CONNECT: Duration = Duration::from_secs(20);
@@ -24,7 +25,11 @@ fn said(e: impl std::fmt::Display) -> String {
 
 /// Connects to the target through the jump hosts: the target's connection, and the jump
 /// hosts' in order, which must live as long as it.
-pub(crate) async fn reach(options: &Options, prompt: &Arc<Prompt>) -> Result<(Link, Vec<Link>), String> {
+pub(crate) async fn reach(
+    options: &Options,
+    prompt: &Arc<Prompt>,
+    traffic: &Arc<Traffic>,
+) -> Result<(Link, Vec<Link>), String> {
     let mut hops: Vec<Hop> = options.jumps.iter().take(HOPS).cloned().collect();
     hops.push(Hop { target: options.target.clone(), auth: options.auth.clone() });
     let last = hops.len() - 1;
@@ -43,7 +48,7 @@ pub(crate) async fn reach(options: &Options, prompt: &Arc<Prompt>) -> Result<(Li
             false => format!("jump host {}: {why}", hop.target.label()),
         };
         prompt.tell(Event::Connecting(hop.target.label()));
-        let mut handle = open(hop, through.last(), options, prompt).await.map_err(named)?;
+        let mut handle = open(hop, through.last(), options, prompt, traffic).await.map_err(named)?;
         crate::auth::authenticate(&mut handle, hop, options, prompt).await.map_err(named)?;
         through.push(handle);
     }
@@ -57,6 +62,7 @@ async fn open(
     before: Option<&Link>,
     options: &Options,
     prompt: &Arc<Prompt>,
+    traffic: &Arc<Traffic>,
 ) -> Result<Link, String> {
     let (host, port) = (hop.target.host.clone(), hop.target.port);
     let config = Arc::new(client::Config {
@@ -87,6 +93,7 @@ async fn open(
                 Err(_) => return Err("timed out".into()),
             };
             let _ = socket.set_nodelay(true);
+            let socket = Counted { inner: socket, traffic: traffic.clone() };
             client::connect_stream(config, socket, checker).await.map_err(refused)
         }
         Some(before) => {

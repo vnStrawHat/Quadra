@@ -56,7 +56,9 @@ pub use win::console;
 #[cfg(windows)]
 pub use win::shell_process;
 #[cfg(windows)]
-pub use win::{WinShell, crash_reports, hash_password, process_usage, single_instance, verify_password};
+pub use win::{
+    WinShell, crash_reports, hash_password, process_usage, single_instance, user_environment, verify_password,
+};
 #[cfg(windows)]
 pub use win::{cycles_per_second, private_memory, process_cycles, window_shown};
 #[cfg(windows)]

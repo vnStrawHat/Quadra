@@ -64,9 +64,9 @@ impl App {
 #[test]
 fn a_host_added_is_saved_listed_and_connects_on_a_double_click() {
     let mut a = app();
-    // A local space has no host in the status bar.
+    // A local space has no network in the status bar.
     assert!(!a.h.has_text("local shell"));
-    assert!(a.h.query(|n| n.semantics.name == "Host").is_empty(), "no host for a local space");
+    assert!(a.h.query(|n| n.semantics.name == "Network").is_empty(), "no network for a local space");
     a.add("prod-api-01", "Production", "trung@10.20.1.14");
     a.add("", "Staging", "trung@10.30.2.8:2222");
     assert_eq!(a.rows()[0], ["prod-api-01", "Production", "trung@10.20.1.14", "Auto", "", "", ""]);

@@ -25,6 +25,9 @@ fn an_unknown_host_is_asked_then_the_password_opens_a_shell() {
     assert_eq!(c.ask(), Ask::Password { target: target.clone(), again: false });
     c.answer(Some("secret"));
     c.wait_for("welcome");
+    // The socket's bytes are counted, both ways.
+    let (received, sent) = c.ssh.traffic();
+    assert!(received > 1000 && sent > 1000, "{received} {sent}");
     let told = c.told.lock().unwrap().clone();
     assert_eq!(told.first(), Some(&Event::Connecting(target)));
     assert_eq!(told.last(), Some(&Event::Open));

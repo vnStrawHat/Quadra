@@ -27,6 +27,8 @@ pub(crate) struct Conn {
     pub phase: Signal<Phase>,
     /// `user@host`, as the engine last said it was connecting to.
     pub label: Signal<String>,
+    /// What crossed the network in the last second, `↓ 12 KB/s ↑ 1.1 KB/s`.
+    pub traffic: Signal<String>,
     ssh: Arc<Ssh>,
 }
 
@@ -139,12 +141,24 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
         }
     });
     session.keep(std::rc::Rc::new(ssh.clone()));
-    session.keep(std::rc::Rc::new(Conn { phase, label, ssh: ssh.clone() }));
-    // The latency the engine measured, read every 2 s.
-    let (pings, note) = (ssh.clone(), session.link_note());
-    let _ = quadra::interval(std::time::Duration::from_secs(2), move || {
+    let traffic = signal(String::new());
+    session.keep(std::rc::Rc::new(Conn { phase, label, traffic, ssh: ssh.clone() }));
+    // Each second: the latency the engine measured, and the bytes since the last time.
+    let (pings, note, last) = (ssh.clone(), session.link_note(), std::cell::Cell::new((0, 0)));
+    let _ = quadra::interval(std::time::Duration::from_secs(1), move || {
         if let Some(took) = pings.latency() {
-            note.set(format!("{} ms", took.as_millis().max(1)));
+            let said = format!("{} ms", took.as_millis().max(1));
+            if note.with_untracked(|it| *it != said) {
+                note.set(said);
+            }
+        }
+        let ((received, sent), (was_received, was_sent)) = (pings.traffic(), last.get());
+        last.set((received, sent));
+        let size = crate::panes::size;
+        let said =
+            format!("\u{2193} {}/s \u{2191} {}/s", size(received - was_received), size(sent - was_sent));
+        if traffic.with_untracked(|it| *it != said) {
+            traffic.set(said);
         }
     });
     let (resizes, closes) = (ssh.clone(), ssh.clone());

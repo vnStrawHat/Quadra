@@ -82,7 +82,11 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         }
         let mut list = column().width(Length::Fill);
         if local.dir.with(|it| it.parent().is_some()) {
-            list = list.child(line(&parent(), None, || false).on_click(move |_| local.up()));
+            list = list.child(line(&parent(), None, || false).on_click(move |e| {
+                if e.clicks == 2 {
+                    local.up();
+                }
+            }));
         }
         for entry in all {
             let (name, picks, opens) = (entry.name.clone(), entry.name.clone(), entry.clone());
@@ -107,8 +111,11 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         if dir != "/" && !dir.is_empty() {
             let (ups, up) = (remotes.clone(), dir.rsplit_once('/').map_or("/", |it| it.0).to_string());
             let up = if up.is_empty() { "/".to_string() } else { up };
-            list =
-                list.child(line(&parent(), None, || false).on_click(move |_| d.load(&ups, Some(up.clone()))));
+            list = list.child(line(&parent(), None, || false).on_click(move |e| {
+                if e.clicks == 2 {
+                    d.load(&ups, Some(up.clone()));
+                }
+            }));
         }
         let locals = if compare.get() { local.entries.get() } else { Vec::new() };
         for entry in all {

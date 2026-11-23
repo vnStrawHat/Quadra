@@ -20,7 +20,6 @@ struct App {
     settings: Rc<Settings>,
     port: u16,
     dir: std::path::PathBuf,
-    shell: Rc<quadra_shell::FakeShell>,
 }
 
 fn app(name: &str) -> App {
@@ -42,8 +41,7 @@ fn app(name: &str) -> App {
     h.size = quadra::Size::new(1400.0, 800.0);
     h.tree.set_keymap(Rc::new(keymap()));
     let (given, kept) = (settings.clone(), Rc::new(std::cell::RefCell::new(None)));
-    let (made, shell) = (kept.clone(), quadra_shell::FakeShell::new());
-    let fake = shell.clone();
+    let (made, fake) = (kept.clone(), quadra_shell::FakeShell::new());
     h.mount(move || {
         provide(given.clone());
         fake.provide();
@@ -54,7 +52,7 @@ fn app(name: &str) -> App {
     h.settle();
     let model = kept.borrow().clone().unwrap();
     model.ui().opening.known_hosts.set(dir.join("known_hosts"));
-    App { h, model, settings, port, dir, shell }
+    App { h, model, settings, port, dir }
 }
 
 impl App {
@@ -242,15 +240,17 @@ fn a_startup_command_is_written_once_the_shell_opens() {
 }
 
 #[test]
-fn without_a_master_password_the_dialog_sets_one_and_a_key_file_is_chosen() {
+fn without_a_master_password_the_dialog_sets_one_and_a_key_is_chosen() {
     let mut a = app("vault-new-master");
     let file = a.dir.join("id");
     write_locked_user_key(&file, "open sesame");
     a.host_with("keyed", "", Auth::Key(std::path::PathBuf::from("typed")));
+    // The key chosen by name from the Keys of the settings.
+    a.model.prefs().ssh_keys.set(vec![file.display().to_string()]);
     a.menu("keyed", "Edit\u{2026}");
-    // The key file chosen in the system's dialog (the fake one).
-    a.shell.choose(&[file.to_str().unwrap()]);
-    a.h.get_by_role(Role::Button, "Choose\u{2026}").click();
+    a.h.get_by_test_id("host-key").click();
+    a.h.settle();
+    a.h.get_by_role(Role::MenuItem, &file.display().to_string().replace('\\', "/")).click();
     a.h.settle();
     a.h.get_by_test_id("host-secret").set_value("open sesame");
     a.h.settle();

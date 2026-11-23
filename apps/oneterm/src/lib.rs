@@ -34,6 +34,7 @@ mod shells;
 mod signals;
 mod spaces;
 mod split;
+mod sshkeys;
 mod statusbar;
 mod strip;
 mod tab;

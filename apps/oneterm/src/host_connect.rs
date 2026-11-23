@@ -183,7 +183,9 @@ fn shown(model: &Model, host: Host, here: bool, open: Signal<bool>, form: Form) 
     };
     let asking_now = asking;
     let (host_view, known_now, secret_at) = (host.clone(), known.clone(), NodeRef::new());
+    let keyed = model.clone();
     let body = move || {
+        let model = keyed.clone();
         let (host, known, go, answer) = (host_view.clone(), known_now.clone(), go.clone(), answer.clone());
         let secret_at = secret_at.clone();
         dynamic(move || match space.get() {
@@ -196,7 +198,7 @@ fn shown(model: &Model, host: Host, here: bool, open: Signal<bool>, form: Form) 
             None => {
                 let missing = if untrack(|| form.refused.get()) { PASSWORD } else { missing };
                 untrack(|| form.refused.set(false));
-                AnyView::new(form::body(&host, form, missing, saved, &known, go.clone(), &secret_at))
+                AnyView::new(form::body(&model, &host, form, missing, &known, go.clone(), &secret_at))
             }
         })
     };

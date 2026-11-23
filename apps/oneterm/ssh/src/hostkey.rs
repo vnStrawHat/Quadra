@@ -28,10 +28,24 @@ pub(crate) struct Checker {
 pub fn known_key(host: &str, port: u16, file: &std::path::Path) -> Option<String> {
     let keys = russh::keys::known_hosts::known_host_keys_path(host, port, file).ok()?;
     let (_, key) = keys.into_iter().next()?;
+    Some(said(&key))
+}
+
+/// A key's kind and short fingerprint, `ED25519 SHA256:k3Vq…9fTn`.
+fn said(key: &russh::keys::PublicKey) -> String {
     let kind = key.algorithm().to_string();
     let kind = kind.strip_prefix("ssh-").unwrap_or(&kind).split('-').next().unwrap_or("").to_uppercase();
-    let print = key.fingerprint(HashAlg::Sha256).to_string();
-    Some(format!("{kind} {}", short_print(&print)))
+    format!("{kind} {}", short_print(&key.fingerprint(HashAlg::Sha256).to_string()))
+}
+
+/// A private key file's kind and fingerprint, and whether a passphrase locks it (read without
+/// it: OpenSSH keeps the public half in the clear); else why it cannot be read.
+pub fn key_info(file: &std::path::Path) -> Result<(String, bool), String> {
+    let key = russh::keys::PrivateKey::read_openssh_file(file).map_err(|e| match e {
+        russh::keys::ssh_key::Error::Io(_) => "Not found".to_string(),
+        _ => "Not an OpenSSH private key".to_string(),
+    })?;
+    Ok((said(key.public_key()), key.is_encrypted()))
 }
 
 /// `SHA256:` and the first and last four of the hash, an ellipsis between.

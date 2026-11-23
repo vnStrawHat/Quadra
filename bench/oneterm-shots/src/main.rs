@@ -33,7 +33,7 @@ use quadra_term::{Session, echo};
 
 type Shots = App<D3d11Renderer>;
 
-const SCENES: [&str; 14] = [
+const SCENES: [&str; 15] = [
     "main",
     "collapsed",
     "horizontal",
@@ -42,6 +42,7 @@ const SCENES: [&str; 14] = [
     "add",
     "host-connect",
     "host-edit",
+    "keys",
     "settings",
     "lock",
     "sftp",
@@ -227,6 +228,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             "add" => model.ui().adding.set(true),
             "host-connect" => model.ui().opening.host.set(Some(("prod-lb".into(), false))),
             "host-edit" => model.ui().editing.set(Some("prod-lb".into())),
+            "keys" => {
+                let key = std::path::absolute(".tmp/ssh-tests/ssh-keys/work_key").unwrap_or_default();
+                model.prefs().ssh_keys.set(vec![key.display().to_string()]);
+                model.ui().page.set(3);
+                model.ui().settings.set(true);
+            }
             "settings" => model.ui().settings.set(true),
             "lock" => model.lock().lock_now(),
             "sftp" => model.ui().expanded.set(true),

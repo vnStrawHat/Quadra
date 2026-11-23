@@ -75,14 +75,15 @@ fn summary(host: &Host, key: &Option<String>) -> Div {
 
 /// The whole form; the focus starts in `missing`.
 pub(super) fn body(
+    model: &crate::model::Model,
     host: &Host,
     form: Form,
     missing: u8,
-    saved: bool,
     key_known: &Option<String>,
     go: Go,
     secret_at: &quadra::NodeRef,
 ) -> Div {
+    let saved = model.sealed(&host.name).is_some();
     let entry = |value: Signal<String>, id: &'static str, width: f32| {
         let go = go.clone();
         input(value).test_id(id).width(width).on_submit(move |_| go())
@@ -96,14 +97,15 @@ pub(super) fn body(
     let no_user = host.remote.target.user.is_empty();
     let user = field("Username", entry(form.user, "connect-user", HALF).mono().placeholder("Required"));
     let user = if no_user { user.help("This host has no saved username.") } else { user };
-    let how = column().gap(4.0).child(field("Auth method", select(AUTHS, auth).width(HALF))).child(hint(
-        move || match auth.get() == saved_auth {
+    let how = column()
+        .gap(4.0)
+        .child(field("Auth method", select(AUTHS, auth).width(HALF).test_id("connect-auth")))
+        .child(hint(move || match auth.get() == saved_auth {
             true => "Saved for this host.".into(),
             false => format!("Saved for this host: {}", AUTHS[saved_auth]),
-        },
-    ));
+        }));
     let saved_hint = if saved { "Saved" } else { "" };
-    let key = entry(form.key, "connect-key", HALF).mono().placeholder("Path of the key file");
+    let key = crate::sshkeys::picker(model, form.key, HALF, "connect-key");
     let passphrase = entry(form.password, "connect-passphrase", HALF).password().reveal();
     let passphrase = field(
         "Passphrase",

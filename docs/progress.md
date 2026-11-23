@@ -514,6 +514,12 @@ ok; the progress as a meter; the busy bar while working; a bell as two red piece
 that shows with a short floating accent bar, New terminal a plain `+` (`rail/narrow.rs`;
 `tests/signals.rs`, `tests/rail.rs`).
 
+SSH keys are kept in the settings (2026-11-23, specs/19 "Keys"): the setting `ssh.keys`, the
+group Keys of SSH & hosts (Add key…, Find in ~/.ssh, each key's kind and fingerprint by
+`oneterm_ssh::key_info`, Remove; `sshkeys.rs`), and the Connect dialog and the host editor choose
+a key by name in a select in place of a path and a file dialog (`tests/ssh_keys.rs`, the
+`bench/oneterm-shots` scene `keys`).
+
 The setting Card when blocked is gone: a program blocked or failed (OSC 7501) shows on its tab
 and header only, with no card.
 

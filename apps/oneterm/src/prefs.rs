@@ -84,6 +84,8 @@ pub struct Prefs {
     /// Saved hosts and recent targets, rows of words (`hosts.rs`).
     pub hosts: Signal<Vec<Vec<String>>>,
     pub recent: Signal<Vec<Vec<String>>>,
+    /// The key files hosts sign in with, their paths (`sshkeys.rs`).
+    pub ssh_keys: Signal<Vec<String>>,
     /// The saved passwords' vault, and each host's sealed secret (`vault.rs`).
     pub vault: Signal<String>,
     pub secrets: Signal<Vec<Vec<String>>>,
@@ -158,6 +160,7 @@ impl Prefs {
             clipboard_read: s.value("security.allow_clipboard_read", false),
             hosts: s.value("ssh.hosts", Vec::new()),
             recent: s.value("ssh.recent", Vec::new()),
+            ssh_keys: s.value("ssh.keys", Vec::new()),
             vault: s.value("ssh.vault", String::new()),
             secrets: s.value("ssh.secrets", Vec::new()),
             startup: s.value("ssh.startup", Vec::new()),

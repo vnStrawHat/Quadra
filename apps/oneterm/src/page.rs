@@ -139,6 +139,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         vec![tabs],
         vec![
             hosts(p, model),
+            crate::sshkeys::group(model),
             SettingsGroup::new("Connections")
                 .row("Keepalive", "Asked of an idle server so the connection stays.", switch(p.keepalive_on))
                 .back(p.keepalive_on, d.keepalive_on)

@@ -346,7 +346,7 @@ what it is about, groups with titles; the title bar names the page), a search, p
 Appearance (and the UI's text size, 75 to 200 %, the terminals' with it: the app's
 `TextSize::text`), Terminal, Tabs & spaces (and the tab's title: the program's, a path of a program
 shortened to its name, or "Terminal" and the host), SSH & hosts (the count of saved hosts with Add SSH host,
-the recent targets with Forget; Connections: the keepalive, on, every 30 s from 5 to 3600, given up
+the recent targets with Forget; Keys, below; Connections: the keepalive, on, every 30 s from 5 to 3600, given up
 after 3 unanswered from 1 to 20), SFTP (the downloads folder), Notifications & signals, Status bar
 (and frames a second, on: `window().frames()` counted each second), and whether the SFTP dock is
 open is kept for each kind of tab that shows (a local shell's, closed at first; an SSH space's,
@@ -531,8 +531,9 @@ thread never waits on the network.
   `Required`, with `This host has no saved username.` under it when there is none; it takes
   `user` or `user@host:port`, and what it gives of them takes the saved one's place for this
   connection) beside Auth method (Auto, SSH agent, Key file, Password; the saved one, `Saved
-  for this host.` or `Saved for this host: <auth>` under it); for Key file the key file
-  (mono) beside the passphrase; for Auto and Password the password across, both with the
+  for this host.` or `Saved for this host: <auth>` under it); for Key file the key, a select of
+  the Keys by their paths (`~/.ssh/id_ed25519`; a host's key not among them is offered too),
+  beside the passphrase; for Auto and Password the password across, both with the
   eye that shows what was typed (a saved one is used when it is left empty, the empty password
   else); for Auto and SSH agent a line of what they do. A new key adds a warning (`1Term has
   not seen this host key before. Check the fingerprint with the host's owner.`) and `Trust
@@ -579,12 +580,20 @@ thread never waits on the network.
   Name; Group beside Colour tag; Address (mono; a whole `user@host:port` is taken too) beside
   Port (88 px); Username (`Ask when connecting`, Optional.) beside Jump host; Auth method
   beside its Password or Passphrase (with the eye; for Auto and SSH agent none), then a line of
-  what the auth does; the key file of Key file (Choose…); the master password when one is
+  what the auth does; the key of Key file, a select of the Keys as in the Connect dialog; the
+  master password when one is
   needed (Saved passwords); Startup command; Forwards. The Username and Port filled take the
   place of what the Address says. The foot: `Delete host…` at its left (Edit only), Cancel and
   Save or Add host (Enter); `Delete host…` asks once more (`Delete <name>?` at the form's end,
   Keep and Delete in the danger colour), and deleting forgets its saved password and startup
   command.
+- **Keys** (`sshkeys.rs`): the key files hosts sign in with, the setting `ssh.keys` (their
+  paths), kept in the group Keys of SSH & hosts: Add key… (the system's dialog, from `~/.ssh`
+  when there is one), Find in ~/.ssh (each file there beside a `.pub` of its name), then each
+  key: its file's name, its path (`~` for the home folder) and its kind and SHA-256
+  fingerprint cut to its ends with `· passphrase` when one locks it (`oneterm_ssh::key_info`,
+  read without the passphrase), or `Not found` or `Not an OpenSSH private key`; Remove. No
+  dialog picks a file: a host's key is chosen by name from these.
 - **Saved passwords**: a vault in `ssh.vault`,
   `v1$<rounds>$<salt hex>$<sealed key hex>`: a random data key of 32 bytes sealed
   (`quadra_shell::seal`, specs/16) under a key derived from the master password (PBKDF2, its

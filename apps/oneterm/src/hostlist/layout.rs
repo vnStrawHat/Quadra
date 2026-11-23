@@ -3,7 +3,7 @@
 //! the key file; the master password when one is needed; startup command and forwards.
 
 use quadra::{AnyView, Color, Div, Paint, Signal, Track, View, column, div, dynamic, row, text};
-use quadra_design::{Tone, Variant, alert, field, input, select, size, token};
+use quadra_design::{Tone, alert, field, input, select, size, token};
 
 use super::AUTHS;
 use super::form::Form;
@@ -75,7 +75,11 @@ pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirmin
         .child(address)
         .child(pair(user, jump))
         .child(column().gap(4.0).child(how).child(hint))
-        .child(div().display(shown(move || auth.get() == 2)).child(field("Key file", key_field(form.key))))
+        .child(
+            div()
+                .display(shown(move || auth.get() == 2))
+                .child(field("Key file", crate::sshkeys::picker(model, form.key, FULL, "host-key"))),
+        )
         .child(super::secret::fields(model, form))
         .child(field(
             "Startup command",
@@ -86,21 +90,4 @@ pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirmin
             text_field(form.forwards, "8080:localhost:80 R9000:localhost:3000 D1080", "host-forwards", FULL),
         ))
         .child(div().display(shown(move || confirming.get())).child(question))
-}
-
-/// The key file: typed, or chosen in the system's dialog (from `~/.ssh` when there is one).
-fn key_field(key: Signal<String>) -> Div {
-    let dialogs = quadra::use_context::<std::rc::Rc<dyn quadra_shell::Dialogs>>();
-    let choose = quadra_design::button("Choose\u{2026}").variant(Variant::Secondary).on_click(move || {
-        let mut asked = quadra_shell::FileDialog::new("Key file");
-        let ssh = std::env::var_os("USERPROFILE").map(|it| std::path::PathBuf::from(it).join(".ssh"));
-        if let Some(ssh) = ssh.filter(|it| it.is_dir()) {
-            asked = asked.folder(ssh);
-        }
-        if let Some(chosen) = dialogs.as_ref().and_then(|it| it.open_files(&asked).into_iter().next()) {
-            key.set(chosen.display().to_string());
-        }
-    });
-    let typed = input(key).placeholder("Path of the key file").mono().test_id("host-key");
-    row().gap(8.0).child(typed.width(324.0).height(H)).child(choose)
 }

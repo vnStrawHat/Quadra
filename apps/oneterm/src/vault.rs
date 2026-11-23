@@ -27,6 +27,10 @@ pub type DataKey = Rc<Key>;
 pub struct Secret(Zeroizing<String>);
 
 impl Secret {
+    pub(crate) fn new(text: String) -> Secret {
+        Secret(Zeroizing::new(text))
+    }
+
     pub(crate) fn as_str(&self) -> &str {
         &self.0
     }

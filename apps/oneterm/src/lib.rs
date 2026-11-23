@@ -12,6 +12,7 @@ mod editing;
 mod expanded;
 mod find;
 mod git;
+mod host_connect;
 mod hostlist;
 mod hosts;
 mod links;
@@ -176,6 +177,7 @@ impl OneTerm {
             .child(statusbar::status_bar(&self.model, self.clock, self.now.clone()))
             .child(cards)
             .child(connect::dialog(&self.model))
+            .child(host_connect::dialog(&self.model))
             .child(asking::dialogs(&self.model))
             .child(hostlist::add_dialog(&self.model))
             .child(vault::dialog(&self.model))

@@ -470,8 +470,10 @@ thread never waits on the network.
   the window shows the focused space's, one dialog for each phase, swapped as the phase moves;
   a space whose connection is done or local shows none. Giving a dialog up (its cross, Escape,
   a press outside) is its Cancel or Close. They start with the connection, whichever way it
-  is started: a double click on a saved host, its menu's Connect or Connect in a new space,
-  Quick connect, a host or a recent target in the `+` menu.
+  is started: Quick connect, a host or a recent target in the `+` menu; for a saved host's
+  Connect dialog (below) only the questions it does not ask (Unknown host, a key's passphrase,
+  a jump host's password, a user), its own Connect saying it connects and its alert the
+  failure.
   - **Connecting** (`Connecting to user@host…`): Cancel (`Ssh::cancel`). It closes by itself
     when the shell opens, and the focus is the space's.
   - **Unknown host**: `The authenticity of host 'host' can't be established.`, `ssh-ed25519
@@ -521,9 +523,20 @@ thread never waits on the network.
 - **The rail**, under "New terminal": "SSH hosts" with an Add SSH host button at its right, a
   filter (on the name and the target, whatever the case), then the hosts by group in the order
   first met (a click on a group's heading folds it), each a row of the square of its colour
-  tag, its name and its address. A double click opens a tab connected to it, the Connect
-  dialogs following the connection (M7 in detail; one click does
-  nothing; a reader connects by its menu's Connect); its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
+  tag, its name and its address. A click opens its **Connect dialog**, as do its menu's
+  Connect and Connect in a new space: titled `Connect to <name>`, it says where it goes
+  (`host:port`, through the jump host) and holds what is saved: Username (the saved user;
+  it takes `user` or `user@host:port`, and what it gives of them takes the saved one's
+  place for this connection, the rest staying the saved), Auth (the saved, changeable here),
+  the key file (Key file) and the password (Auto, Password; the passphrase for Key file; a
+  saved one is used when it is left empty, the empty password else). The focus is in the
+  first field missing: the user, the key file of Key file, the password of Password with
+  none saved. Connect (Enter in a field) reads `Connecting…` and is off while it connects;
+  the tab, or the space beside the focused one, opens only once the shell is open. A
+  failure, or a password refused, shows in an alert of the danger tone over the fields
+  (`Could not connect` and why), the dialog stays, the focus in the password when it was
+  refused; Cancel gives the connecting up. A saved secret whose vault is locked asks the
+  master password first, and connects as before. Its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
   filled, titled Edit SSH host; a new name takes the old one's place), Forget password (with
   one saved), Remove. A group's heading has a menu, Connect all (n): a tab for each of its
   hosts, in their order, the last one shown. The Add dialog

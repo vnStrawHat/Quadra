@@ -162,6 +162,11 @@ impl Model {
         } else {
             self.new_tab_with(launch)
         }
+        self.remember(label);
+    }
+
+    /// A target connected to is the most recent.
+    pub(crate) fn remember(&self, label: String) {
         let now = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |it| it.as_secs());
         self.prefs().recent.update(|rows| {
             rows.retain(|it| it.first() != Some(&label));

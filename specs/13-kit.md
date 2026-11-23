@@ -813,7 +813,10 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   button runs what it was given and closes the dialog; the cross, Escape and a press outside
   give it up. `.disabled(|| ..)` and `.danger()` apply to the last action given, as
   `.shortcut(..)` does: a disabled one can be neither pressed nor reached with the keys
-  while what it reads says so (Add while there is nothing to add).
+  while what it reads says so (Add while there is nothing to add). `.stays_open()` leaves
+  the dialog open when the last action is pressed (what it starts closes it when done), and
+  `.busy("Connecting…", || ..)` gives the last action that label and turns it off while what
+  it reads says so.
 - Elevation is a paint value of a box (`.elevation(1)`): a level above the window casts the
   shadows of the design language (behaviour/15) under the box, two for the level of menus,
   popovers and tooltips, four for that of dialogs. A change of level is a paint change.

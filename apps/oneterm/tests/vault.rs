@@ -94,6 +94,13 @@ impl App {
         self.h.settle();
     }
 
+    /// Its menu's Connect, then the Connect dialog's.
+    fn connect(&mut self, row: &str) {
+        self.menu(row, "Connect");
+        self.h.get_by_role(Role::Button, "Connect").click();
+        self.h.settle();
+    }
+
     fn secrets(&self) -> Vec<Vec<String>> {
         self.settings.value("ssh.secrets", Vec::<Vec<String>>::new()).get_untracked()
     }
@@ -128,13 +135,13 @@ fn a_saved_password_signs_in_and_the_master_password_opens_it() {
     a.h.settle();
     let sealed = a.secrets();
     assert!(sealed.len() == 1 && sealed[0][1].starts_with("sv2:") && !sealed[0][1].contains("secret"));
-    a.menu("box", "Connect");
+    a.connect("box");
     a.wait(|a| a.welcomed() == 1, "signed in by the saved password");
     assert!(!a.h.has_text("Sign in"));
 
     // As after a start: the data key is not in memory, so the master password is asked.
     a.model.lock().key.set(None);
-    a.menu("box", "Connect");
+    a.connect("box");
     assert!(a.h.has_text("Unlock saved passwords"), "{}", a.h.semantics());
     a.h.get_by_test_id("vault-password").set_value("wrong");
     a.h.settle();
@@ -191,7 +198,7 @@ fn a_passphrase_is_saved_by_the_master_password_typed_in_the_dialog() {
     assert!(a.secrets().is_empty());
     edit(&mut a, "master");
     a.wait(|a| a.secrets().len() == 1, "the passphrase saved");
-    a.menu("keyed", "Connect");
+    a.connect("keyed");
     a.wait(|a| a.welcomed() == 1, "signed in by the saved passphrase");
     assert!(!a.h.has_text("Sign in") && !a.h.has_text("Unlock saved passwords"));
 }
@@ -209,7 +216,7 @@ fn a_startup_command_is_written_once_the_shell_opens() {
     a.h.settle();
     let kept = a.settings.value("ssh.startup", Vec::<Vec<String>>::new()).get_untracked();
     assert_eq!(kept, [["tmuxed", "tmux attach"]]);
-    a.menu("tmuxed", "Connect");
+    a.connect("tmuxed");
     let said = |a: &App, words: &str| {
         let holds = |n: &quadra_tree::SemanticNode| {
             n.semantics.role == Role::TextInput
@@ -228,7 +235,7 @@ fn a_startup_command_is_written_once_the_shell_opens() {
     a.h.get_by_role(Role::Button, "Save").click();
     a.h.settle();
     assert!(a.settings.value("ssh.startup", Vec::<Vec<String>>::new()).get_untracked().is_empty());
-    a.menu("tmuxed", "Connect");
+    a.connect("tmuxed");
     a.wait(|a| tabs(a) == 4 && a.welcomed() == 1, "connected without it");
     assert_eq!(said(&a, "echo:"), 0);
 }
@@ -256,6 +263,6 @@ fn without_a_master_password_the_dialog_sets_one_and_a_key_file_is_chosen() {
     assert!(a.model.lock().can_lock());
     let saved = a.model.hosts().into_iter().find(|it| it.name == "keyed").unwrap();
     assert_eq!(saved.remote.auth, Auth::Key(file.clone()), "the key file chosen");
-    a.menu("keyed", "Connect");
+    a.connect("keyed");
     a.wait(|a| a.welcomed() == 1, "signed in by the saved passphrase");
 }

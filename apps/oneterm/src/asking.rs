@@ -17,9 +17,14 @@ const SIGN_IN: usize = 2;
 const FAILED: usize = 3;
 
 /// The dialog a phase shows.
-fn which(phase: &Phase) -> Option<usize> {
+/// The dialog of a phase; a saved host's Connect dialog says connecting, the failure and the
+/// password refused itself.
+fn which(phase: &Phase, opening: bool) -> Option<usize> {
     match phase {
         Phase::Done => None,
+        Phase::Connecting | Phase::Ask(Ask::Failed { .. } | Ask::Password { again: true, .. }) if opening => {
+            None
+        }
         Phase::Connecting => Some(CONNECTING),
         Phase::Ask(Ask::HostKey { .. }) => Some(HOST_KEY),
         Phase::Ask(Ask::Failed { .. }) => Some(FAILED),
@@ -29,14 +34,20 @@ fn which(phase: &Phase) -> Option<usize> {
 
 pub(crate) fn dialogs(model: &Model) -> impl View + use<> {
     let model = model.clone();
-    let shown = Rc::new(move || model.active_tab()?.focused()?.session.kept::<Conn>());
+    // The connection a Connect dialog makes, else the focused space's.
+    let opening = model.ui().opening.space;
+    let opening_now = move || opening.with(Option::is_some);
+    let shown = Rc::new(move || match opening.get() {
+        Some(space) => space.session.kept::<Conn>(),
+        None => model.active_tab()?.focused()?.session.kept::<Conn>(),
+    });
     let opens: [Signal<bool>; 4] = std::array::from_fn(|_| signal(false));
     // What the Sign in dialog's field holds: nothing kept after it is answered.
     let typed = signal(String::new());
     let following = shown.clone();
     effect(move || {
         let phase = following().map(|conn| conn.phase.get());
-        let want = phase.as_ref().and_then(which);
+        let want = phase.as_ref().and_then(|it| which(it, opening_now()));
         if want == Some(SIGN_IN) && !opens[SIGN_IN].get_untracked() {
             let user = match &phase {
                 Some(Phase::Ask(Ask::User { user, .. })) => user.clone(),
@@ -62,7 +73,7 @@ pub(crate) fn dialogs(model: &Model) -> impl View + use<> {
             let Some(conn) = untrack(|| gives_up()) else { return };
             let phase = untrack(|| conn.phase.get());
             match phase {
-                _ if which(&phase) != Some(at) => {}
+                _ if which(&phase, untrack(opening_now)) != Some(at) => {}
                 Phase::Connecting => conn.cancel(),
                 _ => conn.answer(None),
             }
@@ -160,7 +171,7 @@ fn failure(asked: Option<(Phase, String)>) -> quadra::Div {
 }
 
 /// The engine's reason as a sentence: its first letter upper case.
-fn sentence(reason: &str) -> String {
+pub(crate) fn sentence(reason: &str) -> String {
     let mut chars = reason.chars();
     chars.next().map_or_else(String::new, |first| first.to_uppercase().chain(chars).collect())
 }

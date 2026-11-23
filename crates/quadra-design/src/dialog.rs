@@ -8,27 +8,31 @@ use std::rc::Rc;
 use quadra_headless::dialog as base;
 use quadra_layout::{Align, Justify};
 use quadra_platform::Cursor;
-use quadra_prim::{Ease, Point};
-use quadra_reactive::{Signal, on_cleanup};
+use quadra_reactive::Signal;
 use quadra_tree::NodeId;
-use quadra_view::{
-    AnyView, Div, IntoProp, MountCx, NodeRef, Place, Prop, View, column, div, row, show, text, timeline,
-};
+use quadra_view::{AnyView, Div, IntoProp, MountCx, Place, Prop, View, column, div, row, text};
 
 use crate::button::{Variant, button};
 use crate::icon::icon;
-use crate::popup::{EDGE, Edge, popup};
+use crate::popup::{EDGE, popup};
 use crate::{icons, size, token};
+
+mod drawer;
+
+pub use drawer::{Drawer, drawer};
 
 type Act = Rc<dyn Fn()>;
 
-/// A button at the foot: its label and look, what it does, its key, and when it is off.
+/// A button at the foot: its label and look, what it does, its key, when it is off, whether
+/// pressing it leaves the dialog open, and its label while busy.
 struct Action {
     label: String,
     variant: Variant,
     act: Act,
     key: Option<&'static str>,
     off: Option<Rc<dyn Fn() -> bool>>,
+    stays: bool,
+    busy: Option<(String, Rc<dyn Fn() -> bool>)>,
 }
 
 pub struct Dialog<F> {
@@ -52,7 +56,7 @@ impl<F> Dialog<F> {
     /// Pressing it runs `f` and closes the dialog.
     pub fn action(mut self, label: impl Into<String>, variant: Variant, f: impl Fn() + 'static) -> Self {
         let (label, act) = (label.into(), Rc::new(f));
-        self.actions.push(Action { label, variant, act, key: None, off: None });
+        self.actions.push(Action { label, variant, act, key: None, off: None, stays: false, busy: None });
         self
     }
 
@@ -71,6 +75,22 @@ impl<F> Dialog<F> {
                 Prop::Value(off) => Rc::new(move || off),
                 Prop::Reactive(read) => Rc::from(read),
             });
+        }
+        self
+    }
+
+    /// Pressing the last action leaves the dialog open: what it starts closes it when done.
+    pub fn stays_open(mut self) -> Self {
+        if let Some(last) = self.actions.last_mut() {
+            last.stays = true;
+        }
+        self
+    }
+
+    /// While `busy` says so, the last action reads `label` and is off (`Connecting…`).
+    pub fn busy(mut self, label: impl Into<String>, busy: impl Fn() -> bool + 'static) -> Self {
+        if let Some(last) = self.actions.last_mut() {
+            last.busy = Some((label.into(), Rc::new(busy)));
         }
         self
     }
@@ -97,132 +117,6 @@ fn head(title: &str, own: Option<AnyView>, open: Signal<bool>) -> Div {
     };
     let head = row().align_items(Align::Center).gap(4.0).padding_x(12.0).padding_top(8.0);
     head.padding_bottom(4.0).child(headline).child(cross)
-}
-
-type Head = Rc<dyn Fn() -> AnyView>;
-
-pub struct Drawer<F> {
-    open: Signal<bool>,
-    edge: Edge,
-    title: String,
-    size: f32,
-    body: F,
-    beside: bool,
-    own: Option<Head>,
-}
-
-/// A dialog that lies along an edge of the window, over all of its length, while `open` is
-/// true: a title over what `body` builds. It reaches 360 px into the window.
-pub fn drawer<V, F>(open: Signal<bool>, edge: Edge, title: impl Into<String>, body: F) -> Drawer<F>
-where
-    V: View + 'static,
-    F: Fn() -> V + 'static,
-{
-    Drawer { open, edge, title: title.into(), size: 360.0, body, beside: false, own: None }
-}
-
-impl<F> Drawer<F> {
-    /// How far the drawer reaches into the window, with its border.
-    pub fn size(mut self, px: f32) -> Self {
-        self.size = px;
-        self
-    }
-
-    /// In the layout where it stands, next to the content, not over the window: nothing
-    /// outside closes it and the focus is not kept in it.
-    pub fn beside(mut self) -> Self {
-        self.beside = true;
-        self
-    }
-
-    /// A row of the app's in the place of the title, before the cross.
-    pub fn head<H: View + 'static>(mut self, row: impl Fn() -> H + 'static) -> Self {
-        self.own = Some(Rc::new(move || AnyView::new(row())));
-        self
-    }
-}
-
-/// A drawer beside the content while it is open: the focus goes into it, and back to what
-/// had it when it closes, unless it went elsewhere.
-struct Beside {
-    page: Div,
-}
-
-impl View for Beside {
-    fn mount(self, cx: &mut MountCx) -> NodeId {
-        let (before, mine) = (cx.tree.focused(), NodeRef::new());
-        let id = self.page.node_ref(&mine).mount(cx);
-        cx.tree.focus_first(id);
-        let handle = cx.handle.clone();
-        on_cleanup(move || {
-            handle.with(move |tree| {
-                // Gone with the drawer, or still in it: not where the user put it since.
-                let inside = |tree: &quadra_tree::Tree, mut at: NodeId| loop {
-                    match Some(at) == mine.get() {
-                        true => break true,
-                        false => match tree.parent(at) {
-                            Some(up) => at = up,
-                            None => break false,
-                        },
-                    }
-                };
-                let lost = tree.focused().is_none_or(|at| !tree.is_alive(at) || inside(tree, at));
-                if let Some(before) = before.filter(|&it| lost && tree.is_alive(it)) {
-                    tree.focus(before);
-                }
-            })
-        });
-        id
-    }
-}
-
-impl<V, F> View for Drawer<F>
-where
-    V: View + 'static,
-    F: Fn() -> V + 'static,
-{
-    fn mount(self, cx: &mut MountCx) -> NodeId {
-        let Drawer { open, edge, title, size, body, beside, own } = self;
-        let content = move || {
-            let page = base::page(column().grow(1.0), title.clone());
-            // Beside the content the page is the drawer, its line within its size.
-            let line = if beside { 0.0 } else { EDGE };
-            let page = match edge {
-                Edge::Bottom => page.height(size - line),
-                _ => page.width(size - line),
-            };
-            let middle = div().grow(1.0).padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2);
-            // It slides in from its edge: put past it, then moved to its place over 200 ms.
-            let away = match edge {
-                Edge::Left => Point::new(-size, 0.0),
-                Edge::Right => Point::new(size, 0.0),
-                Edge::Bottom => Point::new(0.0, size),
-            };
-            let slide = timeline().to(0, Ease::Linear, |s| s.translate(away));
-            let page = page.animate(slide.to(200, Ease::Out, |s| s.translate(Point::ZERO)));
-            page.child(head(&title, own.as_ref().map(|own| own()), open)).child(middle.child(body()))
-        };
-        if !beside {
-            return popup(open, edge, None, content).mount(cx);
-        }
-        let shown = move || {
-            let page = content().shrink(0.0).bg(token::PANEL).border_color(token::LINE_STRONG);
-            let page = match edge {
-                Edge::Left => page.border_right(1.0),
-                Edge::Right => page.border_left(1.0),
-                Edge::Bottom => page.border_top(1.0),
-            };
-            // Escape gives it up while the focus is in it.
-            let page = page.tab_index(-1).key_context(quadra_headless::action::POPUP);
-            Beside { page: page.on_action::<quadra_headless::action::Cancel>(move |_| open.set(false)) }
-        };
-        // Closed, it takes no room.
-        let stand = match edge {
-            Edge::Bottom => column().shrink(0.0),
-            _ => row().shrink(0.0),
-        };
-        show(move || open.get(), shown).container(stand).mount(cx)
-    }
 }
 
 /// A question with two answers: `yes` does `on_yes`, Cancel does nothing, and both close the
@@ -261,15 +155,31 @@ where
             let mut foot = row().gap(4.0).padding(8.0).justify(Justify::End);
             foot = foot.border_top(1.0).border_color(token::LINE);
             for at in actions.iter() {
-                let press = base::answer(open, at.act.clone());
-                let face = button(at.label.clone()).variant(at.variant).on_click(press);
+                let press: Rc<dyn Fn()> = match at.stays {
+                    true => at.act.clone(),
+                    false => Rc::new(base::answer(open, at.act.clone())),
+                };
+                let face = match at.busy.clone() {
+                    Some((busy_label, busy)) => {
+                        let (label, busy) = (at.label.clone(), busy.clone());
+                        let says = Rc::new(move || if busy() { busy_label.clone() } else { label.clone() });
+                        // The label alone names it, not the key after it.
+                        let names = says.clone();
+                        button(move || says()).label(move || names())
+                    }
+                    None => button(at.label.clone()),
+                };
+                let face = face.variant(at.variant).on_click(move || press());
                 let face = match at.key {
                     Some(key) => face.shortcut(key),
                     None => face,
                 };
-                foot = foot.child(match at.off.clone() {
-                    Some(off) => face.disabled(move || off()),
-                    None => face,
+                let (off, busy) = (at.off.clone(), at.busy.clone().map(|it| it.1));
+                foot = foot.child(match (off, busy) {
+                    (None, None) => face,
+                    (off, busy) => face.disabled(move || {
+                        off.as_ref().is_some_and(|it| it()) || busy.as_ref().is_some_and(|it| it())
+                    }),
                 });
             }
             page.child(foot)

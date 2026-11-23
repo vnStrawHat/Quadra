@@ -62,7 +62,7 @@ impl App {
 }
 
 #[test]
-fn a_host_added_is_saved_listed_and_connects_on_a_double_click() {
+fn a_host_added_is_saved_listed_and_connects_from_its_dialog() {
     let mut a = app();
     // A local space has no network in the status bar.
     assert!(!a.h.has_text("local shell"));
@@ -74,9 +74,13 @@ fn a_host_added_is_saved_listed_and_connects_on_a_double_click() {
     assert!(a.h.has_text("Production") && a.h.has_text("Staging"));
 
     let tabs = a.made.borrow().len();
+    // A click opens its Connect dialog; its Connect connects.
     a.click_host("prod-api-01", 1);
-    assert_eq!(a.made.borrow().len(), tabs, "one click connects to nothing");
-    a.click_host("prod-api-01", 2);
+    assert!(a.h.has_text("Connect to prod-api-01"), "{}", a.h.semantics());
+    assert_eq!(a.made.borrow().len(), tabs, "nothing before Connect");
+    a.h.get_by_role(Role::Button, "Connect").click();
+    a.h.settle();
+    assert!(!a.h.has_text("Connect to prod-api-01"), "the dialog closes");
     let launch = a.made.borrow().last().cloned().unwrap();
     assert_eq!(launch.ssh.map(|it| it.target.label()), Some("trung@10.20.1.14".into()));
     assert!(a.h.has_text("1 ssh \u{B7} 1 space"), "the tab counts its kinds");
@@ -105,6 +109,8 @@ fn a_host_reached_through_another_carries_its_way_and_forwards() {
     assert_eq!(a.rows()[1][5..], ["bastion", "5432:localhost:5432"]);
 
     a.click_host("db", 2);
+    a.h.get_by_role(Role::Button, "Connect").click();
+    a.h.settle();
     let remote = a.made.borrow().last().cloned().unwrap().ssh.unwrap();
     let hops: Vec<String> = remote.jumps.iter().map(|it| it.target.label()).collect();
     assert_eq!(hops, ["ops@203.0.113.5"]);

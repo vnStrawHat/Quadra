@@ -125,16 +125,12 @@ fn host_row(model: &Model, host: Host) -> impl View + use<> {
         .bg(color)
         .role(Role::Image)
         .label(format!("Colour tag: {tag}"));
-    let remote = host.remote.clone();
+    let named = host.name.clone();
     let face = line()
         .role(Role::Button)
         .label(host.name.clone())
-        // A double click; a reader connects by the row's menu (Connect).
-        .on_click(move |e| {
-            if e.clicks == 2 {
-                opens.connect_to(remote.clone(), false)
-            }
-        })
+        // Its Connect dialog; a double click's second press, outside it, opens it again.
+        .on_click(move |_| opens.ui().opening.host.set(Some((named.clone(), false))))
         .child(square)
         .child(div().grow(1.0).min_width(Length::Px(0.0)).child(text(host.name.clone()).ellipsis()))
         .child(address(short(&host.remote.target)));
@@ -151,11 +147,12 @@ pub(crate) fn short(target: &Target) -> String {
 
 fn host_menu(model: &Model, host: &Host) -> Vec<MenuItem> {
     let (tab, space, gone, forgets) = (model.clone(), model.clone(), model.clone(), model.clone());
-    let (a, b, name) = (host.remote.clone(), host.remote.clone(), host.name.clone());
+    let (a, b, name) = (host.name.clone(), host.name.clone(), host.name.clone());
     let (editing, edited) = (model.ui().editing, host.name.clone());
+    let (tab, space) = (tab.ui().opening.host, space.ui().opening.host);
     let mut items = vec![
-        MenuItem::new("Connect").on_select(move || tab.connect_to(a.clone(), false)),
-        MenuItem::new("Connect in a new space").on_select(move || space.connect_to(b.clone(), true)),
+        MenuItem::new("Connect").on_select(move || tab.set(Some((a.clone(), false)))),
+        MenuItem::new("Connect in a new space").on_select(move || space.set(Some((b.clone(), true)))),
         MenuItem::new("Edit…").on_select(move || editing.set(Some(edited.clone()))),
     ];
     if model.sealed(&host.name).is_some() {

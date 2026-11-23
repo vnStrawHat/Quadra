@@ -490,6 +490,14 @@ The status bar has no host group; a remote space shows its network instead, befo
 memory: `↓ 12 KB/s ↑ 1.1 KB/s`, the first hop's socket counted (`traffic.rs`). A server's
 OSC 7 sets the status bar's directory (`asking.rs`).
 
+A saved host connects from its Connect dialog (`host_connect.rs`): a click on it, or its menu's
+Connect or Connect in a new space, shows `Connect to <name>` with what is saved (Username, which
+takes `user@host:port` for this connection, Auth, the key file, the password), the focus in the
+first field missing. Connect reads `Connecting…` and is off while it connects; the tab or the
+space opens only once the shell is open; a failure or a refused password is a danger alert in the
+dialog (`connect_host.rs`). The kit's dialog has `.stays_open()` and `.busy(label, ..)`, and the
+drawer moved to `dialog/drawer.rs`.
+
 ### Status marks a step up, tabs without a hover box (2026-11-22)
 
 A status mark (and a status label's) is 14 px unless told, a step up from 12 beside 14 px

@@ -35,6 +35,8 @@ pub struct Ui {
     /// Connections waiting for the master password to open their saved secrets, and whether
     /// in a space here.
     pub unlocking: Signal<Option<(Vec<crate::shells::Remote>, bool)>>,
+    /// A saved host's Connect dialog, and the space it is connecting.
+    pub opening: crate::host_connect::Opening,
     /// Command completion: its settings and the app's one engine.
     pub complete: crate::complete::Completion,
 }
@@ -85,6 +87,7 @@ impl Model {
                 dock: signal(false),
                 expanded: signal(false),
                 unlocking: signal(None),
+                opening: crate::host_connect::Opening::new(),
                 complete: crate::complete::Completion::new(),
             },
             lock: Lock::new(prefs),
@@ -198,7 +201,7 @@ impl Model {
 
     /// A tab running a launch, after the others, shown.
     pub fn new_tab_with(&self, launch: Launch) {
-        self.insert_tab(usize::MAX, launch);
+        self.insert_tab(usize::MAX, self.space(launch));
     }
 
     /// A tab after it starting what its focused space started: the same host, else a shell.
@@ -207,7 +210,7 @@ impl Model {
         let ssh = tab.and_then(|tab| quadra::untrack(|| tab.focused())).and_then(|space| space.remote);
         self.insert_tab(
             self.index_of(id).map_or(usize::MAX, |at| at + 1),
-            ssh.map_or_else(|| self.launch(None), |it| self.launch_to(it)),
+            self.space(ssh.map_or_else(|| self.launch(None), |it| self.launch_to(it))),
         );
     }
 
@@ -251,8 +254,7 @@ impl Model {
         }
     }
 
-    fn insert_tab(&self, at: usize, launch: Launch) {
-        let space = self.space(launch);
+    pub(crate) fn insert_tab(&self, at: usize, space: Space) {
         let layout = quadra_design::work::Pane::leaf(space.id.to_string());
         let tab = self.0.owner.run(|| Tab {
             id: self.id(),

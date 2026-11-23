@@ -133,3 +133,26 @@ fn the_middle_button_closes_a_tab_of_the_folded_rail() {
     h.settle();
     assert_eq!(tabs(&h).len(), 1);
 }
+
+#[test]
+fn closing_the_last_tab_closes_the_window() {
+    for vertical in [true, false] {
+        let mut h = app(vertical);
+        h.key(Key::T, Mods::CTRL);
+        h.settle();
+        let close = |h: &mut Harness| {
+            let button = h.get_by_role(Role::Button, "Close tab").node();
+            let at = h.tree.window_rect(button).center();
+            h.click(at.x, at.y);
+            h.settle();
+        };
+        close(&mut h);
+        assert!(h.tree.take_window_requests().is_empty(), "a tab is left");
+        close(&mut h);
+        assert_eq!(
+            h.tree.take_window_requests(),
+            [quadra_tree::WindowRequest::Close],
+            "vertical: {vertical}"
+        );
+    }
+}

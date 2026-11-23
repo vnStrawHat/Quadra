@@ -16,6 +16,7 @@ mod narrow;
 mod rename;
 
 pub(crate) use self::menu::{ASK, new_menu};
+pub(crate) use self::rename::dialog as rename_dialog;
 use crate::marks;
 use crate::model::{Model, Tab};
 
@@ -90,7 +91,6 @@ fn full(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         .child(heading)
         .child(strip)
         .child(menu)
-        .child(rename::dialog(model))
         // While SFTP is expanded the rail holds the tabs alone.
         .child(
             div()

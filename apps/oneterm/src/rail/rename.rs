@@ -2,13 +2,15 @@
 //! name in a field; Enter or Rename keeps it (an empty one gives the program's title back),
 //! Cancel, Escape or the cross leave it as it was.
 
-use quadra::{View, effect, signal, untrack};
-use quadra_design::{Variant, input};
+use quadra::{View, column, effect, signal, untrack};
+use quadra_design::{Variant, field, input};
 
 use crate::model::Model;
 
 pub(crate) fn dialog(model: &Model) -> impl View + use<> {
     let (renaming, tabs) = (model.renaming(), model.tabs());
+    // The strip renames in place; a folded rail has no rename.
+    let (vertical, folded) = (model.vertical(), model.prefs().rail_folded);
     let (open, value) = (signal(false), signal(String::new()));
     let tab = move || {
         let id = renaming.get_untracked()?;
@@ -16,6 +18,8 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
     };
     effect(move || {
         if renaming.get().is_some()
+            && vertical.get()
+            && !folded.get()
             && let Some(tab) = untrack(tab)
         {
             value.set(untrack(|| tab.name.get().unwrap_or_else(|| tab.title())));
@@ -36,13 +40,16 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
         }
     };
     let body = move || {
-        input(value).width(320.0).test_id("rename-tab").on_submit(move |_: &str| {
+        let typed = input(value).width(296.0).test_id("rename-tab").on_submit(move |_: &str| {
             keep();
             open.set(false);
-        })
+        });
+        // As SFTP's Rename: 320 px, the field 12 px from each side.
+        column().width(320.0).padding_x(12.0).child(field("Name", typed))
     };
-    quadra_design::dialog(open, "Rename tab", body)
-        .action("Cancel", Variant::Secondary, || {})
-        .action("Rename", Variant::Primary, keep)
-        .shortcut("Enter")
+    quadra_design::dialog(open, "Rename tab", body).action("Cancel", Variant::Secondary, || {}).action(
+        "Rename",
+        Variant::Primary,
+        keep,
+    )
 }

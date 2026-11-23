@@ -287,7 +287,7 @@ fn the_rail_folds_to_its_icons_and_unfolds() {
     a.h.tree.act(first, &quadra::SemanticAction::Click);
     a.h.settle();
     assert!(a.h.query(|n| n.semantics.role == Role::Tab && n.semantics.selected).contains(&first));
-    assert!(a.h.has_text("Terminal, idle"), "a tab's name says its signal");
+    assert!(a.h.has_text("Terminal") && !a.h.has_text("idle"), "no signal said, none shown");
     a.h.get_by_role(Role::Button, "New terminal").click();
     a.h.settle();
     a.h.get_by_role(Role::MenuItem, "Local shell").click();

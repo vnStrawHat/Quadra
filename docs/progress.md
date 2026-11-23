@@ -471,6 +471,11 @@ in a group of its own; while the focused space logs, the status bar has a red do
 each half second (`Session::logging` looked at then, as a log can end on its feeding thread).
 Tests: `apps/oneterm/tests/rail.rs`, `menus.rs`, `signals.rs`.
 
+Then: OSC 7501 shows only what a program sent (no `idle` word of a tab that said nothing);
+the Rename tab dialog laid out as SFTP's Rename, a Name field 12 px in; the last tab closed by
+any way (Close tab, the middle button, its menu, its program ending) closes the window, as
+Ctrl+W did alone before (`rail.rs`).
+
 ### Status marks a step up, tabs without a hover box (2026-11-22)
 
 A status mark (and a status label's) is 14 px unless told, a step up from 12 beside 14 px

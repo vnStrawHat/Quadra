@@ -130,10 +130,9 @@ fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_word_under_its_icon() {
     a.key(Key::T, Mods::CTRL);
     let fold =
         a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Collapse tabs to icons");
-    // Expanded, an idle tab says so in the colour the folded rail gives it.
+    // A tab whose program said no state shows none, expanded or folded.
     let theme = a.h.tree.theme().clone();
-    let idle = a.h.query(|n| n.semantics.role == Role::Text && n.semantics.name == "idle")[0];
-    assert_eq!(a.h.tree.inherited(idle).color, theme.resolve(quadra_design::token::HUE_PURPLE.into()));
+    assert!(!a.says("idle"));
     a.h.tree.act(fold[0], &quadra::SemanticAction::Click);
     a.h.settle();
     a.feed(0, b"\x1b]7501;state=blocked:id=deploy\x07");
@@ -144,17 +143,15 @@ fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_word_under_its_icon() {
     };
     let (blocked, warn) = word(&a, "blocked");
     let (part, accent) = word(&a, "64%");
-    let (idle, purple) = word(&a, "idle");
     assert_eq!(warn, theme.resolve(quadra_design::token::WARN.into()));
     assert_eq!(accent, theme.resolve(quadra_design::token::ACCENT.into()));
-    assert_eq!(purple, theme.resolve(quadra_design::token::HUE_PURPLE.into()));
     // Under the icon of a tab of 46 px, in a rail of 56.
     let tabs = a.h.query(|n| n.semantics.role == Role::Tab);
     let first = a.h.tree.window_rect(tabs[0]);
     assert_eq!((first.width, first.height), (55.0, 46.0), "56 with the line at its right");
     assert!(first.contains(blocked.center()) && blocked.y > first.y + 16.0);
     assert!(a.h.tree.window_rect(tabs[1]).contains(part.center()));
-    assert!(a.h.tree.window_rect(tabs[2]).contains(idle.center()));
+    assert!(!a.says("idle"), "the third said nothing");
     assert!(a.says("Terminal, blocked, needs permission"));
     // Working with no progress: the seam is the kit's busy bar; with one, the bar of its part.
     let busy = |a: &App| a.h.query(|n| n.semantics.role == Role::ProgressBar && n.semantics.name == "Busy");
@@ -184,7 +181,11 @@ fn a_folded_tab_s_tooltip_at_its_right_says_where_its_shell_is_and_what_it_runs(
     a.h.advance(std::time::Duration::from_millis(500));
     a.h.settle();
     // Its words, then where the shell is and the program it started (the OS's shell).
-    assert!(a.says("Terminal, idle") && a.says(&cwd) && a.says("cmd.exe"), "{}", a.h.semantics());
+    assert!(
+        a.says("Terminal") && !a.says("idle") && a.says(&cwd) && a.says("cmd.exe"),
+        "{}",
+        a.h.semantics()
+    );
     let tip = a.h.tree.window_rect(a.h.tree.overlays().next().expect("the tooltip"));
     assert!(tip.x >= tab.right(), "at the tab's right: {tip:?} {tab:?}");
 }

@@ -153,6 +153,16 @@ impl OneTerm {
         let cards = div()
             .display(locked::shown(move || !lock.locked.get()))
             .child(self.model.notices().above(30.0).host());
+        // The last tab gone, however it went (Close tab, Ctrl+W, its program ended), 1Term
+        // closes as its close button does. The model starts with a tab.
+        if let Some(window) = window.clone() {
+            let tabs = self.model.tabs();
+            quadra::effect(move || {
+                if tabs.with(Vec::is_empty) {
+                    window.close();
+                }
+            });
+        }
         let windows = use_context::<quadra::Windows>();
         let closing = (self.model.clone(), window.clone());
         locked::watches(quadra_design::root(), lock)
@@ -160,7 +170,7 @@ impl OneTerm {
                 if !run(&model, command, windows.as_ref())
                     && let Some(window) = &window
                 {
-                    window.close(); // the last tab went, or Quit: as the close button does
+                    window.close(); // Quit: as the close button does
                 }
             })
             .on_close({
@@ -178,6 +188,7 @@ impl OneTerm {
             .child(asking::dialogs(&self.model))
             .child(hostlist::add_dialog(&self.model))
             .child(vault::dialog(&self.model))
+            .child(rail::rename_dialog(&self.model))
     }
 }
 
@@ -195,7 +206,7 @@ fn hosts_panel(model: &Model) -> impl View + use<> {
         .child(hostlist::hosts(model))
 }
 
-/// Does a command; false when no tab is left. Locked, only locking does anything.
+/// Does a command; false for Quit. Locked, only locking does anything.
 fn run(model: &Model, command: Command, windows: Option<&quadra::Windows>) -> bool {
     model.lock().active();
     if model.lock().locked.get_untracked() {
@@ -205,7 +216,7 @@ fn run(model: &Model, command: Command, windows: Option<&quadra::Windows>) -> bo
         Command::NewTab => model.new_tab(),
         Command::Split => model.split(),
         Command::SplitTo(side) => model.split_to(side),
-        Command::CloseSpace => return model.close_focused(),
+        Command::CloseSpace => _ = model.close_focused(), // the last: the window closes
         Command::FocusNext(forward) => model.focus_next(forward),
         Command::Lock => model.lock().lock_now(),
         Command::QuickConnect => model.ui().connecting.set(true),

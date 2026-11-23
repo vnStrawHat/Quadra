@@ -38,16 +38,14 @@ fn bell(px: f32) -> quadra::Div {
         .child(icon(icons::BELL).size(px).color(token::ERROR))
 }
 
-/// Idle's colour, folded or not.
-const IDLE: quadra::Token = token::HUE_PURPLE;
-
 /// The part done of a tab's progress, when the settings show it on tabs.
 fn part_of(tab: Tab) -> Option<u8> {
     tab.progress().filter(|_| tab.prefs.progress_tab.get()).and_then(percent)
 }
 
 /// What a tab says at its end: blocked, error and done as their icons, else its progress in
-/// the accent, else working's spinner, else a bell when one rang unseen, else `idle`.
+/// the accent, else working's spinner, else a bell when one rang unseen, else nothing: a
+/// program that said nothing (or is idle) shows nothing.
 pub(crate) fn tab_mark(tab: Tab) -> impl View {
     dynamic(move || {
         let state = tab.status();
@@ -64,14 +62,14 @@ pub(crate) fn tab_mark(tab: Tab) -> impl View {
             None => match state_icon(state, 14.0) {
                 Some(face) => AnyView::new(face),
                 None if tab.bells() > 0 => AnyView::new(bell(14.0)),
-                None => AnyView::new(div().text_size(12.0).text_color(IDLE).child(text("idle"))),
+                None => AnyView::new(div()),
             },
         }
     })
 }
 
 /// The word under a tab's icon in the folded rail, in its state's colour: blocked, error and
-/// done, else its progress in mono, else working, else a bell that rang unseen, else idle.
+/// done, else its progress in mono, else working, else a bell that rang unseen, else none.
 pub(crate) fn tab_word(tab: Tab) -> impl View {
     let word = dynamic(move || {
         let (said, color, mono) = match (tab.status(), part_of(tab)) {
@@ -81,7 +79,7 @@ pub(crate) fn tab_word(tab: Tab) -> impl View {
             (_, Some(n)) => (format!("{n}%"), token::ACCENT, true),
             (ProgramState::Working, _) => ("working".to_string(), token::ACCENT, false),
             _ if tab.bells() > 0 => ("bell".to_string(), token::ERROR, false),
-            _ => ("idle".to_string(), IDLE, false),
+            _ => (String::new(), token::TEXT_2, false),
         };
         let word = row().text_color(color).child(text(said));
         AnyView::new(if mono { word.font_family(fonts::MONO) } else { word })
@@ -89,7 +87,7 @@ pub(crate) fn tab_word(tab: Tab) -> impl View {
     word.container(row().height(by_text(14.0)).align_items(Align::Center).text_size(10.0).shrink(0.0))
 }
 
-/// What a reader hears of a tab in the folded rail: its title, then its signal.
+/// What a reader hears of a tab in the folded rail: its title, then its signal if it has one.
 pub(crate) fn tab_said(tab: Tab) -> String {
     let state = tab.status();
     let signal = match state_look(state) {
@@ -98,7 +96,7 @@ pub(crate) fn tab_said(tab: Tab) -> String {
             (Some(n), ..) => format!("working, {n} percent"),
             (_, ProgramState::Working, _) => "working".into(),
             (_, _, 1..) => "bell rang".into(),
-            _ => "idle".into(),
+            _ => return tab.title(),
         },
     };
     format!("{}, {signal}", tab.title())

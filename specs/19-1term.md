@@ -98,8 +98,8 @@ Collapsed (Collapse tabs to icons, in the heading or the status bar, or the sett
 56 px: Expand tabs at the top, then a box of 46 px a tab: its icon of 16 px (the secondary text
 colour, the accent while it shows) and 2 px under it its signal as one word of 10 px on a line
 of 14 in the state's colour: `blocked` in warn, `error` in error, `done` in ok, its progress
-(`64%`, mono) or `working` in the accent, `bell` in error when one rang unseen, else `idle` in
-purple (the colours of the signals expanded, an idle one purple there too); a progress also has the seam bar, and working with no progress makes the seam the
+(`64%`, mono) or `working` in the accent, `bell` in error when one rang unseen, else nothing
+(the colours of the signals expanded; a program that said no state, or is idle, shows none); a progress also has the seam bar, and working with no progress makes the seam the
 kit's busy bar (`progress_busy()`, 2 px on `line_strong`), a piece of accent that crosses it
 again and again. No line between them (`panel_hover` at half under the pointer), the active
 one on the pressed editor colour, a pixel wider, with the accent bar; the title and signal are its name
@@ -116,14 +116,15 @@ of a dashed 1 px strong line (radius 6, the hover fill inside it) around the `+`
 at its right.
 
 Click selects; middle closes (collapsed too); double-click renames (in the Rename tab dialog,
-the name in a field, Enter keeps it; in the strip in place); the right button opens the tab menu (Rename,
+as SFTP's Rename: 320 px, a Name field 12 px from its sides, Cancel and Rename; Enter keeps it;
+in the strip in place); the last tab closed, however it goes, closes the window; the right button opens the tab menu (Rename,
 Duplicate, Close, Close others, Close to the right: the tabs after it, asked first as a close
 is when one has edits). Rows drag to reorder.
 
 **Horizontal variant** (setting "Tabs: vertical | horizontal"): no rail; a strip of 32 px and a
 strong line under the title bar, one tab per button split by strong lines (icon, title, then its signal: the state's icon,
 else the progress in mono in the accent with a 2 px bar along the tab's bottom, else a bell, else
-`idle`), the active one on the pressed editor colour, semibold, an accent line of 3 px along
+nothing), the active one on the pressed editor colour, semibold, an accent line of 3 px along
 its top and Close tab at its end; New terminal (`+`, the `+` menu under it) after the last, "Vertical tabs" (Switch to vertical tabs, a
 panel icon and the word) at the end. The title bar's SSH hosts button opens the rail's hosts as
 a panel of 248 px at the left.
@@ -247,7 +248,7 @@ all on but where it says. A change applies at once (`Engine::set_config`).
 
 | Signal | Tab | Space header | Bar | Else |
 |---|---|---|---|---|
-| OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else `idle` in purple, as the folded rail's | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
+| OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else nothing: OSC 7501 shows only what a program sent, and idle shows none | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
 | OSC 9;4 progress | the percentage in mono and the accent at the end, a 2 px accent bar along the row's lower seam | the percentage | `build`, a 56 px line and the percentage | |
 | BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the title bar's count | |
 | OSC 9, 777, 99 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and the sequence: `OSC 9`, `OSC 777` or `OSC 99`), 6 s or until dismissed (setting) |

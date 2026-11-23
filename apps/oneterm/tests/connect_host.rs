@@ -24,6 +24,7 @@ fn app(name: &str) -> App {
     std::fs::create_dir_all(dir.join("keys")).unwrap();
     let (port, _) = serve(51);
     trust(port, 51, &dir.join("known_hosts"));
+    let known = dir.join("known_hosts");
     let sessions: NewSession = Rc::new(move |launch: oneterm::Launch| match launch.ssh {
         Some(_) => remote_shell_with(launch, |target| {
             let mut o = options(target.port, &dir, Auth::Auto);
@@ -45,6 +46,7 @@ fn app(name: &str) -> App {
     });
     h.settle();
     let model = kept.borrow().clone().unwrap();
+    model.ui().opening.known_hosts.set(known);
     App { h, model, port }
 }
 
@@ -105,7 +107,8 @@ fn the_focus_is_in_what_is_missing_and_the_tab_opens_once_connected() {
     a.save("box", &format!("127.0.0.1:{}", a.port));
     let tabs = a.tabs();
     a.click("box");
-    assert!(a.h.has_text("Connect to box") && a.h.has_text(&format!("127.0.0.1:{}", a.port)));
+    assert!(a.h.has_text("Connect to box") && a.h.has_text("127.0.0.1"));
+    assert!(a.h.has_text(&format!("port {}", a.port)) && a.h.has_text("Known"), "{}", a.h.semantics());
     assert!(a.focused("connect-user"), "no user saved\n{}", a.h.semantics());
     // A user, a wrong password: Connecting… and off while it connects, then refused, no tab.
     a.h.get_by_test_id("connect-user").set_value("tester");
@@ -114,6 +117,7 @@ fn the_focus_is_in_what_is_missing_and_the_tab_opens_once_connected() {
     a.press_connect();
     let off = a.h.query(|n| n.semantics.name == "Connecting\u{2026}" && n.semantics.disabled);
     assert_eq!(off.len(), 1, "{}", a.h.semantics());
+    assert!(a.h.has_text("Reach host") && a.h.has_text("Authenticate"), "the steps\n{}", a.h.semantics());
     a.wait(|a| a.h.has_text("Permission denied: the password was refused."), "refused");
     assert!(a.h.has_text("Could not connect") && a.h.has_text("Connect to box"));
     assert_eq!(a.tabs(), tabs, "no tab for a failure");
@@ -134,6 +138,11 @@ fn the_username_s_host_and_port_take_the_saved_ones_place_and_a_failure_is_an_al
     let tabs = a.tabs();
     a.click("far");
     assert!(a.focused("connect-password"), "Password with none saved\n{}", a.h.semantics());
+    // A key not in the known hosts: Connect is off until it is trusted.
+    assert!(a.h.has_text("New"), "{}", a.h.semantics());
+    assert!(a.h.query(|n| n.semantics.name == "Connect" && n.semantics.disabled).len() == 1);
+    a.h.get_by_test_id("connect-trust").click();
+    a.h.settle();
     a.press_connect();
     a.wait(
         |a| a.h.has_text("Could not connect") && !a.h.query(|n| n.semantics.name == "Connect").is_empty(),
@@ -147,4 +156,31 @@ fn the_username_s_host_and_port_take_the_saved_ones_place_and_a_failure_is_an_al
     a.wait(|a| a.tabs() == tabs + 1 && a.welcomed(), "connected to the port typed");
     let saved = a.model.hosts().into_iter().find(|it| it.name == "far").unwrap();
     assert_eq!(saved.remote.target.port, dead, "the saved host stays as it was");
+}
+
+#[test]
+fn edit_host_returns_to_the_dialog_and_save_keeps_what_worked() {
+    let mut a = app("connect-save");
+    a.save("box", &format!("127.0.0.1:{}", a.port));
+    a.click("box");
+    assert!(a.h.query(|n| n.semantics.name == "Connect" && n.semantics.disabled).len() == 1, "no user");
+    // Edit host… opens the editor; Cancel shows the Connect dialog again.
+    a.h.get_by_role(Role::Button, "Edit host\u{2026}").click();
+    a.h.settle();
+    assert!(a.h.has_text("Edit box") && !a.h.has_text("Connect to box"), "{}", a.h.semantics());
+    a.h.get_by_role(Role::Button, "Cancel").click();
+    a.h.settle();
+    a.h.advance(Duration::from_millis(20));
+    a.h.settle();
+    assert!(a.h.has_text("Connect to box"), "back\n{}", a.h.semantics());
+    // A user and the password, saved to the host once they worked.
+    a.h.get_by_test_id("connect-user").set_value("tester");
+    a.h.get_by_test_id("connect-password").set_value("secret");
+    a.h.get_by_test_id("connect-save").click();
+    a.h.settle();
+    let tabs = a.tabs();
+    a.press_connect();
+    a.wait(|a| a.tabs() == tabs + 1 && a.welcomed(), "connected");
+    let saved = a.model.hosts().into_iter().find(|it| it.name == "box").unwrap();
+    assert_eq!(saved.remote.target.user, "tester");
 }

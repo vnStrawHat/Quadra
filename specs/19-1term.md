@@ -469,10 +469,8 @@ thread never waits on the network.
   the window shows the focused space's, one dialog for each phase, swapped as the phase moves;
   a space whose connection is done or local shows none. Giving a dialog up (its cross, Escape,
   a press outside) is its Cancel or Close. They start with the connection, whichever way it
-  is started: Quick connect, a host or a recent target in the `+` menu; for a saved host's
-  Connect dialog (below) only the questions it does not ask (Unknown host, a key's passphrase,
-  a jump host's password, a user), its own Connect saying it connects and its alert the
-  failure.
+  is started: Quick connect, a host or a recent target in the `+` menu; none for a saved host's
+  Connect dialog (below), which shows each phase itself.
   - **Connecting** (`Connecting to user@host…`): Cancel (`Ssh::cancel`). It closes by itself
     when the shell opens, and the focus is the space's.
   - **Unknown host**: `The authenticity of host 'host' can't be established.`, `ssh-ed25519
@@ -523,20 +521,38 @@ thread never waits on the network.
   filter (on the name and the target, whatever the case), then the hosts by group in the order
   first met (a click on a group's heading folds it), each a row of the square of its colour
   tag, its name and its address. A click opens its **Connect dialog**, as do its menu's
-  Connect and Connect in a new space: titled `Connect to <name>`, it says where it goes
-  (`host:port`, through the jump host) and holds what is saved: Username (the saved user;
-  it takes `user` or `user@host:port`, and what it gives of them takes the saved one's
-  place for this connection, the rest staying the saved), Auth (the saved, changeable here),
-  the key file (Key file) and the password (Auto, Password; the passphrase for Key file; a
-  saved one is used when it is left empty, the empty password else). The focus is in the
-  first field missing: the user, the key file of Key file, the password of Password with
-  none saved. Connect (Enter in a field) reads `Connecting…` and is off while it connects;
-  the tab, or the space beside the focused one, opens only once the shell is open. A
-  failure, or a password refused, shows in an alert of the danger tone over the fields
-  (`Could not connect` and why), the dialog stays, the focus in the password when it was
-  refused; Cancel gives the connecting up. A saved secret whose vault is locked asks the
-  master password first, and connects as before. Its menu has Connect, Connect in a new space, Edit… (the dialog of Add SSH host,
-  filled, titled Edit SSH host; a new name takes the old one's place), Forget password (with
+  Connect and Connect in a new space. Its head is the host's colour tag (10 px), `Connect to
+  <name>` and the group at the right. Under it, in rows of an 88 px label and a value:
+  Address (the host in mono, `port N` muted), Jump host (or None), Host key (`Known` with a
+  green check and the key's kind and `SHA256:` fingerprint cut to its ends, from the known
+  hosts; or `New` with a warning). Then the fields, two to a row: Username (the saved user,
+  `Required`, with `This host has no saved username.` under it when there is none; it takes
+  `user` or `user@host:port`, and what it gives of them takes the saved one's place for this
+  connection) beside Auth method (Auto, SSH agent, Key file, Password; the saved one, `Saved
+  for this host.` or `Saved for this host: <auth>` under it); for Key file the key file
+  (mono) beside the passphrase; for Auto and Password the password across, both with the
+  eye that shows what was typed (a saved one is used when it is left empty, the empty password
+  else); for Auto and SSH agent a line of what they do. A new key adds a warning (`1Term has
+  not seen this host key before. Check the fingerprint with the host's owner.`) and `Trust
+  this key and add it to known hosts`, which the engine's question is then answered with.
+  Two checkboxes end it: `Save username, auth method and password (or passphrase) to this
+  host`, which saves what worked once the shell is open (the secret sealed while the vault's
+  key is in memory), and `Open in the current tab as a new space` (ticked by Connect in a new
+  space). The foot: `Edit host…` at its left, Cancel and Connect (Enter), Connect off without
+  a username or while a new key is not trusted. The focus is in the first field missing: the
+  user, the key file of Key file, the password of Password with none saved. Connecting, the
+  body is the steps (Reach jump host, Reach host, Verify host key, Authenticate, each with
+  what it is about: a check when done, a spinner under way, a dot to come, by the engine's
+  `Connecting` and `Authenticating` events) and what the server asks on the way (a user, a
+  password or passphrase, keyboard-interactive's questions, a key) in a field under them with
+  `Asked by <name>. 1Term passes your answer through and does not store it.`, answered by
+  Continue or Enter; Connect reads `Connecting…` and is off, and Cancel goes back to the form.
+  The tab, or the space beside the focused one, opens only once the shell is open. A failure,
+  or a password refused, shows in an alert of the danger tone over the fields (`Could not
+  connect` and why), the focus in the password when it was refused. `Edit host…` opens the
+  host's editor, and the Connect dialog shows again once it closes. A saved secret whose
+  vault is locked asks the master password first, and connects as before. Its menu has Connect, Connect in a new space, Edit… (the host editor,
+  filled, titled `Edit <name>`; a new name takes the old one's place), Forget password (with
   one saved), Remove. A group's heading has a menu, Connect all (n): a tab for each of its
   hosts, in their order, the last one shown. The Add dialog
   takes the name (the host when empty), the group, the target,
@@ -556,6 +572,17 @@ thread never waits on the network.
   has none. Its
   fields, pickers and selects are all 28 px high. Quick connect has
   "Save as host".
+- **The host editor** (Add SSH host, or `Edit <name>` from a row's Edit… or the Connect
+  dialog's `Edit host…`), 440 wide: its head the colour tag the host will have and the title;
+  Name; Group beside Colour tag; Address (mono; a whole `user@host:port` is taken too) beside
+  Port (88 px); Username (`Ask when connecting`, Optional.) beside Jump host; Auth method
+  beside its Password or Passphrase (with the eye; for Auto and SSH agent none), then a line of
+  what the auth does; the key file of Key file (Choose…); the master password when one is
+  needed (Saved passwords); Startup command; Forwards. The Username and Port filled take the
+  place of what the Address says. The foot: `Delete host…` at its left (Edit only), Cancel and
+  Save or Add host (Enter); `Delete host…` asks once more (`Delete <name>?` at the form's end,
+  Keep and Delete in the danger colour), and deleting forgets its saved password and startup
+  command.
 - **Saved passwords**: a vault in `ssh.vault`,
   `v1$<rounds>$<salt hex>$<sealed key hex>`: a random data key of 32 bytes sealed
   (`quadra_shell::seal`, specs/16) under a key derived from the master password (PBKDF2, its

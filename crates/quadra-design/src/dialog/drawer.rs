@@ -9,11 +9,9 @@ use quadra_reactive::{Signal, on_cleanup};
 use quadra_tree::NodeId;
 use quadra_view::{AnyView, Div, MountCx, NodeRef, View, column, div, row, show, timeline};
 
-use super::head;
+use super::{Head, head};
 use crate::popup::{EDGE, Edge, popup};
 use crate::token;
-
-type Head = Rc<dyn Fn() -> AnyView>;
 
 pub struct Drawer<F> {
     open: Signal<bool>,

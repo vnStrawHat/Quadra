@@ -9,21 +9,13 @@ use super::form::Form;
 use crate::locked::shown;
 use crate::model::Model;
 
-const W: f32 = 392.0;
+const W: f32 = 416.0;
 
-/// The password (auth Password) or the key's passphrase (Key file), while that auth is chosen;
-/// under it the master password while its key is not in memory, or a new one and again while
-/// there is none.
-pub(super) fn fields(model: &Model, form: Form, editing: Option<String>) -> impl View + use<> {
+/// Under the password or passphrase typed, the master password while its key is not in memory,
+/// or a new one and again while there is none.
+pub(super) fn fields(model: &Model, form: Form) -> impl View + use<> {
     let lock = model.lock();
-    let saved = editing.and_then(|it| model.sealed(&it)).is_some();
     let h = quadra_design::size::H_MD;
-    let secret = input(form.secret)
-        .password()
-        .placeholder(if saved { "Saved" } else { "" })
-        .test_id("host-secret")
-        .width(W)
-        .height(h);
     let typed = move || !form.secret.with(String::is_empty);
     let opens = move || typed() && lock.can_lock() && lock.key.get().is_none();
     let sets = move || typed() && !lock.can_lock();
@@ -31,7 +23,6 @@ pub(super) fn fields(model: &Model, form: Form, editing: Option<String>) -> impl
     column()
         .gap(12.0)
         .display(shown(move || matches!(form.auth.get(), 2 | 3)))
-        .child(field("Password or passphrase", secret).help("Saved sealed with the master password."))
         .child(
             div().display(shown(opens)).child(field("Master password", master("host-master", form.master))),
         )

@@ -16,15 +16,11 @@ const HOST_KEY: usize = 1;
 const SIGN_IN: usize = 2;
 const FAILED: usize = 3;
 
-/// The dialog a phase shows.
-/// The dialog of a phase; a saved host's Connect dialog says connecting, the failure and the
-/// password refused itself.
+/// The dialog of a phase; a saved host's Connect dialog shows each phase itself.
 fn which(phase: &Phase, opening: bool) -> Option<usize> {
     match phase {
+        _ if opening => None,
         Phase::Done => None,
-        Phase::Connecting | Phase::Ask(Ask::Failed { .. } | Ask::Password { again: true, .. }) if opening => {
-            None
-        }
         Phase::Connecting => Some(CONNECTING),
         Phase::Ask(Ask::HostKey { .. }) => Some(HOST_KEY),
         Phase::Ask(Ask::Failed { .. }) => Some(FAILED),

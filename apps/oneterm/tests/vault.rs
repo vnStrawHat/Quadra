@@ -53,6 +53,7 @@ fn app(name: &str) -> App {
     });
     h.settle();
     let model = kept.borrow().clone().unwrap();
+    model.ui().opening.known_hosts.set(dir.join("known_hosts"));
     App { h, model, settings, port, dir, shell }
 }
 

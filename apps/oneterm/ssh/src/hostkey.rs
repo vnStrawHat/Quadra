@@ -22,6 +22,30 @@ pub(crate) struct Checker {
     pub(crate) remotes: Vec<crate::Forward>,
 }
 
+/// The key the known hosts hold for `host` on `port`, before connecting: its kind and its
+/// SHA-256 fingerprint, `ED25519 SHA256:k3Vq…9fTn` (the middle left out); None when it is
+/// not there.
+pub fn known_key(host: &str, port: u16, file: &std::path::Path) -> Option<String> {
+    let keys = russh::keys::known_hosts::known_host_keys_path(host, port, file).ok()?;
+    let (_, key) = keys.into_iter().next()?;
+    let kind = key.algorithm().to_string();
+    let kind = kind.strip_prefix("ssh-").unwrap_or(&kind).split('-').next().unwrap_or("").to_uppercase();
+    let print = key.fingerprint(HashAlg::Sha256).to_string();
+    Some(format!("{kind} {}", short_print(&print)))
+}
+
+/// `SHA256:` and the first and last four of the hash, an ellipsis between.
+pub fn short_print(print: &str) -> String {
+    let (head, hash) = print.split_once(':').unwrap_or(("", print));
+    let chars: Vec<char> = hash.chars().collect();
+    if chars.len() <= 10 {
+        return print.to_string();
+    }
+    let (first, last): (String, String) =
+        (chars[..4].iter().collect(), chars[chars.len() - 4..].iter().collect());
+    format!("{head}:{first}\u{2026}{last}")
+}
+
 impl Checker {
     /// Refuses the key: `why` is the error the connection fails with.
     fn refuse(&self, why: String) -> Result<bool, russh::Error> {

@@ -13,6 +13,8 @@ use tokio::sync::mpsc::UnboundedReceiver;
 pub enum Event {
     /// A hop is being reached: `user@host`.
     Connecting(String),
+    /// A hop's host key is known or trusted: signing in to it, `user@host`.
+    Authenticating(String),
     /// A question, answered by `Ssh::answer`.
     Ask(Ask),
     /// The shell is open.

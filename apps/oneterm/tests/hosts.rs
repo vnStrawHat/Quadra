@@ -28,7 +28,10 @@ fn app() -> App {
     });
     h.mount(move || {
         provide(given.clone());
-        OneTerm::new(sessions).view()
+        let app = OneTerm::new(sessions);
+        // No key is known: the Connect dialog asks to trust it (never the user's own file).
+        app.model.ui().opening.known_hosts.set(".tmp/hosts-tests/known_hosts".into());
+        app.view()
     });
     h.settle();
     App { h, made, settings }
@@ -45,6 +48,14 @@ impl App {
         self.h.settle();
     }
 
+    /// The Connect dialog's Connect, its new key trusted.
+    fn connect(&mut self) {
+        self.h.get_by_test_id("connect-trust").click();
+        self.h.settle();
+        self.h.get_by_role(Role::Button, "Connect").click();
+        self.h.settle();
+    }
+
     fn add(&mut self, name: &str, group: &str, target: &str) {
         self.h.get_by_role(Role::Button, "Add SSH host").click();
         self.h.settle();
@@ -52,7 +63,7 @@ impl App {
             self.h.get_by_test_id(id).set_value(value);
         }
         self.h.settle();
-        self.h.get_by_role(Role::Button, "Save").click();
+        self.h.get_by_role(Role::Button, "Add host").click();
         self.h.settle();
     }
 
@@ -78,8 +89,7 @@ fn a_host_added_is_saved_listed_and_connects_from_its_dialog() {
     a.click_host("prod-api-01", 1);
     assert!(a.h.has_text("Connect to prod-api-01"), "{}", a.h.semantics());
     assert_eq!(a.made.borrow().len(), tabs, "nothing before Connect");
-    a.h.get_by_role(Role::Button, "Connect").click();
-    a.h.settle();
+    a.connect();
     assert!(!a.h.has_text("Connect to prod-api-01"), "the dialog closes");
     let launch = a.made.borrow().last().cloned().unwrap();
     assert_eq!(launch.ssh.map(|it| it.target.label()), Some("trung@10.20.1.14".into()));
@@ -104,13 +114,12 @@ fn a_host_reached_through_another_carries_its_way_and_forwards() {
     a.h.settle();
     a.h.get_by_role(Role::MenuItem, "bastion").click();
     a.h.settle();
-    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.get_by_role(Role::Button, "Add host").click();
     a.h.settle();
     assert_eq!(a.rows()[1][5..], ["bastion", "5432:localhost:5432"]);
 
     a.click_host("db", 2);
-    a.h.get_by_role(Role::Button, "Connect").click();
-    a.h.settle();
+    a.connect();
     let remote = a.made.borrow().last().cloned().unwrap().ssh.unwrap();
     let hops: Vec<String> = remote.jumps.iter().map(|it| it.target.label()).collect();
     assert_eq!(hops, ["ops@203.0.113.5"]);
@@ -163,7 +172,11 @@ fn a_host_is_edited_in_its_dialog_and_a_new_name_takes_its_place() {
     a.h.get_by_role(Role::MenuItem, "Edit\u{2026}").click();
     a.h.settle();
     assert!(a.h.has_text("Edit SSH host"));
-    assert!(a.h.semantics().contains("= \"trung@10.0.0.9\" #host-target"), "{}", a.h.semantics());
+    let tree = a.h.semantics();
+    assert!(
+        tree.contains("= \"10.0.0.9\" #host-target") && tree.contains("= \"trung\" #host-user"),
+        "{tree}"
+    );
     a.h.get_by_test_id("host-name").set_value("db-main");
     a.h.get_by_test_id("host-target").set_value("trung@10.0.0.10");
     a.h.settle();
@@ -218,7 +231,7 @@ fn a_host_has_a_colour_tag_its_group_s_until_one_is_chosen_and_kept() {
     a.h.settle();
     a.h.get_by_role(Role::Button, "Purple").click();
     a.h.settle();
-    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.get_by_role(Role::Button, "Add host").click();
     a.h.settle();
     assert_eq!(a.rows()[1][7], "purple");
     assert!(a.h.has_text("Colour tag: purple"));
@@ -256,7 +269,7 @@ fn a_colour_tag_is_any_colour_and_a_tag_saved_by_name_still_reads() {
     a.h.settle();
     a.h.get_by_role(Role::TextInput, "Hex").type_text("#336699");
     a.h.settle();
-    a.h.get_by_role(Role::Button, "Save").click();
+    a.h.get_by_role(Role::Button, "Add host").click();
     a.h.settle();
     assert_eq!(a.rows()[2][7], "#336699");
     assert!(a.h.has_text("Colour tag: #336699"));

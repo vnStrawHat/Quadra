@@ -49,6 +49,7 @@ pub(crate) async fn reach(
         };
         prompt.tell(Event::Connecting(hop.target.label()));
         let mut handle = open(hop, through.last(), options, prompt, traffic).await.map_err(named)?;
+        prompt.tell(Event::Authenticating(hop.target.label()));
         crate::auth::authenticate(&mut handle, hop, options, prompt).await.map_err(named)?;
         through.push(handle);
     }

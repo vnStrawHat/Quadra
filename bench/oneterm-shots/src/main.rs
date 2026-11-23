@@ -33,13 +33,15 @@ use quadra_term::{Session, echo};
 
 type Shots = App<D3d11Renderer>;
 
-const SCENES: [&str; 12] = [
+const SCENES: [&str; 14] = [
     "main",
     "collapsed",
     "horizontal",
     "menu",
     "connect",
     "add",
+    "host-connect",
+    "host-edit",
     "settings",
     "lock",
     "sftp",
@@ -216,13 +218,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         first.focus.set(1);
         pass(&platform, &mut app, 150);
         fill(&model, &made.borrow());
-        model.ui().dock.set(*scene != "connect" && !scene.starts_with("ask-"));
+        model.ui().dock.set(*scene != "connect" && !scene.starts_with("ask-") && !scene.starts_with("host-"));
         // A master password, as the canvas has: Lock 1Term now shows.
         model.prefs().password.set("set".into());
         match *scene {
             "menu" => click(&platform, &app, window, "New terminal"),
             "connect" => model.ui().connecting.set(true),
             "add" => model.ui().adding.set(true),
+            "host-connect" => model.ui().opening.host.set(Some(("prod-lb".into(), false))),
+            "host-edit" => model.ui().editing.set(Some("prod-lb".into())),
             "settings" => model.ui().settings.set(true),
             "lock" => model.lock().lock_now(),
             "sftp" => model.ui().expanded.set(true),

@@ -498,6 +498,16 @@ space opens only once the shell is open; a failure or a refused password is a da
 dialog (`connect_host.rs`). The kit's dialog has `.stays_open()` and `.busy(label, ..)`, and the
 drawer moved to `dialog/drawer.rs`.
 
+The SSH dialogs follow the design canvas (2026-11-23, specs/19 "The rail"): the Connect dialog's
+head with the colour tag and the group, Address, Jump host and Host key (`oneterm_ssh::known_key`
+reads the known hosts), the fields two to a row with the eye, a new key trusted in the dialog,
+Save … to this host and Open in the current tab, `Edit host…`; connecting, the steps (the engine's
+new `Event::Authenticating`) and the server's questions answered in the dialog (`host_connect/`).
+The host editor (`hostlist/layout.rs`): `Edit <name>` or Add SSH host with the tag, Address and
+Port, Username and Jump host, Auth method and its password or passphrase, `Delete host…` asked
+once more. The kit's dialog has `.head(..)`, `.aside(..)` and `.shown(..)`; `bench/oneterm-shots`
+draws `host-connect` and `host-edit`.
+
 The setting Card when blocked is gone: a program blocked or failed (OSC 7501) shows on its tab
 and header only, with no card.
 

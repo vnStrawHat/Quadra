@@ -22,6 +22,9 @@ mod drawer;
 pub use drawer::{Drawer, drawer};
 
 type Act = Rc<dyn Fn()>;
+type When = Rc<dyn Fn() -> bool>;
+/// A row of the app's in the place of the title.
+pub(crate) type Head = Rc<dyn Fn() -> AnyView>;
 
 /// A button at the foot: its label and look, what it does, its key, when it is off, whether
 /// pressing it leaves the dialog open, and its label while busy.
@@ -30,9 +33,13 @@ struct Action {
     variant: Variant,
     act: Act,
     key: Option<&'static str>,
-    off: Option<Rc<dyn Fn() -> bool>>,
+    off: Option<When>,
     stays: bool,
-    busy: Option<(String, Rc<dyn Fn() -> bool>)>,
+    busy: Option<(String, When)>,
+    /// At the start of the foot, apart from the others.
+    start: bool,
+    /// Shown only while this says so.
+    shown: Option<When>,
 }
 
 pub struct Dialog<F> {
@@ -40,6 +47,7 @@ pub struct Dialog<F> {
     title: String,
     body: F,
     actions: Vec<Action>,
+    own: Option<Head>,
 }
 
 /// A dialog shown while `open` is true: a title over what `body` builds, each time it opens.
@@ -48,7 +56,7 @@ where
     V: View + 'static,
     F: Fn() -> V + 'static,
 {
-    Dialog { open, title: title.into(), body, actions: Vec::new() }
+    Dialog { open, title: title.into(), body, actions: Vec::new(), own: None }
 }
 
 impl<F> Dialog<F> {
@@ -56,7 +64,42 @@ impl<F> Dialog<F> {
     /// Pressing it runs `f` and closes the dialog.
     pub fn action(mut self, label: impl Into<String>, variant: Variant, f: impl Fn() + 'static) -> Self {
         let (label, act) = (label.into(), Rc::new(f));
-        self.actions.push(Action { label, variant, act, key: None, off: None, stays: false, busy: None });
+        let (off, busy, shown) = (None, None, None);
+        self.actions.push(Action {
+            label,
+            variant,
+            act,
+            key: None,
+            off,
+            stays: false,
+            busy,
+            start: false,
+            shown,
+        });
+        self
+    }
+
+    /// A quiet button at the start of the foot, apart from the others (`Edit host…`).
+    pub fn aside(mut self, label: impl Into<String>, f: impl Fn() + 'static) -> Self {
+        self = self.action(label, Variant::Ghost, f);
+        if let Some(last) = self.actions.last_mut() {
+            last.start = true;
+        }
+        self
+    }
+
+    /// The last action shows only while `shown` says so.
+    pub fn shown(mut self, shown: impl Fn() -> bool + 'static) -> Self {
+        if let Some(last) = self.actions.last_mut() {
+            last.shown = Some(Rc::new(shown));
+        }
+        self
+    }
+
+    /// A row of the app's in the place of the title, before the cross; the title still names
+    /// the dialog to a reader.
+    pub fn head<H: View + 'static>(mut self, row: impl Fn() -> H + 'static) -> Self {
+        self.own = Some(Rc::new(move || AnyView::new(row())));
         self
     }
 
@@ -144,46 +187,69 @@ where
 {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (open, title, body, actions) = (self.open, self.title, self.body, Rc::new(self.actions));
+        let own = self.own;
         let content = move || {
-            let head = head(&title, None, open);
+            let head = head(&title, own.as_ref().map(|own| own()), open);
             let middle = div().padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2).child(body());
             let page = base::page(column().width(440.0 - EDGE), title.clone());
             let page = page.child(head).child(middle);
             if actions.is_empty() {
                 return page;
             }
-            let mut foot = row().gap(4.0).padding(8.0).justify(Justify::End);
-            foot = foot.border_top(1.0).border_color(token::LINE);
-            for at in actions.iter() {
-                let press: Rc<dyn Fn()> = match at.stays {
-                    true => at.act.clone(),
-                    false => Rc::new(base::answer(open, at.act.clone())),
-                };
-                let face = match at.busy.clone() {
-                    Some((busy_label, busy)) => {
-                        let (label, busy) = (at.label.clone(), busy.clone());
-                        let says = Rc::new(move || if busy() { busy_label.clone() } else { label.clone() });
-                        // The label alone names it, not the key after it.
-                        let names = says.clone();
-                        button(move || says()).label(move || names())
-                    }
-                    None => button(at.label.clone()),
-                };
-                let face = face.variant(at.variant).on_click(move || press());
-                let face = match at.key {
-                    Some(key) => face.shortcut(key),
-                    None => face,
-                };
-                let (off, busy) = (at.off.clone(), at.busy.clone().map(|it| it.1));
-                foot = foot.child(match (off, busy) {
-                    (None, None) => face,
-                    (off, busy) => face.disabled(move || {
-                        off.as_ref().is_some_and(|it| it()) || busy.as_ref().is_some_and(|it| it())
-                    }),
-                });
-            }
-            page.child(foot)
+            page.child(foot(open, &actions))
         };
         popup(open, (Place::Top(80.0), 2), None, content).mount(cx)
     }
+}
+
+/// The seam and the buttons: those at the start, room, then the others at the end.
+fn foot(open: Signal<bool>, actions: &[Action]) -> Div {
+    let mut foot =
+        row().gap(4.0).padding(8.0).align_items(Align::Center).border_top(1.0).border_color(token::LINE);
+    let starts = actions.iter().filter(|it| it.start);
+    let ends = actions.iter().filter(|it| !it.start);
+    for at in starts {
+        foot = foot.child(face(open, at));
+    }
+    foot = foot.child(div().grow(1.0));
+    for at in ends {
+        foot = foot.child(face(open, at));
+    }
+    foot
+}
+
+/// One button of the foot.
+fn face(open: Signal<bool>, at: &Action) -> Div {
+    let press: Rc<dyn Fn()> = match at.stays {
+        true => at.act.clone(),
+        false => Rc::new(base::answer(open, at.act.clone())),
+    };
+    let face = match at.busy.clone() {
+        Some((busy_label, busy)) => {
+            let (label, busy) = (at.label.clone(), busy.clone());
+            let says = Rc::new(move || if busy() { busy_label.clone() } else { label.clone() });
+            // The label alone names it, not the key after it.
+            let names = says.clone();
+            button(move || says()).label(move || names())
+        }
+        None => button(at.label.clone()),
+    };
+    let face = face.variant(at.variant).on_click(move || press());
+    let face = match at.key {
+        Some(key) => face.shortcut(key),
+        None => face,
+    };
+    let (off, busy) = (at.off.clone(), at.busy.clone().map(|it| it.1));
+    let face = match (off, busy) {
+        (None, None) => face,
+        (off, busy) => {
+            face.disabled(move || off.as_ref().is_some_and(|it| it()) || busy.as_ref().is_some_and(|it| it()))
+        }
+    };
+    let shown = at.shown.clone();
+    let display = move || match shown.as_ref().is_none_or(|it| it()) {
+        true => quadra_layout::Display::Flex,
+        false => quadra_layout::Display::None,
+    };
+    div().display(display).child(face)
 }

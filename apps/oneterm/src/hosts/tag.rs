@@ -73,7 +73,7 @@ pub(crate) fn tag_picker(tag: Signal<String>, group: Signal<String>) -> impl Vie
     dynamic(move || {
         let fallback = tag_of_group(group.get().trim()).1;
         let picker = color_picker(tag).label("Colour tag").presets(presets()).fallback(fallback);
-        AnyView::new(picker.placeholder("By group").width(190.0).test_id("host-tag"))
+        AnyView::new(picker.placeholder("By group").width(202.0).test_id("host-tag"))
     })
 }
 

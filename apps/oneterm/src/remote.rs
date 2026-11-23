@@ -29,6 +29,8 @@ pub(crate) struct Conn {
     pub label: Signal<String>,
     /// What crossed the network in the last second, `↓ 12 KB/s ↑ 1.1 KB/s`.
     pub traffic: Signal<String>,
+    /// The hop signing in, `user@host`: its host key known or trusted.
+    pub authing: Signal<String>,
     ssh: Arc<Ssh>,
 }
 
@@ -95,6 +97,7 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     let startup = launch.startup.map(|it| format!("{it}\r"));
     let size = session.size();
     let (phase, label) = (signal(Phase::Connecting), signal(remote.target.label()));
+    let authing = signal(String::new());
     let mut options = options(remote.target);
     (options.auth, options.jumps, options.forwards) = (remote.auth, remote.jumps, remote.forwards);
     (options.rows, options.cols) = (size.rows, size.cols);
@@ -122,6 +125,7 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
         for event in burst.drain(..) {
             let _ = match event {
                 Event::Connecting(to) => label.try_set(to) && phase.try_set(Phase::Connecting),
+                Event::Authenticating(to) => authing.try_set(to),
                 // The saved secret answers its question once; refused, the dialog asks.
                 Event::Ask(ask) => match saved.answer(&ask) {
                     Some(secret) => {
@@ -142,7 +146,7 @@ pub fn remote_shell_with(launch: Launch, options: impl FnOnce(oneterm_ssh::Targe
     });
     session.keep(std::rc::Rc::new(ssh.clone()));
     let traffic = signal(String::new());
-    session.keep(std::rc::Rc::new(Conn { phase, label, traffic, ssh: ssh.clone() }));
+    session.keep(std::rc::Rc::new(Conn { phase, label, traffic, authing, ssh: ssh.clone() }));
     // Each second: the latency the engine measured, and the bytes since the last time.
     let (pings, note, last) = (ssh.clone(), session.link_note(), std::cell::Cell::new((0, 0)));
     let _ = quadra::interval(std::time::Duration::from_secs(1), move || {

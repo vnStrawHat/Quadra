@@ -2,6 +2,7 @@
 //! connecting on a click, and the dialog that adds one.
 
 mod form;
+mod layout;
 mod secret;
 
 pub(crate) use form::add_dialog;
@@ -13,7 +14,7 @@ use quadra_design::{MenuItem, context_menu, fonts, icon, icon_button, icons, inp
 use crate::hosts::Host;
 use crate::model::Model;
 
-const AUTHS: [&str; 4] = ["Auto", "ssh-agent", "Key file", "Password"];
+const AUTHS: [&str; 4] = ["Auto", "SSH agent", "Key file", "Password"];
 
 /// The heading with its Add button, the filter, the groups (a chevron, the name, the count;
 /// folded by a click) and their hosts under a line.

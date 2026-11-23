@@ -24,6 +24,7 @@ use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 
 pub use files::{Entry, Files, Stat, join, safe_name};
+pub use hostkey::{known_key, short_print};
 use prompt::Cmd;
 pub use prompt::{Ask, Event};
 pub use target::{Target, os_user};

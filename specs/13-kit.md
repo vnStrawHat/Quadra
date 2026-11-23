@@ -816,7 +816,9 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   while what it reads says so (Add while there is nothing to add). `.stays_open()` leaves
   the dialog open when the last action is pressed (what it starts closes it when done), and
   `.busy("Connecting…", || ..)` gives the last action that label and turns it off while what
-  it reads says so.
+  it reads says so. `.aside("Edit host…", f)` is a ghost button at the start of the foot, apart
+  from the others; `.shown(|| ..)` shows the last action only while it says so; `.head(|| row)`
+  puts a row of the app's in the place of the title, the title still naming the dialog.
 - Elevation is a paint value of a box (`.elevation(1)`): a level above the window casts the
   shadows of the design language (behaviour/15) under the box, two for the level of menus,
   popovers and tooltips, four for that of dialogs. A change of level is a paint change.

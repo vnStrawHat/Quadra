@@ -472,9 +472,12 @@ each half second (`Session::logging` looked at then, as a log can end on its fee
 Tests: `apps/oneterm/tests/rail.rs`, `menus.rs`, `signals.rs`.
 
 Then: OSC 7501 shows only what a program sent (no `idle` word of a tab that said nothing);
-the Rename tab dialog laid out as SFTP's Rename, a Name field 12 px in; the last tab closed by
-any way (Close tab, the middle button, its menu, its program ending) closes the window, as
-Ctrl+W did alone before (`rail.rs`).
+the Rename tab dialog laid out as SFTP's Rename, a Name field 12 px in. With no tab left the
+window stays (Ctrl+W on the last space too) and the workspace says `Ctrl+T opens a terminal`;
+Quit and the close button end 1Term (`rail.rs`). A folded tab with no word has its icon in the
+box's middle. Each kind of shell has an icon of its own (`shell_icons.rs`: Command Prompt,
+PowerShell, Git Bash, WSL, Nushell, a bash), on its tabs and in the `+` menu; Nushell, MSYS2
+and Cygwin are found too, and `CHERE_INVOKING=1` keeps a login bash where it starts.
 
 ### Status marks a step up, tabs without a hover box (2026-11-22)
 

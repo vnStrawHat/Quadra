@@ -72,19 +72,27 @@ pub(crate) fn tab_mark(tab: Tab) -> impl View {
 /// done, else its progress in mono, else working, else a bell that rang unseen, else none.
 pub(crate) fn tab_word(tab: Tab) -> impl View {
     let word = dynamic(move || {
-        let (said, color, mono) = match (tab.status(), part_of(tab)) {
-            (ProgramState::Blocked, _) => ("blocked".to_string(), token::WARN, false),
-            (ProgramState::Error, _) => ("error".to_string(), token::ERROR, false),
-            (ProgramState::Done, _) => ("done".to_string(), token::OK, false),
-            (_, Some(n)) => (format!("{n}%"), token::ACCENT, true),
-            (ProgramState::Working, _) => ("working".to_string(), token::ACCENT, false),
-            _ if tab.bells() > 0 => ("bell".to_string(), token::ERROR, false),
-            _ => (String::new(), token::TEXT_2, false),
-        };
+        let (said, color, mono) = word_of(tab);
         let word = row().text_color(color).child(text(said));
         AnyView::new(if mono { word.font_family(fonts::MONO) } else { word })
     });
-    word.container(row().height(by_text(14.0)).align_items(Align::Center).text_size(10.0).shrink(0.0))
+    // No word, no line: the icon stands in the box's middle.
+    let shown = move || if word_of(tab).0.is_empty() { Display::None } else { Display::Flex };
+    let line = row().height(by_text(14.0)).align_items(Align::Center).text_size(10.0).shrink(0.0);
+    word.container(line.display(shown))
+}
+
+/// The folded rail's word of a tab, its colour, and whether it is mono.
+fn word_of(tab: Tab) -> (String, quadra::Token, bool) {
+    match (tab.status(), part_of(tab)) {
+        (ProgramState::Blocked, _) => ("blocked".to_string(), token::WARN, false),
+        (ProgramState::Error, _) => ("error".to_string(), token::ERROR, false),
+        (ProgramState::Done, _) => ("done".to_string(), token::OK, false),
+        (_, Some(n)) => (format!("{n}%"), token::ACCENT, true),
+        (ProgramState::Working, _) => ("working".to_string(), token::ACCENT, false),
+        _ if tab.bells() > 0 => ("bell".to_string(), token::ERROR, false),
+        _ => (String::new(), token::TEXT_2, false),
+    }
 }
 
 /// What a reader hears of a tab in the folded rail: its title, then its signal if it has one.
@@ -137,7 +145,13 @@ pub(crate) fn tab_runs(tab: Tab) -> String {
 pub(crate) fn tab_icon(tab: Tab, px: f32, on: impl Fn() -> bool + 'static, off: quadra::Token) -> impl View {
     dynamic(move || {
         let remote = tab.spaces.with(|spaces| spaces.iter().any(|it| it.remote.is_some()));
-        let body = if remote { icons::SERVER } else { icons::SQUARE_TERMINAL };
+        // The focused space's shell's icon; a remote tab's is a server.
+        let shell = tab.focused().and_then(|it| it.session.kept::<crate::shells::ShellName>());
+        let body = match (remote, shell) {
+            (true, _) => icons::SERVER,
+            (false, Some(shell)) => crate::shell_icons::of(&shell.0),
+            (false, None) => icons::SQUARE_TERMINAL,
+        };
         AnyView::new(icon(body).size(px).color(if on() { token::ACCENT } else { off }))
     })
 }

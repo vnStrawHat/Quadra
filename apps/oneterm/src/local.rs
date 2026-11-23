@@ -30,6 +30,8 @@ pub fn local_shell(launch: Launch) -> Session {
         ("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into()),
         ("TERM_PROGRAM".into(), "1Term".into()),
         ("TERM_PROGRAM_VERSION".into(), env!("CARGO_PKG_VERSION").into()),
+        // A login bash (MSYS2, Cygwin, Git's) stays in the directory it starts in.
+        ("CHERE_INVOKING".into(), "1".into()),
     ];
     if launch.force_links {
         // Programs that know terminals by name show OSC 8 links here too.

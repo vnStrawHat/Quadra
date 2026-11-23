@@ -20,7 +20,7 @@ pub(crate) fn workspace(model: &Model) -> impl View + use<> {
     let shown = model.clone();
     let tab = dynamic(move || match shown.active_tab() {
         Some(tab) => AnyView::new(columns(&shown, tab)),
-        None => AnyView::new(div()),
+        None => AnyView::new(crate::no_tab()),
     });
     // The expanded SFTP view takes the workspace's place; the spaces run on, not displayed.
     let expanded = model.ui().expanded;

@@ -81,9 +81,15 @@ impl Remote {
 /// The shells whose programs are where they are installed, in the menu's order.
 pub fn found() -> Vec<Shell> {
     let var = |name: &str| std::env::var_os(name).map(PathBuf::from);
-    let (system, programs) = (var("SystemRoot"), var("ProgramFiles"));
+    let (system, programs, drive) = (var("SystemRoot"), var("ProgramFiles"), var("SystemDrive"));
     let under = |root: &Option<PathBuf>, path: &str| root.as_ref().map(|root| root.join(path));
-    let known: [(&'static str, Option<PathBuf>, &[&str]); 5] = [
+    // `C:` names the drive's current folder; its root is `C:\`.
+    let drive = drive.map(|it| PathBuf::from(format!("{}\\", it.display())));
+    // Nushell's installer puts it under Program Files, or the user's programs.
+    let nu = under(&programs, "nu/bin/nu.exe")
+        .filter(|it| it.is_file())
+        .or_else(|| under(&var("LOCALAPPDATA"), "Programs/nu/bin/nu.exe"));
+    let known: [(&'static str, Option<PathBuf>, &[&str]); 8] = [
         ("Command Prompt", under(&system, "System32/cmd.exe"), &[]),
         (
             "Windows PowerShell",
@@ -93,6 +99,9 @@ pub fn found() -> Vec<Shell> {
         ("PowerShell 7", under(&programs, "PowerShell/7/pwsh.exe"), &["-NoLogo"]),
         ("Git Bash", under(&programs, "Git/bin/bash.exe"), &["--login", "-i"]),
         ("WSL", under(&system, "System32/wsl.exe"), &[]),
+        ("Nushell", nu, &[]),
+        ("MSYS2", under(&drive, "msys64/usr/bin/bash.exe"), &["--login", "-i"]),
+        ("Cygwin", under(&drive, "cygwin64/bin/bash.exe"), &["--login", "-i"]),
     ];
     known
         .into_iter()

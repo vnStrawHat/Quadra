@@ -81,7 +81,7 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
 270 px on the panel colour (the setting, 140 to 400), a line on its right. A heading of 28 px
 ("Tabs", 12 px semibold, the secondary colour) with the count (mono, regular, the third text
 colour) and Collapse tabs to icons at its right; then, under a strong line, the tabs as the kit's tab rules turned on their side: a row of 36 px a tab, the full
-width, no line between them (`panel_hover` at half under the pointer), 14 px from the left: an icon (a terminal, or a server when a space is
+width, no line between them (`panel_hover` at half under the pointer), 14 px from the left: an icon (the focused space's shell's, below, or a server when a space is
 remote; the third text colour unless active), the title, and at the end the tab's signal
 (below). The active row is 52 px, the editor colour pressed (`press` over `canvas`) and one
 pixel wider (over the rail's line), its title semibold, an accent bar of 3 px on its left, a
@@ -96,7 +96,7 @@ name, the address in mono at the right. The switch to horizontal tabs is in the 
 
 Collapsed (Collapse tabs to icons, in the heading or the status bar, or the setting) the rail is
 56 px: Expand tabs at the top, then a box of 46 px a tab: its icon of 16 px (the secondary text
-colour, the accent while it shows) and 2 px under it its signal as one word of 10 px on a line
+colour, the accent while it shows; in the box's middle when there is no word) and 2 px under it its signal as one word of 10 px on a line
 of 14 in the state's colour: `blocked` in warn, `error` in error, `done` in ok, its progress
 (`64%`, mono) or `working` in the accent, `bell` in error when one rang unseen, else nothing
 (the colours of the signals expanded; a program that said no state, or is idle, shows none); a progress also has the seam bar, and working with no progress makes the seam the
@@ -117,7 +117,7 @@ at its right.
 
 Click selects; middle closes (collapsed too); double-click renames (in the Rename tab dialog,
 as SFTP's Rename: 320 px, a Name field 12 px from its sides, Cancel and Rename; Enter keeps it;
-in the strip in place); the last tab closed, however it goes, closes the window; the right button opens the tab menu (Rename,
+in the strip in place); the last tab closed leaves the window open; the right button opens the tab menu (Rename,
 Duplicate, Close, Close others, Close to the right: the tabs after it, asked first as a close
 is when one has edits). Rows drag to reorder.
 
@@ -280,8 +280,8 @@ Seen clears: selecting the tab clears its bell and a "done" seen state.
 ## The `+` menu
 
 At the right of "New terminal" (over the rail's edge by 8 px; under the strip's `+`), the kit's
-menu: Local shell (`Ctrl-T`), Other shells (a submenu of the local shells found: Command Prompt,
-Windows PowerShell, PowerShell 7, Git Bash, WSL; the canvas shows one shell), from P2
+menu: Local shell (`Ctrl-T`), Other shells (a submenu of the local shells found, each with its icon: Command Prompt,
+Windows PowerShell, PowerShell 7, Git Bash, WSL, Nushell, MSYS2, Cygwin; the canvas shows one shell), from P2
 Quick connect… (a bolt, `Ctrl-Shift-K`), Split current space (`Ctrl-D`, Split space); a line,
 Recent (up to 3, how long ago: `2 min ago`, `yesterday`), the saved hosts under their groups'
 headings (the address in mono: the host, its port when not 22, `· jump` for a host reached
@@ -294,8 +294,16 @@ detail), the focus in it as it opens.
 - **Shells found**: Command Prompt (`%SystemRoot%\System32\cmd.exe`), Windows PowerShell
   (`%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`), PowerShell 7
   (`%ProgramFiles%\PowerShell\7\pwsh.exe`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe`
-  `--login -i`), WSL (`%SystemRoot%\System32\wsl.exe`), each where its file is. The default
-  shell is Command Prompt until settings (M5) name another. A split starts in the focused
+  `--login -i`), WSL (`%SystemRoot%\System32\wsl.exe`), Nushell (`%ProgramFiles%\nu\bin\nu.exe`, or
+  `%LOCALAPPDATA%\Programs\nu\bin\nu.exe`), MSYS2 (`%SystemDrive%\msys64\usr\bin\bash.exe`
+  `--login -i`), Cygwin (`%SystemDrive%\cygwin64\bin\bash.exe` `--login -i`), each where its file
+  is (`CHERE_INVOKING=1` keeps a login bash in the directory it starts in). Each kind of shell has
+  an icon of its own, the kit's stroked outlines on a grid of 24, known by the shell's name or
+  its program's file name: Command Prompt a window with a prompt, PowerShell (both) a slanted
+  box with `>_`, Git Bash a diamond with a branch, WSL a penguin, Nushell `nu`, another bash
+  (MSYS2, Cygwin, zsh, fish) a box with `$`, anything else the terminal square. The default
+  shell is Command Prompt until settings (M5) name another. With no tab left (the last one
+  closed, however it went) the window stays: the workspace says `Ctrl+T opens a terminal`. A split starts in the focused
   space's directory. A local shell's environment names the terminal (`TERM_PROGRAM=1Term`,
   `TERM_PROGRAM_VERSION` its version) and, while Force links is on, adds `FORCE_HYPERLINK=1`:
   1Term opens OSC 8 links, and programs that know terminals by name (1Term is on no list)

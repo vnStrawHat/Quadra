@@ -135,24 +135,22 @@ fn the_middle_button_closes_a_tab_of_the_folded_rail() {
 }
 
 #[test]
-fn closing_the_last_tab_closes_the_window() {
+fn the_window_stays_with_no_tab_and_says_how_to_open_one() {
     for vertical in [true, false] {
         let mut h = app(vertical);
         h.key(Key::T, Mods::CTRL);
         h.settle();
-        let close = |h: &mut Harness| {
-            let button = h.get_by_role(Role::Button, "Close tab").node();
-            let at = h.tree.window_rect(button).center();
-            h.click(at.x, at.y);
-            h.settle();
-        };
-        close(&mut h);
-        assert!(h.tree.take_window_requests().is_empty(), "a tab is left");
-        close(&mut h);
-        assert_eq!(
-            h.tree.take_window_requests(),
-            [quadra_tree::WindowRequest::Close],
-            "vertical: {vertical}"
-        );
+        let button = h.get_by_role(Role::Button, "Close tab").node();
+        let at = h.tree.window_rect(button).center();
+        h.click(at.x, at.y);
+        h.settle();
+        // The last one by Ctrl+W.
+        h.key(Key::W, Mods::CTRL);
+        h.settle();
+        assert!(tabs(&h).is_empty() && h.tree.take_window_requests().is_empty(), "vertical: {vertical}");
+        assert!(h.has_text("Ctrl+T opens a terminal"));
+        h.key(Key::T, Mods::CTRL);
+        h.settle();
+        assert_eq!(tabs(&h).len(), 1, "a new one opens");
     }
 }

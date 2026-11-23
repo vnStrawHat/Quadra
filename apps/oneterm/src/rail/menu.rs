@@ -29,7 +29,8 @@ pub(crate) fn new_menu(model: &Model, typed: &str) -> Vec<MenuItem> {
         return items;
     }
     let (local, splits) = (model.clone(), model.clone());
-    let first = MenuItem::new("Local shell").icon(icons::SQUARE_TERMINAL).keys("Ctrl-T");
+    let default = shells::shell_name(model.launch(None).shell.as_ref());
+    let first = MenuItem::new("Local shell").icon(crate::shell_icons::of(&default)).keys("Ctrl-T");
     items.push(first.on_select(move || local.new_tab()));
     // The other shells found, in a menu of their own: the menu keeps the canvas's three rows.
     let others: Vec<MenuItem> = shells::found()
@@ -37,7 +38,7 @@ pub(crate) fn new_menu(model: &Model, typed: &str) -> Vec<MenuItem> {
         .map(|shell| {
             let (makes, name) = (model.clone(), shell.name);
             MenuItem::new(name)
-                .icon(icons::TERMINAL)
+                .icon(crate::shell_icons::of(name))
                 .on_select(move || makes.new_tab_with(makes.launch(Some(shell.clone()))))
         })
         .collect();

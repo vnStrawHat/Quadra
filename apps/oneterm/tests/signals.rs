@@ -70,14 +70,6 @@ fn a_status_shows_on_the_tab_and_the_header_and_done_is_seen_when_the_tab_shows(
 }
 
 #[test]
-fn a_program_that_waits_raises_a_card() {
-    let mut a = app();
-    a.feed(0, b"\x1b]7501;state=blocked:id=deploy\x07");
-    assert!(a.says("Terminal blocked"));
-    assert!(a.says("1 bells and notices"));
-}
-
-#[test]
 fn progress_shows_on_the_tab_and_in_the_status_bar() {
     let mut a = app();
     a.key(Key::D, Mods::CTRL);

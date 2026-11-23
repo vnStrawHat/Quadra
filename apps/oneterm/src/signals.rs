@@ -7,7 +7,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use quadra::{Scope, Signal, effect, signal, timeout, untrack};
-use quadra_design::{Notice, Tone};
+use quadra_design::Notice;
 use quadra_term::vt::Progress;
 use quadra_term::{ProgramState, Session};
 
@@ -79,7 +79,7 @@ impl Model {
     /// Follows what a new space's program signals: a bell in the space that has the focus is
     /// seen at once, a notification and a program that waits or failed raise a card.
     pub(crate) fn watch(&self, id: u64, session: &Session) {
-        let (bells, status, prefs) = (session.bells(), session.status(), self.prefs());
+        let (bells, prefs) = (session.bells(), self.prefs());
         let (looked_at, rang, flash, scope) = (self.clone(), Cell::new(0), signal(false), Scope::current());
         session.keep(Rc::new(Flash(flash)));
         effect(move || {
@@ -103,20 +103,6 @@ impl Model {
                 }
             });
         }
-        let raises = self.clone();
-        let was: std::cell::Cell<ProgramState> = Default::default();
-        effect(move || {
-            let state = status.get();
-            let toasts = untrack(|| prefs.toast_blocked.get() && prefs.status_shown.get() < 2);
-            if was.replace(state) != state
-                && toasts
-                && matches!(state, ProgramState::Blocked | ProgramState::Error)
-            {
-                let tone = if state == ProgramState::Error { Tone::Danger } else { Tone::Warning };
-                let title = format!("{} {}", raises.tab_name(id), state_word(state).unwrap_or(""));
-                raises.notify(Notice::new(title).tone(tone));
-            }
-        });
         self.follow_notices(id, session);
     }
 

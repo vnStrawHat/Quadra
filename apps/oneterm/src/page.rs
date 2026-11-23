@@ -104,8 +104,6 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
     let signals = SettingsGroup::new("Signals")
         .row("Program states", "OSC 7501.", select(prefs::STATUS_SHOWN, p.status_shown).width(240.0))
         .back(p.status_shown, d.status_shown)
-        .row("Card when blocked", "A card when a program waits or failed.", switch(p.toast_blocked))
-        .back(p.toast_blocked, d.toast_blocked)
         .row("Progress on the tab", "OSC 9;4 under the tab.", switch(p.progress_tab))
         .back(p.progress_tab, d.progress_tab)
         .row("Progress in the status bar", "OSC 9;4 as a meter.", switch(p.progress_bar))

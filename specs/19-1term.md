@@ -249,7 +249,7 @@ all on but where it says. A change applies at once (`Engine::set_config`).
 
 | Signal | Tab | Space header | Bar | Else |
 |---|---|---|---|---|
-| OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else nothing: OSC 7501 shows only what a program sent, and idle shows none | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | blocked and error raise a card (setting) |
+| OSC 7501 status | the state's icon at the end, each state its own shape, outlined in its colour (14 px): blocked a `?` in a circle (warn, `Blocked, needs permission`), done a check in a circle (ok, `Done, result not yet seen`), error a cross in a circle (error), working a spinner arc (accent; a progress shows in its place); else nothing: OSC 7501 shows only what a program sent, and idle shows none | the state's icon and a label in its colour: the record's id and the state (`deploy blocked`, `Session::status_name`) | | |
 | OSC 9;4 progress | the percentage in mono and the accent at the end, a 2 px accent bar along the row's lower seam | the percentage | `build`, a 56 px line and the percentage | |
 | BEL in an unfocused space | a bell icon in the error colour at the end (`Bell rang`) | | the title bar's count | |
 | OSC 9, 777, 99 notification | | | the title bar's count | a card at the window's bottom right above the status bar (the title, the text, the tab and the sequence: `OSC 9`, `OSC 777` or `OSC 99`), 6 s or until dismissed (setting) |
@@ -381,8 +381,7 @@ program and its arguments typed, `terminal.shell_program`, `terminal.shell_args`
 home, last used: the directory a local shell said last, kept across runs as
 `terminal.last_dir`, home when it is no longer there), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
-the view's `TermSettings` (specs/18). A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored, toast on
-blocked; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound (the system's
+the view's `TermSettings` (specs/18). A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound (the system's
 default sound, at once for each bell however the space is looked at) / badge and flash (the
 space's terminal tinted the selection colour for 120 ms) / ignore; OSC 9: toast 6 s / until dismissed / silent.
 

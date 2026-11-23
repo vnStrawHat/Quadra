@@ -498,6 +498,9 @@ space opens only once the shell is open; a failure or a refused password is a da
 dialog (`connect_host.rs`). The kit's dialog has `.stays_open()` and `.busy(label, ..)`, and the
 drawer moved to `dialog/drawer.rs`.
 
+The setting Card when blocked is gone: a program blocked or failed (OSC 7501) shows on its tab
+and header only, with no card.
+
 ### Status marks a step up, tabs without a hover box (2026-11-22)
 
 A status mark (and a status label's) is 14 px unless told, a step up from 12 beside 14 px

@@ -57,7 +57,7 @@ fn the_menu_pastes_splits_and_closes() {
         "Paste",
         "Select all",
         "Clear scrollback",
-        "Split space",
+        "Start logging",
         "Split right",
         "Split down",
         "Input channel",
@@ -68,6 +68,7 @@ fn the_menu_pastes_splits_and_closes() {
             "{name}"
         );
     }
+    assert!(a.h.query(|n| n.semantics.name == "Split space").is_empty(), "Ctrl+D is enough");
     a.h.clipboard.write_text("ls");
     a.choose("Paste");
     assert_eq!(a.made.borrow()[0].screen_text()[0], "ls", "the echo shows what was pasted");
@@ -80,7 +81,7 @@ fn the_menu_pastes_splits_and_closes() {
     assert!(a.h.clipboard.read_text().unwrap_or_default().starts_with("ls"));
 
     a.other_click();
-    a.choose("Split space");
+    a.choose("Split right");
     assert!(a.h.has_text("2 local \u{B7} 2 spaces"));
     a.other_click();
     a.choose("Close space");
@@ -119,4 +120,22 @@ fn a_program_that_reports_the_mouse_takes_the_press_and_a_click_copies_nothing()
     a.h.settle();
     a.other_click();
     assert!(a.h.query(|n| n.semantics.role == Role::MenuItem).is_empty(), "no menu over the program");
+}
+
+#[test]
+fn a_space_that_logs_has_a_dot_in_the_status_bar() {
+    let mut a = app();
+    let dot = |a: &App| a.h.query(|n| n.semantics.name == "Logging").len();
+    assert_eq!(dot(&a), 0, "nothing logs");
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.tmp/oneterm-rec-test/a.log");
+    let s = a.made.borrow()[0].clone();
+    s.start_log(&path, false, String::new).unwrap();
+    a.h.advance(std::time::Duration::from_millis(500));
+    a.h.settle();
+    assert_eq!(dot(&a), 1, "{}", a.h.semantics());
+    a.other_click();
+    a.choose("Stop logging");
+    a.h.advance(std::time::Duration::from_millis(500));
+    a.h.settle();
+    assert_eq!(dot(&a), 0, "the log closed");
 }

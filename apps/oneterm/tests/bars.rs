@@ -42,6 +42,8 @@ fn app(vertical: bool) -> App {
     h.tree.set_keymap(Rc::new(keymap()));
     let (settings, shell, seconds) = (Settings::memory(), FakeShell::new(), Rc::new(Cell::new(0)));
     settings.value("tabs.vertical", true).set(vertical);
+    // What a second costs is the clock's alone here: no frames a second.
+    settings.value("status_bar.fps", true).set(false);
     shell.set_usage(usage(0, 10));
     let (given, read, made) = (shell.clone(), seconds.clone(), Rc::new(std::cell::RefCell::new(None)));
     let kept = made.clone();

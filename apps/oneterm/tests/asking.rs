@@ -172,7 +172,8 @@ fn a_user_not_given_is_asked() {
     assert_eq!(a.h.query(filled).len(), 1, "the OS's user filled in");
     a.sign_in("tester");
     a.wait(|a| a.screen().contains("welcome") && a.no_dialog(), "the shell");
-    // The space's header says the user answered.
+    // The space's header says the user answered (a tab of two spaces has headers).
+    a.h.key(Key::D, Mods::CTRL);
     let header = format!("tester@127.0.0.1:{port} ");
     a.wait(|a| a.h.query(|n| n.semantics.name.starts_with(&header)).len() == 1, "the header");
 }

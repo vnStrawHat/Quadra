@@ -81,3 +81,55 @@ fn rail_tabs_have_no_line_between_them_and_a_light_fill_under_the_pointer() {
         assert_eq!(dashed.len(), 1, "folded: {folded}");
     }
 }
+
+#[test]
+fn two_clicks_in_the_rail_rename_in_a_dialog_and_cancel_keeps_the_name() {
+    let mut h = app(true);
+    let tab = h.get_by_role(Role::Tab, "Terminal").node();
+    let at = h.tree.window_rect(tab).center();
+    let twice = |h: &mut Harness| {
+        for _ in 0..2 {
+            for input in [quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up] {
+                h.tree.pointer(input, quadra::MouseButton::Left, at, Mods::NONE, h.now());
+            }
+            h.settle();
+        }
+    };
+    twice(&mut h);
+    let named = |n: &quadra_tree::SemanticNode| {
+        n.semantics.test_id.as_deref() == Some("rename-tab")
+            && n.semantics.value.as_deref() == Some("Terminal")
+    };
+    assert_eq!(h.query(named).len(), 1, "the name as it is: {}", h.semantics());
+    h.get_by_test_id("rename-tab").set_value("logs");
+    h.settle();
+    h.get_by_role(Role::Button, "Cancel").click();
+    h.settle();
+    assert_eq!(tabs(&h), [("Terminal".to_string(), true)], "Cancel leaves it");
+    // Not a third and a fourth click.
+    h.advance(std::time::Duration::from_secs(1));
+    twice(&mut h);
+    h.get_by_test_id("rename-tab").set_value("logs");
+    h.settle();
+    h.get_by_role(Role::Button, "Rename").click();
+    h.settle();
+    assert_eq!(tabs(&h), [("logs".to_string(), true)]);
+    assert!(h.query(|n| n.semantics.test_id.as_deref() == Some("rename-tab")).is_empty(), "closed");
+}
+
+#[test]
+fn the_middle_button_closes_a_tab_of_the_folded_rail() {
+    let mut h = app(true);
+    h.key(Key::T, Mods::CTRL);
+    h.settle();
+    let fold = h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Collapse tabs to icons");
+    h.tree.act(fold[0], &quadra::SemanticAction::Click);
+    h.settle();
+    let first = h.query(|n| n.semantics.role == Role::Tab)[0];
+    let at = h.tree.window_rect(first).center();
+    for input in [quadra_tree::PointerInput::Down, quadra_tree::PointerInput::Up] {
+        h.tree.pointer(input, quadra::MouseButton::Middle, at, Mods::NONE, h.now());
+    }
+    h.settle();
+    assert_eq!(tabs(&h).len(), 1);
+}

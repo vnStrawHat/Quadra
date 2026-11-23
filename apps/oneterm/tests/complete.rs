@@ -30,6 +30,8 @@ fn app_with(set: impl FnOnce(&Settings)) -> App {
     h.size = quadra::Size::new(1200.0, 700.0);
     h.tree.set_keymap(Rc::new(keymap()));
     let settings = Settings::memory();
+    // Off at first; these tests are of completion on.
+    settings.value("completion.enabled", false).set(true);
     set(&settings);
     let (made, wrote) = (Rc::new(RefCell::new(None)), Rc::new(RefCell::new(Vec::new())));
     let (kept, into, given) = (made.clone(), wrote.clone(), settings.clone());

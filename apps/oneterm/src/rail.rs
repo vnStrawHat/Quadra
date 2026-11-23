@@ -1,6 +1,6 @@
-//! The rail (specs/19, "Rail"): 248 px of tabs on the panel colour, a heading with the count,
+//! The rail (specs/19, "Rail"): 270 px of tabs on the panel colour, a heading with the count,
 //! a row of 36 px a tab (the kit's tab rules on their side), "New terminal", the SSH hosts. A
-//! click shows a tab, the middle button closes it, two clicks rename it, the right button
+//! click shows a tab, the middle button closes it, two clicks rename it (a dialog), the right button
 //! opens its menu, and rows drag to reorder.
 
 use quadra::{
@@ -13,6 +13,7 @@ use quadra_design::{
 
 mod menu;
 mod narrow;
+mod rename;
 
 pub(crate) use self::menu::{ASK, new_menu};
 use crate::marks;
@@ -89,6 +90,7 @@ fn full(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         .child(heading)
         .child(strip)
         .child(menu)
+        .child(rename::dialog(model))
         // While SFTP is expanded the rail holds the tabs alone.
         .child(
             div()
@@ -129,7 +131,7 @@ pub(crate) fn tab_menu(model: &Model, id: u64) -> Vec<MenuItem> {
     ]
 }
 
-/// The title of a tab, or the field that renames it: Enter keeps the name (an empty one
+/// The title of a tab, or the field that renames it in the strip: Enter keeps the name (an empty one
 /// gives the program's title back), Escape leaves it as it was.
 pub(crate) fn title(model: &Model, tab: Tab) -> impl View + use<> {
     let renaming = model.renaming();
@@ -215,7 +217,7 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
         .grow(1.0)
         .min_width(0.0)
         .justify(quadra::Justify::Center)
-        .child(div().line_height(20.0 / 14.0).child(title(model, tab)))
+        .child(div().line_height(20.0 / 14.0).child(text(move || tab.title()).ellipsis()))
         .child(line);
     let (short, tall) = (by_text(36.0), by_text(52.0));
     let face = row()

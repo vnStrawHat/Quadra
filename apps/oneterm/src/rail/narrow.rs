@@ -1,8 +1,10 @@
 //! The rail collapsed (specs/19, "Rail"): 56 px, Expand tabs, a box of 46 px a tab (its icon,
 //! its signal as a coloured word under it, the one that shows on the editor colour with the
-//! accent bar), then New terminal as a `+`.
+//! accent bar; the middle button closes it), then New terminal as a `+`.
 
-use quadra::{Align, NodeRef, Role, Side, Signal, View, by_text, column, each, row, signal};
+use quadra::{
+    Align, MouseButton, NodeRef, PointerKind, Role, Side, Signal, View, by_text, column, each, row, signal,
+};
 use quadra_design::{icon, icon_button, icons, searched_menu, token, tooltip};
 
 use crate::marks;
@@ -79,7 +81,7 @@ fn boxed() -> quadra::Div {
 /// on the pressed editor colour with the accent bar; its title and signal are its name. Its
 /// tooltip is two lines: where its shell is, and what it runs (read when it shows).
 fn face(model: &Model, tab: Tab) -> impl View + use<> {
-    let (active, shows) = (model.active(), model.clone());
+    let (active, shows, closes) = (model.active(), model.clone(), model.clone());
     let on = move || active.get() == tab.id;
     let column =
         column().height(46.0).shrink(0.0).align_items(Align::Center).justify(quadra::Justify::Center);
@@ -98,6 +100,11 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
             .label(move || marks::tab_said(tab))
             .selected(on)
             .on_click(move |_| shows.show(tab.id))
+            .on_pointer(PointerKind::Click, move |e| {
+                if e.button == MouseButton::Middle {
+                    closes.close_tab(tab.id);
+                }
+            })
             .child(crate::rail::active_fill(on, 1.0, false))
             .child(marks::tab_icon(tab, 16.0, on, token::TEXT_2))
             .child(marks::tab_word(tab))

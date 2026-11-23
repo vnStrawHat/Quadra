@@ -1,6 +1,6 @@
 //! The status bar (specs/19, "Window"): 30 px on the chrome plane, 12 px, its groups parted by
 //! rules of 1×14: the rail's fold; the focused space's directory (a click copies it); git; a
-//! remote space's host and its latency; at the right the progress, 1Term's processor and memory
+//! remote space's host and its latency; a red dot that blinks while it logs; at the right the progress, 1Term's processor and memory
 //! (details in a tooltip), the clock and the SFTP panel. Locked, only a lock and "Locked,
 //! details hidden", the progress and the clock show.
 
@@ -108,6 +108,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         .child(text("Locked, details hidden"));
     let shows = move || prefs.show_usage.get() || prefs.show_fps.get();
     let (meter, metered) = meter(model);
+    let rec = logging(model);
     let left_side = groups(
         part().gap(12.0),
         vec![
@@ -115,6 +116,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
             (when(open), place),
             (when(move || open() && git_shown()), git),
             (host_shown(model, open), host(model)),
+            (when(move || open() && rec.get().0), recording(rec)),
         ],
     );
     let right_side = groups(
@@ -213,6 +215,26 @@ fn meter(model: &Model) -> (quadra::Div, When) {
             found.with(|it| it.as_ref().map(|it| format!("{}%", it.0)).unwrap_or_default())
         }));
     (meter, when(move || shows.get() && found.with(Option::is_some)))
+}
+
+/// Whether the focused space logs, and whether its dot is lit: looked at each half second,
+/// as a log can end on the feeding thread. Written only when it changes.
+fn logging(model: &Model) -> Signal<(bool, bool)> {
+    let (rec, model) = (quadra::signal((false, false)), model.clone());
+    let _ = interval(Duration::from_millis(500), move || {
+        let on = model.active_tab().and_then(|tab| tab.focused()).is_some_and(|it| it.session.logging());
+        let next = (on, on && !rec.get_untracked().1);
+        if next != rec.get_untracked() {
+            rec.set(next);
+        }
+    });
+    rec
+}
+
+/// The dot of 8 px, red while lit.
+fn recording(rec: Signal<(bool, bool)>) -> quadra::Div {
+    let lit = move || if rec.get().1 { token::HUE_RED } else { token::STATUS_BG };
+    part().role(Role::Image).label("Logging").child(div().size(8.0, 8.0).radius(4.0).bg(lit))
 }
 
 /// The frames the window made in the last second, `60 fps`, counted while shown.

@@ -62,13 +62,14 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
   search are the rail's and the keys'. Then the window buttons, 36 px
   wide, 8 px after. In the settings only Done shows; locked, only "Locked" after the name, in
   the secondary colour.
-- **Body**: the rail (248 px, vertical tabs), the workspace, and from P2 the SFTP dock (300 px)
+- **Body**: the rail (270 px, vertical tabs), the workspace, and from P2 the SFTP dock (300 px)
   on the right.
 - **Status bar** (the chrome plane, a line over it, 12 px, groups split by 1×14 px lines):
   first Collapse tabs to icons (the rail's fold, an icon button in the accent); then the active
   space's cwd after a folder icon (a click copies it); git branch and changes after a branch
   icon (M4: `main ↑2 M1`), a group of its own; the host and its latency after a server icon
-  (P2; a remote space only: a local one shows nothing there); then right the OSC 9;4 meter
+  (P2; a remote space only: a local one shows nothing there); a red dot of 8 px that blinks
+  each half second while the focused space logs; then right the OSC 9;4 meter
   (M3: `build`, a 56 px line, the percentage), CPU and memory (M4), the `2026-11-16 20:45:07` (24 h, the local time, again each second; in mono, so only its
   text is painted again), and last Toggle SFTP panel. Labels are the secondary colour, values
   the text colour, numbers in mono. The icons have the kit's roles (the canvas leaves them in
@@ -77,7 +78,7 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
 
 ## Rail (vertical tabs)
 
-248 px on the panel colour (the setting, 140 to 400), a line on its right. A heading of 28 px
+270 px on the panel colour (the setting, 140 to 400), a line on its right. A heading of 28 px
 ("Tabs", 12 px semibold, the secondary colour) with the count (mono, regular, the third text
 colour) and Collapse tabs to icons at its right; then, under a strong line, the tabs as the kit's tab rules turned on their side: a row of 36 px a tab, the full
 width, no line between them (`panel_hover` at half under the pointer), 14 px from the left: an icon (a terminal, or a server when a space is
@@ -114,7 +115,8 @@ under a strong line, in it, 4 px from its seams and 6 from its sides, the expand
 of a dashed 1 px strong line (radius 6, the hover fill inside it) around the `+`; the `+` menu
 at its right.
 
-Click selects; middle closes; double-click renames; the right button opens the tab menu (Rename,
+Click selects; middle closes (collapsed too); double-click renames (in the Rename tab dialog,
+the name in a field, Enter keeps it; in the strip in place); the right button opens the tab menu (Rename,
 Duplicate, Close, Close others, Close to the right: the tabs after it, asked first as a close
 is when one has edits). Rows drag to reorder.
 
@@ -149,7 +151,7 @@ they do after a close. Split space in a layout of the user's is a split to the r
 at one space arranges itself again. The order of the spaces (the focus keys, the status bar) is
 the tree's reading order (in an arranged tab, each added space comes after the focused one). The
 layout is not saved. A space is a terminal, or the editor of a remote file (M9, "Editing in
-1Term"): that one runs no program and is in no input channel; it is not saved either. Each space has an 18 px header in 12 px on the panel colour, a 1 px line along its bottom (inside the 18 px): where it is on the left,
+1Term"): that one runs no program and is in no input channel; it is not saved either. Each space of a tab of two or more has an 18 px header (a tab of one space has none) in 12 px on the panel colour, a 1 px line along its bottom (inside the 18 px): where it is on the left,
 in mono (the cwd, after `user@host:` for a remote space; in the text colour while focused), its
 signal on the right (a progress percentage in mono; the state's 12 px icon and a label in the
 state's colour, `deploy blocked`, then the latency in mono; with no state the latency, else the
@@ -163,8 +165,8 @@ the active space (Split space: a new local shell in its cwd, after it, with the 
 space), `Ctrl+Alt+Left/Right` moves the focus; a press anywhere in a space makes it the focused one. A space whose program ended shows
 `[process exited N]` and closes on a key. The other button opens a space's menu (when the
 setting has it, the default): Open link and Copy link first when the press was on a link, Copy
-(with a selection), Paste, Select all, Clear scrollback, then Split space, Split right, Split
-left, Split up, Split down, Input channel, and Close space, the groups split by lines, no
+(with a selection), Paste, Select all, Clear scrollback, then Start logging (Stop logging while
+a log is open), then Split right, Split left, Split up, Split down, Input channel, and Close space, the groups split by lines, no
 icons; a program that reports the mouse takes the press instead.
 
 Input channels (broadcast typing): five, A to E. A space that joined one sends what is typed in
@@ -234,7 +236,7 @@ Enter that goes to the shell records the line first (`Engine::record`, which red
 the line is at a prompt (or `require_prompt_region` is off) and not on the alternate screen:
 a password typed for a program is no command.
 
-Settings (Terminal page, group Completion; `completion.*` in `settings.json`): enabled, accept
+Settings (Terminal page, group Completion; `completion.*` in `settings.json`): enabled (off at first), accept
 with Tab, history kept (500, 0 to 5000), characters before suggesting (1, 0 to 10), rows shown
 (8, 1 to 20), the history, hand-written catalogs and generated catalogs as sources, fuzzy
 matching, the ancestors' options, off in full-screen programs, only at a prompt, Unix commands
@@ -332,7 +334,7 @@ Appearance (and the UI's text size, 75 to 200 %, the terminals' with it: the app
 shortened to its name, or "Terminal" and the host), SSH & hosts (the count of saved hosts with Add SSH host,
 the recent targets with Forget; Connections: the keepalive, on, every 30 s from 5 to 3600, given up
 after 3 unanswered from 1 to 20), SFTP (the downloads folder), Notifications & signals, Status bar
-(and frames a second, off: `window().frames()` counted each second), and whether the SFTP dock is
+(and frames a second, on: `window().frames()` counted each second), and whether the SFTP dock is
 open is kept for each kind of tab that shows (a local shell's, closed at first; an SSH space's,
 open): it follows the tab, and opening or closing it is remembered for the kind,
 Security & lock (Lock now while a password is set; and whether programs may read the clipboard by OSC 52, off), Terminal's

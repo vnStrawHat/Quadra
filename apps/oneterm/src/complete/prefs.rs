@@ -46,7 +46,8 @@ impl CompletePrefs {
         let on = Config::default();
         let count = |key: &str, default: usize| s.value(key, default as f64);
         CompletePrefs {
-            enabled: s.value("completion.enabled", on.enabled),
+            // Off until asked for: the app, not the engine, decides that.
+            enabled: s.value("completion.enabled", false),
             accept_tab: s.value("completion.accept_tab", on.accept_tab),
             max_history: count("completion.max_history", on.max_history),
             min_prefix: count("completion.min_prefix_len", on.min_prefix_len),

@@ -461,6 +461,16 @@ the pid from `Pty::pid` kept on the session. An idle tab is purple expanded too,
 The status bar drops `local shell` (the host group is a remote space's), puts git in a group
 of its own after the directory, and the lock's minutes moved into Lock in the title bar.
 
+### 1Term: defaults, rename in a dialog, a dot while logging (2026-11-23)
+
+New defaults: completion off, the rail 270 px, frames a second shown. The folded rail's
+middle button closes a tab as the expanded one's does. In the rail at its width two clicks
+(or Rename) open the Rename tab dialog; the strip still renames in place. A tab of one space
+shows no space header. A space's menu drops Split space (Ctrl+D stays) and puts Start logging
+in a group of its own; while the focused space logs, the status bar has a red dot that blinks
+each half second (`Session::logging` looked at then, as a log can end on its feeding thread).
+Tests: `apps/oneterm/tests/rail.rs`, `menus.rs`, `signals.rs`.
+
 ### Status marks a step up, tabs without a hover box (2026-11-22)
 
 A status mark (and a status label's) is 14 px unless told, a step up from 12 beside 14 px

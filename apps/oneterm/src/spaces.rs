@@ -154,7 +154,10 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
         }
     };
     let links = Links::here(model);
+    // A tab of one space shows no header: the tab says what it would.
+    let many = move || tab.spaces.try_with(|it| it.len() > 1).unwrap_or(false);
     let header = row()
+        .display(crate::locked::shown(many))
         .align_items(Align::Center)
         .gap(8.0)
         .padding_x(8.0)
@@ -260,13 +263,13 @@ fn menu_of(
             }),
             MenuItem::new("Select all").on_select(move || all.select_all()),
             MenuItem::new("Clear scrollback").on_select(move || clears.clear_history()),
+            MenuItem::separator(),
             logging(&model, &s, &name, folder.clone()),
             MenuItem::separator(),
-            split(&model, "Split space", None, "Ctrl+D"),
-            split(&model, "Split right", Some(Side::Right), "Ctrl+Shift+Right"),
-            split(&model, "Split left", Some(Side::Left), "Ctrl+Shift+Left"),
-            split(&model, "Split up", Some(Side::Up), "Ctrl+Shift+Up"),
-            split(&model, "Split down", Some(Side::Down), "Ctrl+Shift+Down"),
+            split(&model, "Split right", Side::Right, "Ctrl+Shift+Right"),
+            split(&model, "Split left", Side::Left, "Ctrl+Shift+Left"),
+            split(&model, "Split up", Side::Up, "Ctrl+Shift+Up"),
+            split(&model, "Split down", Side::Down, "Ctrl+Shift+Down"),
             MenuItem::separator(),
             crate::channels::menu(model.tabs(), &space),
             MenuItem::separator(),
@@ -278,13 +281,10 @@ fn menu_of(
     })
 }
 
-/// A row that splits the space to a side, or as Split space does.
-fn split(model: &Model, name: &str, side: Option<Side>, keys: &str) -> MenuItem {
+/// A row that splits the space to a side.
+fn split(model: &Model, name: &str, side: Side, keys: &str) -> MenuItem {
     let model = model.clone();
-    MenuItem::new(name).keys(keys).on_select(move || match side {
-        Some(side) => model.split_to(side),
-        None => model.split(),
-    })
+    MenuItem::new(name).keys(keys).on_select(move || model.split_to(side))
 }
 
 /// Start logging, or Stop logging while a log is open.

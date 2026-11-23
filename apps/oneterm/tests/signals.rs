@@ -52,6 +52,7 @@ impl App {
 #[test]
 fn a_status_shows_on_the_tab_and_the_header_and_done_is_seen_when_the_tab_shows() {
     let mut a = app();
+    a.key(Key::D, Mods::CTRL);
     a.feed(0, b"\x1b]7501;state=working:id=build\x07");
     let turning = |n: &quadra_tree::SemanticNode| {
         n.semantics.role == Role::ProgressBar && n.semantics.name == "Working"
@@ -61,7 +62,7 @@ fn a_status_shows_on_the_tab_and_the_header_and_done_is_seen_when_the_tab_shows(
     a.feed(0, b"\x1b]7501;state=done:id=build\x07");
     assert!(a.says("Done, result not yet seen"));
     a.key(Key::T, Mods::CTRL);
-    a.feed(1, b"\x1b]0;other\x07");
+    a.feed(2, b"\x1b]0;other\x07");
     assert!(a.says("Done, result not yet seen"), "a tab that does not show keeps its done");
     a.h.get_by_role(Role::Tab, "Terminal").click();
     a.h.settle();
@@ -79,6 +80,7 @@ fn a_program_that_waits_raises_a_card() {
 #[test]
 fn progress_shows_on_the_tab_and_in_the_status_bar() {
     let mut a = app();
+    a.key(Key::D, Mods::CTRL);
     a.feed(0, b"\x1b]9;4;1;40\x07");
     assert_eq!(a.h.query(|n| n.semantics.name == "40%").len(), 3, "the tab, the header, the meter");
     a.feed(0, b"\x1b]9;4;0\x07");
@@ -112,10 +114,13 @@ fn a_notification_is_a_card_and_counts_until_looked_at() {
 #[test]
 fn a_header_names_the_shell_until_the_program_gives_a_title() {
     let mut a = app();
+    assert!(!a.says("Command Prompt"), "a tab of one space has no header");
+    a.key(Key::D, Mods::CTRL);
     // A newer console host says no title at the start: the shell's name stands for it.
-    assert!(a.says("Command Prompt"), "{}", a.h.semantics());
+    let names = |a: &App| a.h.query(|n| n.semantics.name == "Command Prompt").len();
+    assert_eq!(names(&a), 2, "{}", a.h.semantics());
     a.feed(0, b"\x1b]0;C:\\WINDOWS\\System32\\cmd.exe - ls\x07");
-    assert!(a.says("cmd.exe - ls") && !a.says("Command Prompt"), "the title, its path shortened");
+    assert!(a.says("cmd.exe - ls") && names(&a) == 1, "the title, its path shortened");
 }
 
 #[test]

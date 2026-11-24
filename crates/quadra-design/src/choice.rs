@@ -141,7 +141,8 @@ impl Choice {
             (true, _) => {
                 let outlined = group.radius(token::RADIUS_MD).border(1.0).shrink(0.0);
                 let outlined = match crate::layout::fills() {
-                    true => outlined.width(quadra_layout::Length::Fill),
+                    // Its column's width; in a row, the room its neighbours leave.
+                    true => outlined.width(quadra_layout::Length::Fill).shrink(1.0),
                     false => outlined,
                 };
                 outlined.border_color(token::LINE_STRONG).overflow_y(Overflow::Hidden)

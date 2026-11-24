@@ -181,14 +181,18 @@ def figure(root, name, words):
 
 def components(site):
     pages = json.loads(read(f"{SHOTS}/dark/pages.json"))
-    made = dict(re.findall(r'"([a-z0-9-]+)" => (\w+)::', read("examples/gallery/src/registry.rs")))
+    made = {i: (m, f) for i, m, f in re.findall(r'"([a-z0-9-]+)" => (\w+)::(\w+)\(', read("examples/gallery/src/registry.rs"))}
     groups, cards = {}, []
     for page in pages:
         ident, title, group = page["id"], page["title"], page["group"]
         if group == "Performance":
             continue
         names = shots(site.out, ident)
-        source = f"examples/gallery/src/pages/{made.get(ident, 'overview')}.rs"
+        module, function = made.get(ident, ("overview", "start_page"))
+        source = f"examples/gallery/src/pages/{module}.rs"
+        whole = read(source)
+        start = whole.find(f"pub fn {function}(")
+        built = whole[start:whole.find("\n}\n", start) + 2] if start >= 0 else ""
         text = [f"# {title}", "", page["about"] or f"{title}, as the gallery shows it.", ""]
         text += [f"Pictures: " + ", ".join(f"[{n}, {t}](../img/{t}/{n}.png)" for n in names for t in ("dark", "light")), ""]
         if any(demo["code"] for demo in page["demos"]):
@@ -196,7 +200,11 @@ def components(site):
         for demo in page["demos"]:
             if demo["code"]:
                 text += [f"### {demo['title']}", "", "```rust", demo["code"], "```", ""]
-        text += ["## More", "", f"- The code that draws this page, whole and compiled: [`{source}`]({REPO}{source}).",
+        if built:
+            text += ["## The page's code", "", f"The function that builds the page pictured above, as the gate compiles it "
+                     f"(what it calls and is not the kit's is beside it in [`{source}`]({REPO}{source})):", "",
+                     "```rust", built, "```", ""]
+        text += ["## More", "", f"- The file this page is in, whole: [`{source}`]({REPO}{source}).",
                  "- What it looks like and why: [the design language](../design/README.md); "
                  "its API, keys and semantics: [`specs/13-kit.md`](" + REPO + "specs/13-kit.md).",
                  "- Everything here is `quadra_design::..`; `use quadra_design::*` and `use quadra::*` bring the names in.", ""]

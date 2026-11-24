@@ -4,12 +4,14 @@
 
 use std::rc::Rc;
 
-use quadra_design::{TimeOfDay, number_input};
-use quadra_design::{button, button_row, columns, dark, field, form, input, segmented, time_input};
+use quadra_design::{TimeOfDay, date_picker, number_input, select};
+use quadra_design::{
+    button, button_row, columns, dark, field, form, hstack, input, segmented, spacer, time_input,
+};
 use quadra_reactive::signal;
 use quadra_testing::Harness;
 use quadra_tree::Role;
-use quadra_view::column;
+use quadra_view::{column, text};
 
 // #test
 #[test]
@@ -75,4 +77,40 @@ fn a_control_fills_its_column_in_a_form_and_keeps_its_own_width_outside() {
     // A select too, with what holds it and its menu.
     let kind = h.get_by_test_id("kind").node();
     assert_eq!(h.tree.window_rect(kind).width, 412.0);
+}
+
+#[test]
+fn what_fills_its_column_gives_way_in_a_row_and_a_bound_text_in_a_form_follows() {
+    let (name, kind, day) =
+        (signal(String::new()), signal(0usize), signal(quadra_design::Date::new(2026, 11, 24)));
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        let said = text(move || format!("Hello, {}", name.get()));
+        let with_button = hstack().child(input(name).label("Name")).child(button("Go"));
+        let beside = hstack()
+            .child(text("Every"))
+            .child(spacer())
+            .child(segmented(["Hour", "Day"], kind).label("Seg"));
+        let picks = hstack()
+            .child(select(["One", "Two"], kind).test_id("pick"))
+            .child(date_picker(day).test_id("day"));
+        column().width(412.0).child(form().child(said).child(with_button).child(beside).child(picks))
+    });
+    h.frame();
+    let ends = |h: &mut Harness, node| {
+        let rect = h.tree.window_rect(node);
+        rect.x + rect.width
+    };
+    // In a row a field takes the room its neighbours leave; nothing goes past the column.
+    let go = h.get_by_role(Role::Button, "Go").node();
+    let seg = h.get_by_role(Role::Group, "Seg").node();
+    let (pick, day) = (h.get_by_test_id("pick").node(), h.get_by_test_id("day").node());
+    assert_eq!((ends(&mut h, go), ends(&mut h, seg)), (412.0, 412.0));
+    assert!(ends(&mut h, pick) < ends(&mut h, day) && ends(&mut h, day) <= 412.0, "{}", ends(&mut h, day));
+    assert!(h.tree.window_rect(go).x > 300.0, "the field took the room the button left");
+    // A text bound to a signal follows it inside a form as anywhere.
+    h.get_by_role(Role::TextInput, "Name").type_text("Lan");
+    h.frame();
+    assert!(h.has_text("Hello, Lan"));
 }

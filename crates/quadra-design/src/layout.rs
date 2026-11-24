@@ -82,7 +82,12 @@ pub(crate) fn field_width(frame: Div, told: Option<f32>, own: f32) -> Div {
 /// wide as the form.
 /// What holds a field and its popup: as wide as its column where the field is.
 pub(crate) fn holder(around: Div, told: Option<f32>) -> Div {
-    if told.is_none() && fills() { around.width(Length::Fill) } else { around }
+    // Its column's width; in a row, the room its neighbours leave.
+    if told.is_none() && fills() {
+        around.width(Length::Fill).min_width(Length::Px(0.0)).shrink(1.0)
+    } else {
+        around
+    }
 }
 
 pub struct Form {

@@ -149,7 +149,7 @@ pub(super) fn bar(
     });
     let count = text(move || said.get()).size(size::TEXT_SM.size).color(token::TEXT_3);
     let next = act(Act::Next(false));
-    let query = input(f.query).height(26.0).icon(icons::SEARCH).width(220.0);
+    let query = input(f.query).icon(icons::SEARCH).width(220.0);
     let query = query.placeholder("Find").label("Find").on_submit(move |_| next());
     let first = row().align_items(Align::Center).gap(4.0).child(query);
     let first = first.child(switch(icons::CASE_SENSITIVE, "Match case", f.case));
@@ -162,7 +162,7 @@ pub(super) fn bar(
     let first = first.child(icon_button(icons::X, "Close").on_click(act(Act::Close)));
     let (one, all) = (act(Act::Replace), act(Act::All));
     let second = move || {
-        let with = input(f.with).height(26.0).width(220.0).placeholder("Replace").label("Replace");
+        let with = input(f.with).width(220.0).placeholder("Replace").label("Replace");
         // 4 under the row above: the plane has no gap, so nothing is under the last row.
         let row = row().align_items(Align::Center).gap(4.0).padding_top(4.0).child(with);
         row.child(button("Replace").size(Size::Sm).on_click(one.clone()))

@@ -33,8 +33,7 @@ pub(super) fn head(form: Form, title: String) -> Div {
 /// The form; `confirming` puts the question of deleting it at its end.
 pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirming: Signal<bool>) -> Div {
     // No field has a width: each is as wide as its column of the dialog's body.
-    let text_field =
-        |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id).height(H);
+    let text_field = |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id);
     let auth = form.auth;
     let address = div()
         .grid([Track::fr(1.0), Track::px(88.0)])

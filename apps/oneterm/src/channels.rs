@@ -103,7 +103,7 @@ pub(crate) fn chip(channel: Signal<Option<u8>>) -> impl View {
                 .bg(colour(c))
                 .text_color(token::TEXT_ON_STATUS)
                 .text_size(10.0)
-                .font_weight(700)
+                .font_weight(600)
                 .role(Role::Image)
                 .label(format!("Channel {}", letter(c)))
                 .child(text(letter(c).to_string())),

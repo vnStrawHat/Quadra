@@ -69,7 +69,7 @@ pub(super) fn line(
         .align_items(Align::Center)
         .gap(token::SPACE_LG)
         .padding_x(token::SPACE_LG)
-        .height(by_text(26.0))
+        .height(by_text(24.0))
         .shrink(0.0)
         .border_bottom(1.0)
         .border_color(token::LINE)

@@ -26,7 +26,7 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
         icon_button(icons::PLUS, "Add SSH host").muted().on_click(move || adds.set(true)),
     );
     let heading = crate::rail::heading("SSH hosts").child(add);
-    let field = input(filter).placeholder("Filter hosts").height(28.0).width(232.0).test_id("host-filter");
+    let field = input(filter).placeholder("Filter hosts").fill().test_id("host-filter");
     let list = dynamic(move || {
         let words = filter.get().to_lowercase();
         let hosts: Vec<Host> = (shown.hosts().into_iter())
@@ -90,17 +90,17 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
         .grow(1.0)
         .min_height(0.0)
         .child(heading)
-        .child(div().padding_x(token::SPACE_MD).padding_bottom(token::SPACE_SM).child(field))
+        .child(row().padding_x(token::SPACE_MD).padding_bottom(token::SPACE_SM).child(field))
         .child(quadra::scroll(signal(0.0), list).container(
             column().grow(1.0).min_height(0.0).padding_x(token::SPACE_SM).padding_bottom(token::SPACE_MD),
         ))
 }
 
-/// A row of the list: 26 px, radius 6, 8 px in, its parts 8 px apart.
+/// A row of the list: a data row (24), radius 6, 8 px in, its parts 8 px apart.
 fn line() -> quadra::Div {
     row()
         .width(Length::Fill)
-        .height(by_text(26.0))
+        .height(by_text(24.0))
         .align_items(Align::Center)
         .gap(token::SPACE_MD)
         .padding_x(token::SPACE_MD)

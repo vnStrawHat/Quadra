@@ -121,7 +121,7 @@ fn bar(b: Bar, s: &Session, close: Rc<dyn Fn()>, at: NodeRef) -> Div {
         div().width(64.0).shrink(0.0).text_size(size::TEXT_SM.size).text_color(tone).child(text(said));
     let next = step(false);
     // 220 wide, less in a narrow space: the bar stays inside it.
-    let query = input(b.query).height(26.0).fill().icon(icons::SEARCH);
+    let query = input(b.query).fill().icon(icons::SEARCH);
     let query = query.placeholder("Find").label("Find").invalid(none).on_submit(move |_| next());
     let query = row().width(224.0).min_width(Length::Px(96.0)).padding_right(token::SPACE_XS).child(query);
     let rule = div().width(1.0).height(16.0).shrink(0.0).bg(token::LINE);

@@ -53,7 +53,9 @@ search shows the matching rows alone, and a page with none leaves the column.
 
 ## Settings, cards (`settings(..).cards()`, `settings_group(..)`)
 
-A group stands on its own in any page as `settings_group(group)`: its title (16, semibold)
+A field in a row of settings is 240 wide: a text field's own width, and what a select
+there is told (`.width(240.0)`), so that the controls of a page end on one edge and are one
+width. A group stands on its own in any page as `settings_group(group)`: its title (16, semibold)
 over the outlined card of its rows, 16 apart; groups are 24 apart (`sections()`).
 
 - **Navigation**: 250 wide on `panel`, a 1 px `line` at its right. The search field as wide as

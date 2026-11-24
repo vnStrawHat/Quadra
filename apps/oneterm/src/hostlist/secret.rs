@@ -10,17 +10,14 @@ use crate::locked::shown;
 use crate::model::Model;
 use quadra_design::token;
 
-const W: f32 = 416.0;
-
 /// Under the password or passphrase typed, the master password while its key is not in memory,
 /// or a new one and again while there is none.
 pub(super) fn fields(model: &Model, form: Form) -> impl View + use<> {
     let lock = model.lock();
-    let h = quadra_design::size::H_MD;
     let typed = move || !form.secret.with(String::is_empty);
     let opens = move || typed() && lock.can_lock() && lock.key.get().is_none();
     let sets = move || typed() && !lock.can_lock();
-    let master = |id: &'static str, value| input(value).password().test_id(id).width(W).height(h);
+    let master = |id: &'static str, value| input(value).password().test_id(id);
     column()
         .gap(token::SPACE_LG)
         .display(shown(move || matches!(form.auth.get(), 2 | 3)))

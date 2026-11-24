@@ -161,7 +161,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                 .row(
                     "Downloads folder",
                     "Where a file downloaded from the dock goes; empty, the user's Downloads.",
-                    input(p.downloads).placeholder("Downloads").label("Downloads folder").width(240.0),
+                    input(p.downloads).placeholder("Downloads").label("Downloads folder"),
                 )
                 .back(p.downloads, d.downloads),
             SettingsGroup::new("Editing")
@@ -174,13 +174,13 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                 .row(
                     "Program",
                     "The editor's program, when it is one.",
-                    input(p.editor_program).placeholder("notepad.exe").label("Program").width(240.0),
+                    input(p.editor_program).placeholder("notepad.exe").label("Program"),
                 )
                 .back(p.editor_program, d.editor_program)
                 .row(
                     "Arguments",
                     "Before the file, split at spaces.",
-                    input(p.editor_args).label("Arguments").width(240.0),
+                    input(p.editor_args).label("Arguments"),
                 )
                 .back(p.editor_args, d.editor_args)
                 .row(
@@ -246,10 +246,7 @@ fn folder_field(folder: quadra::Signal<String>) -> quadra::Div {
             folder.set(chosen.display().to_string());
         }
     });
-    row()
-        .gap(token::SPACE_MD)
-        .child(input(folder).placeholder("session-logs").label("Folder").width(240.0))
-        .child(choose)
+    row().gap(token::SPACE_MD).child(input(folder).placeholder("session-logs").label("Folder")).child(choose)
 }
 
 /// The saved hosts and the recent targets, with what adds one and what forgets them.

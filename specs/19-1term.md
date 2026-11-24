@@ -92,7 +92,7 @@ its end. A tab with a progress has a
 more row: in it, 4 px from its seams and 6 from its sides, a box of a dashed 1 px strong line
 (radius 6, the hover fill inside it) with a `+` 14 px from the rail's edge and `Ctrl-T` at its end; it opens the `+` menu at the rail's right. From P2 the SSH hosts follow: a heading "SSH hosts"
 with Add SSH host, the filter ("Filter hosts", 28 px), then groups (a chevron, the name, the
-count in mono at the right) of rows of 26 px (radius 6) under a line from the chevron: a 10 px square in the host's colour tag (`Colour tag: red`, `Colour tag: #e06c75`), the
+count in mono at the right) of data rows (24 px, radius 6) under a line from the chevron: a 10 px square in the host's colour tag (`Colour tag: red`, `Colour tag: #e06c75`), the
 name, the address in mono at the right. The switch to horizontal tabs is in the settings.
 
 Collapsed (Collapse tabs to icons, in the heading or the status bar, or the setting) the rail is
@@ -200,8 +200,8 @@ address, or a target over 256 KiB is refused, with a card saying why.
 `Ctrl+F` (the binding `find` of the Keybindings page; bound for the whole window, so the keys
 reach a shell only once unbound there) opens a find bar at the top right of the focused space,
 over its terminal, and puts the focus in its query; pressed again it gives the focus back to the
-query. The bar is one row of 26 px in the kit's pieces, 4 px inside its plane (specs/design, "Text
-input": a find bar's row): the query (`input`, 26 px, 220 wide or less in a narrow space (96 at least: the bar stays inside it), the search
+query. The bar is one row of the kit's pieces, 4 px inside its plane (specs/design/controls.md,
+"A find bar"): the query (`input`, the md step, 220 wide or less in a narrow space (96 at least: the bar stays inside it), the search
 icon before it, placeholder and name "Find"; the error colour
 while it finds nothing), the switches Match case, Whole word and Regular expression as toggled icon buttons (the
 icons `case-sensitive`, `whole-word`, `regex`: the accent while on), the count in 12 px of the second
@@ -225,7 +225,7 @@ for an SSH space. The overlay follows the terminal's `command_line` (specs/18) a
 screen (`disable_in_alt_screen`), away from a prompt (`require_prompt_region`), without the
 caret, or after Escape until the line changes. It stands under the caret at the start of the
 token (above it when there is no room below), on the plane of the kit's popups (its fill,
-border, radius and level 1 shadow); rows of 23 px in the kit's mono face: the matched part in
+border, radius and level 1 shadow); data rows (24 px) in the kit's mono face: the matched part in
 the accent's text colour, the rest, the option's hint and the kind (`command`, `subcommand`,
 `option`, `history`) in the second text colour; the chosen row filled as a menu's. At most
 `max_visible_items` rows show, the window following the chosen row, with `↑ N more` and
@@ -652,7 +652,7 @@ thread never waits on the network.
   tab with a remote space (`Show prod-api-01`). Its header (28 px, 12 px semibold in the
   secondary colour): `SFTP`, the host in the third colour, and Zoom SFTP (an icon button: the
   expanded view). Under it the folder in a mono field of 28 px (12 px) with Go to the typed path
-  after it (Enter goes too); then `..` and the entries as rows of 26 px: a folder icon (blue) or a
+  after it (Enter goes too); then `..` and the entries as data rows (24 px): a folder icon (blue) or a
   file icon, the name, the size in mono 12 px in the third colour (none for a folder). A click
   selects a row (the press fill and a 2 px accent bar at its left, a file's icon in the
   accent); two on a folder (or on `..`) open it, two on a file download it to
@@ -688,7 +688,7 @@ thread never waits on the network.
   path and Refresh; a header row (Name, Size 80 px, Modified 124 px, the last two at the right;
   a click sorts the pane by it, again the other way, its label marked `↑` or `↓`; folders stay
   first; each pane by name at first)
-  and rows of 26 px with a line under each: `..`, then the entries, size and time in mono 12 px
+  and data rows (24 px) with a line under each: `..`, then the entries, size and time in mono 12 px
   (`Nov 16 10:52`); a click selects a row (the accent at 10 % and a 2 px accent bar), two open a
   folder. The Local pane starts in the downloads folder (the setting or Downloads). Between them
   a column of 48 px on the panel plane: bordered square buttons of 28 px, Upload selected,

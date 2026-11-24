@@ -139,7 +139,7 @@ fn path(model: &Model, d: Dock) -> impl View + use<> {
         }
     };
     let (submits, goes) = (model.clone(), model.clone());
-    let field = input(typed).mono().small().height(28.0).fill().label("Remote path").test_id("sftp-path");
+    let field = input(typed).mono().small().fill().label("Remote path").test_id("sftp-path");
     row()
         .align_items(Align::Center)
         .gap(token::SPACE_XS)
@@ -212,7 +212,7 @@ fn line(entry: &Entry, d: Dock) -> quadra::Div {
         .gap(token::SPACE_MD)
         .padding_left(token::SPACE_LG)
         .padding_right(token::SPACE_LG)
-        .height(by_text(26.0))
+        .height(by_text(24.0))
         .shrink(0.0)
         .border_left(2.0)
         .border_color(token::ACCENT.alpha(0.0))

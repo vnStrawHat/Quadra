@@ -34,7 +34,7 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .row(
             "Fallback fonts",
             "Families tried in order, separated by commas, for what the font lacks (icons of patched fonts).",
-            input(l.fallbacks).placeholder("Fallback fonts").width(240.0),
+            input(l.fallbacks).placeholder("Fallback fonts"),
         )
         .back(l.fallbacks, k.fallbacks)
         .row("Font size", "In pixels.", number_input(l.font_size).stepper().range(8.0, 32.0))
@@ -166,13 +166,13 @@ pub(super) fn terminal(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .row(
             "Program",
             "The shell's program when the default is A program.",
-            input(p.shell_program).placeholder("C:\\path\\to\\shell.exe").label("Program").width(240.0),
+            input(p.shell_program).placeholder("C:\\path\\to\\shell.exe").label("Program"),
         )
         .back(p.shell_program, d.shell_program)
         .row(
             "Arguments",
             "Separated by spaces.",
-            input(p.shell_args).placeholder("--login").label("Arguments").width(240.0),
+            input(p.shell_args).placeholder("--login").label("Arguments"),
         )
         .back(p.shell_args, d.shell_args)
         .row(

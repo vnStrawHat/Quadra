@@ -123,7 +123,7 @@ fn a_layout_changed_keeps_where_each_pane_is() {
     frames(&mut h);
     assert!((m.pos.get_untracked() - 80.0).abs() < 1e-3, "{}", m.pos.get_untracked());
     let at = h.tree.window_rect(h.query(|n| n.semantics.role == Role::TextInput)[0]).y;
-    assert!((at - (40.0 + 36.0 - 80.0 * 22.0)).abs() < 1.0, "the editor's rows moved: {at}");
+    assert!((at - (40.0 + 45.0 - 80.0 * 22.0)).abs() < 1.0, "the editor's rows moved: {at}");
     assert!((m.preview_y.get_untracked() - heading_y(&m, 80)).abs() < 1.0);
     // Preview and back: the preview is where it was.
     let y = m.preview_y.get_untracked();

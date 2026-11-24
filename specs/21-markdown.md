@@ -117,8 +117,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 - **Ctrl+F** finds in the document; F3 and Shift+F3, the next and the one before.
   - While the editor shows (Raw, Side by side), it is the editor's find bar, with replace
     (Ctrl+H; behaviour/18, "Find"): Ctrl+F gives the editor the focus where it is not.
-  - In Preview, a bar at the top right of the preview, its row 26 tall (specs/design, "Text
-    input"; as 1Term's, 19 "Find"): the query with the search icon, Match case and Whole
+  - In Preview, a bar at the top right of the preview (specs/design/controls.md, "A find
+    bar"; as 1Term's, 19 "Find"): the query with the search icon, Match case and Whole
     word, `3 of 12` (`No results`), the one before and the next, and a cross. Enter is the
     next, Shift+Enter the one before; Escape closes it. The matches are marked in the
     preview (13, "Markdown", Find), the current one brought into view. Each tab has its own
@@ -173,7 +173,8 @@ Each milestone is committed once `tools/check.sh prod` is green, before the next
 
 ## Toolbar
 
-- **Where.** A row of 36 px, under the bar, while the editor shows (Raw, Side by side). It
+- **Where.** The kit's `toolbar()` (45 px on the canvas, a line under it; groups split by
+  `vdivider()`), under the bar, while the editor shows (Raw, Side by side). It
   holds ghost icon buttons of 28 px with tooltips that name their keys, in groups split by
   rules. After a press the focus is back in the editor, its selection as the button left
   it. The buttons work on the primary cursor's selection.

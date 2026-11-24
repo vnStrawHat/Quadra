@@ -64,7 +64,7 @@ pub(super) fn pane(
     let header = row()
         .gap(token::SPACE_LG)
         .padding_x(token::SPACE_LG)
-        .height(by_text(26.0))
+        .height(by_text(28.0))
         .shrink(0.0)
         .align_items(Align::Center)
         .bg(token::PANEL)

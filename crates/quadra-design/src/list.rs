@@ -35,7 +35,7 @@ where
 }
 
 impl<F> List<F> {
-    /// The height of every row: 23 px unless told; 32 for the rows of a picker.
+    /// The height of every row: a data row (24) unless told; 32 for the rows of a picker.
     pub fn row_height(mut self, height: f32) -> Self {
         self.row_height = height;
         self

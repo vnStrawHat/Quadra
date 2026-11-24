@@ -8,7 +8,6 @@ use quadra_design::{Notice, Tone, Variant, copyable, description_list, dialog, f
 use super::Dock;
 use crate::model::Model;
 use crate::panes::{size, when};
-use quadra_design::token;
 
 impl Dock {
     /// Asks for an entry of the folder shown, then shows the dialog; what fails is a card.
@@ -56,7 +55,7 @@ pub(crate) fn properties(d: Dock) -> impl View + use<> {
             ("Group", plain(owner(stat.group.as_deref(), stat.gid))),
             ("Path", mono(copyable(path))),
         ];
-        div().width(420.0).padding_x(token::SPACE_LG).child(description_list(rows))
+        description_list(rows)
     };
     dialog(ask.properties, "Properties", body).action("Close", Variant::Primary, || {})
 }

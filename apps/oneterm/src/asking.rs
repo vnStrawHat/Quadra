@@ -151,7 +151,7 @@ fn sign_in(
         "Passphrase" => "Wrong passphrase, please try again.",
         _ => "Permission denied, please try again.",
     };
-    let mut entry = input(typed).label(name).test_id("sign-in").height(quadra_design::size::H_MD);
+    let mut entry = input(typed).label(name).test_id("sign-in");
     if secret {
         entry = entry.password();
     }
@@ -167,7 +167,7 @@ fn failure(asked: Option<(Phase, String)>) -> quadra::Div {
     column()
         .gap(token::SPACE_MD)
         .child(text(format!("Could not connect to {label}.")))
-        .child(div().text_color(token::ERROR).child(text(sentence(&reason))))
+        .child(quadra_design::alert(quadra_design::Tone::Danger, "", &sentence(&reason)))
 }
 
 /// The engine's reason as a sentence: its first letter upper case.

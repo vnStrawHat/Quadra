@@ -8,7 +8,7 @@ use quadra_design::{fonts, size, token};
 use super::Shown;
 
 /// The height of a row, and of a row that says how many more there are.
-const ROW: f32 = 23.0;
+const ROW: f32 = 24.0;
 const MORE: f32 = 20.0;
 
 /// The first row shown and how many, of `n`, at most `most`, keeping `chosen` in view: at

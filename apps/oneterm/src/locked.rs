@@ -76,8 +76,8 @@ fn card(model: &Model) -> Div {
         .reveal()
         .placeholder("Master password")
         .test_id("unlock")
-        .width(414.0)
-        .height(32.0)
+        .fill()
+        .height(32.0) // the lg step: the one field of a sign-in card
         .on_submit(move |_| lock.unlock());
     let head = row()
         .align_items(Align::Center)
@@ -167,7 +167,7 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>, default: Signal<f64>) -> 
     let (current, new, again, said) =
         (signal(String::new()), signal(String::new()), signal(String::new()), signal(String::new()));
     let field = |value: Signal<String>, hint: &str, name: &str, id: &'static str| {
-        input(value).password().placeholder(hint).label(name).test_id(id).width(240.0)
+        input(value).password().placeholder(hint).label(name).test_id(id)
     };
     let set = move || {
         if new.get_untracked() != again.get_untracked() {

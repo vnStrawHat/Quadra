@@ -5,13 +5,12 @@
 use std::rc::Rc;
 
 use oneterm_ssh::{Entry, Stat, join};
-use quadra::{Clipboard, Signal, View, column, div, signal, text, use_context};
+use quadra::{Clipboard, Signal, View, div, signal, text, use_context};
 use quadra_design::{MenuItem, Variant, dialog, field, icons, input};
 
 use crate::model::Model;
 use crate::panes::Local;
 use crate::sftp::{Dock, Editing};
-use quadra_design::token;
 
 /// What the dialogs of a dock ask about.
 #[derive(Clone, Copy)]
@@ -200,49 +199,46 @@ pub(crate) fn dialogs(model: &Model, d: Dock) -> impl View + use<> {
                 }
             }
         };
-        column()
-            .width(320.0)
-            .padding_x(token::SPACE_LG)
-            .child(field("Name", input(ask.name).width(296.0).test_id("sftp-name").on_submit(submit)))
+        field("Name", input(ask.name).test_id("sftp-name").on_submit(submit))
     };
+    // A question, or one field: the dialog of 360 (specs/design/surfaces.md).
     let folder = dialog(ask.folder, "New folder", body.clone())
+        .width(360.0)
         .action("Cancel", Variant::Secondary, || {})
         .action("Create", Variant::Primary, move || create());
-    let rename = dialog(ask.rename, "Rename", body).action("Cancel", Variant::Secondary, || {}).action(
-        "Rename",
-        Variant::Primary,
-        move || rename(),
-    );
+    let rename = dialog(ask.rename, "Rename", body)
+        .width(360.0)
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Rename", Variant::Primary, move || rename());
     let asked = move || {
         let entry = ask.entry.get();
         let name = entry.as_ref().map(|it| it.name.as_str()).unwrap_or_default();
         let what = if entry.as_ref().is_some_and(|it| it.dir) { "the empty folder" } else { "the file" };
         format!("Delete {what} {name} from the server? It cannot be undone.")
     };
-    let delete = dialog(ask.delete, "Delete", move || {
-        div().width(320.0).padding_x(token::SPACE_LG).child(text(asked))
-    })
-    .action("Cancel", Variant::Secondary, || {})
-    .action("Delete", Variant::Primary, move || {
-        if let Some(entry) = ask.entry.get_untracked() {
-            d.delete(&deletes, &entry);
-        }
-    });
+    let delete = dialog(ask.delete, "Delete", move || text(asked))
+        .width(360.0)
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Delete", Variant::Primary, move || {
+            if let Some(entry) = ask.entry.get_untracked() {
+                d.delete(&deletes, &entry);
+            }
+        })
+        .danger();
     let (edits, editing) = (model.clone(), Editing::here());
     let large = move || {
         let entry = ask.entry.get();
         let (name, size) = entry.as_ref().map(|it| (it.name.clone(), it.size)).unwrap_or_default();
         format!("{name} is {}. Download it to edit anyway?", crate::panes::size(size))
     };
-    let large = dialog(ask.large, "A large file", move || {
-        div().width(320.0).padding_x(token::SPACE_LG).child(text(large))
-    })
-    .action("Cancel", Variant::Secondary, || {})
-    .action("Edit", Variant::Primary, move || {
-        if let Some(entry) = ask.entry.get_untracked() {
-            d.edit(&edits, &entry, &editing);
-        }
-    });
+    let large = dialog(ask.large, "A large file", move || text(large))
+        .width(360.0)
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Edit", Variant::Primary, move || {
+            if let Some(entry) = ask.entry.get_untracked() {
+                d.edit(&edits, &entry, &editing);
+            }
+        });
     let properties = crate::sftp::properties::properties(d);
     div().child(folder).child(rename).child(delete).child(large).child(properties)
 }

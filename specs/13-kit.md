@@ -359,7 +359,7 @@ As built so far:
 - **`sidebar(chosen)`** is the places of an app (`NavItem::new(id, label).icon(..)`) in
   groups under muted titles, on the panel's plane with a strong line at its right, 240 px
   wide unless told. `chosen` holds the id of the chosen place: a click writes it, and with
-  the focus in the sidebar the arrows, Home and End move it. A place is a row of 26 px,
+  the focus in the sidebar the arrows, Home and End move it. A place is an item row (28 px),
   12 px in from each side, its icon of 14 px, 6 px between its parts, filled when chosen;
   the groups' titles start 12 px in. While `.folded(|| ..)` says so it is 40 px wide and shows the icons
   alone; the places keep their names for a reader. `.head(view)` is a strip above the
@@ -452,11 +452,11 @@ As built so far:
   opacity): nothing is laid out, painted or uploaded, at the exact place of every frame.
 - **`table(columns, rows, cell)`** (`table.rs`, `table/view.rs`) shows `rows()` rows of
   cells under a header; `cell(row, column)` is what a cell says, and both are asked again
-  when what they read changes. Rows are 26 px with a seam under each and are mounted as
+  when what they read changes. Rows are data rows (24 px) with a seam under each and are mounted as
   they show (`uniform_list`); the header is 28 px on the plane of table heads. A cell has
   8 px at each side of its words. A selected row is tinted, with a bar of 2 px in the accent
   along all of its left edge: a row is a band, not a place in a list. `.dense()` makes the
-  header 26 px with its titles in 12 px `text_2`, and puts 12 px from a row's start to its
+  header 24 px with its titles in 12 px `text_2`, and puts 12 px from a row's start to its
   first words and between the columns' words (6 px at each side of a cell, and 6 at each
   end of a row and of the header); a column's width holds its words and that room. A `Column`
   has a title, a width (140 px; `.width(..)`), and how it shows its cells: text, numbers
@@ -528,7 +528,7 @@ As built so far:
   while it shows; choosing one hides or shows it (`hidden`), and the last one that shows
   cannot be hidden. Cells that change are tinted by live data (above).
 - **`tree(roots, chosen)`** shows things inside things (`TreeNode::new(id, label)
-  .icon(..).children(..)`) as rows of 26 px: 20 px in for each level, with a faint guide for
+  .icon(..).children(..)`) as data rows (24 px): 20 px in for each level, with a faint guide for
   each, then a chevron if the thing holds something, its icon and its label. `roots` is
   asked again when what it reads changes; the rows that show are mounted (`uniform_list`),
   and a row is built again only when the thing at its place is another one, or opens.

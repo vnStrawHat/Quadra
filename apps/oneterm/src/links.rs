@@ -4,13 +4,12 @@
 
 use std::rc::Rc;
 
-use quadra::{Clipboard, Signal, View, div, signal, text, use_context};
+use quadra::{Clipboard, Signal, View, signal, text, use_context};
 use quadra_design::{MenuItem, Notice, Tone, Variant, dialog};
 use quadra_shell::Opener;
 use quadra_term::TermLink;
 
 use crate::model::Model;
-use quadra_design::token;
 
 /// What the policy makes of a link.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -124,15 +123,14 @@ impl Links {
     pub fn dialog(&self) -> impl View + use<> {
         let (asking, opens) = (self.asking, self.clone());
         let says = move || asking.link.with(|it| it.as_ref().map(question).unwrap_or_default());
-        dialog(asking.open, "Open link?", move || {
-            div().width(320.0).padding_x(token::SPACE_LG).child(text(says))
-        })
-        .action("Cancel", Variant::Secondary, || {})
-        .action("Open", Variant::Primary, move || {
-            if let Some(link) = asking.link.get_untracked() {
-                opens.open(&link.url);
-            }
-        })
+        dialog(asking.open, "Open link?", move || text(says))
+            .width(360.0)
+            .action("Cancel", Variant::Secondary, || {})
+            .action("Open", Variant::Primary, move || {
+                if let Some(link) = asking.link.get_untracked() {
+                    opens.open(&link.url);
+                }
+            })
     }
 
     /// The menu's items for a link the other button was pressed on.

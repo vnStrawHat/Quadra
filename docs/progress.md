@@ -574,6 +574,11 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   the accent at 3 to 1 or more (seven corrected, one test). The gallery and the apps write their distances as tokens; the check follows
   constants across files; a `Measure` carries its own number for a tree with no theme. Nothing of
   the design language is owed.
+- **The apps read against the language** (`decisions.md`): 1Term's small dialogs give the
+  body alone in the dialog of 360; hosts, SFTP entries and completions are data rows (24);
+  the find bars' query is the md step in the editor, 1Term and Markdown; Markdown's toolbar
+  is the kit's; a select in a settings row is 240 in both apps; a failure in a dialog is an
+  alert. 1Term's title bar, status bar and rail keep the user's canvas (specs/19).
 
 ### One height for the controls of one line (2026-11-22)
 

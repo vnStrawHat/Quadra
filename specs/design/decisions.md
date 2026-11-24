@@ -149,4 +149,27 @@ The pictures read pale. The palette was not the cause; four things were, and eac
 - **A measure carries its own number** (`Measure(index, own)`): a tree with no theme, or a
   theme with fewer measures, keeps a view's distances instead of collapsing them to 0.
 
+## The apps, read against the language (2026-11-24)
+
+1Term and Markdown took the look from the kit; what they still did their own way is changed:
+
+- **Small dialogs** (SFTP's New folder, Rename, Delete and A large file; Rename tab; Open
+  link; Properties) set a width and a padding inside the dialog's own, so their content
+  stood 24 from the edge where every other dialog's stands 12. They give the body alone, in
+  the dialog of 360 for a question or one field. Delete is `.danger()`.
+- **Rows on the ladder**: hosts, SFTP entries, transfers and completions were 26 and 23 and
+  are data rows (24); the expanded SFTP pane's header is an item row (28); 1Term's
+  horizontal strip is the bar's 32, as its spec said.
+- **No size on a control**: the find bars (the editor's, 1Term's, Markdown's) gave their
+  query 26, between two steps; it is md. Heights that only repeated the md step and widths
+  that only repeated a field's own are gone; the host filter fills the rail.
+- **Markdown's toolbar** is the kit's `toolbar()`, not a row of 36 of its own.
+- **Settings**: a select in a row is 240 in both apps (Markdown's were 200).
+- **A failure in a dialog** is the kit's alert, not a paragraph in the error colour; the
+  one weight of 700 is 600.
+
+**1Term's own shapes, kept**: the title bar of 38, the status bar of 30, the rail's tab rows
+(36, 52 for the active one) and its folded form (48 wide, 44 a tab) are the canvas the user
+drew for 1Term (specs/19). They are stated there and are not steps of the ladders.
+
 Nothing is owed.

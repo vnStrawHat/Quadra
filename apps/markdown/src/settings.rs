@@ -80,11 +80,11 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> [Vec<SettingsGroup>; 5] {
         .row(
             "Text width",
             "The column of the text: 720, 900 or 1200 px, or the pane's width.",
-            select(prefs::WIDTHS, p.width).width(200.0),
+            select(prefs::WIDTHS, p.width).width(240.0),
         )
         .resets(p.width, d.width.get_untracked());
     let layouts = SettingsGroup::new("Layouts")
-        .row("A file opens in", "The layout of a file opened.", select(prefs::OPENS, p.opens_in).width(200.0))
+        .row("A file opens in", "The layout of a file opened.", select(prefs::OPENS, p.opens_in).width(240.0))
         .resets(p.opens_in, d.opens_in.get_untracked())
         .row(
             "Scroll together",

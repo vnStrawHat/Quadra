@@ -2,11 +2,10 @@
 //! name in a field; Enter or Rename keeps it (an empty one gives the program's title back),
 //! Cancel, Escape or the cross leave it as it was.
 
-use quadra::{View, column, effect, signal, untrack};
+use quadra::{View, effect, signal, untrack};
 use quadra_design::{Variant, field, input};
 
 use crate::model::Model;
-use quadra_design::token;
 
 pub(crate) fn dialog(model: &Model) -> impl View + use<> {
     let (renaming, tabs) = (model.renaming(), model.tabs());
@@ -41,16 +40,15 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
         }
     };
     let body = move || {
-        let typed = input(value).width(296.0).test_id("rename-tab").on_submit(move |_: &str| {
+        let typed = input(value).test_id("rename-tab").on_submit(move |_: &str| {
             keep();
             open.set(false);
         });
-        // As SFTP's Rename: 320 px, the field 12 px from each side.
-        column().width(320.0).padding_x(token::SPACE_LG).child(field("Name", typed))
+        field("Name", typed)
     };
-    quadra_design::dialog(open, "Rename tab", body).action("Cancel", Variant::Secondary, || {}).action(
-        "Rename",
-        Variant::Primary,
-        keep,
-    )
+    // As SFTP's Rename: one field in the dialog of 360.
+    quadra_design::dialog(open, "Rename tab", body)
+        .width(360.0)
+        .action("Cancel", Variant::Secondary, || {})
+        .action("Rename", Variant::Primary, keep)
 }

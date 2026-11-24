@@ -23,7 +23,7 @@ pub(crate) fn strip(model: &Model) -> impl View + use<> {
     .muted();
     row()
         .align_items(Align::Stretch)
-        .height(by_text(33.0))
+        .height(by_text(32.0))
         .shrink(0.0)
         .bg(token::PANEL)
         .border_bottom(1.0)

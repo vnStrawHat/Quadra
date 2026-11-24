@@ -1,9 +1,9 @@
 //! The toolbar (specs/21, "Toolbar"): buttons that format the text and insert blocks, each
 //! one change of the editor, the focus back in it after.
 
-use quadra::{Action, Align, Div, div, row};
+use quadra::{Action, Div};
 use quadra_code::Edit;
-use quadra_design::{Size, icon_button, icons, token, tooltip};
+use quadra_design::{Size, icon_button, icons, tooltip};
 
 use crate::format::{Format, format};
 use crate::model::Model;
@@ -67,20 +67,10 @@ pub(crate) fn apply(m: &Model, what: Format) {
 }
 
 pub(crate) fn toolbar(m: &Model) -> Div {
-    let mut bar = row()
-        .height(36.0)
-        .shrink(0.0)
-        .align_items(Align::Center)
-        .gap(token::SPACE_XS)
-        .padding_x(token::SPACE_MD)
-        .bg(token::PANEL)
-        .border_bottom(1.0)
-        .border_color(token::LINE)
-        .role(quadra::Role::Group)
-        .label("Format");
+    let mut bar = quadra_design::toolbar().role(quadra::Role::Group).label("Format");
     for (n, group) in GROUPS.iter().enumerate() {
         if n > 0 {
-            bar = bar.child(div().width(1.0).height(16.0).bg(token::LINE));
+            bar = bar.child(quadra_design::vdivider());
         }
         for &(svg, name, key, what) in group.iter() {
             let tip = if key.is_empty() { name.to_string() } else { format!("{name} ({key})") };

@@ -64,8 +64,11 @@ fn summary(host: &Host, key: &Option<String>) -> Div {
         .gap_y(token::SPACE_XS)
         .align_items(quadra::Align::Center);
     for (name, value) in [("Address", address), ("Jump host", jump), ("Host key", known)] {
-        let label =
-            row().height(23.0).align_items(quadra::Align::Center).text_size(12.0).text_color(token::TEXT_2);
+        let label = row()
+            .height(quadra::by_text(23.0))
+            .align_items(quadra::Align::Center)
+            .text_size(12.0)
+            .text_color(token::TEXT_2);
         grid = grid.child(label.child(text(name))).child(value);
     }
     grid

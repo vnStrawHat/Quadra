@@ -131,11 +131,9 @@ fn keys_kept_in_the_settings_hold_from_the_start_and_a_clash_is_said() {
 
 #[test]
 fn a_lock_while_a_field_records_takes_the_keys_from_it() {
-    let mut a = app(|settings| {
-        let hash = quadra_shell::hash_password("pw").expect("random bytes");
-        settings.value("security.password", String::new()).set(hash);
-        settings.value("security.lock_after_minutes", 0.0).set(1.0);
-    });
+    let mut a = app(|settings| settings.value("security.lock_after_minutes", 0.0).set(1.0));
+    // A master password set since the start: a vault, which a start with it would open locked.
+    a.settings.value("ssh.vault", String::new()).set(include_str!("fixtures/vault.json").into());
     a.open_page();
     let field = a.h.get_by_role(Role::Button, "New tab keys").focus().node();
     a.settle();

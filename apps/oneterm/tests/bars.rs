@@ -78,7 +78,7 @@ impl App {
 fn the_bells_stand_in_the_title_bar_between_search_and_lock() {
     for vertical in [true, false] {
         let mut a = app(vertical);
-        a.model.prefs().password.set("set".into()); // Lock 1Term now shows
+        a.model.prefs().vault.set("set".into()); // Lock 1Term now shows
         a.h.settle();
         // No search in the title bar: the `+` menus have the field.
         assert!(a.h.query(|n| n.semantics.name == "Search tabs, hosts and commands").is_empty());

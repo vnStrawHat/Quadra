@@ -1,7 +1,7 @@
 //! What 1Term takes over from OneTerm, the app it replaces (specs/19, "Taking over from
 //! OneTerm"): the sessions saved in its folder as hosts, and at the first start the settings
-//! of its terminal that have one here. Saved passwords stay where they are: sealed by its
-//! vault, which 1Term does not open.
+//! of its terminal that have one here. Its vault and the passwords it sealed come as they
+//! are: 1Term's vault is of the same format (`vault.rs`).
 
 use std::path::{Path, PathBuf};
 
@@ -11,12 +11,13 @@ use quadra_data::{Value, parse_json};
 use crate::hosts::Host;
 use crate::model::Model;
 use crate::shells::Remote;
+use crate::vault::Header;
 
-/// A saved session as a host, its colour, and whether a password was saved with it.
+/// A saved session as a host, its colour, and the password sealed with it.
 pub(crate) struct Taken {
     pub host: Host,
     pub colour: Option<String>,
-    pub sealed: bool,
+    pub sealed: Option<String>,
 }
 
 fn text<'a>(of: &'a Value, key: &str) -> Option<&'a str> {
@@ -82,7 +83,7 @@ pub(crate) fn sessions(json: &str) -> Vec<Taken> {
                 jump: number(session, "jump_host").and_then(named).unwrap_or_default(),
             },
             colour: text(session, "color").map(str::to_string),
-            sealed: text(session, "sealed_password").is_some(),
+            sealed: text(session, "sealed_password").map(str::to_string),
         })
     });
     taken.filter(|it| !it.host.remote.target.host.is_empty()).collect()
@@ -104,14 +105,14 @@ fn forward(of: &Value) -> Option<Forward> {
 
 impl Model {
     /// Adds the hosts OneTerm saved in `folder` whose names 1Term does not have, with their
-    /// colours: how many, and how many of them had a password saved there. `settings` (the
-    /// first start alone) takes the terminal's settings too.
-    pub fn take_over(&self, folder: &Path, settings: bool) -> (usize, usize) {
+    /// colours, then its saved passwords: how many hosts, how many passwords, and how many
+    /// passwords could not be taken. `settings` (the first start alone) takes the terminal's
+    /// settings too.
+    pub fn take_over(&self, folder: &Path, settings: bool) -> (usize, usize, usize) {
         let saved = std::fs::read_to_string(folder.join("ssh_session.json")).unwrap_or_default();
         let have: Vec<String> = self.hosts().into_iter().map(|it| it.name).collect();
-        let new: Vec<Taken> =
-            sessions(&saved).into_iter().filter(|it| !have.contains(&it.host.name)).collect();
-        let sealed = new.iter().filter(|it| it.sealed).count();
+        let all = sessions(&saved);
+        let new: Vec<&Taken> = all.iter().filter(|it| !have.contains(&it.host.name)).collect();
         for taken in &new {
             self.save_host(taken.host.clone());
             self.set_host_tag(&taken.host.name, taken.colour.as_deref());
@@ -120,7 +121,38 @@ impl Model {
         if let Some(Ok(terminal)) = terminal.as_deref().map(parse_json) {
             self.take_settings(&terminal);
         }
-        (new.len(), sealed)
+        let vault = std::fs::read_to_string(folder.join("vault.json")).unwrap_or_default();
+        let (passwords, left) = self.take_passwords(&vault, &all);
+        (new.len(), passwords, left)
+    }
+
+    /// OneTerm's vault and what it sealed, as they are: its document becomes 1Term's vault
+    /// where there is none, and a session's password its host's secret, where 1Term has that
+    /// host (the name and the target) without one. A vault of 1Term's own is kept, and then
+    /// nothing opens what another sealed: how many were taken, and how many were not.
+    fn take_passwords(&self, vault: &str, all: &[Taken]) -> (usize, usize) {
+        let sealed = || all.iter().filter_map(|it| Some((&it.host, it.sealed.as_ref()?)));
+        let (theirs, ours) = (Header::parse(vault), self.prefs().vault);
+        let Some(theirs) = theirs.filter(|_| sealed().count() > 0) else { return (0, sealed().count()) };
+        match Header::parse(&ours.get_untracked()) {
+            Some(ours) if ours.id != theirs.id => return (0, sealed().count()),
+            Some(_) => {}
+            None => ours.set(theirs.write()),
+        }
+        let hosts = self.hosts();
+        let (mut taken, mut left) = (0, 0);
+        for (host, envelope) in sealed() {
+            let here = hosts.iter().any(|it| it.name == host.name && it.remote.target == host.remote.target);
+            match (here && theirs.seals(envelope), self.sealed(&host.name)) {
+                (true, None) => {
+                    self.set_sealed(&host.name, Some(envelope.clone()));
+                    taken += 1;
+                }
+                (true, Some(_)) => {}
+                (false, _) => left += 1,
+            }
+        }
+        (taken, left)
     }
 
     /// The settings of OneTerm's `terminal.json` that have one here.
@@ -150,21 +182,25 @@ impl Model {
         done.set(true);
         // Nothing taken is nothing to say at a start; the settings' button says it.
         let took = folder().filter(|it| it.is_dir()).map(|it| self.take_over(&it, true));
-        took.filter(|it| it.0 > 0).into_iter().for_each(|it| self.say_taken(it));
+        took.filter(|it| *it != (0, 0, 0)).into_iter().for_each(|it| self.say_taken(it));
     }
 
     /// A card that says what was taken over.
-    pub(crate) fn say_taken(&self, (hosts, sealed): (usize, usize)) {
+    pub(crate) fn say_taken(&self, (hosts, passwords, left): (usize, usize, usize)) {
         let count = |n: usize, one: &str| format!("{n} {one}{}", if n == 1 { "" } else { "s" });
-        let body = match (hosts, sealed) {
-            (0, _) => "OneTerm has no saved host that 1Term does not have.".to_string(),
-            (n, 0) => format!("{} taken over from OneTerm.", count(n, "host")),
-            (n, s) => format!(
-                "{} taken over from OneTerm. {} had a saved password: 1Term asks for it again.",
-                count(n, "host"),
-                count(s, "host")
-            ),
+        let (h, p) = (count(hosts, "host"), count(passwords, "saved password"));
+        let mut body = match (hosts, passwords) {
+            (0, 0) => "OneTerm has no saved host or password that 1Term does not have.".to_string(),
+            (_, 0) => format!("{h} taken over from OneTerm."),
+            (0, _) => format!("{p} taken over from OneTerm."),
+            _ => format!("{h} and {p} taken over from OneTerm."),
         };
+        if passwords > 0 {
+            body += " The master password is the one set in OneTerm.";
+        }
+        if left > 0 {
+            body += &format!(" {} could not be taken: 1Term asks again.", count(left, "saved password"));
+        }
         self.notify(quadra_design::Notice::new("OneTerm").body(body));
     }
 }
@@ -189,7 +225,7 @@ mod tests {
         assert_eq!(names, ["prod", "prod (2)", "10.0.0.3"]);
         let (first, second) = (&all[0], &all[1]);
         assert_eq!((first.host.address(), first.host.group.as_str()), ("deploy@10.0.0.1".into(), "infra"));
-        assert!(first.sealed && first.colour.as_deref() == Some("#56B6C2"));
+        assert!(first.sealed.is_some() && first.colour.as_deref() == Some("#56B6C2"));
         assert_eq!(first.host.remote.auth, Auth::Password);
         assert_eq!(second.host.address(), "ops@10.0.0.2:2222");
         assert_eq!(

@@ -2,6 +2,7 @@
 //! sealed with the master password, which is asked for while its key is not in memory, or set
 //! there when there is none.
 
+use oneterm_ssh::Target;
 use quadra::{View, column, div};
 use quadra_design::{Notice, Tone, field, input};
 
@@ -40,14 +41,14 @@ pub(super) fn fields(model: &Model, form: Form) -> impl View + use<> {
 /// `kept` stays, sealed again when the target changed (forgotten, with a card, while the data
 /// key is not in memory). Another auth than Password and Key file saves none. Without a master
 /// password the one typed is set first.
-pub(super) fn save(model: &Model, form: Form, name: &str, bound: &str, kept: Option<(String, String)>) {
+pub(super) fn save(model: &Model, form: Form, name: &str, bound: &Target, kept: Option<(String, Target)>) {
     let typed = quadra_shell::Zeroizing::new(form.secret.get_untracked());
     if !matches!(form.auth.get_untracked(), 2 | 3) {
         return model.set_sealed(name, None);
     }
     if typed.is_empty() {
         let Some((sealed, was)) = kept else { return model.set_sealed(name, None) };
-        if was == bound {
+        if was == *bound {
             return model.set_sealed(name, Some(sealed));
         }
         let key = model.lock().key.get_untracked();
@@ -66,7 +67,7 @@ pub(super) fn save(model: &Model, form: Form, name: &str, bound: &str, kept: Opt
     }
     let (master, again) =
         (form.master.get_untracked(), quadra_shell::Zeroizing::new(form.again.get_untracked()));
-    let (lock, model, name, bound) = (model.lock(), model.clone(), name.to_string(), bound.to_string());
+    let (lock, model, name, bound) = (model.lock(), model.clone(), name.to_string(), bound.clone());
     let sealing = move |model: &Model, why: &str| match model.lock().key.get_untracked() {
         Some(key) => model.set_sealed(&name, crate::vault::seal_secret(&key, &typed, &bound)),
         None => model.notify(

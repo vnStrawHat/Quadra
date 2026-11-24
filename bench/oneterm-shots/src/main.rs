@@ -229,7 +229,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         fill(&model, &made.borrow());
         model.ui().dock.set(*scene != "connect" && !scene.starts_with("ask-") && !scene.starts_with("host-"));
         // A master password, as the canvas has: Lock 1Term now shows.
-        model.prefs().password.set("set".into());
+        model.prefs().vault.set("set".into());
         match *scene {
             "menu" => click(&platform, &app, window, "New terminal"),
             "connect" => model.ui().connecting.set(true),

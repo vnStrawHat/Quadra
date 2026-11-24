@@ -133,7 +133,7 @@ fn a_saved_password_signs_in_and_the_master_password_opens_it() {
     a.h.get_by_role(Role::Button, "Save").click();
     a.h.settle();
     let sealed = a.secrets();
-    assert!(sealed.len() == 1 && sealed[0][1].starts_with("sv2:") && !sealed[0][1].contains("secret"));
+    assert!(sealed.len() == 1 && sealed[0][1].starts_with("otv1:") && !sealed[0][1].contains("secret"));
     a.connect("box");
     a.wait(|a| a.welcomed() == 1, "signed in by the saved password");
     assert!(!a.h.has_text("Sign in"));

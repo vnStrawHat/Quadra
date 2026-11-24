@@ -17,6 +17,8 @@ path = "src/main.rs"
 [dependencies]
 quadra = { path = "../../crates/quadra" }
 quadra-code = { path = "../../crates/quadra-code" }
+# Argon2id alone, with no password-hash strings: the vault calls the function itself.
+argon2 = { version = "0.6", default-features = false, features = ["zeroize"] }
 quadra-data = { path = "../../crates/quadra-data" }
 quadra-design = { path = "../../crates/quadra-design" }
 oneterm-complete = { path = "complete" }

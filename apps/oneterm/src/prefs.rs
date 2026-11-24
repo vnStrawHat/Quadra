@@ -80,8 +80,6 @@ pub struct Prefs {
     pub show_usage: Signal<bool>,
     pub show_clock: Signal<bool>,
     pub show_fps: Signal<bool>,
-    /// The master password's hash; empty: none, and no lock.
-    pub password: Signal<String>,
     pub lock_after: Signal<f64>,
     /// Programs may read the clipboard by OSC 52.
     pub clipboard_read: Signal<bool>,
@@ -90,7 +88,8 @@ pub struct Prefs {
     pub recent: Signal<Vec<Vec<String>>>,
     /// The key files hosts sign in with, their paths (`sshkeys.rs`).
     pub ssh_keys: Signal<Vec<String>>,
-    /// The saved passwords' vault, and each host's sealed secret (`vault.rs`).
+    /// The saved passwords' vault (empty: no master password, and no lock), and each host's
+    /// sealed secret (`vault.rs`).
     pub vault: Signal<String>,
     pub secrets: Signal<Vec<Vec<String>>>,
     /// Each saved host's startup command: its name, the command.
@@ -119,6 +118,21 @@ impl Prefs {
     }
 
     fn of(s: &Settings) -> Prefs {
+        // Settings of version 0 kept a hash of the master password, and a vault and secrets
+        // of 1Term's first format, which nothing opens any more (specs/19, "Saved passwords"):
+        // they are forgotten, the hash above all. What is of today's format stays.
+        s.migrate(1, |_, all| {
+            all.remove("security.password");
+            let vault = all.get("ssh.vault").and_then(|it| it.as_str());
+            if vault.is_some_and(|it| crate::vault::Header::parse(it).is_none()) {
+                all.remove("ssh.vault");
+            }
+            if let Some(rows) = all.get_mut("ssh.secrets").and_then(|it| it.as_array_mut()) {
+                rows.retain(|row| {
+                    row.get(1).and_then(|it| it.as_str()).is_some_and(|it| it.starts_with("otv1:"))
+                });
+            }
+        });
         Prefs {
             theme: s.choice("appearance.theme", &THEMES),
             colour_theme: s.choice("appearance.colour_theme", &COLOUR_THEMES),
@@ -163,7 +177,6 @@ impl Prefs {
             show_usage: s.value("status_bar.usage", true),
             show_clock: s.value("status_bar.clock", true),
             show_fps: s.value("status_bar.fps", true),
-            password: s.value("security.password", String::new()),
             lock_after: s.value("security.lock_after_minutes", 10.0),
             clipboard_read: s.value("security.allow_clipboard_read", false),
             hosts: s.value("ssh.hosts", Vec::new()),

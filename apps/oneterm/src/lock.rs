@@ -1,6 +1,6 @@
 //! The lock (specs/19, "Lock", "M6 in detail"): with a master password, the window locks
 //! after a time idle or at once, and only the password opens it. Five wrong tries start a
-//! back-off. The hash is made and checked on the pool.
+//! back-off. The password is the one that opens the vault (`vault.rs`), tried on the pool.
 
 use std::time::Duration;
 
@@ -48,7 +48,7 @@ impl Lock {
             owner: Scope::current(),
         };
         // With a vault the window opens locked (specs/19, "M6 in detail").
-        if untrack(|| lock.can_lock() && !prefs.vault.with(String::is_empty)) {
+        if untrack(|| lock.can_lock()) {
             lock.locked.set(true);
         }
         let _ = interval(Duration::from_secs(u64::from(STEP)), move || lock.tick());
@@ -60,9 +60,9 @@ impl Lock {
         lock
     }
 
-    /// Whether there is a password, so the window can lock.
+    /// Whether there is a master password (a vault it opens), so the window can lock.
     pub fn can_lock(&self) -> bool {
-        !self.prefs.password.with(String::is_empty)
+        !self.prefs.vault.with(String::is_empty)
     }
 
     /// How many hosts have a secret saved under the master password.
@@ -134,19 +134,15 @@ impl Lock {
     }
 
     /// Tries the master password on the pool: right, the saved passwords' data key is in
-    /// memory (a new vault's when there was none). `done` is told whether it was right.
+    /// memory. `done` is told whether it was right.
     pub fn open(&self, typed: String, done: impl FnOnce(bool) + 'static) {
         let typed = quadra_shell::Zeroizing::new(typed);
-        let (key, vault) = (self.key, self.prefs.vault);
-        let (stored, sealed) = (self.prefs.password.get_untracked(), vault.get_untracked());
+        let (key, sealed) = (self.key, self.prefs.vault.get_untracked());
         self.owner.run(|| {
             spawn(async move {
-                let opened = background(move || crate::vault::open_with(&typed, &stored, &sealed)).await;
-                let Ok(Some((data, made))) = opened else { return done(false) };
+                let opened = background(move || crate::vault::unseal(&typed, &sealed)).await;
+                let Ok(Some(data)) = opened else { return done(false) };
                 key.set(Some(std::rc::Rc::new(data)));
-                if let Some(made) = made {
-                    vault.set(made);
-                }
                 done(true);
             })
             .detach()
@@ -157,30 +153,30 @@ impl Lock {
     /// one set, if any. `done` is told what came of it.
     pub fn set_password(&self, current: String, new: String, done: impl Fn(&str) + 'static) {
         let (current, new) = (quadra_shell::Zeroizing::new(current), quadra_shell::Zeroizing::new(new));
-        let (stored, password) = (self.prefs.password.get_untracked(), self.prefs.password);
         let (sealed, (vault, secrets, key)) =
             (self.prefs.vault.get_untracked(), (self.prefs.vault, self.prefs.secrets, self.key));
         self.owner.run(|| {
             spawn(async move {
                 let made = background(move || {
-                    if !stored.is_empty() && !verify(&current, &stored) {
+                    let opened = crate::vault::unseal(&current, &sealed);
+                    if !sealed.is_empty() && opened.is_none() {
                         return Err("The current password is wrong");
                     }
                     if new.is_empty() {
-                        return Ok((String::new(), String::new(), None));
+                        return Ok((String::new(), None));
                     }
-                    let hash = hash(&new).ok_or("The OS gave no random bytes")?;
-                    // The vault's data key, sealed again under the new password.
-                    let opened = crate::vault::open_with(&current, &stored, &sealed).map(|it| it.0);
-                    let data = opened.or_else(crate::vault::new_key).ok_or("The OS gave no random bytes")?;
-                    let vault = crate::vault::reseal(&data, &new).ok_or("Sealing failed")?;
-                    Ok((hash, vault, Some(data)))
+                    // The same vault and data key under the new password, so what it sealed
+                    // still opens; the first password makes the vault.
+                    let made = match opened {
+                        Some(data) => crate::vault::reseal(&data, &new).map(|vault| (vault, data)),
+                        None => crate::vault::make(&new),
+                    };
+                    made.map(|(vault, data)| (vault, Some(data))).ok_or("Sealing failed")
                 })
                 .await;
                 match made {
-                    Ok(Ok((hash, sealed, data))) => {
-                        let removed = hash.is_empty();
-                        password.set(hash);
+                    Ok(Ok((sealed, data))) => {
+                        let removed = sealed.is_empty();
                         vault.set(sealed);
                         key.set(data.map(std::rc::Rc::new));
                         // Removed, the saved secrets go with it.
@@ -190,23 +186,10 @@ impl Lock {
                         done(if removed { "Password removed" } else { "Password set" });
                     }
                     Ok(Err(why)) => done(why),
-                    Err(_) => done("Hashing failed"),
+                    Err(_) => done("Sealing failed"),
                 }
             })
             .detach()
         });
     }
-}
-
-#[cfg(windows)]
-use quadra_shell::{hash_password as hash, verify_password as verify};
-
-#[cfg(not(windows))]
-fn hash(_: &str) -> Option<String> {
-    None
-}
-
-#[cfg(not(windows))]
-fn verify(_: &str, _: &str) -> bool {
-    false
 }

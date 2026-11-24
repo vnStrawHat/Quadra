@@ -423,16 +423,25 @@ tried; not in a trial run under `ONETERM_HOME`, nor in a test) 1Term takes over:
 - of `terminal.json`: the font's family and size, the rows of history, the cursor's blink,
   and the keepalive (on, its seconds, how many may go unanswered).
 
-Saved passwords are not taken: they are sealed by OneTerm's vault, which 1Term does not
-open, so a host asks for its password again. A card says how many hosts were taken over and
-how many of them had one. Settings, SSH & hosts has **Import from OneTerm**, which adds the
-hosts 1Term does not have yet (no settings) and says the same. OneTerm's files are read and
-never changed.
+- the saved passwords, with nothing asked: 1Term's vault is of OneTerm's format (below,
+  "Saved passwords"), so the document of `vault.json` becomes 1Term's vault as it is, and
+  each session's `sealed_password` the secret of its host, as it is. The master password is
+  OneTerm's from then on: the next start opens locked, and it is asked for the first time a
+  host with a saved password is connected to. A password comes along for a host 1Term has
+  under the session's name and target and with no secret of its own, and only an envelope
+  of that vault; with no password saved there, the vault is not taken either. Where 1Term
+  has a vault of its own already (a master password set here
+  first), it is kept and no password is taken.
+
+A card says how many hosts and saved passwords were taken over, that the master password is
+OneTerm's, and how many passwords could not be taken. Settings, SSH & hosts has **Import
+from OneTerm**, which does the same again for what 1Term does not have yet (no settings) and
+says so. OneTerm's files are read and never changed.
 
 ## Lock
 
-Only with a master password (Security & lock: set, change, remove; kept as a salted PBKDF2
-hash from the OS's crypto, never the password). Locks after the idle time (10 min default, 1-480)
+Only with a master password (Security & lock: set, change, remove; nothing of it is kept:
+it is the password that opens the vault). Locks after the idle time (10 min default, 1-480)
 or at once with `Ctrl+Shift+L` and the title bar's button. Locked: the workspace blurred and
 dimmed behind, the title bar usable and saying "Locked", a card where dialogs hang (the
 dialog's look: level 2, 440 wide, 80 px from the window top, centred): a 16 px lock in the
@@ -446,14 +455,15 @@ the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep 
 
 ### M6 in detail
 
-- **The hash** is `quadra_shell::hash_password` (16, "Passwords"), kept in the setting
-  `security.password`; set, change and remove ask for the current password when one is set,
-  and a new one twice. Hashing and verifying run on the pool.
+- **The master password** is the one that opens the vault in `ssh.vault` (below, "Saved
+  passwords"): there is one exactly while there is a vault, and no hash of it is kept. Set,
+  change and remove ask for the current password when one is set, and a new one twice.
+  Deriving the vault's key runs on the pool.
 - **Idle** is no key and no pointer press or move in the window; it is counted in steps of
   10 s on the app's timers, so it locks within 10 s after the time set.
-- **At start**, with a vault (passwords saved under the master password, below), the window
-  opens locked: what is saved is not a start away from anyone at the machine, and the
-  password that opens the window opens the vault's data key with it.
+- **At start**, with a master password, the window opens locked: what is saved is not a
+  start away from anyone at the machine, and the password that opens the window opens the
+  vault's data key with it.
 - **Locked, the workspace shows blurred behind, and is inert** (`Div::inert`, `State::INERT`):
   a displayed node is in the semantic tree, which any process can read through the OS's
   accessibility, so the rail and the spaces are left out of it while locked, and no press or
@@ -639,15 +649,27 @@ thread never waits on the network.
   fingerprint cut to its ends with `· passphrase` when one locks it (`oneterm_ssh::key_info`,
   read without the passphrase), or `Not found` or `Not an OpenSSH private key`; Remove. No
   dialog picks a file: a host's key is chosen by name from these.
-- **Saved passwords**: a vault in `ssh.vault`,
-  `v1$<rounds>$<salt hex>$<sealed key hex>`: a random data key of 32 bytes sealed
-  (`quadra_shell::seal`, specs/16) under a key derived from the master password (PBKDF2, its
-  own salt, 600,000 rounds); a host's secret is sealed under the data key, `sv2:<hex>`, in
-  `ssh.secrets` (rows of the host's name and that), the name its associated data (AES-GCM's
-  AAD), so a secret copied into another host's row does not open; a row of the first form,
-  `sv1:` (no associated data), still opens. The data key is in memory only, from the
+- **Saved passwords** are kept as OneTerm keeps them (`vault/format.rs`), so what it saved
+  opens here. The vault in `ssh.vault` is the document of its `vault.json` (schema 1): the
+  vault's id of 16 random bytes, the cost of Argon2id (version 19; a new vault takes 64 MiB,
+  3 passes, 1 lane; a document asking for less than 19 MiB and 2 passes or more than 1 GiB,
+  16 passes and 4 lanes is not derived with), a salt of 16 bytes, and a random data key of
+  32 bytes sealed (AES-256-GCM, `quadra_shell::seal`, specs/16) under the key the master
+  password derives. What is sealed is an envelope: `otv1:` and the padded base64 of the
+  id's first 8 bytes, the nonce of 12, the ciphertext, the tag of 16. A seal is bound
+  (AES-GCM's associated data) to `oneterm-vault`, a zero byte, the layout's version 1, the
+  purpose with its length before it (`key-wrap` for the data key, `ssh-password` for a
+  secret), the vault's id, and for a secret the host, the port (2 bytes) and the user of
+  its target, each with its length in 4 bytes before it. A host's secret is such an
+  envelope in `ssh.secrets` (rows of the host's name and that): one copied to a host of
+  another target, or sealed by another vault, does not open. Argon2id is the `argon2` crate
+  (specs/01, R15), wiped of its memory after. Settings of before this format (version 0: a
+  PBKDF2 hash of the master password in `security.password`, a vault `v1$...`, secrets
+  `sv1:` and `sv2:`) are forgotten when they are read: nothing opens them any more, and the
+  hash is not left in the file. The data key is in memory only, from the
   first time the master password is typed (setting it, unlocking, a Master password field);
-  setting the first password makes the vault, changing it seals the data key again, removing
+  setting the first password makes the vault, changing it seals the same vault's data key
+  again (a new salt, the cost of today), so every secret still opens, removing
   it forgets the vault and every saved secret, once a dialog said so: Remove the master
   password?, `The window will no longer lock, and the 3 saved passwords are forgotten. It
   cannot be undone.` (the count left out with none saved), Cancel and Remove (danger). Connecting to a saved host with a secret: with

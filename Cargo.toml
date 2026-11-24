@@ -18,6 +18,13 @@ unsafe_code = "forbid"
 [profile.dev]
 debug = "line-tables-only"
 
+# A vault's key takes 64 MiB and three passes of Argon2id (specs/19, "Saved passwords"):
+# seconds unoptimized, so a debug build and its tests optimize these two.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
+
 # What ships and what is measured (specs/14, "Shipped builds"): release, with the whole program
 # optimized at once. The gate builds and tests in plain release, which builds far faster.
 [profile.dist]

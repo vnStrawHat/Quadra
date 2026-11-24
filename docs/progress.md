@@ -604,7 +604,16 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   - Taking over from OneTerm (`import.rs`; specs/19, "Taking over from OneTerm"): its saved
     sessions as hosts (names made unique, jump hosts by name, forwards, colours) and a few
     of its terminal's settings, once at the user's own start and by Import from OneTerm in
-    the settings; saved passwords are not taken (tests/import.rs).
+    the settings (tests/import.rs).
+  - The vault in OneTerm's format, and its saved passwords taken as they are (the user's
+    decision, 2026-11-24; specs/19, "Saved passwords"): Argon2id (`argon2`, specs/01 R15)
+    and `otv1:` envelopes bound to the target (`vault/format.rs`), checked against
+    OneTerm's own fixture; no hash of the master password is kept, the vault is what it
+    opens, so a start with one is locked. The takeover copies `vault.json` and each
+    session's sealed password, so OneTerm's master password is 1Term's with nothing asked;
+    a vault of 1Term's own is kept. Breaking for a 1Term of before: its hash, vault and
+    saved secrets of the first format are forgotten when the settings are read
+    (tests/import.rs, tests/lock.rs).
 - **The options' words, and the editor's bar along the bottom** (2026-11-24). The options
   of 1Term's choices are in a reader's words (`Dot and count`, `Tab only`, `Off`, `1Term's
   editor`, `Custom program`); one saved by an old word reads as the default (the user's

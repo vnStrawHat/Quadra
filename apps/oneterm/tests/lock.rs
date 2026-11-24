@@ -16,20 +16,27 @@ struct App {
     settings: Rc<Settings>,
 }
 
+/// A vault as OneTerm writes it (its own fixture, at the least cost it reads), and the master
+/// password that opens it.
+const VAULT: &str = include_str!("fixtures/vault.json");
+const PW: &str = "correct horse battery staple";
+
+/// A window, with a master password when one is given: opened by it, as a start is locked.
 fn app(password: Option<&str>) -> App {
-    app_with(password, None)
+    let mut a = app_with(password.map(|_| VAULT.to_string()));
+    if let Some(password) = password {
+        a.unlock_with(password);
+        assert!(!a.locked());
+    }
+    a
 }
 
-/// A window whose settings hold a password and, when given, a vault.
-fn app_with(password: Option<&str>, vault: Option<String>) -> App {
+/// A window whose settings hold a vault, when given.
+fn app_with(vault: Option<String>) -> App {
     let mut h = Harness::new();
     h.size = quadra::Size::new(1200.0, 700.0);
     h.tree.set_keymap(Rc::new(keymap()));
     let settings = Settings::memory();
-    if let Some(password) = password {
-        let hash = quadra_shell::hash_password(password).expect("random bytes");
-        settings.value("security.password", String::new()).set(hash);
-    }
     if let Some(vault) = vault {
         settings.value("ssh.vault", String::new()).set(vault);
     }
@@ -101,8 +108,9 @@ fn a_password_set_on_the_page_locks_and_opens_the_window() {
     a.h.get_by_role(Role::Button, "Set password").click();
     a.h.settle();
     assert!(a.says("Password set"));
-    let stored = a.settings.value("security.password", String::new()).get();
-    assert!(stored.starts_with("pbkdf2-sha256$") && !stored.contains("open sesame"));
+    // What is kept is a vault the password opens, never the password or a hash of it.
+    let stored = a.settings.value("ssh.vault", String::new()).get();
+    assert!(stored.contains("\"algorithm\":\"argon2id\"") && !stored.contains("open sesame"), "{stored}");
     a.h.get_by_role(Role::Button, "Done").click();
     a.h.settle();
 
@@ -127,7 +135,7 @@ fn a_password_set_on_the_page_locks_and_opens_the_window() {
 
 #[test]
 fn a_locked_window_refuses_the_app_keys_and_hides_cards() {
-    let mut a = app(Some("pw"));
+    let mut a = app(Some(PW));
     a.key(Key::L, Mods::CTRL | Mods::SHIFT);
     assert!(a.locked());
     a.key(Key::T, Mods::CTRL);
@@ -140,14 +148,14 @@ fn a_locked_window_refuses_the_app_keys_and_hides_cards() {
     a.h.settle();
     assert!(a.says("64%") && !a.says("payroll"), "{}", a.h.semantics());
     assert!(a.says("1 sessions connected \u{B7} 1 notices"));
-    a.unlock_with("pw");
+    a.unlock_with(PW);
     assert!(a.says("payroll"), "{}", a.h.semantics());
     assert_eq!(a.tabs(), 1, "Ctrl+T did nothing while locked");
 }
 
 #[test]
 fn it_locks_after_the_time_idle_and_activity_starts_it_again() {
-    let mut a = app(Some("pw"));
+    let mut a = app(Some(PW));
     a.settings.value("security.lock_after_minutes", 0.0).set(1.0);
     a.h.advance(Duration::from_secs(50));
     a.h.settle();
@@ -163,30 +171,30 @@ fn it_locks_after_the_time_idle_and_activity_starts_it_again() {
 
 #[test]
 fn five_wrong_tries_start_a_back_off() {
-    let mut a = app(Some("pw"));
+    let mut a = app(Some(PW));
     a.key(Key::L, Mods::CTRL | Mods::SHIFT);
     for _ in 0..5 {
         a.unlock_with("no");
     }
     assert!(a.says("Wrong password \u{B7} try again in 2 s"));
-    a.unlock_with("pw");
+    a.unlock_with(PW);
     assert!(a.locked(), "the right password waits too");
     a.h.advance(Duration::from_secs(2));
     a.h.settle();
-    a.unlock_with("pw");
+    a.unlock_with(PW);
     assert!(!a.locked());
 }
 
 #[test]
 fn removing_the_password_asks_first_and_forgets_the_saved_ones() {
-    let mut a = app(Some("pw"));
+    let mut a = app(Some(PW));
     let secrets = a.settings.value("ssh.secrets", Vec::<Vec<String>>::new());
     secrets.set(vec![vec!["a".into(), "sv1:00".into()], vec!["b".into(), "sv1:00".into()]]);
     a.h.get_by_role(Role::Button, "Settings").click();
     a.h.settle();
     a.h.get_by_role(Role::TreeItem, "Security & lock").click();
     a.h.settle();
-    a.h.get_by_test_id("password-current").set_value("pw");
+    a.h.get_by_test_id("password-current").set_value(PW);
     a.h.settle();
     a.h.get_by_role(Role::Button, "Remove password").click();
     a.h.settle();
@@ -195,7 +203,7 @@ fn removing_the_password_asks_first_and_forgets_the_saved_ones() {
     assert!(a.says("Remove the master password?") && a.says(said), "{}", a.h.semantics());
     a.h.get_by_role(Role::Button, "Cancel").click();
     a.h.settle();
-    assert!(a.settings.value("security.password", String::new()).get().starts_with("pbkdf2"));
+    assert_eq!(a.settings.value("ssh.vault", String::new()).get(), VAULT);
     assert_eq!(secrets.get().len(), 2, "Cancel keeps all");
 
     a.h.get_by_role(Role::Button, "Remove password").click();
@@ -207,34 +215,26 @@ fn removing_the_password_asks_first_and_forgets_the_saved_ones() {
         a.h.advance(Duration::from_millis(10));
         a.h.settle();
     }
-    assert!(a.settings.value("security.password", String::new()).get().is_empty());
+    assert!(a.settings.value("ssh.vault", String::new()).get().is_empty());
     assert!(secrets.get().is_empty());
 }
 
 #[test]
 fn with_a_vault_the_window_opens_locked_and_its_password_opens_the_vault() {
-    // A vault as 1Term writes it: a data key sealed under the master password's key.
-    let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
-    let salt = quadra_shell::random_bytes::<16>().unwrap();
-    let kek = quadra_shell::derive_key("master", &salt, 1000).unwrap();
-    let sealed = quadra_shell::seal(&kek, &*quadra_shell::random_key().unwrap(), b"").unwrap();
-    let vault = format!("v1$1000${}${}", hex(&salt), hex(&sealed));
-    let mut a = app_with(Some("master"), Some(vault.clone()));
+    let mut a = app_with(Some(VAULT.to_string()));
     assert!(a.locked() && a.tabs() == 0, "locked at start, nothing shown");
     a.unlock_with("master");
+    assert!(a.locked() && a.says("Wrong password"));
+    a.unlock_with(PW);
     a.h.settle();
     assert!(!a.locked() && a.tabs() == 1);
     let kept = a.settings.value("ssh.vault", String::new()).get();
-    assert_eq!(kept, vault, "the vault opened, not made again");
-
-    // A password alone does not lock at start.
-    let a = app(Some("master"));
-    assert!(!a.locked());
+    assert_eq!(kept, VAULT, "the vault opened, not made again");
 }
 
 #[test]
 fn locked_nothing_but_the_card_the_title_bar_and_the_status_bar_is_in_reach() {
-    let mut a = app(Some("pw"));
+    let mut a = app(Some(PW));
     // A space's menu open when the lock falls: an overlay, no part of the workspace.
     let id = a.h.query(|n| n.semantics.role == Role::TextInput && n.semantics.name == "Terminal")[0];
     let at = a.h.tree.window_rect(id).center();
@@ -262,7 +262,7 @@ fn locked_nothing_but_the_card_the_title_bar_and_the_status_bar_is_in_reach() {
     let card = ["Close", "Master password", "Maximize", "Minimize", "Show password", "Unlock"];
     assert_eq!(in_reach(&a), card, "the menu closed as the lock fell");
     // A dialog open when it locks (Quick connect) is not in reach either.
-    a.unlock_with("pw");
+    a.unlock_with(PW);
     a.key(Key::K, Mods::CTRL | Mods::SHIFT);
     assert_eq!(a.h.query(|n| n.semantics.role == Role::Dialog).len(), 1, "Quick connect is open");
     a.h.advance(Duration::from_secs(11 * 60));

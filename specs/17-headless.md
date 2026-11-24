@@ -84,13 +84,15 @@ numbers (13, "Tokens").
   and light themes give their sets. A level the theme has no set for casts none.
 - **Measures are the theme's too.** A `Measure` is a number of the theme, as `Token` is a
   colour: a radius, a space, or a time in milliseconds, as its name says
-  (`Theme::with_measures`; one the theme does not have is 0). A number of a style is an
+  (`Theme::with_measures`). It carries its own number (`Measure(index, own)`), which it is
+  where the theme has none: a tree with no theme keeps a view's distances. A number of a style is an
   `Amount`, pixels or a measure: the radius, the padding of every side and the gaps take
   one. A style that holds a measure is kept as a role is, and resolved again when the theme
   changes: what comes out other lays out (spaces) or paints (radii) only the nodes that
   hold it. A transition's time may be a measure, read from the theme of the box when it is
-  mounted. The kit names its measures (`token::RADIUS_SM` to `RADIUS_XL`, `SPACE_XS` to
-  `SPACE_XL`: 4, 8, 12, 16, 24, `DURATION_FAST` 150 and `DURATION_SLOW` 400) and a theme file
+  mounted. The kit names its measures (`token::RADIUS_XS` to `RADIUS_LG`: 2, 4, 6, 10;
+  `SPACE_XXS` to `SPACE_XXXL`: 2, 4, 6, 8, 12, 16, 24, 32; `DURATION_FAST` 150 and
+  `DURATION_SLOW` 400) and a theme file
   may give them other numbers under their names in lower case (`"measures": {"radius_md": 8}`).
   Its controls take their radii from them; the constants of `size` stay for arithmetic.
 - **Type** stays constants of the kit (`quadra_design::size`, `fonts`): a family is a name the

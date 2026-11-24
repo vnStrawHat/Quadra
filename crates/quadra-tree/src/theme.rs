@@ -47,9 +47,11 @@ impl From<Token> for Paint {
 }
 
 /// A measure of the theme: a radius, a space, or a time in milliseconds, as its name says.
-/// The names are whoever defines the theme's, as those of roles are.
+/// The names are whoever defines the theme's, as those of roles are. Its second number is
+/// what it is where the theme has none (a tree with no theme, a theme with fewer measures):
+/// a view built from measures keeps its distances there.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Measure(pub u16);
+pub struct Measure(pub u16, pub u16);
 
 /// A number of a style: pixels (or milliseconds), or a measure of the theme.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -105,9 +107,9 @@ impl Theme {
         Theme { measures, ..self }
     }
 
-    /// A measure's number; 0 for one the theme does not have.
+    /// A measure's number; its own for one the theme does not have.
     pub fn measure(&self, measure: Measure) -> f32 {
-        self.measures.get(measure.0 as usize).copied().unwrap_or(0.0)
+        self.measures.get(measure.0 as usize).copied().unwrap_or(f32::from(measure.1))
     }
 
     /// The number an amount stands for under this theme.

@@ -110,10 +110,13 @@ fn a_box_gives_what_is_under_it_a_theme_of_its_own() {
 
 #[test]
 fn spaces_and_radii_can_be_measures_of_the_theme() {
-    const SPACE: quadra_tree::Measure = quadra_tree::Measure(0);
-    const ROUND: quadra_tree::Measure = quadra_tree::Measure(1);
+    const SPACE: quadra_tree::Measure = quadra_tree::Measure(0, 6);
+    const ROUND: quadra_tree::Measure = quadra_tree::Measure(1, 2);
     let measured =
         |space: f32, round: f32| Rc::new(Theme::new(vec![Color::rgb(0)]).with_measures(vec![space, round]));
+    // A theme without them: each is its own number.
+    let bare = Theme::new(vec![Color::rgb(0)]);
+    assert_eq!((bare.measure(SPACE), bare.measure(ROUND)), (6.0, 2.0));
     let mut h = Harness::new();
     h.tree.set_theme(measured(8.0, 4.0));
     h.mount(|| {

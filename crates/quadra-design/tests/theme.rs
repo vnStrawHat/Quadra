@@ -115,6 +115,16 @@ fn the_series_of_a_chart_are_roles_and_the_accent_where_a_file_lists_fewer() {
 
 #[test]
 fn a_theme_file_gives_measures_other_numbers() {
+    // What a measure is with no theme is what the kit's themes say it is.
+    use token::*;
+    let bare = quadra_tree::Theme::new(Vec::new());
+    let named = [RADIUS_XS, RADIUS_SM, RADIUS_MD, RADIUS_LG, SPACE_XXS, SPACE_XS, SPACE_SM, SPACE_MD];
+    let named =
+        [&named[..], &[SPACE_LG, SPACE_XL, SPACE_XXL, SPACE_XXXL, DURATION_FAST, DURATION_SLOW]].concat();
+    assert_eq!(named.len(), MEASURES.len());
+    for (at, (measure, (name, own))) in named.iter().zip(MEASURES).enumerate() {
+        assert_eq!((measure.0 as usize, bare.measure(*measure)), (at, own), "{name}");
+    }
     // The built-in numbers, and a file's in their place.
     assert_eq!(
         (dark().theme().measure(token::RADIUS_MD), dark().theme().measure(token::DURATION_FAST)),

@@ -221,20 +221,20 @@ pub const MEASURES: [(&str, f32); 14] = [
 
 /// The radii (specs/design/space.md): marks; small things and what is inside a rounded thing;
 /// controls, cards and small overlays; what floats and is large.
-pub const RADIUS_XS: Measure = Measure(0);
-pub const RADIUS_SM: Measure = Measure(1);
-pub const RADIUS_MD: Measure = Measure(2);
-pub const RADIUS_LG: Measure = Measure(3);
+pub const RADIUS_XS: Measure = Measure(0, 2);
+pub const RADIUS_SM: Measure = Measure(1, 4);
+pub const RADIUS_MD: Measure = Measure(2, 6);
+pub const RADIUS_LG: Measure = Measure(3, 10);
 /// The distances (specs/design/space.md): 2, 4, 6 and 8 inside a thing; 12, 16, 24 and 32
 /// between things and around them.
-pub const SPACE_XXS: Measure = Measure(4);
-pub const SPACE_XS: Measure = Measure(5);
-pub const SPACE_SM: Measure = Measure(6);
-pub const SPACE_MD: Measure = Measure(7);
-pub const SPACE_LG: Measure = Measure(8);
-pub const SPACE_XL: Measure = Measure(9);
-pub const SPACE_XXL: Measure = Measure(10);
-pub const SPACE_XXXL: Measure = Measure(11);
+pub const SPACE_XXS: Measure = Measure(4, 2);
+pub const SPACE_XS: Measure = Measure(5, 4);
+pub const SPACE_SM: Measure = Measure(6, 6);
+pub const SPACE_MD: Measure = Measure(7, 8);
+pub const SPACE_LG: Measure = Measure(8, 12);
+pub const SPACE_XL: Measure = Measure(9, 16);
+pub const SPACE_XXL: Measure = Measure(10, 24);
+pub const SPACE_XXXL: Measure = Measure(11, 32);
 /// What comes and goes (a toast), and what fades slowly (a scroll thumb).
-pub const DURATION_FAST: Measure = Measure(12);
-pub const DURATION_SLOW: Measure = Measure(13);
+pub const DURATION_FAST: Measure = Measure(12, 150);
+pub const DURATION_SLOW: Measure = Measure(13, 400);

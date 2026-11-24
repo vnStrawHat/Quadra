@@ -6,6 +6,7 @@ mod assoc;
 pub mod console;
 mod crash;
 mod environment;
+mod fetch;
 mod instance;
 mod measure;
 mod process;
@@ -16,10 +17,11 @@ mod usage;
 
 pub use crash::crash_reports;
 pub use environment::user_environment;
+pub use fetch::http_get;
 pub use instance::single_instance;
 pub use measure::{cycles_per_second, private_memory, process_cycles, window_shown};
 pub use process::shell_process;
-pub use seal::{open, random_bytes, random_key, seal};
+pub use seal::{open, random_bytes, random_key, seal, sha256};
 pub use secret::{derive_key, hash_password, verify_password};
 pub use usage::process_usage;
 

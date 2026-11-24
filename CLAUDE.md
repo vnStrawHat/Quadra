@@ -18,7 +18,7 @@ implementation is its reference. Its specs, its tests and its own measurements
    `docs(specs): ...`, `refactor: ...`, `test: ...`, `chore: ...`, `perf: ...`; `!` or a
    `BREAKING CHANGE:` footer for breaking API changes). Scopes are crate names without the
    `quadra-` prefix (prim, reactive, layout, text, render, platform, tree, view, async, a11y,
-   app, native, shell, testing, headless, design, code, md, data, viz, term), the apps `oneterm`
+   app, native, shell, updater, testing, headless, design, code, md, data, viz, term), the apps `oneterm`
    and `markdown`, or specs, tools.
 4. **Never test the real clipboard.**
 5. **Commit each finished part** once `tools/check.sh prod` exits 0, then go on with the
@@ -121,6 +121,7 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-app` | Windows, the frame loop, settings, the log, time, language |
 | `quadra-native-win` | Windows: D3D11, DirectWrite, Win32, UI Automation (`unsafe` allowed) |
 | `quadra-shell` | OS services: dialogs, opener, tray, one instance, crash reports (`unsafe` allowed) |
+| `quadra-updater` | An app's updates from GitHub Releases: check, fetch and verify, install while it runs (specs/22) |
 | `quadra-testing` | The test harness: no OS, no GPU, fixed text |
 | `quadra-headless` | Components without a look: state, keys, focus, semantics |
 | `quadra-design` | The kit: the design language, themes, the components' look |

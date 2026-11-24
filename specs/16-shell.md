@@ -138,6 +138,23 @@ What is secret comes back wiped on drop (`zeroize`'s `Zeroizing`, re-exported wi
 `Zeroize`): the derived key, what `open` opened, and `random_key()`, 32 random bytes made in
 place; the derived keys `verify_password` compares are wiped too.
 
+## Fetching
+
+For an app that reads something from the network (the updater, specs/22):
+`http_get(url, headers, body) -> Result<u16, String>` is a GET by the OS's own HTTP (WinHTTP),
+so the proxy the system is set to (found by itself), its certificates and its TLS are the
+ones used, and no HTTP or TLS code is linked in. `headers` are sent as given, the
+`User-Agent` among them being the agent; `body` is given what comes piece by piece (64 KiB
+at most) whatever the status, and stops the GET by answering `false` (the error `stopped`).
+The answer is the status; an error says in words what failed (no connection, cut off).
+Redirects are followed, never from https to http. Resolving and connecting give up after
+10 s, a silence of the server after 30 s; there is no limit on the whole, so a large body on
+a slow line still arrives. It blocks: an app calls it on the pool. Only `http` and `https`
+addresses are asked; which of them an app accepts is the app's rule.
+
+`sha256(bytes) -> Option<[u8; 32]>` is the OS's SHA-256 of bytes in memory, to check what
+was fetched against a digest published for it.
+
 ## Console
 
 For a program of the bench that writes to the console it runs in (`bench/doomfire`):

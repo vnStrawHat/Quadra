@@ -4,9 +4,9 @@
 
 use windows::Win32::Security::Cryptography::{
     BCRYPT_AES_GCM_ALG_HANDLE, BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO,
-    BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION, BCRYPT_FLAGS, BCRYPT_KEY_HANDLE,
+    BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_VERSION, BCRYPT_FLAGS, BCRYPT_KEY_HANDLE, BCRYPT_SHA256_ALG_HANDLE,
     BCRYPT_USE_SYSTEM_PREFERRED_RNG, BCryptDecrypt, BCryptDestroyKey, BCryptEncrypt, BCryptGenRandom,
-    BCryptGenerateSymmetricKey,
+    BCryptGenerateSymmetricKey, BCryptHash,
 };
 
 use zeroize::Zeroizing;
@@ -24,6 +24,15 @@ pub fn random_bytes<const N: usize>() -> Option<[u8; N]> {
 pub fn random_key() -> Option<Zeroizing<[u8; 32]>> {
     let mut key = Zeroizing::new([0u8; 32]);
     fill(&mut *key).then_some(key)
+}
+
+/// The SHA-256 of `bytes`, by the OS's crypto.
+/// ponytail: the whole of it in memory; hashed piece by piece when what is hashed is too large
+/// to hold.
+pub fn sha256(bytes: &[u8]) -> Option<[u8; 32]> {
+    let mut hash = [0u8; 32];
+    // SAFETY: the pseudo handle needs no opening, and both slices are told with their lengths.
+    unsafe { BCryptHash(BCRYPT_SHA256_ALG_HANDLE, None, bytes, &mut hash) }.is_ok().then_some(hash)
 }
 
 fn fill(bytes: &mut [u8]) -> bool {

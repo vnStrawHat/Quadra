@@ -38,6 +38,7 @@ quadra-app             App, windows, the frame loop, settings, assets, i18n, log
 quadra-native-win      Win32 platform, D3D11 renderer, DirectWrite backend, the accessibility
                        adapter, image codecs, their wiring
 quadra-shell           tray, notifications, single instance, crash reports, file dialogs
+quadra-updater         an app's updates from GitHub Releases, over quadra-shell (22)
 quadra-testing         harness, fake text, null renderer, snapshots
 quadra                 the facade apps depend on
 quadra-headless            components without a look: state, keys, focus, semantics, popups (17)

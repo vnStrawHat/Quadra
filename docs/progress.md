@@ -614,6 +614,13 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     a vault of 1Term's own is kept. Breaking for a 1Term of before: its hash, vault and
     saved secrets of the first format are forgotten when the settings are read
     (tests/import.rs, tests/lock.rs).
+  - `quadra-updater` (specs/22; the user's decision, 2026-11-24: a crate for any app that
+    updates through GitHub): `check` (the latest release, newer, with this build's package
+    and digest), `fetch` (checked against the digest GitHub publishes, unpacked by the OS's
+    `tar`), `install` (the files of the folder of the app that runs moved aside and replaced,
+    all or nothing), `restart`, `started`. Under it `quadra_shell::http_get` (WinHTTP: the
+    system's proxy and certificates) and `sha256` (specs/16, "Fetching"). Tests against a
+    server of the test on 127.0.0.1, with a program that runs while its file is replaced.
 - **The options' words, and the editor's bar along the bottom** (2026-11-24). The options
   of 1Term's choices are in a reader's words (`Dot and count`, `Tab only`, `Off`, `1Term's
   editor`, `Custom program`); one saved by an old word reads as the default (the user's

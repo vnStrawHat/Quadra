@@ -1705,6 +1705,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "quadra-updater"
+version = "0.1.0"
+dependencies = [
+ "quadra-shell",
+ "serde_json",
+]
+
+[[package]]
 name = "quadra-vector"
 version = "0.1.0"
 dependencies = [

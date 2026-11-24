@@ -62,7 +62,7 @@ pub use win::{
 #[cfg(windows)]
 pub use win::{cycles_per_second, private_memory, process_cycles, window_shown};
 #[cfg(windows)]
-pub use win::{derive_key, open, random_bytes, random_key, seal};
+pub use win::{derive_key, http_get, open, random_bytes, random_key, seal, sha256};
 pub use zeroize::{Zeroize, Zeroizing};
 
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,

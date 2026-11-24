@@ -1,0 +1,17 @@
+[package]
+name = "quadra-updater"
+description = "An app's updates from GitHub Releases: checking, fetching and verifying a package, replacing the app's files while it runs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# The OS's HTTP and SHA-256 (specs/16, "Fetching").
+quadra-shell = { path = "../quadra-shell" }
+# What GitHub answers (specs/01, R15).
+serde_json = "1"

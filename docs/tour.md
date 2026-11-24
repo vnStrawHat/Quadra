@@ -155,3 +155,10 @@ SFTP, whose engine the user decides when P2 starts. The user's own terminal app 
 `.cache/vendor/oneterm-app`; never edit it; its CLAUDE.md and AGENTS.md are for that repository) is the reference
 for behaviour and settings the design leaves open. **P1 is done** (M1-M6, docs/progress.md): `tools/cargo.sh run -p oneterm`; a trial run takes
 `ONETERM_HOME=.tmp/1term` so it writes nothing outside the project. P2 (SSH over `russh` + `tokio` + `ring`, the user's choice) is done through M10 (`apps/oneterm/ssh`; jump hosts, local forwards, SFTP dock and its expanded view, saved hosts; tests only against servers of the test process on 127.0.0.1). Throughput: 592 fps of the fire demo at 147 by 40 with the bundled console host (docs/benchmarks.md).
+
+**The updater** (`quadra-updater`, specs/22, 2026-11-24): `Updater::new(repo, app, version, cache)`, then `check()` (the
+latest release of a GitHub repository, if newer, with this build's package and its digest), `fetch(&release, progress)`
+(the package checked against the digest and unpacked) and `install(&package)` (each file of the app's folder moved aside
+and the new one put at its name, while the app runs); `restart()` and, at the top of `main`, `started()`. It blocks: an
+app calls it on its pool. Under it `quadra_shell::http_get` (the OS's HTTP: its proxy, its certificates) and `sha256`
+(specs/16, "Fetching"). Tests only against a server of the test on 127.0.0.1.

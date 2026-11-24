@@ -24,6 +24,7 @@ quadra-design = { path = "../../crates/quadra-design" }
 oneterm-complete = { path = "complete" }
 oneterm-ssh = { path = "ssh" }
 quadra-shell = { path = "../../crates/quadra-shell" }
+quadra-updater = { path = "../../crates/quadra-updater" }
 quadra-term = { path = "../../crates/quadra-term", features = ["pty"] }
 quadra-tree = { path = "../../crates/quadra-tree" }
 

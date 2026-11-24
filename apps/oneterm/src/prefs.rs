@@ -50,6 +50,8 @@ pub struct Prefs {
     pub force_links: Signal<bool>,
     /// A shell 1Term found says its folder and its prompts (OSC 133), and writes UTF-8.
     pub integration: Signal<bool>,
+    /// A start asks whether a newer 1Term is published (`updates.rs`).
+    pub update_check: Signal<bool>,
     /// OneTerm's folder was looked at for what to take over (`import.rs`).
     pub taken_over: Signal<bool>,
     pub vertical: Signal<bool>,
@@ -153,6 +155,7 @@ impl Prefs {
             start: s.choice("terminal.start_in", &STARTS),
             force_links: s.value("terminal.force_hyperlink", true),
             integration: s.value("terminal.shell_integration", true),
+            update_check: s.value("updates.check_at_start", true),
             taken_over: s.value("import.oneterm", false),
             vertical: s.value("tabs.vertical", true),
             rail_width: s.value("tabs.rail_width", 270.0),

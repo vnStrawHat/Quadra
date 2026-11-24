@@ -429,7 +429,9 @@ tried; not in a trial run under `ONETERM_HOME`, nor in a test) 1Term takes over:
   OneTerm's from then on: the next start opens locked, and it is asked for the first time a
   host with a saved password is connected to. A password comes along for a host 1Term has
   under the session's name and target and with no secret of its own, and only an envelope
-  of that vault; with no password saved there, the vault is not taken either. Where 1Term
+  of that vault, and only for a session whose way in is the password (one left behind
+  another way is stale there, and would be tried here as a key's passphrase); with no
+  password saved there, the vault is not taken either. Where 1Term
   has a vault of its own already (a master password set here
   first), it is kept and no password is taken.
 
@@ -437,6 +439,37 @@ A card says how many hosts and saved passwords were taken over, that the master 
 OneTerm's, and how many passwords could not be taken. Settings, SSH & hosts has **Import
 from OneTerm**, which does the same again for what 1Term does not have yet (no settings) and
 says so. OneTerm's files are read and never changed.
+
+## Updates
+
+1Term updates itself through `quadra-updater` (specs/22) from the releases of
+`vnStrawHat/OneTerm`, the repository of the app it replaces: that app's own updater looks
+there, so its last version updates to 1Term, and 1Term goes on from the same place. A
+release carries `oneterm-<version>-x86_64-pc-windows-msvc.zip`, holding
+`oneterm-<version>-x86_64-pc-windows-msvc/` with `oneterm.exe`, the console host and the
+notices (`tools/release.sh`); 1Term's versions go on from that app's (0.7.0 the first).
+
+Settings, About has the group **Updates** (`updates.rs`):
+
+- **Update**: what is known, and one button that is the next step. Nothing asked yet:
+  **Check for updates**. `Checking…` (the button off). `1Term is up to date.` `Version 0.7.1
+  is available.` with **Install**: the package is fetched (`Downloading 0.7.1 42%`, with
+  **Cancel**, which leaves the version to install), checked against the digest GitHub
+  publishes, and its files put in 1Term's folder while it runs; no session is touched.
+  `Version 0.7.1 is installed.` with **Restart 1Term**, which starts the new version and
+  closes this one, with every terminal and connection, as the row's words say; left alone,
+  the next start is the new version anyway. What failed is said in the row in words (the
+  network, no package for this system, a package that is not the one published), with the
+  detail in the log, and the button checks again.
+- **Check at start** (`updates.check_at_start`, on): a start asks once, off the window's
+  thread; a newer version shows a card, `1Term 0.7.1 is available`, `Install it from
+  Settings, About.`; a check that found none or failed says nothing. A trial run under
+  `ONETERM_HOME` asks nothing.
+
+The package is fetched to `updates` in the app's data folder. `main` calls
+`quadra_updater::started()` first, which removes what the version before left moved aside.
+Not done: pre-release versions, a version skipped on purpose, a proxy of 1Term's own (the
+system's is used).
 
 ## Lock
 

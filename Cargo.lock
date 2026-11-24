@@ -1067,6 +1067,7 @@ dependencies = [
  "quadra-term",
  "quadra-testing",
  "quadra-tree",
+ "quadra-updater",
 ]
 
 [[package]]

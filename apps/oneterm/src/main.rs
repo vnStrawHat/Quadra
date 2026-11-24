@@ -12,6 +12,8 @@ use oneterm::{NewSession, OneTerm, keymap, start, theme};
 use quadra::{AppDirs, WindowOptions};
 
 fn main() -> quadra::Result<()> {
+    // After an update: what the version before left moved aside goes (specs/22).
+    quadra_updater::started();
     let mut app = quadra::app()?;
     // ONETERM_HOME puts the settings and the log in one folder (a trial run); else the user's.
     let home = std::env::var_os("ONETERM_HOME").map(|home| AppDirs::under(std::path::Path::new(&home)));
@@ -40,9 +42,11 @@ fn main() -> quadra::Result<()> {
     app.keymap(keymap())
         .window(options, move || {
             let term = OneTerm::new(shells);
-            // The user's own run takes over from OneTerm once; a trial run takes nothing.
+            // The user's own run takes over from OneTerm once and asks for a newer version;
+            // a trial run takes nothing and asks nothing.
             if std::env::var_os("ONETERM_HOME").is_none() {
                 term.model.take_over_once();
+                term.model.check_for_updates_at_start();
             }
             if let Some(report) = crashed.clone() {
                 term.crashed(&report);

@@ -71,6 +71,9 @@ pub(crate) fn sessions(json: &str) -> Vec<Taken> {
             (Some("agent"), _) => Auth::Agent,
             _ => Auth::Password,
         };
+        // A password saved behind another way in is stale there, and would be tried here
+        // as a key's passphrase.
+        let sealed = text(session, "sealed_password").filter(|_| auth == Auth::Password);
         let mut remote = Remote::new(target, auth);
         if let Some(Value::List(forwards)) = session.get("port_forwards") {
             remote.forwards = forwards.iter().filter_map(forward).collect();
@@ -83,7 +86,7 @@ pub(crate) fn sessions(json: &str) -> Vec<Taken> {
                 jump: number(session, "jump_host").and_then(named).unwrap_or_default(),
             },
             colour: text(session, "color").map(str::to_string),
-            sealed: text(session, "sealed_password").map(str::to_string),
+            sealed: sealed.map(str::to_string),
         })
     });
     taken.filter(|it| !it.host.remote.target.host.is_empty()).collect()

@@ -103,4 +103,6 @@ Nothing panics on what the network or the disk does.
 folders under `.tmp`: the check's answers by tag, asset and digest; a zip fetched, checked
 and unpacked, a wrong digest and a stop refused; the files of a program that runs replaced,
 the second update refused, a failed one taken back, and the files moved aside removed once
-the program ended. The OS's calls have their own (specs/16).
+the program ended. The OS's calls have their own (specs/16). `quadra_updater::testing` is
+that server, what GitHub says of a release, and a package as a release carries it, for the
+tests of an app that updates.

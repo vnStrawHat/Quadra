@@ -17,6 +17,7 @@
 
 mod install;
 mod release;
+pub mod testing;
 
 use std::path::{Path, PathBuf};
 

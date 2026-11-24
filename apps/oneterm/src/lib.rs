@@ -40,6 +40,8 @@ mod statusbar;
 mod strip;
 mod tab;
 mod themes;
+mod ui;
+mod updates;
 mod usage;
 mod vault;
 
@@ -56,6 +58,7 @@ pub use prefs::{KIT_THEME, Prefs, theme};
 pub use remote::{remote_shell, remote_shell_with};
 pub use shells::{Launch, Remote, Shell};
 pub use signals::{percent, state_word};
+pub use updates::{Update, Updates};
 pub use usage::Clock;
 
 /// Makes the session of a new space: it is called in the scope the space lives in.
@@ -159,6 +162,7 @@ impl OneTerm {
             .child(self.model.notices().above(32.0).host());
         let windows = use_context::<quadra::Windows>();
         let closing = (self.model.clone(), window.clone());
+        updates::closes(self.model.ui().updates, window.clone());
         locked::watches(quadra_design::root(), lock)
             .on_action::<Command>(move |&command| {
                 if !run(&model, command, windows.as_ref())

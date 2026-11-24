@@ -621,6 +621,11 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     all or nothing), `restart`, `started`. Under it `quadra_shell::http_get` (WinHTTP: the
     system's proxy and certificates) and `sha256` (specs/16, "Fetching"). Tests against a
     server of the test on 127.0.0.1, with a program that runs while its file is replaced.
+  - 1Term's updates (`updates.rs`; specs/19, "Updates"): Settings, About has the group
+    Updates, one row whose button is the next step (Check for updates, Install with its
+    progress and Cancel, Restart 1Term) and Check at start, which shows a card for a newer
+    version; the releases are those of the repository of the app 1Term replaces. A saved
+    password behind another way in than the password is not taken over (tests/updates.rs).
 - **The options' words, and the editor's bar along the bottom** (2026-11-24). The options
   of 1Term's choices are in a reader's words (`Dot and count`, `Tab only`, `Off`, `1Term's
   editor`, `Custom program`); one saved by an old word reads as the default (the user's

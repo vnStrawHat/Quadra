@@ -2,10 +2,9 @@
 //! 127.0.0.1 that answers as GitHub does, in folders of the test under `.tmp`.
 #![cfg(windows)]
 
-use std::io::{BufRead, BufReader, Write};
-use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 
+use quadra_updater::testing::{digest, package, release, serve};
 use quadra_updater::{Error, Release, Updater, swap, swept};
 
 const TARGET: &str = "x86_64-pc-windows-msvc";
@@ -17,27 +16,6 @@ fn folder(name: &str) -> PathBuf {
     folder
 }
 
-/// Serves each answer (a status and a body) to one connection, and gives what was asked.
-fn serve(answers: Vec<(&'static str, Vec<u8>)>) -> (String, std::thread::JoinHandle<Vec<String>>) {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let at = format!("http://{}", listener.local_addr().unwrap());
-    let served = std::thread::spawn(move || {
-        let mut asked = Vec::new();
-        for (status, body) in answers {
-            let (mut stream, _) = listener.accept().unwrap();
-            let mut said = String::new();
-            let mut reader = BufReader::new(stream.try_clone().unwrap());
-            while reader.read_line(&mut said).unwrap() > 2 {}
-            asked.push(said);
-            let head =
-                format!("HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len());
-            let _ = stream.write_all(head.as_bytes()).and_then(|()| stream.write_all(&body));
-        }
-        asked
-    });
-    (at, served)
-}
-
 fn updater(api: &str, root: &Path) -> Updater {
     let mut updater = Updater::new("owner/app", "app", "0.7.0", &root.join("cache"));
     (updater.api, updater.home) = (api.into(), root.join("home"));
@@ -45,51 +23,38 @@ fn updater(api: &str, root: &Path) -> Updater {
     updater
 }
 
-/// What GitHub says of a release: its tag and its assets (a name, a digest when it has one).
-fn release(tag: &str, assets: &[(&str, Option<&str>)]) -> Vec<u8> {
-    let at = "https://github.com/owner/app/releases/download";
-    let assets: Vec<String> = assets
-        .iter()
-        .map(|(name, digest)| {
-            let digest = digest.map_or("null".to_string(), |it| format!("\"sha256:{it}\""));
-            format!(
-                r#"{{"name":"{name}","size":3,"digest":{digest},"browser_download_url":"{at}/get/{name}"}}"#
-            )
-        })
-        .collect();
-    let page = "https://github.com/owner/app/releases/tag/".to_string() + tag;
-    format!(r#"{{"tag_name":"{tag}","html_url":"{page}","draft":false,"assets":[{}]}}"#, assets.join(","))
-        .into()
-}
-
 #[test]
 fn a_check_gives_a_newer_release_with_this_build_s_package_and_its_digest() {
     let root = folder("check");
-    let (name, digest) = (format!("app-0.8.0-{TARGET}.zip"), "AB".repeat(32));
+    let (name, zip) = (format!("app-0.8.0-{TARGET}.zip"), Some(&b"zip"[..]));
     let other = "app-0.8.0-aarch64-unknown-linux-gnu.tar.gz";
-    let (at, served) = serve(vec![
-        ("200 OK", release("v0.8.0", &[(other, Some(&digest)), (&name, Some(&digest))])),
-        ("200 OK", release("v0.7.0", &[(&name, Some(&digest))])),
-        ("200 OK", release("v0.6.9", &[(&name, Some(&digest))])),
-        ("200 OK", release("v0.8.0-rc.1", &[(&name, Some(&digest))])),
-        ("200 OK", release("v0.8.0", &[(other, Some(&digest))])),
-        ("200 OK", release("v0.8.0", &[(&name, None)])),
-        ("404 Not Found", b"{}".to_vec()),
-        ("403 Forbidden", b"{}".to_vec()),
-        ("500 Oops", b"down".to_vec()),
-        ("200 OK", b"<html>a proxy's page</html>".to_vec()),
-    ]);
+    let (at, served) = serve(|at| {
+        vec![
+            ("200 OK", release("v0.8.0", &[(other, zip), (&name, zip)], at)),
+            ("200 OK", release("v0.7.0", &[(&name, zip)], at)),
+            ("200 OK", release("v0.6.9", &[(&name, zip)], at)),
+            ("200 OK", release("v0.8.0-rc.1", &[(&name, zip)], at)),
+            ("200 OK", release("v0.8.0", &[(other, zip)], at)),
+            ("200 OK", release("v0.8.0", &[(&name, None)], at)),
+            ("200 OK", release("v0.8.0", &[(&name, zip)], "http://elsewhere.invalid")),
+            ("404 Not Found", b"{}".to_vec()),
+            ("403 Forbidden", b"{}".to_vec()),
+            ("500 Oops", b"down".to_vec()),
+            ("200 OK", b"<html>a proxy's page</html>".to_vec()),
+        ]
+    });
     let u = updater(&at, &root);
     let found = u.check().unwrap().expect("a newer release");
     assert_eq!((found.version.as_str(), found.name.as_str(), found.size), ("0.8.0", name.as_str(), 3));
-    assert_eq!(found.sha256, "ab".repeat(32), "the digest in lower case");
+    assert_eq!(found.sha256, digest(b"zip"));
     assert_eq!(found.notes, "https://github.com/owner/app/releases/tag/v0.8.0");
-    assert_eq!(found.url, format!("https://github.com/owner/app/releases/download/get/{name}"));
+    assert_eq!(found.url, format!("{at}/get/{name}"));
     assert_eq!(u.check(), Ok(None), "the same version");
     assert_eq!(u.check(), Ok(None), "an older one");
     assert_eq!(u.check(), Ok(None), "a pre-release tag");
     assert_eq!(u.check(), Err(Error::NoPackage("0.8.0".into())), "no package for this build");
     assert_eq!(u.check(), Err(Error::NoPackage("0.8.0".into())), "a package without a digest");
+    assert_eq!(u.check(), Err(Error::NoPackage("0.8.0".into())), "a package TLS would not carry");
     assert_eq!(u.check(), Ok(None), "no release yet");
     assert_eq!(u.check(), Err(Error::Limited));
     assert!(matches!(u.check(), Err(Error::Network(_))), "a server's error");
@@ -104,32 +69,13 @@ fn a_check_gives_a_newer_release_with_this_build_s_package_and_its_digest() {
     assert!(far.check().is_err(), "the server is gone");
 }
 
-/// A package as a release carries it: a zip of the folder named as the package is.
-fn package(root: &Path, version: &str, files: &[(&str, &[u8])]) -> (String, Vec<u8>) {
-    let name = format!("app-{version}-{TARGET}");
-    for (file, bytes) in files {
-        let path = root.join("made").join(&name).join(file);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(path, bytes).unwrap();
-    }
-    let zip = root.join(format!("{name}.zip"));
-    let tar = Path::new(&std::env::var_os("SystemRoot").unwrap()).join("System32").join("tar.exe");
-    let mut made = std::process::Command::new(tar);
-    made.arg("-a").arg("-c").arg("-f").arg(&zip).arg("-C").arg(root.join("made")).arg(&name);
-    let made = made.output().unwrap();
-    assert!(made.status.success(), "{}", String::from_utf8_lossy(&made.stderr));
-    (format!("{name}.zip"), std::fs::read(zip).unwrap())
-}
-
-fn hex(bytes: &[u8]) -> String {
-    quadra_shell::sha256(bytes).unwrap().iter().map(|b| format!("{b:02x}")).collect()
-}
-
 #[test]
 fn a_package_is_fetched_checked_against_its_digest_and_unpacked() {
     let root = folder("fetch");
-    let (name, zip) = package(&root, "0.8.0", &[("app.exe", b"new app"), ("x64/host.exe", b"new host")]);
-    let (at, served) = serve(vec![("200 OK", zip.clone()), ("200 OK", zip.clone()), ("200 OK", zip.clone())]);
+    let files: [(&str, &[u8]); 2] = [("app.exe", b"new app"), ("x64/host.exe", b"new host")];
+    let (name, zip) = package(&root, "app", "0.8.0", TARGET, &files);
+    let (at, served) =
+        serve(|_| vec![("200 OK", zip.clone()), ("200 OK", zip.clone()), ("200 OK", zip.clone())]);
     let u = updater(&at, &root);
     let size = zip.len() as u64;
     let of = |sha256: String| Release {
@@ -141,7 +87,7 @@ fn a_package_is_fetched_checked_against_its_digest_and_unpacked() {
         sha256,
     };
     let mut told = Vec::new();
-    let found = u.fetch(&of(hex(&zip)), &mut |got, all| {
+    let found = u.fetch(&of(digest(&zip)), &mut |got, all| {
         told.push((got, all));
         true
     });
@@ -153,7 +99,7 @@ fn a_package_is_fetched_checked_against_its_digest_and_unpacked() {
     // What came is not what was published: nothing of it is unpacked, and what a fetch before
     // unpacked is not taken for it.
     assert_eq!(u.fetch(&of("0".repeat(64)), &mut |_, _| true), Err(Error::Mismatch));
-    assert_eq!(u.fetch(&of(hex(&zip)), &mut |_, _| false), Err(Error::Cancelled));
+    assert_eq!(u.fetch(&of(digest(&zip)), &mut |_, _| false), Err(Error::Cancelled));
     let asked = served.join().unwrap();
     assert!(asked[0].starts_with(&format!("GET /get/{name} ")), "{}", asked[0]);
 }

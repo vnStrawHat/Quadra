@@ -601,6 +601,10 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     paint), and the keys Shift+PageUp/PageDown and Ctrl+Shift+Home/End, bound again on
     1Term's Keybindings page (term tests/bar.rs). A press on any scrollbar's thumb leaves
     the focus where it is.
+  - Taking over from OneTerm (`import.rs`; specs/19, "Taking over from OneTerm"): its saved
+    sessions as hosts (names made unique, jump hosts by name, forwards, colours) and a few
+    of its terminal's settings, once at the user's own start and by Import from OneTerm in
+    the settings; saved passwords are not taken (tests/import.rs).
 - **The options' words, and the editor's bar along the bottom** (2026-11-24). The options
   of 1Term's choices are in a reader's words (`Dot and count`, `Tab only`, `Off`, `1Term's
   editor`, `Custom program`); one saved by an old word reads as the default (the user's

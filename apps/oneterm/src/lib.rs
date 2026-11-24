@@ -15,6 +15,7 @@ mod git;
 mod host_connect;
 mod hostlist;
 mod hosts;
+mod import;
 mod links;
 mod local;
 mod lock;

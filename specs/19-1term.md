@@ -406,6 +406,29 @@ the view's `TermSettings` (specs/18). A choice is saved as its words. Signals: O
 default sound, at once for each bell however the space is looked at) / badge and flash (the
 space's terminal tinted the selection colour for 120 ms) / ignore; OSC 9: toast 6 s / until dismissed / silent.
 
+## Taking over from OneTerm
+
+1Term replaces OneTerm, the user's terminal app before it, whose folder is `.OneTerm` in the
+user's (`import.rs`). At its first start (the setting `import.oneterm`, set once it was
+tried; not in a trial run under `ONETERM_HOME`, nor in a test) 1Term takes over:
+
+- the sessions of `ssh_session.json`, of any of its versions, as hosts: the label is the
+  name (a label met again gets a number after it, `prod (2)`, as sessions are known by an id
+  there and hosts by their name here; one without a label is named by its address), the
+  group, `user@host:port`, the way in (`private_key` with its key file, `agent`, else the
+  password), the jump host by the name its session got, the forwards (local, remote, dynamic;
+  the address listened on is this machine's own here), and the colour as the host's tag. A
+  host whose name 1Term already has is left as it is. What 1Term has no place for is left
+  behind: a session's own logging, agent forwarding.
+- of `terminal.json`: the font's family and size, the rows of history, the cursor's blink,
+  and the keepalive (on, its seconds, how many may go unanswered).
+
+Saved passwords are not taken: they are sealed by OneTerm's vault, which 1Term does not
+open, so a host asks for its password again. A card says how many hosts were taken over and
+how many of them had one. Settings, SSH & hosts has **Import from OneTerm**, which adds the
+hosts 1Term does not have yet (no settings) and says the same. OneTerm's files are read and
+never changed.
+
 ## Lock
 
 Only with a master password (Security & lock: set, change, remove; kept as a salted PBKDF2

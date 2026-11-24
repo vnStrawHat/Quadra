@@ -40,6 +40,10 @@ fn main() -> quadra::Result<()> {
     app.keymap(keymap())
         .window(options, move || {
             let term = OneTerm::new(shells);
+            // The user's own run takes over from OneTerm once; a trial run takes nothing.
+            if std::env::var_os("ONETERM_HOME").is_none() {
+                term.model.take_over_once();
+            }
             if let Some(report) = crashed.clone() {
                 term.crashed(&report);
             }

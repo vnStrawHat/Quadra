@@ -4,3 +4,4 @@
 .private/
 *.pdb
 CLAUDE.local.md
+tools/__pycache__/

@@ -165,6 +165,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .filter(|it| only.is_empty() || only.iter().any(|o| o == *it))
     {
         let platform = HeadlessPlatform::new();
+        // The title bar's mark is a picture.
+        platform.set_image_decoder(std::sync::Arc::new(quadra_native_win::WicImages));
         let text = DirectWrite::new().map_err(AppError::Text)?;
         let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
         let mut app = quadra_design::install(app, &quadra_design::dark())?.keymap(keymap());

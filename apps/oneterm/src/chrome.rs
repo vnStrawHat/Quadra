@@ -9,9 +9,9 @@ use quadra_design::{button, fonts, icon, icon_button, icons, titlebar, token, to
 use crate::locked::shown;
 use crate::model::Model;
 
-/// 1Term's mark: a terminal's prompt in a window.
-const MARK: &str =
-    r#"<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3"/><path d="M13 15h4"/>"#;
+/// 1Term's mark: the icon of the app it replaces, as the executable's is (`assets/logo.ico`),
+/// its 96 px picture.
+const MARK: &[u8] = include_bytes!("../assets/logo.png");
 
 pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
     let (seen, lock) = (model.clone(), model.lock());
@@ -22,7 +22,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .align_items(Align::Center)
         .gap(token::SPACE_XS)
         .padding_left(token::SPACE_LG)
-        .child(icon(MARK).size(16.0).color(token::ACCENT))
+        .child(quadra::image(MARK).width(20.0).height(20.0).label("1Term"))
         .child(div().padding_x(token::SPACE_XS).text_size(14.0).font_weight(600).child(text("1Term")))
         .child(locked);
     let (open, hosts, vertical) = (seen.ui().settings, seen.ui().hosts, seen.vertical());

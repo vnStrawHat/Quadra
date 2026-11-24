@@ -633,6 +633,8 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     `oneterm-0.7.0-x86_64-pc-windows-msvc.zip` holds the folder of that name with the
     console host, LICENSE, NOTICE and the notices of 180 crates, the icons and the faces
     (`tools/notices.py`). Nothing is published by the tools.
+  - The title bar's mark is that icon too (`assets/logo.png`, its 96 px picture at 20 px;
+    the user's request, 2026-11-24); `bench/oneterm-shots` decodes pictures to draw it.
 - **The options' words, and the editor's bar along the bottom** (2026-11-24). The options
   of 1Term's choices are in a reader's words (`Dot and count`, `Tab only`, `Off`, `1Term's
   editor`, `Custom program`); one saved by an old word reads as the default (the user's

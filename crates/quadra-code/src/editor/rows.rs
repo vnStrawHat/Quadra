@@ -143,10 +143,24 @@ impl EditorWidget {
         }
     }
 
-    /// Scrolls sideways by `dx`, as far as the widest line painted; never when it wraps.
+    /// How far it scrolls sideways: to the end of the widest line painted; nowhere when it
+    /// wraps.
+    pub(super) fn far(&self) -> f32 {
+        if self.wrap { 0.0 } else { (self.widest - self.text_width()).max(0.0) }
+    }
+
+    /// Tells the bar along the bottom where the text is and how far it goes. In the update
+    /// pass, never as it paints: a frame leaves no work.
+    pub(super) fn tell_sideways(&self) {
+        if let Some((at, far)) = self.sideways {
+            at.try_set(self.scroll_x);
+            far.try_set(self.far());
+        }
+    }
+
+    /// Scrolls sideways by `dx`, as far as it goes.
     pub fn scroll_by(&mut self, dx: f32) -> bool {
-        let end = if self.wrap { 0.0 } else { (self.widest - self.text_width()).max(0.0) };
-        let to = (self.scroll_x + dx).clamp(0.0, end);
+        let to = (self.scroll_x + dx).clamp(0.0, self.far());
         std::mem::replace(&mut self.scroll_x, to) != to
     }
 }

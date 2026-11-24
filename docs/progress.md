@@ -584,6 +584,12 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   alert, and what is wrong with a field is said under it. The apps and the gallery say
   `vstack()`, `hstack()` and `form()` where they wrote them out. A theme file with no
   `accent_tint` gets its own accent at 16 % (37 of 1Term's themes showed the kit's blue).
+- **The options' words, and the editor's bar along the bottom** (2026-11-24). The options
+  of 1Term's choices are in a reader's words (`Dot and count`, `Tab only`, `Off`, `1Term's
+  editor`, `Custom program`); one saved by an old word reads as the default (the user's
+  decision). The code editor has the kit's sideways bar while a line is wider than it: the
+  widget tells it where the text is and how far it goes in the update pass, never as it
+  paints (a frame leaves no work), and its thumb moves the text (code tests/wrap_when.rs).
 - **1Term, what the walk said to put right** (2026-11-24). A new host key is trusted at the
   step that shows whose it is and its fingerprint: the tick that trusted it unseen is gone
   (tests/connect_host.rs). A changed host key offers Close first (`oneterm_ssh::key_changed`;

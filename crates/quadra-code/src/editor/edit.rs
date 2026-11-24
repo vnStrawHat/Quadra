@@ -116,6 +116,7 @@ pub(super) fn edit(
     f(w, ((view / w.line_px) as usize).max(1));
     w.caret_on = true; // a caret in use does not blink away
     w.follow_caret();
+    w.tell_sideways();
     w.sync_rows();
     let changed = w.doc.version != version;
     let moved = (w.doc.primary().anchor, w.doc.primary().head) != held;

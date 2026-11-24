@@ -179,7 +179,7 @@ impl View for Editor {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (find, widget, bar, epoch) =
             (Finding::new(), Rc::new(Cell::new(None)), NodeRef::new(), cx.handle.now());
-        let scroll_y = signal(0.0);
+        let (scroll_y, sideways, slot) = (signal(0.0), (signal(0.0), signal(0.0)), widget.clone());
         if let Some(top) = self.top {
             time::follow_top(cx, widget.clone(), scroll_y, top);
         }
@@ -190,7 +190,10 @@ impl View for Editor {
         let handle = cx.handle.clone();
         let shown = move || find_bar::bar(find, handle.clone(), widget.clone(), epoch, bar.clone());
         let over = show(move || find.open.get(), shown).container(div().absolute().top(6.0).right(16.0));
-        column().grow(1.0).child(scroll(scroll_y, surface)).child(over).mount(cx)
+        let all = column().grow(1.0).child(scroll(scroll_y, surface)).child(over);
+        let root = quadra_view::sideways_bar(all, sideways.0, move |_| sideways.1.get()).mount(cx);
+        slot.get().into_iter().for_each(|id| time::follow_sideways(cx, id, sideways));
+        root
     }
 }
 

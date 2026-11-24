@@ -45,7 +45,8 @@ pub(super) fn pointer(cx: &mut MountCx, id: NodeId, epoch: Instant, on_link: Opt
         if dx != 0.0 {
             e.stop();
             writer.with(move |tree| {
-                if tree.widget_mut::<EditorWidget>(id).is_some_and(|w| w.scroll_by(dx)) {
+                let moved = |w: &mut EditorWidget| (w.scroll_by(dx), w.tell_sideways()).0;
+                if tree.widget_mut::<EditorWidget>(id).is_some_and(moved) {
                     tree.mark_paint(id);
                 }
             });
@@ -68,9 +69,13 @@ pub(super) fn pointer(cx: &mut MountCx, id: NodeId, epoch: Instant, on_link: Opt
                 over.set(None);
             }
             if kind == PointerKind::Move && !held.get() {
-                if let Some(over) = over {
-                    writer.with(move |tree| hover(tree, id, at, mods, (window, over)));
-                }
+                // The bar along the bottom learns here how far the lines painted since go.
+                writer.with(move |tree| {
+                    if let Some(over) = over {
+                        hover(tree, id, at, mods, (window, over));
+                    }
+                    tree.widget_mut::<EditorWidget>(id).into_iter().for_each(|w| w.tell_sideways());
+                });
                 return;
             }
             if kind == PointerKind::Down

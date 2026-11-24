@@ -1490,7 +1490,11 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   widget is as high as its lines (as its view at least: under the last line of a short text
   the pointer and the wheel are still the editor's) and as wide as the view; the scroll view scrolls it up and
   down, its wheel and its bar, and it scrolls itself sideways (the wheel with Shift, or
-  sideways; the caret is kept in view), as far as the widest line it has painted. It paints
+  sideways; the caret is kept in view), as far as the widest line it has painted, with a bar
+  along the bottom of the view while a line is wider than it (`sideways_bar`: the widget
+  tells it where the text is and how far it goes after what moved the text and as the
+  pointer moves over it, never as it paints, and is moved by its thumb;
+  none while it wraps). It paints
   the lines of the band its layer paints, not the document: under the text the line of each
   cursor (with the focus), the selections, the matches and the bracket that matches; the
   text, a glyph at the column of its character (`Doc::col_of`: a tab to its stop, a wide

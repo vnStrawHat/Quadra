@@ -76,6 +76,8 @@ pub struct EditorWidget {
     pub(super) width: f32,
     /// The widest line painted so far: how far it scrolls sideways.
     pub(super) widest: f32,
+    /// The bar along the bottom: told how far the text is scrolled, and how far it goes.
+    pub(super) sideways: Option<(Signal<f32>, Signal<f32>)>,
     /// The text the marks of the gutter compare with, the marks, and their colours.
     pub(super) base: Option<super::marks::Base>,
     pub marks: Vec<Mark>,
@@ -120,6 +122,7 @@ impl EditorWidget {
             gutter: 0.0,
             width: 0.0,
             widest: 0.0,
+            sideways: None,
             base: None,
             marks: Vec::new(),
             changed: None,

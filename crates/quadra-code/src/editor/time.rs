@@ -161,6 +161,24 @@ fn go_to(tree: &mut quadra_tree::Tree, slot: &Cell<Option<NodeId>>, scroll_y: Si
 
 /// Wraps the lines while `wraps` says so: the rows are made again, as an edit makes them, and
 /// the caret is kept in view.
+/// The bar along the bottom (`sideways_bar`): the widget tells `at` and `far` as it paints,
+/// and a thumb dragged, which writes `at`, moves the text.
+pub(super) fn follow_sideways(cx: &mut MountCx, id: NodeId, (at, far): (Signal<f32>, Signal<f32>)) {
+    if let Some(w) = cx.tree.widget_mut::<EditorWidget>(id) {
+        w.sideways = Some((at, far));
+    }
+    let writer = cx.handle.clone();
+    cx.handle.bind(move || {
+        let x = at.get();
+        writer.with(move |tree| {
+            let moved = |w: &mut EditorWidget| std::mem::replace(&mut w.scroll_x, x) != x;
+            if tree.widget_mut::<EditorWidget>(id).is_some_and(moved) {
+                tree.mark_paint(id);
+            }
+        });
+    });
+}
+
 pub(super) fn follow_wrap(cx: &mut MountCx, id: NodeId, epoch: Instant, wraps: Signal<bool>) {
     let writer = cx.handle.clone();
     cx.handle.bind(move || {

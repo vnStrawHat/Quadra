@@ -588,6 +588,13 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   own terminal app found 1Term lacks, part by part.
   - An upload onto a name the folder shown already has asks first, Skip or Replace
     (`sftp/upload.rs`; tests/dock_replace.rs). It went over the remote file unasked.
+  - Shell integration for the local shells 1Term finds (`local/integrate.rs`, the setting
+    `terminal.shell_integration`, on): Command Prompt, both PowerShells and bash say their
+    directory and mark their prompts (OSC 133; PowerShell and bash a command's start and
+    its end with the status too), and write UTF-8. tests/shell_marks.rs runs the three
+    against real consoles. A bash's own path of a folder (`/c/work`) is taken as the folder.
+    Found on the way: a shell found was named with a `/` in its path, which Command Prompt
+    read as `/C md .exe` (it made a folder `.exe` and ended); named with the OS's separator.
 - **The options' words, and the editor's bar along the bottom** (2026-11-24). The options
   of 1Term's choices are in a reader's words (`Dot and count`, `Tab only`, `Off`, `1Term's
   editor`, `Custom program`); one saved by an old word reads as the default (the user's

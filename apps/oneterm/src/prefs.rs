@@ -48,6 +48,8 @@ pub struct Prefs {
     pub start: Signal<usize>,
     /// A new local shell gets `FORCE_HYPERLINK=1`.
     pub force_links: Signal<bool>,
+    /// A shell 1Term found says its folder and its prompts (OSC 133), and writes UTF-8.
+    pub integration: Signal<bool>,
     pub vertical: Signal<bool>,
     /// The rail's width, and whether it is folded to its icons.
     pub rail_width: Signal<f64>,
@@ -134,6 +136,7 @@ impl Prefs {
             shell_args: s.value("terminal.shell_args", String::new()),
             start: s.choice("terminal.start_in", &STARTS),
             force_links: s.value("terminal.force_hyperlink", true),
+            integration: s.value("terminal.shell_integration", true),
             vertical: s.value("tabs.vertical", true),
             rail_width: s.value("tabs.rail_width", 270.0),
             rail_folded: s.value("tabs.rail_folded", false),

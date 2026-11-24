@@ -45,4 +45,12 @@ fn the_last_directory_used_is_where_a_new_tab_starts_and_home_once_it_is_gone() 
     h.settle();
     let home = std::env::var_os("USERPROFILE").map(PathBuf::from);
     assert_eq!(starts.borrow().last().cloned().flatten(), home, "gone: home");
+    // A bash of Windows says a folder its own way (OSC 7, `/d/work`): it is that folder.
+    let shown = here.display().to_string();
+    let (drive, under) = shown.split_once(":\\").expect("a drive");
+    let said = format!("\x1b]7;file://pc/{}/{}\x07", drive.to_lowercase(), under.replace('\\', "/"));
+    made.borrow().last().unwrap().feeder().feed(said.as_bytes(), Instant::now());
+    h.settle();
+    assert_eq!(model.prefs().last_dir.get_untracked(), shown);
+    assert_eq!(made.borrow().last().unwrap().cwd().get_untracked(), shown);
 }

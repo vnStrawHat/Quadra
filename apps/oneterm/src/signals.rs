@@ -98,6 +98,10 @@ impl Model {
             let (cwd, last) = (session.cwd(), prefs.last_dir);
             effect(move || {
                 let at = cwd.get();
+                // A bash of Windows says a folder its own way: the folder, for what starts there.
+                if let Some(folder) = crate::local::integrate::windows_folder(&at) {
+                    return cwd.set(folder);
+                }
                 if !at.is_empty() && untrack(|| last.get()) != at {
                     last.set(at);
                 }

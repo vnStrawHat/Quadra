@@ -9,9 +9,11 @@ use quadra_term::{Pty, PtyOptions};
 
 use crate::shells::Launch;
 
+pub mod integrate;
+
 /// A session running a shell (the OS's when the launch names none) in a directory (the
-/// app's own when it names none). The working directory shows from the start; Command
-/// Prompt is asked to say it with each prompt (OSC 9;9), as it says nothing of it otherwise.
+/// app's own when it names none). The working directory shows from the start; with shell
+/// integration the shell says it from then on, and where its prompts and commands are.
 pub fn local_shell(launch: Launch) -> Session {
     // Windows' console resizes keeping the viewport's top.
     let mut config = Config::default();
@@ -25,14 +27,12 @@ pub fn local_shell(launch: Launch) -> Session {
     // The console starts at the grid's size, once the view has sized it: a program that reads
     // its size only at start reads the real one. ponytail: the closure holds the session until
     // then, so a space never shown keeps its session alive with it.
-    let program = launch.shell.map(|shell| (shell.program.display().to_string(), shell.args));
     // The user's variables as they are now (one set after 1Term started too), then 1Term's.
     #[cfg(windows)]
     let mut env = quadra_shell::user_environment();
     #[cfg(not(windows))]
     let mut env = Vec::new();
     env.extend([
-        ("PROMPT".into(), "$e]9;9;$P$e\\$P$G".into()),
         ("TERM_PROGRAM".into(), "1Term".into()),
         ("TERM_PROGRAM_VERSION".into(), env!("CARGO_PKG_VERSION").into()),
         // A login bash (MSYS2, Cygwin, Git's) stays in the directory it starts in.
@@ -42,6 +42,10 @@ pub fn local_shell(launch: Launch) -> Session {
         // Programs that know terminals by name show OSC 8 links here too.
         env.push(("FORCE_HYPERLINK".into(), "1".into()));
     }
+    let program = match launch.integration {
+        true => integrate::start(launch.shell, &mut env),
+        false => launch.shell.map(|shell| (shell.program.display().to_string(), shell.args)),
+    };
     let starts = session.clone();
     session.when_sized(move |size| {
         let options = PtyOptions { program, cwd: start, env, rows: size.rows, cols: size.cols };

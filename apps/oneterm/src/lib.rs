@@ -48,7 +48,7 @@ use quadra::{AnyView, Keymap, Signal, View, Window, column, div, dynamic, row, s
 use quadra_term::Session;
 
 pub use hosts::Host;
-pub use local::local_shell;
+pub use local::{integrate, local_shell};
 pub use model::{Command, Model, Side, Space, Tab};
 pub use notify::abilities;
 pub use prefs::{KIT_THEME, Prefs, theme};

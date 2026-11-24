@@ -53,6 +53,8 @@ pub struct Launch {
     pub startup: Option<String>,
     /// A local shell gets `FORCE_HYPERLINK=1` (the setting Force links).
     pub force_links: bool,
+    /// A shell 1Term found is started with shell integration (the setting of that name).
+    pub integration: bool,
 }
 
 /// A host and how to sign in to it.
@@ -82,7 +84,11 @@ impl Remote {
 pub fn found() -> Vec<Shell> {
     let var = |name: &str| std::env::var_os(name).map(PathBuf::from);
     let (system, programs, drive) = (var("SystemRoot"), var("ProgramFiles"), var("SystemDrive"));
-    let under = |root: &Option<PathBuf>, path: &str| root.as_ref().map(|root| root.join(path));
+    // With the OS's separator alone: Command Prompt reads a `/cmd.exe` in its own path as
+    // `/C md .exe`, makes that folder and ends.
+    let under = |root: &Option<PathBuf>, path: &str| {
+        root.as_ref().map(|root| root.join(path).components().collect::<PathBuf>())
+    };
     // `C:` names the drive's current folder; its root is `C:\`.
     let drive = drive.map(|it| PathBuf::from(format!("{}\\", it.display())));
     // Nushell's installer puts it under Program Files, or the user's programs.
@@ -146,6 +152,7 @@ impl Model {
             secret: None,
             startup: None,
             force_links: p.force_links.get_untracked(),
+            integration: p.integration.get_untracked(),
         }
     }
 
@@ -154,4 +161,12 @@ impl Model {
         let space = quadra::untrack(|| self.active_tab().and_then(|tab| tab.focused()))?;
         Some(space.session.cwd().get_untracked()).filter(|cwd| !cwd.is_empty()).map(Into::into)
     }
+}
+
+#[cfg(test)]
+#[test]
+fn a_shell_found_is_named_with_the_os_s_separator_alone() {
+    let shells = found();
+    assert!(shells.iter().any(|it| it.name == "Command Prompt"), "{shells:?}");
+    assert!(shells.iter().all(|it| !it.program.to_string_lossy().contains('/')), "{shells:?}");
 }

@@ -308,7 +308,9 @@ detail), the focus in it as it opens.
   its program's file name: Command Prompt a window with a prompt, PowerShell (both) a slanted
   box with `>_`, Git Bash a diamond with a branch, WSL a penguin, Nushell `nu`, another bash
   (MSYS2, Cygwin, zsh, fish) a box with `$`, anything else the terminal square. The default
-  shell is Command Prompt until settings (M5) name another. With no tab left (the last one
+  shell is Command Prompt until settings (M5) name another. A shell found is named by its
+  path with the OS's separator alone (Command Prompt reads `/cmd.exe` in its own path as a
+  switch, `/C md .exe`, and ends). With no tab left (the last one
   closed, however it went) the window stays: the workspace says `Ctrl+T opens a terminal`. A split starts in the focused
   space's directory. A local shell's environment is the user's as the registry says it at
   that moment (`CreateEnvironmentBlock`, as Windows Terminal does: a variable set after 1Term
@@ -316,6 +318,20 @@ detail), the focus in it as it opens.
   `TERM_PROGRAM_VERSION` its version) and, while Force links is on, adds `FORCE_HYPERLINK=1`:
   1Term opens OSC 8 links, and programs that know terminals by name (1Term is on no list)
   show links on it; off, a program that writes links even into a pipe or a file does not.
+  **Shell integration** (the setting of that name, `terminal.shell_integration`, on): a shell
+  1Term found is started so that it says where it is and where its prompts, commands and
+  outputs begin and end, and writes UTF-8 (`local/integrate.rs`). Command Prompt: `/K chcp
+  65001 >nul`, and a `PROMPT` of OSC 9;9 with its directory, OSC 133 `A`, the prompt, `B` (its
+  one hook: it cannot say `C` or `D`). PowerShell, both: `-NoExit -Command` with one quoted
+  script that sets the console's output to UTF-8, wraps the `prompt` function (`D` with the
+  status, OSC 9;9 in a folder of the file system, `A`, the user's own prompt, `B`) and binds
+  Enter through PSReadLine to say `C`, calling what Enter was bound to. bash (Git's, MSYS2,
+  Cygwin): `PROMPT_COMMAND` (`D` with the status, OSC 7, `A`, `B` put once at the end of
+  `PS1`) and `PS0` (`C`); a `PROMPT_COMMAND` of the user's runs after it, and one that says
+  OSC 133 itself is left alone. A program the user typed, WSL and Nushell start as they are.
+  Off, a shell gets none of it (Command Prompt then says no directory). A directory a bash
+  says its own way (`/c/work`, `/cygdrive/c/work`, `/mnt/c/work`) is taken as the folder it
+  is (`C:\work`), so a new space starts there.
 - **The `+` menu** has a search field wherever it opens, the rail's New terminal (expanded
   or folded) or the strip's `+` (`searched_menu`): what is typed keeps the shells, recent targets and hosts whose
   names or addresses hold it (whatever the case), and a typed target (`Target::parse`) is a
@@ -384,7 +400,7 @@ every terminal follows them as they are, its screen kept. Terminal: cursor shape
 blink, scrollback lines, the default local shell ("System default", the OS's; a shell found; or "Custom program": the
 program and its arguments typed, `terminal.shell_program`, `terminal.shell_args`), where new spaces start (active space's cwd,
 home, last used: the directory a local shell said last, kept across runs as
-`terminal.last_dir`, home when it is no longer there), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
+`terminal.last_dir`, home when it is no longer there), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell), Shell integration (`terminal.shell_integration`, on; "M4 in detail"); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
 the view's `TermSettings` (specs/18). A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound (the system's
 default sound, at once for each bell however the space is looked at) / badge and flash (the

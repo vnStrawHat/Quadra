@@ -33,7 +33,7 @@ pub struct Ui {
 
 impl Ui {
     /// Nothing open; in the scope the model is made in.
-    pub(crate) fn new() -> Ui {
+    pub(crate) fn new(net: crate::prefs::NetPrefs) -> Ui {
         Ui {
             settings: signal(false),
             connecting: signal(false),
@@ -46,7 +46,7 @@ impl Ui {
             unlocking: signal(None),
             opening: crate::host_connect::Opening::new(),
             complete: crate::complete::Completion::new(),
-            updates: crate::updates::Updates::new(),
+            updates: crate::updates::Updates::new(net),
         }
     }
 }

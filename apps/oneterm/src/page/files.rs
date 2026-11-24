@@ -2,7 +2,7 @@
 //! Advanced page, and the logging of spaces, a group of the Terminal page.
 
 use quadra::{row, text};
-use quadra_design::{SettingsGroup, Variant, button, input, segmented, switch, token};
+use quadra_design::{SettingsGroup, Tone, Variant, badge, button, input, segmented, switch, token};
 
 use super::Back;
 use crate::prefs::Prefs;
@@ -28,6 +28,35 @@ pub(super) fn files() -> SettingsGroup {
     SettingsGroup::new("Files")
         .about("Saved as you change them; the file can be edited by hand while OneTerm is closed.")
         .row("Settings file", &said, show)
+}
+
+/// How what the app fetches reaches the network: the proxy, and whether a server's
+/// certificate is checked, with a warning while it is not.
+pub(super) fn network(p: Prefs, d: Prefs) -> SettingsGroup {
+    let (n, was) = (p.net, d.net);
+    let address = input(n.proxy_address)
+        .placeholder("proxy.example:8080")
+        .label("Proxy address")
+        .disabled(move || n.proxy.get() == 0);
+    let unsafe_now = badge("Not checked", Tone::Danger)
+        .display(move || if n.verify_tls.get() { quadra::Display::None } else { quadra::Display::Flex });
+    let verify = row()
+        .align_items(quadra::Align::Center)
+        .gap(token::SPACE_MD)
+        .child(unsafe_now)
+        .child(switch(n.verify_tls));
+    SettingsGroup::new("Network")
+        .about("For what OneTerm fetches over HTTPS: its updates. SSH connections do not go through it.")
+        .row("Proxy", "System is the proxy Windows is set to use.", segmented(crate::prefs::PROXIES, n.proxy))
+        .back(n.proxy, was.proxy)
+        .row("Proxy address", "The HTTP proxy asked when Proxy is Manual, as host:port.", address)
+        .back(n.proxy_address, was.proxy_address)
+        .row(
+            "Verify certificates",
+            "Turn off only on a network that opens TLS on the way: what is fetched is then not known to be GitHub's.",
+            verify,
+        )
+        .back(n.verify_tls, was.verify_tls)
 }
 
 /// Which spaces are logged from their start, where, and how a file there is written.

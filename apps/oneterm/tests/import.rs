@@ -125,6 +125,8 @@ fn hosts_and_the_terminal_s_settings_are_taken_over_and_a_host_there_is_left() {
     let (mut h, settings, model, folder) = app("settings");
     let terminal = r#"{"font":{"family":"Legacy Mono","size":15.0},"scroll":{"scrollback_history":20000}}"#;
     std::fs::write(folder.join("terminal.json"), terminal).unwrap();
+    let updates = r#"{"proxy_url":"http://proxy.corp:3128","verify_certificates":false}"#;
+    std::fs::write(folder.join("update_config.json"), updates).unwrap();
 
     assert_eq!(model.take_over(&folder, true), (2, 0, 1));
     h.settle();
@@ -134,6 +136,9 @@ fn hosts_and_the_terminal_s_settings_are_taken_over_and_a_host_there_is_left() {
     assert_eq!((rows[1][2].as_str(), rows[1][5].as_str()), ("me@10.0.0.9:2222", "prod"));
     assert_eq!(settings.value("terminal.font_family", String::new()).get(), "Legacy Mono");
     assert_eq!(settings.value("terminal.scrollback", 0.0).get(), 20000.0);
+    // The proxy its updates went through comes along; that certificates went unchecked does not.
+    let net = model.prefs().net.network();
+    assert_eq!((net.proxy.as_deref(), net.verify_tls), (Some("http://proxy.corp:3128"), true));
     // The rail lists them, in their group.
     assert!(h.has_text("prod") && h.has_text("lab"), "{}", h.semantics());
 

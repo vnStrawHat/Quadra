@@ -7,8 +7,10 @@ use std::rc::Rc;
 use quadra::{Appearance, Settings, Signal, Theme, use_context};
 
 mod look;
+mod net;
 
 pub use look::{ANSI, COLORS, LookPrefs, PADDING, WEIGHTS};
+pub use net::{NetPrefs, PROXIES};
 
 /// The choices of the settings that are one of a few.
 pub const THEMES: [&str; 3] = ["System", "Dark", "Light"];
@@ -29,6 +31,8 @@ pub struct Prefs {
     pub ui_text: Signal<f64>,
     /// How terminals look: their text, cells, room and colours.
     pub look: LookPrefs,
+    /// The proxy and the certificates of what the app fetches.
+    pub net: NetPrefs,
     pub cursor: Signal<usize>,
     pub blink: Signal<bool>,
     pub scrollback: Signal<f64>,
@@ -149,6 +153,7 @@ impl Prefs {
             colour_theme: s.choice("appearance.colour_theme", &COLOUR_THEMES),
             ui_text: s.value("appearance.ui_text_percent", 100.0),
             look: LookPrefs::of(s),
+            net: NetPrefs::of(s),
             cursor: s.choice("terminal.cursor", &CURSORS),
             blink: s.value("terminal.cursor_blink", true),
             scrollback: s.value("terminal.scrollback", 10_000.0),

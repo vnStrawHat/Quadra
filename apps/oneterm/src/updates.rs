@@ -49,11 +49,13 @@ pub struct Updates {
     /// Set by Restart: the window closes for the new version's start.
     pub closing: Signal<bool>,
     stop: Signal<Option<Stop>>,
+    /// The proxy and the certificates, as the settings say when something is fetched.
+    net: crate::prefs::NetPrefs,
     owner: Scope,
 }
 
 impl Updates {
-    pub(crate) fn new() -> Updates {
+    pub(crate) fn new(net: crate::prefs::NetPrefs) -> Updates {
         let dirs = quadra::use_context::<std::rc::Rc<quadra::AppDirs>>();
         let cache = dirs.as_ref().map_or_else(|| ".tmp/updates".into(), |it| it.data.join("updates"));
         let mut source = Updater::new(REPOSITORY, "oneterm", env!("CARGO_PKG_VERSION"), &cache);
@@ -67,8 +69,17 @@ impl Updates {
             source: signal(source),
             closing: signal(false),
             stop: signal(None),
+            net,
             owner: Scope::current(),
         }
+    }
+
+    /// Where the releases are, reached as the network's settings say now: what a check or a
+    /// fetch started now is made with.
+    pub fn updater(&self) -> Updater {
+        let mut source = self.source.get_untracked();
+        source.network = self.net.network();
+        source
     }
 
     /// Asks whether a newer release is published. `then` is told once it is known.
@@ -79,7 +90,7 @@ impl Updates {
         ) {
             return;
         }
-        let (state, source) = (self.state, self.source.get_untracked());
+        let (state, source) = (self.state, self.updater());
         state.set(Update::Checking);
         self.owner.run(|| {
             spawn(async move {
@@ -99,7 +110,7 @@ impl Updates {
     /// Fetches the release found, checks it and puts its files in OneTerm's folder.
     pub fn install(&self) {
         let Update::Found(release) = self.state.get_untracked() else { return };
-        let (state, source, stop) = (self.state, self.source.get_untracked(), Stop(Arc::default()));
+        let (state, source, stop) = (self.state, self.updater(), Stop(Arc::default()));
         self.stop.set(Some(stop.clone()));
         state.set(Update::Fetching(release.clone(), 0, release.size));
         self.owner.run(|| {

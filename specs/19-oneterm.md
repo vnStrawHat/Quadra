@@ -483,6 +483,25 @@ Settings, About has the group **Updates** (`updates.rs`):
   Settings, About.`; a check that found none or failed says nothing. A trial run under
   `ONETERM_HOME` asks nothing.
 
+### Network
+
+Settings, Advanced has the group **Network** (`prefs/net.rs`, `page/files.rs`), for what
+OneTerm fetches over HTTPS, which is its updates; SSH connections do not go through it.
+
+- **Proxy** (`network.proxy`): System, the proxy Windows is set to use, or Manual.
+- **Proxy address** (`network.proxy_address`): the HTTP proxy asked when Proxy is Manual, as
+  `host:port`; the field is off while Proxy is System, and Manual with no address is the
+  system's. An address that names no HTTP proxy makes the check fail as any network failure
+  does, with the reason in the log.
+- **Verify certificates** (`network.verify_tls`, on): off takes any certificate, for a
+  network that opens TLS on the way; the row shows `Not checked` in the danger colour while
+  it is off, since an update is then not known to be GitHub's (its digest comes the same
+  way).
+
+The updater reads them each time it checks or fetches. Taking over from OneTerm 0.6 takes
+the proxy its updates went through (`update_config.json`, `proxy_url`), and never that
+certificates were unchecked there.
+
 After that app's updater put OneTerm over its folder, the console host it shipped is still
 there (`x64/OpenConsole.exe`, an older version) beside OneTerm's own: `conpty.dll` starts the
 one beside itself (tried 2026-11-24 with both in the folder), so the older one is only a

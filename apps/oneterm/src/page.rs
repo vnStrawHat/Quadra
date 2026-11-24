@@ -35,7 +35,7 @@ const PAGES_ABOUT: [(&str, &str, &str); 11] = [
     ("Status bar", icons::GAUGE, "What the status bar shows."),
     ("Security & lock", icons::LOCK, "The master password and the lock when idle."),
     ("Keybindings", icons::COMMAND, "Keyboard shortcuts."),
-    ("Advanced", icons::CODE, "Where your settings are kept."),
+    ("Advanced", icons::CODE, "Where your settings are kept, and how OneTerm reaches the network."),
     ("About", icons::INFO, "Which OneTerm this is."),
 ];
 
@@ -223,7 +223,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                 .back(p.clipboard_read, d.clipboard_read),
         ],
         vec![keys],
-        vec![advanced],
+        vec![advanced, files::network(p, d)],
         vec![
             SettingsGroup::new("OneTerm")
                 .row("Version", "", text(env!("CARGO_PKG_VERSION")))

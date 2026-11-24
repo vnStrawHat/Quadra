@@ -137,3 +137,28 @@ fn a_start_shows_a_card_for_a_newer_version_and_says_nothing_otherwise() {
     assert!(matches!(state.get_untracked(), Update::Found(_)));
     served.join().unwrap();
 }
+
+#[test]
+fn the_updater_is_given_the_proxy_and_the_certificates_the_advanced_page_says() {
+    let mut a = app("proxy");
+    let first = a.model.ui().updates.updater().network;
+    assert_eq!((first.proxy, first.verify_tls), (None, true), "the system's proxy, checked");
+    a.press("Settings");
+    a.h.get_by_role(Role::TreeItem, "Advanced").click();
+    a.h.settle();
+    assert!(a.h.has_text("Network") && !a.h.has_text("Not checked"), "{}", a.h.semantics());
+    a.h.get_by_role(Role::Radio, "Manual").click();
+    a.h.settle();
+    a.h.get_by_role(Role::TextInput, "Proxy address").type_text("proxy.corp:3128");
+    a.h.settle();
+    a.h.get_by_role(Role::Switch, "Verify certificates").click();
+    a.h.settle();
+    assert!(a.h.has_text("Not checked"), "said while certificates are not checked");
+    // What the next check or fetch is made with (that a proxy named so is the one asked:
+    // quadra-shell's tests/fetch.rs).
+    let now = a.model.ui().updates.updater().network;
+    assert_eq!((now.proxy.as_deref(), now.verify_tls), (Some("proxy.corp:3128"), false));
+    a.h.get_by_role(Role::Radio, "System").click();
+    a.h.settle();
+    assert_eq!(a.model.ui().updates.updater().network.proxy, None);
+}

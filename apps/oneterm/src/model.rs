@@ -52,7 +52,7 @@ impl Model {
             prefs,
             notices: notices(),
             unread: signal(0),
-            ui: Ui::new(),
+            ui: Ui::new(prefs.net),
             lock: Lock::new(prefs),
             outside: crate::notify::Outside::here(),
         };

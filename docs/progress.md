@@ -637,6 +637,16 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     replaces has it (the user's correction, 2026-11-24: the picture of the icon, tried
     first, was not what was meant). About names the terminal engine's version from the lock
     file (`build.rs`): it said 0.2 while 0.4.2 was built in.
+- **The network's settings** (2026-11-24, the user's request): `quadra_shell::Network`
+  (a proxy named by hand, certificates unchecked) taken by `http_get` and held by `Updater`
+  (specs/16, 22); OneTerm's Settings, Advanced has Network (Proxy: System or Manual, Proxy
+  address, Verify certificates with `Not checked` while off), read by its updater at each
+  check and fetch; the proxy of OneTerm 0.6's updates is taken over. Tests: a proxy named by
+  hand is asked in the server's place (`quadra-shell/tests/fetch.rs`), and the updater is
+  given what the page says (`apps/oneterm/tests/updates.rs`; no request of the app goes
+  through a test's proxy: the OS asks a server of this machine without one, and the updater
+  takes plain HTTP from no other). Unchecked certificates are built and not exercised:
+  no test has a server with a certificate of its own.
 - **Settings are written as objects in objects** (2026-11-24; the user asked why the file
   was flat): a key is still `editor.font_size`, and the file holds `"editor": { "font_size":
   15 }` (`quadra-app`, `settings.rs`: `at`, `place`, `nested`; the values a setting can hold

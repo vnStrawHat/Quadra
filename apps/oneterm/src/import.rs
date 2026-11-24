@@ -136,6 +136,16 @@ impl Model {
         if let Some(Ok(terminal)) = terminal.as_deref().map(parse_json) {
             self.take_settings(&terminal);
         }
+        // The proxy its updates went through, so the next one arrives the same way. Whether
+        // certificates are checked is not taken: off is chosen here, knowingly.
+        let updates = std::fs::read_to_string(folder.join("update_config.json")).ok().filter(|_| settings);
+        let updates = updates.as_deref().and_then(|it| parse_json(it).ok());
+        let proxy = updates.as_ref().and_then(|it| text(it, "proxy_url")).map(str::trim);
+        if let Some(proxy) = proxy.filter(|it| !it.is_empty()) {
+            let net = self.prefs().net;
+            net.proxy.set(1);
+            net.proxy_address.set(proxy.to_string());
+        }
         let vault = std::fs::read_to_string(folder.join("vault.json")).unwrap_or_default();
         let (passwords, left) = self.take_passwords(&vault, &all);
         (new.len(), passwords, left)

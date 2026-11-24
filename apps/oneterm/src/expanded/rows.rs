@@ -54,7 +54,7 @@ pub(super) fn line(
         .grow(1.0)
         .min_width(Length::Px(0.0))
         .align_items(Align::Center)
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .child(div().text_color(tint).child(icon(shape).size(14.0)))
         .child(div().min_width(Length::Px(0.0)).child(text(entry.name.clone()).ellipsis()));
     if let Some(mark) = mark {
@@ -67,8 +67,8 @@ pub(super) fn line(
     let bar = bar.bottom(Length::Px(0.0)).width(2.0).bg(bar_paint);
     row()
         .align_items(Align::Center)
-        .gap(12.0)
-        .padding_x(12.0)
+        .gap(token::SPACE_LG)
+        .padding_x(token::SPACE_LG)
         .height(by_text(26.0))
         .shrink(0.0)
         .border_bottom(1.0)
@@ -95,24 +95,24 @@ pub(super) fn transfers(d: Dock) -> impl View + use<> {
     };
     let head = row()
         .align_items(Align::Center)
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .text_size(12.0)
         .text_color(token::TEXT_2)
         .child(div().font_weight(600).child(text("Transfers")))
         .child(div().grow(1.0).child(text(counts)))
         .child(div().font_family(fonts::MONO).child(text(rate(d))));
     let list = dynamic(move || {
-        let mut list = column().gap(6.0);
+        let mut list = column().gap(token::SPACE_SM);
         for transfer in d.transfers.get() {
             list = list.child(transfer_row(d, transfer));
         }
         AnyView::new(list)
     });
     column()
-        .gap(6.0)
-        .padding_x(12.0)
-        .padding_top(6.0)
-        .padding_bottom(12.0)
+        .gap(token::SPACE_SM)
+        .padding_x(token::SPACE_LG)
+        .padding_top(token::SPACE_SM)
+        .padding_bottom(token::SPACE_LG)
         .shrink(0.0)
         .bg(token::PANEL)
         .border_top(1.0)
@@ -159,7 +159,7 @@ fn transfer_row(d: Dock, transfer: Rc<Transfer>) -> impl View {
         .grow(1.0)
         .min_width(Length::Px(0.0))
         .align_items(Align::Center)
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .child(div().text_color(token::TEXT_2).child(icon(arrow).size(14.0)))
         .child(text(format!("{} to ", transfer.name)))
         .child(
@@ -176,7 +176,7 @@ fn transfer_row(d: Dock, transfer: Rc<Transfer>) -> impl View {
     });
     row()
         .align_items(Align::Center)
-        .gap(12.0)
+        .gap(token::SPACE_LG)
         .child(what)
         .child(div().width(200.0).height(2.0).shrink(0.0).bg(token::LINE_STRONG).child(fill))
         .child(cell(String::new(), 44.0).child(text(move || {

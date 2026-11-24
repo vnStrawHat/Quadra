@@ -46,7 +46,7 @@ pub(super) fn list(shown: Shown, most: impl Fn() -> usize + 'static) -> Div {
         }
     });
     let plane = column().bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE_STRONG);
-    let plane = plane.radius(token::RADIUS_LG).elevation(1).padding(4.0).min_width(180.0);
+    let plane = plane.radius(token::RADIUS_LG).elevation(1).padding(token::SPACE_XS).min_width(180.0);
     plane.font_family(fonts::MONO).role(Role::List).label("Suggestions").child(rows)
 }
 
@@ -55,7 +55,8 @@ pub(super) fn list(shown: Shown, most: impl Fn() -> usize + 'static) -> Div {
 fn face(item: &Suggestion, chosen: bool) -> Div {
     let at = (0..=item.matched.min(item.text.len())).rev().find(|&at| item.text.is_char_boundary(at));
     let (matched, rest) = item.text.split_at(at.unwrap_or(0));
-    let face = row().height(by_text(ROW)).padding_x(6.0).gap(16.0).radius(token::RADIUS_MD);
+    let face =
+        row().height(by_text(ROW)).padding_x(token::SPACE_SM).gap(token::SPACE_XL).radius(token::RADIUS_MD);
     let face = face.align_items(Align::Center).role(Role::ListItem).label(item.text.clone());
     let face = face.selected(chosen).when(State::SELECTED, |s| s.bg(token::PRESS));
     let words =
@@ -78,7 +79,7 @@ fn face(item: &Suggestion, chosen: bool) -> Div {
 /// A row that says how many more there are above or below.
 fn more(words: String) -> Div {
     let words = text(words).size(size::TEXT_SM.size).color(token::TEXT_2);
-    row().height(by_text(MORE)).padding_x(6.0).align_items(Align::Center).child(words)
+    row().height(by_text(MORE)).padding_x(token::SPACE_SM).align_items(Align::Center).child(words)
 }
 
 #[cfg(test)]

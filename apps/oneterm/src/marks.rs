@@ -185,7 +185,12 @@ pub(crate) fn header_signal<F: Fn() -> String + 'static>(
             name => format!("{name} {word}"),
         };
         AnyView::new(
-            row().align_items(Align::Center).gap(4.0).text_color(color).child(face).child(text(label)),
+            row()
+                .align_items(Align::Center)
+                .gap(token::SPACE_XS)
+                .text_color(color)
+                .child(face)
+                .child(text(label)),
         )
     });
     let named = div().child(text(move || {
@@ -197,5 +202,12 @@ pub(crate) fn header_signal<F: Fn() -> String + 'static>(
         .font_family(fonts::MONO)
         .text_color(token::ACCENT)
         .child(text(move || progress.get().and_then(percent).map(|n| format!("{n}%")).unwrap_or_default()));
-    row().align_items(Align::Center).gap(8.0).shrink(0.0).child(part).child(mark).child(note).child(named)
+    row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_MD)
+        .shrink(0.0)
+        .child(part)
+        .child(mark)
+        .child(note)
+        .child(named)
 }

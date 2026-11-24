@@ -80,7 +80,7 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
     let column = column()
         .height(44.0)
         .shrink(0.0)
-        .gap(6.0)
+        .gap(token::SPACE_SM)
         .align_items(Align::Center)
         .justify(quadra::Justify::Center)
         .border_bottom(1.0)
@@ -149,19 +149,19 @@ fn line_of(tab: Tab) -> Line {
 /// The signal's line, 22 by 4 with round ends; none leaves the icon in the box's middle.
 fn state_line(tab: Tab) -> impl View {
     let line = quadra::memo(move || line_of(tab));
-    let bar = || div().width(22.0).height(4.0).shrink(0.0).radius(2.0);
+    let bar = || div().width(22.0).height(4.0).shrink(0.0).radius(token::RADIUS_XS);
     dynamic(move || {
         AnyView::new(match line.get() {
             Line::None => div().display(Display::None),
             Line::Solid(color) => bar().bg(color),
             Line::Part(n, color) => {
-                let fill = div().height(4.0).radius(2.0).width(f32::from(n) * 0.22).bg(color);
+                let fill = div().height(4.0).radius(token::RADIUS_XS).width(f32::from(n) * 0.22).bg(color);
                 bar().bg(token::LINE_STRONG).child(fill)
             }
             Line::Busy => div().child(progress_busy().width(22.0).height(4.0).track(token::LINE_STRONG)),
             Line::Bell => {
-                let piece = || div().width(9.0).height(4.0).radius(2.0).bg(token::ERROR);
-                row().width(22.0).height(4.0).gap(4.0).child(piece()).child(piece())
+                let piece = || div().width(9.0).height(4.0).radius(token::RADIUS_XS).bg(token::ERROR);
+                row().width(22.0).height(4.0).gap(token::SPACE_XS).child(piece()).child(piece())
             }
         })
     })

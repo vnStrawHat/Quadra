@@ -49,8 +49,8 @@ pub(crate) fn open_window(windows: &quadra::Windows, model: &Model) {
         });
         let mark = row()
             .align_items(Align::Center)
-            .gap(8.0)
-            .padding_left(12.0)
+            .gap(token::SPACE_MD)
+            .padding_left(token::SPACE_LG)
             .child(icon(icons::SETTINGS).size(16.0).color(token::ACCENT))
             .child(div().font_weight(600).child(text("1Term Settings")));
         // Using the settings is using 1Term: idle starts again.
@@ -129,7 +129,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
     let advanced = SettingsGroup::new("Files").row("Settings file", &file, div());
     let note = row()
         .align_items(Align::Center)
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .text_color(token::TEXT_2)
         .child(icon(icons::INFO).size(14.0))
         .child(text(format!("Settings are saved to {file} as you change them.")));
@@ -246,7 +246,10 @@ fn folder_field(folder: quadra::Signal<String>) -> quadra::Div {
             folder.set(chosen.display().to_string());
         }
     });
-    row().gap(8.0).child(input(folder).placeholder("session-logs").label("Folder").width(240.0)).child(choose)
+    row()
+        .gap(token::SPACE_MD)
+        .child(input(folder).placeholder("session-logs").label("Folder").width(240.0))
+        .child(choose)
 }
 
 /// The saved hosts and the recent targets, with what adds one and what forgets them.
@@ -255,7 +258,7 @@ fn hosts(p: Prefs, model: &Model) -> SettingsGroup {
     let count = move |n: usize, one: &str| format!("{n} {one}{}", if n == 1 { "" } else { "s" });
     let saved = row()
         .align_items(Align::Center)
-        .gap(12.0)
+        .gap(token::SPACE_LG)
         .child(text(move || count(hosts.with(Vec::len), "host")))
         .child(button("Add SSH host\u{2026}").variant(Variant::Secondary).on_click(move || {
             closes.set(false);
@@ -263,7 +266,7 @@ fn hosts(p: Prefs, model: &Model) -> SettingsGroup {
         }));
     let lately = row()
         .align_items(Align::Center)
-        .gap(12.0)
+        .gap(token::SPACE_LG)
         .child(text(move || count(recent.with(Vec::len), "target")))
         .child(button("Forget").variant(Variant::Secondary).on_click(move || recent.set(Vec::new())));
     SettingsGroup::new("Hosts")

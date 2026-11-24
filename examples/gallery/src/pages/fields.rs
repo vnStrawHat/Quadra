@@ -227,7 +227,7 @@ pub fn field_page(gallery: Gallery) -> Div {
     let mailed = input(email).placeholder("ban@vidu.vn").width(380.0).invalid(move || !bad_mail().is_empty());
     let send = button("Đăng ký").variant(Variant::Primary).disabled(move || !agree.get()).on_click(submit);
     let form = column()
-        .gap(16.0)
+        .gap(token::SPACE_XL)
         .width(380.0)
         .child(field("Họ tên", named).help("Như trên giấy tờ").error(name_wrong).required())
         .child(

@@ -75,7 +75,8 @@ pub(crate) fn outline(m: &Model, headings: Memo<Vec<Heading>>) -> Div {
         open.set(ids);
     });
     let none = move || if headings.with(Vec::is_empty) { Display::Flex } else { Display::None };
-    let empty = div().padding(12.0).text_color(token::TEXT_3).display(none).child(text("No headings"));
+    let empty =
+        div().padding(token::SPACE_LG).text_color(token::TEXT_3).display(none).child(text("No headings"));
     let rows = tree(move || headings.with(|h| nest(h)), chosen).open(open);
     let shown = m.outline;
     column()

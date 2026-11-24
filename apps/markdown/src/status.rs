@@ -5,6 +5,7 @@ use quadra::{View, memo, row, show};
 use quadra_design::{status_divider, status_item, statusbar};
 
 use crate::model::{Model, PREVIEW};
+use quadra_design::token;
 
 /// Words a minute, read.
 const READ: usize = 200;
@@ -52,7 +53,7 @@ pub(crate) fn bar(m: &Model) -> impl View + use<> {
     // The editor shows: its cursor.
     let editing = show(
         move || layout.get() != PREVIEW,
-        move || row().gap(12.0).child(status_item(None, caret)).child(status_divider()),
+        move || row().gap(token::SPACE_LG).child(status_item(None, caret)).child(status_divider()),
     );
     let saved = m.saved;
     let crlf = memo(move || saved.with(|it| it.contains("\r\n")));

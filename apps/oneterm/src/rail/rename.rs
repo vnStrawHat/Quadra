@@ -6,6 +6,7 @@ use quadra::{View, column, effect, signal, untrack};
 use quadra_design::{Variant, field, input};
 
 use crate::model::Model;
+use quadra_design::token;
 
 pub(crate) fn dialog(model: &Model) -> impl View + use<> {
     let (renaming, tabs) = (model.renaming(), model.tabs());
@@ -45,7 +46,7 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
             open.set(false);
         });
         // As SFTP's Rename: 320 px, the field 12 px from each side.
-        column().width(320.0).padding_x(12.0).child(field("Name", typed))
+        column().width(320.0).padding_x(token::SPACE_LG).child(field("Name", typed))
     };
     quadra_design::dialog(open, "Rename tab", body).action("Cancel", Variant::Secondary, || {}).action(
         "Rename",

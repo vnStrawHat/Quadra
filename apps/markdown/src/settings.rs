@@ -98,9 +98,9 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> [Vec<SettingsGroup>; 5] {
 /// Which Markdown this is, and the button that makes it the default for `.md` files.
 fn about(model: &Model) -> Vec<SettingsGroup> {
     let exe = std::env::current_exe().unwrap_or_default();
-    let mark = row().align_items(Align::Center).gap(16.0).child(crate::logo::logo(64.0)).child(
+    let mark = row().align_items(Align::Center).gap(token::SPACE_XL).child(crate::logo::logo(64.0)).child(
         column()
-            .gap(4.0)
+            .gap(token::SPACE_XS)
             .child(div().font_weight(600).text_size(18.0).child(text("Markdown")))
             .child(div().text_color(token::TEXT_2).child(text("Reads and edits Markdown files."))),
     );

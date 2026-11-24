@@ -29,7 +29,7 @@ fn fitted(fit: Fit, how: &'static str) -> Div {
     let picture = image(HILLS).width(150.0).height(96.0).fit(fit).radius(size::RADIUS_MD).label(how);
     let frame = div().bg(token::PANEL).radius(token::RADIUS_MD).child(picture);
     let said = text(how).size(size::TEXT_SM.size).color(token::TEXT_2);
-    column().gap(6.0).align_items(Align::Center).child(frame).child(said)
+    column().gap(token::SPACE_SM).align_items(Align::Center).child(frame).child(said)
 }
 
 /// A box that shows the first file another program drops on it, as a picture.
@@ -47,7 +47,8 @@ fn dropped() -> Div {
 
 pub fn image_page() -> Div {
     let sizes = [96.0, 64.0, 40.0, 24.0, 16.0].map(|side| image(MARK).width(side).label("The mark"));
-    let marks = row().gap(16.0).align_items(Align::End).padding(12.0).radius(token::RADIUS_MD);
+    let marks =
+        row().gap(token::SPACE_XL).align_items(Align::End).padding(token::SPACE_LG).radius(token::RADIUS_MD);
     let fits = [(Fit::Contain, "Contain"), (Fit::Cover, "Cover"), (Fit::Fill, "Fill")];
     page(
         "Image",
@@ -60,8 +61,8 @@ pub fn image_page() -> Div {
             ),
             demo(
                 "A box of another shape",
-                row().gap(24.0).children(fits.map(|(fit, how)| fitted(fit, how))),
-                "image(file).width(150.0).height(96.0).fit(Fit::Cover).radius(6.0)",
+                row().gap(token::SPACE_XXL).children(fits.map(|(fit, how)| fitted(fit, how))),
+                "image(file).width(150.0).height(96.0).fit(Fit::Cover).radius(token::RADIUS_MD)",
             ),
             demo(
                 "Decoded at the size it shows at",

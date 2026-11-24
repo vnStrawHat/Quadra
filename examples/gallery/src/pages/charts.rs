@@ -25,7 +25,7 @@ pub fn sparkline_page() -> Div {
         let trend =
             sparkline(values).size(160.0, 24.0).color(series_color(i)).label(format!("CPU of {name}"));
         let name = div().width(80.0).child(text(name));
-        row().align_items(Align::Center).gap(16.0).child(name).child(trend).child(mono(last))
+        row().align_items(Align::Center).gap(token::SPACE_XL).child(name).child(trend).child(mono(last))
     });
     let about = "An inline trend: a 1.5 px line over an area at 12 %. Lines are drawn a pixel column at a \
                  time by the shader, so live data never fills the atlas.";
@@ -61,27 +61,27 @@ pub fn line_chart_page() -> Div {
         [
             demo(
                 "One series (with area) and its limit",
-                framed(div().padding(12.0).child(one)),
+                framed(div().padding(token::SPACE_LG).child(one)),
                 "line_chart([Series::new(\"cpu\", values)]).time(start_ms, 1000).limit(\"limit\", 250.0)",
             ),
             demo(
                 "Bare, beside its numbers",
-                framed(div().padding(12.0).width(520.0).child(bare)),
+                framed(div().padding(token::SPACE_LG).width(520.0).child(bare)),
                 "line_chart(series).limit(\"limit\", 250.0).bare().legend_note(|| since)",
             ),
             demo(
                 "Of what can be allocated",
-                framed(div().padding(12.0).child(health)),
+                framed(div().padding(token::SPACE_LG).child(health)),
                 "Series::new(\"Memory\", values).dashed(), .unit(\"%\").top(100.0): a sign on the scale",
             ),
             demo(
                 "Five series",
-                framed(div().padding(12.0).child(many)),
+                framed(div().padding(token::SPACE_LG).child(many)),
                 "the colours of series are the theme's",
             ),
             demo(
                 "Twelve series, with a legend",
-                framed(div().padding(12.0).child(twelve)),
+                framed(div().padding(token::SPACE_LG).child(twelve)),
                 "line_chart(series).legend(): past eight, the colours again, fainter",
             ),
         ],
@@ -98,12 +98,12 @@ pub fn bar_chart_page() -> Div {
         [
             demo(
                 "CPU by app",
-                framed(div().padding(12.0).child(bar_chart(bars.clone()).unit("m"))),
+                framed(div().padding(token::SPACE_LG).child(bar_chart(bars.clone()).unit("m"))),
                 "bar_chart(vec![Bar::new(\"api\", 120.0)]).unit(\"m\")",
             ),
             demo(
                 "Upright",
-                framed(div().padding(12.0).child(bar_chart(bars).unit("m").upright(180.0))),
+                framed(div().padding(token::SPACE_LG).child(bar_chart(bars).unit("m").upright(180.0))),
                 "bar_chart(bars).upright(180.0)",
             ),
         ],
@@ -115,8 +115,10 @@ pub fn bar_chart_page() -> Div {
 fn topology(lit: quadra::Signal<Option<Hit>>) -> Graph {
     let node = |id: &'static str, kind: &'static str, status: Status, (x, y): (f32, f32)| {
         let face = move || {
-            let line = row().align_items(Align::Center).gap(6.0).height(40.0).padding_x(12.0);
-            let line = line.bg(token::PANEL).radius(6.0).border(1.0).border_color(token::LINE_STRONG);
+            let line =
+                row().align_items(Align::Center).gap(token::SPACE_SM).height(40.0).padding_x(token::SPACE_LG);
+            let line =
+                line.bg(token::PANEL).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
             line.child(status_mark(status)).child(plain_badge(kind, Tone::Primary)).child(text(id))
         };
         // The export draws what the face shows: the box, the kind, the name.
@@ -178,8 +180,9 @@ fn topology(lit: quadra::Signal<Option<Hit>>) -> Graph {
 fn storage() -> Graph {
     let box_of = |id: &'static str, (x, y): (f32, f32)| {
         let face = move || {
-            let line = row().align_items(Align::Center).height(28.0).padding_x(8.0).bg(token::PANEL);
-            line.radius(4.0).border(1.0).border_color(token::LINE_STRONG).child(mono(id))
+            let line =
+                row().align_items(Align::Center).height(28.0).padding_x(token::SPACE_MD).bg(token::PANEL);
+            line.radius(token::RADIUS_SM).border(1.0).border_color(token::LINE_STRONG).child(mono(id))
         };
         Node::new(id, Point::new(x, y), Size::new(120.0, 28.0), id, face)
     };

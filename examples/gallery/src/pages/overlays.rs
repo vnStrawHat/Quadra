@@ -94,7 +94,7 @@ pub fn popover_page() -> Div {
     let columns = popover_button("Columns", || {
         let title = text("Visible columns").weight(size::WEIGHT_STRONG);
         column()
-            .gap(8.0)
+            .gap(token::SPACE_MD)
             .width(220.0)
             .child(title)
             .child(checkbox(signal(true)).label("Name"))
@@ -120,7 +120,12 @@ pub fn hover_card_page() -> Div {
     let card = hover_card(pod, move || {
         let logs = button("Open logs").size(Size::Sm);
         let title = text(name).weight(size::WEIGHT_STRONG);
-        column().gap(4.0).width(240.0).child(title).child(text("Running on node-2 · 3 restarts")).child(logs)
+        column()
+            .gap(token::SPACE_XS)
+            .width(240.0)
+            .child(title)
+            .child(text("Running on node-2 · 3 restarts"))
+            .child(logs)
     });
     let about = "Details about a link or a name after a 400 ms hover. It stays open while the pointer is \
                  over it, so its links can be clicked.";
@@ -171,14 +176,14 @@ fn inspector<V: quadra::View + 'static>(body: impl Fn() -> V + 'static) -> Div {
         });
         div().child(pick)
     });
-    let list = column().grow(1.0).padding(8.0).gap(2.0).children(pods);
+    let list = column().grow(1.0).padding(token::SPACE_MD).gap(token::SPACE_XXS).children(pods);
     let head = move || {
         let kind = div().text_color(token::TEXT_3).child(text("Pod"));
         let name = div().font_family(quadra_design::fonts::MONO).child(text(move || shown.get()));
         let restart = button("Restart").size(Size::Sm);
         row()
             .align_items(Align::Center)
-            .gap(8.0)
+            .gap(token::SPACE_MD)
             .child(kind)
             .child(name)
             .child(div().grow(1.0))

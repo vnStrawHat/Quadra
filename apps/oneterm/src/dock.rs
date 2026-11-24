@@ -85,9 +85,9 @@ fn panel(model: &Model, d: Dock) -> impl View + use<> {
     let zoom = icon_button(icons::MAXIMIZE_2, "Zoom SFTP").on_click(move || d.expanded.set(true));
     let head = row()
         .align_items(Align::Center)
-        .gap(6.0)
-        .padding_left(12.0)
-        .padding_right(6.0)
+        .gap(token::SPACE_SM)
+        .padding_left(token::SPACE_LG)
+        .padding_right(token::SPACE_SM)
         .height(by_text(28.0))
         .shrink(0.0)
         .text_size(12.0)
@@ -142,10 +142,10 @@ fn path(model: &Model, d: Dock) -> impl View + use<> {
     let field = input(typed).mono().small().height(28.0).fill().label("Remote path").test_id("sftp-path");
     row()
         .align_items(Align::Center)
-        .gap(4.0)
-        .padding_left(8.0)
-        .padding_right(6.0)
-        .padding_bottom(6.0)
+        .gap(token::SPACE_XS)
+        .padding_left(token::SPACE_MD)
+        .padding_right(token::SPACE_SM)
+        .padding_bottom(token::SPACE_SM)
         .display(shown(move || !d.dir.with(String::is_empty)))
         .child(field.on_submit(move |_| go(&submits)))
         .child(icon_button(icons::ARROW_RIGHT, "Go to the typed path").on_click(move || go(&goes)))
@@ -159,7 +159,7 @@ fn entries(model: &Model, d: Dock) -> impl View + use<> {
             return AnyView::new(local(&model));
         }
         if !said.is_empty() {
-            return AnyView::new(div().padding(12.0).text_color(token::TEXT_2).child(text(said)));
+            return AnyView::new(div().padding(token::SPACE_LG).text_color(token::TEXT_2).child(text(said)));
         }
         let all = crate::panes::visible(&d.entries.get(), d.hidden.get());
         let mut list = column().width(Length::Fill);
@@ -180,7 +180,7 @@ fn entries(model: &Model, d: Dock) -> impl View + use<> {
         if all.len() > SHOWN {
             list = list.child(
                 div()
-                    .padding(8.0)
+                    .padding(token::SPACE_MD)
                     .text_color(token::TEXT_3)
                     .child(text(format!("{} more", all.len() - SHOWN))),
             );
@@ -209,9 +209,9 @@ fn line(entry: &Entry, d: Dock) -> quadra::Div {
     let size = if file { size(entry.size) } else { String::new() };
     row()
         .align_items(Align::Center)
-        .gap(8.0)
-        .padding_left(12.0)
-        .padding_right(12.0)
+        .gap(token::SPACE_MD)
+        .padding_left(token::SPACE_LG)
+        .padding_right(token::SPACE_LG)
         .height(by_text(26.0))
         .shrink(0.0)
         .border_left(2.0)
@@ -240,8 +240,8 @@ fn local(model: &Model) -> impl View + use<> {
         .grow(1.0)
         .align_items(Align::Center)
         .justify(quadra::Justify::Center)
-        .gap(8.0)
-        .padding(24.0)
+        .gap(token::SPACE_MD)
+        .padding(token::SPACE_XXL)
         .text_size(12.0)
         .text_color(token::TEXT_2)
         .child(icon(icons::FOLDER).size(24.0).color(token::TEXT_3))

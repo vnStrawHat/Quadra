@@ -31,13 +31,15 @@ pub(crate) fn strip(model: &Model) -> impl View + use<> {
         .role(Role::TabList)
         .label("Tabs")
         .child(buttons.container(row().align_items(Align::Stretch).min_width(0.0)))
-        .child(row().align_items(Align::Center).padding_x(4.0).child(tooltip("New terminal", new)))
+        .child(
+            row().align_items(Align::Center).padding_x(token::SPACE_XS).child(tooltip("New terminal", new)),
+        )
         .child(div().grow(1.0))
         .child(
             row()
                 .align_items(Align::Center)
-                .gap(6.0)
-                .padding_x(12.0)
+                .gap(token::SPACE_SM)
+                .padding_x(token::SPACE_LG)
                 .border_left(1.0)
                 .border_color(token::LINE_STRONG)
                 .text_size(12.0)
@@ -57,8 +59,8 @@ fn tab_button(model: &Model, tab: Tab) -> impl View + use<> {
     let (shows, closes, moves, menu) = (model.clone(), model.clone(), model.clone(), model.clone());
     let face = row()
         .align_items(Align::Center)
-        .gap(8.0)
-        .padding_x(12.0)
+        .gap(token::SPACE_MD)
+        .padding_x(token::SPACE_LG)
         .max_width(240.0)
         .min_width(0.0)
         .text_color(move || if on() { token::TEXT } else { token::TEXT_2 })

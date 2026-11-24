@@ -62,7 +62,7 @@ pub(super) fn view(
     let following = conn.clone();
     let lines = dynamic(move || {
         let now = under_way(&following, &last, has_jump, count);
-        let mut lines = column().gap(6.0);
+        let mut lines = column().gap(token::SPACE_SM);
         for (at, step) in list.iter().enumerate() {
             lines = lines.child(line(step, at.cmp(&now)));
         }
@@ -72,7 +72,7 @@ pub(super) fn view(
         Some(Phase::Ask(ask)) => AnyView::new(question(ask, form.answer, &name, answer.clone())),
         _ => AnyView::new(div()),
     });
-    column().gap(12.0).child(lines).child(asked)
+    column().gap(token::SPACE_LG).child(lines).child(asked)
 }
 
 /// A step's line: a check when done, a spinner under way, a dot to come.
@@ -85,7 +85,7 @@ fn line(step: &Step, when: std::cmp::Ordering) -> Div {
         .justify(quadra::Justify::Center);
     let color = if when == Greater { token::TEXT_2 } else { token::TEXT };
     row()
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .align_items(quadra::Align::Center)
         .child(mark.child(match when {
             Less => AnyView::new(icon(icons::CIRCLE_CHECK).size(14.0).color(token::OK)),
@@ -104,11 +104,10 @@ fn question(ask: Ask, typed: Signal<String>, name: &str, answer: Rc<dyn Fn()>) -
         Ask::HostKey { kind, fingerprint, .. } => {
             let words =
                 "1Term has not seen this host key before. Continue trusts it and adds it to known hosts.";
-            return column().gap(4.0).child(div().text_color(token::TEXT).child(text(words))).child(mono(
-                format!("{kind} {fingerprint}"),
-                12.0,
-                token::TEXT_2,
-            ));
+            return column()
+                .gap(token::SPACE_XS)
+                .child(div().text_color(token::TEXT).child(text(words)))
+                .child(mono(format!("{kind} {fingerprint}"), 12.0, token::TEXT_2));
         }
         Ask::User { .. } => ("Username", false, false),
         Ask::Password { again, .. } => ("Password", true, again),

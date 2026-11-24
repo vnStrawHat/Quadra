@@ -119,7 +119,7 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
             .row(
                 prefs::ANSI[n].1,
                 "Normal and bright, #rrggbb; empty, the theme's.",
-                row().gap(8.0).child(field(n)).child(field(n + 8)),
+                row().gap(token::SPACE_MD).child(field(n)).child(field(n + 8)),
             )
             .resets_with(
                 move || pair.iter().any(|(now, was)| now.with(|now| now != was)),

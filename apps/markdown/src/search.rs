@@ -127,11 +127,11 @@ fn face(s: &Search) -> Div {
     let (next, back, close) = (s.clone(), s.clone(), s.open);
     let line = row()
         .align_items(Align::Center)
-        .gap(2.0)
-        .child(row().padding_right(4.0).child(query))
+        .gap(token::SPACE_XXS)
+        .child(row().padding_right(token::SPACE_XS).child(query))
         .child(switch(icons::CASE_SENSITIVE, "Match case", s.case))
         .child(switch(icons::WHOLE_WORD, "Whole word", s.word))
-        .child(div().padding_x(6.0).child(said))
+        .child(div().padding_x(token::SPACE_SM).child(said))
         .child(rule)
         .child(div().width(4.0))
         .child(
@@ -154,7 +154,7 @@ fn face(s: &Search) -> Div {
             _ => {}
         }
     };
-    let plane = column().padding(4.0).bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE);
+    let plane = column().padding(token::SPACE_XS).bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE);
     let plane = plane.radius(token::RADIUS_MD).elevation(1).role(Role::Group).label("Find in the document");
     plane
         .node_ref(&s.bar)

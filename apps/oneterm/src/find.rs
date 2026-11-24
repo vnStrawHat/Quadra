@@ -123,18 +123,18 @@ fn bar(b: Bar, s: &Session, close: Rc<dyn Fn()>, at: NodeRef) -> Div {
     // 220 wide, less in a narrow space: the bar stays inside it.
     let query = input(b.query).height(26.0).fill().icon(icons::SEARCH);
     let query = query.placeholder("Find").label("Find").invalid(none).on_submit(move |_| next());
-    let query = row().width(224.0).min_width(Length::Px(96.0)).padding_right(4.0).child(query);
+    let query = row().width(224.0).min_width(Length::Px(96.0)).padding_right(token::SPACE_XS).child(query);
     let rule = div().width(1.0).height(16.0).shrink(0.0).bg(token::LINE);
     let closes = close.clone();
     let line = row()
         .align_items(Align::Center)
-        .gap(2.0)
+        .gap(token::SPACE_XXS)
         .min_width(Length::Px(0.0))
         .child(query)
         .child(switch(icons::CASE_SENSITIVE, "Match case", b.case))
         .child(switch(icons::WHOLE_WORD, "Whole word", b.word))
         .child(switch(icons::REGEX, "Regular expression", b.pattern))
-        .child(div().padding_x(6.0).child(count))
+        .child(div().padding_x(token::SPACE_SM).child(count))
         .child(rule)
         .child(div().width(4.0))
         .child(icon_button(icons::ARROW_UP, "Previous match").disabled(none).on_click(step(true)))
@@ -159,7 +159,7 @@ fn bar(b: Bar, s: &Session, close: Rc<dyn Fn()>, at: NodeRef) -> Div {
     };
     let plane = column()
         .min_width(Length::Px(0.0))
-        .padding(4.0)
+        .padding(token::SPACE_XS)
         .bg(token::OVERLAY_BG)
         .border(1.0)
         .border_color(token::LINE);

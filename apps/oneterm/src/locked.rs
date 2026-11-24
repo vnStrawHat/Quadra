@@ -81,37 +81,37 @@ fn card(model: &Model) -> Div {
         .on_submit(move |_| lock.unlock());
     let head = row()
         .align_items(Align::Center)
-        .gap(8.0)
-        .padding_x(12.0)
-        .padding_top(12.0)
-        .padding_bottom(4.0)
+        .gap(token::SPACE_MD)
+        .padding_x(token::SPACE_LG)
+        .padding_top(token::SPACE_LG)
+        .padding_bottom(token::SPACE_XS)
         .child(icon(icons::LOCK).size(16.0).color(token::ACCENT))
         .child(div().font_weight(600).text_size(16.0).child(text("1Term is locked")));
     // What runs behind, and what came while locked.
     let foot = row()
         .align_items(Align::Center)
-        .gap(12.0)
+        .gap(token::SPACE_LG)
         .text_size(12.0)
         .label(move || format!("{} \u{B7} {} notices", running(), unread.get()))
         .role(quadra::Role::Group)
         .child(
             row()
                 .align_items(Align::Center)
-                .gap(6.0)
-                .child(div().size(8.0, 8.0).radius(4.0).bg(token::OK))
+                .gap(token::SPACE_SM)
+                .child(div().size(8.0, 8.0).radius(token::RADIUS_SM).bg(token::OK))
                 .child(text(running)),
         )
         .child(
             row()
                 .align_items(Align::Center)
-                .gap(6.0)
+                .gap(token::SPACE_SM)
                 .child(icon(icons::BELL).size(14.0).color(token::ERROR))
                 .child(text(move || format!("{} new while locked", unread.get()))),
         );
     let body = column()
-        .gap(12.0)
-        .padding_x(12.0)
-        .padding_bottom(12.0)
+        .gap(token::SPACE_LG)
+        .padding_x(token::SPACE_LG)
+        .padding_bottom(token::SPACE_LG)
         .text_color(token::TEXT_2)
         .child(text(why))
         .child(quadra_design::field("Password", field))
@@ -130,7 +130,7 @@ fn card(model: &Model) -> Div {
     // Where dialogs hang, with their look; neither Escape nor a press outside closes it.
     let card = column()
         .width(440.0)
-        .radius(10.0)
+        .radius(token::RADIUS_LG)
         .bg(token::OVERLAY_BG)
         .border(1.0)
         .border_color(token::LINE_STRONG)
@@ -139,7 +139,12 @@ fn card(model: &Model) -> Div {
         .child(head)
         .child(body)
         .child(
-            row().justify(Justify::End).padding(8.0).border_top(1.0).border_color(token::LINE).child(unlock),
+            row()
+                .justify(Justify::End)
+                .padding(token::SPACE_MD)
+                .border_top(1.0)
+                .border_color(token::LINE)
+                .child(unlock),
         );
     // Over the workspace, which it blurs and dims.
     column()
@@ -150,7 +155,7 @@ fn card(model: &Model) -> Div {
         .bottom(0.0)
         .align_items(Align::Center)
         .padding_top(48.0) // design: the room over the lock card's mark
-        .padding_x(16.0)
+        .padding_x(token::SPACE_XL)
         .backdrop_blur(BLUR)
         .bg(token::SCRIM)
         .display(shown(move || lock.locked.get()))
@@ -193,7 +198,7 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>, default: Signal<f64>) -> 
     let confirm = quadra_design::dialog(asking, "Remove the master password?", asked)
         .action("Cancel", quadra_design::Variant::Secondary, || {})
         .action("Remove", quadra_design::Variant::Danger, remove);
-    let buttons = quadra::row().gap(8.0).child(button("Set password").on_click(set)).child(
+    let buttons = quadra::row().gap(token::SPACE_MD).child(button("Set password").on_click(set)).child(
         div()
             .display(shown(move || lock.can_lock()))
             .child(button("Remove password").on_click(move || asking.set(true)))

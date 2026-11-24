@@ -134,8 +134,8 @@ fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -
     };
     let head = row()
         .align_items(Align::Center)
-        .gap(8.0)
-        .padding_x(8.0)
+        .gap(token::SPACE_MD)
+        .padding_x(token::SPACE_MD)
         .height(by_text(18.0))
         .shrink(0.0)
         .bg(token::PANEL)
@@ -189,7 +189,9 @@ fn editing(edit: &Rc<FileEdit>, source: &str) -> quadra::Div {
     let compared = move || {
         let (old, new) = (edit.base.get_untracked(), edit.now.get_untracked());
         let view = match old == new {
-            true => AnyView::new(div().padding(12.0).text_color(token::TEXT_3).child(text("No changes."))),
+            true => AnyView::new(
+                div().padding(token::SPACE_LG).text_color(token::TEXT_3).child(text("No changes.")),
+            ),
             false => AnyView::new(diff(old, new).colours(line_colours(&edit.kind)).context(3)),
         };
         column().grow(1.0).min_height(0.0).child(view)

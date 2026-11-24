@@ -62,7 +62,7 @@ fn volumes() -> Div {
         let part = move || says.get().parse::<f32>().unwrap_or(0.0) / 100.0;
         let bar = meter(part).warn_at(0.85).height(4.0).width(120.0);
         let value = div().font_family(fonts::MONO).child(text(move || format!("{}%", says.get())));
-        row().align_items(Align::Center).gap(8.0).child(bar).child(value)
+        row().align_items(Align::Center).gap(token::SPACE_MD).child(bar).child(value)
     });
     let open = Column::new("").width(90.0).unsorted().view(|_, _| button("Open").size(Size::Sm));
     let columns = [Column::new("Name").mono().width(200.0), used, Column::new("Note").muted().fill(), open];
@@ -155,7 +155,11 @@ pub fn variable_list_page() -> Div {
         signal(0.0),
         |i: Signal<usize>| {
             let number = text(move || format!("#{}", i.get())).color(token::TEXT_3).size(size::TEXT_XS.size);
-            let event = column().gap(2.0).padding_x(12.0).padding_y(8.0).border_bottom(1.0);
+            let event = column()
+                .gap(token::SPACE_XXS)
+                .padding_x(token::SPACE_LG)
+                .padding_y(token::SPACE_MD)
+                .border_bottom(1.0);
             event.border_color(token::LINE).child(number).child(text(move || feed_text(i.get())))
         },
     );
@@ -169,7 +173,8 @@ pub fn variable_list_page() -> Div {
 }
 
 pub fn stress_page() -> Div {
-    let mut grid = div().grid_fill(96.0).gap(4.0).font_family(fonts::MONO).text_size(size::TEXT_XS.size);
+    let mut grid =
+        div().grid_fill(96.0).gap(token::SPACE_XS).font_family(fonts::MONO).text_size(size::TEXT_XS.size);
     for i in 0..1000 {
         let cell = row().height(28.0).align_items(Align::Center).justify(Justify::Center).bg(token::PANEL);
         let cell = cell.hover(|s| s.bg(token::ACCENT).text_color(token::TEXT_ON_ACCENT));

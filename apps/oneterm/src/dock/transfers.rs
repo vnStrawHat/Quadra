@@ -12,8 +12,8 @@ use crate::sftp::{Dock, Transfer};
 /// The transfers, newest last, each with a cross that cancels it or clears it.
 pub(super) fn transfers(d: Dock) -> impl View + use<> {
     let list = dynamic(move || {
-        let list = column().width(Length::Fill).gap(8.0).padding_x(12.0);
-        let mut list = list.padding_top(6.0).padding_bottom(12.0).text_size(12.0);
+        let list = column().width(Length::Fill).gap(token::SPACE_MD).padding_x(token::SPACE_LG);
+        let mut list = list.padding_top(token::SPACE_SM).padding_bottom(token::SPACE_LG).text_size(12.0);
         for transfer in d.transfers.get() {
             list = list.child(transfer_row(d, transfer));
         }
@@ -47,7 +47,7 @@ fn transfer_row(d: Dock, transfer: Rc<Transfer>) -> impl View {
     let arrow = if transfer.up { icons::ARROW_UP } else { icons::ARROW_DOWN };
     let line = row()
         .align_items(Align::Center)
-        .gap(6.0)
+        .gap(token::SPACE_SM)
         .text_color(token::TEXT_2)
         .child(icon(arrow).size(12.0))
         .child(
@@ -66,5 +66,5 @@ fn transfer_row(d: Dock, transfer: Rc<Transfer>) -> impl View {
         d.tick.get();
         Length::Pct(part.part() * 100.0)
     });
-    column().gap(6.0).child(line).child(div().height(2.0).bg(token::LINE_STRONG).child(fill))
+    column().gap(token::SPACE_SM).child(line).child(div().height(2.0).bg(token::LINE_STRONG).child(fill))
 }

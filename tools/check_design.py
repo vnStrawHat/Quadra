@@ -16,7 +16,8 @@ RADII = {0.0, 1.0, 2.0, 4.0, 6.0, 10.0}
 TEXT = {10.0, 12.0, 14.0, 16.0, 18.0, 23.0, 28.0}
 NUMBER = re.compile(r"(?<![\w.])\d+\.\d+(?![\w.])")
 # A call and its ladder: every number written in what the call is given is checked, so a
-# distance chosen between two (`if small { 4.0 } else { 8.0 }`) is too.
+# distance chosen between two (`if small { 4.0 } else { 8.0 }`) is too, and one kept in a
+# `const` of the file and given by its name.
 CHECKS = [
     (re.compile(r"\.(?:gap|gap_x|gap_y|padding|padding_x|padding_y|padding_left|padding_right"
                 r"|padding_top|padding_bottom)\("), DISTANCES, "distance"),
@@ -24,6 +25,10 @@ CHECKS = [
     (re.compile(r"\.text_size\("), TEXT, "text size"),
     (re.compile(r"\btext\([^()]*(?:\([^()]*\)[^()]*)*\)\.size\("), TEXT, "text size"),
 ]
+
+
+CONST = re.compile(r"\bconst ([A-Z][A-Z0-9_]*): f32 = (\d+\.\d+);")
+NAME = re.compile(r"(?<![\w:])[A-Z][A-Z0-9_]*\b")
 
 
 def given(code, start):
@@ -50,14 +55,18 @@ def sources():
 def main():
     off, excused = [], []
     for path in sources():
-        lines = io.open(path, encoding="utf-8").read().split("\n")
+        source = io.open(path, encoding="utf-8").read()
+        lines = source.split("\n")
+        # A number kept under a name in the file is read where the name is given to a call.
+        named = dict(CONST.findall(source))
         for at, line in enumerate(lines, 1):
             code = line.split("//", 1)[0]
             # The reason: on the line, or alone on the line before it.
             reason = "// design:" in line or lines[at - 2].strip().startswith("// design:")
             for pattern, ladder, kind in CHECKS:
                 for call in pattern.finditer(code):
-                    for number in NUMBER.findall(given(code, call.end())):
+                    said = given(code, call.end())
+                    for number in NUMBER.findall(said) + [named[n] for n in NAME.findall(said) if n in named]:
                         if float(number) in ladder:
                             continue
                         entry = f"{path}:{at}: {kind} {number}"

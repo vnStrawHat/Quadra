@@ -20,10 +20,10 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         div().text_color(token::TEXT_2).display(shown(move || lock.locked.get())).child(text("Locked"));
     let mark = row()
         .align_items(Align::Center)
-        .gap(4.0)
-        .padding_left(12.0)
+        .gap(token::SPACE_XS)
+        .padding_left(token::SPACE_LG)
         .child(icon(MARK).size(16.0).color(token::ACCENT))
-        .child(div().padding_x(4.0).text_size(14.0).font_weight(600).child(text("1Term")))
+        .child(div().padding_x(token::SPACE_XS).text_size(14.0).font_weight(600).child(text("1Term")))
         .child(locked);
     let (open, hosts, vertical) = (seen.ui().settings, seen.ui().hosts, seen.vertical());
     // With the tabs in a strip, the hosts are a panel this opens.
@@ -49,8 +49,8 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
     // Locked, what would open something is not displayed; in the settings, only Done.
     let buttons = row()
         .align_items(Align::Center)
-        .gap(4.0)
-        .padding_right(8.0)
+        .gap(token::SPACE_XS)
+        .padding_right(token::SPACE_MD)
         .display(shown(move || !lock.locked.get() && !settings.get()))
         .child(collapse)
         .child(panel)
@@ -58,7 +58,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .child(locks)
         .child(gear);
     let done = div()
-        .padding_right(8.0)
+        .padding_right(token::SPACE_MD)
         .display(shown(move || settings.get()))
         .child(button("Done").on_click(move || open.set(false)));
     titlebar("").height(38.0).control(mark).control(div().grow(1.0)).control(buttons).control(done)
@@ -70,11 +70,11 @@ fn lock_button(model: &Model) -> impl View + use<> {
     row()
         .align_items(Align::Center)
         .justify(quadra::Justify::Center)
-        .gap(4.0)
-        .padding_x(4.0)
+        .gap(token::SPACE_XS)
+        .padding_x(token::SPACE_XS)
         .min_width(22.0)
         .height(22.0)
-        .radius(4.0)
+        .radius(token::RADIUS_SM)
         .text_color(token::TEXT_2)
         .hover(|s| s.bg(token::PANEL_HOVER))
         .role(Role::Button)
@@ -98,10 +98,10 @@ fn bells(model: &Model) -> impl View + use<> {
     let tone = move || if count() > 0 { token::ERROR } else { token::TEXT_2 };
     let face = row()
         .align_items(Align::Center)
-        .gap(4.0)
-        .padding_x(4.0)
+        .gap(token::SPACE_XS)
+        .padding_x(token::SPACE_XS)
         .height(22.0)
-        .radius(4.0)
+        .radius(token::RADIUS_SM)
         .hover(|s| s.bg(token::PANEL_HOVER))
         .role(Role::Button)
         .label(move || format!("{} bells and notices", count()))

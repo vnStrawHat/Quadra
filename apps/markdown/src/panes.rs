@@ -92,7 +92,7 @@ fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
     let prefs = m.prefs;
     let widest = move || prefs.column().map_or(Length::Auto, Length::Px);
     let text = column().grow(1.0).min_width(0.0).max_width(widest).child(tint(m)).child(empty(m)).child(doc);
-    let page = row().justify(Justify::Center).padding_x(32.0).padding_y(PAD).child(text);
+    let page = row().justify(Justify::Center).padding_x(token::SPACE_XXXL).padding_y(PAD).child(text);
     let pane = column().grow(1.0).min_width(0.0).min_height(0.0).bg(token::CANVAS);
     let pane = drives(pane.role(Role::Group).label("Rendered"), m, Driver::Preview);
     pane.child(scroll(m.preview_y, page)).child(crate::search::bar(&m.search))
@@ -104,7 +104,7 @@ fn empty(m: &Model) -> Div {
     let words = "Open a file (Ctrl+O), drop one here, or start writing in Raw (Ctrl+1).";
     column()
         .align_items(quadra::Align::Center)
-        .gap(16.0)
+        .gap(token::SPACE_XL)
         .padding_top(96.0) // design: the room over an empty pane's words
         .text_color(token::TEXT_3)
         .display(move || if text.with(String::is_empty) { Display::Flex } else { Display::None })
@@ -138,7 +138,7 @@ fn tint(m: &Model) -> Div {
         .right(0.0)
         .top(move || Length::Px(place().map_or(0.0, |it| it.top)))
         .height(move || Length::Px(place().map_or(0.0, |it| it.height)))
-        .radius(4.0)
+        .radius(token::RADIUS_SM)
         .bg(token::SELECTION)
         .display(move || if place().is_some() { Display::Flex } else { Display::None })
 }

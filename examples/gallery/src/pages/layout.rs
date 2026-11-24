@@ -13,7 +13,7 @@ pub fn tabs_page() -> Div {
         "12:04:51  GET /healthz 200 0.4ms",
         "apiVersion: v1\nkind: Pod",
     ];
-    let panel = dynamic(move || div().padding(12.0).child(mono(panels[tab.get().min(2)])));
+    let panel = dynamic(move || div().padding(token::SPACE_LG).child(mono(panels[tab.get().min(2)])));
     let underline = column().child(tabs(["Overview", "Logs", "YAML"], tab)).child(panel);
     page(
         "Tabs",
@@ -39,9 +39,9 @@ pub fn accordion_page() -> Div {
 
 pub fn split_page() -> Div {
     let (share, upper) = (signal(0.3f32), signal(0.6f32));
-    let left = div().grow(1.0).padding(12.0).bg(token::PANEL).child(hint("Explorer"));
-    let top = div().grow(1.0).padding(12.0).child(text("Editor: drag the dividers."));
-    let bottom = div().grow(1.0).padding(12.0).bg(token::PANEL).child(mono("$ cargo run"));
+    let left = div().grow(1.0).padding(token::SPACE_LG).bg(token::PANEL).child(hint("Explorer"));
+    let top = div().grow(1.0).padding(token::SPACE_LG).child(text("Editor: drag the dividers."));
+    let bottom = div().grow(1.0).padding(token::SPACE_LG).bg(token::PANEL).child(mono("$ cargo run"));
     let inner = split(top, bottom, upper).stacked();
     page(
         "Split pane",
@@ -53,7 +53,8 @@ pub fn split_page() -> Div {
 pub fn scroll_page() -> Div {
     let mut list = column();
     for i in 0..60 {
-        let item = row().gap(12.0).padding_x(12.0).height(26.0).align_items(Align::Center);
+        let item =
+            row().gap(token::SPACE_LG).padding_x(token::SPACE_LG).height(26.0).align_items(Align::Center);
         let item = item.border_bottom(1.0).border_color(token::LINE).child(mono(format!("{:3}", i + 1)));
         list = list.child(item.child(text(format!("12:04:{:02}  GET /api/v1/pods 200", i % 60))));
     }
@@ -67,7 +68,7 @@ pub fn scroll_page() -> Div {
 
 pub fn grid_page(gallery: Gallery) -> Div {
     let light = if gallery.dark.get() { 0.3 } else { 0.8 };
-    let mut cards = div().grid_fill(140.0).gap(8.0);
+    let mut cards = div().grid_fill(140.0).gap(token::SPACE_MD);
     for i in 0..12 {
         let card = row().height(64.0).align_items(Align::Center).justify(Justify::Center);
         let card = card.bg(Color::hsla(190.0 + i as f32 * 6.0, 0.5, light, 1.0));
@@ -76,6 +77,6 @@ pub fn grid_page(gallery: Gallery) -> Div {
     page(
         "Grid",
         "Responsive columns: as many as fit at the minimum width.",
-        [demo("Fill", cards, "div().grid_fill(140.0).gap(8.0)")],
+        [demo("Fill", cards, "div().grid_fill(140.0).gap(token::SPACE_MD)")],
     )
 }

@@ -24,10 +24,10 @@ pub(super) fn head(form: Form, title: String) -> Div {
             Some(color) => color.into(),
             None => tag_of_group(form.group.get().trim()).1.into(),
         };
-        AnyView::new(div().size(10.0, 10.0).radius(2.0).bg(paint))
+        AnyView::new(div().size(10.0, 10.0).radius(token::RADIUS_XS).bg(paint))
     });
     let title = div().font_weight(600).text_size(size::TEXT_LG.size).child(text(title));
-    row().grow(1.0).gap(8.0).align_items(quadra::Align::Center).child(mark).child(title)
+    row().grow(1.0).gap(token::SPACE_MD).align_items(quadra::Align::Center).child(mark).child(title)
 }
 
 /// The form; `confirming` puts the question of deleting it at its end.
@@ -38,7 +38,7 @@ pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirmin
     let auth = form.auth;
     let address = div()
         .grid([Track::fr(1.0), Track::px(88.0)])
-        .gap_x(12.0)
+        .gap_x(token::SPACE_LG)
         .child(field("Address", text_field(form.target, "Host name or IP", "host-target").mono()))
         .child(field("Port", text_field(form.port, "22", "host-port").mono()));
     let user = field("Username", text_field(form.user, "Ask when connecting", "host-user")).help("Optional.");
@@ -62,7 +62,7 @@ pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirmin
     let question =
         alert(Tone::Danger, &format!("Delete {name}?"), "Its saved password and startup command go too.");
     column()
-        .gap(12.0)
+        .gap(token::SPACE_LG)
         .child(field("Name", text_field(form.name, "The host when empty", "host-name")))
         .child(pair(
             field("Group", text_field(form.group, "Group", "host-group")),
@@ -70,7 +70,7 @@ pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirmin
         ))
         .child(address)
         .child(pair(user, jump))
-        .child(column().gap(4.0).child(how).child(hint))
+        .child(column().gap(token::SPACE_XS).child(how).child(hint))
         .child(
             div()
                 .display(shown(move || auth.get() == 2))

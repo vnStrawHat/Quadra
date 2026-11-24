@@ -26,7 +26,11 @@ pub fn badge_page() -> Div {
         ("Volume", token::HUE_ORANGE),
     ];
     let count = |name: &str, n: &str, tone| {
-        row().align_items(Align::Center).gap(6.0).child(text(name.to_string())).child(badge(n, tone))
+        row()
+            .align_items(Align::Center)
+            .gap(token::SPACE_SM)
+            .child(text(name.to_string()))
+            .child(badge(n, tone))
     };
     let counts = line()
         .child(count("Problems", "12", Tone::Danger))
@@ -75,7 +79,7 @@ pub fn kbd_page() -> Div {
     ];
     let mut list = column().max_width(420.0);
     for (keys, does) in keys {
-        let item = row().align_items(Align::Center).padding_y(6.0).border_bottom(1.0);
+        let item = row().align_items(Align::Center).padding_y(token::SPACE_SM).border_bottom(1.0);
         list = list
             .child(item.border_color(token::LINE).child(div().grow(1.0).child(text(does))).child(kbd(keys)));
     }
@@ -90,7 +94,7 @@ pub fn avatar_page() -> Div {
     let people = [("Nguyễn Văn An", 40.0), ("Trần Bình", 32.0), ("Lê Thị Cúc", 24.0), ("Ada Lovelace", 20.0)];
     let author = row()
         .align_items(Align::Center)
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .child(avatar("Ada Lovelace", 20.0))
         .child(text("Ada Lovelace").weight(size::WEIGHT_STRONG))
         .child(hint("committed 2 hours ago"))
@@ -113,7 +117,7 @@ pub fn progress_page() -> Div {
     let bar = |part: f32, says: &str| {
         row()
             .align_items(Align::Center)
-            .gap(12.0)
+            .gap(token::SPACE_LG)
             .child(progress(part).width(320.0))
             .child(mono(says.to_string()))
     };
@@ -133,14 +137,14 @@ pub fn progress_page() -> Div {
                     .child(
                         row()
                             .align_items(Align::Center)
-                            .gap(12.0)
+                            .gap(token::SPACE_LG)
                             .child(meter(0.43).mark(0.61).width(320.0))
                             .child(mono("CPU 43%, requested 61%".to_string())),
                     )
                     .child(
                         row()
                             .align_items(Align::Center)
-                            .gap(12.0)
+                            .gap(token::SPACE_LG)
                             .child(meter(0.91).mark(0.7).warn_at(0.85).width(320.0))
                             .child(mono("memory 91%".to_string())),
                     )
@@ -153,7 +157,7 @@ pub fn progress_page() -> Div {
 
 pub fn spinner_page() -> Div {
     let sizes = line().children([12.0, 16.0, 24.0].map(|px| spinner().size(px)));
-    let inline = row().align_items(Align::Center).gap(8.0);
+    let inline = row().align_items(Align::Center).gap(token::SPACE_MD);
     let inline = inline.child(spinner().size(12.0)).child(hint("Pulling image nginx:1.27…"));
     page(
         "Spinner",

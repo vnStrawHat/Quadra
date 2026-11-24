@@ -72,7 +72,7 @@ fn value(seen: Signal<Option<Reading>>, of: impl Fn(&Reading) -> String + 'stati
 /// A column of the card: its heading, then terms and values.
 fn group(title: &'static str, items: Vec<(&'static str, AnyView)>) -> quadra::Div {
     let heading = div().font_weight(600).text_color(token::TEXT_2).child(text(title));
-    column().gap(8.0).child(heading).child(description_list(items))
+    column().gap(token::SPACE_MD).child(heading).child(description_list(items))
 }
 
 /// The details: memory | processor, following the readings.
@@ -92,7 +92,7 @@ fn details(seen: Signal<Option<Reading>>) -> quadra::Div {
     ];
     let line = div().width(1.0).shrink(0.0).bg(token::LINE);
     row()
-        .gap(16.0)
+        .gap(token::SPACE_XL)
         .text_size(12.0)
         .child(group("Memory", memory))
         .child(line)

@@ -21,7 +21,7 @@ type When = Rc<dyn Fn() -> bool>;
 
 /// A part of a group: its icon or label and its value, 6 px apart.
 fn part() -> quadra::Div {
-    row().align_items(Align::Center).gap(6.0)
+    row().align_items(Align::Center).gap(token::SPACE_SM)
 }
 
 /// A value: mono, in the text colour.
@@ -92,11 +92,11 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
     let meters = part()
         .role(Role::Group)
         .label("CPU and memory")
-        .gap(12.0)
+        .gap(token::SPACE_LG)
         .display(shown(move || prefs.show_usage.get()))
         .child(part().child(text("CPU")).child(value(cpu)))
         .child(part().child(text("RAM")).child(value(ram)));
-    let using = part().gap(12.0).label("Usage").child(crate::usage::tip(meters, usage)).child(
+    let using = part().gap(token::SPACE_LG).label("Usage").child(crate::usage::tip(meters, usage)).child(
         part().display(shown(move || prefs.show_fps.get())).child({
             let said = fps(prefs.show_fps);
             value(move || said.get())
@@ -111,7 +111,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
     let (meter, metered) = meter(model);
     let rec = logging(model);
     let left_side = groups(
-        part().gap(12.0),
+        part().gap(token::SPACE_LG),
         vec![
             (when(move || open() && vertical.get()), part().child(fold)),
             (when(open), place),
@@ -120,7 +120,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         ],
     );
     let right_side = groups(
-        part().gap(12.0),
+        part().gap(token::SPACE_LG),
         vec![
             (metered, meter),
             (remote_shown(model, open), network(model)),
@@ -131,8 +131,8 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
     );
     row()
         .align_items(Align::Center)
-        .gap(12.0)
-        .padding_x(8.0)
+        .gap(token::SPACE_LG)
+        .padding_x(token::SPACE_MD)
         .height(by_text(30.0))
         .shrink(0.0)
         .bg(token::STATUS_BG)
@@ -229,7 +229,7 @@ fn logging(model: &Model) -> Signal<(bool, bool)> {
 /// The dot of 8 px, red while lit.
 fn recording(rec: Signal<(bool, bool)>) -> quadra::Div {
     let lit = move || if rec.get().1 { token::HUE_RED } else { token::STATUS_BG };
-    part().role(Role::Image).label("Logging").child(div().size(8.0, 8.0).radius(4.0).bg(lit))
+    part().role(Role::Image).label("Logging").child(div().size(8.0, 8.0).radius(token::RADIUS_SM).bg(lit))
 }
 
 /// The frames the window made in the last second, `60 fps`, counted while shown.

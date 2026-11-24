@@ -29,7 +29,11 @@ fn parent() -> Entry {
 
 /// What stands for a list that cannot show: why.
 fn said_row(said: String) -> AnyView {
-    AnyView::new(column().padding(4.0).child(div().padding(8.0).text_color(token::TEXT_2).child(text(said))))
+    AnyView::new(
+        column()
+            .padding(token::SPACE_XS)
+            .child(div().padding(token::SPACE_MD).text_color(token::TEXT_2).child(text(said))),
+    )
 }
 
 pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
@@ -51,9 +55,9 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         .on_click(move || collapse.set(false));
     let head = row()
         .align_items(Align::Center)
-        .gap(8.0)
-        .padding_left(12.0)
-        .padding_right(8.0)
+        .gap(token::SPACE_MD)
+        .padding_left(token::SPACE_LG)
+        .padding_right(token::SPACE_MD)
         .height(by_text(28.0))
         .shrink(0.0)
         .bg(token::PANEL)
@@ -180,7 +184,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         .shrink(0.0)
         .align_items(Align::Center)
         .justify(quadra::Justify::Center)
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .bg(token::PANEL)
         .border_left(1.0)
         .border_right(1.0)

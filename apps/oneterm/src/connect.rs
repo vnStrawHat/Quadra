@@ -8,6 +8,7 @@ use quadra_design::{Notice, Tone, Variant, checkbox, field, input, select};
 
 use crate::model::Model;
 use crate::shells::Remote;
+use quadra_design::token;
 
 const AUTHS: [&str; 4] = ["Auto", "ssh-agent", "Key file", "Password"];
 
@@ -53,12 +54,12 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
             .child(field("Auth", select(AUTHS, form.auth)))
             .child(field("Jump host", select(lists.jump_choices(), form.jump).test_id("connect-jump")));
         let boxes = column()
-            .gap(4.0)
+            .gap(token::SPACE_XS)
             .child(checkbox(form.sftp).label("Open SFTP alongside"))
             .child(checkbox(form.save).label("Save as host"))
             .child(checkbox(form.here).label("Open in the current tab as a new space"));
         column()
-            .gap(12.0)
+            .gap(token::SPACE_LG)
             .child(text(
                 "Open a one-off SSH session. It is not added to your hosts unless you tick Save as host.",
             ))

@@ -32,7 +32,7 @@ pub fn button_page() -> Div {
         .child(button("Disabled").variant(Variant::Primary).disabled(true))
         .child(button("Applying").variant(Variant::Primary).loading(true));
     let footer = row()
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .justify(Justify::End)
         .child(button("Cancel").variant(Variant::Ghost))
         .child(button("View diff").variant(Variant::Outline))
@@ -64,7 +64,7 @@ pub fn icon_button_page() -> Div {
     let sizes = [("xs", Size::Xs), ("sm", Size::Sm), ("md", Size::Md), ("lg", Size::Lg)];
     let sizes = sizes.map(|(name, size)| tooltip(name, icon_button(icons::SETTINGS, name).size(size)));
     let small = |body, name: &'static str| tooltip(name, icon_button(body, name).size(Size::Xs));
-    let actions = row().align_items(Align::Center).height(28.0).padding_x(8.0).bg(token::PANEL);
+    let actions = row().align_items(Align::Center).height(28.0).padding_x(token::SPACE_MD).bg(token::PANEL);
     let actions = actions.border(1.0).border_color(token::LINE).child(label("Pods")).child(div().grow(1.0));
     let actions = actions
         .child(small(icons::FILTER, "Filter"))
@@ -114,7 +114,8 @@ pub fn toggle_button_page() -> Div {
     let kinds = ["All", "Languages", "Themes", "Icon Themes", "Snippets"];
     let chip =
         |(i, name): (usize, &str)| small(name).toggled(move || kind.get() == i).on_click(move || kind.set(i));
-    let chips = row().gap(4.0).children(kinds.into_iter().enumerate().map(chip).collect::<Vec<_>>());
+    let chips =
+        row().gap(token::SPACE_XS).children(kinds.into_iter().enumerate().map(chip).collect::<Vec<_>>());
     let about = "A button that stays pressed. The pressed state turns its label and icon the accent.";
     page(
         "Toggle button",

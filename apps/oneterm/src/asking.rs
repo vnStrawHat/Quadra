@@ -122,9 +122,14 @@ fn mono(words: String) -> quadra::Div {
 fn host_key(asked: Option<(Phase, String)>) -> quadra::Div {
     let Some((Phase::Ask(Ask::HostKey { host, kind, fingerprint }), _)) = asked else { return column() };
     column()
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .child(text(format!("The authenticity of host '{host}' can't be established.")))
-        .child(column().gap(2.0).child(text(format!("{kind} key fingerprint:"))).child(mono(fingerprint)))
+        .child(
+            column()
+                .gap(token::SPACE_XXS)
+                .child(text(format!("{kind} key fingerprint:")))
+                .child(mono(fingerprint)),
+        )
         .child(text("Trusting it adds the key to known_hosts."))
 }
 
@@ -150,7 +155,7 @@ fn sign_in(
     if secret {
         entry = entry.password();
     }
-    let mut body = column().gap(12.0);
+    let mut body = column().gap(token::SPACE_LG);
     if again {
         body = body.child(div().text_color(token::ERROR).child(text(wrong)));
     }
@@ -160,7 +165,7 @@ fn sign_in(
 fn failure(asked: Option<(Phase, String)>) -> quadra::Div {
     let Some((Phase::Ask(Ask::Failed { reason }), label)) = asked else { return column() };
     column()
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .child(text(format!("Could not connect to {label}.")))
         .child(div().text_color(token::ERROR).child(text(sentence(&reason))))
 }

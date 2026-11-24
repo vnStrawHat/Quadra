@@ -19,7 +19,8 @@ pub fn activity_page() -> Div {
         Activity::new("events", icons::BELL, "Events").badge(|| 12),
     ];
     let bar = activity_bar(active, tools).footer([Activity::new("settings", icons::SETTINGS, "Settings")]);
-    let said = div().grow(1.0).padding(16.0).child(hint(move || format!("Active: {}", active.get())));
+    let said =
+        div().grow(1.0).padding(token::SPACE_XL).child(hint(move || format!("Active: {}", active.get())));
     let about = "The leftmost column: one icon per tool view, the active one in the accent, badges for \
                  counts.";
     page(
@@ -42,7 +43,7 @@ pub fn tab_strip_page() -> Div {
     ]);
     let active = signal("logs".to_string());
     let strip = tab_strip(tabs, active).on_close(move |id| tabs.update(|all| all.retain(|tab| tab.id != id)));
-    let shown = div().grow(1.0).padding(16.0).bg(token::CANVAS).child(mono(move || active.get()));
+    let shown = div().grow(1.0).padding(token::SPACE_XL).bg(token::CANVAS).child(mono(move || active.get()));
     let about = "Open editors and views of one pane. Drag to reorder, middle-click or × to close; a dot \
                  marks unsaved changes.";
     page(
@@ -62,8 +63,10 @@ pub fn panel_header_page() -> Div {
         .child(quiet(icons::FILTER, "Filter"))
         .child(quiet(icons::REFRESH_CW, "Refresh"))
         .child(quiet(icons::ELLIPSIS, "More"));
-    let panel =
-        column().width(320.0).child(head).child(div().height(80.0).padding(12.0).child(hint("124 pods")));
+    let panel = column()
+        .width(320.0)
+        .child(head)
+        .child(div().height(80.0).padding(token::SPACE_LG).child(hint("124 pods")));
     page(
         "Panel header",
         "The title strip of a panel: a section label and quiet actions.",
@@ -84,7 +87,7 @@ pub fn panes_page() -> Div {
         };
         let head = panel_header(group);
         let head = if group == "terminal" { head.child(dynamic(fold)) } else { head };
-        let said = div().padding(12.0).child(hint(format!("pane \"{group}\"")));
+        let said = div().padding(token::SPACE_LG).child(hint(format!("pane \"{group}\"")));
         let plane = if group == "editor" { token::CANVAS } else { token::PANEL };
         column().grow(1.0).bg(plane).child(head).child(said)
     };
@@ -120,7 +123,7 @@ pub fn dock_page() -> Div {
     let leaf = move |group: &str| {
         let pane = column().grow(1.0).bg(token::CANVAS);
         let Some(tabs) = work.group(group) else { return pane };
-        let shown = div().padding(12.0).child(mono(move || tabs.active.get()));
+        let shown = div().padding(token::SPACE_LG).child(mono(move || tabs.active.get()));
         pane.child(tab_strip(tabs.tabs, tabs.active).dock(work, group)).child(shown)
     };
     let about = "Tear a tab off its strip (drag it down) and drop it on another strip, the middle of a \
@@ -244,5 +247,9 @@ fn groups() -> Div {
         .resets(fps, false)
         .row("Vertical tabs", "Tabs in a list at the left instead of a strip above.", switch(vertical))
         .resets(vertical, false);
-    column().gap(24.0).width(640.0).child(settings_group(theme_group)).child(settings_group(interface))
+    column()
+        .gap(token::SPACE_XXL)
+        .width(640.0)
+        .child(settings_group(theme_group))
+        .child(settings_group(interface))
 }

@@ -22,8 +22,13 @@ pub fn start_page() -> Div {
     ];
     let mut list = column();
     for (i, (title, about)) in principles.into_iter().enumerate() {
-        let words = column().gap(2.0).child(text(title).weight(size::WEIGHT_STRONG)).child(hint(about));
-        let item = row().gap(16.0).padding_y(8.0).border_bottom(1.0).border_color(token::LINE);
+        let words =
+            column().gap(token::SPACE_XXS).child(text(title).weight(size::WEIGHT_STRONG)).child(hint(about));
+        let item = row()
+            .gap(token::SPACE_XL)
+            .padding_y(token::SPACE_MD)
+            .border_bottom(1.0)
+            .border_color(token::LINE);
         list = list.child(item.child(div().width(24.0).child(mono(format!("0{}", i + 1)))).child(words));
     }
     let keys = [
@@ -46,7 +51,7 @@ pub fn start_page() -> Div {
             demo(
                 "Hello, world",
                 text("Xin ch\u{E0}o! Pick a component on the left."),
-                "div().padding(16.0).child(text(\"Xin ch\u{E0}o\"))",
+                "div().padding(token::SPACE_XL).child(text(\"Xin ch\u{E0}o\"))",
             ),
             demo("Design principles", list, ""),
             demo("Developer shortcuts", shortcuts, ""),
@@ -66,12 +71,16 @@ pub fn typography_page() -> Div {
     let mut scale = column();
     for (name, px, weight) in roles {
         let sample = text("Tiếng Việt có dấu, rõ ràng").size(px).weight(weight);
-        let step = row().align_items(Align::Center).gap(16.0).padding_y(8.0);
+        let step = row().align_items(Align::Center).gap(token::SPACE_XL).padding_y(token::SPACE_MD);
         let step = step.border_bottom(1.0).border_color(token::LINE);
         scale = scale.child(step.child(div().width(120.0).child(hint(name))).child(sample));
     }
     let code = "fn main() {\n    let pods = cluster.list(\"default\")?;\n    println!(\"{} pods, 0O 1lI\", pods.len());\n}";
-    let code = div().padding(12.0).bg(token::PANEL).font_family(fonts::MONO).child(text(code).selectable());
+    let code = div()
+        .padding(token::SPACE_LG)
+        .bg(token::PANEL)
+        .font_family(fonts::MONO)
+        .child(text(code).selectable());
     let words = "Quadra shapes text with the platform engine and caches every word, so long paragraphs wrap \
                  in microseconds. Chữ tiếng Việt như “Đường Trường Sơn”, “nghiêng ngả”, “thuở ấy” hiển thị \
                  đúng dấu ở mọi cỡ chữ.";
@@ -95,15 +104,20 @@ pub fn typography_page() -> Div {
 
 /// A grid of the colours of some roles: each a sample, its name and its value.
 fn swatches(theme: &KitTheme, roles: &[(&str, Token)]) -> Div {
-    let mut grid = div().grid_fill(150.0).gap(12.0);
+    let mut grid = div().grid_fill(150.0).gap(token::SPACE_LG);
     for &(name, role) in roles {
         let (color, hex) = (theme.color(role), theme.color(role).hex());
         let hex = if color.a >= 1.0 { hex[..7].to_string() } else { hex };
         let sample = div().height(40.0).bg(color).border(1.0).border_color(token::LINE);
         let value =
             div().font_family(fonts::MONO).child(text(hex).size(size::TEXT_XS.size).color(token::TEXT_3));
-        grid = grid
-            .child(column().gap(4.0).child(sample).child(text(name).size(size::TEXT_SM.size)).child(value));
+        grid = grid.child(
+            column()
+                .gap(token::SPACE_XS)
+                .child(sample)
+                .child(text(name).size(size::TEXT_SM.size))
+                .child(value),
+        );
     }
     grid
 }
@@ -151,9 +165,13 @@ pub fn colors_page(theme: &KitTheme) -> Div {
 }
 
 pub fn icons_page() -> Div {
-    let mut grid = div().grid_fill(112.0).gap(4.0);
+    let mut grid = div().grid_fill(112.0).gap(token::SPACE_XS);
     for (name, body) in icons::ALL {
-        let cell = column().align_items(Align::Center).gap(8.0).padding_y(12.0).radius(token::RADIUS_MD);
+        let cell = column()
+            .align_items(Align::Center)
+            .gap(token::SPACE_MD)
+            .padding_y(token::SPACE_LG)
+            .radius(token::RADIUS_MD);
         let cell = cell.hover(|s| s.bg(token::PANEL_HOVER)).child(icon(body).size(18.0).color(token::TEXT));
         grid = grid.child(cell.child(text(name).size(size::TEXT_XS.size).color(token::TEXT_3)));
     }

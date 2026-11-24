@@ -68,9 +68,10 @@ pub(crate) fn group(model: &Model) -> SettingsGroup {
             return AnyView::new(div().text_color(token::TEXT_2).child(text("No keys yet.")));
         }
         AnyView::new(
-            all.into_iter().fold(column().grow(1.0).gap(8.0).align_items(Align::Stretch), |list, path| {
-                list.child(line(keys, path))
-            }),
+            all.into_iter()
+                .fold(column().grow(1.0).gap(token::SPACE_MD).align_items(Align::Stretch), |list, path| {
+                    list.child(line(keys, path))
+                }),
         )
     })
     .container(column().grow(1.0).align_items(Align::Stretch));
@@ -79,7 +80,7 @@ pub(crate) fn group(model: &Model) -> SettingsGroup {
         .row(
             "Add a key",
             "A private key file, from ~/.ssh or anywhere.",
-            row().gap(8.0).child(choose).child(find),
+            row().gap(token::SPACE_MD).child(choose).child(find),
         )
         .wide(list)
 }
@@ -99,7 +100,7 @@ fn line(keys: Signal<Vec<String>>, path: String) -> quadra::Div {
     let words = column()
         .grow(1.0)
         .min_width(0.0)
-        .gap(2.0)
+        .gap(token::SPACE_XXS)
         .child(div().font_weight(600).text_size(size::TEXT_MD.size).child(text(name)))
         .child(small(shown(&path)))
         .child(small(about));
@@ -107,7 +108,7 @@ fn line(keys: Signal<Vec<String>>, path: String) -> quadra::Div {
     let remove = button("Remove")
         .variant(Variant::Ghost)
         .on_click(move || keys.update(|it| it.retain(|k| *k != gone)));
-    row().gap(12.0).align_items(Align::Center).label(path).child(words).child(remove)
+    row().gap(token::SPACE_LG).align_items(Align::Center).label(path).child(words).child(remove)
 }
 
 fn ssh_folder() -> Option<PathBuf> {

@@ -8,6 +8,7 @@ use quadra_design::{Notice, Tone, field, input};
 use super::form::Form;
 use crate::locked::shown;
 use crate::model::Model;
+use quadra_design::token;
 
 const W: f32 = 416.0;
 
@@ -21,14 +22,14 @@ pub(super) fn fields(model: &Model, form: Form) -> impl View + use<> {
     let sets = move || typed() && !lock.can_lock();
     let master = |id: &'static str, value| input(value).password().test_id(id).width(W).height(h);
     column()
-        .gap(12.0)
+        .gap(token::SPACE_LG)
         .display(shown(move || matches!(form.auth.get(), 2 | 3)))
         .child(
             div().display(shown(opens)).child(field("Master password", master("host-master", form.master))),
         )
         .child(
             column()
-                .gap(12.0)
+                .gap(token::SPACE_LG)
                 .display(shown(sets))
                 .child(
                     field("New master password", master("host-new-master", form.master))

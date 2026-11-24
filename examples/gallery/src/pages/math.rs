@@ -5,6 +5,7 @@ use quadra_md::markdown;
 use quadra_md::tex::formula;
 
 use crate::common::{demo, page};
+use quadra_design::token;
 
 const SAMPLES: [&str; 6] = [
     r"\int_0^1 \frac{x^2}{\sqrt{1+x}}\,dx = \sum_{n=0}^{\infty} \binom{n}{k}",
@@ -29,9 +30,9 @@ $$
 ";
 
 pub fn math_page() -> Div {
-    let display = SAMPLES
-        .iter()
-        .fold(column().gap(16.0).text_size(18.0), |all, source| all.child(formula(source).display()));
+    let display = SAMPLES.iter().fold(column().gap(token::SPACE_XL).text_size(18.0), |all, source| {
+        all.child(formula(source).display())
+    });
     let line = rich_text([
         span("The sides of a right triangle have "),
         formula("a^2+b^2=c^2").span(),

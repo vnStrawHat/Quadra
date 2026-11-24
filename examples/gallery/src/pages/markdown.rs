@@ -4,6 +4,7 @@ use quadra::{Div, column, div, signal};
 use quadra_md::markdown;
 
 use crate::common::{demo, hint, page};
+use quadra_design::token;
 
 const SAMPLE: &str = "## Release 0.4
 
@@ -42,7 +43,7 @@ pub fn markdown_page() -> Div {
         "Release notes, READMEs and help text: headings, lists, code, quotes, tables and links.",
         [demo(
             "Release notes",
-            column().gap(12.0).child(div().width(560.0).child(doc)).child(said),
+            column().gap(token::SPACE_LG).child(div().width(560.0).child(doc)).child(said),
             "markdown(source).on_link(|target| ..)",
         )],
     )

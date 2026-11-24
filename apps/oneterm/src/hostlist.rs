@@ -76,7 +76,7 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
             // A group's hosts stand under a line from its chevron; those of no group do not.
             let mut under = column().gap(1.0).width(Length::Fill);
             if !group.is_empty() {
-                under = under.padding_left(4.0).border_left(1.0).border_color(token::LINE);
+                under = under.padding_left(token::SPACE_XS).border_left(1.0).border_color(token::LINE);
             }
             for host in hosts.iter().filter(|it| it.group == group && !closed) {
                 under = under.child(host_row(&shown, host.clone()));
@@ -90,11 +90,10 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
         .grow(1.0)
         .min_height(0.0)
         .child(heading)
-        .child(div().padding_x(8.0).padding_bottom(6.0).child(field))
-        .child(
-            quadra::scroll(signal(0.0), list)
-                .container(column().grow(1.0).min_height(0.0).padding_x(6.0).padding_bottom(8.0)),
-        )
+        .child(div().padding_x(token::SPACE_MD).padding_bottom(token::SPACE_SM).child(field))
+        .child(quadra::scroll(signal(0.0), list).container(
+            column().grow(1.0).min_height(0.0).padding_x(token::SPACE_SM).padding_bottom(token::SPACE_MD),
+        ))
 }
 
 /// A row of the list: 26 px, radius 6, 8 px in, its parts 8 px apart.
@@ -103,9 +102,9 @@ fn line() -> quadra::Div {
         .width(Length::Fill)
         .height(by_text(26.0))
         .align_items(Align::Center)
-        .gap(8.0)
-        .padding_x(8.0)
-        .radius(6.0)
+        .gap(token::SPACE_MD)
+        .padding_x(token::SPACE_MD)
+        .radius(token::RADIUS_MD)
         .text_color(token::TEXT)
         .hover(|s| s.bg(token::PANEL_HOVER))
 }
@@ -121,7 +120,7 @@ fn host_row(model: &Model, host: Host) -> impl View + use<> {
     let (tag, color) = model.host_tag(&host);
     let square = div()
         .size(10.0, 10.0)
-        .radius(2.0)
+        .radius(token::RADIUS_XS)
         .shrink(0.0)
         .bg(color)
         .role(Role::Image)

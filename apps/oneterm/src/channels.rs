@@ -96,7 +96,7 @@ pub(crate) fn chip(channel: Signal<Option<u8>>) -> impl View {
         Some(c) => AnyView::new(
             row()
                 .size(14.0, 14.0)
-                .radius(4.0)
+                .radius(token::RADIUS_SM)
                 .shrink(0.0)
                 .align_items(Align::Center)
                 .justify(Justify::Center)

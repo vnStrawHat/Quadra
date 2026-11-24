@@ -51,7 +51,8 @@ pub fn sidebar_page() -> Div {
                 .icon(icons::SEARCH)
                 .placeholder("Filter by pod name"),
         );
-    let said = div().grow(1.0).padding(16.0).child(hint(move || format!("Selected: {}", place.get())));
+    let said =
+        div().grow(1.0).padding(token::SPACE_XL).child(hint(move || format!("Selected: {}", place.get())));
     page(
         "Sidebar",
         "Sections of places. The current place is two tones up, the hovered one a tone.",
@@ -143,7 +144,11 @@ pub fn statusbar_page() -> Div {
 /// A count of diagnostics: its icon in the hue of its kind, then the number.
 fn problems(body: &'static str, hue: Token, count: &str) -> Div {
     let mark = icon(body).size(14.0).color(hue);
-    row().align_items(quadra::Align::Center).gap(4.0).child(mark).child(quadra::text(count.to_string()))
+    row()
+        .align_items(quadra::Align::Center)
+        .gap(token::SPACE_XS)
+        .child(mark)
+        .child(quadra::text(count.to_string()))
 }
 
 pub fn palette_page(gallery: Gallery) -> Div {

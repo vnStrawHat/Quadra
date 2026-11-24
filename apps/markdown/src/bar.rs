@@ -24,7 +24,7 @@ pub(crate) fn bar(model: &Model, files: &Files) -> impl View + use<> {
     let name = div().font_weight(600).text_size(14.0).child(text(move || m.name()));
     let dot = div()
         .size(6.0, 6.0)
-        .radius(4.0)
+        .radius(token::RADIUS_SM)
         .bg(token::ACCENT)
         .label("Unsaved changes")
         .role(quadra::Role::Image)
@@ -33,7 +33,9 @@ pub(crate) fn bar(model: &Model, files: &Files) -> impl View + use<> {
     // The empty room between the name and the layout drags the window.
     titlebar("")
         .height(40.0)
-        .control(div().padding_left(12.0).padding_right(4.0).child(crate::logo::logo(20.0)))
+        .control(
+            div().padding_left(token::SPACE_LG).padding_right(token::SPACE_XS).child(crate::logo::logo(20.0)),
+        )
         .control(name)
         .control(dot)
         .control(div().grow(1.0))
@@ -41,5 +43,5 @@ pub(crate) fn bar(model: &Model, files: &Files) -> impl View + use<> {
         .control(tooltip("Outline (Ctrl+Shift+O)", outline))
         .control(tooltip("Open (Ctrl+O)", open))
         .control(tooltip("Save (Ctrl+S)", save))
-        .control(div().padding_right(8.0).child(tooltip("Settings (Ctrl+,)", settings)))
+        .control(div().padding_right(token::SPACE_MD).child(tooltip("Settings (Ctrl+,)", settings)))
 }

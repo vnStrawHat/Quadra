@@ -10,12 +10,12 @@ use crate::locked::shown;
 
 /// The header's colour tag, title and group.
 pub(super) fn head(title: String, tag: quadra::Paint, group: String) -> Div {
-    let mark = div().size(10.0, 10.0).shrink(0.0).radius(2.0).bg(tag);
+    let mark = div().size(10.0, 10.0).shrink(0.0).radius(token::RADIUS_XS).bg(tag);
     let title = div().font_weight(600).text_size(size::TEXT_LG.size).child(text(title));
     let group = div().text_size(12.0).text_color(token::TEXT_2).child(text(group));
     row()
         .grow(1.0)
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .align_items(quadra::Align::Center)
         .child(mark)
         .child(title)
@@ -41,7 +41,7 @@ fn pair(a: impl View + 'static, b: impl View + 'static) -> Div {
 fn summary(host: &Host, key: &Option<String>) -> Div {
     let target = &host.remote.target;
     let address = row()
-        .gap(8.0)
+        .gap(token::SPACE_MD)
         .align_items(quadra::Align::Center)
         .child(mono(target.host.clone(), 13.0, token::TEXT))
         .child(div().text_size(12.0).text_color(token::TEXT_2).child(text(format!("port {}", target.port))));
@@ -54,13 +54,15 @@ fn summary(host: &Host, key: &Option<String>) -> Div {
         None => (icons::TRIANGLE_ALERT, token::WARN, "New", "Not in known hosts".into()),
     };
     let known = row()
-        .gap(6.0)
+        .gap(token::SPACE_SM)
         .align_items(quadra::Align::Center)
         .child(icon(mark).size(14.0).color(role))
         .child(div().text_color(token::TEXT).child(text(state)))
         .child(mono(print, 12.0, token::TEXT_2));
-    let mut grid =
-        div().grid([Track::px(88.0), Track::fr(1.0)]).gap_y(4.0).align_items(quadra::Align::Center);
+    let mut grid = div()
+        .grid([Track::px(88.0), Track::fr(1.0)])
+        .gap_y(token::SPACE_XS)
+        .align_items(quadra::Align::Center);
     for (name, value) in [("Address", address), ("Jump host", jump), ("Host key", known)] {
         let label =
             row().height(23.0).align_items(quadra::Align::Center).text_size(12.0).text_color(token::TEXT_2);
@@ -94,7 +96,7 @@ pub(super) fn body(
     let user = field("Username", entry(form.user, "connect-user").mono().placeholder("Required"));
     let user = if no_user { user.help("This host has no saved username.") } else { user };
     let how = column()
-        .gap(4.0)
+        .gap(token::SPACE_XS)
         .child(field("Auth method", select(AUTHS, auth).test_id("connect-auth")))
         .child(hint(move || match auth.get() == saved_auth {
             true => "Saved for this host.".into(),
@@ -118,7 +120,7 @@ pub(super) fn body(
         why => AnyView::new(alert(Tone::Danger, "Could not connect", &why)),
     });
     let mut body = column()
-        .gap(12.0)
+        .gap(token::SPACE_LG)
         .child(failure)
         .child(summary(host, key_known))
         .child(pair(focused(div().child(user), USER), how));
@@ -147,15 +149,15 @@ pub(super) fn body(
         _ => "Save username and auth method to this host".to_string(),
     });
     let here = checkbox(form.here).test_id("connect-here").label("Open in the current tab as a new space");
-    body.child(column().gap(8.0).child(save).child(here))
+    body.child(column().gap(token::SPACE_MD).child(save).child(here))
 }
 
 /// A host key 1Term has not seen: checked with its owner, trusted here.
 fn trust(trust: Signal<bool>) -> Div {
     let words = "1Term has not seen this host key before. Check the fingerprint with the host's owner.";
     let note = row()
-        .gap(8.0)
-        .padding(8.0)
+        .gap(token::SPACE_MD)
+        .padding(token::SPACE_MD)
         .radius(token::RADIUS_MD)
         .bg(token::WARN_TINT)
         .border(1.0)
@@ -163,5 +165,5 @@ fn trust(trust: Signal<bool>) -> Div {
         .child(icon(icons::TRIANGLE_ALERT).size(14.0).color(token::WARN))
         .child(div().grow(1.0).min_width(0.0).text_color(token::TEXT).child(text(words)));
     let tick = checkbox(trust).test_id("connect-trust").label("Trust this key and add it to known hosts");
-    column().gap(8.0).child(note).child(tick)
+    column().gap(token::SPACE_MD).child(note).child(tick)
 }

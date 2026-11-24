@@ -23,14 +23,14 @@ pub fn status_page() -> Div {
         ("cron-backup-28417-1", "Completed", "0", "1h"),
         ("web-6b7c8d9e0-old01", "Terminating", "1", "6d"),
     ];
-    let head = row().align_items(Align::Center).height(28.0).padding_x(12.0).bg(token::PANEL);
+    let head = row().align_items(Align::Center).height(28.0).padding_x(token::SPACE_LG).bg(token::PANEL);
     let head = head.border_bottom(1.0).border_color(token::LINE).text_size(size::TEXT_SM.size);
     let head = head.text_color(token::TEXT_2).child(div().width(260.0).child(text("Name")));
     let head = head.child(div().width(200.0).child(text("Status")));
     let head = head.child(div().width(80.0).child(text("Restarts"))).child(text("Age"));
     let mut table = column().border(1.0).border_color(token::LINE).child(head);
     for (i, (name, state, restarts, age)) in pods.into_iter().enumerate() {
-        let line = row().align_items(Align::Center).height(28.0).padding_x(12.0);
+        let line = row().align_items(Align::Center).height(28.0).padding_x(token::SPACE_LG);
         let line = line.border_bottom(1.0).border_color(token::LINE).hover(|s| s.bg(token::PANEL_HOVER));
         let line = line.child(div().width(260.0).child(mono(name).text_color(token::TEXT)));
         let line = line.child(div().width(200.0).child(status_label(STATES[i], state)));

@@ -121,7 +121,7 @@ pub(crate) fn group() -> SettingsGroup {
         };
         let control = row()
             .align_items(Align::Center)
-            .gap(8.0)
+            .gap(token::SPACE_MD)
             .role(Role::Group)
             .label(b.name.to_string())
             .child(text(clash).color(token::WARN))

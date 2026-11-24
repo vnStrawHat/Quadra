@@ -46,9 +46,9 @@ pub(super) fn pane(
         .on_submit(move |words| go(words.trim().to_string()));
     let bar = row()
         .align_items(Align::Center)
-        .gap(8.0)
-        .padding_left(12.0)
-        .padding_right(6.0)
+        .gap(token::SPACE_MD)
+        .padding_left(token::SPACE_LG)
+        .padding_right(token::SPACE_SM)
         .height(by_text(28.0))
         .shrink(0.0)
         .bg(token::PANEL)
@@ -62,8 +62,8 @@ pub(super) fn pane(
         )
         .child(icon_button(icons::REFRESH_CW, side.again_name).on_click(again));
     let header = row()
-        .gap(12.0)
-        .padding_x(12.0)
+        .gap(token::SPACE_LG)
+        .padding_x(token::SPACE_LG)
         .height(by_text(26.0))
         .shrink(0.0)
         .align_items(Align::Center)

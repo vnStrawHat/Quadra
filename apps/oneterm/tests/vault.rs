@@ -236,6 +236,10 @@ fn a_startup_command_is_written_once_the_shell_opens() {
     // Duplicate writes it too; once None is chosen, nothing is written.
     a.model.duplicate(a.model.active().get_untracked());
     a.wait(|a| tabs(a) == 3 && said(a, "echo:tmux attach") == 1, "the duplicate's");
+    // A command added since the dialog was last open is offered the next time.
+    commands.update(|rows| rows.push(vec!["Top".to_string(), "htop".to_string()]));
+    choose(&mut a, "Top");
+    assert_eq!(a.settings.value("ssh.startup", Vec::<Vec<String>>::new()).get_untracked()[0][1], "Top");
     choose(&mut a, "None");
     assert!(a.settings.value("ssh.startup", Vec::<Vec<String>>::new()).get_untracked().is_empty());
     a.connect("tmuxed");

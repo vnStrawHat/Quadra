@@ -415,6 +415,40 @@ the view's `TermSettings` (specs/18). A choice is saved as its words. Signals: O
 default sound, at once for each bell however the space is looked at) / badge and flash (the
 space's terminal tinted the selection colour for 120 ms) / ignore; OSC 9: toast 6 s / until dismissed / silent.
 
+### Startup commands
+
+What is written to a host's shell once it is open is a command of a list, kept in the
+settings and chosen by name (the user's decision, 2026-11-24; before, each host had words of
+its own, typed in its dialog). Settings, SSH & hosts has the group **Startup commands**
+(`startup.rs`; `ssh.startup_commands`, rows of a name and the command): each command with
+its name over what is written, **Edit** (the two fields under the list take it) and
+**Remove**; then **Name**, **Command** and **Save command**, which adds it, or replaces the
+command of that name; with no name a command is named by its own words, and an empty
+command saves nothing. A host's dialog has a select, **Startup command**: None, then the
+names. A host keeps the name (`ssh.startup`, rows of the host's name and the command's), so
+a command changed in the settings is changed for every host that chose it; one removed is
+taken from the hosts that chose it, which run nothing. Settings of before version 3 held
+each host's own words there: each becomes a command of the list named by its words, once.
+
+### Network
+
+Settings, Advanced has the group **Network** (`prefs/net.rs`, `page/files.rs`), for what
+OneTerm fetches over HTTPS, which is its updates; SSH connections do not go through it.
+
+- **Proxy** (`network.proxy`): System, the proxy Windows is set to use, or Manual.
+- **Proxy address** (`network.proxy_address`): the HTTP proxy asked when Proxy is Manual, as
+  `host:port`; the field is off while Proxy is System, and Manual with no address is the
+  system's. An address that names no HTTP proxy makes the check fail as any network failure
+  does, with the reason in the log.
+- **Verify certificates** (`network.verify_tls`, on): off takes any certificate, for a
+  network that opens TLS on the way; the row shows `Not checked` in the danger colour while
+  it is off, since an update is then not known to be GitHub's (its digest comes the same
+  way).
+
+The updater reads them each time it checks or fetches. Taking over from OneTerm 0.6 takes
+the proxy its updates went through (`update_config.json`, `proxy_url`), and never that
+certificates were unchecked there.
+
 ## Taking over from OneTerm 0.6
 
 OneTerm takes the place of OneTerm 0.6, whose folder is `.OneTerm` in the user's (`import.rs`).
@@ -490,41 +524,7 @@ Settings, About has the group **Updates** (`updates.rs`):
   Settings, About.`; a check that found none or failed says nothing. A trial run under
   `ONETERM_HOME` asks nothing.
 
-### Startup commands
-
-What is written to a host's shell once it is open is a command of a list, kept in the
-settings and chosen by name (the user's decision, 2026-11-24; before, each host had words of
-its own, typed in its dialog). Settings, SSH & hosts has the group **Startup commands**
-(`startup.rs`; `ssh.startup_commands`, rows of a name and the command): each command with
-its name over what is written, **Edit** (the two fields under the list take it) and
-**Remove**; then **Name**, **Command** and **Save command**, which adds it, or replaces the
-command of that name; with no name a command is named by its own words, and an empty
-command saves nothing. A host's dialog has a select, **Startup command**: None, then the
-names. A host keeps the name (`ssh.startup`, rows of the host's name and the command's), so
-a command changed in the settings is changed for every host that chose it; one removed is
-taken from the hosts that chose it, which run nothing. Settings of before version 3 held
-each host's own words there: each becomes a command of the list named by its words, once.
-
-### Network
-
-Settings, Advanced has the group **Network** (`prefs/net.rs`, `page/files.rs`), for what
-OneTerm fetches over HTTPS, which is its updates; SSH connections do not go through it.
-
-- **Proxy** (`network.proxy`): System, the proxy Windows is set to use, or Manual.
-- **Proxy address** (`network.proxy_address`): the HTTP proxy asked when Proxy is Manual, as
-  `host:port`; the field is off while Proxy is System, and Manual with no address is the
-  system's. An address that names no HTTP proxy makes the check fail as any network failure
-  does, with the reason in the log.
-- **Verify certificates** (`network.verify_tls`, on): off takes any certificate, for a
-  network that opens TLS on the way; the row shows `Not checked` in the danger colour while
-  it is off, since an update is then not known to be GitHub's (its digest comes the same
-  way).
-
-The updater reads them each time it checks or fetches. Taking over from OneTerm 0.6 takes
-the proxy its updates went through (`update_config.json`, `proxy_url`), and never that
-certificates were unchecked there.
-
-After that app's updater put OneTerm over its folder, the console host it shipped is still
+After the updater of OneTerm 0.6 put this app over its folder, the console host that one shipped is still
 there (`x64/OpenConsole.exe`, an older version) beside OneTerm's own: `conpty.dll` starts the
 one beside itself (tried 2026-11-24 with both in the folder), so the older one is only a
 file left behind.

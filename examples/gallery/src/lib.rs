@@ -7,6 +7,7 @@ mod pages;
 mod registry;
 mod shell;
 
+pub use common::notes;
 pub use registry::{PAGES, PageInfo};
 pub use shell::{Gallery, OpenPalette, Zoom};
 

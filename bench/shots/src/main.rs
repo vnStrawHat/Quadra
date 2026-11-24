@@ -122,6 +122,24 @@ fn open(platform: &HeadlessPlatform, app: &mut Shots, window: WindowId, page: &s
     true
 }
 
+/// A page as JSON: its id, title and group, what it says it is, and its demos' titles and code.
+fn told(page: &quadra_gallery::PageInfo, notes: Vec<(String, String)>) -> String {
+    let quoted = |text: &str| {
+        let text = text.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n").replace('\t', "\\t");
+        format!("\"{text}\"")
+    };
+    let about = notes.iter().find(|(what, _)| what.is_empty()).map_or("", |(_, about)| about);
+    let demos = notes.iter().filter(|(what, _)| !what.is_empty());
+    let demos =
+        demos.map(|(title, code)| format!("{{\"title\":{},\"code\":{}}}", quoted(title), quoted(code)));
+    let (id, title, group) = (quoted(page.id), quoted(page.title), quoted(page.group));
+    let demos = demos.collect::<Vec<_>>().join(",");
+    format!(
+        "{{\"id\":{id},\"title\":{title},\"group\":{group},\"about\":{},\"demos\":[{demos}]}}",
+        quoted(about)
+    )
+}
+
 fn save(app: &mut Shots, window: WindowId, file: PathBuf) -> Result<(), Box<dyn Error>> {
     let pixels = app.read_pixels(window)?;
     std::fs::write(&file, png::png(pixels.size.width, pixels.size.height, &pixels.rgba))?;
@@ -176,10 +194,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(scale) = std::env::var("QUADRA_SCALE").ok().and_then(|scale| scale.parse().ok()) {
         platform.resize(window, Size::new(SIZE.0, SIZE.1), scale);
     }
+    // What each page says of itself, for the site (tools/website.py): `pages.json`.
+    let (mut said, _) = (Vec::new(), quadra_gallery::notes());
     for page in PAGES.iter().filter(|page| only.is_empty() || only.iter().any(|id| id == page.id)) {
         gallery.page.set(page.id);
         // The page is built and laid out, and what moves has moved for a moment.
         pass(&platform, &mut app, 300);
+        said.push(told(page, quadra_gallery::notes()));
         save(&mut app, window, out.join(format!("{}.png", page.id)))?;
         let Some((_, opener)) = OPENERS.iter().find(|(id, _)| *id == page.id) else { continue };
         if !open(&platform, &mut app, window, page.id, opener) {
@@ -196,6 +217,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let (kind, button, at) = (PointerKind::Leave, MouseButton::None, Point::ZERO);
         platform.push(window, PlatformEvent::Pointer { kind, button, at, mods: Mods::NONE });
         pass(&platform, &mut app, 11_000);
+    }
+    if only.is_empty() {
+        std::fs::write(out.join("pages.json"), format!("[\n{}\n]\n", said.join(",\n")))?;
     }
     Ok(())
 }

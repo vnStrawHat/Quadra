@@ -6,7 +6,13 @@ incremental layout, and painted output kept per layer, so a frame costs what cha
 nothing else.
 
 Status: early. The design is in [specs/](specs/README.md); what is built is in
-[docs/progress.md](docs/progress.md).
+[docs/progress.md](docs/progress.md). What anything built with the kit looks like, and how a
+view is laid out, is [the design language](specs/design/README.md).
+
+The website (an introduction, a guide, the design language and a page for each component,
+with a markdown twin of every page and `llms.txt` for agents) is built from this repository
+by `python tools/website.py` into `target/site`, after `tools/shots.sh dark` and
+`tools/shots.sh light` have drawn the components.
 
 ## Build
 

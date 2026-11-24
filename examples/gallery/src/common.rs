@@ -5,9 +5,26 @@ use quadra_design::{fonts, heading, label, size, token};
 
 use crate::registry::PAGES;
 
+thread_local! {
+    /// What the pages built since `notes` was last called said of themselves: kept only once
+    /// it has been called, for the site (`tools/website.py`).
+    static NOTES: std::cell::RefCell<Option<Vec<(String, String)>>> = const { std::cell::RefCell::new(None) };
+}
+
+fn note(what: &str, words: &str) {
+    NOTES.with_borrow_mut(|notes| notes.iter_mut().for_each(|notes| notes.push((what.into(), words.into()))));
+}
+
+/// Takes what the pages built since the last call said: `("", about)` for a page, then
+/// `(title, code)` for each of its demos.
+pub fn notes() -> Vec<(String, String)> {
+    NOTES.with_borrow_mut(|notes| notes.replace(Vec::new()).unwrap_or_default())
+}
+
 /// A page: the group it is in, its title, what the component is for, and its demos.
 pub fn page(title: &str, about: &str, demos: impl IntoIterator<Item = Div>) -> Div {
     let group = PAGES.iter().find(|page| page.title == title).map_or("Overview", |page| page.group);
+    note("", about);
     let about = div().max_width(640.0).child(text(about.to_string()).color(token::TEXT_2).selectable());
     let head = column().gap(6.0).child(label(group)).child(heading(title, 1)).child(about);
     let body = column().gap(24.0).padding_x(32.0).padding_y(24.0).max_width(1000.0);
@@ -17,6 +34,7 @@ pub fn page(title: &str, about: &str, demos: impl IntoIterator<Item = Div>) -> D
 /// A framed demo: a strip that names it, the thing itself on the canvas, and how it is
 /// written.
 pub fn demo(title: &str, content: impl View + 'static, code: &str) -> Div {
+    note(title, code);
     let strip = || row().align_items(Align::Center).padding_x(12.0).bg(token::PANEL);
     let head = strip().height(28.0).border_bottom(1.0).border_color(token::LINE).child(label(title));
     let body = column().padding(16.0).bg(token::CANVAS).child(content);

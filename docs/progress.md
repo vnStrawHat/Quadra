@@ -556,6 +556,13 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   or text size off its ladder without a reason (`// design: why`).
 - **The proof**: the gallery's "Patterns" pages (`pages/patterns.rs`), built with the helpers
   alone and quoted by `specs/design/patterns.md`; `tools/shots.sh` draws them.
+- **The trial**: an agent given the folder alone wrote a dialog with a form and a card that
+  compiled and were laid out right undrawn; what it found wrong or missing is fixed in the
+  kit and the text (`decisions.md`, "The trial"; `tests/layout.rs`).
+- **The website** (`tools/website.py`, `site/`): an introduction, a guide whose code is quoted
+  from compiled files, the design language, and a page for each of the gallery's pages with
+  its pictures in both themes and its demos' code (the shots write `pages.json`); a markdown
+  twin of every page, `llms.txt`, `llms-full.txt`. Built into `target/site`; not deployed.
 - **Owed**: the list at the end of `specs/design/decisions.md` (the apps' hand-laid dialogs,
   tokens in place of on-ladder literals inside the kit).
 

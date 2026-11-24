@@ -1,0 +1,70 @@
+/* The site wears the design language it documents (specs/design): planes a step of tone
+   apart with hairlines between, squares for marks, mono for what the machine said, one accent. */
+:root {
+  --canvas: #fafafa; --panel: #f0f0f2; --line: #d9d9de; --line-strong: #bfbfc7;
+  --text: #242529; --text-2: #55565c; --text-3: #7c7d85; --accent: #3f6fd1; --tint: #3f6fd11a;
+  --ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --mono: "Lilex", "IBM Plex Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --canvas: #282c33; --panel: #2f343e; --line: #3a404b; --line-strong: #4a5160;
+    --text: #dce0e5; --text-2: #a9afbc; --text-3: #7d8494; --accent: #74ade8; --tint: #74ade826; color-scheme: dark }
+}
+* { box-sizing: border-box }
+body { margin: 0; background: var(--canvas); color: var(--text); font: 14px/1.65 var(--ui) }
+a { color: var(--accent); text-decoration: none } a:hover { text-decoration: underline }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+body > header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  min-height: 38px; padding: 4px 24px; background: var(--panel); border-bottom: 1px solid var(--line) }
+.mark { font-weight: 600; color: var(--text); display: inline-flex; align-items: center; gap: 8px }
+.mark::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--accent) }
+body > header nav { display: flex; gap: 16px; flex-wrap: wrap }
+body > header nav a { color: var(--text-2); padding: 4px 0; border-bottom: 2px solid transparent }
+body > header nav a:first-child { display: none }
+body > header nav a.on, body > header nav a:hover { color: var(--text); border-bottom-color: var(--accent); text-decoration: none }
+
+.frame { display: grid; grid-template-columns: 240px minmax(0, 1fr); max-width: 1240px; margin: 0 auto }
+aside { border-right: 1px solid var(--line); padding: 24px 12px; position: sticky; top: 38px; align-self: start;
+  max-height: calc(100vh - 38px); overflow-y: auto }
+aside nav { display: flex; flex-direction: column; gap: 2px }
+aside h2 { font: 500 12px var(--ui); color: var(--text-3); margin: 12px 12px 4px; padding: 0; border: 0; letter-spacing: .02em }
+aside h2:first-child { margin-top: 0 }
+aside a { color: var(--text-2); padding: 3px 12px; border-radius: 6px; border-left: 2px solid transparent }
+aside a:hover { background: var(--panel); text-decoration: none; color: var(--text) }
+aside a.on { color: var(--text); background: var(--tint); border-left-color: var(--accent); border-radius: 0 6px 6px 0 }
+
+main { padding: 32px 32px 64px; min-width: 0; max-width: 920px }
+main > * + * { margin-top: 12px }
+h1 { font: 600 28px/1.2 var(--ui); margin: 0 0 16px; text-wrap: balance }
+h2 { font: 600 18px/1.3 var(--ui); margin: 40px 0 0; padding-bottom: 8px; border-bottom: 1px solid var(--line) }
+h3 { font: 600 14px/1.4 var(--ui); margin: 24px 0 0 }
+h4 { font: 500 12px var(--mono); color: var(--text-2); margin: 16px 0 0 }
+p, li { max-width: 74ch; color: var(--text-2) } p { margin-bottom: 0 }
+strong { color: var(--text); font-weight: 600 }
+ul, ol { padding-left: 20px; margin-bottom: 0 } li + li { margin-top: 4px } li > ul, li > ol { margin-top: 4px }
+ul { list-style: square } li::marker { color: var(--accent) }
+code { font: 12.5px var(--mono); background: var(--panel); padding: 1px 4px; border-radius: 4px; color: var(--text) }
+pre { padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; line-height: 1.55 }
+pre code { background: none; padding: 0 }
+.table { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th, td { text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-weight: 500; font-size: 12px; color: var(--text-3); background: var(--panel) }
+tr:last-child td { border-bottom: 0 } td { color: var(--text-2); font-variant-numeric: tabular-nums }
+figure { margin: 16px 0 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden }
+figure img { display: block; width: 100%; height: auto }
+figcaption { padding: 6px 12px; font-size: 12px; color: var(--text-3); border-top: 1px solid var(--line); background: var(--panel) }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 16px }
+.card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; color: var(--text-2) }
+.card:hover { border-color: var(--accent); text-decoration: none }
+.card img { display: block; width: 100%; height: 120px; object-fit: cover; object-position: left top; border-bottom: 1px solid var(--line) }
+.card strong { padding: 8px 12px 0 } .card span { padding: 2px 12px 8px; font-size: 12px; line-height: 1.5 }
+main > footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-3) }
+
+@media (max-width: 820px) {
+  .frame { grid-template-columns: minmax(0, 1fr) }
+  aside { position: static; max-height: 220px; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px }
+  main { padding: 24px 16px 48px }
+  body > header { padding: 4px 16px; gap: 12px }
+}

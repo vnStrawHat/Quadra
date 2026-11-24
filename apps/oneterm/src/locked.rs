@@ -200,7 +200,7 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>, default: Signal<f64>) -> 
         .about("Kept as a salted hash, never the password. Without one the window does not lock.")
         .row(
             "Current password",
-            "Asked to change or remove one.",
+            "Needed to change or remove the password.",
             field(current, "Current", "Current password", "password-current"),
         )
         .row("New password", "", field(new, "New", "New password", "password-new"))
@@ -209,13 +209,13 @@ pub(crate) fn security(lock: Lock, after: Signal<f64>, default: Signal<f64>) -> 
         .row("", "", div().text_color(token::TEXT_2).child(text(move || said.get())))
         .row(
             "Lock after",
-            "Minutes without a key or the pointer, 1 to 480.",
-            number_input(after).range(1.0, 480.0).label("Lock after"),
+            "Minutes without a key or the mouse, 1 to 480.",
+            number_input(after).stepper().range(1.0, 480.0).label("Lock after"),
         )
         .back(after, default)
         .row(
             "Lock now",
-            "As Ctrl+Shift+L does.",
+            "The same as Ctrl+Shift+L.",
             div()
                 .display(shown(move || lock.can_lock()))
                 .child(button("Lock now").on_click(move || lock.lock_now())),

@@ -71,9 +71,35 @@ fn a_changed_setting_has_its_reset_and_a_page_its_reset_all() {
     s.value("terminal.shell", String::new()).set("A program".into());
     h.get_by_role(Role::TreeItem, "Terminal").click();
     h.settle();
-    assert!(!h.has_text("The OS's"), "the select shows the program");
+    assert!(!h.has_text("System default"), "the select shows the program");
     h.get_by_role(Role::Button, "Reset Default shell").click();
     h.settle();
     assert_eq!(s.value("terminal.shell", "x".to_string()).get(), "");
-    assert!(h.has_text("The OS's") && !has_button(&h, "Reset all"));
+    assert!(h.has_text("System default") && !has_button(&h, "Reset all"));
+}
+
+#[test]
+fn the_advanced_page_says_where_this_run_saves_its_settings_and_shows_the_folder() {
+    let mut h = Harness::new();
+    h.size = quadra::Size::new(1200.0, 700.0);
+    let (shell, home) = (quadra_shell::FakeShell::new(), std::path::absolute(".tmp/settings-files").unwrap());
+    let (given, dirs) = (shell.clone(), Rc::new(quadra::AppDirs::under(&home)));
+    let file = dirs.config.join("settings.json").display().to_string();
+    let sessions: NewSession = Rc::new(|_| echo());
+    h.mount(move || {
+        provide(Settings::memory());
+        provide(dirs.clone());
+        given.provide();
+        OneTerm::new(sessions).view()
+    });
+    h.settle();
+    h.get_by_role(Role::Button, "Settings").click();
+    h.settle();
+    h.get_by_role(Role::TreeItem, "Advanced").click();
+    h.settle();
+    // The file of this run's folder, not the user's own; and its folder in the file manager.
+    assert!(h.has_text(&file), "{}", h.semantics());
+    h.get_by_role(Role::Button, "Show in folder").click();
+    h.settle();
+    assert_eq!(shell.asked(), [format!("reveal: {file}")]);
 }

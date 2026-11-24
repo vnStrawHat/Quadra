@@ -19,19 +19,19 @@ pub(super) fn completion(model: &Model) -> SettingsGroup {
         .back(c.accept_tab, d.accept_tab)
         .row(
             "History kept",
-            "Lines run this session, kept for each kind of shell; 0 keeps none.",
+            "Commands remembered for each kind of shell. 0 remembers none.",
             number_input(c.max_history).stepper().range(0.0, 5000.0).step(50.0).label("History kept"),
         )
         .back(c.max_history, d.max_history)
         .row(
             "Characters before suggesting",
-            "Of a command, before its names are suggested.",
+            "Characters typed before suggestions appear.",
             number_input(c.min_prefix).stepper().range(0.0, 10.0).label("Characters before suggesting"),
         )
         .back(c.min_prefix, d.min_prefix)
         .row(
             "Rows shown",
-            "Before the list scrolls.",
+            "Suggestions shown before the list scrolls.",
             number_input(c.max_visible).stepper().range(1.0, 20.0).label("Rows shown"),
         )
         .back(c.max_visible, d.max_visible)
@@ -41,7 +41,7 @@ pub(super) fn completion(model: &Model) -> SettingsGroup {
         .back(c.manual, d.manual)
         .row("From generated catalogs", "Commands read from the tools' own help.", switch(c.external))
         .back(c.external, d.external)
-        .row("Fuzzy matching", "Also what has the typed letters in order.", switch(c.fuzzy))
+        .row("Fuzzy matching", "Also match names that have the typed letters in order.", switch(c.fuzzy))
         .back(c.fuzzy, d.fuzzy)
         .row(
             "Options of the commands above",
@@ -55,11 +55,7 @@ pub(super) fn completion(model: &Model) -> SettingsGroup {
             switch(c.off_in_alt_screen),
         )
         .back(c.off_in_alt_screen, d.off_in_alt_screen)
-        .row(
-            "Only at a prompt",
-            "Where the shell marks a command being typed, or a prompt shows.",
-            switch(c.only_at_prompt),
-        )
+        .row("Only at a prompt", "Suggest only where a command is being typed.", switch(c.only_at_prompt))
         .back(c.only_at_prompt, d.only_at_prompt)
         .row("Unix commands on Windows", "Cmd and PowerShell also offer coreutils.", switch(c.coreutils))
         .back(c.coreutils, d.coreutils)

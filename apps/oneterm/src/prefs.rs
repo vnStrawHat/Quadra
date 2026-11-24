@@ -222,7 +222,7 @@ pub static COLOUR_THEMES: std::sync::LazyLock<Vec<&'static str>> = std::sync::La
     std::iter::once(KIT_THEME).chain(crate::themes::THEMES.iter().map(|(name, _)| *name)).collect()
 });
 /// What stands for no colour theme: the kit's, as the mode says.
-pub const KIT_THEME: &str = "The kit's";
+pub const KIT_THEME: &str = "Default";
 
 #[cfg(test)]
 #[test]

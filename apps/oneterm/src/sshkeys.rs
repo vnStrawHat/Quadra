@@ -76,7 +76,7 @@ pub(crate) fn group(model: &Model) -> SettingsGroup {
     })
     .container(column().grow(1.0).align_items(Align::Stretch));
     SettingsGroup::new("Keys")
-        .about("The key files hosts sign in with, chosen by name in their dialogs.")
+        .about("Private key files your hosts sign in with. A host's dialog chooses one by name.")
         .row(
             "Add a key",
             "A private key file, from ~/.ssh or anywhere.",

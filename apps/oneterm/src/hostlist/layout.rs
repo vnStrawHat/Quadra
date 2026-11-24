@@ -80,10 +80,10 @@ pub(super) fn body(
                 .child(field("Key file", crate::sshkeys::picker(model, form.key, "host-key"))),
         )
         .child(super::secret::fields(model, form))
-        .child(field(
-            "Startup command",
-            text_field(form.startup, "Written once the shell is open", "host-startup"),
-        ))
+        .child(
+            field("Startup command", crate::startup::picker(model, form.startup, "host-startup"))
+                .help("Written once the shell is open. The commands are kept in Settings, SSH & hosts."),
+        )
         .child(field(
             "Forwards",
             text_field(form.forwards, "8080:localhost:80 R9000:localhost:3000 D1080", "host-forwards"),

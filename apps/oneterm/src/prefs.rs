@@ -7,6 +7,7 @@ use std::rc::Rc;
 use quadra::{Appearance, Settings, Signal, Theme, use_context};
 
 mod look;
+mod migrate;
 mod net;
 
 pub use look::{ANSI, COLORS, LookPrefs, PADDING, WEIGHTS};
@@ -98,7 +99,9 @@ pub struct Prefs {
     /// sealed secret (`vault.rs`).
     pub vault: Signal<String>,
     pub secrets: Signal<Vec<Vec<String>>>,
-    /// Each saved host's startup command: its name, the command.
+    /// The startup commands: a name, and what is written (`startup.rs`).
+    pub startup_commands: Signal<Vec<Vec<String>>>,
+    /// Each saved host's startup command: the host's name, the command's.
     pub startup: Signal<Vec<Vec<String>>>,
     /// Where downloads go; empty: the user's Downloads folder.
     pub downloads: Signal<String>,
@@ -124,30 +127,7 @@ impl Prefs {
     }
 
     fn of(s: &Settings) -> Prefs {
-        // Settings of version 0 kept a hash of the master password, and a vault and secrets
-        // of OneTerm's first format, which nothing opens any more (specs/19, "Saved passwords"):
-        // they are forgotten, the hash above all. What is of today's format stays.
-        // Version 2 is the same settings written as objects in objects (specs/15): the file
-        // is written so at once.
-        s.migrate(2, |from, all| {
-            if from >= 1 {
-                return;
-            }
-            let security = all.get_mut("security").and_then(|it| it.as_object_mut());
-            if security.is_some_and(|it| it.remove("password").is_some() && it.is_empty()) {
-                all.remove("security");
-            }
-            let Some(ssh) = all.get_mut("ssh").and_then(|it| it.as_object_mut()) else { return };
-            let vault = ssh.get("vault").and_then(|it| it.as_str());
-            if vault.is_some_and(|it| crate::vault::Header::parse(it).is_none()) {
-                ssh.remove("vault");
-            }
-            if let Some(rows) = ssh.get_mut("secrets").and_then(|it| it.as_array_mut()) {
-                rows.retain(|row| {
-                    row.get(1).and_then(|it| it.as_str()).is_some_and(|it| it.starts_with("otv1:"))
-                });
-            }
-        });
+        migrate::migrate(s);
         Prefs {
             theme: s.choice("appearance.theme", &THEMES),
             colour_theme: s.choice("appearance.colour_theme", &COLOUR_THEMES),
@@ -201,6 +181,7 @@ impl Prefs {
             ssh_keys: s.value("ssh.keys", Vec::new()),
             vault: s.value("ssh.vault", String::new()),
             secrets: s.value("ssh.secrets", Vec::new()),
+            startup_commands: s.value("ssh.startup_commands", Vec::new()),
             startup: s.value("ssh.startup", Vec::new()),
             downloads: s.value("sftp.downloads", String::new()),
             editor: s.choice("sftp.editor", &crate::sftp::EDITORS),

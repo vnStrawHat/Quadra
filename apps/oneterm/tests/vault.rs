@@ -208,13 +208,21 @@ fn a_startup_command_is_written_once_the_shell_opens() {
     let file = a.dir.join("id");
     write_user_key(&file);
     a.host_with("tmuxed", "", Auth::Key(file.clone()));
-    a.menu("tmuxed", "Edit\u{2026}");
-    a.h.get_by_test_id("host-startup").set_value("tmux attach");
-    a.h.settle();
-    a.h.get_by_role(Role::Button, "Save").click();
-    a.h.settle();
+    // A command of the settings' list, chosen by its name.
+    let commands = a.settings.value("ssh.startup_commands", Vec::<Vec<String>>::new());
+    commands.set(vec![vec!["Attach".to_string(), "tmux attach".to_string()]]);
+    let choose = |a: &mut App, name: &str| {
+        a.menu("tmuxed", "Edit\u{2026}");
+        a.h.get_by_test_id("host-startup").click();
+        a.h.settle();
+        a.h.get_by_role(Role::MenuItem, name).click();
+        a.h.settle();
+        a.h.get_by_role(Role::Button, "Save").click();
+        a.h.settle();
+    };
+    choose(&mut a, "Attach");
     let kept = a.settings.value("ssh.startup", Vec::<Vec<String>>::new()).get_untracked();
-    assert_eq!(kept, [["tmuxed", "tmux attach"]]);
+    assert_eq!(kept, [["tmuxed", "Attach"]]);
     a.connect("tmuxed");
     let said = |a: &App, words: &str| {
         let holds = |n: &quadra_tree::SemanticNode| {
@@ -225,14 +233,10 @@ fn a_startup_command_is_written_once_the_shell_opens() {
     };
     let tabs = |a: &App| a.h.query(|n| n.semantics.role == Role::Tab).len();
     a.wait(|a| said(a, "echo:tmux attach") == 1, "the command written");
-    // Duplicate writes it too; once the command is cleared, nothing is written.
+    // Duplicate writes it too; once None is chosen, nothing is written.
     a.model.duplicate(a.model.active().get_untracked());
     a.wait(|a| tabs(a) == 3 && said(a, "echo:tmux attach") == 1, "the duplicate's");
-    a.menu("tmuxed", "Edit\u{2026}");
-    a.h.get_by_test_id("host-startup").set_value("");
-    a.h.settle();
-    a.h.get_by_role(Role::Button, "Save").click();
-    a.h.settle();
+    choose(&mut a, "None");
     assert!(a.settings.value("ssh.startup", Vec::<Vec<String>>::new()).get_untracked().is_empty());
     a.connect("tmuxed");
     a.wait(|a| tabs(a) == 4 && a.welcomed() == 1, "connected without it");

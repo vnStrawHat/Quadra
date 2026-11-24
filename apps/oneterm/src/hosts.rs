@@ -122,15 +122,21 @@ impl Model {
         self.set_startup(name, None);
     }
 
-    /// The startup command saved for a host.
+    /// What is written once a host's shell is open: the command it chose, as the list has it
+    /// now.
     pub(crate) fn startup(&self, name: &str) -> Option<String> {
+        self.startup_command(&self.startup_name(name)?)
+    }
+
+    /// The name of the startup command a host chose.
+    pub(crate) fn startup_name(&self, name: &str) -> Option<String> {
         let rows = self.prefs().startup;
         rows.with_untracked(|rows| {
             rows.iter().find(|it| it.first().map(String::as_str) == Some(name))?.get(1).cloned()
         })
     }
 
-    /// Saves a host's startup command, or forgets it (`None` or empty).
+    /// Saves the name of a host's startup command, or forgets it (`None` or empty).
     pub(crate) fn set_startup(&self, name: &str, command: Option<String>) {
         let command = command.filter(|it| !it.trim().is_empty());
         self.prefs().startup.update(|rows| {

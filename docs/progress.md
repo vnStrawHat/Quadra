@@ -637,6 +637,11 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     replaces has it (the user's correction, 2026-11-24: the picture of the icon, tried
     first, was not what was meant). About names the terminal engine's version from the lock
     file (`build.rs`): it said 0.2 while 0.4.2 was built in.
+- **Startup commands are a list of the settings** (2026-11-24, the user's request): Settings,
+  SSH & hosts has Startup commands (a name and a command each; Edit, Remove, Save command),
+  and a host's dialog chooses one by name in a select where it had a field (`startup.rs`,
+  `ssh.startup_commands`). The settings are version 3: a host's own command of before becomes
+  a command of the list (`prefs/migrate.rs`). Tests: tests/startup.rs, tests/vault.rs.
 - **The folded rail has no line between its tabs** (2026-11-24, the user's request), as the
   open rail has none; a line stands over the first tab and after the last (`rail/narrow.rs`).
 - **The status bar's git says the lines added and removed** (2026-11-24, the user's

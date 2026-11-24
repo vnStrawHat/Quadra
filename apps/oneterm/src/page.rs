@@ -25,7 +25,11 @@ const PAGES_ABOUT: [(&str, &str, &str); 11] = [
         "The cursor, the history and the shell. Changes apply to new spaces.",
     ),
     ("Tabs & spaces", icons::LAYERS, "Where the tabs are and how they are named."),
-    ("SSH & hosts", icons::APP_WINDOW, "Saved hosts, recent connections, key files and keepalive."),
+    (
+        "SSH & hosts",
+        icons::APP_WINDOW,
+        "Saved hosts, recent connections, key files, startup commands and keepalive.",
+    ),
     ("SFTP", icons::FOLDER, "Downloads, and how remote files are edited."),
     (
         "Notifications & signals",
@@ -158,6 +162,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         vec![
             hosts(p, model),
             crate::sshkeys::group(model),
+            crate::startup::group(model),
             SettingsGroup::new("Connections")
                 .row("Keepalive", "Ping an idle server so the connection is not dropped.", switch(p.keepalive_on))
                 .back(p.keepalive_on, d.keepalive_on)

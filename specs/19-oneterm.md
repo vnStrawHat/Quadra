@@ -487,6 +487,21 @@ Settings, About has the group **Updates** (`updates.rs`):
   Settings, About.`; a check that found none or failed says nothing. A trial run under
   `ONETERM_HOME` asks nothing.
 
+### Startup commands
+
+What is written to a host's shell once it is open is a command of a list, kept in the
+settings and chosen by name (the user's decision, 2026-11-24; before, each host had words of
+its own, typed in its dialog). Settings, SSH & hosts has the group **Startup commands**
+(`startup.rs`; `ssh.startup_commands`, rows of a name and the command): each command with
+its name over what is written, **Edit** (the two fields under the list take it) and
+**Remove**; then **Name**, **Command** and **Save command**, which adds it, or replaces the
+command of that name; with no name a command is named by its own words, and an empty
+command saves nothing. A host's dialog has a select, **Startup command**: None, then the
+names. A host keeps the name (`ssh.startup`, rows of the host's name and the command's), so
+a command changed in the settings is changed for every host that chose it; one removed is
+taken from the hosts that chose it, which run nothing. Settings of before version 3 held
+each host's own words there: each becomes a command of the list named by its words, once.
+
 ### Network
 
 Settings, Advanced has the group **Network** (`prefs/net.rs`, `page/files.rs`), for what
@@ -716,7 +731,8 @@ thread never waits on the network.
   beside its Password or Passphrase (with the eye; for Auto and SSH agent none), then a line of
   what the auth does; the key of Key file, a select of the Keys as in the Connect dialog; the
   master password when one is
-  needed (Saved passwords); Startup command; Forwards. The Username and Port filled take the
+  needed (Saved passwords); Startup command, a select of the commands of the settings by
+  name, None first ("Startup commands", below); Forwards. The Username and Port filled take the
   place of what the Address says. The foot: `Delete host…` at its left (Edit only), Cancel and
   Save or Add host (Enter); `Delete host…` asks once more (`Delete <name>?` at the form's end,
   Keep and Delete in the danger colour), and deleting forgets its saved password and startup

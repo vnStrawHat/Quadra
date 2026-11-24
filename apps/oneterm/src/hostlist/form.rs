@@ -137,7 +137,7 @@ fn fill(model: &Model, form: Form, host: &Host) {
     form.forwards.set(forwards.join(" "));
     form.jump.set(jump.unwrap_or(0));
     form.tag.set(model.saved_tag(&host.name).map_or_else(String::new, |(word, _)| picked(&word)));
-    form.startup.set(model.startup(&host.name).unwrap_or_default());
+    form.startup.set(model.startup_name(&host.name).unwrap_or_default());
 }
 
 /// Saves the form as a host, in place of `was` (the one edited) when it had another name.

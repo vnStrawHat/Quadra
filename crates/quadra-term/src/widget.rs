@@ -138,6 +138,7 @@ impl TerminalWidget {
         let width = self.cell_width.map_or(self.advance, |(px, at)| px * self.style.size / at.max(1.0));
         self.cell = (width * self.scale).round().max(1.0) / self.scale;
         self.line = line(self.style.line_px() * self.scale, self.cell * self.scale) / self.scale;
+        self.session.0.line_px.set(self.line);
     }
 
     /// Takes the engine's snapshot (the first phase of drawing, under the lock): a paint

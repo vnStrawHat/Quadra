@@ -213,8 +213,12 @@ impl Tree {
     }
 
     /// What a press does for the focus: the deepest node of the path that can have it gets
-    /// it; a press on nothing focusable takes it away.
+    /// it; a press on nothing focusable takes it away. A scrollbar's thumb is no place of the
+    /// window: a press on it leaves the focus where it is.
     pub(crate) fn focus_on_press(&mut self, path: &[NodeId]) {
+        if path.first().is_some_and(|&id| self.widget_mut::<crate::ScrollThumb>(id).is_some()) {
+            return;
+        }
         // What is disabled, and what is in it, does not take the focus; the press goes on to
         // what is around the outermost node that is disabled.
         let off = |id: &NodeId| self.nodes[id.index as usize].state.contains(State::DISABLED);

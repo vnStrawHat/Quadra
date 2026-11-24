@@ -3,6 +3,7 @@
 //! (`quadra-shell`), a network channel, or `echo()`.
 
 mod actions;
+mod bar;
 mod clip;
 mod contrast;
 mod drawn;
@@ -37,6 +38,7 @@ pub use pty::{Pty, PtyOptions};
 
 pub use actions::TermSettings;
 pub use actions::echo;
+pub use bar::Scroll;
 pub use contrast::{contrast_ratio, with_contrast};
 pub use feed::Feeder;
 pub use find::FindQuery;

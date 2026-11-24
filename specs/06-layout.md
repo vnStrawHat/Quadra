@@ -130,7 +130,12 @@ because every render built new nodes. Here nodes persist, and a change is a flag
   one second after the last of those, then fades over 400 ms (a thumb held stays, however
   still, until a second after it is let go); content that fits has none.
   The 14 px at the edge where the thumb is are its grip: a press there takes the pointer,
-  and the content follows the pointer in proportion until the release.
+  and the content follows the pointer in proportion until the release. A press on the
+  thumb leaves the focus where it is.
+  A node whose owner moves its content by hand has the same thumb: along its bottom
+  (`sideways_bar`), or down its right edge (`bar_by_hand(cx, node, scroll, end)`: `scroll`
+  pixels from the top of content that goes `end` pixels past the node; the thumb is the
+  node's last child, and a drag writes `scroll`). A terminal has that one.
 - **Scrolling into view** (`Tree::scroll_into_view`, `NodeRef::scroll_into_view`): every node
   around the asked one that scrolls what it holds is asked, the nearest first, to show the
   node's rect, given in its own box as it is scrolled now. It scrolls as little as shows the

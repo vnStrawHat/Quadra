@@ -142,6 +142,19 @@ fn strip<V: View + 'static>(scroll_x: Signal<f32>, content: V, plain_wheel: bool
     Region::new(div().grow(1.0), bind)
 }
 
+/// A bar down the right edge of `node`, whose owner moves its content by hand: `scroll` pixels
+/// from the top of content that goes `end` pixels past the node. The thumb is the node's last
+/// child; it shows and is dragged as a scroll container's, and a drag writes `scroll`.
+pub fn bar_by_hand(cx: &mut MountCx, node: NodeId, scroll: Signal<f32>, end: Signal<f32>) {
+    let view = cx.tree.size_signal(node);
+    let end = memo(move || end.get().max(0.0));
+    let top = memo(move || scroll.get().clamp(0.0, end.get()));
+    let bar = scrollbar::attach(cx, node, Scrolled { scroll, top, end, view, sideways: false });
+    let mut children = cx.tree.children(node).to_vec();
+    children.push(bar);
+    cx.tree.set_children(node, &children);
+}
+
 /// A box whose content its owner moves sideways by hand, `scroll` pixels, which goes
 /// `end(width)` past a box so wide: a scrollbar along its bottom that shows and is dragged as
 /// a scroll container's. A table with pinned columns has one.

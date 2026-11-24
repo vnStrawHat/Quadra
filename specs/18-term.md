@@ -258,6 +258,15 @@ shell's handle.
   (`set_color_scheme`, below a half is dark) whenever it gives it the theme's colours, and
   writes the report the engine returns to a program that asked for updates (`?2031`); the
   query (`CSI ? 996 n`) is answered by the engine.
+- The history has the scroll containers' bar down the view's right edge (specs/06, "The
+  scrollbar"; `bar_by_hand`; the widget is a leaf of the layout, so the view is a box of its
+  place that holds the widget and the thumb over it): as long as the view is of the history, shown as the pointer
+  moves over the terminal or the history is scrolled, and a drag of its thumb goes through
+  the history by rows (the terminal keeps the focus). The session tells it where the view is after what scrolled it and as
+  the pointer moves over the terminal; output tells it nothing (a burst costs the bar
+  nothing) and neither does a paint. None on the alternate screen, which has no history.
+  The keys (`TermCommand::Scroll`, bound by `bind_keys`): Shift+PageUp and Shift+PageDown a
+  page (the rows that show less one), Ctrl+Shift+Home the top and Ctrl+Shift+End the bottom.
 - Typing scrolls back to the bottom. Focus in and out is told to the program when it asked
   (`encode_focus`): the view's focus, and the window's keyboard while the view has the focus
   (`Tree::on_active`), so switching windows is told.

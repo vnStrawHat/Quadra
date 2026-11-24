@@ -7,12 +7,17 @@ use std::rc::Rc;
 
 use quadra::{Keymap, KeymapError, Keystroke, Role, Settings, Signal, effect, text, use_context};
 use quadra_design::{SettingsGroup, key_input, token};
-use quadra_term::{TERMINAL_CONTEXT, TermCommand};
+use quadra_term::{Scroll, TERMINAL_CONTEXT, TermCommand};
 
 use crate::model::{Command, Side};
 
 /// Binds keys to an action, in its context.
 type Bind = fn(&mut Keymap, &str) -> Result<(), KeymapError>;
+
+/// The keys that go through a terminal's history.
+fn scrolls(keys: &mut Keymap, stroke: &str, to: Scroll) -> Result<(), KeymapError> {
+    keys.bind_in(TERMINAL_CONTEXT, stroke, TermCommand::Scroll(to))
+}
 
 /// An action the user can bind: its id in the settings, its name, its default keys.
 pub(crate) struct Binding {
@@ -27,7 +32,7 @@ const fn binding(id: &'static str, name: &'static str, keys: &'static str, bind:
 }
 
 /// The actions, in the order of the page.
-pub(crate) const BINDINGS: [Binding; 23] = [
+pub(crate) const BINDINGS: [Binding; 27] = [
     binding("new_tab", "New tab", "ctrl-t", |k, s| k.bind(s, Command::NewTab)),
     binding("split", "Split the space", "ctrl-d", |k, s| k.bind(s, Command::Split)),
     binding("split_right", "Split right", "ctrl-shift-right", |k, s| {
@@ -53,6 +58,12 @@ pub(crate) const BINDINGS: [Binding; 23] = [
     binding("quit", "Quit", "ctrl-shift-q", |k, s| k.bind(s, Command::Quit)),
     binding("copy", "Copy", "ctrl-shift-c", |k, s| k.bind_in(TERMINAL_CONTEXT, s, TermCommand::Copy)),
     binding("paste", "Paste", "ctrl-shift-v", |k, s| k.bind_in(TERMINAL_CONTEXT, s, TermCommand::Paste)),
+    binding("scroll_page_up", "Scroll a page up", "shift-pageup", |k, s| scrolls(k, s, Scroll::PageUp)),
+    binding("scroll_page_down", "Scroll a page down", "shift-pagedown", |k, s| {
+        scrolls(k, s, Scroll::PageDown)
+    }),
+    binding("scroll_top", "Scroll to the top", "ctrl-shift-home", |k, s| scrolls(k, s, Scroll::Top)),
+    binding("scroll_bottom", "Scroll to the bottom", "ctrl-shift-end", |k, s| scrolls(k, s, Scroll::Bottom)),
 ];
 
 /// The app's keymap: the kit's, the terminal's keys that do not change, then each action's

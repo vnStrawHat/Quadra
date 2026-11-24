@@ -79,6 +79,9 @@ pub(crate) struct Shared {
     pub line: crate::line::Follow,
     /// What waits for a view to size the grid; `None` once one has.
     pub sized: RefCell<Option<Waiting>>,
+    /// The bar down the view's edge, and the height of a line as the view has it.
+    pub bar: Cell<Option<crate::bar::Told>>,
+    pub line_px: Cell<f32>,
     pub find: crate::find::Finding,
     pub profile: Cell<crate::ShellProfile>,
     /// Told what the user sends (`Session::on_input`).
@@ -142,6 +145,8 @@ impl Session {
             pressed: RefCell::new(None),
             line: crate::line::Follow::new(),
             sized: RefCell::new(Some(Vec::new())),
+            bar: Cell::new(None),
+            line_px: Cell::new(0.0),
             find: crate::find::Finding::new(),
             profile: Cell::default(),
             input: RefCell::new(None),

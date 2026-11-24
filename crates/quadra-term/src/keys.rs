@@ -15,6 +15,8 @@ pub enum TermCommand {
     Tab(bool),
     Copy,
     Paste,
+    /// Through the history: a page, or to an end.
+    Scroll(crate::Scroll),
 }
 
 impl Action for TermCommand {
@@ -31,6 +33,10 @@ pub fn bind_keys(keymap: &mut Keymap) {
         ("ctrl-insert", TermCommand::Copy),
         ("ctrl-shift-v", TermCommand::Paste),
         ("shift-insert", TermCommand::Paste),
+        ("shift-pageup", TermCommand::Scroll(crate::Scroll::PageUp)),
+        ("shift-pagedown", TermCommand::Scroll(crate::Scroll::PageDown)),
+        ("ctrl-shift-home", TermCommand::Scroll(crate::Scroll::Top)),
+        ("ctrl-shift-end", TermCommand::Scroll(crate::Scroll::Bottom)),
     ];
     for (keys, command) in keys {
         keymap.bind_in(TERMINAL_CONTEXT, keys, command).expect("the terminal's bindings are well formed");

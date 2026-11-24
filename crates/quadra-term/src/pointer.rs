@@ -60,6 +60,9 @@ pub(crate) fn pointer(
         cx.tree.on_pointer(id, kind, move |e: &mut PointerEvent| {
             let (at, mods, clicks, pressed) = (e.local, e.mods, e.clicks, button(e.button));
             let reports = s.engine().term.mouse_reporting().is_some() && !mods.contains(Mods::SHIFT);
+            if kind == PointerKind::Move {
+                s.tell_bar(); // its thumb is where the view is when the pointer comes to it
+            }
             match (kind, &hovering) {
                 (PointerKind::Move, Some(hovering)) => {
                     hovering.moved(&writer, id, Some(at), mods.contains(Mods::CTRL))
@@ -209,7 +212,6 @@ fn wheel(tree: &mut Tree, id: NodeId, s: &Session, (at, mods, arrows): (Point, M
         let one = s.engine().term.encode_key(&arrow, KeyMods::default()).unwrap_or_default();
         send(tree, id, s, &one.repeat(rows.unsigned_abs() as usize));
     } else {
-        s.engine().term.scroll_viewport(-rows);
-        crate::widget::repaint(tree, id);
+        crate::bar::scroll_rows(tree, id, s, -rows);
     }
 }

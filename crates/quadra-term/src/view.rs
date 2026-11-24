@@ -100,6 +100,7 @@ pub(crate) fn send(tree: &mut Tree, id: NodeId, session: &Session, bytes: &[u8])
     };
     if back {
         crate::widget::repaint(tree, id);
+        session.tell_bar();
     }
     session.write(bytes);
 }
@@ -212,6 +213,10 @@ impl View for Terminal {
                     return;
                 }
                 // After the keys before it, as they are written.
+                (TermCommand::Scroll(to), _) => {
+                    let s = s.clone();
+                    return writer.with(move |tree| crate::bar::scroll(tree, id, &s, to));
+                }
                 (TermCommand::Paste, Some(clipboard)) => {
                     let (s, text) = (s.clone(), clipboard.read_text().unwrap_or_default());
                     return writer.with(move |_| s.paste(&text));
@@ -227,7 +232,7 @@ impl View for Terminal {
         }
         crate::pointer::pointer(cx, id, &session, settings, link);
         crate::ime::compose(cx, id);
-        id
+        crate::bar::bar(cx, id, &session)
     }
 }
 

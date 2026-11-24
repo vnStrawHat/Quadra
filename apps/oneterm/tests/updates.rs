@@ -1,6 +1,6 @@
 //! Updates (specs/19, "Updates"): the About page's row from the check to the files in place,
 //! and the card a start shows, against a server of the test on 127.0.0.1 that answers as
-//! GitHub does. 1Term's folder here is the test's, under `.tmp`; Restart is not pressed.
+//! GitHub does. OneTerm's folder here is the test's, under `.tmp`; Restart is not pressed.
 #![cfg(windows)]
 
 use std::path::PathBuf;
@@ -20,7 +20,7 @@ struct App {
     root: PathBuf,
 }
 
-/// A window whose updates ask `api`, with 1Term's folder and the cache under `.tmp/<name>`.
+/// A window whose updates ask `api`, with OneTerm's folder and the cache under `.tmp/<name>`.
 fn app(name: &str) -> App {
     let root = std::path::absolute(".tmp/updates").unwrap().join(name);
     let _ = std::fs::remove_dir_all(&root);
@@ -88,18 +88,18 @@ fn the_about_page_checks_installs_and_offers_the_restart() {
     a.press("Check for updates");
     a.wait("GitHub could not be reached. Check the network connection.");
     a.press("Check for updates");
-    a.wait("1Term is up to date.");
+    a.wait("OneTerm is up to date.");
     a.press("Check for updates");
     a.wait("Version 0.8.0 is available.");
     a.press("Install");
     a.wait("Version 0.8.0 is installed.");
     assert_eq!(a.model.ui().updates.state.get_untracked(), Update::Installed("0.8.0".into()));
-    // The files are in 1Term's folder, the ones before moved aside; nothing restarted.
+    // The files are in OneTerm's folder, the ones before moved aside; nothing restarted.
     let home = a.root.join("home");
     assert_eq!(std::fs::read(home.join("oneterm.exe")).unwrap(), b"the new version");
     assert_eq!(std::fs::read(home.join("oneterm.exe.quadra-old")).unwrap(), b"the version before");
     assert_eq!(std::fs::read(home.join("conpty.dll")).unwrap(), b"host");
-    let restarts = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Restart 1Term");
+    let restarts = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Restart OneTerm");
     assert_eq!(restarts.len(), 1);
     assert!(!a.model.ui().updates.closing.get_untracked());
     let asked = served.join().unwrap();
@@ -128,7 +128,7 @@ fn a_start_shows_a_card_for_a_newer_version_and_says_nothing_otherwise() {
     }
     assert!(!a.h.has_text("is available"));
     a.model.check_for_updates_at_start();
-    a.wait("1Term 0.8.0 is available");
+    a.wait("OneTerm 0.8.0 is available");
     assert!(a.h.has_text("Install it from Settings, About."));
     // Turned off, a start asks nothing: the server would have no answer left.
     a.model.prefs().update_check.set(false);

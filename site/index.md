@@ -15,7 +15,7 @@ A click writes the signal; the one text node bound to it is measured and painted
 | The framework (`quadra`) | Signals, memos and effects; views built once; flex and grid layout; text with wrapping, selection, input methods; overlays; focus, keys and actions; timers and background tasks; a semantic tree for assistive technology and for tests |
 | The kit (`quadra-design`) | More than 80 components with one look: buttons, fields, pickers, menus, dialogs, tables, trees, tabs, a dock, settings, a command palette, notifications, and helpers that lay a view out |
 | Beside the kit | Charts (`quadra-viz`), a code editor (`quadra-code`), markdown with formulas and diagrams (`quadra-md`), JSON and log views (`quadra-data`), a terminal (`quadra-term`) |
-| Apps built with it | 1Term, a terminal with SSH and SFTP; Markdown, a reader and editor |
+| Apps built with it | OneTerm, a terminal with SSH and SFTP; Markdown, a reader and editor |
 | Testing | A harness with no OS and no GPU: mount a view, find a control by its role and name, click, type, advance time, read the tree |
 
 ## Measured

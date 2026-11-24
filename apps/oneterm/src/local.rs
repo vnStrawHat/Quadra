@@ -27,13 +27,13 @@ pub fn local_shell(launch: Launch) -> Session {
     // The console starts at the grid's size, once the view has sized it: a program that reads
     // its size only at start reads the real one. ponytail: the closure holds the session until
     // then, so a space never shown keeps its session alive with it.
-    // The user's variables as they are now (one set after 1Term started too), then 1Term's.
+    // The user's variables as they are now (one set after OneTerm started too), then OneTerm's.
     #[cfg(windows)]
     let mut env = quadra_shell::user_environment();
     #[cfg(not(windows))]
     let mut env = Vec::new();
     env.extend([
-        ("TERM_PROGRAM".into(), "1Term".into()),
+        ("TERM_PROGRAM".into(), "OneTerm".into()),
         ("TERM_PROGRAM_VERSION".into(), env!("CARGO_PKG_VERSION").into()),
         // A login bash (MSYS2, Cygwin, Git's) stays in the directory it starts in.
         ("CHERE_INVOKING".into(), "1".into()),
@@ -68,7 +68,7 @@ pub fn local_shell(launch: Launch) -> Session {
                 starts.connect(link);
             }
             Err(e) => {
-                let said = format!("1Term: the shell did not start: {e}\r\n");
+                let said = format!("OneTerm: the shell did not start: {e}\r\n");
                 starts.feeder().feed(said.as_bytes(), Instant::now());
             }
         }

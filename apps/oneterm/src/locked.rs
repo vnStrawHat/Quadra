@@ -83,7 +83,7 @@ fn card(model: &Model) -> Div {
         .padding_top(token::SPACE_LG)
         .padding_bottom(token::SPACE_XS)
         .child(icon(icons::LOCK).size(16.0).color(token::ACCENT))
-        .child(div().font_weight(600).text_size(16.0).child(text("1Term is locked")));
+        .child(div().font_weight(600).text_size(16.0).child(text("OneTerm is locked")));
     // What runs behind, and what came while locked.
     let foot = row()
         .align_items(Align::Center)

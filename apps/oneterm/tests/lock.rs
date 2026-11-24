@@ -16,7 +16,7 @@ struct App {
     settings: Rc<Settings>,
 }
 
-/// A vault as OneTerm writes it (its own fixture, at the least cost it reads), and the master
+/// A vault as OneTerm 0.6 writes it (its own fixture, at the least cost it reads), and the master
 /// password that opens it.
 const VAULT: &str = include_str!("fixtures/vault.json");
 const PW: &str = "correct horse battery staple";
@@ -66,7 +66,7 @@ impl App {
     }
 
     fn locked(&self) -> bool {
-        self.says("1Term is locked")
+        self.says("OneTerm is locked")
     }
 
     fn tabs(&self) -> usize {

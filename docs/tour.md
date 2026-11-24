@@ -148,13 +148,13 @@ Room left that the numbers show (docs/benchmarks.md, 2026-11-15): the grid's upd
 reactive runtime (some 70) and applying 1,200 writes (56), each tried and found lean; a new band of a long page still looks at
 each row of a column once (25 ns a row).
 
-**1Term has started (2026-11-15, the user's decision)**: `quadra-term` (specs/18) is resumed over the user's own engine
+**OneTerm has started (2026-11-15, the user's decision)**: `quadra-term` (specs/18) is resumed over the user's own engine
 `oneterm-vt` (git tag v0.2.0, a clone to read in `.cache/vendor/oneterm-vt`; never edit that repository), and the app is
-`apps/oneterm` (specs/19), drawn after the user's design canvas "1Term". P1 is local shells (milestones M1-M6); P2 is SSH and
-SFTP, whose engine the user decides when P2 starts. The user's own terminal app OneTerm (a clone to read in
+`apps/oneterm` (specs/19), drawn after the user's design canvas "OneTerm". P1 is local shells (milestones M1-M6); P2 is SSH and
+SFTP, whose engine the user decides when P2 starts. The user's own terminal app OneTerm 0.6 (a clone to read in
 `.cache/vendor/oneterm-app`; never edit it; its CLAUDE.md and AGENTS.md are for that repository) is the reference
 for behaviour and settings the design leaves open. **P1 is done** (M1-M6, docs/progress.md): `tools/cargo.sh run -p oneterm`; a trial run takes
-`ONETERM_HOME=.tmp/1term` so it writes nothing outside the project. P2 (SSH over `russh` + `tokio` + `ring`, the user's choice) is done through M10 (`apps/oneterm/ssh`; jump hosts, local forwards, SFTP dock and its expanded view, saved hosts; tests only against servers of the test process on 127.0.0.1). Throughput: 592 fps of the fire demo at 147 by 40 with the bundled console host (docs/benchmarks.md).
+`ONETERM_HOME=.tmp/oneterm` so it writes nothing outside the project. P2 (SSH over `russh` + `tokio` + `ring`, the user's choice) is done through M10 (`apps/oneterm/ssh`; jump hosts, local forwards, SFTP dock and its expanded view, saved hosts; tests only against servers of the test process on 127.0.0.1). Throughput: 592 fps of the fire demo at 147 by 40 with the bundled console host (docs/benchmarks.md).
 
 **The updater** (`quadra-updater`, specs/22, 2026-11-24): `Updater::new(repo, app, version, cache)`, then `check()` (the
 latest release of a GitHub repository, if newer, with this build's package and its digest), `fetch(&release, progress)`

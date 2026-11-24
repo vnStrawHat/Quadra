@@ -80,7 +80,7 @@ pub(crate) fn keymap(keys: impl Fn(&str) -> Option<String>) -> Keymap {
     for (stroke, command) in fixed {
         map.bind_in(TERMINAL_CONTEXT, stroke, command).expect("the terminal's bindings are well formed");
     }
-    // The editor of a file edited in 1Term, and its Ctrl+S.
+    // The editor of a file edited in OneTerm, and its Ctrl+S.
     quadra_code::bind_keys(&mut map);
     map.bind_in(crate::editing::CONTEXT, "ctrl-s", crate::editing::Save).expect("ctrl-s is well formed");
     for b in &BINDINGS {

@@ -36,7 +36,7 @@ pub fn app(name: &str) -> App {
 
     let settings = Settings::memory();
     settings.value("sftp.downloads", String::new()).set(downloads.display().to_string());
-    // Edit opens the system's app (tests/editing.rs edits in 1Term).
+    // Edit opens the system's app (tests/editing.rs edits in OneTerm).
     settings.value("sftp.editor", String::new()).set("System default app".into());
     let (base, key_file) = (dir.clone(), dir.join("id"));
     let (home, shell) = (dir.join("app"), quadra_shell::FakeShell::new());

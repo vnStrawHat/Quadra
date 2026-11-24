@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools/conpty.sh [folder...]: Microsoft's console host for 1Term (specs/01, R15; specs/19,
+# tools/conpty.sh [folder...]: Microsoft's console host for OneTerm (specs/01, R15; specs/19,
 # "The console host"). Fetches the pinned NuGet package into .cache/conpty once, checks its
 # SHA-256, and copies conpty.dll and OpenConsole.exe into each folder given, or into
 # target/debug, target/release, target/dist and target/dist/examples.

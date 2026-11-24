@@ -1,6 +1,6 @@
 //! OSC 99 notifications as cards (specs/19, "Signals"): buttons, opening, a card that takes
 //! the place of one with its id, and what the program asked to hear, written back to it; when
-//! one wants to show, its icon, its sound, and what 1Term says it does.
+//! one wants to show, its icon, its sound, and what OneTerm says it does.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -27,7 +27,7 @@ fn app() -> App {
     let (made, wrote) = (Rc::new(RefCell::new(Vec::new())), Rc::new(RefCell::new(Vec::new())));
     let (kept, into) = (made.clone(), wrote.clone());
     let sessions: NewSession = Rc::new(move |_| {
-        // As 1Term's shells declare.
+        // As OneTerm's shells declare.
         let config = quadra_term::vt::Config { notifications: oneterm::abilities(), ..Default::default() };
         let s = Session::configured(ResizePolicy::BottomAnchor, config);
         let into = into.clone();

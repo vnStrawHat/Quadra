@@ -1,4 +1,4 @@
-//! 1Term's settings (specs/19, "Settings"): each a signal of the app's `Settings`, saved to
+//! OneTerm's settings (specs/19, "Settings"): each a signal of the app's `Settings`, saved to
 //! `settings.json` as it changes (specs/15). A choice is kept as its words, so the file
 //! reads as the page does.
 
@@ -48,11 +48,11 @@ pub struct Prefs {
     pub start: Signal<usize>,
     /// A new local shell gets `FORCE_HYPERLINK=1`.
     pub force_links: Signal<bool>,
-    /// A shell 1Term found says its folder and its prompts (OSC 133), and writes UTF-8.
+    /// A shell OneTerm found says its folder and its prompts (OSC 133), and writes UTF-8.
     pub integration: Signal<bool>,
-    /// A start asks whether a newer 1Term is published (`updates.rs`).
+    /// A start asks whether a newer OneTerm is published (`updates.rs`).
     pub update_check: Signal<bool>,
-    /// OneTerm's folder was looked at for what to take over (`import.rs`).
+    /// OneTerm 0.6's folder was looked at for what to take over (`import.rs`).
     pub taken_over: Signal<bool>,
     pub vertical: Signal<bool>,
     /// The rail's width, and whether it is folded to its icons.
@@ -103,7 +103,7 @@ pub struct Prefs {
     pub editor: Signal<usize>,
     pub editor_program: Signal<String>,
     pub editor_args: Signal<String>,
-    /// The editor of 1Term wraps long lines.
+    /// The editor of OneTerm wraps long lines.
     pub editor_wrap: Signal<bool>,
     pub edit_limit_kb: Signal<f64>,
 }
@@ -121,7 +121,7 @@ impl Prefs {
 
     fn of(s: &Settings) -> Prefs {
         // Settings of version 0 kept a hash of the master password, and a vault and secrets
-        // of 1Term's first format, which nothing opens any more (specs/19, "Saved passwords"):
+        // of OneTerm's first format, which nothing opens any more (specs/19, "Saved passwords"):
         // they are forgotten, the hash above all. What is of today's format stays.
         s.migrate(1, |_, all| {
             all.remove("security.password");

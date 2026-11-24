@@ -61,11 +61,11 @@ implementation is its reference. Its specs, its tests and its own measurements
   the like); a box of a line of text in the kit is `.height(by_text(px))`; a change to what the
   tree tells a reader goes through `semantics_changed`; a chart line never shows steps; the
   Win32 clipboard is never run by a test.
-- 1Term (`apps/oneterm`, specs/19): a trial run takes `ONETERM_HOME=.tmp/1term` so it writes
+- OneTerm (`apps/oneterm`, specs/19): a trial run takes `ONETERM_HOME=.tmp/oneterm` so it writes
   nothing outside the project; SSH tests only against servers of the test process on
-  127.0.0.1. The user's engine `oneterm-vt` (`.cache/vendor/oneterm-vt`) and the user's own
-  terminal app OneTerm (`.cache/vendor/oneterm-app`, the reference for behaviour and settings
-  the design leaves open) are clones to read: never edit them; their CLAUDE.md and AGENTS.md
+  127.0.0.1. The user's engine `oneterm-vt` (`.cache/vendor/oneterm-vt`) and OneTerm 0.6, the
+  app's versions before 0.7 on another toolkit (`.cache/vendor/oneterm-app`, the reference for
+  behaviour and settings the design leaves open), are clones to read: never edit them; their CLAUDE.md and AGENTS.md
   are for those repositories.
 
 ## Commands (Git Bash, from the project root)
@@ -83,10 +83,10 @@ starts Git Bash; `GIT_BASH` names another `bash.exe`).
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
 | The bench app | `tools/bench.sh` builds `target/dist/compare.exe` (the dist profile: release with fat LTO, what ships and is measured); with scene names it runs them headless with pass timings; `tools/bench.sh compare [runs]` measures the four scenes' real windows from outside (`target/dist/run.exe`) into `.tmp/bench/compare.json`; `tools/bench.sh incremental` prints what a change costs against the size of the UI; `BENCH_GPU=1` adds the GPU's time to a windowed scene's passes |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
-| Terminal throughput | `tools/doomfire.sh [seconds]`: the fire demo (`bench/doomfire`) fed to the engine, through the console host alone, and in a real 1Term window (specs/14) |
-| 1Term's console host | `tools/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (specs/19); 1Term uses the system's without them |
+| Terminal throughput | `tools/doomfire.sh [seconds]`: the fire demo (`bench/doomfire`) fed to the engine, through the console host alone, and in a real OneTerm window (specs/14) |
+| OneTerm's console host | `tools/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (specs/19); OneTerm uses the system's without them |
 | A release package | `tools/package.sh gallery` puts `gallery.exe` with `tools/app.manifest` embedded in `target/package/gallery/` |
-| 1Term's release asset | `tools/release.sh` makes `target/release-zip/oneterm-<version>-x86_64-pc-windows-msvc.zip` and prints its SHA-256 (specs/19, "Updates"); it publishes nothing |
+| OneTerm's release asset | `tools/release.sh` makes `target/release-zip/oneterm-<version>-x86_64-pc-windows-msvc.zip` and prints its SHA-256 (specs/19, "Updates"); it publishes nothing |
 | The gallery | `tools/cargo.sh run -p quadra-gallery` (`examples/gallery`: a page a component) |
 | Numbers off the design's ladders | `python tools/check_design.py --list` |
 | The website | `tools/shots.sh dark && tools/shots.sh light`, then `python tools/website.py` builds `target/site` (open `index.html`): the introduction and the guide from `site/`, the design language from `specs/design`, a page a component from the gallery's pages, their words and pictures; a markdown twin of every page, `llms.txt` and `llms-full.txt` for agents. The guide's code is quoted from compiled files (`examples/gallery/examples/guide.rs`). Not deployed |
@@ -131,13 +131,13 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-md` | Markdown: parser, outline, view, formulas, diagrams |
 | `quadra-code` | The code editor: buffer, tokenizers, highlighter, find |
 | `quadra-term` | The terminal view over `oneterm-vt`: grid, input, find, links |
-| `apps/oneterm` | 1Term, the terminal app (specs/19) |
-| `apps/oneterm/ssh` | 1Term's SSH and SFTP over `russh` |
-| `apps/oneterm/complete` | 1Term's command completion (specs/20) |
+| `apps/oneterm` | OneTerm, the terminal app (specs/19) |
+| `apps/oneterm/ssh` | OneTerm's SSH and SFTP over `russh` |
+| `apps/oneterm/complete` | OneTerm's command completion (specs/20) |
 | `apps/markdown` | Markdown, the app that reads and edits `.md` files (specs/21) |
 | `examples/gallery` | Every kit component on a page: the kit's acceptance test |
 | `examples/plain` | A second kit over the headless components |
 | `bench/compare` | The comparison bench's four scenes |
 | `bench/runner` | The comparison bench's runner: measures an app from outside |
 | `bench/doomfire` | Terminal throughput by the fire demo |
-| `bench/shots`, `bench/oneterm-shots`, `bench/markdown-shots` | The gallery's, 1Term's and Markdown's screens drawn to pictures |
+| `bench/shots`, `bench/oneterm-shots`, `bench/markdown-shots` | The gallery's, OneTerm's and Markdown's screens drawn to pictures |

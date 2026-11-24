@@ -113,7 +113,7 @@ fn a_crash_of_the_last_run_is_a_card_that_shows_its_report() {
     });
     h.settle();
     assert!(
-        h.has_text("1Term closed unexpectedly")
+        h.has_text("OneTerm closed unexpectedly")
             && h.has_text("A report was written: 2026-11-17-10-52-00.txt")
     );
     h.get_by_role(Role::Button, "Show report").click();

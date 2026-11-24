@@ -15,7 +15,7 @@ pub struct Space {
     pub remote: Option<crate::shells::Remote>,
     /// The input channel it is in, 0 to 4 (A to E): what is typed in it goes to the others.
     pub channel: Signal<Option<u8>>,
-    /// A remote file edited in 1Term: the space runs no program, its session is never
+    /// A remote file edited in OneTerm: the space runs no program, its session is never
     /// connected (it keeps the file's connection, for the dock).
     pub(crate) edit: Option<std::rc::Rc<crate::editing::FileEdit>>,
 }

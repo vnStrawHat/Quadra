@@ -7,7 +7,7 @@ key and mouse encoders, the pseudo console. Quadra writes none of that again; be
 the reference for what the user sees, and its model, parser and limits sections are the engine's
 (its `docs/user/limits.md`).
 
-Resumed by the user on 2026-11-15 for the 1Term app (19). It was on hold since 2026-11-11.
+Resumed by the user on 2026-11-15 for the OneTerm app (19). It was on hold since 2026-11-11.
 
 ## Pieces
 
@@ -22,7 +22,7 @@ Resumed by the user on 2026-11-15 for the 1Term app (19). It was on hold since 2
 
 Dependencies: `quadra-term` uses `oneterm-vt` with `kitty-graphics` (Sixel is in the engine's
 core), and with `pty` (and `polling`) only under its own `pty` feature, which an app with local
-shells turns on (1Term, the `doomfire` bench); the view and the session never use it. The app
+shells turns on (OneTerm, the `doomfire` bench); the view and the session never use it. The app
 joins them: the shell's output callback is the session's `Feeder`, the session's `Link` is the
 shell's handle.
 
@@ -321,7 +321,7 @@ shell's handle.
 
 ## The command line
 
-What any completion needs, with no knowledge of commands (specs/20 is 1Term's):
+What any completion needs, with no knowledge of commands (specs/20 is OneTerm's):
 
 - `Session::command_line()` is a signal of `CommandLine { text, at_prompt, alt_screen, caret }`,
   followed from the first call on: after each burst of output, a focus change and a resize it is

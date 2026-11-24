@@ -1,4 +1,4 @@
-//! 1Term's screens drawn without a window, to pictures, to compare with its design canvas
+//! OneTerm's screens drawn without a window, to pictures, to compare with its design canvas
 //! (specs/19): the software device, the real text, the headless platform, `echo()` sessions
 //! fed what the canvas shows. Nothing shows on the desktop.
 //!
@@ -130,7 +130,7 @@ fn fill(model: &Model, made: &[Session]) {
     feed(
         0,
         &format!(
-            "\x1b]9;9;~/Projects/1term\x07\x1b[35m\u{276F}{x} pnpm dev\n{d}> 1term@0.4.2 dev{x}\n{g}\u{2713}{x} vite v6.0.3 ready in {y}412 ms{x}\n  {b}\u{279C}{x}  Local:   http://localhost:5173/\n\x1b[35m\u{276F}{x} "
+            "\x1b]9;9;~/Projects/oneterm\x07\x1b[35m\u{276F}{x} pnpm dev\n{d}> oneterm@0.4.2 dev{x}\n{g}\u{2713}{x} vite v6.0.3 ready in {y}412 ms{x}\n  {b}\u{279C}{x}  Local:   http://localhost:5173/\n\x1b[35m\u{276F}{x} "
         ),
     );
     feed(
@@ -154,7 +154,7 @@ fn fill(model: &Model, made: &[Session]) {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = std::env::args().skip(1);
-    let out = PathBuf::from(args.next().unwrap_or_else(|| ".tmp/shots/1term".into()));
+    let out = PathBuf::from(args.next().unwrap_or_else(|| ".tmp/shots/oneterm".into()));
     let only: Vec<String> = args.collect();
     std::fs::create_dir_all(&out)?;
     for scene in SCENES
@@ -183,14 +183,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         let built: Rc<RefCell<Option<Model>>> = Rc::default();
         let tell = built.clone();
         let vertical = *scene != "horizontal";
-        let options = WindowOptions::new("1Term").size(1440.0, 900.0).custom_frame();
+        let options = WindowOptions::new("OneTerm").size(1440.0, 900.0).custom_frame();
         let window = app.open_window(options, move || {
             let settings = Settings::memory();
             settings.value("ssh.hosts", Vec::<Vec<String>>::new()).set(hosts());
             settings.value("tabs.vertical", true).set(vertical);
             settings.value("terminal.show_gutter", false).set(*scene == "gutter");
             // The local pane lists a folder of the project, not the user's Downloads.
-            let local = std::path::absolute(".tmp/shots/1term-local").unwrap_or_default();
+            let local = std::path::absolute(".tmp/shots/oneterm-local").unwrap_or_default();
             let _ = std::fs::create_dir_all(local.join("deploy"));
             let _ = std::fs::write(
                 local.join("config.yaml"),
@@ -201,8 +201,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             provide(settings);
             // The app's folders in the project, for a file edited: downloaded there.
             if scene.starts_with("edit") {
-                let dirs =
-                    quadra::AppDirs::under(&std::path::absolute(".tmp/shots/1term-app").unwrap_or_default());
+                let dirs = quadra::AppDirs::under(
+                    &std::path::absolute(".tmp/shots/oneterm-app").unwrap_or_default(),
+                );
                 provide(Rc::new(dirs));
             }
             let term = OneTerm::new(sessions.clone());
@@ -228,7 +229,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         pass(&platform, &mut app, 150);
         fill(&model, &made.borrow());
         model.ui().dock.set(*scene != "connect" && !scene.starts_with("ask-") && !scene.starts_with("host-"));
-        // A master password, as the canvas has: Lock 1Term now shows.
+        // A master password, as the canvas has: Lock OneTerm now shows.
         model.prefs().vault.set("set".into());
         match *scene {
             "menu" => click(&platform, &app, window, "New terminal"),

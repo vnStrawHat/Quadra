@@ -31,7 +31,7 @@ pub(super) fn fields(model: &Model, form: Form) -> impl View + use<> {
                 .display(shown(sets))
                 .child(
                     field("New master password", master("host-new-master", form.master))
-                        .help("1Term has none yet: it also locks the window (Security & lock)."),
+                        .help("OneTerm has none yet: it also locks the window (Security & lock)."),
                 )
                 .child(field("Repeat it", master("host-master-again", form.again))),
         )

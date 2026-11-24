@@ -1,6 +1,6 @@
 //! Saved passwords (specs/19, "Saved passwords"): a data key sealed under the master
 //! password in `ssh.vault`, each host's secret sealed under the data key in `ssh.secrets`,
-//! both as OneTerm writes them (`format.rs`). The data key is in memory only, once the master
+//! both as OneTerm 0.6 writes them (`format.rs`). The data key is in memory only, once the master
 //! password was typed; the master password itself is kept nowhere: it is the one that opens
 //! the vault.
 
@@ -203,8 +203,8 @@ fn open(_: &[u8; 32], _: &[u8], _: &[u8]) -> Option<Zeroizing<Vec<u8>>> {
 pub(crate) mod tests {
     use super::*;
 
-    /// OneTerm's own fixture of a vault and a password sealed under it, made by an
-    /// implementation that is neither OneTerm's nor this one: what it pins is the format.
+    /// OneTerm 0.6's own fixture of a vault and a password sealed under it, made by an
+    /// implementation that is neither OneTerm 0.6's nor this one: what it pins is the format.
     pub(crate) const ONETERM_S: &str = include_str!("../tests/fixtures/vault.json");
     const SEALED: &str = "otv1:P5wKTosdTCdcXFxcXFxcXFxcXFxbpgEB6ylBEMijZRhddr55R0kOe/uq";
 

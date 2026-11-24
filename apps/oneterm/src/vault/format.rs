@@ -1,5 +1,5 @@
-//! What a vault is written as (specs/19, "Saved passwords"): the document of OneTerm's
-//! `vault.json`, and its `otv1:` envelopes, byte for byte, so what OneTerm sealed 1Term opens.
+//! What a vault is written as (specs/19, "Saved passwords"): the document of OneTerm 0.6's
+//! `vault.json`, and its `otv1:` envelopes, byte for byte, so what OneTerm 0.6 sealed OneTerm opens.
 //!
 //! A document names the vault (16 bytes), the cost of Argon2id, its salt, and the data key
 //! sealed under the key the master password derives. An envelope is `otv1:` and the base64 of
@@ -60,7 +60,7 @@ impl Header {
         sealed(envelope, &self.id).is_some()
     }
 
-    /// The document, as OneTerm writes it.
+    /// The document, as OneTerm 0.6 writes it.
     pub fn write(&self) -> String {
         format!(
             "{{\"schema_version\":1,\"vault_id\":\"{}\",\"kdf\":{{\"algorithm\":\"argon2id\",\"version\":19,\
@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn a_document_is_read_within_the_bounds_and_written_back() {
-        let header = Header::parse(crate::vault::tests::ONETERM_S).expect("OneTerm's document");
+        let header = Header::parse(crate::vault::tests::ONETERM_S).expect("OneTerm 0.6's document");
         assert_eq!((header.cost, header.salt.as_slice()), ([19456, 2, 1], &b"defghijklmnopqrs"[..]));
         assert_eq!(Header::parse(&header.write()), Some(header.clone()));
         let with = |was: &str, now: &str| Header::parse(&crate::vault::tests::ONETERM_S.replace(was, now));

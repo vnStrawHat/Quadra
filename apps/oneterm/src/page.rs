@@ -30,21 +30,21 @@ const PAGES_ABOUT: [(&str, &str, &str); 11] = [
     (
         "Notifications & signals",
         icons::BELL,
-        "How 1Term shows what programs report: state, progress, bells and notifications.",
+        "How OneTerm shows what programs report: state, progress, bells and notifications.",
     ),
     ("Status bar", icons::GAUGE, "What the status bar shows."),
     ("Security & lock", icons::LOCK, "The master password and the lock when idle."),
     ("Keybindings", icons::COMMAND, "Keyboard shortcuts."),
     ("Advanced", icons::CODE, "Where your settings are kept."),
-    ("About", icons::INFO, "Which 1Term this is."),
+    ("About", icons::INFO, "Which OneTerm this is."),
 ];
 
 /// Opens the settings in a window of their own, or brings it to the front: its own title bar
-/// and the page. It closes when 1Term locks, and with the main window.
+/// and the page. It closes when OneTerm locks, and with the main window.
 pub(crate) fn open_window(windows: &quadra::Windows, model: &Model) {
     let model = model.clone();
     let options =
-        quadra::WindowOptions::new("1Term Settings").size(980.0, 700.0).custom_frame().remember("settings");
+        quadra::WindowOptions::new("OneTerm Settings").size(980.0, 700.0).custom_frame().remember("settings");
     windows.open(options, move || {
         let (locked, me) = (model.lock().locked, quadra::window());
         effect(move || {
@@ -55,8 +55,8 @@ pub(crate) fn open_window(windows: &quadra::Windows, model: &Model) {
         let mark = quadra_design::hstack()
             .padding_left(token::SPACE_LG)
             .child(icon(icons::SETTINGS).size(16.0).color(token::ACCENT))
-            .child(div().font_weight(600).child(text("1Term Settings")));
-        // Using the settings is using 1Term: idle starts again.
+            .child(div().font_weight(600).child(text("OneTerm Settings")));
+        // Using the settings is using OneTerm: idle starts again.
         crate::locked::watches(quadra_design::root(), model.lock())
             .child(quadra_design::titlebar("").control(mark).control(div().grow(1.0)))
             .child(page(&model))
@@ -142,7 +142,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
     let status = SettingsGroup::new("Status bar")
         .row("Git", "The branch and how many files changed.", switch(p.show_git))
         .back(p.show_git, d.show_git)
-        .row("CPU and memory", "How much 1Term itself uses.", switch(p.show_usage))
+        .row("CPU and memory", "How much OneTerm itself uses.", switch(p.show_usage))
         .back(p.show_usage, d.show_usage)
         .row("Clock", "The local time.", switch(p.show_clock))
         .back(p.show_clock, d.show_clock)
@@ -201,7 +201,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                     input(p.editor_args).label("Arguments"),
                 )
                 .back(p.editor_args, d.editor_args)
-                .row("Wrap long lines", "In 1Term's editor, instead of scrolling sideways.", switch(p.editor_wrap))
+                .row("Wrap long lines", "In OneTerm's editor, instead of scrolling sideways.", switch(p.editor_wrap))
                 .back(p.editor_wrap, d.editor_wrap)
                 .row(
                     "Ask before editing",
@@ -225,7 +225,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         vec![keys],
         vec![advanced],
         vec![
-            SettingsGroup::new("1Term")
+            SettingsGroup::new("OneTerm")
                 .row("Version", "", text(env!("CARGO_PKG_VERSION")))
                 .row("Terminal engine", "", text(concat!("oneterm-vt ", env!("ONETERM_VT_VERSION"))))
                 .row("Built with", "", text("Quadra, a native UI framework on Direct3D 11 and DirectWrite"))
@@ -255,11 +255,15 @@ fn hosts(p: Prefs, model: &Model) -> SettingsGroup {
     SettingsGroup::new("Hosts")
         .row("Saved hosts", "Edit or remove a host from its menu in the rail.", saved)
         .row("Recent", "Recent connections, listed in the New terminal menu.", lately)
-        .row("OneTerm", "Add the hosts and passwords saved in OneTerm that 1Term does not have yet.", {
-            let model = model.clone();
-            button("Import from OneTerm").variant(Variant::Secondary).on_click(move || {
-                let took = crate::import::folder().map_or((0, 0, 0), |it| model.take_over(&it, false));
-                model.say_taken(took);
-            })
-        })
+        .row(
+            "OneTerm 0.6",
+            "Add the hosts and passwords OneTerm 0.6 and earlier saved that are not here yet.",
+            {
+                let model = model.clone();
+                button("Import from OneTerm 0.6").variant(Variant::Secondary).on_click(move || {
+                    let took = crate::import::folder().map_or((0, 0, 0), |it| model.take_over(&it, false));
+                    model.say_taken(took);
+                })
+            },
+        )
 }

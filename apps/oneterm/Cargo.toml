@@ -1,7 +1,7 @@
 [package]
 name = "oneterm"
-description = "1Term: a terminal app of local shells, in tabs and spaces side by side (specs/19)"
-# 1Term's versions go on from those of the app it replaces (specs/19, "Updates").
+description = "OneTerm: a terminal app of local shells, in tabs and spaces side by side (specs/19)"
+# OneTerm's versions go on from those of the app it replaces (specs/19, "Updates").
 version = "0.7.0"
 edition.workspace = true
 rust-version.workspace = true

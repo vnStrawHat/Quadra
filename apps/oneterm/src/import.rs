@@ -1,7 +1,7 @@
-//! What 1Term takes over from OneTerm, the app it replaces (specs/19, "Taking over from
-//! OneTerm"): the sessions saved in its folder as hosts, and at the first start the settings
+//! What OneTerm takes over from OneTerm 0.6, its versions before 0.7 (specs/19, "Taking over from
+//! OneTerm 0.6"): the sessions saved in its folder as hosts, and at the first start the settings
 //! of its terminal that have one here. Its vault and the passwords it sealed come as they
-//! are: 1Term's vault is of the same format (`vault.rs`).
+//! are: OneTerm's vault is of the same format (`vault.rs`).
 
 use std::path::{Path, PathBuf};
 
@@ -34,7 +34,19 @@ fn number(of: &Value, key: &str) -> Option<f64> {
     }
 }
 
-/// OneTerm's folder: `.OneTerm` in the user's.
+/// The folders a build of the name before kept under `roots` (`%APPDATA%`, `%LOCALAPPDATA%`)
+/// become this app's, where it has none there yet. One that cannot be moved, as that build
+/// still runs, stays where it is.
+pub fn adopt(roots: &[PathBuf]) {
+    for root in roots {
+        let (old, new) = (root.join("1Term"), root.join("OneTerm"));
+        if old.is_dir() && !new.exists() {
+            let _ = std::fs::rename(old, new);
+        }
+    }
+}
+
+/// OneTerm 0.6's folder: `.OneTerm` in the user's.
 pub(crate) fn folder() -> Option<PathBuf> {
     std::env::var_os("USERPROFILE").map(|home| PathBuf::from(home).join(".OneTerm"))
 }
@@ -107,7 +119,7 @@ fn forward(of: &Value) -> Option<Forward> {
 }
 
 impl Model {
-    /// Adds the hosts OneTerm saved in `folder` whose names 1Term does not have, with their
+    /// Adds the hosts OneTerm 0.6 saved in `folder` whose names OneTerm does not have, with their
     /// colours, then its saved passwords: how many hosts, how many passwords, and how many
     /// passwords could not be taken. `settings` (the first start alone) takes the terminal's
     /// settings too.
@@ -129,9 +141,9 @@ impl Model {
         (new.len(), passwords, left)
     }
 
-    /// OneTerm's vault and what it sealed, as they are: its document becomes 1Term's vault
-    /// where there is none, and a session's password its host's secret, where 1Term has that
-    /// host (the name and the target) without one. A vault of 1Term's own is kept, and then
+    /// OneTerm 0.6's vault and what it sealed, as they are: its document becomes OneTerm's vault
+    /// where there is none, and a session's password its host's secret, where OneTerm has that
+    /// host (the name and the target) without one. A vault of OneTerm's own is kept, and then
     /// nothing opens what another sealed: how many were taken, and how many were not.
     fn take_passwords(&self, vault: &str, all: &[Taken]) -> (usize, usize) {
         let sealed = || all.iter().filter_map(|it| Some((&it.host, it.sealed.as_ref()?)));
@@ -158,7 +170,7 @@ impl Model {
         (taken, left)
     }
 
-    /// The settings of OneTerm's `terminal.json` that have one here.
+    /// The settings of OneTerm 0.6's `terminal.json` that have one here.
     fn take_settings(&self, of: &Value) {
         let (p, part) = (self.prefs(), |name: &str| of.get(name).cloned().unwrap_or(Value::Null));
         let (font, scroll, cursor, ssh) = (part("font"), part("scroll"), part("cursor"), part("ssh"));
@@ -175,7 +187,7 @@ impl Model {
         number(&ssh, "keepalive_max").into_iter().for_each(|it| p.keepalive_max.set(it));
     }
 
-    /// What a start of the app does once: takes over from OneTerm's folder, and says what it
+    /// What a start of the app does once: takes over from OneTerm 0.6's folder, and says what it
     /// took. A trial run (`ONETERM_HOME`) and a test take nothing: the app's `main` asks.
     pub fn take_over_once(&self) {
         let done = self.prefs().taken_over;
@@ -193,18 +205,18 @@ impl Model {
         let count = |n: usize, one: &str| format!("{n} {one}{}", if n == 1 { "" } else { "s" });
         let (h, p) = (count(hosts, "host"), count(passwords, "saved password"));
         let mut body = match (hosts, passwords) {
-            (0, 0) => "OneTerm has no saved host or password that 1Term does not have.".to_string(),
-            (_, 0) => format!("{h} taken over from OneTerm."),
-            (0, _) => format!("{p} taken over from OneTerm."),
-            _ => format!("{h} and {p} taken over from OneTerm."),
+            (0, 0) => "OneTerm 0.6 saved no host or password that is not here already.".to_string(),
+            (_, 0) => format!("{h} taken over from OneTerm 0.6."),
+            (0, _) => format!("{p} taken over from OneTerm 0.6."),
+            _ => format!("{h} and {p} taken over from OneTerm 0.6."),
         };
         if passwords > 0 {
-            body += " The master password is the one set in OneTerm.";
+            body += " The master password is the one set in OneTerm 0.6.";
         }
         if left > 0 {
-            body += &format!(" {} could not be taken: 1Term asks again.", count(left, "saved password"));
+            body += &format!(" {} could not be taken: OneTerm asks again.", count(left, "saved password"));
         }
-        self.notify(quadra_design::Notice::new("OneTerm").body(body));
+        self.notify(quadra_design::Notice::new("OneTerm 0.6").body(body));
     }
 }
 

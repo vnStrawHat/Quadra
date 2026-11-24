@@ -139,7 +139,7 @@ fn a_lock_while_a_field_records_takes_the_keys_from_it() {
     a.settle();
     a.h.advance(std::time::Duration::from_secs(70));
     a.settle();
-    assert!(a.h.has_text("1Term is locked"));
+    assert!(a.h.has_text("OneTerm is locked"));
     assert_ne!(a.h.tree.focused(), Some(field), "the focus went to the password");
     a.key(Key::P, Mods::NONE);
     assert_eq!(a.setting("new_tab").get_untracked(), "ctrl-t", "the password's keys are not recorded");

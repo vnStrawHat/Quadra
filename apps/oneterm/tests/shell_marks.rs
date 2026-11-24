@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 use oneterm::Shell;
 use quadra_term::{Pty, PtyOptions};
 
-/// Starts a shell as 1Term does with shell integration, runs `command` (if any) once its first
+/// Starts a shell as OneTerm does with shell integration, runs `command` (if any) once its first
 /// prompt is marked, and gives everything it wrote once all of `wanted` is in it.
 fn run(
     name: &'static str,
@@ -72,7 +72,7 @@ fn run(
 }
 
 fn under(var: &str, path: &str) -> PathBuf {
-    // With the OS's separator alone, as the shells 1Term finds are named.
+    // With the OS's separator alone, as the shells OneTerm finds are named.
     PathBuf::from(std::env::var_os(var).unwrap_or_default()).join(path).components().collect()
 }
 

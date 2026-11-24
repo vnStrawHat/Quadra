@@ -1,4 +1,4 @@
-//! Settings written before the vault was of OneTerm's format (specs/19, "Saved passwords"):
+//! Settings written before the vault was of OneTerm 0.6's format (specs/19, "Saved passwords"):
 //! the hash of the master password, the first vault and its secrets are forgotten when they
 //! are read; a vault of today's format stays, and is a master password.
 
@@ -28,7 +28,7 @@ fn settings_of_the_first_format_are_forgotten_and_a_vault_of_today_s_stays() {
         });
         h.settle();
         settings.save_now();
-        (h.has_text("1Term is locked"), std::fs::read_to_string(file).unwrap())
+        (h.has_text("OneTerm is locked"), std::fs::read_to_string(file).unwrap())
     };
     let (locked, kept) = load(&file);
     assert!(!locked, "no master password is left");

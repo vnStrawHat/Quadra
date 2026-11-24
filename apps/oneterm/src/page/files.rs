@@ -11,7 +11,7 @@ use crate::prefs::Prefs;
 /// shown in the file manager.
 pub(super) fn files() -> SettingsGroup {
     let dirs = quadra::use_context::<std::rc::Rc<quadra::AppDirs>>().map(|it| (*it).clone());
-    let file = dirs.or_else(|| quadra::AppDirs::for_app("1Term")).map(|it| it.config.join("settings.json"));
+    let file = dirs.or_else(|| quadra::AppDirs::for_app("OneTerm")).map(|it| it.config.join("settings.json"));
     let said = file.as_ref().map(|it| it.display().to_string()).unwrap_or_default();
     let opener = quadra::use_context::<std::rc::Rc<dyn quadra_shell::Opener>>();
     let show = button("Show in folder").variant(Variant::Secondary).on_click(move || {
@@ -26,7 +26,7 @@ pub(super) fn files() -> SettingsGroup {
         }
     });
     SettingsGroup::new("Files")
-        .about("Saved as you change them; the file can be edited by hand while 1Term is closed.")
+        .about("Saved as you change them; the file can be edited by hand while OneTerm is closed.")
         .row("Settings file", &said, show)
 }
 
@@ -39,7 +39,7 @@ pub(super) fn logging(p: Prefs, d: Prefs) -> SettingsGroup {
         .back(p.log_ssh, d.log_ssh)
         .row(
             "Folder",
-            "Where logs are saved. Leave empty for session-logs in 1Term's data folder.",
+            "Where logs are saved. Leave empty for session-logs in OneTerm's data folder.",
             folder_field(p.log_folder),
         )
         .back(p.log_folder, d.log_folder)

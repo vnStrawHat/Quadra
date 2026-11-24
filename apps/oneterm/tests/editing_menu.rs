@@ -1,4 +1,4 @@
-//! The editor space's menu (specs/19, "Editing in 1Term") on a real connection to the engine's
+//! The editor space's menu (specs/19, "Editing in OneTerm") on a real connection to the engine's
 //! test server on 127.0.0.1: a right click gives Copy, Paste and Find, the editor's own
 //! commands, and Close, which asks with changes; a binary file's menu has Close alone. The
 //! clipboard is the harness's. And Wrap in its header, which breaks long lines at the space's
@@ -144,7 +144,7 @@ fn choose(a: &mut App, name: &str) {
 
 #[test]
 fn the_editor_s_menu_copies_pastes_finds_and_closes() {
-    let mut a = app("edit-menu", "1Term's editor");
+    let mut a = app("edit-menu", "OneTerm's editor");
     a.edit("config.yaml");
     a.wait(|a| a.shows("/home/config.yaml"), "the editor");
     a.h.key(Key::A, Mods::CTRL);
@@ -191,7 +191,7 @@ fn the_editor_s_menu_copies_pastes_finds_and_closes() {
 
 #[test]
 fn wrap_breaks_long_lines_at_the_space_s_width_and_back() {
-    let mut a = app("edit-wrap", "1Term's editor");
+    let mut a = app("edit-wrap", "OneTerm's editor");
     a.edit("config.yaml");
     a.wait(|a| a.shows("/home/config.yaml"), "the editor space");
     a.h.type_text(&"wide ".repeat(60));

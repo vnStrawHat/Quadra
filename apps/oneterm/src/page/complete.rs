@@ -37,7 +37,11 @@ pub(super) fn completion(model: &Model) -> SettingsGroup {
         .back(c.max_visible, d.max_visible)
         .row("From the history", "The commands run this session.", switch(c.memory))
         .back(c.memory, d.memory)
-        .row("From hand-written catalogs", "Commands and their options written for 1Term.", switch(c.manual))
+        .row(
+            "From hand-written catalogs",
+            "Commands and their options written for OneTerm.",
+            switch(c.manual),
+        )
         .back(c.manual, d.manual)
         .row("From generated catalogs", "Commands read from the tools' own help.", switch(c.external))
         .back(c.external, d.external)

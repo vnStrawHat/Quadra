@@ -152,9 +152,10 @@ pub(super) fn body(
     body.child(quadra_design::vstack().child(save).child(here))
 }
 
-/// A host key 1Term has not seen: trusted where its fingerprint shows, once it connects.
+/// A host key OneTerm has not seen: trusted where its fingerprint shows, once it connects.
 fn new_key() -> Div {
-    let words = "1Term has not seen this host's key. Its fingerprint is shown to check before it is trusted.";
+    let words =
+        "OneTerm has not seen this host's key. Its fingerprint is shown to check before it is trusted.";
     row()
         .gap(token::SPACE_MD)
         .padding(token::SPACE_MD)

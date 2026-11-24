@@ -22,7 +22,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .gap(token::SPACE_XS)
         .padding_left(token::SPACE_LG)
         .child(icon(icons::TERMINAL).size(20.0).color(BRAND))
-        .child(div().padding_x(token::SPACE_XS).text_size(14.0).font_weight(600).child(text("1Term")))
+        .child(div().padding_x(token::SPACE_XS).text_size(14.0).font_weight(600).child(text("OneTerm")))
         .child(locked);
     let (open, hosts, vertical) = (seen.ui().settings, seen.ui().hosts, seen.vertical());
     // With the tabs in a strip, the hosts are a panel this opens.
@@ -44,7 +44,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .display(shown(move || expanded.get()))
         .child(button("Collapse SFTP").icon(icons::WINDOW_RESTORE).on_click(move || expanded.set(false)));
     let locks =
-        div().display(shown(move || lock.can_lock())).child(tooltip("Lock 1Term now", lock_button(&seen)));
+        div().display(shown(move || lock.can_lock())).child(tooltip("Lock OneTerm now", lock_button(&seen)));
     // Locked, what would open something is not displayed; in the settings, only Done.
     let buttons = row()
         .align_items(Align::Center)

@@ -27,7 +27,7 @@ pub struct Ui {
     pub opening: crate::host_connect::Opening,
     /// Command completion: its settings and the app's one engine.
     pub complete: crate::complete::Completion,
-    /// Whether a newer 1Term is published, and installing it.
+    /// Whether a newer OneTerm is published, and installing it.
     pub updates: crate::updates::Updates,
 }
 

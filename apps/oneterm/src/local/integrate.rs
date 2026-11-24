@@ -1,4 +1,4 @@
-//! Shell integration (specs/19, "M4 in detail"): what a shell 1Term found is started with so
+//! Shell integration (specs/19, "M4 in detail"): what a shell OneTerm found is started with so
 //! that it says where it is (OSC 9;9, OSC 7) and where its prompts, commands and outputs
 //! begin and end (OSC 133), and writes UTF-8. A program the user typed is left as typed.
 
@@ -144,7 +144,7 @@ mod tests {
             "one quoted argument"
         );
 
-        // bash: the user's hook runs after 1Term's; one that says OSC 133 itself stands alone.
+        // bash: the user's hook runs after OneTerm's; one that says OSC 133 itself stands alone.
         let mut env = vec![("PROMPT_COMMAND".to_string(), "history -a".to_string())];
         start(shell("Git Bash", "C:/Program Files/Git/bin/bash.exe"), &mut env).unwrap();
         assert!(env[1].0 == "PROMPT_COMMAND" && env[1].1.ends_with("; history -a") && env[2].0 == "PS0");

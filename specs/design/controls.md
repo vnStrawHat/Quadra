@@ -77,7 +77,7 @@ label 14 (12 at xs and sm), weight 400.
   answer.
 - An **icon button** is 22 square (sm) with a 14 px icon, ghost, with a name a reader hears
   and a tooltip. `.muted()` puts its icon in `text_2` (chrome).
-- **A find bar** (the code editor's, 1Term's, Markdown's) is one row on a popup's plane, 4
+- **A find bar** (the code editor's, OneTerm's, Markdown's) is one row on a popup's plane, 4
   inside it: the query, a field of the md step with the search icon, then 22 px icon
   buttons centred on it (the switches, the one before, the next, the cross), 2 apart, and
   the count in 12 px `text_2`.

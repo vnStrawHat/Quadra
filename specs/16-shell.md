@@ -203,6 +203,6 @@ packaged so, and Markdown (`tools/package.sh markdown`).
 an icon group (resource 1, its images 1 to n) and links it with the binaries: written by the
 script itself, as the format is a few headers, so no resource compiler is needed: the
 script is `tools/icon_resource.rs`, which an app's `build.rs` takes by path and calls
-(`icon_resource::link("assets/logo.ico")`; Markdown's and 1Term's do). `tools/package.sh`
+(`icon_resource::link("assets/logo.ico")`; Markdown's and OneTerm's do). `tools/package.sh`
 fails when an app's binary has no icon. ponytail: no installer or version resource yet; an
 MSIX package when an app ships.

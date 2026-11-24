@@ -58,8 +58,8 @@ pub(super) fn body(
         div().text_size(size::TEXT_SM.size).text_color(token::TEXT_2).child(text(move || match auth.get() {
             0 => "Tries the keys in ssh-agent and ~/.ssh, then asks for a password.",
             1 => "Uses the keys loaded in ssh-agent.",
-            2 => "The passphrase is optional. Left empty, 1Term asks for it when you connect.",
-            _ => "The password is optional. Left empty, 1Term asks for it when you connect.",
+            2 => "The passphrase is optional. Left empty, OneTerm asks for it when you connect.",
+            _ => "The password is optional. Left empty, OneTerm asks for it when you connect.",
         }));
     let how = pair(field("Auth method", select(AUTHS, auth)), secret);
     let name = editing.clone().unwrap_or_default();

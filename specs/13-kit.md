@@ -243,8 +243,8 @@ As built so far:
   What is written is `#rrggbb` in lower case. The picker keeps the hue, saturation and
   brightness it moves while it is open, so a drag through grey or black keeps its hue; it
   takes them again from `value` only when that changes to a colour it did not write. A
-  preset is a colour, not a role: a caller whose presets are roles of the theme (1Term's
-  host tags) gives `KitTheme::color(role)` for each. 1Term's settings colours (empty: the
+  preset is a colour, not a role: a caller whose presets are roles of the theme (OneTerm's
+  host tags) gives `KitTheme::color(role)` for each. OneTerm's settings colours (empty: the
   theme's) and its hosts' colour tags are its two callers.
 - **`file_picker(value, browse)` and `folder_picker(value, browse)`** (`path_picker.rs`) are a
   path in an input (240 px, `.width(..)`; `.fill()` the room left in its row) and a secondary

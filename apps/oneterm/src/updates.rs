@@ -1,4 +1,4 @@
-//! 1Term's updates (specs/19, "Updates"): whether a newer release is published where 1Term's
+//! OneTerm's updates (specs/19, "Updates"): whether a newer release is published where OneTerm's
 //! are, and installing it, by `quadra-updater` (specs/22). Checking and fetching run on the
 //! pool; nothing is installed unasked, and nothing restarts but by its button.
 
@@ -12,7 +12,7 @@ use quadra_updater::{Error, Release, Updater};
 use crate::model::Model;
 use crate::prefs::Prefs;
 
-/// Where 1Term's releases are published: the repository of the app it replaces, which is
+/// Where OneTerm's releases are published: the repository of the app it replaces, which is
 /// where that app's updater looks for them.
 const REPOSITORY: &str = "vnStrawHat/OneTerm";
 
@@ -96,7 +96,7 @@ impl Updates {
         });
     }
 
-    /// Fetches the release found, checks it and puts its files in 1Term's folder.
+    /// Fetches the release found, checks it and puts its files in OneTerm's folder.
     pub fn install(&self) {
         let Update::Found(release) = self.state.get_untracked() else { return };
         let (state, source, stop) = (self.state, self.source.get_untracked(), Stop(Arc::default()));
@@ -142,7 +142,7 @@ impl Updates {
     pub fn restart(&self) {
         match quadra_updater::restart() {
             Ok(()) => self.closing.set(true),
-            Err(why) => self.state.set(Update::Failed(format!("1Term could not be started again: {why}"))),
+            Err(why) => self.state.set(Update::Failed(format!("OneTerm could not be started again: {why}"))),
         }
     }
 }
@@ -163,7 +163,7 @@ impl Model {
         let model = self.clone();
         self.ui().updates.check(move |now| {
             if let Update::Found(release) = now {
-                let title = format!("1Term {} is available", release.version);
+                let title = format!("OneTerm {} is available", release.version);
                 model.notify(Notice::new(title).body("Install it from Settings, About."));
             }
         });
@@ -175,13 +175,13 @@ fn said(now: &Update) -> (String, &'static str) {
     match now {
         Update::Unknown => (String::new(), "Check for updates"),
         Update::Checking => ("Checking\u{2026}".into(), "Check for updates"),
-        Update::Latest => ("1Term is up to date.".into(), "Check for updates"),
+        Update::Latest => ("OneTerm is up to date.".into(), "Check for updates"),
         Update::Found(release) => (format!("Version {} is available.", release.version), "Install"),
         Update::Fetching(release, got, of) => {
             let part = if *of > 0 { format!(" {}%", got * 100 / of) } else { String::new() };
             (format!("Downloading {}{part}", release.version), "Cancel")
         }
-        Update::Installed(version) => (format!("Version {version} is installed."), "Restart 1Term"),
+        Update::Installed(version) => (format!("Version {version} is installed."), "Restart OneTerm"),
         Update::Failed(why) => (why.clone(), "Check for updates"),
     }
 }
@@ -204,12 +204,12 @@ pub(crate) fn group(p: Prefs, d: Prefs, model: &Model) -> SettingsGroup {
         .gap(token::SPACE_LG)
         .child(text(move || said(&state.get()).0))
         .child(act);
-    let about = "A newer version is fetched from GitHub, checked, and put in place while 1Term runs. \
+    let about = "A newer version is fetched from GitHub, checked, and put in place while OneTerm runs. \
                  Restarting closes every terminal and connection.";
     crate::page::Back::back(
         SettingsGroup::new("Updates").row("Update", about, now).row(
             "Check at start",
-            "Ask GitHub for a newer version each time 1Term starts.",
+            "Ask GitHub for a newer version each time OneTerm starts.",
             switch(p.update_check),
         ),
         p.update_check,

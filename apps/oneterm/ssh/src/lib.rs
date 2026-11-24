@@ -1,4 +1,4 @@
-//! 1Term's SSH (specs/19, "SSH (P2)"): `russh` on a `tokio` runtime of its own, behind a
+//! OneTerm's SSH (specs/19, "SSH (P2)"): `russh` on a `tokio` runtime of its own, behind a
 //! blocking API of the shape of `quadra_term::Pty`. What the engine asks (a host key, a
 //! password) it asks the app, which answers with [`Ssh::answer`].
 

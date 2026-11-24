@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # tools/package.sh <example|oneterm|markdown>: the shipped binary (the dist profile) of examples/<example> (the package
-# quadra-<example>, whose binary is <example>), of 1Term (apps/oneterm, binary oneterm) or of
+# quadra-<example>, whose binary is <example>), of OneTerm (apps/oneterm, binary oneterm) or of
 # Markdown (apps/markdown); an app's icon is checked to be in its binary,
 # with tools/app.manifest embedded by the linker, put in target/package/<name>/ (or in the
 # folder PACKAGE_OUT names; specs/16,
-# "Packaging"). Fonts and images are in the binary (specs/15, "Assets"); 1Term's folder also
+# "Packaging"). Fonts and images are in the binary (specs/15, "Assets"); OneTerm's folder also
 # holds its console host and the host's notice (specs/19, "The console host").
 # ponytail: no installer or version resource; an MSIX package when an app ships.
 set -euo pipefail

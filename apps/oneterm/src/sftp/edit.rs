@@ -1,5 +1,5 @@
 //! Editing a remote file (specs/19, "M9 in detail"): it is downloaded to the app's data
-//! folder, then opened in a space of 1Term (`crate::editing`), or in the editor the settings
+//! folder, then opened in a space of OneTerm (`crate::editing`), or in the editor the settings
 //! name and sent back each time it is saved.
 
 use std::path::{Path, PathBuf};
@@ -15,7 +15,7 @@ use super::{Dock, store};
 use crate::editing::Content;
 use crate::model::Model;
 
-pub const EDITORS: [&str; 3] = ["1Term's editor", "System default app", "Custom program"];
+pub const EDITORS: [&str; 3] = ["OneTerm's editor", "System default app", "Custom program"];
 
 /// What editing needs from where the view was built: the folder and the opener.
 #[derive(Clone)]
@@ -45,7 +45,7 @@ impl Dock {
     /// Downloads a file of the folder shown and opens it: in a space of the tab, or in the
     /// editor the settings name, sending it back when it is saved.
     pub fn edit(&self, model: &Model, entry: &Entry, editing: &Editing) {
-        // In 1Term: the space the dock shows is where it opens, and whose connection saves it.
+        // In OneTerm: the space the dock shows is where it opens, and whose connection saves it.
         let inside = match model.prefs().editor.get_untracked() {
             0 => Some(crate::editing::source(model)),
             _ => None,

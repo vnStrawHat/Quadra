@@ -23,7 +23,7 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .back(p.colour_theme, d.colour_theme)
         .row(
             "Text size",
-            "Size of all text in 1Term, terminals included, in percent.",
+            "Size of all text in OneTerm, terminals included, in percent.",
             number_input(p.ui_text).stepper().range(75.0, 200.0).step(5.0),
         )
         .back(p.ui_text, d.ui_text);
@@ -31,7 +31,7 @@ pub(super) fn appearance(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
     let text = SettingsGroup::new("Terminal text")
         .row(
             "Font family",
-            "A font installed on this computer. Default is 1Term's own monospace font.",
+            "A font installed on this computer. Default is OneTerm's own monospace font.",
             Families(l.font_family),
         )
         .back(l.font_family, k.font_family)

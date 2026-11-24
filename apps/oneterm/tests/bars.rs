@@ -1,6 +1,6 @@
 //! The bars (specs/19, "Window"): the title bar's bells and notices between Search and Lock,
 //! with the tabs in the rail and in a strip, gone while locked and in the settings; the status
-//! bar's clock by the app's time, and the card of what 1Term uses from the fake meter.
+//! bar's clock by the app's time, and the card of what OneTerm uses from the fake meter.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -78,7 +78,7 @@ impl App {
 fn the_bells_stand_in_the_title_bar_between_search_and_lock() {
     for vertical in [true, false] {
         let mut a = app(vertical);
-        a.model.prefs().vault.set("set".into()); // Lock 1Term now shows
+        a.model.prefs().vault.set("set".into()); // Lock OneTerm now shows
         a.h.settle();
         // No search in the title bar: the `+` menus have the field.
         assert!(a.h.query(|n| n.semantics.name == "Search tabs, hosts and commands").is_empty());
@@ -140,9 +140,9 @@ fn ram_is_the_private_working_set_and_its_tooltip_has_the_details() {
         assert!(a.h.has_text(words), "{words}");
     }
     assert!(a.h.has_text("Uptime") && a.h.has_text("0:00:12"));
-    // In a tooltip; a reader is told what 1Term uses.
+    // In a tooltip; a reader is told what OneTerm uses.
     assert!(!a.h.query(|n| n.semantics.role == Role::Tooltip).is_empty());
-    let told = format!("1Term: CPU {cpu}, RAM 182 MB");
+    let told = format!("OneTerm: CPU {cpu}, RAM 182 MB");
     assert!(
         !a.h.query(|n| n.semantics.description.as_deref() == Some(told.as_str())).is_empty(),
         "{}",

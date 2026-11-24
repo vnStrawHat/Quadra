@@ -113,7 +113,7 @@ number of 9,600, a different one each frame: 103 µs, 12,351 instances uploaded)
 keeps its room** now (specs/07): fewer instances than it holds are padded with empty ones, so
 the layer is rebuilt only when a node first reaches its longest; a hidden or culled node keeps
 none. A different number each frame still rebuilds each time one first grows: the room is
-per node. 1Term's fire demo, which repaints every row every frame, is unchanged by it (six
+per node. OneTerm's fire demo, which repaints every row every frame, is unchanged by it (six
 runs on each side, 576 to 627 fps against 583 to 621).
 
 **The rest, measured again** (the dist profile): the runner, three rounds: list / grid /
@@ -122,7 +122,7 @@ document 0.375 / 1.103 / 0.654 ms a frame, p99 13.45 / 13.45 / 13.44 ms, peaks 2
 window: grid 200 / 127 / 145 µs (update / layout / paint), document 2 / 39 / 91, the editor
 typing 9 / 0 / 444 (still over the 367 of 2026-11-14: open), scrolling 1 / 0 / 9. The GPU:
 42 / 151 / 112 µs. The fire demo: the engine alone 1,129 fps at 200×50 (180 MB/s), the
-console host alone 637 to 641 at 147×40 (71.4 MB/s), a 1Term window 576 to 627 at 143×39
+console host alone 637 to 641 at 147×40 (71.4 MB/s), a OneTerm window 576 to 627 at 143×39
 (62 to 68 MB/s).
 
 ## 2026-11-16 — every bench again, with the runner in Rust (on fef3e5c)
@@ -174,7 +174,7 @@ grid, 123 for document, as on 2026-11-14.
 |---|---|---|---|---|
 | The engine alone (`doomfire-feed`) | 200×50 | 1,035 | 159,535 | 165 MB/s |
 | The console host alone (`doomfire-conpty`) | 147×40 | 641 | 111,603 | 71.5 MB/s |
-| A real 1Term window | 143×39 | 588 | 107,824 | 63.4 MB/s |
+| A real OneTerm window | 143×39 | 588 | 107,824 | 63.4 MB/s |
 
 ## 2026-11-15 — terminal throughput, the fire demo (on dbe175a plus this commit)
 
@@ -188,23 +188,23 @@ the writer sees it. Release builds.
 | Feed | 120x30 | 2,222 | 74 | 165 |
 | The console host alone: the pseudo console read and dropped (`doomfire-conpty`) | 147x40 | 336 to 350 | 109 | 37 |
 | The console host alone | 200x50 | 235 | 155 | 36 |
-| **1Term**, release, a real window of 1440 by 900 (`tools/doomfire.sh 15`) | 147x40 | **340** | 109 | 37 |
+| **OneTerm**, release, a real window of 1440 by 900 (`tools/doomfire.sh 15`) | 147x40 | **340** | 109 | 37 |
 | Feed | 147x40 | 1,447 to 1,465 (a snapshot holds the lock 53 µs) | 109 | 158 |
 | The console host 1.25.260930003 beside the binary (`tools/conpty.sh`), alone | 147x40 | 627 to 634 | 109 | 68 |
 | The console host 1.25 alone | 200x50 | 434 | 155 | 66 |
-| **1Term with the console host 1.25** | 147x40 | **592 to 593** | 109 | 64 |
-| 1Term on 2026-11-16: ligatures, semantic highlighting and a minimum contrast on (its defaults), padding 0/5/0/10 | 143x39 | **591** | 105 | 64 |
+| **OneTerm with the console host 1.25** | 147x40 | **592 to 593** | 109 | 64 |
+| OneTerm on 2026-11-16: ligatures, semantic highlighting and a minimum contrast on (its defaults), padding 0/5/0/10 | 143x39 | **591** | 105 | 64 |
 
-With the system's console host 1Term is at that host's ceiling: what it passes on is all
-1Term gets, and 1Term takes it as fast as nothing at all would (a read buffer of 256 KB in
+With the system's console host OneTerm is at that host's ceiling: what it passes on is all
+OneTerm gets, and OneTerm takes it as fast as nothing at all would (a read buffer of 256 KB in
 place of 16 KB changed nothing). The engine could take five times as much. Microsoft's newer
 host, beside the binary (the user's choice; specs/01, R15), passes nearly twice as much, and
-1Term takes 93 % of it: 592 fps, "great" in the demo's bands (100 or more). The rest is not
+OneTerm takes 93 % of it: 592 fps, "great" in the demo's bands (100 or more). The rest is not
 the lock (53 µs 60 times a second) and the machine has 12 threads; most likely the host and
 the parsing thread share cores.
 
 Since 2026-11-16 the bench's window runs on settings of its own, removed before each run
-(`.tmp/1term-bench/defaults`): its numbers are those of 1Term's defaults. The shell starts
+(`.tmp/oneterm-bench/defaults`): its numbers are those of OneTerm's defaults. The shell starts
 once the view has sized the grid (`Session::when_sized`), so the demo reads the window's size;
 before, it could read the 80 by 24 the session starts at.
 

@@ -95,7 +95,7 @@ was silent, said two things, or did not match the kit. What they changed:
 
 ## What was owed, and done (2026-11-24)
 
-- **1Term's dialogs take the kit's layout.** The host editor, Connect, Quick connect, the
+- **OneTerm's dialogs take the kit's layout.** The host editor, Connect, Quick connect, the
   sign-in question and the vault's unlock gave up their widths (202, 416, 392) and their own
   grid of two: fields fill their columns and `columns(2)` puts two to a row.
 - **The kit names its tokens.** Every gap, padding and radius inside the kit that is a step
@@ -108,7 +108,7 @@ was silent, said two things, or did not match the kit. What they changed:
   `number_input(..).unit("backups")` says what a number counts, muted, inside the field;
   `card_head_with(title, more, end)` puts a status, a tag or a quiet button at the end of a
   card's head; a control in a `field(..)` in a form fills its column whatever wraps it.
-- **The title bar**: `titlebar(..).height(38.0)` is the taller bar (1Term uses it); nothing
+- **The title bar**: `titlebar(..).height(38.0)` is the taller bar (OneTerm uses it); nothing
   was missing but the sentence in components.md.
 
 ## Decided, not owed
@@ -125,7 +125,7 @@ The pictures read pale. The palette was not the cause; four things were, and eac
   the eye to land. It is the accent, solid, by the theme's own roles (`accent_hover`,
   `accent_press`, `text_on_accent` for its words); off, it is the tint it was. One a view,
   as before: the accent is still a mark, and this is its one fill. Its border is the focus
-  colour already, so its focus by keys is a border in the text's colour. Seven of 1Term's
+  colour already, so its focus by keys is a border in the text's colour. Seven of OneTerm's
   themes had words on the accent that could not be read (under 3 to 1); they are corrected,
   and a test holds every theme to 3 to 1.
 - **Titles had the weight of body text.** A page's headline, a card's title and a group's
@@ -134,7 +134,7 @@ The pictures read pale. The palette was not the cause; four things were, and eac
   `text_2` stays for what explains (a label over a field, a description, help).
 - **The accent was near absent**: a 2 px bar and the focus border. What is chosen in a
   list, a tree, a navigation and the settings' pages, a toggle button that is on, and in
-  1Term the active tab of the rail and the picked row of the dock, is filled with the
+  OneTerm the active tab of the rail and the picked row of the dock, is filled with the
   accent's tint in place of the neutral `press`, which stays for the pressed and the
   keyboard's row.
 
@@ -151,16 +151,16 @@ The pictures read pale. The palette was not the cause; four things were, and eac
 
 ## The apps, read against the language (2026-11-24)
 
-1Term and Markdown took the look from the kit; what they still did their own way is changed:
+OneTerm and Markdown took the look from the kit; what they still did their own way is changed:
 
 - **Small dialogs** (SFTP's New folder, Rename, Delete and A large file; Rename tab; Open
   link; Properties) set a width and a padding inside the dialog's own, so their content
   stood 24 from the edge where every other dialog's stands 12. They give the body alone, in
   the dialog of 360 for a question or one field. Delete is `.danger()`.
 - **Rows on the ladder**: hosts, SFTP entries, transfers and completions were 26 and 23 and
-  are data rows (24); the expanded SFTP pane's header is an item row (28); 1Term's
+  are data rows (24); the expanded SFTP pane's header is an item row (28); OneTerm's
   horizontal strip is the bar's 32, as its spec said.
-- **No size on a control**: the find bars (the editor's, 1Term's, Markdown's) gave their
+- **No size on a control**: the find bars (the editor's, OneTerm's, Markdown's) gave their
   query 26, between two steps; it is md. Heights that only repeated the md step and widths
   that only repeated a field's own are gone; the host filter fills the rail.
 - **Markdown's toolbar** is the kit's `toolbar()`, not a row of 36 of its own.
@@ -171,7 +171,7 @@ The pictures read pale. The palette was not the cause; four things were, and eac
 - **Helpers where the apps wrote them out**: a column 8 apart is `vstack()`, a centred row 8
   apart `hstack()`, a body 12 apart `form()` (31 places in the apps and the gallery). The
   lock card's body is a form, so its field is the card's width by the kit.
-- **A theme's own tint.** What is chosen is the accent's tint, and 37 of 1Term's 38 themes
+- **A theme's own tint.** What is chosen is the accent's tint, and 37 of OneTerm's 38 themes
   gave none: they showed the kit's blue under their own accent. A file that gives no tint
   gets its accent at 16 %. A test holds every theme to that, and to words that read (3 to
   1) on the accent at rest, under the pointer and pressed.
@@ -179,8 +179,8 @@ The pictures read pale. The palette was not the cause; four things were, and eac
 One exception with its reason in the code: a host key's fingerprint is mono at 12 px, a step
 under the text around it, so that its 50 characters stay one line to compare.
 
-**1Term's own shapes, on the ladders too** (the user's decision, 2026-11-24). The canvas the
-user drew for 1Term gave it a title bar of 38, a status bar of 30, tab rows of 36 (52 for
+**OneTerm's own shapes, on the ladders too** (the user's decision, 2026-11-24). The canvas the
+user drew for OneTerm gave it a title bar of 38, a status bar of 30, tab rows of 36 (52 for
 the one that shows) and a folded rail 48 wide with 44 a tab. Asked whether they stay, the
 user chose the ladders: the title bar and the status bar are bars (32), a tab of the rail is
 an item row (28) and the touch step (40) while it shows its second line, the folded rail is

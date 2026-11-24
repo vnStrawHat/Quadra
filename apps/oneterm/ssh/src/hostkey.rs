@@ -103,7 +103,7 @@ impl Handler for Checker {
 
     async fn check_server_key(&mut self, key: &PublicKeyOrCertificate) -> Result<bool, Self::Error> {
         let PublicKeyOrCertificate::PublicKey { key, .. } = key else {
-            return self.refuse("the host gave a certificate, which 1Term does not check yet".into());
+            return self.refuse("the host gave a certificate, which OneTerm does not check yet".into());
         };
         let shown =
             if self.port == 22 { self.host.clone() } else { format!("[{}]:{}", self.host, self.port) };

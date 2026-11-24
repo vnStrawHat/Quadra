@@ -1,4 +1,4 @@
-//! The editor space's scenes (specs/19, "Editing in 1Term"): a tab connected by a key to the
+//! The editor space's scenes (specs/19, "Editing in OneTerm"): a tab connected by a key to the
 //! engine's file server on 127.0.0.1 (never another host), its files under `.tmp/ssh-tests`;
 //! Edit… on a file of the dock opens it beside the terminal, then a line is typed, and in
 //! `edit-diff` the diff shows.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools/release.sh: 1Term's release asset (specs/19, "Updates"): the package of
+# tools/release.sh: OneTerm's release asset (specs/19, "Updates"): the package of
 # tools/package.sh with LICENSE, NOTICE and the notices of what the binary holds, in target/release-zip/oneterm-<version>-<target>/,
 # and that folder zipped beside it as oneterm-<version>-<target>.zip, the name the updater
 # asks a GitHub release for (specs/22). It prints the zip's SHA-256; it publishes nothing.

@@ -41,7 +41,7 @@ impl Outside {
     }
 }
 
-/// What 1Term does with an OSC 99 notification, from which the engine answers `p=?`.
+/// What OneTerm does with an OSC 99 notification, from which the engine answers `p=?`.
 pub fn abilities() -> NotificationSupport {
     NotificationSupport {
         focus: true,

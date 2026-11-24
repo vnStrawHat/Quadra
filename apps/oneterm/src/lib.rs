@@ -1,4 +1,4 @@
-//! 1Term (specs/19): the window, its title bar, the rail of tabs, the workspace of spaces,
+//! OneTerm (specs/19): the window, its title bar, the rail of tabs, the workspace of spaces,
 //! the status bar. Where a session's program comes from is the caller's: a local shell in the
 //! app ([`local_shell`]), `quadra_term::echo` in tests.
 
@@ -51,6 +51,7 @@ use quadra::{AnyView, Keymap, Signal, View, Window, column, div, dynamic, row, s
 use quadra_term::Session;
 
 pub use hosts::Host;
+pub use import::adopt;
 pub use local::{integrate, local_shell};
 pub use model::{Command, Model, Side, Space, Tab};
 pub use notify::abilities;
@@ -97,7 +98,7 @@ impl OneTerm {
     pub fn crashed(&self, report: &std::path::Path) {
         let opener = use_context::<Rc<dyn quadra_shell::Opener>>();
         let (shown, name) = (report.to_path_buf(), report.file_name().unwrap_or_default().to_string_lossy());
-        let notice = quadra_design::Notice::new("1Term closed unexpectedly")
+        let notice = quadra_design::Notice::new("OneTerm closed unexpectedly")
             .body(format!("A report was written: {name}"))
             .tone(quadra_design::Tone::Warning)
             .action("Show report", move || {

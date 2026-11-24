@@ -1,10 +1,10 @@
-//! 1Term in a real window whose one space runs the fire demo through the pseudo console
+//! OneTerm in a real window whose one space runs the fire demo through the pseudo console
 //! (specs/14, "Terminal throughput"); it ends when the demo has written its summary.
 //!
 //!     tools/doomfire.sh [seconds]
 //!
 //! `DOOMFIRE` names the demo's program, `DOOMFIRE_OUT` the file of its summary, and
-//! `DOOMFIRE_SECONDS` how long it burns. Settings and the log go to `.tmp/1term-bench`.
+//! `DOOMFIRE_SECONDS` how long it burns. Settings and the log go to `.tmp/oneterm-bench`.
 
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -27,7 +27,7 @@ fn main() -> quadra::Result<()> {
         std::thread::sleep(Duration::from_millis(200));
         std::process::exit(0);
     });
-    let mut app = quadra::app()?.dirs(AppDirs::under(std::path::Path::new(".tmp/1term-bench/defaults")));
+    let mut app = quadra::app()?.dirs(AppDirs::under(std::path::Path::new(".tmp/oneterm-bench/defaults")));
     let chosen = app.settings().value("appearance.theme", "Dark".to_string());
     let named = app.settings().value("appearance.colour_theme", oneterm::KIT_THEME.to_string());
     let first = quadra_design::system_theme(&app.appearance());
@@ -36,6 +36,6 @@ fn main() -> quadra::Result<()> {
     let fire = Shell { name: "doomfire", program, args };
     let shells: NewSession =
         Rc::new(move |launch: Launch| start(Launch { shell: Some(fire.clone()), ..launch }));
-    let options = WindowOptions::new("1Term").size(1440.0, 900.0).centered().custom_frame();
+    let options = WindowOptions::new("OneTerm").size(1440.0, 900.0).centered().custom_frame();
     app.keymap(keymap()).window(options, move || OneTerm::new(shells.clone()).view())?.run()
 }

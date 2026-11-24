@@ -1,6 +1,6 @@
-//! Taking over from OneTerm (specs/19, "Taking over from OneTerm"): its saved sessions become
+//! Taking over from OneTerm 0.6 (specs/19, "Taking over from OneTerm 0.6"): its saved sessions become
 //! hosts with their colours, its terminal's settings are taken at the first pass alone, and a
-//! host 1Term has is left as it is. The folder is the test's, under `.tmp`.
+//! host OneTerm has is left as it is. The folder is the test's, under `.tmp`.
 
 use std::rc::Rc;
 
@@ -9,13 +9,28 @@ use quadra::{Settings, provide};
 use quadra_term::echo;
 use quadra_testing::Harness;
 
-/// OneTerm's own fixture of a vault, its master password, and a password it sealed for
+#[test]
+fn the_folders_of_the_name_before_become_the_app_s_where_it_has_none() {
+    let root = std::path::absolute(".tmp/import/adopt").unwrap();
+    let _ = std::fs::remove_dir_all(&root);
+    let (moved, kept) = (root.join("moved"), root.join("kept"));
+    std::fs::create_dir_all(moved.join("1Term")).unwrap();
+    std::fs::write(moved.join("1Term/settings.json"), "{}").unwrap();
+    std::fs::create_dir_all(kept.join("1Term")).unwrap();
+    std::fs::create_dir_all(kept.join("OneTerm")).unwrap();
+    oneterm::adopt(&[moved.clone(), kept.clone(), root.join("none")]);
+    assert!(moved.join("OneTerm/settings.json").is_file() && !moved.join("1Term").exists());
+    assert!(kept.join("1Term").is_dir(), "the app's own folder is there: nothing is moved over it");
+    assert!(!root.join("none").exists());
+}
+
+/// OneTerm 0.6's own fixture of a vault, its master password, and a password it sealed for
 /// `deploy@10.0.0.1`.
 const VAULT: &str = include_str!("fixtures/vault.json");
 const PW: &str = "correct horse battery staple";
 const SEALED: &str = "otv1:P5wKTosdTCdcXFxcXFxcXFxcXFxbpgEB6ylBEMijZRhddr55R0kOe/uq";
 
-/// A window of 1Term over its settings, and OneTerm's folder `name` under `.tmp` with two
+/// A window of OneTerm over its settings, and OneTerm 0.6's folder `name` under `.tmp` with two
 /// sessions, the first with a saved password.
 fn app(name: &str) -> (Harness, Rc<Settings>, oneterm::Model, std::path::PathBuf) {
     let folder = std::path::absolute(".tmp/import").unwrap().join(name).join(".OneTerm");
@@ -60,7 +75,7 @@ fn the_vault_and_its_saved_passwords_come_as_they_are() {
     let (mut h, settings, model, folder) = app("vault");
     let secrets = settings.value("ssh.secrets", Vec::<Vec<String>>::new());
     let vault = settings.value("ssh.vault", String::new());
-    // Hosts taken while OneTerm's vault could not be read: the password is not, and it is said.
+    // Hosts taken while OneTerm 0.6's vault could not be read: the password is not, and it is said.
     assert_eq!(model.take_over(&folder, false), (2, 0, 1));
     assert!(vault.get().is_empty() && secrets.get().is_empty());
     // With the vault there, the password arrives for the host that is here already.
@@ -69,7 +84,7 @@ fn the_vault_and_its_saved_passwords_come_as_they_are() {
     assert_eq!(secrets.get(), [["prod".to_string(), SEALED.to_string()]]);
     assert!(vault.get().contains("3f9c0a4e8b1d4c27a6e2f0b9c1d2e3f4"), "{}", vault.get());
     assert_eq!(model.take_over(&folder, false), (0, 0, 0), "nothing twice");
-    // OneTerm's master password is 1Term's: it opens the vault, and another does not.
+    // OneTerm 0.6's master password is OneTerm's: it opens the vault, and another does not.
     let lock = model.lock();
     assert!(lock.can_lock() && lock.key.get_untracked().is_none());
     let told = Rc::new(std::cell::Cell::new(None));
@@ -90,7 +105,7 @@ fn the_vault_and_its_saved_passwords_come_as_they_are() {
 }
 
 #[test]
-fn a_vault_of_1term_s_own_is_kept_and_takes_no_password_of_another() {
+fn a_vault_of_oneterm_s_own_is_kept_and_takes_no_password_of_another() {
     let (mut h, settings, model, folder) = app("own");
     std::fs::write(folder.join("vault.json"), VAULT).unwrap();
     let done = Rc::new(std::cell::Cell::new(false));

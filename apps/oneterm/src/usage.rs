@@ -1,4 +1,4 @@
-//! What 1Term's process uses (specs/19, "M4 in detail"): read every 2 s from the context's
+//! What OneTerm's process uses (specs/19, "M4 in detail"): read every 2 s from the context's
 //! `Meter` (the OS's where there is none), the status bar's CPU and RAM, and the tooltip of
 //! details under the pointer.
 
@@ -100,11 +100,11 @@ fn details(seen: Signal<Option<Reading>>) -> quadra::Div {
 }
 
 /// `of` with the tooltip of details: memory | processor, laid out as a card; a reader is told
-/// what 1Term uses.
+/// what OneTerm uses.
 pub(crate) fn tip(of: quadra::Div, seen: Signal<Option<Reading>>) -> impl View + use<> {
     let said = move || {
         let mb = |r: &Reading| r.usage.memory / (1024 * 1024);
-        seen.with(|it| it.map(|r| format!("1Term: CPU {}%, RAM {} MB", r.cpu, mb(&r))).unwrap_or_default())
+        seen.with(|it| it.map(|r| format!("OneTerm: CPU {}%, RAM {} MB", r.cpu, mb(&r))).unwrap_or_default())
     };
     tooltip(said, of).content(move || details(seen))
 }

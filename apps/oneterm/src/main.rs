@@ -1,8 +1,8 @@
-//! 1Term in a real window:
+//! OneTerm in a real window:
 //!
 //!     tools/cargo.sh run -p oneterm
 //!
-//! With `ONETERM_HOME=.tmp/1term` its settings and log go there instead of the user's folders.
+//! With `ONETERM_HOME=.tmp/oneterm` its settings and log go there instead of the user's folders.
 
 #![windows_subsystem = "windows"]
 
@@ -17,7 +17,13 @@ fn main() -> quadra::Result<()> {
     let mut app = quadra::app()?;
     // ONETERM_HOME puts the settings and the log in one folder (a trial run); else the user's.
     let home = std::env::var_os("ONETERM_HOME").map(|home| AppDirs::under(std::path::Path::new(&home)));
-    if let Some(dirs) = home.or_else(|| AppDirs::for_app("1Term")) {
+    if home.is_none() {
+        let roots = ["APPDATA", "LOCALAPPDATA"].map(|it| std::env::var_os(it).unwrap_or_default().into());
+        oneterm::adopt(
+            &roots.into_iter().filter(|it: &std::path::PathBuf| it.is_absolute()).collect::<Vec<_>>(),
+        );
+    }
+    if let Some(dirs) = home.or_else(|| AppDirs::for_app("OneTerm")) {
         // A crash that is no panic is reported beside the panics' reports.
         quadra_shell::crash_reports(&dirs.data.join("crashes"));
         app = app.dirs(dirs);
@@ -31,7 +37,7 @@ fn main() -> quadra::Result<()> {
         quadra_design::install(app, &first)?.theme_by(move |seen| theme(&chosen.get(), &named.get(), seen));
     // The system's dialogs and what opens files, for SFTP's Edit.
     let app = quadra_shell::install(app);
-    let options = WindowOptions::new("1Term")
+    let options = WindowOptions::new("OneTerm")
         .size(1440.0, 900.0)
         .fit(0.85)
         .min_size(720.0, 480.0)
@@ -42,7 +48,7 @@ fn main() -> quadra::Result<()> {
     app.keymap(keymap())
         .window(options, move || {
             let term = OneTerm::new(shells);
-            // The user's own run takes over from OneTerm once and asks for a newer version;
+            // The user's own run takes over from OneTerm 0.6 once and asks for a newer version;
             // a trial run takes nothing and asks nothing.
             if std::env::var_os("ONETERM_HOME").is_none() {
                 term.model.take_over_once();

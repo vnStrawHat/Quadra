@@ -1,10 +1,14 @@
-# 19. 1Term
+# 19. OneTerm
 
-1Term is a terminal app for local shells, and later SSH and SFTP, in `apps/oneterm` (package
-`oneterm`, binary `oneterm`, as the app it replaces, whose updater starts that name). Started 2026-11-15 by the user's decision, before the other apps.
-Its look is the user's design (the canvas "1Term": main window, horizontal tabs variant, the `+`
-menu, settings, the lock screen, SFTP), drawn with `quadra-design` in the kit's language; the
-user's own terminal app OneTerm (a clone to read in `.cache/vendor/oneterm-app`) is the
+OneTerm is a terminal app for local shells, and later SSH and SFTP, in `apps/oneterm` (package
+`oneterm`, binary `oneterm`). It is the user's terminal app of that name built again on Quadra:
+its versions go on from 0.7.0, and **OneTerm 0.6** in this spec is every version before, built
+on another toolkit, whose updater starts `oneterm.exe`. Until 2026-11-24 the app was named
+1Term (the user's decision that day gave it the name of what it replaces); the folders it
+kept under that name are taken along ("Taking over from OneTerm 0.6"). Started 2026-11-15 by the user's decision, before the other apps.
+Its look is the user's design (the canvas "1Term", by the name then: main window, horizontal tabs variant, the `+`
+menu, settings, the lock screen, SFTP), drawn with `quadra-design` in the kit's language; OneTerm 0.6
+(a clone to read in `.cache/vendor/oneterm-app`) is the
 reference for behaviour and settings the design leaves open. The terminal is `quadra-term` (18).
 
 ## Phases
@@ -36,9 +40,9 @@ P2 milestones:
 
 ## Window
 
-Crashes: with its folders 1Term writes a report of a panic (specs/15) and, through
+Crashes: with its folders OneTerm writes a report of a panic (specs/15) and, through
 `quadra_shell::crash_reports` (specs/16), of a crash that is no panic (a minidump and the log's
-last lines) to `crashes` in its data folder. The next start shows a warning card, `1Term closed
+last lines) to `crashes` in its data folder. The next start shows a warning card, `OneTerm closed
 unexpectedly` with the report's name, whose Show report shows the report in the file manager
 (`Opener::reveal`); each report is told once (`App::last_crash`). Nothing is sent anywhere.
 
@@ -46,16 +50,16 @@ Custom frame (`WindowOptions::custom_frame`), 1440×900 at most 85 % of the disp
 at least 720×480 (`WindowOptions::min_size`; a smaller remembered place opens at it), its place
 remembered. Top to bottom: the title bar and, under the body, the status bar: each a bar
 of the design language (32 px). Colours are the kit's roles; the accent is the theme's. The look follows
-the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: the UI face at
+the user's canvas "OneTerm" as revised on 2026-11-16 (the Quadra design language: the UI face at
 14 px on 23 px lines, labels 12 px on 19, the kit's mono face for paths, numbers and keys).
 
 - **Title bar** (the chrome plane, a line under it): the mark, a terminal's prompt (the kit's
   `terminal` glyph, 20 px) in the brand's colour `#58C4DC`, the same in every theme, and
-  "1Term" (13 px, semibold), 12 px from the left edge; then, right, icon buttons of 22 px with
+  "OneTerm" (13 px, semibold), 12 px from the left edge; then, right, icon buttons of 22 px with
   14 px icons, in this order: the
   bells and notices (M3: a bell and one count of bells not heard and notices not seen in mono,
   `3 bells and notices`, both in the error colour while the count is above 0, else the muted
-  colour; 22 px high, 4 px at its sides; a click marks the notices seen), Lock 1Term now (M6:
+  colour; 22 px high, 4 px at its sides; a click marks the notices seen), Lock OneTerm now (M6:
   while a lock is set, a lock icon and the minutes left before it locks in mono, `9m`, both
   muted, 22 px high, 4 px at its sides; the icon alone in a box of 22 when none is set),
   Open settings (M5); in the horizontal variant SSH hosts before the bells, so the bells,
@@ -77,7 +81,7 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
   text is painted again), and last Toggle SFTP panel. Labels are the secondary colour, values
   the text colour, numbers in mono. The icons have the kit's roles (the canvas leaves them in
   the label colour): the folder `warn`, the branch `ok`, the server `info`, the lock
-  `hue_purple`. The minutes before the lock are in the title bar (Lock 1Term now).
+  `hue_purple`. The minutes before the lock are in the title bar (Lock OneTerm now).
 
 ## Rail (vertical tabs)
 
@@ -158,7 +162,7 @@ they do after a close. Split space in a layout of the user's is a split to the r
 at one space arranges itself again. The order of the spaces (the focus keys, the status bar) is
 the tree's reading order (in an arranged tab, each added space comes after the focused one). The
 layout is not saved. A space is a terminal, or the editor of a remote file (M9, "Editing in
-1Term"): that one runs no program and is in no input channel; it is not saved either. Each space of a tab of two or more has an 18 px header (a tab of one space has none) in 12 px on the panel colour (a line of 16 over one pixel, so its words stand in the middle of the 17 its line leaves and both faces share a baseline), a 1 px line along its bottom (inside the 18 px): where it is on the left,
+OneTerm"): that one runs no program and is in no input channel; it is not saved either. Each space of a tab of two or more has an 18 px header (a tab of one space has none) in 12 px on the panel colour (a line of 16 over one pixel, so its words stand in the middle of the 17 its line leaves and both faces share a baseline), a 1 px line along its bottom (inside the 18 px): where it is on the left,
 in mono (the cwd, after `user@host:` for a remote space; a shell that has said no cwd, its
 title after `user@host`, the title alone when it says who already; in the text colour while focused), its
 signal on the right (a progress percentage in mono; the state's 12 px icon and a label in the
@@ -314,13 +318,13 @@ detail), the focus in it as it opens.
   switch, `/C md .exe`, and ends). With no tab left (the last one
   closed, however it went) the window stays: the workspace says `Ctrl+T opens a terminal`. A split starts in the focused
   space's directory. A local shell's environment is the user's as the registry says it at
-  that moment (`CreateEnvironmentBlock`, as Windows Terminal does: a variable set after 1Term
-  started is in it), over 1Term's own. It names the terminal (`TERM_PROGRAM=1Term`,
+  that moment (`CreateEnvironmentBlock`, as Windows Terminal does: a variable set after OneTerm
+  started is in it), over OneTerm's own. It names the terminal (`TERM_PROGRAM=OneTerm`,
   `TERM_PROGRAM_VERSION` its version) and, while Force links is on, adds `FORCE_HYPERLINK=1`:
-  1Term opens OSC 8 links, and programs that know terminals by name (1Term is on no list)
+  OneTerm opens OSC 8 links, and programs that know terminals by name (OneTerm is on no list)
   show links on it; off, a program that writes links even into a pipe or a file does not.
   **Shell integration** (the setting of that name, `terminal.shell_integration`, on): a shell
-  1Term found is started so that it says where it is and where its prompts, commands and
+  OneTerm found is started so that it says where it is and where its prompts, commands and
   outputs begin and end, and writes UTF-8 (`local/integrate.rs`). Command Prompt: `/K chcp
   65001 >nul`, and a `PROMPT` of OSC 9;9 with its directory, OSC 133 `A`, the prompt, `B` (its
   one hook: it cannot say `C` or `D`). PowerShell, both: `-NoExit -Command` with one quoted
@@ -343,7 +347,7 @@ detail), the focus in it as it opens.
   green) and the count of changed files (`M1`, yellow) from `git status --porcelain --branch`
   run on the pool with no window, again when the directory changes and every 10 s; nothing
   when there is no repository or no `git`.
-- **CPU and memory**: of 1Term's process (the `Meter` in the context, `quadra_shell::install`'s
+- **CPU and memory**: of OneTerm's process (the `Meter` in the context, `quadra_shell::install`'s
   or a test's `FakeShell`; with none, `process_usage`; 16), read every 2 s (`CPU 3%`, `RAM
   182 MB`, the private working set): the processor time between two readings over the time the
   process lived between them and the count of processors. The pointer resting on CPU and RAM
@@ -351,7 +355,7 @@ detail), the focus in it as it opens.
   "Memory" (Private working set, Working set, Commit (private bytes), Peak working set, in MB
   with one decimal, `182.4 MB`) and "Processor" (CPU usage `3%`, CPU time and Uptime as
   `h:mm:ss`, Threads), values in mono, following the readings while it shows; a reader is
-  told `1Term: CPU 3%, RAM 182 MB`. The canvas's
+  told `OneTerm: CPU 3%, RAM 182 MB`. The canvas's
   machine-wide memory and network rates wait for a framework service that reads them.
 - **The meter** shows the progress of the tab that shows, else of the first tab that reports
   one; its label is the OSC 7501 id of the space that reports it (`build`; none without one),
@@ -360,7 +364,7 @@ detail), the focus in it as it opens.
 ## Settings
 
 A window of its own (980 by 700, its place kept; the title bar's Settings opens it or brings
-it to the front; it closes when 1Term locks and with the main window; where no window can open,
+it to the front; it closes when OneTerm locks and with the main window; where no window can open,
 the harness, the page shows in the main window with Done), the kit's `settings` in its layout of cards: pages with icons, each with
 what it is about, groups with titles; the title bar names the page), a search, pages (a row is explained in a reader's words, what it does and not how it is made; the options of a choice are in the same words, and as a choice is saved by its words, one saved by a word since changed reads as the default):
 Appearance (and the UI's text size, 75 to 200 %, the terminals' with it: the app's
@@ -407,11 +411,16 @@ the view's `TermSettings` (specs/18). A choice is saved as its words. Signals: O
 default sound, at once for each bell however the space is looked at) / badge and flash (the
 space's terminal tinted the selection colour for 120 ms) / ignore; OSC 9: toast 6 s / until dismissed / silent.
 
-## Taking over from OneTerm
+## Taking over from OneTerm 0.6
 
-1Term replaces OneTerm, the user's terminal app before it, whose folder is `.OneTerm` in the
-user's (`import.rs`). At its first start (the setting `import.oneterm`, set once it was
-tried; not in a trial run under `ONETERM_HOME`, nor in a test) 1Term takes over:
+OneTerm takes the place of OneTerm 0.6, whose folder is `.OneTerm` in the user's (`import.rs`).
+A build of the name before kept its settings in `%APPDATA%\1Term` and its data in
+`%LOCALAPPDATA%\1Term`: at a start with the user's own folders each becomes `OneTerm` there,
+where there is none yet (`adopt`). One that cannot be moved, as that build still runs, stays,
+and the app starts with folders of its own.
+
+ At its first start (the setting `import.oneterm`, set once it was
+tried; not in a trial run under `ONETERM_HOME`, nor in a test) OneTerm takes over:
 
 - the sessions of `ssh_session.json`, of any of its versions, as hosts: the label is the
   name (a label met again gets a number after it, `prod (2)`, as sessions are known by an id
@@ -419,70 +428,70 @@ tried; not in a trial run under `ONETERM_HOME`, nor in a test) 1Term takes over:
   group, `user@host:port`, the way in (`private_key` with its key file, `agent`, else the
   password), the jump host by the name its session got, the forwards (local, remote, dynamic;
   the address listened on is this machine's own here), and the colour as the host's tag. A
-  host whose name 1Term already has is left as it is. What 1Term has no place for is left
+  host whose name OneTerm already has is left as it is. What OneTerm has no place for is left
   behind: a session's own logging, agent forwarding.
 - of `terminal.json`: the font's family and size, the rows of history, the cursor's blink,
   and the keepalive (on, its seconds, how many may go unanswered).
 
-- the saved passwords, with nothing asked: 1Term's vault is of OneTerm's format (below,
-  "Saved passwords"), so the document of `vault.json` becomes 1Term's vault as it is, and
+- the saved passwords, with nothing asked: OneTerm's vault is of OneTerm 0.6's format (below,
+  "Saved passwords"), so the document of `vault.json` becomes OneTerm's vault as it is, and
   each session's `sealed_password` the secret of its host, as it is. The master password is
-  OneTerm's from then on: the next start opens locked, and it is asked for the first time a
-  host with a saved password is connected to. A password comes along for a host 1Term has
+  OneTerm 0.6's from then on: the next start opens locked, and it is asked for the first time a
+  host with a saved password is connected to. A password comes along for a host OneTerm has
   under the session's name and target and with no secret of its own, and only an envelope
   of that vault, and only for a session whose way in is the password (one left behind
   another way is stale there, and would be tried here as a key's passphrase); with no
-  password saved there, the vault is not taken either. Where 1Term
+  password saved there, the vault is not taken either. Where OneTerm
   has a vault of its own already (a master password set here
   first), it is kept and no password is taken.
 
 A card says how many hosts and saved passwords were taken over, that the master password is
-OneTerm's, and how many passwords could not be taken. Settings, SSH & hosts has **Import
-from OneTerm**, which does the same again for what 1Term does not have yet (no settings) and
-says so. OneTerm's files are read and never changed.
+OneTerm 0.6's, and how many passwords could not be taken. Settings, SSH & hosts has **Import
+from OneTerm 0.6**, which does the same again for what OneTerm does not have yet (no settings) and
+says so. OneTerm 0.6's files are read and never changed.
 
 ## Updates
 
-1Term updates itself through `quadra-updater` (specs/22) from the releases of
-`vnStrawHat/OneTerm`, the repository of the app it replaces: that app's own updater looks
-there, so its last version updates to 1Term, and 1Term goes on from the same place. The
-user splits 1Term out of Quadra into that repository and releases 0.7.0 from it, at a time
+OneTerm updates itself through `quadra-updater` (specs/22) from the releases of
+`vnStrawHat/OneTerm`: the updater of OneTerm 0.6 looks there, so its last version updates to
+0.7.0, and the app goes on from the same place. The
+user splits OneTerm out of Quadra into that repository and releases 0.7.0 from it, at a time
 of their choosing (00, the decisions of 2026-11-24); nothing is published before. A
 release carries `oneterm-<version>-x86_64-pc-windows-msvc.zip`, holding
 `oneterm-<version>-x86_64-pc-windows-msvc/` with `oneterm.exe`, the console host, `LICENSE`,
 `NOTICE` and `THIRD-PARTY-NOTICES.txt` (`tools/notices.py`: the console host's notice, the
 licences of the kit's icons and faces, and every crate the binary is built from with its
 licence files) (`tools/release.sh`, which makes the zip and prints its SHA-256, and publishes
-nothing); 1Term's versions go on from that app's (0.7.0 the first, the package's own version
+nothing); OneTerm's versions go on from that app's (0.7.0 the first, the package's own version
 in `apps/oneterm/Cargo.toml`). The executable's icon is that app's (`assets/logo.ico`, its
 48 and 96 px images; specs/16, "An executable's icon"), which the window takes too.
 
 Settings, About has the group **Updates** (`updates.rs`):
 
 - **Update**: what is known, and one button that is the next step. Nothing asked yet:
-  **Check for updates**. `Checking…` (the button off). `1Term is up to date.` `Version 0.7.1
+  **Check for updates**. `Checking…` (the button off). `OneTerm is up to date.` `Version 0.7.1
   is available.` with **Install**: the package is fetched (`Downloading 0.7.1 42%`, with
   **Cancel**, which leaves the version to install), checked against the digest GitHub
-  publishes, and its files put in 1Term's folder while it runs; no session is touched.
-  `Version 0.7.1 is installed.` with **Restart 1Term**, which starts the new version and
+  publishes, and its files put in OneTerm's folder while it runs; no session is touched.
+  `Version 0.7.1 is installed.` with **Restart OneTerm**, which starts the new version and
   closes this one, with every terminal and connection, as the row's words say; left alone,
   the next start is the new version anyway. What failed is said in the row in words (the
   network, no package for this system, a package that is not the one published), with the
   detail in the log, and the button checks again.
 - **Check at start** (`updates.check_at_start`, on): a start asks once, off the window's
-  thread; a newer version shows a card, `1Term 0.7.1 is available`, `Install it from
+  thread; a newer version shows a card, `OneTerm 0.7.1 is available`, `Install it from
   Settings, About.`; a check that found none or failed says nothing. A trial run under
   `ONETERM_HOME` asks nothing.
 
-After that app's updater put 1Term over its folder, the console host it shipped is still
-there (`x64/OpenConsole.exe`, an older version) beside 1Term's own: `conpty.dll` starts the
+After that app's updater put OneTerm over its folder, the console host it shipped is still
+there (`x64/OpenConsole.exe`, an older version) beside OneTerm's own: `conpty.dll` starts the
 one beside itself (tried 2026-11-24 with both in the folder), so the older one is only a
 file left behind.
 
 The package is fetched to `updates` in the app's data folder, and removed once installed.
 Where the app has no folders of its own (a test, a picture of the page) nothing is asked. `main` calls
 `quadra_updater::started()` first, which removes what the version before left moved aside.
-Not done: pre-release versions, a version skipped on purpose, a proxy of 1Term's own (the
+Not done: pre-release versions, a version skipped on purpose, a proxy of OneTerm's own (the
 system's is used).
 
 ## Lock
@@ -492,7 +501,7 @@ it is the password that opens the vault). Locks after the idle time (10 min defa
 or at once with `Ctrl+Shift+L` and the title bar's button. Locked: the workspace blurred and
 dimmed behind, the title bar usable and saying "Locked", a card where dialogs hang (the
 dialog's look: level 2, 440 wide, 80 px from the window top, centred): a 16 px lock in the
-accent and "1Term is locked" (16 px), "Locked after N minutes idle. Your sessions are still
+accent and "OneTerm is locked" (16 px), "Locked after N minutes idle. Your sessions are still
 running." in the secondary colour, the field labelled Password (32 px) with Show password at
 its end, then in 12 px `n sessions connected` after a green dot and `n new while locked` after
 a bell in the error colour; a footer over a line with Unlock (primary, `Enter` after it) at the
@@ -554,7 +563,7 @@ thread never waits on the network.
   unknown one is asked (`HostKey`, its SHA-256 fingerprint), and trusting it writes it to the
   file; a changed key is never asked: it fails with `the host key of 'host' has changed`, the
   key sent and its fingerprint, and the line and file of the key known, to remove there. A
-  certificate fails (`the host gave a certificate, which 1Term does not check yet`).
+  certificate fails (`the host gave a certificate, which OneTerm does not check yet`).
 - **Authentication**, by the option `Auth`: first `none`, as OpenSSH does (a server that needs
   nothing of the user, an account with no password, lets it in unasked). Then `Auto` (the
   default) tries the agent
@@ -636,7 +645,7 @@ thread never waits on the network.
   the Keys by their paths (`~/.ssh/id_ed25519`; a host's key not among them is offered too),
   beside the passphrase; for Auto and Password the password across, both with the
   eye that shows what was typed (a saved one is used when it is left empty, the empty password
-  else); for Auto and SSH agent a line of what they do. A new key adds a note (`1Term has
+  else); for Auto and SSH agent a line of what they do. A new key adds a note (`OneTerm has
   not seen this host's key. Its fingerprint is shown to check before it is trusted.`): no key
   is trusted before it is seen, so nothing is ticked here; the engine's question is a step
   of connecting (below), with the host, the key's kind and its fingerprint.
@@ -650,7 +659,7 @@ thread never waits on the network.
   what it is about: a check when done, a spinner under way, a dot to come, by the engine's
   `Connecting` and `Authenticating` events) and what the server asks on the way (a user, a
   password or passphrase, keyboard-interactive's questions, a key) in a field under them with
-  `Asked by <name>. 1Term passes your answer through and does not store it.`, answered by
+  `Asked by <name>. OneTerm passes your answer through and does not store it.`, answered by
   Continue or Enter; Connect reads `Connecting…` and is off, and Cancel goes back to the form.
   The tab, or the space beside the focused one, opens only once the shell is open. A failure,
   or a password refused, shows in an alert of the danger tone over the fields (`Could not
@@ -668,7 +677,7 @@ thread never waits on the network.
   the auths Password and Key file the password or the key's passphrase to save (a password
   field, Password or passphrase; editing, empty keeps the one saved, `Saved` its placeholder). A secret is saved only
   sealed with the master password (below, "Saved passwords"): once one is typed, with a master
-  password set but not typed since 1Term started a Master password field shows under it, and
+  password set but not typed since OneTerm started a Master password field shows under it, and
   with none set New master password and Repeat it, which set it as Security & lock does (it
   also locks the window). A wrong or missing one saves nothing and a card says why. Then the startup command (Startup
   command, `tmux attach -t main || tmux new -s main`): kept in `ssh.startup` (rows of the
@@ -696,7 +705,7 @@ thread never waits on the network.
   fingerprint cut to its ends with `· passphrase` when one locks it (`oneterm_ssh::key_info`,
   read without the passphrase), or `Not found` or `Not an OpenSSH private key`; Remove. No
   dialog picks a file: a host's key is chosen by name from these.
-- **Saved passwords** are kept as OneTerm keeps them (`vault/format.rs`), so what it saved
+- **Saved passwords** are kept as OneTerm 0.6 keeps them (`vault/format.rs`), so what it saved
   opens here. The vault in `ssh.vault` is the document of its `vault.json` (schema 1): the
   vault's id of 16 random bytes, the cost of Argon2id (version 19; a new vault takes 64 MiB,
   3 passes, 1 lane; a document asking for less than 19 MiB and 2 passes or more than 1 GiB,
@@ -728,7 +737,7 @@ thread never waits on the network.
   (`Secret`, its `Debug` hiding it) and the passwords typed are wiped when dropped or cleared
   (`zeroize`): the master password and the secret fields of the dialogs, the Sign in field and
   the lock card's field are wiped, not just emptied, once used; the engine wipes a key file's
-  passphrase once it opened the key. What leaves 1Term's hands is not: a password given to
+  passphrase once it opened the key. What leaves OneTerm's hands is not: a password given to
   `russh` to send, the text fields' own copies while typing.
 - **The `+` menu** lists Recent (up to 3, with how long ago) and the hosts by group under
   Quick connect, and Add SSH host, under its search field.
@@ -772,7 +781,7 @@ thread never waits on the network.
   accent); two on a folder (or on `..`) open it, two on a file download it to
   the user's Downloads folder (`name (1).ext` when the name is taken). The other button gives
   a remote row's menu (Open or Download; for a file Edit…: downloaded to `sftp-edit` in the app's data
-  folder, then as the setting Editor says: 1Term's editor (the default; "Editing in 1Term" below), or
+  folder, then as the setting Editor says: OneTerm's editor (the default; "Editing in OneTerm" below), or
   opened in the system's app for it or the program the settings name with its arguments
   (`Opener::open_with`), sent back each time it is saved, a card saying so; above the size set, 1 MB,
   asked first; Rename…, Copy path, Properties…, Delete…) and, where no row is, the
@@ -818,7 +827,7 @@ thread never waits on the network.
   of 200 px, its percentage and the cross. The kit draws all of it (tokens, `checkbox`, inputs,
   icon buttons); the canvas gives the layout only.
   `Entry::modified` is the server's mtime (seconds; 0 when it has none).
-- **Editing in 1Term**: Edit… opens the file in a space after the focused one of the tab it
+- **Editing in OneTerm**: Edit… opens the file in a space after the focused one of the tab it
   was chosen in (as Split space puts one), with the focus; the same file open already takes the
   focus instead. The file is read on the pool: a NUL in its first 8 KB, or bytes that are not
   UTF-8, make it binary, and the space says `Binary file, 3 B: not shown, and not edited here.`
@@ -856,7 +865,7 @@ thread never waits on the network.
 
 ### The console host
 
-1Term's folder holds `conpty.dll` and `OpenConsole.exe` beside `oneterm.exe` (specs/01, R15):
+OneTerm's folder holds `conpty.dll` and `OpenConsole.exe` beside `oneterm.exe` (specs/01, R15):
 `oneterm-vt` uses them before the system's host, which passes about half as much output
 (specs/14, "Terminal throughput"). `tools/conpty.sh` fetches the pinned package into
 `.cache/conpty`, checks it and copies the two files to `target/debug`, `target/release`,

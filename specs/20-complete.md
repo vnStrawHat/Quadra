@@ -1,9 +1,9 @@
 # 20. Completion
 
-The engine of 1Term's command completion, in `apps/oneterm/complete` (package
+The engine of OneTerm's command completion, in `apps/oneterm/complete` (package
 `oneterm-complete`): from the line at the prompt and its cursor, a short ranked list of what
 may be typed next. It has no view; the terminal's overlay asks it and draws what it gives.
-OneTerm's completion engine (a read-only clone in `.cache/vendor/oneterm-app`,
+OneTerm 0.6's completion engine (a read-only clone in `.cache/vendor/oneterm-app`,
 `crates/completion`) is the reference for behaviour.
 
 ## Families

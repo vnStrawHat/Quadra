@@ -92,15 +92,15 @@ writes `<cols>x<rows> <frames> frames <fps> fps <bytes> bytes a frame`):
 
 - **Feed**: `doomfire-feed`, the frames fed straight to a `quadra-term` session's `Feeder`
   with no console and no window: the engine's ceiling.
-- **1Term**: `tools/doomfire.sh`, the app's release build in a real window running
+- **OneTerm**: `tools/doomfire.sh`, the app's release build in a real window running
   `doomfire` in a space through the pseudo console, 1440 by 900.
 - **Reference**: the same program in another terminal, by hand.
 
-The goal is the best fps there is: 1Term's is to come as near the feed's as the console host
+The goal is the best fps there is: OneTerm's is to come as near the feed's as the console host
 lets it, and never below the poor band. A fourth number, `doomfire-conpty`, is that host's
-own ceiling: the demo through the pseudo console with its output read and dropped. 1Term
+own ceiling: the demo through the pseudo console with its output read and dropped. OneTerm
 ships a newer host than the system's (specs/01, R15): `tools/conpty.sh` puts it beside the
-binaries, and every number of 1Term is taken with it.
+binaries, and every number of OneTerm is taken with it.
 
 ## Baselines
 

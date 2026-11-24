@@ -1,4 +1,4 @@
-//! 1Term on the headless platform with an `echo()` session (specs/19, "Tests"): the title
+//! OneTerm on the headless platform with an `echo()` session (specs/19, "Tests"): the title
 //! bar, the terminal with the focus from the start, the status bar's directory (the clock:
 //! `tests/bars.rs`).
 
@@ -29,7 +29,7 @@ fn app() -> (Harness, Session) {
 #[test]
 fn the_window_shows_a_terminal_that_has_the_focus_and_says_where_it_is() {
     let (mut h, s) = app();
-    assert!(h.has_text("1Term"));
+    assert!(h.has_text("OneTerm"));
     assert!(h.has_text("1 local \u{B7} 1 space"));
     h.type_text("ls");
     h.settle();

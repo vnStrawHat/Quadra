@@ -21,7 +21,7 @@ pub struct ColorPicker {
     value: Signal<String>,
     presets: Vec<(String, Color)>,
     fallback: Option<Paint>,
-    placeholder: String,
+    placeholder: Option<String>,
     label: Option<Prop<String>>,
     width: Option<f32>,
     test_id: Option<&'static str>,
@@ -34,7 +34,7 @@ pub fn color_picker(value: Signal<String>) -> ColorPicker {
         value,
         presets: Vec::new(),
         fallback: None,
-        placeholder: "Default".to_string(),
+        placeholder: None,
         label: None,
         width: None,
         test_id: None,
@@ -55,9 +55,10 @@ impl ColorPicker {
         self
     }
 
-    /// What the field says while the value is empty: "Default" unless told.
+    /// What the field says while the value is empty, in the place of the fallback's code
+    /// ("Default" where there is neither).
     pub fn placeholder(mut self, text: &str) -> Self {
-        self.placeholder = text.to_string();
+        self.placeholder = Some(text.to_string());
         self
     }
 
@@ -162,13 +163,19 @@ impl View for ColorPicker {
         let face = face.border_color(token::LINE_STRONG).cursor(Cursor::Pointer);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
-        // Empty, the code of the colour that stands instead, as the window's theme has it.
+        // A preset is said by its name. Empty, the placeholder told; else the code of the
+        // colour that stands instead, as the window's theme has it.
         let theme = quadra_reactive::use_context::<Signal<std::rc::Rc<quadra_tree::Theme>>>();
-        let words = placeholder.clone();
-        let said = move || match (empty(), fallback.zip(theme)) {
-            (false, _) => value.get(),
-            (true, Some((paint, theme))) => hex(theme.with(|it| it.resolve(paint))),
-            (true, None) => words.clone(),
+        let names: Vec<_> = self.presets.iter().map(|(name, color)| (name.clone(), hex(*color))).collect();
+        let said = move || match (empty(), &placeholder, fallback.zip(theme)) {
+            (false, ..) => {
+                let now = value.get();
+                let named = names.iter().find(|(_, code)| code.eq_ignore_ascii_case(now.trim()));
+                named.map_or(now.clone(), |(name, _)| name.clone())
+            }
+            (true, Some(words), _) => words.clone(),
+            (true, None, Some((paint, theme))) => hex(theme.with(|it| it.resolve(paint))),
+            (true, None, None) => "Default".to_string(),
         };
         let face = match self.label {
             Some(name) => face.label(name).value(move || value.get()),

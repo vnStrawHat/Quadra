@@ -160,3 +160,25 @@ fn an_empty_picker_shows_the_code_of_the_colour_that_stands_instead() {
     settle(&mut h);
     assert!(h.has_text("#336699") && !h.has_text(&code));
 }
+
+#[test]
+fn a_preset_is_said_by_its_name_and_empty_by_the_placeholder_told() {
+    let value = signal(String::new());
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(move || {
+        quadra_reactive::provide(signal(Rc::new(dark().theme())));
+        let picker = color_picker(value).label("Tag").fallback(token::ANSI[1]).placeholder("By group");
+        quadra_design::root().child(picker.presets([("Blue", Color::rgb(0x61afef))]))
+    });
+    settle(&mut h);
+    assert!(h.has_text("By group"), "{}", h.semantics());
+    // A preset's colour, however it is written; a reader is still told the colour.
+    value.set("#61AFEF".into());
+    settle(&mut h);
+    assert!(h.semantics().contains("Text \"Blue\""), "{}", h.semantics());
+    assert!(h.semantics().contains("Button \"Tag\" = \"#61AFEF\""), "{}", h.semantics());
+    value.set("#336699".into());
+    settle(&mut h);
+    assert!(h.has_text("#336699"));
+}

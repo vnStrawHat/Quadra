@@ -223,10 +223,11 @@ As built so far:
 - **`color_picker(value)`** (`color/picker.rs`) chooses a colour in a popover; `value` is a
   `String` as in `color_input`: `#rrggbb`, or empty for "the default" (the theme's colour of a
   setting, the tag of a host's group). The opener is a field of 120 px (`.width(..)`) the
-  look of the date picker's: a 14 px swatch of the colour and its text, or while empty the
-  swatch of `.fallback(paint)` and that colour's `#rrggbb` in `text_3`, as the window's
-  theme (the app's `Signal<Rc<Theme>>`) gives it; with no fallback or no theme, the
-  placeholder (`.placeholder(..)`, "Default" unless told). A button to a reader, named by `.label(..)` with the colour as its
+  look of the date picker's: a 14 px swatch of the colour and its text (a preset's name where the colour is
+  one of `.presets(..)`: `Purple`, not its code), or while empty the
+  swatch of `.fallback(paint)` and, in `text_3`, the placeholder told (`.placeholder(..)`:
+  `By group`), else that colour's `#rrggbb` as the window's
+  theme (the app's `Signal<Rc<Theme>>`) gives it; with none of them, "Default". A button to a reader, named by `.label(..)` with the colour as its
   value, or by the colour (the placeholder while empty); `.test_id(..)`. A click opens the
   popover, its focus in the area; opening and closing write nothing. In it, 208 px wide:
   - the area of saturation (left to right) and brightness (top to bottom) at the hue, a

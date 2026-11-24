@@ -188,4 +188,15 @@ belong to an app, such as 1Term's SSH engine, are taken when its phase starts.
 | Order | Quadra first; the apps afterwards; `quadra-term` on hold |
 | Repository on disk | `D:\quadra`; the remote is set up later |
 
-Open: the remote repository and its name.
+The remote was set up since: `origin`, github.com/vnStrawHat/Quadra.
+
+## Decisions taken by the user (2026-11-24): 1Term replaces OneTerm
+
+| Question | Decision |
+|---|---|
+| Licence | Apache-2.0, as OneTerm's |
+| Saved passwords | 1Term's vault is OneTerm's format (Argon2id); its vault and sealed passwords are taken as they are, with nothing asked. Breaking a 1Term of before is accepted (19, "Saved passwords") |
+| The executable | `oneterm.exe` with OneTerm's icon, in the title bar too; versions go on from OneTerm's, 0.7.0 the first |
+| Updates | A crate of Quadra's for any app that updates through GitHub: `quadra-updater` (22) |
+| Other systems | Linux and macOS are left for later |
+| Where 1Term lives | In Quadra for now. At a time of the user's choosing the user splits the app out of Quadra into github.com/vnStrawHat/OneTerm, in place of what is there, and releases 0.7.0 from that repository. Until then nothing is published: `tools/release.sh` only builds the asset |

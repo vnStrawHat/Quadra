@@ -445,7 +445,9 @@ says so. OneTerm's files are read and never changed.
 
 1Term updates itself through `quadra-updater` (specs/22) from the releases of
 `vnStrawHat/OneTerm`, the repository of the app it replaces: that app's own updater looks
-there, so its last version updates to 1Term, and 1Term goes on from the same place. A
+there, so its last version updates to 1Term, and 1Term goes on from the same place. The
+user splits 1Term out of Quadra into that repository and releases 0.7.0 from it, at a time
+of their choosing (00, the decisions of 2026-11-24); nothing is published before. A
 release carries `oneterm-<version>-x86_64-pc-windows-msvc.zip`, holding
 `oneterm-<version>-x86_64-pc-windows-msvc/` with `oneterm.exe`, the console host, `LICENSE`,
 `NOTICE` and `THIRD-PARTY-NOTICES.txt` (`tools/notices.py`: the console host's notice, the

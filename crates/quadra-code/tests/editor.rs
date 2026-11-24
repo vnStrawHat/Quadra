@@ -224,7 +224,7 @@ fn wrapped(text: &str) -> Ed {
 fn wrapped_lines_break_after_blanks_and_the_rows_drive_up_down_and_the_pointer() {
     // "alpha beta " | "gamma " | "delta", then a word longer than a row in pieces of ten.
     let mut e = wrapped("alpha beta gamma delta\nabcdefghijklmnopqrstuvwxy");
-    assert_eq!(e.h.tree.rect(e.id).height, 6.0 * 14.0);
+    assert_eq!(e.w().row_count(), 6);
     let rows: Vec<_> = (0..6).map(|row| e.w().row_span(row)).collect();
     assert_eq!(rows, vec![0..11, 11..17, 17..22, 23..33, 33..43, 43..48]);
     // Down goes a row, in the column it came from; End is the line's.
@@ -240,11 +240,11 @@ fn wrapped_lines_break_after_blanks_and_the_rows_drive_up_down_and_the_pointer()
     e.h.advance(Duration::from_secs(1));
     e.h.click(54.0 + 9.0 * 6.0, 1.0 * 14.0 + 7.0);
     assert_eq!(e.head(), 16); // the blank that hangs at the end of "gamma "
-    // Typing makes a row more, and the editor taller.
+    // Typing makes a row more; the editor is as high as its view while its rows fit in it.
     e.keys(&[(Key::End, Mods::CTRL)]);
     e.h.type_text("zzzzzz");
     e.h.frame();
-    assert_eq!(e.h.tree.rect(e.id).height, 7.0 * 14.0);
+    assert_eq!((e.w().row_count(), e.h.tree.rect(e.id).height), (7, 140.0));
     assert_eq!(e.w().scroll_x, 0.0);
 }
 
@@ -266,4 +266,23 @@ fn the_gutter_marks_what_differs_from_the_base() {
     assert!(e.w().marks.iter().all(|m| *m == Mark::None));
     e.h.type_text("x");
     assert_eq!(e.w().marks[0], Mark::Changed);
+}
+
+#[test]
+fn under_the_last_line_the_editor_is_still_the_editor() {
+    let mut e = ed(&format!("{}\nshort\n", "wide ".repeat(60)), "a.txt");
+    // Shift and the wheel under the text scroll it sideways, as over it.
+    e.h.tree.wheel(
+        quadra_prim::Point::new(0.0, -3.0),
+        false,
+        quadra_prim::Point::new(200.0, 120.0),
+        Mods::SHIFT,
+    );
+    e.h.frame_if_needed();
+    assert!(e.w().scroll_x > 0.0, "the wheel under the text");
+    // A press there puts the cursor at the end of the text, and gives it the focus.
+    e.h.tree.blur();
+    e.h.click(200.0, 120.0);
+    e.h.frame_if_needed();
+    assert_eq!((e.h.tree.focused(), e.head()), (Some(e.id), 307));
 }

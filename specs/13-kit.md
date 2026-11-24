@@ -1486,7 +1486,8 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
   make it slow); a replacement is literal.
 - **The editor** (`editor(text).path(name)`) is a scroll view around one widget,
   `EditorWidget`, which holds the document, its highlighter and what finding found. The
-  widget is as high as its lines and as wide as the view; the scroll view scrolls it up and
+  widget is as high as its lines (as its view at least: under the last line of a short text
+  the pointer and the wheel are still the editor's) and as wide as the view; the scroll view scrolls it up and
   down, its wheel and its bar, and it scrolls itself sideways (the wheel with Shift, or
   sideways; the caret is kept in view), as far as the widest line it has painted. It paints
   the lines of the band its layer paints, not the document: under the text the line of each
@@ -1532,7 +1533,9 @@ What the editor does is behaviour/18. As built, its buffer and its tokenizers:
     with a match on each, 230 µs a letter where the whole text took 306 ms. A test of
     random edits, several at once and undone, holds the kept matches to those found
     again, with whole words and with case.
-  - **Soft wrap** (`editor(..).wrap(true)`, for prose): a line is broken into rows at the
+  - **Soft wrap** (`editor(..).wrap(true)`, for prose; `.wrap_when(signal)` while a signal
+    says so, an app's switch: the rows of an editor that shows are made again, its text,
+    cursors and undo as they were): a line is broken into rows at the
     text's width in cells, after the last blank that fits; a word longer than a row breaks
     inside it, and blanks hang past the edge. The rows (`editor/rows/wrap.rs`: the first row
     of each line, where each row starts) are built when the width or the tab size changes, a

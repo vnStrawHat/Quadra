@@ -3,7 +3,7 @@
 
 use std::cell::Cell;
 use std::rc::Rc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use quadra_async::{Timers, interval};
 use quadra_reactive::{Scope, Signal, use_context};
@@ -157,4 +157,18 @@ fn go_to(tree: &mut quadra_tree::Tree, slot: &Cell<Option<NodeId>>, scroll_y: Si
     if (y - scroll_y.get_untracked()).abs() > 0.5 {
         scroll_y.set(y);
     }
+}
+
+/// Wraps the lines while `wraps` says so: the rows are made again, as an edit makes them, and
+/// the caret is kept in view.
+pub(super) fn follow_wrap(cx: &mut MountCx, id: NodeId, epoch: Instant, wraps: Signal<bool>) {
+    let writer = cx.handle.clone();
+    cx.handle.bind(move || {
+        let (on, at) = (wraps.get(), writer.now());
+        writer.with(move |tree| {
+            if tree.widget_mut::<EditorWidget>(id).is_some_and(|w| w.wrap != on) {
+                super::edit(tree, id, (epoch, at), |w, _| w.wrap = on);
+            }
+        });
+    });
 }

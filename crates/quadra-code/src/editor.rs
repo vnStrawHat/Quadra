@@ -16,9 +16,9 @@ use std::cell::Cell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use quadra_platform::{Clipboard, Cursor, Mods};
+use quadra_platform::{Clipboard, Cursor};
 use quadra_reactive::{Signal, signal, use_context};
-use quadra_tree::{NodeId, PointerKind, Style, TextValues};
+use quadra_tree::{NodeId, Style, TextValues};
 use quadra_view::{MountCx, NodeRef, View, column, div, scroll, show};
 
 use edit::{edit, rows_by};
@@ -39,6 +39,7 @@ pub struct Editor {
     /// The size of the text and the height of a line, in pixels.
     font: (f32, f32),
     wrap: bool,
+    wraps: Option<Signal<bool>>,
     on_link: Option<pointer::OnLink>,
     base: Option<String>,
     changed: Option<Signal<bool>>,
@@ -60,6 +61,7 @@ pub fn editor(text: impl Into<String>) -> Editor {
         highlight: None,
         font: (15.0, 25.0),
         wrap: false,
+        wraps: None,
         on_link: None,
         base: None,
         changed: None,
@@ -109,6 +111,12 @@ impl Editor {
     /// Breaks lines at the editor's width, as prose wants: no line scrolls sideways.
     pub fn wrap(mut self, wrap: bool) -> Self {
         self.wrap = wrap;
+        self
+    }
+
+    /// As [`wrap`](Self::wrap) while `wraps` says so: it may change while the editor shows.
+    pub fn wrap_when(mut self, wraps: Signal<bool>) -> Self {
+        self.wraps = Some(wraps);
         self
     }
 
@@ -201,7 +209,7 @@ impl View for Surface {
         let tokenizer = tokenizer_for(&editor.path);
         let tokens = || Box::new(Highlighter::new(tokenizer)) as Box<dyn Highlight>;
         let mut widget = EditorWidget::new(&editor.text, editor.highlight.unwrap_or_else(tokens));
-        widget.wrap = editor.wrap;
+        widget.wrap = editor.wraps.map_or(editor.wrap, |it| it.get_untracked());
         widget.prose = matches!(tokenizer, Tokenizer::Plain | Tokenizer::Markdown);
         widget.base = editor.base.as_deref().map(marks::Base::new);
         widget.changed = editor.changed;
@@ -219,7 +227,9 @@ impl View for Surface {
         let family = Some(quadra_design::fonts::MONO.into());
         let text =
             TextValues { family, size: Some(size), line_height: Some(line / size), ..TextValues::default() };
-        let id = cx.tree.insert_widget(Style { text, ..Style::default() }, Box::new(widget));
+        // As high as the view at least: under the last line of a short text it is the editor.
+        let layout = quadra_layout::Style { min_height: quadra_layout::Length::Fill, ..Default::default() };
+        let id = cx.tree.insert_widget(Style { text, layout, ..Style::default() }, Box::new(widget));
         cx.tree.set_focusable(id, true);
         cx.tree.set_cursor(id, Some(Cursor::Text));
         cx.tree.set_key_context(id, EDITOR_CONTEXT);
@@ -277,19 +287,9 @@ impl View for Surface {
                 }
             });
         });
-        // Sideways: the wheel turned so, or with Shift.
-        let writer = cx.handle.clone();
-        cx.tree.on_pointer(id, PointerKind::Wheel, move |e| {
-            let dx = if e.mods.contains(Mods::SHIFT) { -e.delta.y } else { -e.delta.x };
-            if dx != 0.0 {
-                e.stop();
-                writer.with(move |tree| {
-                    if tree.widget_mut::<EditorWidget>(id).is_some_and(|w| w.scroll_by(dx)) {
-                        tree.mark_paint(id);
-                    }
-                });
-            }
-        });
+        if let Some(wraps) = editor.wraps {
+            time::follow_wrap(cx, id, epoch, wraps);
+        }
         time::blink(cx, id);
         pointer::pointer(cx, id, epoch, editor_link);
         id

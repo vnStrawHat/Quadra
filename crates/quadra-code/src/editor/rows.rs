@@ -34,7 +34,8 @@ impl EditorWidget {
         self.rows = Some(rows.unwrap_or_else(|| Rows::build(&self.doc, key.1, key.2)));
     }
 
-    pub(super) fn row_count(&self) -> usize {
+    /// How many rows the text takes: its lines, or what they wrap into.
+    pub fn row_count(&self) -> usize {
         self.rows.as_ref().map_or(self.doc.buffer.line_count(), |rows| rows.starts.len())
     }
 

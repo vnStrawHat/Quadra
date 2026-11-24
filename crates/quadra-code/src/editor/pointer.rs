@@ -38,6 +38,19 @@ pub(super) type OnLink = Rc<dyn Fn(&str)>;
 type Over = Signal<Option<(Point, Rc<str>)>>;
 
 pub(super) fn pointer(cx: &mut MountCx, id: NodeId, epoch: Instant, on_link: Option<OnLink>) {
+    // Sideways: the wheel turned so, or with Shift.
+    let writer = cx.handle.clone();
+    cx.tree.on_pointer(id, PointerKind::Wheel, move |e| {
+        let dx = if e.mods.contains(Mods::SHIFT) { -e.delta.y } else { -e.delta.x };
+        if dx != 0.0 {
+            e.stop();
+            writer.with(move |tree| {
+                if tree.widget_mut::<EditorWidget>(id).is_some_and(|w| w.scroll_by(dx)) {
+                    tree.mark_paint(id);
+                }
+            });
+        }
+    });
     let pressed: Pressed = Rc::new(Cell::new(None));
     // Whether the button is down, as the events come; `pressed` is filled as they are
     // handled, in the update pass.

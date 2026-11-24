@@ -182,6 +182,11 @@ fn a_user_not_given_is_asked() {
     a.h.key(Key::D, Mods::CTRL);
     let header = format!("tester@127.0.0.1:{port}:/home/tester/src");
     a.wait(|a| a.h.query(|n| n.semantics.name.starts_with(&header)).len() == 1, "the header");
+    // Its words are a line of 16 from the header's top: one pixel is under it, over the line.
+    let words = a.h.query(|n| n.semantics.name.starts_with(&header))[0];
+    let bar = a.h.tree.parent(a.h.tree.parent(words).unwrap()).unwrap();
+    let (words, bar) = (a.h.tree.window_rect(words), a.h.tree.window_rect(bar));
+    assert_eq!((words.height, words.y - bar.y, bar.height), (16.0, 0.0, 18.0));
 }
 
 #[test]

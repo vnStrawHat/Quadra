@@ -130,6 +130,9 @@ fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_line_under_its_icon() {
     let tabs = a.h.query(|n| n.semantics.role == Role::Tab);
     let first = a.h.tree.window_rect(tabs[0]);
     assert_eq!((first.width, first.height), (39.0, 40.0), "40 with the line at its right");
+    // A tab with no signal has no line under its icon: the icon is in the box's middle.
+    let (quiet, icon) = (a.h.tree.window_rect(tabs[2]), a.h.tree.window_rect(a.h.tree.children(tabs[2])[1]));
+    assert!((icon.center().y - (quiet.y + 19.5)).abs() <= 0.5, "{icon:?} in {quiet:?}");
     assert!(a.says("Terminal, blocked, needs permission"));
     assert!(a.says("Terminal, working, 64 percent"));
     assert_eq!(a.h.query(|n| n.semantics.role == Role::Tab && n.semantics.name == "Terminal").len(), 1);

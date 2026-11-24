@@ -167,7 +167,9 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
         .border_bottom(1.0) // inside the 18 px
         .border_color(token::LINE)
         .text_size(12.0)
-        .line_height(1.5)
+        // The border leaves 17: a line of 16 over one pixel has the words in their middle.
+        .padding_bottom(1.0)
+        .line_height(16.0 / 12.0)
         .text_color(token::TEXT_2)
         .child(
             div()

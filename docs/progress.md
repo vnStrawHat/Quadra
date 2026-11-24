@@ -584,6 +584,9 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   alert, and what is wrong with a field is said under it. The apps and the gallery say
   `vstack()`, `hstack()` and `form()` where they wrote them out. A theme file with no
   `accent_tint` gets its own accent at 16 % (37 of 1Term's themes showed the kit's blue).
+- **1Term: a folded tab with no signal has its icon in the middle; a space header's words too**
+  (2026-11-24): the hidden line's box kept its gap and lifted the icon 3 px; a line of 18 in
+  the header's 17 stood the mono words a pixel low and off the other face's baseline.
 - **1Term's own heights on the ladders** (the user's decision, 2026-11-24): title bar 38 to
   32, status bar 30 to 32 (the kit's too), a tab of the rail 36 to 28 (52 to 40 while it
   shows), the folded rail 48 by 44 to 40 by 40; the command palette's query row 36 to 32.

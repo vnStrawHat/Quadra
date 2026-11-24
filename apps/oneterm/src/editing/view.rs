@@ -140,7 +140,9 @@ fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -
         .border_bottom(1.0) // inside the 18 px
         .border_color(token::LINE)
         .text_size(12.0)
-        .line_height(1.5)
+        // As a terminal's header: a line of 16 over one pixel in the 17 the border leaves.
+        .padding_bottom(1.0)
+        .line_height(16.0 / 12.0)
         .text_color(token::TEXT_2)
         .child(place(&edit.place, on))
         .child(div().text_color(token::TEXT_3).child(text(kind)))

@@ -102,7 +102,8 @@ shows) and 6 px under it its signal as a line of 22 by 4 with round ends: `warn`
 `error` for error, `ok` for done; its progress as a meter (the accent filled to its part on
 `line_strong`, the error colour for an error); working with no progress the kit's busy bar of
 that size; a bell rung unseen the error colour broken in two pieces of 9, so it is not error;
-else no line, the icon in the box's middle (a program that said no state, or is idle). The
+else no line and no room kept for one, the icon in the box's middle (a program that said no
+state, or is idle). The
 one that shows is on the pressed editor colour, a pixel wider, with a short accent bar of 3 px
 floating at its left, 8 px from its top and bottom; `panel_hover` at half under the pointer.
 New terminal is a `+` in a box of 40 px. The title and signal are its name
@@ -155,7 +156,7 @@ they do after a close. Split space in a layout of the user's is a split to the r
 at one space arranges itself again. The order of the spaces (the focus keys, the status bar) is
 the tree's reading order (in an arranged tab, each added space comes after the focused one). The
 layout is not saved. A space is a terminal, or the editor of a remote file (M9, "Editing in
-1Term"): that one runs no program and is in no input channel; it is not saved either. Each space of a tab of two or more has an 18 px header (a tab of one space has none) in 12 px on the panel colour, a 1 px line along its bottom (inside the 18 px): where it is on the left,
+1Term"): that one runs no program and is in no input channel; it is not saved either. Each space of a tab of two or more has an 18 px header (a tab of one space has none) in 12 px on the panel colour (a line of 16 over one pixel, so its words stand in the middle of the 17 its line leaves and both faces share a baseline), a 1 px line along its bottom (inside the 18 px): where it is on the left,
 in mono (the cwd, after `user@host:` for a remote space; in the text colour while focused), its
 signal on the right (a progress percentage in mono; the state's 12 px icon and a label in the
 state's colour, `deploy blocked`, then the latency in mono; with no state the latency, else the

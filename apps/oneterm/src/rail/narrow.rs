@@ -150,6 +150,8 @@ fn line_of(tab: Tab) -> Line {
 fn state_line(tab: Tab) -> impl View {
     let line = quadra::memo(move || line_of(tab));
     let bar = || div().width(22.0).height(4.0).shrink(0.0).radius(token::RADIUS_XS);
+    // With no line its box is out of the column, or the gap before it would lift the icon.
+    let there = move || if line.get() == Line::None { Display::None } else { Display::Flex };
     dynamic(move || {
         AnyView::new(match line.get() {
             Line::None => div().display(Display::None),
@@ -165,4 +167,5 @@ fn state_line(tab: Tab) -> impl View {
             }
         })
     })
+    .container(div().display(there))
 }

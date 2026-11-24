@@ -132,7 +132,8 @@ fn card(model: &Model) -> Div {
         .child(
             row()
                 .justify(Justify::End)
-                .padding(token::SPACE_MD)
+                .padding_y(token::SPACE_MD)
+                .padding_x(token::SPACE_LG)
                 .border_top(1.0)
                 .border_color(token::LINE)
                 .child(unlock),

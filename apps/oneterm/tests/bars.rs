@@ -170,3 +170,16 @@ fn a_reading_as_wide_as_the_last_lays_out_only_its_text() {
     a.wait(2000);
     assert!(a.h.has_text("1830 MB"));
 }
+
+#[test]
+fn a_group_with_nothing_to_say_is_not_in_the_status_bar() {
+    let mut a = app(true);
+    let named = |a: &App, name: &str| a.h.query(|n| n.semantics.name == name).len();
+    // A shell that has said no directory: no folder alone; a space with no connection: no
+    // network between two lines.
+    assert_eq!((named(&a, "Working directory"), named(&a, "Network")), (0, 0), "{}", a.h.semantics());
+    let shell = a.model.active_tab().unwrap().focused().unwrap().session;
+    shell.feeder().feed(b"\x1b]9;9;/work\x07", std::time::Instant::now());
+    a.wait(100);
+    assert_eq!(named(&a, "Working directory"), 1, "{}", a.h.semantics());
+}

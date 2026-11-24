@@ -6,7 +6,8 @@
 //!
 //! Scenes: main, collapsed, horizontal, menu, connect, add, settings, lock, sftp, gutter (main
 //! with the terminals' gutter on), usage (the pointer resting on RAM: its card), find (the
-//! find bar over the focused space, a word typed), and the
+//! find bar over the focused space, a word typed), page-0 to page-10 (each page of the
+//! settings), and the
 //! Connect dialogs: ask-connecting, ask-host, ask-sign-in, ask-failed (`asks.rs`); the editor
 //! space: edit, edit-diff (`edits.rs`).
 
@@ -49,6 +50,12 @@ const SCENES: [&str; 15] = [
     "gutter",
     "usage",
     "find",
+];
+
+/// Each page of the settings, by its place.
+const PAGES: [&str; 11] = [
+    "page-0", "page-1", "page-2", "page-3", "page-4", "page-5", "page-6", "page-7", "page-8", "page-9",
+    "page-10",
 ];
 
 fn pass(platform: &HeadlessPlatform, app: &mut Shots, ms: u64) {
@@ -152,6 +159,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(&out)?;
     for scene in SCENES
         .iter()
+        .chain(&PAGES)
         .chain(&asks::SCENES)
         .chain(&edits::SCENES)
         .filter(|it| only.is_empty() || only.iter().any(|o| o == *it))
@@ -235,6 +243,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 model.ui().settings.set(true);
             }
             "settings" => model.ui().settings.set(true),
+            page if page.starts_with("page-") => {
+                model.ui().page.set(page[5..].parse().unwrap_or(0));
+                model.ui().settings.set(true);
+            }
             "lock" => model.lock().lock_now(),
             "sftp" => model.ui().expanded.set(true),
             "collapsed" => model.prefs().rail_folded.set(true),

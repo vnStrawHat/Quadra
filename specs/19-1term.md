@@ -66,11 +66,12 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
   on the right.
 - **Status bar** (the chrome plane, a line over it, 12 px, groups split by 1×14 px lines):
   first Collapse tabs to icons (the rail's fold, an icon button in the accent); then the active
-  space's cwd after a folder icon (a click copies it); git branch and changes after a branch
+  space's cwd after a folder icon (a click copies it; a shell that has said none has no
+  group, as every group with nothing to say: no icon alone, no two lines side by side); git branch and changes after a branch
   icon (M4: `main ↑2 M1`), a group of its own; a red dot of 8 px that blinks
   each half second while the focused space logs; then right the OSC 9;4 meter
   (M3: `build`, a 56 px line, the percentage), a remote space's network (P2; a local one shows
-  nothing there): what came and went in the last second, `↓ 12 KB/s ↑ 1.1 KB/s`, counted on
+  nothing there, nor one not connected yet): what came and went in the last second, `↓ 12 KB/s ↑ 1.1 KB/s`, counted on
   the connection's socket, jump hosts' traffic in it; CPU and memory (M4), the `2026-11-16 20:45:07` (24 h, the local time, again each second; in mono, so only its
   text is painted again), and last Toggle SFTP panel. Labels are the secondary colour, values
   the text colour, numbers in mono. The icons have the kit's roles (the canvas leaves them in
@@ -157,7 +158,8 @@ at one space arranges itself again. The order of the spaces (the focus keys, the
 the tree's reading order (in an arranged tab, each added space comes after the focused one). The
 layout is not saved. A space is a terminal, or the editor of a remote file (M9, "Editing in
 1Term"): that one runs no program and is in no input channel; it is not saved either. Each space of a tab of two or more has an 18 px header (a tab of one space has none) in 12 px on the panel colour (a line of 16 over one pixel, so its words stand in the middle of the 17 its line leaves and both faces share a baseline), a 1 px line along its bottom (inside the 18 px): where it is on the left,
-in mono (the cwd, after `user@host:` for a remote space; in the text colour while focused), its
+in mono (the cwd, after `user@host:` for a remote space; a shell that has said no cwd, its
+title after `user@host`, the title alone when it says who already; in the text colour while focused), its
 signal on the right (a progress percentage in mono; the state's 12 px icon and a label in the
 state's colour, `deploy blocked`, then the latency in mono; with no state the latency, else the
 program's title, a program's path shortened to its name as in a tab's title (`cmd.exe - ping

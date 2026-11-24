@@ -1,5 +1,5 @@
-//! The rail collapsed (specs/19, "Rail"; the canvas's option I): 48 px, Expand tabs, a box of
-//! 44 px a tab (its icon, its signal as a coloured line under it, the one that shows on the
+//! The rail collapsed (specs/19, "Rail"; the canvas's option I): 40 px, Expand tabs, a box of
+//! 40 px a tab (its icon, its signal as a coloured line under it, the one that shows on the
 //! editor colour with a short accent bar; the middle button closes it), then New terminal as
 //! a `+`.
 

@@ -95,7 +95,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
             number_input(p.rail_width).stepper().range(140.0, 400.0).step(10.0).label("Rail width"),
         )
         .back(p.rail_width, d.rail_width)
-        .row("Fold the rail", "Only the tabs' icons, in 48 px.", switch(p.rail_folded))
+        .row("Fold the rail", "Only the tabs' icons, in 40 px.", switch(p.rail_folded))
         .back(p.rail_folded, d.rail_folded)
         .row("Tab title", "What names a tab not renamed.", select(prefs::TITLES, p.tab_title).width(240.0))
         .back(p.tab_title, d.tab_title);

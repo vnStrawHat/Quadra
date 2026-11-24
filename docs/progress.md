@@ -584,6 +584,11 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   alert, and what is wrong with a field is said under it. The apps and the gallery say
   `vstack()`, `hstack()` and `form()` where they wrote them out. A theme file with no
   `accent_tint` gets its own accent at 16 % (37 of 1Term's themes showed the kit's blue).
+- **1Term, a walk through its screens** (2026-11-24; `oneterm-shots` draws each page of the
+  settings, `page-0` to `page-10`): the status bar showed a folder alone for a shell with no
+  directory and two lines side by side for a remote space not connected; a space header said
+  `user@host` twice when the title was that; the lock card's Unlock stood 4 px off its
+  field's edge; Fold the rail still said 48 px. Test: tests/bars.rs.
 - **1Term's editor wraps long lines; the editor is the editor under its last line** (2026-11-24):
   `editor(..).wrap_when(signal)` wraps an editor that shows (rows made again; text, cursors and
   undo kept); 1Term's header has Wrap and its settings "Wrap long lines" (`sftp.editor_wrap`,

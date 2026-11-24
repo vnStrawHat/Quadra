@@ -139,8 +139,7 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
             said.connect(Link::new(move |_| _ = closes.close_space(gone)));
         }
     });
-    // Where it is: the directory, after the user and host of a remote space; a shell that
-    // says no directory, its title.
+    // Where it is: the directory (else the title), after a remote space's user and host.
     let (named, remote, conn) = (model.clone(), space.remote.clone(), s.kept::<crate::remote::Conn>());
     let place = move || {
         let dir = cwd.get();
@@ -148,7 +147,9 @@ fn space_view(model: &Model, tab: Tab, space: Space) -> quadra::Div {
         match &remote {
             Some(remote) => {
                 let who = who(&named, remote, conn.as_deref());
-                if cwd.with(String::is_empty) { format!("{who} {dir}") } else { format!("{who}:{dir}") }
+                // A title in the directory's place; one that says who already is not said twice.
+                let sep = if cwd.with(String::is_empty) { " " } else { ":" };
+                if sep == " " && dir.starts_with(&who) { dir } else { format!("{who}{sep}{dir}") }
             }
             None => dir,
         }

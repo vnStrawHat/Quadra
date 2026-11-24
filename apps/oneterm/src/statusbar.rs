@@ -61,6 +61,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         space.map(|space| space.session.cwd().get()).unwrap_or_default()
     };
     let (clipboard, said, repo_of) = (use_context::<Rc<dyn Clipboard>>(), cwd.clone(), cwd.clone());
+    let placed = cwd.clone();
     let repo = crate::git::follow(repo_of);
     let place = part()
         .role(Role::Button)
@@ -114,7 +115,8 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         part().gap(token::SPACE_LG),
         vec![
             (when(move || open() && vertical.get()), part().child(fold)),
-            (when(open), place),
+            // A shell that has said no directory has no place to show.
+            (when(move || open() && !placed().is_empty()), place),
             (when(move || open() && git_shown()), git),
             (when(move || open() && rec.get().0), recording(rec)),
         ],
@@ -123,7 +125,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         part().gap(token::SPACE_LG),
         vec![
             (metered, meter),
-            (remote_shown(model, open), network(model)),
+            (remote_shown(model, open), part().label("Network").child(value(traffic(model)))),
             (when(move || open() && shows()), using),
             (when(move || prefs.show_clock.get()), time),
             (when(open), part().child(sftp(model))),
@@ -162,22 +164,21 @@ fn sftp(model: &Model) -> impl View + use<> {
 }
 
 /// Whether the network shows: unlocked, a remote space focused.
+/// The network group shows while the focused space's connection has said its traffic: one
+/// that is not connected yet has nothing to stand between two lines.
 fn remote_shown(model: &Model, open: impl Fn() -> bool + 'static) -> When {
-    let of = model.clone();
-    when(move || {
-        open() && of.active_tab().and_then(|tab| tab.focused()).is_some_and(|it| it.remote.is_some())
-    })
+    let rate = traffic(model);
+    when(move || open() && !rate().is_empty())
 }
 
 /// What the focused remote space's connection received and sent in the last second.
-fn network(model: &Model) -> quadra::Div {
+fn traffic(model: &Model) -> impl Fn() -> String + 'static {
     let model = model.clone();
-    let rate = move || {
+    move || {
         let space = model.active_tab().and_then(|tab| tab.focused());
         let conn = space.and_then(|it| it.session.kept::<crate::remote::Conn>());
         conn.map(|it| it.traffic.get()).unwrap_or_default()
-    };
-    part().label("Network").child(value(rate))
+    }
 }
 
 /// The progress of the tab that shows, else of the first that reports one: the id of what

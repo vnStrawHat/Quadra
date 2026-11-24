@@ -1,7 +1,8 @@
 [package]
 name = "oneterm"
 description = "1Term: a terminal app of local shells, in tabs and spaces side by side (specs/19)"
-version.workspace = true
+# 1Term's versions go on from those of the app it replaces (specs/19, "Updates").
+version = "0.7.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -11,7 +12,7 @@ publish.workspace = true
 workspace = true
 
 [[bin]]
-name = "1term"
+name = "oneterm"
 path = "src/main.rs"
 
 [dependencies]

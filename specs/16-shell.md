@@ -201,6 +201,8 @@ packaged so, and Markdown (`tools/package.sh markdown`).
 
 **An executable's icon.** An app's build script turns an `.ico` file into a resource file of
 an icon group (resource 1, its images 1 to n) and links it with the binaries: written by the
-script itself, as the format is a few headers, so no resource compiler is needed. Markdown's
-is `apps/markdown/build.rs` over `assets/logo.ico`. ponytail: no installer or version
-resource yet; an MSIX package when an app ships.
+script itself, as the format is a few headers, so no resource compiler is needed: the
+script is `tools/icon_resource.rs`, which an app's `build.rs` takes by path and calls
+(`icon_resource::link("assets/logo.ico")`; Markdown's and 1Term's do). `tools/package.sh`
+fails when an app's binary has no icon. ponytail: no installer or version resource yet; an
+MSIX package when an app ships.

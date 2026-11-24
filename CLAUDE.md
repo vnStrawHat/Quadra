@@ -86,6 +86,7 @@ starts Git Bash; `GIT_BASH` names another `bash.exe`).
 | Terminal throughput | `tools/doomfire.sh [seconds]`: the fire demo (`bench/doomfire`) fed to the engine, through the console host alone, and in a real 1Term window (specs/14) |
 | 1Term's console host | `tools/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (specs/19); 1Term uses the system's without them |
 | A release package | `tools/package.sh gallery` puts `gallery.exe` with `tools/app.manifest` embedded in `target/package/gallery/` |
+| 1Term's release asset | `tools/release.sh` makes `target/release-zip/oneterm-<version>-x86_64-pc-windows-msvc.zip` and prints its SHA-256 (specs/19, "Updates"); it publishes nothing |
 | The gallery | `tools/cargo.sh run -p quadra-gallery` (`examples/gallery`: a page a component) |
 | Numbers off the design's ladders | `python tools/check_design.py --list` |
 | The website | `tools/shots.sh dark && tools/shots.sh light`, then `python tools/website.py` builds `target/site` (open `index.html`): the introduction and the guide from `site/`, the design language from `specs/design`, a page a component from the gallery's pages, their words and pictures; a markdown twin of every page, `llms.txt` and `llms-full.txt` for agents. The guide's code is quoted from compiled files (`examples/gallery/examples/guide.rs`). Not deployed |

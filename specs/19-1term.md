@@ -1,7 +1,7 @@
 # 19. 1Term
 
 1Term is a terminal app for local shells, and later SSH and SFTP, in `apps/oneterm` (package
-`oneterm`, binary `1term`). Started 2026-11-15 by the user's decision, before the other apps.
+`oneterm`, binary `oneterm`, as the app it replaces, whose updater starts that name). Started 2026-11-15 by the user's decision, before the other apps.
 Its look is the user's design (the canvas "1Term": main window, horizontal tabs variant, the `+`
 menu, settings, the lock screen, SFTP), drawn with `quadra-design` in the kit's language; the
 user's own terminal app OneTerm (a clone to read in `.cache/vendor/oneterm-app`) is the
@@ -446,8 +446,13 @@ says so. OneTerm's files are read and never changed.
 `vnStrawHat/OneTerm`, the repository of the app it replaces: that app's own updater looks
 there, so its last version updates to 1Term, and 1Term goes on from the same place. A
 release carries `oneterm-<version>-x86_64-pc-windows-msvc.zip`, holding
-`oneterm-<version>-x86_64-pc-windows-msvc/` with `oneterm.exe`, the console host and the
-notices (`tools/release.sh`); 1Term's versions go on from that app's (0.7.0 the first).
+`oneterm-<version>-x86_64-pc-windows-msvc/` with `oneterm.exe`, the console host, `LICENSE`,
+`NOTICE` and `THIRD-PARTY-NOTICES.txt` (`tools/notices.py`: the console host's notice, the
+licences of the kit's icons and faces, and every crate the binary is built from with its
+licence files) (`tools/release.sh`, which makes the zip and prints its SHA-256, and publishes
+nothing); 1Term's versions go on from that app's (0.7.0 the first, the package's own version
+in `apps/oneterm/Cargo.toml`). The executable's icon is that app's (`assets/logo.ico`, its
+48 and 96 px images; specs/16, "An executable's icon"), which the window takes too.
 
 Settings, About has the group **Updates** (`updates.rs`):
 
@@ -842,7 +847,7 @@ thread never waits on the network.
 
 ### The console host
 
-1Term's folder holds `conpty.dll` and `OpenConsole.exe` beside `1term.exe` (specs/01, R15):
+1Term's folder holds `conpty.dll` and `OpenConsole.exe` beside `oneterm.exe` (specs/01, R15):
 `oneterm-vt` uses them before the system's host, which passes about half as much output
 (specs/14, "Terminal throughput"). `tools/conpty.sh` fetches the pinned package into
 `.cache/conpty`, checks it and copies the two files to `target/debug`, `target/release`,

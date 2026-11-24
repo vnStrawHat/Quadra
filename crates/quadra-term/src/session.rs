@@ -82,6 +82,8 @@ pub(crate) struct Shared {
     /// The bar down the view's edge, and the height of a line as the view has it.
     pub bar: Cell<Option<crate::bar::Told>>,
     pub line_px: Cell<f32>,
+    /// Where the bar was last told the view is: what its signal says otherwise, a drag wrote.
+    pub told_top: Cell<f32>,
     pub find: crate::find::Finding,
     pub profile: Cell<crate::ShellProfile>,
     /// Told what the user sends (`Session::on_input`).
@@ -147,6 +149,7 @@ impl Session {
             sized: RefCell::new(Some(Vec::new())),
             bar: Cell::new(None),
             line_px: Cell::new(0.0),
+            told_top: Cell::new(0.0),
             find: crate::find::Finding::new(),
             profile: Cell::default(),
             input: RefCell::new(None),

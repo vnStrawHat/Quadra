@@ -31,8 +31,10 @@ impl Session {
             let screen = engine.term.screen();
             (screen.history_len(), screen.scroll_offset())
         };
+        let at = history.saturating_sub(back) as f32 * line;
+        self.0.told_top.set(at);
         end.try_set(history as f32 * line);
-        top.try_set(history.saturating_sub(back) as f32 * line);
+        top.try_set(at);
     }
 }
 
@@ -42,6 +44,7 @@ impl Session {
 pub(crate) fn bar(cx: &mut MountCx, id: NodeId, session: &Session) -> NodeId {
     let told: Told = (signal(0.0), signal(0.0));
     session.0.bar.set(Some(told));
+    session.0.told_top.set(0.0);
     let layout = cx.tree.layout_style(id).clone();
     let around = cx.tree.insert(quadra_tree::Style { layout, ..Default::default() });
     cx.tree.set_children(around, &[id]);
@@ -50,12 +53,17 @@ pub(crate) fn bar(cx: &mut MountCx, id: NodeId, session: &Session) -> NodeId {
     cx.handle.bind(move || {
         let (y, s) = (told.0.get(), s.clone());
         writer.with(move |tree| {
+            // What the view told of itself moves nothing: output since may have added rows,
+            // and a view mounted on a session with a history starts untold.
+            if y == s.0.told_top.get() {
+                return;
+            }
             let line = s.0.line_px.get();
             let (history, back) = {
                 let engine = s.engine();
                 (engine.term.screen().history_len(), engine.term.screen().scroll_offset())
             };
-            // The row the thumb is at; what the view told of itself is where it is already.
+            // The row the thumb was dragged to.
             let want = history.saturating_sub((y / line.max(1.0)).round() as u32);
             if line > 0.0 && want != back {
                 s.engine().term.scroll_viewport(back as i32 - want as i32);

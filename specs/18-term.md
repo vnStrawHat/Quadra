@@ -262,7 +262,8 @@ shell's handle.
   scrollbar"; `bar_by_hand`; the widget is a leaf of the layout, so the view is a box of its
   place that holds the widget and the thumb over it): as long as the view is of the history, shown as the pointer
   moves over the terminal or the history is scrolled, and a drag of its thumb goes through
-  the history by rows (the terminal keeps the focus). The session tells it where the view is after what scrolled it and as
+  the history by rows (the terminal keeps the focus; only what a drag wrote moves the view,
+  never what the session told the bar, so rows that came since scroll nothing). The session tells it where the view is after what scrolled it and as
   the pointer moves over the terminal; output tells it nothing (a burst costs the bar
   nothing) and neither does a paint. None on the alternate screen, which has no history.
   The keys (`TermCommand::Scroll`, bound by `bind_keys`): Shift+PageUp and Shift+PageDown a

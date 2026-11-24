@@ -91,3 +91,25 @@ fn the_thumb_down_the_right_edge_is_where_the_view_is_and_a_drag_moves_the_histo
     h.settle();
     assert_eq!(h.tree.window_rect(thumb).height, 0.0);
 }
+
+#[test]
+fn what_the_bar_is_told_scrolls_nothing() {
+    // Output between the pointer's move and the update pass: the view stays at the bottom.
+    let (mut h, s) = term();
+    h.pointer(PointerInput::Move, 100.0, 60.0);
+    s.feeder().feed(b"more 1\r\nmore 2\r\nmore 3\r\n", Instant::now());
+    h.settle();
+    assert_eq!(s.screen_text()[4], "more 1", "{:?}", s.screen_text());
+    h.pointer(PointerInput::Move, 110.0, 60.0);
+    h.settle();
+    assert_eq!(s.screen_text()[4], "more 1");
+
+    // A view mounted on a session that has a history shows its bottom.
+    let mut h = Harness::new();
+    let again = s.clone();
+    h.mount(move || column().size(400.0, 140.0).child(terminal(&again).font(10.0, 14.0)));
+    h.settle();
+    h.pointer(PointerInput::Move, 100.0, 60.0);
+    h.settle();
+    assert_eq!(s.screen_text()[4], "more 1", "{:?}", s.screen_text());
+}

@@ -57,7 +57,7 @@ here). Since the tab index: cursors, scrolling into view (`Tree::scroll_into_vie
 (`text_area`; `TextField::sync`, `Paragraph::place`), text that can be selected, drag and
 drop (`quadra-tree/src/drag.rs`, `quadra-view/src/div/drag.rs`, the example `board`), and
 `tween` on the window's clock (`Tree::set_clock`, `Handle::now`). **R3 has started** (specs/13;
-the design language is specs/behaviour/15): colours of box styles can be roles of the theme
+the design language is specs/design): colours of box styles can be roles of the theme
 (`Paint`, `Token`, `Theme` in `quadra-tree/src/theme.rs`; `Tree::set_theme`; the app's theme
 is a `Signal<Rc<Theme>>` in the context of views), and the crate `quadra-design` has the names
 of the roles (`quadra_design::token`) and the themes (`dark()`, `light()`, `theme_from_json`;

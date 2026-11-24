@@ -121,7 +121,7 @@ because every render built new nodes. Here nodes persist, and a change is a flag
   their subpixel positions while scrolling.
 - `scroll_into_view`, anchoring (keep the first visible item in place when content above it
   changes size) and momentum are behaviours of the scroll widget.
-- **The scrollbar** (behaviour/15, "Scrollbar"). Every scroll view and list has one, with
+- **The scrollbar** (specs/design, "Scrollbar"). Every scroll view and list has one, with
   nothing to ask for: a pill 6 px wide, 4 px in from the right edge and from the ends, as
   long as the viewport is of the content and at least 25 px, in the text colour that holds
   at the container, at 30 %. It is a node of its own in the viewport, beside the content

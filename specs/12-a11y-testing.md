@@ -104,7 +104,7 @@ semantic children attach to the nearest semantic ancestor.
   the adapter's relations. ponytail: resolved when the relating node is described, so a
   target that becomes another semantic node is told only at the relating node's next change.
 
-Requirements carried from the design language (behaviour/15): visible focus for keyboard users,
+Requirements carried from the design language (specs/design): visible focus for keyboard users,
 contrast of the themes, respect for the OS text scale and high-contrast setting.
 
 ### Text size

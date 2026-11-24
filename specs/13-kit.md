@@ -1,7 +1,9 @@
 # 13 — Style, Themes and the Kit
 
-The look and behaviour of components are those of behaviour/09, 15, 16 and 19. This spec says how
-they are built on the new architecture.
+What components look like is specs/design (the design language: every size, distance, colour
+and shape is stated there once, and a number here that differs from it is a bug here); what
+they do is behaviour/09, 16 and 19. This spec says how they are built on the new
+architecture: their API, keys and semantics.
 
 ## Style values
 
@@ -92,7 +94,7 @@ div().bg(token::ACCENT.alpha(0.12))
 
 ## Themes
 
-Themes stay JSON files (behaviour/15) with the same structure: palette, type scale, spacing,
+Themes stay JSON files (specs/design) with the same structure: palette, type scale, spacing,
 radii, component styles. They are loaded and validated at start-up; an unknown key or a
 malformed value is reported with its path. The system appearance (dark, accent, high contrast,
 text scale) arrives from the platform (10) and can select or adjust the theme. As built:
@@ -112,7 +114,7 @@ each a `Token` numbered in the order of the table, and `token::NAMES` their name
 `theme_from_json(text)` reads a theme file into a `KitTheme` (name, mode, a colour a role),
 starting from `dark()` or `light()` by the file's mode; the two built-in themes are files
 bundled in the crate (`themes/one-dark-pro.json`, `themes/one-light.json`). Roles a file
-leaves unset follow its own colours (the table of behaviour/15 says which follows which).
+leaves unset follow its own colours (the table of specs/design says which follows which).
 `KitTheme::theme()` is what a tree styles with. The sections of code, the terminal and
 charts are checked to hold colours and are not kept yet: their roles come with their crates.
 
@@ -162,7 +164,7 @@ As built so far:
   `.size(Xs | Sm | Md | Lg)`, `.disabled(..)`, `.toggled(..)`, `.full()`, `.test_id(..)`,
   `.label(words)` (its name to a reader when it is not the visible words: "Reset Copy" for one
   of several "Reset"), `.on_click(|| ..)`. A click and `Confirm` do the same thing. Its colours are roles: the
-  fill, the label, the fill under the pointer and while pressed, the border (behaviour/15,
+  fill, the label, the fill under the pointer and while pressed, the border (specs/design,
   "States"); a tinted button's hover is a role of its own (`accent_tint_hover`,
   `error_tint_hover`: the tint 8 % towards its colour unless a theme says). The label is a
   text that takes the button's text colour. To a reader it is a button named by its label,
@@ -546,7 +548,7 @@ As built so far:
   and a click adds or takes away one, Shift and a click selects those from the one the keys
   are on to it, in the order shown; the keys select the one they move to alone, and the
   focus ring follows the keys, not what is selected.
-- **`settings(current)`** is the preferences of an app in pages (behaviour/15, "Settings"
+- **`settings(current)`** is the preferences of an app in pages (specs/design, "Settings"
   and "Settings, cards", has the numbers): a column of the pages at the left, the chosen one
   at the right. A page is `SettingsPage::new(title).icon(..).about(..).group(..)`, a group
   `SettingsGroup::new(title).about(..).row(title, about, control)`: a row is what a setting
@@ -735,10 +737,22 @@ stays inside, Escape is the action `Cancel` (key context `action::POPUP`), and a
 outside closes it. A press on its opener is not a press outside (`overlay(..).opener(..)`):
 the button that opened a menu closes it by its own click and does not open it again. When
 the popup closes the focus goes back to what had it. Every popup is on one plane,
-`popup::surface(level)` (behaviour/15, "Elevation"): the `overlay_bg` fill, a 1 px `line`
-border, `radius_sm` (square along an edge of the window) and the shadow of its level.
+`popup::surface(level)` (specs/design, "Elevation"): the `overlay_bg` fill, a 1 px `line`
+border, the corners of its level (`radius_md` at 1, `radius_lg` at 2; square along an edge
+of the window) and the shadow of its level.
 
-- `popover(open, &opener, || content)` is the bare popup, below its opener.
+- `popover(open, &opener, || content)` is a popup below its opener whose content is a column
+  12 px in from its edges, its things 8 apart (specs/design/surfaces.md).
+- **Arrangements** (`layout.rs`; specs/design/layout.md): `vstack()` (a column, 8 apart),
+  `hstack()` (a row centred across, 8 apart), `button_row()` (a row of buttons at the right
+  end), `columns(n)` (equal columns, 12 apart), `section(title)` and `section_label(title)` (a
+  12 px semibold muted heading over a column), `sections()` (24 apart), `spacer()`, and
+  `form()`: a column of fields 12 apart in which a field that was told no width is as wide as
+  its column (`input`, `textarea`, `select`, `number_input`, `key_input`, `color_input`,
+  `color_picker`, `date_picker`, `time_input`, the path pickers). The body of a `dialog` is
+  such a column too. A view is built from these and writes no distance of its own;
+  `tools/check_design.py` (the gate) rejects a distance, a radius or a text size off the
+  ladders.
 - `menu(open, &opener, || items)`: rows of `MenuItem` (`.icon(..)`, `.keys("Ctrl-C")`,
   `.checked(..)`, `.disabled(..)`, `.on_select(..)`, `MenuItem::separator()`), asked for each
   time the menu opens. A click on a row does what it does and closes the menu; the arrows
@@ -756,8 +770,8 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   each opening starts with no query.
 - `menu_button(label, || items)` takes `.icon(body)`, `.variant(..)`, `.size(..)` and
   `.test_id(..)` for its face. `popover_button(label, || content)` is the same button (in
-  the default variant) over a popover, with the content 12 px in from its edge.
-- More of the menu. `MenuItem::heading(name)` names the group of rows under it: 20 px,
+  the default variant) over a popover.
+- More of the menu. `MenuItem::heading(name)` names the group of rows under it: 24 px,
   muted, never chosen. `.submenu(items)` makes a row one that opens a menu of those rows
   beside itself, against the menu's right edge (its left where only that fits) and never
   over the menu, its first row level with this one, with a chevron at its end: under the
@@ -806,8 +820,9 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   (tall at the bottom). `.head(|| view)` takes the place of the title, before the cross:
   a row of the app's (a kind, a name, a state, actions).
 - `dialog(open, "Delete the file?", || body).action("Cancel", Variant::Ghost, f)..`: a popup
-  440 px wide with its border, centred, 80 px under the top of the window (`Place::Top`),
-  with no backdrop:
+  440 px wide with its border (`.width(px)`; a `confirm` is 360), centred, 80 px under the top
+  of the window (`Place::Top`), with no backdrop; its body is a column 12 px in, its things
+  12 apart, the fields in it as wide as it is (specs/design/surfaces.md, "Dialog"):
   a title of 16 px with a quiet cross of 22 px at its end, the body in the second text
   colour, and, when it has actions, a seam and the buttons at the right of its foot. A
   button runs what it was given and closes the dialog; the cross, Escape and a press outside
@@ -820,7 +835,7 @@ border, `radius_sm` (square along an edge of the window) and the shadow of its l
   from the others; `.shown(|| ..)` shows the last action only while it says so; `.head(|| row)`
   puts a row of the app's in the place of the title, the title still naming the dialog.
 - Elevation is a paint value of a box (`.elevation(1)`): a level above the window casts the
-  shadows of the design language (behaviour/15) under the box, two for the level of menus,
+  shadows of the design language (specs/design) under the box, two for the level of menus,
   popovers and tooltips, four for that of dialogs. A change of level is a paint change.
 - **Notifications and toasts** (`notice.rs`). The app holds a `Notices` (`notices()`, made
   where the window's view is built; a copy is the same one), mounts `.host()` once in the
@@ -1192,7 +1207,7 @@ What it reads and how it looks is behaviour/21. As built:
   not change keep their nodes, wherever they now are, and the block being typed in is the
   one built again. Blocks are 16 px apart, the items of one list 4; that gap is the only
   thing of a block that changes under it.
-  - The look is behaviour/15: body 16 / 1.5; headings 28, 22.4, 19.2, 16, 14 and 13.6 px,
+  - The look is specs/design: body 16 / 1.5; headings 28, 22.4, 19.2, 16, 14 and 13.6 px,
     semibold, the first two over a line; items with a bullet, their number or a box (a task:
     read, not clicked), 22 px in for each depth; a quote behind a bar; a rule; code in a box
     on the tone of the editor, in the code face at 14 px, which scrolls sideways (06),

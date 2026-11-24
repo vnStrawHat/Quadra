@@ -51,6 +51,12 @@ implementation is its reference. Its specs, its tests and its own measurements
     here-document (the shell collapses the backslashes).
   - The cargo fork builds in `<cargo home>/targets/` and links the final binaries into
     `target/<profile>/` here.
+- **A view follows the design language** (`specs/design`): before building or changing a
+  view read its `layout.md`, `patterns.md` and `checklist.md`. A view is built from `vstack`,
+  `hstack`, `form`, `columns`, `button_row`, `section` and the containers (dialog, popover,
+  card), which carry the distances: it writes no gap, padding, radius or text size of its
+  own, and a field in a form takes no width. A number that must be written is a step of a
+  ladder, by its token; `tools/check_design.py` (in the gate) rejects the others.
 - Rules the work found: new tests drive controls through the semantic tree (`get_by_role` and
   the like); a box of a line of text in the kit is `.height(by_text(px))`; a change to what the
   tree tells a reader goes through `semantics_changed`; a chart line never shows steps; the
@@ -81,6 +87,7 @@ starts Git Bash; `GIT_BASH` names another `bash.exe`).
 | 1Term's console host | `tools/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (specs/19); 1Term uses the system's without them |
 | A release package | `tools/package.sh gallery` puts `gallery.exe` with `tools/app.manifest` embedded in `target/package/gallery/` |
 | The gallery | `tools/cargo.sh run -p quadra-gallery` (`examples/gallery`: a page a component) |
+| Numbers off the design's ladders | `python tools/check_design.py --list` |
 | The gallery's pages as pictures | `tools/shots.sh [dark\|light] [page ..]` draws them without a window into `.tmp/shots/<theme>` (and `<page>-open.png` for a page that opens something); with `QUADRA_REFERENCE=<folder>` it compares them (`tools/compare_shots.py`) with pictures taken before (`.tmp/shots/r6-dark`, `r6-light`) |
 
 Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
@@ -88,7 +95,8 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 ## Map
 
 - `specs/README.md` indexes the specs. `specs/00` has the phases and the user's decisions,
-  `specs/01` the architecture decisions, `specs/behaviour/` what components do and look like
+  `specs/01` the architecture decisions, `specs/design/` the design language (what anything
+  built with the kit looks like and how a view is laid out), `specs/behaviour/` what components do
   (first written for the V implementation: their sections on its code are history, superseded
   by the numbered specs).
 - `docs/tour.md`: a long tour of what exists, by crate and phase, to find names in.

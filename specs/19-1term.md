@@ -200,7 +200,7 @@ address, or a target over 256 KiB is refused, with a card saying why.
 `Ctrl+F` (the binding `find` of the Keybindings page; bound for the whole window, so the keys
 reach a shell only once unbound there) opens a find bar at the top right of the focused space,
 over its terminal, and puts the focus in its query; pressed again it gives the focus back to the
-query. The bar is one row of 26 px in the kit's pieces, 4 px inside its plane (behaviour/15, "Text
+query. The bar is one row of 26 px in the kit's pieces, 4 px inside its plane (specs/design, "Text
 input": a find bar's row): the query (`input`, 26 px, 220 wide or less in a narrow space (96 at least: the bar stays inside it), the search
 icon before it, placeholder and name "Find"; the error colour
 while it finds nothing), the switches Match case, Whole word and Regular expression as toggled icon buttons (the

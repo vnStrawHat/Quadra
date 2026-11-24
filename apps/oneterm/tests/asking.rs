@@ -197,6 +197,14 @@ fn a_changed_key_is_an_error_that_names_where_the_key_is() {
     a.connect(&format!("tester@127.0.0.1:{port}"));
     a.wait_for(&format!("The host key of '[127.0.0.1]:{port}' has changed"));
     assert!(a.shows("the key known is on line") && a.shows("known_hosts"));
+    // Trying again ends the same way: Close is the answer offered first, at the right.
+    let at = |a: &App, name: &str| {
+        // The lowest of its name: the dialog's foot, not the window's Close or the cross.
+        let found = a.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == name);
+        let rects = found.into_iter().map(|id| a.h.tree.window_rect(id));
+        rects.max_by(|a, b| a.y.total_cmp(&b.y)).expect(name).x
+    };
+    assert!(at(&a, "Retry") < at(&a, "Close"));
     a.press("Retry");
     a.wait(|a| a.shows("Connecting to") || a.shows("has changed"), "connecting again");
     a.wait_for("has changed");

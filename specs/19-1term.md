@@ -491,7 +491,8 @@ thread never waits on the network.
     colour, its first letter upper case (the OS's words for a refused or unreachable host,
     `timed out`, `permission denied`, `cancelled`, a changed key
     with its line and file); Close (the focus; the space says `[connection closed: reason]`)
-    and Retry (connects again from the start).
+    and Retry (connects again from the start). A changed host key fails again until the known
+    hosts are put right: there Close is the answer offered first, Retry beside it.
 - **The shell**: a PTY of `xterm-256color` of the space's size, `COLORTERM=truecolor`; a
   resize is a window change; the channel's exit status is the space's `[process exited N]`,
   and a connection that drops is `[connection closed: reason]` and exit status 255.

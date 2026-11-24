@@ -79,7 +79,7 @@ pub(crate) fn dialogs(model: &Model) -> impl View + use<> {
         let shown = shown.clone();
         move || untrack(|| shown().map(|conn| (conn.phase.get(), conn.label.get())))
     };
-    let connecting_to = shown.clone();
+    let (connecting_to, failing) = (shown.clone(), shown.clone());
     let answers = move |answer: Rc<dyn Fn() -> Option<String>>| {
         let shown = shown.clone();
         move || {
@@ -108,9 +108,23 @@ pub(crate) fn dialogs(model: &Model) -> impl View + use<> {
     .action("Cancel", Variant::Secondary, || {})
     .action("Connect", Variant::Primary, submit)
     .shortcut("Enter");
+    // A changed host key fails again until the known hosts are put right: Close is what it
+    // offers first, and Retry is for after.
+    let changed = move || {
+        let phase = failing().map(|conn| conn.phase.get());
+        matches!(phase, Some(Phase::Ask(Ask::Failed { reason })) if oneterm_ssh::key_changed(&reason))
+    };
+    let (other, retry) = (changed.clone(), answers(Rc::new(|| Some(String::new()))));
+    let (again, wrong, still) = (retry.clone(), changed.clone(), changed.clone());
     let failed = quadra_design::dialog(opens[FAILED], "Could not connect", move || failure(asked()))
         .action("Close", Variant::Secondary, || {})
-        .action("Retry", Variant::Primary, answers(Rc::new(|| Some(String::new()))));
+        .shown(move || !other())
+        .action("Retry", Variant::Primary, retry)
+        .shown(move || !wrong())
+        .action("Retry", Variant::Secondary, again)
+        .shown(still)
+        .action("Close", Variant::Primary, || {})
+        .shown(changed);
     div().child(connecting).child(host_key).child(sign_in).child(failed)
 }
 

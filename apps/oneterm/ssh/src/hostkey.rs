@@ -68,6 +68,15 @@ impl Checker {
     }
 }
 
+/// How the reason of a connection refused for a changed host key starts.
+const CHANGED: &str = "the host key of";
+
+/// Whether a failure's reason is a host key that changed: trying again ends the same way
+/// until the known hosts are put right.
+pub fn key_changed(reason: &str) -> bool {
+    reason.starts_with(CHANGED)
+}
+
 impl Handler for Checker {
     type Error = russh::Error;
 
@@ -113,7 +122,7 @@ impl Handler for Checker {
                 Ok(true)
             }
             Err(russh::keys::Error::KeyChanged { line }) => self.refuse(format!(
-                "the host key of '{shown}' has changed: someone could be eavesdropping on you right now. The {kind} key sent is {print}; the key known is on line {line} of {}. Remove it there to trust the new one.",
+                "{CHANGED} '{shown}' has changed: someone could be eavesdropping on you right now. The {kind} key sent is {print}; the key known is on line {line} of {}. Remove it there to trust the new one.",
                 self.file.display()
             )),
             Err(e) => self.refuse(format!("could not read {}: {e}", self.file.display())),

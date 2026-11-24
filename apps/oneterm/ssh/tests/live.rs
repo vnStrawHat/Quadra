@@ -69,6 +69,7 @@ fn a_changed_host_key_is_refused_without_asking() {
     let c = connect(options(port, &dir, Auth::Password));
     let why = c.failed();
     assert!(why.starts_with(&format!("the host key of '[127.0.0.1]:{port}' has changed")), "{why}");
+    assert!(oneterm_ssh::key_changed(&why) && !oneterm_ssh::key_changed("permission denied"));
     assert!(why.contains("is on line 2 of") && why.contains("known_hosts"), "{why}");
     assert_eq!(c.code(), 255);
     assert!(c.text().contains("[connection closed: the host key of"), "{}", c.text());

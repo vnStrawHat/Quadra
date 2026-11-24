@@ -637,6 +637,12 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     replaces has it (the user's correction, 2026-11-24: the picture of the icon, tried
     first, was not what was meant). About names the terminal engine's version from the lock
     file (`build.rs`): it said 0.2 while 0.4.2 was built in.
+- **Settings are written as objects in objects** (2026-11-24; the user asked why the file
+  was flat): a key is still `editor.font_size`, and the file holds `"editor": { "font_size":
+  15 }` (`quadra-app`, `settings.rs`: `at`, `place`, `nested`; the values a setting can hold
+  moved to `settings/stored.rs`). A file of before, each key whole at the top, opens to the
+  same values and is written the new way at its first change; OneTerm's settings are version
+  2 and written so at its start. A migration is given the nested object.
 - **The app is named OneTerm** (2026-11-24, the user's decision): 1Term everywhere became
   OneTerm (the window, the settings' words, `TERM_PROGRAM`, the specs: `specs/19-oneterm.md`),
   and OneTerm 0.6 names the versions before 0.7 that it takes over from. The folders a build

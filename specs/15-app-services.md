@@ -19,7 +19,12 @@ tool and the benches never write outside the project; a test that does gives a f
 
 ## Settings
 
-- `Settings` is one JSON object in one file, of flat keys: `"editor.font_size": 15`.
+- `Settings` is one JSON object in one file. A key is a path of names with dots between,
+  and the file holds objects in objects, as a person writes JSON: `editor.font_size` is
+  `"editor": { "font_size": 15 }`. (Until 2026-11-24 each key was written whole at the top,
+  `"editor.font_size": 15`, the store's map as it was: a file of that shape still opens to the
+  same values, and is written as objects at its first change.) A key is not also the start of
+  another: `editor` holds settings or is one.
   `App::settings()` opens `settings.json` in the config folder (one per app); any other file
   opens with `Settings::open(path)`, and `Settings::memory()` is one that is never written.
 - `settings.value(key, default)` is a `Signal<T>` for a `T: Stored` (`bool`, the integers,

@@ -1,6 +1,7 @@
-//! Settings (specs/15, "Settings"): one JSON object in one file, of flat keys, each a signal.
-//! Changes are written half a second after the last one, through a file beside it that is
-//! renamed over it.
+//! Settings (specs/15, "Settings"): one JSON object in one file, each key a signal. A key is
+//! a path of names with dots between, `editor.font_size`, and the file holds objects in
+//! objects: `size` in `editor`. Changes are written half a second after the last one, through
+//! a file beside it that is renamed over it.
 
 use std::any::Any;
 use std::cell::{Cell, RefCell};
@@ -16,88 +17,48 @@ use serde_json::{Map, Value};
 
 use crate::log;
 
+mod stored;
+pub use stored::Stored;
+
 /// How long after the last change the file is written.
 const QUIET: Duration = Duration::from_millis(500);
 
-/// A value a setting can hold: what it is in JSON, and back. A value of another shape in
-/// the file is no value: the setting is its default.
-pub trait Stored: Clone + PartialEq + 'static {
-    fn to_json(&self) -> Value;
-    fn from_json(value: &Value) -> Option<Self>;
-}
-
-macro_rules! stored_numbers {
-    ($($t:ty: $as:ident),*) => {$(
-        impl Stored for $t {
-            fn to_json(&self) -> Value {
-                Value::from(*self)
-            }
-            fn from_json(value: &Value) -> Option<Self> {
-                value.$as().and_then(|v| <$t>::try_from(v).ok())
-            }
-        }
-    )*};
-}
-
-stored_numbers!(i32: as_i64, i64: as_i64, u8: as_u64, u32: as_u64, u64: as_u64, usize: as_u64);
-
-impl Stored for f64 {
-    fn to_json(&self) -> Value {
-        Value::from(*self)
-    }
-    fn from_json(value: &Value) -> Option<Self> {
-        value.as_f64()
+/// The value at `key` in `map`: `a.b` is `b` in the object `a`.
+fn at<'a>(map: &'a Map<String, Value>, key: &str) -> Option<&'a Value> {
+    match key.split_once('.') {
+        None => map.get(key),
+        Some((first, rest)) => at(map.get(first)?.as_object()?, rest),
     }
 }
 
-impl Stored for f32 {
-    fn to_json(&self) -> Value {
-        Value::from(*self as f64)
+/// Puts `value` at `key`, making the objects on the way there. What stood on the way and is
+/// no object gives way: a key is not also the start of another.
+fn place(map: &mut Map<String, Value>, key: &str, value: Value) {
+    let Some((first, rest)) = key.split_once('.') else {
+        map.insert(key.to_string(), value);
+        return;
+    };
+    let inner = map.entry(first).or_insert(Value::Null);
+    if !inner.is_object() {
+        *inner = Value::Object(Map::new());
     }
-    fn from_json(value: &Value) -> Option<Self> {
-        value.as_f64().map(|v| v as f32)
-    }
-}
-
-impl Stored for bool {
-    fn to_json(&self) -> Value {
-        Value::Bool(*self)
-    }
-    fn from_json(value: &Value) -> Option<Self> {
-        value.as_bool()
+    if let Value::Object(inner) = inner {
+        place(inner, rest, value);
     }
 }
 
-impl Stored for String {
-    fn to_json(&self) -> Value {
-        Value::String(self.clone())
-    }
-    fn from_json(value: &Value) -> Option<Self> {
-        value.as_str().map(str::to_string)
-    }
-}
-
-impl<T: Stored> Stored for Option<T> {
-    fn to_json(&self) -> Value {
-        self.as_ref().map_or(Value::Null, T::to_json)
-    }
-    fn from_json(value: &Value) -> Option<Self> {
-        if value.is_null() { Some(None) } else { T::from_json(value).map(Some) }
-    }
-}
-
-impl<T: Stored> Stored for Vec<T> {
-    fn to_json(&self) -> Value {
-        Value::Array(self.iter().map(T::to_json).collect())
-    }
-    fn from_json(value: &Value) -> Option<Self> {
-        value.as_array()?.iter().map(T::from_json).collect()
-    }
+/// A file of before named each setting whole at the top (`"editor.font_size": 15`): those
+/// are put where they belong, after what is nested already.
+fn nested(map: Map<String, Value>) -> Map<String, Value> {
+    let (whole, mut out): (Map<_, _>, Map<_, _>) = map.into_iter().partition(|(key, _)| key.contains('.'));
+    whole.into_iter().for_each(|(key, value)| place(&mut out, &key, value));
+    out
 }
 
 pub struct Settings {
     /// None: kept in memory only.
     path: Option<PathBuf>,
+    /// Objects in objects, as the file is.
     map: RefCell<Map<String, Value>>,
     /// The signal of each key asked for: two views of one key share it.
     signals: RefCell<HashMap<String, Box<dyn Any>>>,
@@ -122,7 +83,7 @@ impl Settings {
         let map = match fs::read_to_string(&path) {
             Err(_) => Map::new(),
             Ok(text) => match serde_json::from_str::<Value>(&text) {
-                Ok(Value::Object(map)) => map,
+                Ok(Value::Object(map)) => nested(map),
                 _ => {
                     let aside = with_extension(&path, "corrupt");
                     let _ = fs::rename(&path, &aside);
@@ -185,7 +146,7 @@ impl Settings {
         if let Some(known) = self.signals.borrow().get(key).and_then(|s| s.downcast_ref::<Signal<T>>()) {
             return *known;
         }
-        let start = self.map.borrow().get(key).and_then(T::from_json).unwrap_or(default);
+        let start = at(&self.map.borrow(), key).and_then(T::from_json).unwrap_or(default);
         let (me, name) = (self.me.clone(), key.to_string());
         let value = self.scope.run(|| {
             let (value, first) = (signal(start), Cell::new(true));
@@ -205,10 +166,10 @@ impl Settings {
     }
 
     fn put(&self, key: &str, value: Value) {
-        if self.map.borrow().get(key) == Some(&value) {
+        if at(&self.map.borrow(), key) == Some(&value) {
             return;
         }
-        self.map.borrow_mut().insert(key.to_string(), value);
+        place(&mut self.map.borrow_mut(), key, value);
         self.schedule();
     }
 
@@ -256,8 +217,9 @@ impl Settings {
     }
 
     /// Brings a file of an older shape to `version`: `f` is given the version the file says
-    /// (0 when it says none) and its keys. A file of a newer version is left as it is, and
-    /// never written. Call it before asking for values.
+    /// (0 when it says none) and its object, as the file holds it (objects in objects). A
+    /// file of a newer version is left as it is, and never written. Call it before asking for
+    /// values.
     pub fn migrate(&self, version: u64, f: impl FnOnce(u64, &mut Map<String, Value>)) {
         let from = self.map.borrow().get("version").and_then(Value::as_u64).unwrap_or(0);
         if from > version {

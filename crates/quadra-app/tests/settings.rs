@@ -51,7 +51,7 @@ fn a_setting_is_a_signal_written_half_a_second_after_the_last_change() {
     platform.advance(Duration::from_millis(300), &mut app);
     let written = read(&file);
     assert_eq!(
-        (written["editor.font_size"].as_f64(), written["editor.tabs"][1].as_str()),
+        (written["editor"]["font_size"].as_f64(), written["editor"]["tabs"][1].as_str()),
         (Some(16.0), Some("b.rs"))
     );
     assert!(!dirs.config.join("settings.json.tmp").exists());
@@ -83,7 +83,7 @@ fn a_broken_file_is_moved_aside_and_an_old_one_is_brought_up_to_date() {
         if from < 2
             && let Some(size) = map.remove("fontSize")
         {
-            map.insert("editor.font_size".into(), size);
+            map.insert("editor".into(), serde_json::json!({ "font_size": size }));
         }
     });
     assert_eq!(settings.value("editor.font_size", 14u32).get_untracked(), 18);
@@ -93,7 +93,23 @@ fn a_broken_file_is_moved_aside_and_an_old_one_is_brought_up_to_date() {
     newer.migrate(1, |_, _| unreachable!());
     newer.value("editor.font_size", 14u32).set(20);
     newer.save_now();
-    assert_eq!(read(&file)["editor.font_size"], 18);
+    assert_eq!(read(&file)["editor"]["font_size"], 18);
+
+    // A file of before, each setting named whole at the top: the same values, and written as
+    // objects in objects at the first change. A value that is an object stays one.
+    let old = r#"{ "editor.font_size": 15, "window.main": { "x": 1 }, "editor": { "wrap": true }, "theme": "dark" }"#;
+    fs::write(&file, old).unwrap();
+    let settings = Settings::open(&file);
+    assert_eq!(settings.value("editor.font_size", 0u32).get_untracked(), 15);
+    assert!(settings.value("editor.wrap", false).get_untracked());
+    settings.value("editor.tabs.size", 4u32).set(2);
+    settings.save_now();
+    let expected = serde_json::json!({
+        "editor": { "font_size": 15, "tabs": { "size": 2 }, "wrap": true },
+        "theme": "dark",
+        "window": { "main": { "x": 1 } },
+    });
+    assert_eq!(read(&file), expected);
 }
 
 #[test]
@@ -110,7 +126,7 @@ fn a_remembered_window_opens_where_it_was_when_it_closed() {
     platform.step(&mut first);
     assert_eq!(first.window_count(), 0);
     first.settings().save_now();
-    let kept = read(&dirs.config.join("settings.json"))["window.main"].clone();
+    let kept = read(&dirs.config.join("settings.json"))["window"]["main"].clone();
     assert_eq!(
         kept,
         serde_json::json!({ "x": 120, "y": 80, "width": 640, "height": 480, "maximized": false })
@@ -135,6 +151,6 @@ fn a_window_still_open_when_the_app_ends_is_remembered_too() {
     // The app ends with the window open (a tray's Quit, the session's end).
     platform.quit();
     app.run().unwrap();
-    let kept = read(&dirs.config.join("settings.json"))["window.main"].clone();
+    let kept = read(&dirs.config.join("settings.json"))["window"]["main"].clone();
     assert_eq!((kept["x"].as_i64(), kept["y"].as_i64()), (Some(30), Some(40)));
 }

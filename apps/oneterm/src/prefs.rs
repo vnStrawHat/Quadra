@@ -123,13 +123,22 @@ impl Prefs {
         // Settings of version 0 kept a hash of the master password, and a vault and secrets
         // of OneTerm's first format, which nothing opens any more (specs/19, "Saved passwords"):
         // they are forgotten, the hash above all. What is of today's format stays.
-        s.migrate(1, |_, all| {
-            all.remove("security.password");
-            let vault = all.get("ssh.vault").and_then(|it| it.as_str());
-            if vault.is_some_and(|it| crate::vault::Header::parse(it).is_none()) {
-                all.remove("ssh.vault");
+        // Version 2 is the same settings written as objects in objects (specs/15): the file
+        // is written so at once.
+        s.migrate(2, |from, all| {
+            if from >= 1 {
+                return;
             }
-            if let Some(rows) = all.get_mut("ssh.secrets").and_then(|it| it.as_array_mut()) {
+            let security = all.get_mut("security").and_then(|it| it.as_object_mut());
+            if security.is_some_and(|it| it.remove("password").is_some() && it.is_empty()) {
+                all.remove("security");
+            }
+            let Some(ssh) = all.get_mut("ssh").and_then(|it| it.as_object_mut()) else { return };
+            let vault = ssh.get("vault").and_then(|it| it.as_str());
+            if vault.is_some_and(|it| crate::vault::Header::parse(it).is_none()) {
+                ssh.remove("vault");
+            }
+            if let Some(rows) = ssh.get_mut("secrets").and_then(|it| it.as_array_mut()) {
                 rows.retain(|row| {
                     row.get(1).and_then(|it| it.as_str()).is_some_and(|it| it.starts_with("otv1:"))
                 });

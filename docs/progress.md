@@ -584,6 +584,10 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   alert, and what is wrong with a field is said under it. The apps and the gallery say
   `vstack()`, `hstack()` and `form()` where they wrote them out. A theme file with no
   `accent_tint` gets its own accent at 16 % (37 of 1Term's themes showed the kit's blue).
+- **1Term against the app it is to replace** (from 2026-11-24): what a review of the user's
+  own terminal app found 1Term lacks, part by part.
+  - An upload onto a name the folder shown already has asks first, Skip or Replace
+    (`sftp/upload.rs`; tests/dock_replace.rs). It went over the remote file unasked.
 - **The options' words, and the editor's bar along the bottom** (2026-11-24). The options
   of 1Term's choices are in a reader's words (`Dot and count`, `Tab only`, `Off`, `1Term's
   editor`, `Custom program`); one saved by an old word reads as the default (the user's

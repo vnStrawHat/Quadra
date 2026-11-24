@@ -678,7 +678,12 @@ thread never waits on the network.
   octal), Owner and Group (`name (id)`, the id alone without a name, `-` without either), Path (in
   mono, with a copy button), and Close. It shows; it does not change the mode. A failed ask is a card.
   Files and folders dropped from the OS upload to the folder shown; a folder's Download and a
-  local folder's Upload carry the whole tree. Transfers wait their turn: one runs at a time
+  local folder's Upload carry the whole tree. An upload onto a name the folder shown
+  already has asks first (Replace, 360 wide: `notes.md is already in /srv/www. Replace it on
+  the server? It cannot be undone.`, several by their names; a folder there keeps its other
+  files): Skip sends none of those, Replace (the danger button) sends them over what is
+  there; what was not there went at once. What saving an edited file sends back is not
+  asked. Transfers wait their turn: one runs at a time
   in each space's dock, in the order asked; one waiting says `queued`, and its cross takes it
   off. Transfers show
   under the list over a line, 12 px, each the dock's whole width: an arrow, `Uploading name` or `Downloading name`, its state

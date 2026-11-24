@@ -18,6 +18,7 @@ mod kept;
 mod transfer;
 pub(crate) use transfer::Transfer;
 pub(crate) mod properties;
+pub(crate) mod upload;
 use crate::panes::{Local, free_name};
 pub(crate) use edit::{EDITORS, Editing};
 
@@ -210,37 +211,6 @@ impl Dock {
                 },
             )
         });
-    }
-
-    /// Uploads local files and folders' trees to the folder shown.
-    pub fn upload(&self, model: &Model, paths: Vec<PathBuf>) {
-        for path in paths.into_iter().filter(|it| it.is_file() || it.is_dir()) {
-            let name = path.file_name().map(|it| it.to_string_lossy().into_owned()).unwrap_or_default();
-            let remote = join(&self.dir.get_untracked(), &name);
-            let transfer = self.start(&name, true, self.dir.get_untracked());
-            let (done, whole, cancel) =
-                (transfer.done.clone(), transfer.whole.clone(), transfer.cancel.clone());
-            let (model, ran) = (model.clone(), transfer.clone());
-            self.queue(&transfer, move |dock| {
-                let again = model.clone();
-                dock.with_files(
-                    &model,
-                    move |files| {
-                        let tell = |d, w| store(&done, &whole, d, w);
-                        match path.is_dir() {
-                            true => files.upload_folder(&path, &remote, tell, &cancel),
-                            false => files.upload(&path, &remote, tell, &cancel),
-                        }
-                    },
-                    move |dock, got| {
-                        if got.is_ok() {
-                            dock.refresh(&again);
-                        }
-                        dock.finish(&ran, got);
-                    },
-                )
-            });
-        }
     }
 
     /// A transfer waits its turn: one runs at a time, in the order asked.

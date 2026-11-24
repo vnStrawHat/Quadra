@@ -26,6 +26,9 @@ pub(crate) struct Ask {
     /// The properties shown, and the path they are of.
     pub properties: Signal<bool>,
     pub stat: Signal<Option<(String, Stat)>>,
+    /// The uploads that wait for Replace: their names are in the folder shown.
+    pub replace: Signal<bool>,
+    pub over: Signal<Vec<std::path::PathBuf>>,
 }
 
 impl Ask {
@@ -42,6 +45,8 @@ impl Ask {
             name,
             properties,
             stat,
+            replace: no(),
+            over: signal(Vec::new()),
         }
     }
 
@@ -240,5 +245,6 @@ pub(crate) fn dialogs(model: &Model, d: Dock) -> impl View + use<> {
             }
         });
     let properties = crate::sftp::properties::properties(d);
-    div().child(folder).child(rename).child(delete).child(large).child(properties)
+    let replace = crate::sftp::upload::replace(model, d);
+    div().child(folder).child(rename).child(delete).child(large).child(properties).child(replace)
 }

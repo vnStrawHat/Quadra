@@ -83,6 +83,7 @@ fn the_advanced_page_says_where_this_run_saves_its_settings_and_shows_the_folder
     let mut h = Harness::new();
     h.size = quadra::Size::new(1200.0, 700.0);
     let (shell, home) = (quadra_shell::FakeShell::new(), std::path::absolute(".tmp/settings-files").unwrap());
+    let _ = std::fs::remove_dir_all(&home);
     let (given, dirs) = (shell.clone(), Rc::new(quadra::AppDirs::under(&home)));
     let file = dirs.config.join("settings.json").display().to_string();
     let sessions: NewSession = Rc::new(|_| echo());
@@ -97,9 +98,37 @@ fn the_advanced_page_says_where_this_run_saves_its_settings_and_shows_the_folder
     h.settle();
     h.get_by_role(Role::TreeItem, "Advanced").click();
     h.settle();
-    // The file of this run's folder, not the user's own; and its folder in the file manager.
+    // The file of this run's folder, not the user's own. Nothing is written yet (a default is
+    // not): its folder, made; once there is a file, the file selected in it.
     assert!(h.has_text(&file), "{}", h.semantics());
+    let folder = home.join("config");
     h.get_by_role(Role::Button, "Show in folder").click();
     h.settle();
-    assert_eq!(shell.asked(), [format!("reveal: {file}")]);
+    assert!(folder.is_dir());
+    std::fs::write(folder.join("settings.json"), "{}").unwrap();
+    h.get_by_role(Role::Button, "Show in folder").click();
+    h.settle();
+    assert_eq!(shell.asked(), [format!("open: {}", folder.display()), format!("reveal: {file}")]);
+}
+
+#[test]
+fn a_colour_theme_saved_by_the_old_name_of_the_default_reads_as_the_default() {
+    let mut h = Harness::new();
+    h.size = quadra::Size::new(1200.0, 700.0);
+    let settings = Settings::memory();
+    settings.value("appearance.colour_theme", String::new()).set("The kit's".into());
+    let (given, sessions): (_, NewSession) = (settings.clone(), Rc::new(|_| echo()));
+    h.mount(move || {
+        provide(given.clone());
+        OneTerm::new(sessions).view()
+    });
+    h.settle();
+    h.get_by_role(Role::Button, "Settings").click();
+    h.settle();
+    // The first choice, with nothing to reset; and the theme is the mode's.
+    assert!(h.has_text("Default") && !has_button(&h, "Reset Colour theme"), "{}", h.semantics());
+    let seen = quadra::Appearance::default();
+    let (old, now) =
+        (oneterm::theme("Dark", "The kit's", &seen), oneterm::theme("Dark", oneterm::KIT_THEME, &seen));
+    assert_eq!(old.color(quadra_design::token::CANVAS), now.color(quadra_design::token::CANVAS));
 }

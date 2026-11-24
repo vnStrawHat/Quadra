@@ -15,8 +15,14 @@ pub(super) fn files() -> SettingsGroup {
     let said = file.as_ref().map(|it| it.display().to_string()).unwrap_or_default();
     let opener = quadra::use_context::<std::rc::Rc<dyn quadra_shell::Opener>>();
     let show = button("Show in folder").variant(Variant::Secondary).on_click(move || {
-        if let (Some(opener), Some(file)) = (&opener, &file) {
-            opener.reveal(file);
+        let (Some(opener), Some(file)) = (&opener, &file) else { return };
+        // Nothing is written while every setting is its default: then the folder, made.
+        match (file.exists(), file.parent()) {
+            (false, Some(folder)) => {
+                let _ = std::fs::create_dir_all(folder);
+                opener.open(&folder.display().to_string());
+            }
+            _ => _ = opener.reveal(file),
         }
     });
     SettingsGroup::new("Files")

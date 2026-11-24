@@ -345,7 +345,7 @@ detail), the focus in it as it opens.
 A window of its own (980 by 700, its place kept; the title bar's Settings opens it or brings
 it to the front; it closes when 1Term locks and with the main window; where no window can open,
 the harness, the page shows in the main window with Done), the kit's `settings` in its layout of cards: pages with icons, each with
-what it is about, groups with titles; the title bar names the page), a search, pages:
+what it is about, groups with titles; the title bar names the page), a search, pages (a row is explained in a reader's words, what it does and not how it is made; the options of a choice are saved by their words, so those stay as they are):
 Appearance (and the UI's text size, 75 to 200 %, the terminals' with it: the app's
 `TextSize::text`), Terminal, Tabs & spaces (and the tab's title: the program's, a path of a program
 shortened to its name, or "Terminal" and the host), SSH & hosts (the count of saved hosts with Add SSH host,
@@ -360,14 +360,14 @@ system's dialog, empty for `session-logs` in the app's data folder; the formats 
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
 logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D ("Split the space", Split space), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `zoom_in` Ctrl+=, `zoom_out` Ctrl+- and `zoom_reset` Ctrl+0
 (the terminal's text size, Appearance's, a point a step within 6 to 48, back to 15), `quit`
-Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and the kit's Reset as on the other pages (and the page's Reset all), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the file, and a note that settings save as they change), About (the version, the engine, the license).
+Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V; each with its `key_input` and the kit's Reset as on the other pages (and the page's Reset all), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the settings file this run saves to, a trial run's folder too, and Show in folder: the file selected in the file manager, or its folder, made if need be, while nothing is written yet), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
 folder as they change (specs/15). Every setting of a page has the
 kit's Reset (specs/13, `settings`), its numbers in the kit's stepper (`number_input(..).stepper()`), back to the default the app reads it with (`Prefs::load`; the
 defaults are those of settings in memory, written once), and each page its Reset all; the master
 password, the saved hosts and the recent targets are data, not settings, and have none. Appearance: the theme (System, Dark, Light), and a colour theme over
 it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/themes`, made by
-`.tmp/gen_themes.py` from colours alone; the kit's when none); the terminal's text (font family,
+`.tmp/gen_themes.py` from colours alone; "Default", the kit's, when none: a saved name no theme has reads as it); the terminal's text (font family,
 chosen from the families of the machine in a select with a search, the first "Default" for none (the kit's mono face); fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
 Nerd Font"; size, 15; weight, Normal and Thin to Black; line height, 1.2; the cell's width, 0 for the advance of `0`, up to
 48 px; the padding a side, 5 at the top and the left and 0 at the right and the bottom, each 0 to 64 px, the only room between the grid and the space's edges; ligatures, on; grayscale smoothing, on (no coloured fringes; off, as Windows smooths); semantic
@@ -381,7 +381,7 @@ colour with its normal and bright fields), the view's `TermLook` (specs/18). Key
 `terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`), `terminal.ligatures`, `terminal.grayscale`,
 `terminal.semantic_highlighting`:
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
-blink, scrollback lines, the default local shell (the OS's, a shell found, or "A program": the
+blink, scrollback lines, the default local shell ("System default", the OS's; a shell found; or "A program": the
 program and its arguments typed, `terminal.shell_program`, `terminal.shell_args`), where new spaces start (active space's cwd,
 home, last used: the directory a local shell said last, kept across runs as
 `terminal.last_dir`, home when it is no longer there), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),

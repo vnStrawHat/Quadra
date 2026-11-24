@@ -206,6 +206,19 @@ fn a_new_host_key_is_trusted_where_its_fingerprint_shows() {
         let whose = format!("the key of [127.0.0.1]:{other}");
         assert!(!a.h.query(|n| n.semantics.name.contains(&whose)).is_empty(), "{}", a.h.semantics());
         assert!(!has(other), "not trusted before it is seen");
+        // Enter, the key that pressed Connect, does not answer for the user here.
+        a.h.key(Key::Enter, Mods::NONE);
+        for _ in 0..20 {
+            a.h.advance(Duration::from_millis(10));
+            a.h.settle();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(
+            !has(other) && a.h.has_text("Continue"),
+            "Enter trusted it
+{}",
+            a.h.semantics()
+        );
         let answer = if trusts { "Continue" } else { "Cancel" };
         a.h.get_by_role(Role::Button, answer).click();
         a.h.settle();

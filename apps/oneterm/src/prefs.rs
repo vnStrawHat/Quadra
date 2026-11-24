@@ -256,4 +256,6 @@ fn every_colour_theme_reads() {
         }
     }
     assert_eq!(COLOUR_THEMES.len(), crate::themes::THEMES.len() + 1);
+    // No theme has the default's name, nor the one it had: a saved one reads as the default.
+    assert!(crate::themes::THEMES.iter().all(|(name, _)| ![KIT_THEME, "The kit's"].contains(name)));
 }

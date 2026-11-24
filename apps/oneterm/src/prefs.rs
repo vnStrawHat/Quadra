@@ -13,11 +13,11 @@ pub use look::{ANSI, COLORS, LookPrefs, PADDING, WEIGHTS};
 /// The choices of the settings that are one of a few.
 pub const THEMES: [&str; 3] = ["System", "Dark", "Light"];
 pub const CURSORS: [&str; 3] = ["Block", "Bar", "Underline"];
-pub const STARTS: [&str; 3] = ["The active space's directory", "Home", "The last directory used"];
-pub const STATUS_SHOWN: [&str; 3] = ["On the tab and the header", "On the tab only", "Ignored"];
-pub const BELLS: [&str; 4] = ["A dot and a count", "A dot and a sound", "A dot and a flash", "Ignored"];
-pub const TITLES: [&str; 2] = ["The program's title", "Terminal, or the host"];
-pub const NOTICES: [&str; 3] = ["A card for 6 s", "A card until dismissed", "Silent"];
+pub const STARTS: [&str; 3] = ["Same as the active space", "Home folder", "Last folder used"];
+pub const STATUS_SHOWN: [&str; 3] = ["Tab and header", "Tab only", "Off"];
+pub const BELLS: [&str; 4] = ["Dot and count", "Dot and sound", "Dot and flash", "Off"];
+pub const TITLES: [&str; 2] = ["Program's title", "Terminal or host name"];
+pub const NOTICES: [&str; 3] = ["Card for 6 seconds", "Card until dismissed", "Off"];
 
 /// The settings, as signals: writing one saves it.
 #[derive(Clone, Copy)]

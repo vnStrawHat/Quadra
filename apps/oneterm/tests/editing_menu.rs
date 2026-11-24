@@ -144,7 +144,7 @@ fn choose(a: &mut App, name: &str) {
 
 #[test]
 fn the_editor_s_menu_copies_pastes_finds_and_closes() {
-    let mut a = app("edit-menu", "In 1Term");
+    let mut a = app("edit-menu", "1Term's editor");
     a.edit("config.yaml");
     a.wait(|a| a.shows("/home/config.yaml"), "the editor");
     a.h.key(Key::A, Mods::CTRL);
@@ -191,7 +191,7 @@ fn the_editor_s_menu_copies_pastes_finds_and_closes() {
 
 #[test]
 fn wrap_breaks_long_lines_at_the_space_s_width_and_back() {
-    let mut a = app("edit-wrap", "In 1Term");
+    let mut a = app("edit-wrap", "1Term's editor");
     a.edit("config.yaml");
     a.wait(|a| a.shows("/home/config.yaml"), "the editor space");
     a.h.type_text(&"wide ".repeat(60));

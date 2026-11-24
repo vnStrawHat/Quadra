@@ -119,7 +119,7 @@ fn new_spaces_take_the_cursor_and_the_history_set() {
 #[test]
 fn the_default_shell_can_be_a_program_typed() {
     let mut a = app();
-    a.settings.value("terminal.shell", String::new()).set("A program".into());
+    a.settings.value("terminal.shell", String::new()).set("Custom program".into());
     a.settings.value("terminal.shell_program", String::new()).set("D:\\tools\\nu.exe".into());
     a.settings.value("terminal.shell_args", String::new()).set("--login  -i".into());
     a.h.settle();
@@ -148,8 +148,8 @@ fn the_font_family_is_chosen_from_the_machines_with_a_search() {
 #[test]
 fn silent_notifications_and_ignored_bells_count_nothing() {
     let mut a = app();
-    a.settings.value("signals.notifications", String::new()).set("Silent".into());
-    a.settings.value("signals.bell", String::new()).set("Ignored".into());
+    a.settings.value("signals.notifications", String::new()).set("Off".into());
+    a.settings.value("signals.bell", String::new()).set("Off".into());
     a.h.settle();
     a.feed(0, b"\x1b]9;tests passed\x07");
     assert!(!a.says("tests passed"));

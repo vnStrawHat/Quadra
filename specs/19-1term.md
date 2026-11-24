@@ -345,7 +345,7 @@ detail), the focus in it as it opens.
 A window of its own (980 by 700, its place kept; the title bar's Settings opens it or brings
 it to the front; it closes when 1Term locks and with the main window; where no window can open,
 the harness, the page shows in the main window with Done), the kit's `settings` in its layout of cards: pages with icons, each with
-what it is about, groups with titles; the title bar names the page), a search, pages (a row is explained in a reader's words, what it does and not how it is made; the options of a choice are saved by their words, so those stay as they are):
+what it is about, groups with titles; the title bar names the page), a search, pages (a row is explained in a reader's words, what it does and not how it is made; the options of a choice are in the same words, and as a choice is saved by its words, one saved by a word since changed reads as the default):
 Appearance (and the UI's text size, 75 to 200 %, the terminals' with it: the app's
 `TextSize::text`), Terminal, Tabs & spaces (and the tab's title: the program's, a path of a program
 shortened to its name, or "Terminal" and the host), SSH & hosts (the count of saved hosts with Add SSH host,
@@ -381,7 +381,7 @@ colour with its normal and bright fields), the view's `TermLook` (specs/18). Key
 `terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`), `terminal.ligatures`, `terminal.grayscale`,
 `terminal.semantic_highlighting`:
 every terminal follows them as they are, its screen kept. Terminal: cursor shape and
-blink, scrollback lines, the default local shell ("System default", the OS's; a shell found; or "A program": the
+blink, scrollback lines, the default local shell ("System default", the OS's; a shell found; or "Custom program": the
 program and its arguments typed, `terminal.shell_program`, `terminal.shell_args`), where new spaces start (active space's cwd,
 home, last used: the directory a local shell said last, kept across runs as
 `terminal.last_dir`, home when it is no longer there), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
@@ -664,7 +664,7 @@ thread never waits on the network.
   accent); two on a folder (or on `..`) open it, two on a file download it to
   the user's Downloads folder (`name (1).ext` when the name is taken). The other button gives
   a remote row's menu (Open or Download; for a file Edit…: downloaded to `sftp-edit` in the app's data
-  folder, then as the setting Editor says: In 1Term (the default; "Editing in 1Term" below), or
+  folder, then as the setting Editor says: 1Term's editor (the default; "Editing in 1Term" below), or
   opened in the system's app for it or the program the settings name with its arguments
   (`Opener::open_with`), sent back each time it is saved, a card saying so; above the size set, 1 MB,
   asked first; Rename…, Copy path, Properties…, Delete…) and, where no row is, the

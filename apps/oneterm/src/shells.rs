@@ -8,7 +8,7 @@ use quadra_term::vt::{CursorShape, CursorStyle};
 use crate::model::Model;
 
 /// The default shell's name when it is a program the settings type.
-pub const CUSTOM: &str = "A program";
+pub const CUSTOM: &str = "Custom program";
 
 /// The name of a local space's shell, kept with its session: what its header says until
 /// the program gives a title.

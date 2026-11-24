@@ -191,7 +191,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                 .back(p.editor, d.editor)
                 .row(
                     "Program",
-                    "The program used when Editor is A program.",
+                    "The program used when Editor is Custom program.",
                     input(p.editor_program).placeholder("notepad.exe").label("Program"),
                 )
                 .back(p.editor_program, d.editor_program)

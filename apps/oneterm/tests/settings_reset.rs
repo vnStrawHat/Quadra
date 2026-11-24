@@ -68,7 +68,7 @@ fn a_changed_setting_has_its_reset_and_a_page_its_reset_all() {
     assert!(!has_button(&h, "Reset all"));
 
     // A choice by name follows its reset: the default shell is the OS's again.
-    s.value("terminal.shell", String::new()).set("A program".into());
+    s.value("terminal.shell", String::new()).set("Custom program".into());
     h.get_by_role(Role::TreeItem, "Terminal").click();
     h.settle();
     assert!(!h.has_text("System default"), "the select shows the program");

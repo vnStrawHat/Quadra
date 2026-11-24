@@ -131,7 +131,7 @@ impl App {
 
 #[test]
 fn a_file_opens_in_a_space_is_coloured_by_its_type_and_saved_back() {
-    let mut a = app("edit-space", "In 1Term");
+    let mut a = app("edit-space", "1Term's editor");
     a.edit("config.yaml");
     a.wait(|a| a.shows("/home/config.yaml"), "the editor space");
     assert!(a.h.has_text("yaml"), "its type\n{}", a.h.semantics());
@@ -165,7 +165,7 @@ fn a_file_opens_in_a_space_is_coloured_by_its_type_and_saved_back() {
 
 #[test]
 fn closing_with_changes_asks_and_a_binary_file_is_not_edited() {
-    let mut a = app("edit-close", "In 1Term");
+    let mut a = app("edit-close", "1Term's editor");
     a.edit("blob.bin");
     a.wait(|a| a.h.has_text("Binary file, 3 B: not shown, and not edited here."), "the binary file");
     assert!(!a.button("Save") && !a.button("Diff"));
@@ -206,7 +206,7 @@ fn closing_with_changes_asks_and_a_binary_file_is_not_edited() {
 
 #[test]
 fn a_file_edited_from_an_editor_space_keeps_the_dock_where_it_was() {
-    let mut a = app("edit-second", "In 1Term");
+    let mut a = app("edit-second", "1Term's editor");
     a.tap("src", 2);
     a.wait(|a| a.button("main.rs"), "the folder");
     a.edit("main.rs");
@@ -221,7 +221,7 @@ fn a_file_edited_from_an_editor_space_keeps_the_dock_where_it_was() {
 
 #[test]
 fn closing_a_tab_or_the_window_with_changes_asks_first() {
-    let mut a = app("edit-tab", "In 1Term");
+    let mut a = app("edit-tab", "1Term's editor");
     a.edit("config.yaml");
     a.wait(|a| a.shows("/home/config.yaml"), "the editor");
     assert!(a.h.has_text("1 ssh \u{B7} 1 space"), "an editor is not counted\n{}", a.h.semantics());
@@ -263,7 +263,7 @@ fn closing_a_tab_or_the_window_with_changes_asks_first() {
 
 #[test]
 fn a_closing_given_up_takes_back_its_don_t_saves() {
-    let mut a = app("edit-give-up", "In 1Term");
+    let mut a = app("edit-give-up", "1Term's editor");
     for name in ["config.yaml", "run"] {
         a.edit(name);
         a.wait(|a| a.shows(&format!("/home/{name}")), name);

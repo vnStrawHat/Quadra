@@ -173,7 +173,7 @@ pub(super) fn terminal(p: Prefs, d: Prefs) -> Vec<SettingsGroup> {
         .back(p.shell, d.shell)
         .row(
             "Program",
-            "The shell's program, when Default shell is A program.",
+            "The shell's program, when Default shell is Custom program.",
             input(p.shell_program).placeholder("C:\\path\\to\\shell.exe").label("Program"),
         )
         .back(p.shell_program, d.shell_program)

@@ -15,7 +15,7 @@ use super::{Dock, store};
 use crate::editing::Content;
 use crate::model::Model;
 
-pub const EDITORS: [&str; 3] = ["In 1Term", "The app the system opens it with", "A program"];
+pub const EDITORS: [&str; 3] = ["1Term's editor", "System default app", "Custom program"];
 
 /// What editing needs from where the view was built: the folder and the opener.
 #[derive(Clone)]

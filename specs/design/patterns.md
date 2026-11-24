@@ -42,8 +42,9 @@ pub fn host_dialog(open: Signal<bool>) -> impl View {
 - No field has a width: a field in a `form()` (and in a dialog's body) is as wide as its
   column. `.width(px)` on a field is for a field outside a form (a toolbar, a settings row).
 - No `padding`: the dialog's body is 12 in. No `gap`: `form()` is 12 between, `columns(2)` 12.
-- Every control has a `field(label, ..)` or a `.label(..)`: the label is what a screen reader
-  says and what a test finds it by.
+- Every control is in a `field(label, ..)` or has a `.label(..)`. A field is a group a
+  reader hears by its label; a control with a `.label(..)` of its own is also found by it
+  (`get_by_role(Role::TextInput, "Name")`), which is what a test needs.
 - One primary button, last. `Cancel` is secondary. A dangerous answer is `.danger()`.
 - More than about eight fields is two dialogs, or a page.
 

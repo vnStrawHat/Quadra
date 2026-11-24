@@ -72,6 +72,27 @@ wrong when whole views were built from it.
 | round dots for a menu's mark, a tab's unsaved mark, a step's | squares |
 | 63 values off the ladders | 0; 6 with a reason |
 
+## The trial (2026-11-24)
+
+The language was tried the way it will be used: an agent that had never seen the kit was given
+this folder and nothing else about looks, and asked for a dialog with a form of eight fields
+and a card of facts, without drawing or looking at anything. Its first draft compiled, wrote
+no gap, padding, radius, text size or colour, and when drawn had every field on one left
+edge, the rows of two equal, the foot in order. It also reported 25 places where the text
+was silent, said two things, or did not match the kit. What they changed:
+
+- **In the kit**: a segmented group in a form fills its column, its cells sharing the room
+  (it had an outline as wide as the column with the cells at its left); `field(..)` is a
+  group a reader hears by its label, its label `text_2`, and it no longer stretches a control
+  that has its own width; a dialog's body is `text` (it was `text_2` for everything in it,
+  form or sentence); `number_input` and `time_input` take `.width(px)`; a path and a time are
+  in the mono face; `mono(words)` for a value the machine said.
+- **In the text**: a dialog is 440 with two short fields to a row and 560 only for long
+  values (the recipe and the rule disagreed); "no numbers" became "no distances", with the
+  width of a container as the one number a view gives; `card_head`, the lines of a card, the
+  textarea and the foot with an aside are described as they are; how the facts and the status
+  of a card are laid out; where a section goes in a form; what `form()` and `field(..)` return.
+
 ## Still owed
 
 - **The apps' views still write their own distances.** 1Term's dialogs are laid out by hand
@@ -83,6 +104,10 @@ wrong when whole views were built from it.
   what already names a token.
 - **The check reads literals in calls.** A distance computed (`if small { 3.0 } else { 2.0 }`)
   or kept in a constant is not seen.
+- **From the trial, not done**: a combobox does not take its column's width in a form; a
+  number has no unit after it (`Keep [7] backups`); `card_head` has no place for a status or
+  an action at its right; the gap between a form's fields (12) is also the gap around a
+  section in it, where the rule of three distances asks for a step more.
 - **The title bar is 32 in the kit and 38 in an app whose title bar holds its tabs.** Both are
   stated ([components.md](components.md)); one helper for the taller bar would end the
   hand-built ones.

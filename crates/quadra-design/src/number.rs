@@ -21,6 +21,7 @@ pub struct NumberInput {
     stepper: bool,
     label: Option<Prop<String>>,
     test_id: Option<&'static str>,
+    width: Option<f32>,
 }
 
 /// A field that edits `value`: whole numbers in steps of 1 unless told otherwise.
@@ -33,10 +34,17 @@ pub fn number_input(value: Signal<f64>) -> NumberInput {
         stepper: false,
         label: None,
         test_id: None,
+        width: None,
     }
 }
 
 impl NumberInput {
+    /// How wide it is: its own width, or its column's in a form, unless told (a port: 96).
+    pub fn width(mut self, px: f32) -> Self {
+        self.width = Some(px);
+        self
+    }
+
     /// The least and the most the steps go to.
     pub fn range(mut self, min: f64, max: f64) -> Self {
         self.ends = (min, max);
@@ -100,7 +108,7 @@ impl View for NumberInput {
             };
             let side = || ghost(row().width(32.0).height(by_text(size::H_MD - 2.0)));
             let middle = row().grow(1.0).justify(Justify::Center).cursor(Cursor::Text).child(field);
-            let frame = crate::layout::field_width(around, None, 128.0)
+            let frame = crate::layout::field_width(around, self.width, 128.0)
                 .height(by_text(size::H_MD))
                 .radius(token::RADIUS_MD)
                 .border(1.0);
@@ -113,6 +121,10 @@ impl View for NumberInput {
             return frame.child(step(side(), number, true, icons::PLUS, 16.0)).mount(cx);
         }
         let field = input(words).own_width(140.0).invalid(wrong);
+        let field = match self.width {
+            Some(px) => field.width(px),
+            None => field,
+        };
         let field = match self.test_id {
             Some(id) => field.test_id(id),
             None => field,

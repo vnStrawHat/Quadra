@@ -6,7 +6,9 @@ view; the recipes in patterns.md are these rules applied.
 A view is boxes in rows and columns. Almost every mistake in a first draft is one of five:
 things touch, things sit against an edge, things do not line up, a thing is squeezed or
 overflows, two things are the wrong distance for what they are to each other. Each rule below
-prevents one of them, and the kit's helpers apply the rules so a view writes no numbers.
+prevents one of them, and the kit's helpers apply the rules so a view writes no distances: no
+gap, no padding, no width of a field. The one number a view may give is the width of a
+container that has none of its own (a card, a popover's content), from the list in section 6.
 
 ## 1. Three distances: within, between, around
 
@@ -39,7 +41,8 @@ prevents one of them, and the kit's helpers apply the rules so a view writes no 
 ## 2. The helpers
 
 `quadra_design` has a helper for each common arrangement. They return a `Div`, so anything a
-`Div` takes can follow. Use them in place of `column()` and `row()` in a view; reach for a
+`Div` takes can follow (`form()` returns a `Form` and `field(..)` a `Field`: they take
+`.child(..)`, and `.help(..)`, `.error(..)`, `.required()`, and go into a `Div` as any view). Use them in place of `column()` and `row()` in a view; reach for a
 bare `row()` only inside a component.
 
 | Helper | What it is | Distances |
@@ -54,6 +57,8 @@ bare `row()` only inside a component.
 | `spacer()` | takes the room left in a row or a column | |
 | `field(label, control)` | a label over a control, help or an error under it | 4, 4 |
 | `card()` | a bordered group on a plane | inset 12, 8 between |
+| `description_list(items)` | terms and their values in two columns: the facts of a thing | 8 between |
+| `mono(words)` | what the machine said (a path, a time, a size), in the mono face | |
 
 The containers come with their inset and their gap: the body of a `dialog`, a `drawer`, a
 `popover`, a `hover_card` and a `card` is already a padded column. Put the content in; do not
@@ -111,13 +116,21 @@ fields, help lines, section labels, the first button of a row.
 
 ## 6. Widths
 
-- **A field fills its column.** In a `form()` every control is as wide as the form. Two
-  short fields may share a row (`columns(2)`): never more than two, and only fields that
-  belong together (Address and Port, From and To). A field that holds a short value by
-  nature may keep its own width at the start of its row (a port: 96, a colour: 120).
+- **A field fills its column.** In a `form()` every field is as wide as the form, and a
+  segmented group too, its cells sharing the room. Two short fields may share a row
+  (`columns(2)`): never more than two, and only fields that belong together (Address and
+  Port, From and To). A field that holds a short value by nature may be told its width
+  (`number_input(port).width(96.0)`); it then stands at the start of its row. A checkbox, a
+  switch and a button keep their own width everywhere. A combobox keeps its 280.
+- **A section in a form** (`section(title)`) is a field's distance from its neighbours (12)
+  and holds what is optional or of another kind; put it last, since nothing marks its end
+  but the form's.
 - **A button is as wide as its label** with its padding, at least as wide as it is tall;
   never stretched to its container but in a narrow column where it is the only action.
-- **A dialog is 440 wide** (360 for a question, 560 for a form with two columns of fields),
+- **A dialog is 440 wide**: room for a column of fields, and for two short ones to a row.
+  360 for a question (`confirm` is); 560 (`.width(560.0)`) when a row holds two fields whose
+  values are long (two paths, a path and a name). A card in a page is 360 unless it is in a
+  grid;
   a popover 280, a tooltip at most 288, a menu at least 200 and at most 360.
 - **Text measures at most about 72 characters**: a description wraps inside 560 px.
 - **A page** keeps its content at most 880 px wide, at the left, with the page's inset.
@@ -149,8 +162,9 @@ SECTION LABEL
 ```
 
 - A page has one headline; a section has a label; a card has rows. Three levels, no more.
-- Sections are 24 apart, cards in a section 12, rows in a card 12 with no line, or 0 with a
-  `line` between them where rows are long and many.
+- Sections are 24 apart, cards in a section 12, the lines of a card 8 with no line between
+  (a card of settings: rows 16 apart), or 0 with a `line` between them where rows are long
+  and many.
 
 ## 9. Bars
 

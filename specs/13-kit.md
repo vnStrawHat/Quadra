@@ -749,8 +749,11 @@ of the window) and the shadow of its level.
   12 px semibold muted heading over a column), `sections()` (24 apart), `spacer()`, and
   `form()`: a column of fields 12 apart in which a field that was told no width is as wide as
   its column (`input`, `textarea`, `select`, `number_input`, `key_input`, `color_input`,
-  `color_picker`, `date_picker`, `time_input`, the path pickers). The body of a `dialog` is
-  such a column too. A view is built from these and writes no distance of its own;
+  `color_picker`, `date_picker`, `time_input`, the path pickers; a segmented group too, its
+  cells sharing the room; `.width(px)` on a field says otherwise). The body of a `dialog` is
+  such a column too. `field(label, control)` is a group a reader hears by its label: the
+  label in 12 px `text_2`, the control under it at its own width or its column's. `mono(words)`
+  is a value the machine said, in the mono face. A view is built from these and writes no distance of its own;
   `tools/check_design.py` (the gate) rejects a distance, a radius or a text size off the
   ladders.
 - `menu(open, &opener, || items)`: rows of `MenuItem` (`.icon(..)`, `.keys("Ctrl-C")`,

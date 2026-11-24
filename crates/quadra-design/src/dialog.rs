@@ -182,7 +182,8 @@ pub fn confirm(
     let ask = dialog(
         open,
         title,
-        Box::new(move || AnyView::new(text(message.clone()))) as Box<dyn Fn() -> AnyView>,
+        Box::new(move || AnyView::new(text(message.clone()).color(token::TEXT_2)))
+            as Box<dyn Fn() -> AnyView>,
     );
     ask.width(360.0).action("Cancel", Variant::Secondary, || {}).action(yes, Variant::Primary, on_yes)
 }
@@ -200,7 +201,7 @@ where
             // The body: a column 12 in from the sides and the foot, its things 12 apart, the
             // fields in it as wide as it is.
             let middle = column().gap(token::SPACE_LG).padding_x(token::SPACE_LG);
-            let middle = middle.padding_bottom(token::SPACE_LG).text_color(token::TEXT_2);
+            let middle = middle.padding_bottom(token::SPACE_LG);
             let middle = middle.child(Filled(body()));
             let page = base::page(column().width(width - EDGE), title.clone());
             let page = page.child(head).child(middle);

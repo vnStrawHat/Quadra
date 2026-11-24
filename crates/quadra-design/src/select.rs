@@ -105,7 +105,7 @@ impl View for Select {
         let face = face.child(div().grow(1.0).text_color(tone).child(text(move || value())));
         let face = face.child(icon(icons::CHEVRONS_UP_DOWN).size(12.0).color(token::TEXT_2));
         // The menu is as wide as the field at least: the field's width when it opens.
-        let (options, width) = (self.options, self.width.unwrap_or(OWN));
+        let (options, width, told) = (self.options, self.width.unwrap_or(OWN), self.width);
         let field = opener.clone();
         let wide = move |tree: &quadra_tree::Tree| field.get().map_or(width, |it| tree.window_rect(it).width);
         if let Some(ask) = self.search {
@@ -113,7 +113,7 @@ impl View for Select {
             let list = popup(open, listing(below(&opener)), Some(opener.clone()), move || {
                 search::searched(options.clone(), chosen, open, wide, ask.clone())
             });
-            return column().child(face).child(list).mount(cx);
+            return crate::layout::holder(column(), told).child(face).child(list).mount(cx);
         }
         // The chosen option has a quiet check before it; with none chosen, no room is kept.
         let items = move || {
@@ -131,6 +131,6 @@ impl View for Select {
             let list = rows(items(), ends()).min_width(move || quadra_layout::Length::Px(least.get()));
             list.on_mount(move |tree, _| least.set(wide(tree) - EDGE))
         });
-        column().child(face).child(list).mount(cx)
+        crate::layout::holder(column(), told).child(face).child(list).mount(cx)
     }
 }

@@ -15,14 +15,21 @@ pub struct TimeInput {
     value: Signal<TimeOfDay>,
     step: u8,
     label: Option<Prop<String>>,
+    width: Option<f32>,
 }
 
 /// A field of 120 px that edits a time.
 pub fn time_input(value: Signal<TimeOfDay>) -> TimeInput {
-    TimeInput { value, step: 1, label: None }
+    TimeInput { value, step: 1, label: None, width: None }
 }
 
 impl TimeInput {
+    /// How wide it is: 120, or its column's in a form, unless told.
+    pub fn width(mut self, px: f32) -> Self {
+        self.width = Some(px);
+        self
+    }
+
     /// What a reader calls it, a constant or words that change; the time is then its value.
     /// Without one it is called by the time.
     pub fn label<M>(mut self, name: impl IntoProp<String, M>) -> Self {
@@ -64,7 +71,9 @@ impl View for TimeInput {
             move |minute| value.update(|time| time.minute = minute),
         );
         let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).height(by_text(size::H_MD));
-        let face = crate::layout::field_width(face, None, 120.0).bg(token::INPUT_BG);
+        let face = crate::layout::field_width(face, self.width, 120.0)
+            .bg(token::INPUT_BG)
+            .font_family(crate::fonts::MONO);
         let face = face.padding_x(8.0).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
         let time = move || value.get().to_string();

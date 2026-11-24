@@ -186,6 +186,6 @@ impl View for ColorPicker {
         let face = face.child(mark).child(words);
         let presets = self.presets;
         let body = bare_popover(open, &opener, move || popover_body(value, open, &presets, fallback));
-        div().shrink(0.0).child(face).child(AnyView::new(body)).mount(cx)
+        crate::layout::holder(div().shrink(0.0), self.width).child(face).child(AnyView::new(body)).mount(cx)
     }
 }

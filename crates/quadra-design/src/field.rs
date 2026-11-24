@@ -49,7 +49,7 @@ impl Field {
 
 impl View for Field {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let name = text(self.name).size(size::TEXT_SM.size);
+        let name = text(self.name.clone()).size(size::TEXT_SM.size).color(token::TEXT_2);
         let head = row().gap(4.0).child(name);
         let head = match self.required {
             true => head.child(text("*").size(size::TEXT_SM.size).color(token::ERROR)),
@@ -73,7 +73,10 @@ impl View for Field {
                 line
             }
         });
-        column().gap(4.0).child(head).child(self.control).child(under).mount(cx)
+        // A group named by the label: a reader says it on the way to the control. The control
+        // keeps its own width (a segmented group, a switch); in a form it is the column's.
+        let all = column().gap(4.0).align_items(Align::Start).role(Role::Group).label(self.name);
+        all.child(head).child(self.control).child(under).mount(cx)
     }
 }
 

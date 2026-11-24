@@ -4,7 +4,7 @@
 use quadra_layout::{Align, Display, Justify};
 use quadra_prim::Color;
 use quadra_tree::{Role, Side, Token};
-use quadra_view::{Div, TextView, by_text, column, div, row, text};
+use quadra_view::{Div, IntoProp, TextView, by_text, column, div, row, text};
 
 use crate::{fonts, size, token};
 
@@ -144,6 +144,12 @@ pub fn avatar(name: &str, side: f32) -> Div {
 pub fn card() -> Div {
     let card = column().gap(8.0).padding(12.0).bg(token::PANEL).radius(token::RADIUS_MD);
     card.border(1.0).border_color(token::LINE_STRONG)
+}
+
+/// What the machine said (a path, an address, a time, an id, a size), in the mono face
+/// (specs/design, principle 3): a constant, or words that change.
+pub fn mono<M>(words: impl IntoProp<String, M>) -> Div {
+    div().font_family(fonts::MONO).shrink(0.0).child(text(words))
 }
 
 /// The head of a card: a title of 16 px over a muted line that says more, if there is one.

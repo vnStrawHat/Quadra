@@ -101,6 +101,7 @@ impl Choice {
     fn cell(&self, label: String) -> Div {
         let small = matches!(self.size, Size::Xs | Size::Sm);
         let cell = row().align_items(Align::Center).justify(Justify::Center).shrink(0.0);
+        let cell = if crate::layout::fills() { cell.grow(1.0) } else { cell };
         // Inside the group's border: the group is the control's height.
         let cell = cell.height(by_text(self.size.height() - 2.0)).padding_x(if small { 8.0 } else { 12.0 });
         let cell = match small {
@@ -139,6 +140,10 @@ impl Choice {
         let group = match (self.segmented, self.horizontal) {
             (true, _) => {
                 let outlined = group.radius(token::RADIUS_MD).border(1.0).shrink(0.0);
+                let outlined = match crate::layout::fills() {
+                    true => outlined.width(quadra_layout::Length::Fill),
+                    false => outlined,
+                };
                 outlined.border_color(token::LINE_STRONG).overflow_y(Overflow::Hidden)
             }
             (false, true) => group.gap(16.0),

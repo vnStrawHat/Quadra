@@ -80,6 +80,11 @@ pub(crate) fn field_width(frame: Div, told: Option<f32>, own: f32) -> Div {
 
 /// A column of fields, 12 apart: each field, and its control when it was told no width, is as
 /// wide as the form.
+/// What holds a field and its popup: as wide as its column where the field is.
+pub(crate) fn holder(around: Div, told: Option<f32>) -> Div {
+    if told.is_none() && fills() { around.width(Length::Fill) } else { around }
+}
+
 pub struct Form {
     children: Vec<AnyView>,
 }

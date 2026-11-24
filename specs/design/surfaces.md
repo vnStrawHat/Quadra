@@ -36,11 +36,13 @@ not restyle it.
   window's top, centred, no backdrop; a click outside and Escape dismiss it.
 - The head is the title, or a row of the app's (`.head(..)`: a mark and the title, a tag); the
   cross is `text_2` in a 22 px ghost box.
-- The body is a column 12 between its things and its text is `text_2` when it is a sentence
-  (a question), `text` when it is a form. A body taller than the window scrolls between the
+- The body is a column 12 between its things, its fields as wide as it is. Its text is
+  `text`; the one sentence of a `confirm` is `text_2`. A body taller than the window scrolls between the
   head and the foot.
 - The foot: `.action(label, variant, f)` in order, the main one last; `.aside(label, f)` at
-  the far left; `.shortcut("Enter")` on the main one. A dialog that only tells has one
+  the far left; `.shortcut("Enter")` on the main one. With an aside the foot is 4 in at
+  its left, so that the quiet button's label (8 inside it) stands on the body's left edge. A
+  button closes the dialog unless it is told `.stays_open()` (Test connection, Run now). A dialog that only tells has one
   button, "Close".
 - A confirm (`confirm(..)`) is a dialog 360 wide: the question as the title ("Delete
   prod-api-01?"), what will happen as one sentence, Cancel and the verb ("Delete host").
@@ -90,8 +92,10 @@ bottom centre, a status icon and words, gone after 10 s.
 ## Card
 
 A card groups a few things on a plane: a 1 px `line_strong` border, radius 6, inset 12, its
-things 8 apart. `card_head(title, more)` is its title (14, semibold) with a quiet action at
-the right. A card holds no card. A large card (a group of settings) has inset 16 and rows 16
+things 8 apart. `card_head(title, more)` is its title (16) over a 12 px `text_2` line that
+says more, 2 apart; its facts are lines of a name and a `mono(..)` value (`hstack()` with a
+`spacer()`), or a `description_list`; a status is a line of its own under them; a
+`button_row()` ends it. A card holds no card. A large card (a group of settings) has inset 16 and rows 16
 apart, its title (16, `text_2`) over it, 8 apart.
 
 ## Panels and bars

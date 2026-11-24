@@ -63,5 +63,6 @@ Draw it (`tools/shots.sh`, or the app's own shots) in both themes and check:
 ## Review questions
 
 - Could this view be built from a pattern with fewer parts of its own?
-- Is every number in it gone? (A view of helpers and tokens has none.)
+- Is every distance in it gone? (A view of helpers and tokens writes none; a container's
+  width is the one number it may give.)
 - If a control here were moved to another app of the kit, would it look at home?

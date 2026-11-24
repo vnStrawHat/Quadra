@@ -88,7 +88,7 @@ impl PathPicker {
 impl View for PathPicker {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (value, browse) = (self.value, self.browse);
-        let mut field = input(value).placeholder(&self.placeholder);
+        let mut field = input(value).placeholder(&self.placeholder).mono();
         // In a form with no width told, the path takes the room the button leaves.
         let fill = self.fill || (self.width.is_none() && crate::layout::fills());
         field = if fill { field.fill() } else { field.width(self.width.unwrap_or(240.0)) };

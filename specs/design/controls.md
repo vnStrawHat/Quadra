@@ -33,8 +33,8 @@ same height, the same corners, the same border colour, their text on one baselin
   before the text (`ssh`), `.mono()` the mono face, `.small()` 12 px text in a 22 px field
   (bars), `.fill()` takes the room left in a row; `.reveal()` gives a password a 22 px eye
   inside its end. `.height(px)` only for a bar that has another row height.
-- **Textarea**: the field look, three lines tall unless told, 8 inside on all sides; it
-  grows to a most height, then scrolls.
+- **Textarea**: the field look, three lines tall unless told (`.rows(n)`), 8 inside left and
+  right and 6 above and below; it grows with its lines.
 - **Select**: the field look with a 12 px up-down chevron in `text_2` at its end, 8 from
   the value; 160 wide alone. Its menu is the menu (surfaces.md) as wide as the field or
   wider, a 14 px check in `accent_text` on the chosen row. Searched (`.searchable(ask)`): a

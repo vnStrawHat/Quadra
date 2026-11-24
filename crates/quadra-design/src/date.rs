@@ -171,6 +171,6 @@ impl View for DatePicker {
         let face = face.child(text(move || said.locale().date(value.get())));
         // A day chosen closes the calendar.
         let days = bare_popover(open, &opener, move || month(value, move || open.set(false), true));
-        div().shrink(0.0).child(face).child(days).mount(cx)
+        crate::layout::holder(div().shrink(0.0), None).child(face).child(days).mount(cx)
     }
 }

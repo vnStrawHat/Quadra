@@ -37,12 +37,13 @@ Size and colour go together; a view picks a row of this table, not a size and a 
 | Kind of text | Size | Weight | Colour | Face |
 |---|---|---|---|---|
 | Page headline | 18 | 600 | `text` | UI |
-| Title (dialog, card, group) | 16 | 600 | `text` | UI |
+| Title of a dialog | 16 | 600 | `text` | UI |
+| Title of a card or a group | 16 | 400 | `text` | UI |
 | Section label (a heading over rows or fields) | 12 | 600 | `text_2` | UI |
 | Body, a control's value, a row's name | 14 | 400 | `text` | UI |
 | The chosen or active one of siblings | 14 | 600 | `text` | UI |
 | Description under a title or a row | 14 | 400 | `text_2` | UI |
-| A field's label | 12 | 400 | `text` | UI |
+| A field's label | 12 | 400 | `text_2` | UI |
 | Help under a field | 12 | 400 | `text_2` | UI |
 | An error under a field | 12 | 400 | `error` | UI |
 | Placeholder | 14 | 400 | `text_3` | UI |

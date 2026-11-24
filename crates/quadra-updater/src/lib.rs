@@ -18,6 +18,7 @@
 mod install;
 mod release;
 pub mod testing;
+mod zip;
 
 use std::path::{Path, PathBuf};
 
@@ -98,9 +99,15 @@ impl Updater {
         }
     }
 
-    /// Puts the files of a package [`Updater::fetch`] gave in the app's folder ([`swap`]).
+    /// Puts the files of a package [`Updater::fetch`] gave in the app's folder ([`swap`]),
+    /// then removes what was fetched.
     pub fn install(&self, package: &Path) -> Result<(), Error> {
-        swap(package, &self.home).map_err(|e| Error::Install(e.to_string()))
+        swap(package, &self.home).map_err(|e| Error::Install(e.to_string()))?;
+        // The folder of the cache the package was unpacked in, and nothing else.
+        if let Some(fetched) = package.strip_prefix(&self.cache).ok().and_then(|it| it.components().next()) {
+            let _ = std::fs::remove_dir_all(self.cache.join(fetched));
+        }
+        Ok(())
     }
 
     fn headers(&self, accept: &'static str) -> [(&'static str, String); 2] {

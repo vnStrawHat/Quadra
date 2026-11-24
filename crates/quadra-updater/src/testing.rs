@@ -4,7 +4,6 @@
 
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
-use std::path::Path;
 use std::thread::JoinHandle;
 
 /// Serves each answer (a status as `200 OK`, and a body) to one connection, in order, and
@@ -55,26 +54,43 @@ pub fn digest(bytes: &[u8]) -> String {
     crate::sha256(bytes).unwrap_or_default().iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// A package as a release carries it: the zip `<app>-<version>-<target>.zip` of a folder of
-/// that name holding `files`, made under `root`. Its name and its bytes.
-pub fn package(
-    root: &Path,
-    app: &str,
-    version: &str,
-    target: &str,
-    files: &[(&str, &[u8])],
-) -> (String, Vec<u8>) {
-    let name = format!("{app}-{version}-{target}");
-    for (file, bytes) in files {
-        let path = root.join("made").join(&name).join(file);
-        std::fs::create_dir_all(path.parent().expect("a file in a folder")).expect("the folder");
-        std::fs::write(path, bytes).expect("the file");
+/// A zip of `files` (a name with `/` between its folders, and the bytes), deflated where that
+/// is smaller, as a release's package is.
+pub fn zip(files: &[(&str, &[u8])]) -> Vec<u8> {
+    let (mut out, mut list) = (Vec::new(), Vec::new());
+    let put = |to: &mut Vec<u8>, numbers: &[(u32, usize)]| {
+        numbers.iter().for_each(|(value, bytes)| to.extend_from_slice(&value.to_le_bytes()[..*bytes]));
+    };
+    for (name, plain) in files {
+        let deflated = miniz_oxide::deflate::compress_to_vec(plain, 6);
+        let (method, packed) = if deflated.len() < plain.len() { (8, &deflated[..]) } else { (0, *plain) };
+        let (crc, at) = (crate::zip::crc32(plain), out.len() as u32);
+        // Version 2.0, names in UTF-8, the first day a zip can say; then the sizes and the name.
+        let said = [(20, 2), (0x0800, 2), (method, 2), (0, 2), (0x21, 2), (crc, 4)];
+        let sizes = [(packed.len() as u32, 4), (plain.len() as u32, 4), (name.len() as u32, 2), (0, 2)];
+        put(&mut out, &[(0x0403_4B50, 4)]);
+        put(&mut out, &said);
+        put(&mut out, &sizes);
+        out.extend_from_slice(name.as_bytes());
+        out.extend_from_slice(packed);
+        put(&mut list, &[(0x0201_4B50, 4), (20, 2)]);
+        put(&mut list, &said);
+        put(&mut list, &sizes);
+        put(&mut list, &[(0, 2), (0, 2), (0, 2), (0, 4), (at, 4)]);
+        list.extend_from_slice(name.as_bytes());
     }
-    let zip = root.join(format!("{name}.zip"));
-    let system = std::env::var_os("SystemRoot").unwrap_or_else(|| "C:\\Windows".into());
-    let mut tar = std::process::Command::new(Path::new(&system).join("System32").join("tar.exe"));
-    tar.arg("-a").arg("-c").arg("-f").arg(&zip).arg("-C").arg(root.join("made")).arg(&name);
-    let made = tar.output().expect("the OS's tar");
-    assert!(made.status.success(), "{}", String::from_utf8_lossy(&made.stderr));
-    (format!("{name}.zip"), std::fs::read(zip).expect("the zip"))
+    let (count, listed, at) = (files.len() as u32, list.len() as u32, out.len() as u32);
+    out.extend_from_slice(&list);
+    put(&mut out, &[(0x0605_4B50, 4), (0, 2), (0, 2), (count, 2), (count, 2), (listed, 4), (at, 4), (0, 2)]);
+    out
+}
+
+/// A package as a release carries it: the zip `<app>-<version>-<target>.zip` of a folder of
+/// that name holding `files`. Its name and its bytes.
+pub fn package(app: &str, version: &str, target: &str, files: &[(&str, &[u8])]) -> (String, Vec<u8>) {
+    let name = format!("{app}-{version}-{target}");
+    let inside: Vec<(String, &[u8])> =
+        files.iter().map(|(file, bytes)| (format!("{name}/{file}"), *bytes)).collect();
+    let inside: Vec<(&str, &[u8])> = inside.iter().map(|(file, bytes)| (file.as_str(), *bytes)).collect();
+    (format!("{name}.zip"), zip(&inside))
 }

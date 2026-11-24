@@ -471,7 +471,13 @@ Settings, About has the group **Updates** (`updates.rs`):
   Settings, About.`; a check that found none or failed says nothing. A trial run under
   `ONETERM_HOME` asks nothing.
 
-The package is fetched to `updates` in the app's data folder. `main` calls
+After that app's updater put 1Term over its folder, the console host it shipped is still
+there (`x64/OpenConsole.exe`, an older version) beside 1Term's own: `conpty.dll` starts the
+one beside itself (tried 2026-11-24 with both in the folder), so the older one is only a
+file left behind.
+
+The package is fetched to `updates` in the app's data folder, and removed once installed.
+Where the app has no folders of its own (a test, a picture of the page) nothing is asked. `main` calls
 `quadra_updater::started()` first, which removes what the version before left moved aside.
 Not done: pre-release versions, a version skipped on purpose, a proxy of 1Term's own (the
 system's is used).

@@ -101,19 +101,3 @@ pub fn started() {
     }
     swept(home);
 }
-
-/// Unpacks a zip with the OS's own `tar` (in every Windows since 10 of 2018), which reads
-/// zips and refuses to write outside the folder it is given.
-/// ponytail: a program of the OS is started for it; a reader of our own if one is ever missing.
-pub(crate) fn unzip(zip: &Path, into: &Path) -> io::Result<()> {
-    let root = std::env::var_os("SystemRoot").unwrap_or_else(|| "C:\\Windows".into());
-    let mut tar = std::process::Command::new(Path::new(&root).join("System32").join("tar.exe"));
-    tar.arg("-xf").arg(zip).arg("-C").arg(into);
-    #[cfg(windows)]
-    std::os::windows::process::CommandExt::creation_flags(&mut tar, 0x0800_0000); // no console window
-    let done = tar.output()?;
-    match done.status.success() {
-        true => Ok(()),
-        false => Err(io::Error::other(String::from_utf8_lossy(&done.stderr).trim().to_string())),
-    }
-}

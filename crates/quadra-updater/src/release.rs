@@ -107,10 +107,7 @@ impl Updater {
         let unpack = |why: std::io::Error| Error::Unpack(why.to_string());
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).map_err(unpack)?;
-        let zip = folder.join(&release.name);
-        std::fs::write(&zip, &bytes).map_err(unpack)?;
-        crate::install::unzip(&zip, &folder).map_err(unpack)?;
-        let _ = std::fs::remove_file(&zip);
+        crate::zip::unpack(&bytes, &folder).map_err(unpack)?;
         // The package's own folder, named as the package is, or its files at the top.
         let exe = format!("{}.exe", self.app);
         let inside = folder.join(release.name.trim_end_matches(".zip"));

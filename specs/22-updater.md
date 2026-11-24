@@ -16,7 +16,9 @@ brings the system's proxy and certificates, and its SHA-256.
 - **The app keeps running while it is updated**, and either the whole package is put or
   nothing changed.
 - **Few dependencies** (specs/01, R15): HTTP, TLS, proxies and hashing are the OS's; the
-  JSON GitHub answers is read with `serde_json`; a zip is unpacked by the OS's own `tar`.
+  JSON GitHub answers is read with `serde_json`; a zip is read by the crate itself, its
+  files inflated by `miniz_oxide`. No program is started to unpack: an archiver is not in
+  every Windows.
 
 Not goals, until an app needs them: pre-release channels, a release skipped on purpose,
 patches between versions, a signature beside the digest, installing into a folder that
@@ -60,10 +62,13 @@ the machine itself, which is what tests stand up; the same holds for an asset's 
 the bytes that came and the size (it stops the fetch by answering `false`:
 `Err(Cancelled)`); no more than the size GitHub said is taken (512 MiB where it said none).
 Then, in this order: the SHA-256 of what came must be the release's (`Err(Mismatch)`
-otherwise, and nothing is written); the zip is written into `<cache>/<app>-<version>/`
-(emptied first) and unpacked there by `%SystemRoot%\System32\tar.exe`, which refuses entries
-that would land outside; the folder holding `<app>.exe` is the answer (`Err(Unpack(why))`
-when there is none).
+otherwise, and nothing is written); the zip is unpacked from memory into
+`<cache>/<app>-<version>/` (emptied first) by `zip.rs`: the files its central directory
+lists, stored or deflated, each checked against its length and CRC-32. Refused, with
+nothing more written: an entry that would land outside the folder (`..`, a drive, a root, a
+backslash), a link, an encrypted entry, another method, more than 2 GiB unpacked, and an
+archive that needs zip64. The folder holding `<app>.exe` is the answer (`Err(Unpack(why))`
+when there is none). `install` removes that folder once the files are in place.
 
 ## Installing
 
@@ -101,8 +106,10 @@ Nothing panics on what the network or the disk does.
 
 `tests/update.rs`, against a server of the test on 127.0.0.1 that answers as GitHub does and
 folders under `.tmp`: the check's answers by tag, asset and digest; a zip fetched, checked
-and unpacked, a wrong digest and a stop refused; the files of a program that runs replaced,
+and unpacked, a wrong digest and a stop refused; a zip's entries that would land outside,
+a changed byte and a cut archive refused (`zip.rs`); the files of a program that runs replaced,
 the second update refused, a failed one taken back, and the files moved aside removed once
 the program ended. The OS's calls have their own (specs/16). `quadra_updater::testing` is
-that server, what GitHub says of a release, and a package as a release carries it, for the
+that server, what GitHub says of a release, and a package as a release carries it (a zip
+it writes itself), for the
 tests of an app that updates.

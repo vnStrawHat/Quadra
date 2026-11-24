@@ -13,5 +13,7 @@ workspace = true
 [dependencies]
 # The OS's HTTP and SHA-256 (specs/16, "Fetching").
 quadra-shell = { path = "../quadra-shell" }
+# Inflating a package's files (specs/01, R15).
+miniz_oxide = "0.9"
 # What GitHub answers (specs/01, R15).
 serde_json = "1"

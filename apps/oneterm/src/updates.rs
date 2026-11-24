@@ -55,8 +55,13 @@ pub struct Updates {
 impl Updates {
     pub(crate) fn new() -> Updates {
         let dirs = quadra::use_context::<std::rc::Rc<quadra::AppDirs>>();
-        let cache = dirs.map_or_else(|| ".tmp/updates".into(), |it| it.data.join("updates"));
-        let source = Updater::new(REPOSITORY, "oneterm", env!("CARGO_PKG_VERSION"), &cache);
+        let cache = dirs.as_ref().map_or_else(|| ".tmp/updates".into(), |it| it.data.join("updates"));
+        let mut source = Updater::new(REPOSITORY, "oneterm", env!("CARGO_PKG_VERSION"), &cache);
+        // Without the app's folders (a test, a picture of the page) no machine is asked and no
+        // program's folder is written to, until a test names its own.
+        if dirs.is_none() {
+            (source.api, source.home) = (String::new(), cache.join("home"));
+        }
         Updates {
             state: signal(Update::Unknown),
             source: signal(source),

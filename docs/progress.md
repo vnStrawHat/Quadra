@@ -616,8 +616,9 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     (tests/import.rs, tests/lock.rs).
   - `quadra-updater` (specs/22; the user's decision, 2026-11-24: a crate for any app that
     updates through GitHub): `check` (the latest release, newer, with this build's package
-    and digest), `fetch` (checked against the digest GitHub publishes, unpacked by the OS's
-    `tar`), `install` (the files of the folder of the app that runs moved aside and replaced,
+    and digest), `fetch` (checked against the digest GitHub publishes, unpacked by the
+    crate's own zip reader over `miniz_oxide`: no program of the OS is started, as not
+    every Windows has an archiver), `install` (the files of the folder of the app that runs moved aside and replaced,
     all or nothing), `restart`, `started`. Under it `quadra_shell::http_get` (WinHTTP: the
     system's proxy and certificates) and `sha256` (specs/16, "Fetching"). Tests against a
     server of the test on 127.0.0.1, with a program that runs while its file is replaced.

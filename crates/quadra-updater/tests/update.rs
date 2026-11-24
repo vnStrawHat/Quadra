@@ -73,7 +73,7 @@ fn a_check_gives_a_newer_release_with_this_build_s_package_and_its_digest() {
 fn a_package_is_fetched_checked_against_its_digest_and_unpacked() {
     let root = folder("fetch");
     let files: [(&str, &[u8]); 2] = [("app.exe", b"new app"), ("x64/host.exe", b"new host")];
-    let (name, zip) = package(&root, "app", "0.8.0", TARGET, &files);
+    let (name, zip) = package("app", "0.8.0", TARGET, &files);
     let (at, served) =
         serve(|_| vec![("200 OK", zip.clone()), ("200 OK", zip.clone()), ("200 OK", zip.clone())]);
     let u = updater(&at, &root);

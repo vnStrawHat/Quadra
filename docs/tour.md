@@ -158,7 +158,7 @@ for behaviour and settings the design leaves open. **P1 is done** (M1-M6, docs/p
 
 **The updater** (`quadra-updater`, specs/22, 2026-11-24): `Updater::new(repo, app, version, cache)`, then `check()` (the
 latest release of a GitHub repository, if newer, with this build's package and its digest), `fetch(&release, progress)`
-(the package checked against the digest and unpacked) and `install(&package)` (each file of the app's folder moved aside
+(the package checked against the digest and unpacked by the crate's own zip reader) and `install(&package)` (each file of the app's folder moved aside
 and the new one put at its name, while the app runs); `restart()` and, at the top of `main`, `started()`. It blocks: an
 app calls it on its pool. Under it `quadra_shell::http_get` (the OS's HTTP: its proxy, its certificates) and `sha256`
 (specs/16, "Fetching"). Tests only against a server of the test on 127.0.0.1.

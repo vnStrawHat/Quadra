@@ -70,7 +70,7 @@ impl App {
 fn the_about_page_checks_installs_and_offers_the_restart() {
     let mut a = app("page");
     let files: [(&str, &[u8]); 2] = [("oneterm.exe", b"the new version"), ("conpty.dll", b"host")];
-    let (name, zip) = package(&a.root, "oneterm", "0.8.0", TARGET, &files);
+    let (name, zip) = package("oneterm", "0.8.0", TARGET, &files);
     let (at, served) = serve(|at| {
         vec![
             ("500 Oops", b"down".to_vec()),

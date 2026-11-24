@@ -52,7 +52,7 @@ fn close_tab_closes_the_tab_that_shows_and_the_other_shows() {
 }
 
 #[test]
-fn rail_tabs_have_a_line_between_them_only_folded_and_a_light_fill_under_the_pointer() {
+fn rail_tabs_have_no_line_between_them_folded_or_not_and_a_light_fill_under_the_pointer() {
     for folded in [false, true] {
         let mut h = app(true);
         h.key(Key::T, Mods::CTRL);
@@ -65,9 +65,8 @@ fn rail_tabs_have_a_line_between_them_only_folded_and_a_light_fill_under_the_poi
         }
         let rows = h.query(|n| n.semantics.role == Role::Tab);
         let (first, second) = (h.tree.window_rect(rows[0]), h.tree.window_rect(rows[1]));
-        // Expanded, no line under a tab; folded (option I), one.
-        let line = if folded { 1.0 } else { 0.0 };
-        assert_eq!(h.tree.layout_style(rows[0]).border.bottom, line, "folded: {folded}");
+        // No line under a tab, folded as open.
+        assert_eq!(h.tree.layout_style(rows[0]).border.bottom, 0.0, "folded: {folded}");
         assert_eq!(second.y, first.bottom(), "the next starts where it ends");
         // The first does not show: under the pointer it fills panel_hover at half.
         let at = first.center();

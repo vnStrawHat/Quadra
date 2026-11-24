@@ -1,7 +1,7 @@
 //! The status bar's git (specs/19, "M4 in detail"): the branch of the repository the focused
-//! space is in, read from its `.git`, and the commits ahead of its upstream and how many files
-//! changed, from `git status` run on the pool with no window. Read again when the directory
-//! changes and every 10 s.
+//! space is in, read from its `.git`, and the commits ahead of its upstream, how many files
+//! changed and the lines added and removed, from `git` run on the pool with no window. Read
+//! again when the directory changes and every 10 s.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -12,8 +12,20 @@ use quadra::{Scope, Signal, background, effect, interval, signal, spawn};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Repo {
     pub branch: String,
-    /// The commits ahead of the upstream and the files changed; None when `git` could not say.
-    pub changes: Option<(usize, usize)>,
+    /// None when `git` could not say.
+    pub changes: Option<Changes>,
+}
+
+/// What differs from what is committed and pushed.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Changes {
+    /// The commits ahead of the upstream.
+    pub ahead: usize,
+    /// The files changed, those git does not follow yet among them.
+    pub files: usize,
+    /// The lines added and removed against the last commit, in the files git follows.
+    pub added: usize,
+    pub removed: usize,
 }
 
 /// Keeps a signal the repository of the directory `cwd` gives.
@@ -56,10 +68,11 @@ fn read(dir: &Path) -> Option<Repo> {
     Some(Repo { branch, changes: changes(dir) })
 }
 
-/// What `git status --porcelain --branch` says: the commits ahead, the files changed.
-fn changes(dir: &Path) -> Option<(usize, usize)> {
+/// What `git` prints for `args` in `dir`, run with no window; None when it is not there or
+/// refuses.
+fn git(dir: &Path, args: &[&str]) -> Option<String> {
     let mut git = std::process::Command::new("git");
-    git.args(["status", "--porcelain", "--branch"]).current_dir(dir);
+    git.args(args).current_dir(dir);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -67,7 +80,24 @@ fn changes(dir: &Path) -> Option<(usize, usize)> {
         git.creation_flags(CREATE_NO_WINDOW);
     }
     let out = git.output().ok().filter(|out| out.status.success())?;
-    Some(counts(&String::from_utf8_lossy(&out.stdout)))
+    Some(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+/// What `git status --porcelain --branch` says, and the lines of `git diff --numstat HEAD`
+/// (none where nothing is committed yet).
+fn changes(dir: &Path) -> Option<Changes> {
+    let (ahead, files) = counts(&git(dir, &["status", "--porcelain", "--branch"])?);
+    let (added, removed) = git(dir, &["diff", "--numstat", "HEAD"]).map_or((0, 0), |said| lines(&said));
+    Some(Changes { ahead, files, added, removed })
+}
+
+/// The lines added and removed, summed over the files (`12\t3\tsrc/a.rs`; a binary file says
+/// `-` for both and counts none).
+fn lines(said: &str) -> (usize, usize) {
+    said.lines().fold((0, 0), |(added, removed), line| {
+        let mut parts = line.split('\t').map(|it| it.parse::<usize>().unwrap_or(0));
+        (added + parts.next().unwrap_or(0), removed + parts.next().unwrap_or(0))
+    })
 }
 
 /// The commits ahead, from the first line (`## main...origin/main [ahead 2, behind 1]`), and
@@ -99,6 +129,12 @@ mod tests {
         assert_eq!(counts("## main...origin/main [ahead 12]\n"), (12, 0));
         assert_eq!(counts("## main\n M a.rs\n"), (0, 1));
         assert_eq!(counts(""), (0, 0));
+    }
+
+    #[test]
+    fn lines_added_and_removed_are_summed_and_a_binary_file_counts_none() {
+        assert_eq!(lines("12\t3\tsrc/a.rs\n-\t-\tlogo.png\n0\t40\told name.rs\n"), (12, 43));
+        assert_eq!(lines(""), (0, 0));
     }
 
     #[test]

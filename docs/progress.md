@@ -637,6 +637,11 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     replaces has it (the user's correction, 2026-11-24: the picture of the icon, tried
     first, was not what was meant). About names the terminal engine's version from the lock
     file (`build.rs`): it said 0.2 while 0.4.2 was built in.
+- **The folded rail has no line between its tabs** (2026-11-24, the user's request), as the
+  open rail has none; a line stands over the first tab and after the last (`rail/narrow.rs`).
+- **The status bar's git says the lines added and removed** (2026-11-24, the user's
+  request): `+12` in green and `-3` in red after the changed files, from `git diff --numstat
+  HEAD` (`git.rs`: `Changes`, `lines`).
 - **The network's settings** (2026-11-24, the user's request): `quadra_shell::Network`
   (a proxy named by hand, certificates unchecked) taken by `http_get` and held by `Updater`
   (specs/16, 22); OneTerm's Settings, Advanced has Network (Proxy: System or Manual, Proxy

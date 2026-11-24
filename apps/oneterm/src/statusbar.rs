@@ -74,7 +74,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         .child(icon(icons::FOLDER).size(14.0).color(token::WARN))
         .child(value(said));
     let counts = move || repo.get().and_then(|it| it.changes).unwrap_or_default();
-    let count = |color, sign: &'static str, n: fn((usize, usize)) -> usize| {
+    let count = |color, sign: &'static str, n: fn(crate::git::Changes) -> usize| {
         div()
             .font_family(fonts::MONO)
             .text_color(color)
@@ -86,8 +86,10 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         .label("Git")
         .child(icon(icons::GIT_BRANCH).size(14.0).color(token::OK))
         .child(value(move || repo.get().map(|it| it.branch).unwrap_or_default()))
-        .child(count(token::HUE_GREEN, "\u{2191}", |it| it.0))
-        .child(count(token::HUE_YELLOW, "M", |it| it.1));
+        .child(count(token::HUE_GREEN, "\u{2191}", |it| it.ahead))
+        .child(count(token::HUE_YELLOW, "M", |it| it.files))
+        .child(count(token::HUE_GREEN, "+", |it| it.added))
+        .child(count(token::HUE_RED, "-", |it| it.removed));
     let usage = crate::usage::follow();
     let (cpu, ram) = (crate::usage::cpu(usage), crate::usage::ram(usage));
     let meters = part()

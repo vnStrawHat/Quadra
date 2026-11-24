@@ -59,18 +59,21 @@ pub(crate) fn narrow(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         }))
 }
 
-/// A box of 40 px the rail's width, a line under it, what it holds in its middle.
+/// The box of New terminal: 40 px the rail's width, a line over it, where the tabs end, and
+/// one under it, what it holds in its middle.
 fn boxed() -> quadra::Div {
     row()
         .height(40.0)
         .shrink(0.0)
         .align_items(Align::Center)
         .justify(quadra::Justify::Center)
+        .border_top(1.0)
         .border_bottom(1.0)
         .border_color(token::LINE_STRONG)
 }
 
-/// A tab as its icon in a box of 40 px with its signal as a line of 22 by 4 under it, the one
+/// A tab as its icon in a box of 40 px, no line between it and the next, as in the open
+/// rail, with its signal as a line of 22 by 4 under it, the one
 /// that shows on the pressed editor colour with a short accent bar; its title and signal are
 /// its name. Its tooltip is two lines: where its shell is, and what it runs (read when it
 /// shows).
@@ -82,9 +85,7 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
         .shrink(0.0)
         .gap(token::SPACE_SM)
         .align_items(Align::Center)
-        .justify(quadra::Justify::Center)
-        .border_bottom(1.0)
-        .border_color(token::LINE_STRONG);
+        .justify(quadra::Justify::Center);
     // While the shell has said no directory, the program it was started as.
     let first = move || match marks::tab_dir(tab) {
         dir if dir.is_empty() => marks::tab_program(tab),

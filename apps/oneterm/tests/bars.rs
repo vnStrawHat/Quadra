@@ -183,3 +183,36 @@ fn a_group_with_nothing_to_say_is_not_in_the_status_bar() {
     a.wait(100);
     assert_eq!(named(&a, "Working directory"), 1, "{}", a.h.semantics());
 }
+
+#[test]
+fn git_says_the_changed_files_and_the_lines_added_and_removed() {
+    // A repository of the test's own: a commit, then a line changed, a line added, a new file.
+    let root = std::path::absolute(".tmp/bars-git").unwrap();
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).unwrap();
+    let git = |args: &[&str]| {
+        let quiet = ["-c", "user.name=t", "-c", "user.email=t@t.invalid", "-c", "commit.gpgsign=false"];
+        let ran = std::process::Command::new("git").args(quiet).args(args).current_dir(&root).output();
+        assert!(ran.is_ok_and(|it| it.status.success()), "git {args:?}");
+    };
+    git(&["init", "-q", "-b", "trunk"]);
+    std::fs::write(root.join("a.txt"), "one\ntwo\nthree\n").unwrap();
+    git(&["add", "."]);
+    git(&["commit", "-q", "-m", "first"]);
+    std::fs::write(root.join("a.txt"), "one\n2\nthree\nfour\n").unwrap();
+    std::fs::write(root.join("new.txt"), "x\n").unwrap();
+
+    let mut a = app(true);
+    let shell = a.model.active_tab().unwrap().focused().unwrap().session;
+    let said = format!("\x1b]9;9;{}\x07", root.display());
+    shell.feeder().feed(said.as_bytes(), std::time::Instant::now());
+    let end = std::time::Instant::now() + Duration::from_secs(30);
+    while !a.h.has_text("trunk") {
+        assert!(std::time::Instant::now() < end, "never: the branch\n{}", a.h.semantics());
+        a.wait(20);
+    }
+    // Two files changed (one of them new: a file, and no lines), two lines added, one removed.
+    for part in ["M2", "+2", "-1"] {
+        assert!(a.h.has_text(part), "{part}\n{}", a.h.semantics());
+    }
+}

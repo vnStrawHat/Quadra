@@ -102,8 +102,9 @@ count in mono at the right) of data rows (24 px, radius 6) under a line from the
 name, the address in mono at the right. The switch to horizontal tabs is in the settings.
 
 Collapsed (Collapse tabs to icons, in the heading or the status bar, or the setting) the rail is
-40 px (the canvas's option I): Expand tabs at the top, then a box of 40 px a tab, a line
-(`line_strong`) under each: its icon of 16 px (the secondary text colour, the accent while it
+40 px (the canvas's option I): Expand tabs at the top, then a box of 40 px a tab, with no line
+between two tabs, as the open rail has none (the user's decision, 2026-11-24; a line of
+`line_strong` stands over the first and after the last): its icon of 16 px (the secondary text colour, the accent while it
 shows) and 6 px under it its signal as a line of 22 by 4 with round ends: `warn` for blocked,
 `error` for error, `ok` for done; its progress as a meter (the accent filled to its part on
 `line_strong`, the error colour for an error); working with no progress the kit's busy bar of
@@ -112,7 +113,7 @@ else no line and no room kept for one, the icon in the box's middle (a program t
 state, or is idle). The
 one that shows is on the pressed editor colour, a pixel wider, with a short accent bar of 3 px
 floating at its left, 8 px from its top and bottom; `panel_hover` at half under the pointer.
-New terminal is a `+` in a box of 40 px. The title and signal are its name
+New terminal is a `+` in a box of 40 px, a line over and under it. The title and signal are its name
 and tooltip (`neo-gateway deploy, blocked, needs permission`). The tooltip shows at the tab's
 right, in two lines, the focused space's (its title and signal are the tab's name): its
 working directory (`D:\quadra`; while the shell has said none, the program it was started
@@ -344,9 +345,12 @@ detail), the focus in it as it opens.
   Enter takes the first row.
 - **Git**: the branch from the `.git` folder found up from the focused space's directory
   (`HEAD`; a detached head shows its short hash), and the commits ahead of its upstream (`↑2`,
-  green) and the count of changed files (`M1`, yellow) from `git status --porcelain --branch`
-  run on the pool with no window, again when the directory changes and every 10 s; nothing
-  when there is no repository or no `git`.
+  green) and the count of changed files (`M1`, yellow) from `git status --porcelain --branch`,
+  then the lines added (`+12`, green) and removed (`-3`, red) against the last commit, from
+  `git diff --numstat HEAD` (a binary file counts none; a file git does not follow yet is a
+  changed file and no lines); each shows only when it is not 0. Both are run on the pool with
+  no window, again when the directory changes and every 10 s; nothing when there is no
+  repository or no `git`.
 - **CPU and memory**: of OneTerm's process (the `Meter` in the context, `quadra_shell::install`'s
   or a test's `FakeShell`; with none, `process_usage`; 16), read every 2 s (`CPU 3%`, `RAM
   182 MB`, the private working set): the processor time between two readings over the time the

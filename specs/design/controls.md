@@ -69,7 +69,7 @@ label 14 (12 at xs and sm), weight 400.
 |---|---|---|
 | `Ghost` | no fill, `text` label | the default in bars, rows and toolbars |
 | `Secondary` | 1 px `line_strong`, no fill | the default beside fields and in a foot (Cancel) |
-| `Primary` | `accent_tint` fill, an `accent` border at 42 %, `text` label, `accent_text` icon | the one main action of a view |
+| `Primary` | `accent` fill and border, `canvas` label and icon, a shortcut after it `canvas` at 70 %; under the pointer the accent at 88 %, pressed at 76 %. Off, it is its tint: `accent_tint` fill, an `accent` border at 42 %, `text_disabled` label | the one main action of a view |
 | `Danger` | `error_tint` fill, an `error` border at 42 %, `error` icon | the main action when it destroys |
 | `Link` | `accent_text` label, no fill | an action inside a sentence or a quiet "more" |
 

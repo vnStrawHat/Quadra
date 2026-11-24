@@ -122,7 +122,7 @@ apart, its title (16, `text_2`) over it, 8 apart.
 - **Activity bar**: 40 wide; an item is 40 × 40 with a 16 px icon; the active one has a 2 px
   `accent` bar at its left.
 - **Sidebar** (navigation): rows of 28, an icon 16 and a label, 8 inside, a section label
-  (12, `text_2`) over each group, 16 between groups; the chosen row `press` with the 2 px
+  (12, `text_2`) over each group, 16 between groups; the chosen row `accent_tint` with the 2 px
   bar.
 - **Split**: a 1 px `line_strong` seam with a 6 px grab area; no handle is drawn.
 - **Scrollbar**: a 6 px thumb (`scroll_thumb`, radius 2 at its ends), 4 from the edge, shown

@@ -117,9 +117,28 @@ was silent, said two things, or did not match the kit. What they changed:
   more. Its label (12 px, semibold, `text_2`) is the mark of the group; a wider gap in the
   middle of a dialog read as a hole. It goes last, so that its end is the form's.
 
-## Still owed
+## Against paleness (2026-11-24, the user's word for the look, and their decision)
 
-- **The check does not follow a constant.** A distance kept in a `const` and passed by name
-  is not read; a constant is a decision someone named, and so far each is on a ladder.
-- **The gallery and the apps still write on-ladder literals** (`.gap(8.0)`) where the kit now
-  writes tokens. A theme's measures do not reach those.
+The pictures read pale. The palette was not the cause; four things were, and each is changed:
+
+- **The primary button was a tint**, a step from a plain button, so a view had nowhere for
+  the eye to land. It is the accent, solid, with the canvas for its words; off, it is the
+  tint it was. One a view, as before: the accent is still a mark, and this is its one fill.
+- **Titles had the weight of body text.** A page's headline, a card's title and a group's
+  title are semibold (600); size alone did not make a hierarchy.
+- **Too much was `text_2`.** A group's title in settings was muted at 16 px; it is `text`.
+  `text_2` stays for what explains (a label over a field, a description, help).
+- **The accent was near absent**: a 2 px bar and the focus border. What is chosen in a
+  list, a tree, a navigation and the settings' pages is filled with the accent's tint in
+  place of the neutral `press`, which stays for the pressed and the keyboard's row.
+
+## Done since (2026-11-24)
+
+- **The check follows a constant of the file.** A distance kept in a `const NAME: f32` and
+  given by its name is read as the number it is.
+- **The gallery and the apps write tokens** where they wrote on-ladder literals, so a
+  theme's measures reach them as they reach the kit.
+- **A measure carries its own number** (`Measure(index, own)`): a tree with no theme, or a
+  theme with fewer measures, keeps a view's distances instead of collapsing them to 0.
+
+Nothing is owed.

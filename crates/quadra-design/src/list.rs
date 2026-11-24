@@ -67,7 +67,8 @@ where
                 .grow(1.0)
                 .height(by_text(row_height))
                 .padding_x(token::SPACE_SM);
-            let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
+            let line =
+                line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::ACCENT_TINT));
             line.child(build(index))
         };
         let frame = column().grow(1.0).focus_visible(|s| s.outline(token::BORDER_FOCUSED));

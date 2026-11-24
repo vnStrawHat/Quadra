@@ -1,12 +1,13 @@
 //! The button (specs/design, "Components"): a label that does something when it is
 //! clicked, or when Enter or Space is pressed while it has the focus. A ghost has no fill
-//! until the pointer is over it; an outlined one has a hairline border; a tinted one a fill
-//! at low opacity, a border of its colour and an icon in it; a link is accent text.
+//! until the pointer is over it; an outlined one has a hairline border; the primary one is
+//! the accent, solid, the one thing in a view that is; a tinted one has a fill at low opacity,
+//! a border of its colour and an icon in it; a link is accent text.
 
 use quadra_layout::{Align, Display, Justify};
 use quadra_platform::Cursor;
 use quadra_reactive::memo;
-use quadra_tree::{NodeId, Paint, State, Token};
+use quadra_tree::{NodeId, Paint, State};
 use quadra_view::{Div, IntoProp, MountCx, Prop, View, by_text, div, row, show, text};
 
 use crate::icon::icon;
@@ -95,12 +96,12 @@ fn colors(variant: Variant) -> [Paint; 6] {
     use token::*;
     let none = Paint::default();
     // A tinted one: its hover and pressed fills are one, its border its colour at 42 %.
-    let tinted = |fill: Token, hover: Token, line: Token, mark: Token| {
-        (fill.into(), TEXT, hover.into(), hover.into(), line.alpha(0.42), mark.into())
-    };
+    let over = ERROR_TINT_HOVER.into();
     let (fill, label, hover, press, border, mark) = match variant {
-        Variant::Primary => tinted(ACCENT_TINT, ACCENT_TINT_HOVER, ACCENT, ACCENT_TEXT),
-        Variant::Danger => tinted(ERROR_TINT, ERROR_TINT_HOVER, ERROR, ERROR),
+        Variant::Primary => {
+            (ACCENT.into(), CANVAS, ACCENT.alpha(0.88), ACCENT.alpha(0.76), ACCENT.into(), none)
+        }
+        Variant::Danger => (ERROR_TINT.into(), TEXT, over, over, ERROR.alpha(0.42), ERROR.into()),
         Variant::Secondary => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), LINE_STRONG.into(), none),
         Variant::Outline => (none, TEXT, PANEL_HOVER.into(), PANEL_HOVER.into(), LINE_STRONG.into(), none),
         Variant::Ghost => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), none, none),
@@ -201,8 +202,7 @@ impl Button {
             None => face.size(self.size.height(), self.size.height()),
         };
         let label = if self.muted { token::TEXT_2.into() } else { label };
-        let face = face.radius(token::RADIUS_MD).bg(fill).text_color(label);
-        let face = face.cursor(Cursor::Pointer);
+        let face = face.radius(token::RADIUS_MD).bg(fill).text_color(label).cursor(Cursor::Pointer);
         let face = match self.size {
             Size::Xs => face.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height()),
             _ => face,
@@ -228,8 +228,12 @@ impl Button {
             }
             None => face,
         };
-        // Disabled: as it is at rest, whatever the pointer does, in the colour of what is off.
-        let quiet = |s: quadra_view::Refine| s.bg(fill).border_color(border).text_color(token::TEXT_DISABLED);
+        // Disabled: as it is at rest, whatever the pointer does, in the colour of what is off;
+        // the solid one is its tint, which says less.
+        let solid = self.variant == Variant::Primary;
+        let tint = [token::ACCENT_TINT.into(), token::ACCENT.alpha(0.42)];
+        let [rest, edge] = if solid { tint } else { [fill, border] };
+        let quiet = |s: quadra_view::Refine| s.bg(rest).border_color(edge).text_color(token::TEXT_DISABLED);
         let face = face.when(State::DISABLED, quiet);
         // Busy looks as it did, with a spinner where an icon goes; its click does nothing.
         let busy = self.loading.map(|loading| match loading {
@@ -237,20 +241,14 @@ impl Button {
             Prop::Reactive(read) => memo(read),
         });
         let face = if self.full { face.grow(1.0) } else { face };
-        let face = match self.test_id {
-            Some(id) => face.test_id(id),
-            None => face,
-        };
+        let face = self.test_id.into_iter().fold(face, |face, id| face.test_id(id));
         // What it does, by the pointer and the keyboard alike: the headless crate's.
         let pressed = quadra_headless::button(face).disabled(move || off.get());
         let pressed = match busy {
             Some(busy) => pressed.busy(busy),
             None => pressed,
         };
-        let pressed = match self.toggled {
-            Some(on) => pressed.toggled(on),
-            None => pressed,
-        };
+        let pressed = self.toggled.into_iter().fold(pressed, |pressed, on| pressed.toggled(on));
         let face = match self.click {
             Some(click) => pressed.on_click(click).build(),
             None => pressed.build(),
@@ -286,10 +284,10 @@ impl Button {
             Some(label) => glyph(face.child(text(label)), self.icons[1]),
             None => face,
         };
-        match self.shortcut {
-            Some(key) => face.child(text(key).size(size::TEXT_SM.size).color(token::TEXT_2)),
-            None => face,
-        }
+        let Some(key) = self.shortcut else { return face };
+        // On the solid one the key is the label's colour, dimmed; elsewhere, and off, muted.
+        let dim = move || if solid && !off.get() { token::CANVAS.alpha(0.7) } else { token::TEXT_2.into() };
+        face.child(div().text_color(dim).child(text(key).size(size::TEXT_SM.size)))
     }
 }
 

@@ -84,7 +84,7 @@ fn buttons_have_the_sizes_and_the_colours_of_their_variants() {
     // 28 px high, 8 px beside a label of 14 px text; the smallest is 18 high around 12 px text.
     let (save, delete) = (p.node("save"), p.node("delete"));
     let (save, delete) = (p.h.tree.rect(save).size(), p.h.tree.rect(delete).size());
-    // A tinted button has a border of its colour, a pixel each side.
+    // A filled button has a border of its colour, a pixel each side.
     assert!((save.width - (18.0 + 4.0 * 8.4)).abs() < 0.01 && save.height == 28.0, "{save:?}");
     assert!((delete.width - (10.0 + 6.0 * 7.2)).abs() < 0.01 && delete.height == 18.0, "{delete:?}");
 
@@ -109,7 +109,9 @@ fn buttons_have_the_sizes_and_the_colours_of_their_variants() {
     assert_eq!(p.look("save").0, p.is(token::ACCENT_TINT));
     p.dirty.set(true);
     p.h.frame();
-    assert_eq!(p.look("save"), (p.is(token::ACCENT_TINT_HOVER), accent, p.is(token::TEXT)));
+    // On, it is the accent, solid, with the canvas for its words.
+    let solid = colours.resolve(token::ACCENT.alpha(0.88));
+    assert_eq!(p.look("save"), (solid, p.is(token::ACCENT), p.is(token::CANVAS)));
 }
 
 #[test]

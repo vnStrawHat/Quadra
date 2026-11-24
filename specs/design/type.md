@@ -36,9 +36,9 @@ Size and colour go together; a view picks a row of this table, not a size and a 
 
 | Kind of text | Size | Weight | Colour | Face |
 |---|---|---|---|---|
-| Page headline | 18 | 600 | `text` | UI |
+| Page headline (`heading(words, level)`, 23 to 14) | 18 | 600 | `text` | UI |
 | Title of a dialog | 16 | 600 | `text` | UI |
-| Title of a card or a group | 16 | 400 | `text` | UI |
+| Title of a card or a group | 16 | 600 | `text` | UI |
 | Section label (a heading over rows or fields) | 12 | 600 | `text_2` | UI |
 | Body, a control's value, a row's name | 14 | 400 | `text` | UI |
 | The chosen or active one of siblings | 14 | 600 | `text` | UI |

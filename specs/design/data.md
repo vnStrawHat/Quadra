@@ -14,7 +14,7 @@ is what the eye lands on.
 | Text | 14, one line, ellipsis | 14, one line |
 | Icon | 14, 6 before the name | 14 or 16 (navigation) |
 | Hover | `panel_hover` | `panel_hover` |
-| Selected | `press`, a 2 px `accent` bar on its left edge, its icon `accent_text` | the same |
+| Selected | `accent_tint`, a 2 px `accent` bar on its left edge, its icon `accent_text` | the same |
 | Keyboard's row | `press` | `press` |
 | Lines between rows | none (a table: a `line` under each) | none |
 

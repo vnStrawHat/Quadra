@@ -22,7 +22,7 @@ fn line(title: &str, on: impl Fn() -> bool + 'static) -> Div {
         .shrink(0.0);
     let line = line.radius(token::RADIUS_MD).role(Role::TreeItem).label(title.to_string()).selected(on);
     let line = line.hover(|s| s.bg(token::PRESS.alpha(0.8)));
-    line.when(State::SELECTED, |s| s.bg(token::PRESS).font_weight(500))
+    line.when(State::SELECTED, |s| s.bg(token::ACCENT_TINT).font_weight(500))
 }
 
 /// The column of the pages. A page lists its titled groups under it when more than one of
@@ -110,7 +110,7 @@ fn setting(row_: Setting, kept: Memo<bool>) -> Div {
 pub(super) fn group_card(group: SettingsGroup, kept: Memo<bool>, row: impl Fn(usize) -> Memo<bool>) -> Div {
     let mut whole = column().gap(token::SPACE_XL).display(move || shown(kept.get()));
     if !group.title.is_empty() {
-        let title = text(group.title).size(size::TEXT_LG.size).color(token::TEXT_2).line_height(1.25);
+        let title = text(group.title).size(size::TEXT_LG.size).weight(size::WEIGHT_STRONG).line_height(1.25);
         let mut head = column().gap(token::SPACE_XS).child(title);
         if !group.about.is_empty() {
             head = head.child(text(group.about).color(token::TEXT_2));
@@ -132,6 +132,7 @@ pub(super) fn page(pages: Vec<SettingsPage>, model: &Model, header: Vec<AnyView>
     for (i, page) in pages.into_iter().enumerate() {
         let here = move || shown(on.get() == i);
         let title = div().role(Role::Heading).text_size(size::TEXT_LG.size).line_height(1.625);
+        let title = title.font_weight(size::WEIGHT_STRONG);
         titles = titles.child(title.display(here).child(text(page.title)));
         if !page.about.is_empty() {
             abouts = abouts.child(div().display(here).child(text(page.about).color(token::TEXT_2)));

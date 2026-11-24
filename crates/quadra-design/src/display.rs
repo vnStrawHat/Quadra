@@ -17,7 +17,8 @@ pub fn heading(words: impl Into<String>, level: u8) -> Div {
         3 => size::TEXT_LG.size,
         _ => size::TEXT_MD.size,
     };
-    let line = div().role(Role::Heading).text_size(px).line_height(size::LINE);
+    let line =
+        div().role(Role::Heading).text_size(px).line_height(size::LINE).font_weight(size::WEIGHT_STRONG);
     line.child(text(words.into()))
 }
 
@@ -169,7 +170,8 @@ pub fn mono<M>(words: impl IntoProp<String, M>) -> Div {
 
 /// The head of a card: a title of 16 px over a muted line that says more, if there is one.
 pub fn card_head(title: impl Into<String>, more: impl Into<String>) -> Div {
-    let (title, more) = (text(title.into()).size(size::TEXT_LG.size), more.into());
+    let (title, more) =
+        (text(title.into()).size(size::TEXT_LG.size).weight(size::WEIGHT_STRONG), more.into());
     let head = column().gap(token::SPACE_XXS).child(title);
     if more.is_empty() { head } else { head.child(label(more)) }
 }

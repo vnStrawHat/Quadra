@@ -213,7 +213,7 @@ impl View for Tree {
             let lit = on.clone();
             let line = line(at, sizes, move || lit());
             let line =
-                line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
+                line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::ACCENT_TINT));
             // The selected row of a tree with the focus is outlined.
             line.outline(move || -> Paint {
                 if focused.get() && ring() { token::BORDER_FOCUSED.into() } else { Paint::default() }

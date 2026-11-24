@@ -215,7 +215,7 @@ fn place(
     });
     let on = move || chosen.get() == id;
     let line = list::place(line, id, chosen);
-    let line = line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
+    let line = line.hover(|s| s.bg(token::RAISED_HOVER)).when(State::SELECTED, |s| s.bg(token::ACCENT_TINT));
     let tone = move || Paint::from(if on() { token::ACCENT_TEXT } else { token::TEXT_2 });
     let line = match item.icon {
         Some(body) => line.child(div().text_color(tone).child(icon(body).size(14.0))),

@@ -40,7 +40,7 @@ beside their icons. A status item with more to say says it in a tooltip, not in 
 
 A column of pages 226 wide (12 in, a `line_strong` hairline at its right): the search field,
 page rows 28 tall with a 12 px chevron in a 16 px box and a 14 px label (under the pointer
-`panel_hover`; the chosen page `raised_hover` with a 1 px `line_strong` border, radius 6), a
+`panel_hover`; the chosen page `accent_tint` with a 1 px `line_strong` border, radius 6), a
 key hint at the bottom over a `line`. A page row's chevron shows the page's groups under it
 as 28 px `text_2` rows, 24 in; choosing a group chooses its page and brings the group's
 header to the top.
@@ -53,19 +53,19 @@ search shows the matching rows alone, and a page with none leaves the column.
 
 ## Settings, cards (`settings(..).cards()`, `settings_group(..)`)
 
-A group stands on its own in any page as `settings_group(group)`: its title (16, `text_2`)
+A group stands on its own in any page as `settings_group(group)`: its title (16, semibold)
 over the outlined card of its rows, 16 apart; groups are 24 apart (`sections()`).
 
 - **Navigation**: 250 wide on `panel`, a 1 px `line` at its right. The search field as wide as
   the column, 12 from the top and the sides. Under it, 12 in, page rows 8 apart: 28 tall, 8
   inside, their parts 8 apart, radius 6, 14 px text: a 16 px icon, the label, and when the
   page has more than one titled group a 22 px ghost button with a chevron (right; down while
-  open). Under the pointer `press` at 80 %; the chosen row `press` with a medium (500) label.
+  open). Under the pointer `press` at 80 %; the chosen row `accent_tint` with a medium (500) label.
   The groups list under the row, 4 apart, inside a 1 px `line_strong` rule at the left (16
   in, then 8 to the rows); they are page rows without icons, as wide as the column.
 - **Page header**: 16 in, a 1 px `line` under it; the title 16 at the left, the header's
   actions at the right, 4 apart; a description of the page under the title, 14 `text_2`.
-- **Groups**: the page scrolls under the header; a group's title is 16 `text_2` with a 14
+- **Groups**: the page scrolls under the header; a group's title is 16 semibold with a 14
   `text_2` description 4 under it, then 16 below them the card: a 1 px `line` border, radius
   6, 16 in, rows 16 apart. A group without a title is the card alone.
 - **Rows**: the title (14 `text`) over the description (14 `text_2`, wraps) at the left, at

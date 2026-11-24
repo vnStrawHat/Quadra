@@ -41,7 +41,8 @@ is reference.
 3. **Mono for what the machine said.** Paths, numbers, addresses, keys, times, ids are in the
    mono face. What a person named or wrote is in the UI face.
 4. **One accent, used as a mark.** The accent is a 2 px bar, a border, a label's colour: what
-   is chosen, focused or on. Never a large fill, never decoration.
+   is chosen, focused or on. Solid, it fills one thing a view: the primary button. Never a
+   large fill, never decoration.
 
 **The ladders** (each has four steps; needing a fifth means the design is wrong, not the
 ladder):

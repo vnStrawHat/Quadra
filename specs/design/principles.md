@@ -48,9 +48,11 @@ time, an id, a count, a percentage.
 
 One colour says "this one": what is chosen, what has the focus, what is on. It appears as a
 2 px bar, a 1 px border, the colour of a label or an icon, and as small fills (a tick box, a
-switch, a progress bar). Its tint (16 %) fills the primary button and the chosen segment.
+switch, a progress bar). Its tint (16 %) fills what is chosen: a row, a segment, a day.
+Solid, it fills one thing a view: the primary button, so that the eye has a place to land.
 
-- Never a large accent fill. Never the accent for decoration or for a heading.
+- Never an accent fill larger than a button. Never the accent for decoration or for a
+  heading.
 - One primary button a view. Two things in the accent side by side are siblings of which one
   is chosen.
 - Hover is not the accent: hover is a neutral step (`panel_hover`), press two.

@@ -16,8 +16,9 @@ Rules:
    (labels, descriptions, inactive items); `text_3` is what may be missed (placeholders,
    separators, counts). `text_disabled` is for what cannot be used. Nothing else colours text
    but meaning.
-3. **The accent marks one thing a view.** What is chosen, focused or on. Never a decoration,
-   never a large fill, never two accents side by side but for the chosen state of siblings.
+3. **The accent marks one thing a view.** What is chosen, focused or on, and the view's one
+   primary button, which is the accent, solid. Never a decoration, never a larger fill than
+   that button, never two accents side by side but for the chosen state of siblings.
 4. **Feedback colours are for states of the world**: `ok`, `warn`, `error`, `info`. A red
    button deletes; red text is an error; nothing else is red.
 5. **Hues tell kinds apart and are never alone**: a shape, a letter or a label goes with each.
@@ -36,7 +37,7 @@ The palette keeps the kit's role names; each role is one token of the One themes
 | `overlay_bg` | the plane of every overlay: menus, tooltips, popovers, pickers, dialogs, toasts (the One themes give it the `panel`'s colour; another theme may set it apart) | `#1E2227` | `#EBEBEC` |
 | `raised` | filled controls (element background) | `#404754` | `#EBEBEC` |
 | `panel_hover`, `raised_hover` | ghost and filled hover | `#ABB2BF14` | `#DFDFE0` |
-| `press` | pressed, selected rows, keyboard-highlighted rows | `#ABB2BF29` | `#CACACA` |
+| `press` | pressed, keyboard-highlighted rows | `#ABB2BF29` | `#CACACA` |
 | `line` | dividers, hairlines, the grid of tables | `#31363F` | `#DFDFE0` |
 | `line_strong` | outlines of controls, overlays and cards; tab and pane seams | `#3E4452` | `#C9C9CA` |
 | `border_focused` | focus border: the accent | `#74ADE8` | `#5C78E2` |
@@ -70,9 +71,10 @@ Icons take a text color (`text`, `text_2` for decoration, `accent_text` when tog
 ## Accent and feedback
 
 - `accent` (`#74ADE8` / `#5C78E2`) is the editor cursor, a switch that is on, a checked
-  box, the marks of what is chosen, the progress fill and the dirty dot. `accent_tint`
-  (`#74ADE829` / `#5C78E229`, the accent at 16 %) fills tinted buttons and the chosen
-  segment.
+  box, the marks of what is chosen, the progress fill, the dirty dot and the fill of the
+  primary button. `accent_tint` (`#74ADE829` / `#5C78E229`, the accent at 16 %) fills what
+  is chosen (a row of a list, of a tree, of a navigation; a segment; a day), a button that
+  is on, and the primary button while it is off.
 - Feedback colors with a tint each for banners and tinted buttons. Error text is readable
   (4.5:1 and more) on the canvas of its theme:
 

@@ -325,7 +325,7 @@ As built so far:
   otherwise; close turns `#E81120` under the pointer. They ask the window (`window()`),
   and are buttons to a reader.
 - **The bars** (`bars.rs`). `toolbar()` is a box of 45 px on the canvas with a line under
-  it, its children 4 px apart. `statusbar().left(view).right(view)` is the strip of 30 px
+  it, its children 4 px apart. `statusbar().left(view).right(view)` is the strip of 32 px
   at the bottom of a window, in 12 px text, under a `LINE` as the toolbar is over one; in it stand `status_item(icon, words)`,
   `status_button(icon, name, on)` (an icon toggle: muted, the accent while on, never
   filled; a toggled button that is an icon alone takes no fill anywhere) and
@@ -864,7 +864,7 @@ of the window) and the shadow of its level.
   the accent on a card and the second text colour in a toast. The stacks are overlays that take
   neither the focus nor a press outside them (`Place::BottomRight`, `Place::Bottom`).
 - **`command_palette(open, || commands)`** is a popup of 608 px with its border under the top
-  of the window at the level of dialogs: a query row of 36 px over a line, and under it the commands that
+  of the window at the level of dialogs: a query row that is a bar (32 px) over a line, and under it the commands that
   match, rows of 32 px, at most 347 px of them, the rest scrolled to. A `Command` has a
   title, the keys that run it too (shown muted at the end of its row, as shortcuts are
   written), and what it does. A command matches when the letters of the query are in its

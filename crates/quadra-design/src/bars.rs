@@ -30,7 +30,7 @@ pub struct Statusbar {
     right: Vec<AnyView>,
 }
 
-/// The strip at the bottom of a window: 30 px, 12 px text, what it holds at its left end and
+/// The strip at the bottom of a window: a bar (32 px), 12 px text, what it holds at its left end and
 /// at its right.
 pub fn statusbar() -> Statusbar {
     Statusbar::default()
@@ -54,7 +54,7 @@ impl View for Statusbar {
             .align_items(Align::Center)
             .gap(token::SPACE_LG)
             .padding_x(token::SPACE_MD)
-            .height(by_text(30.0))
+            .height(by_text(32.0))
             .shrink(0.0);
         let bar = bar.bg(token::STATUS_BG).border_top(1.0).border_color(token::LINE);
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());

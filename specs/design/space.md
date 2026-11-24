@@ -58,8 +58,8 @@ control they are centred on it.
 | touch | 40 | a row that is only an icon (an activity bar, a folded rail) |
 
 A bar's height is its row; where it holds controls smaller than its row they are centred
-(22 px buttons in a 32 px bar: 5 above and below). The status bar is the one bar that is 30:
-22 px buttons with 4 above and below, as the canvas of the first app set it.
+(22 px buttons in a 32 px bar: 5 above and below). The status bar is a bar like the others.
+A row of two lines (a title and a line about it, 2 apart) is the touch step, 40.
 
 ## Radii
 

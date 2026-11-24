@@ -56,10 +56,10 @@ fn the_bars_have_their_heights_and_the_breadcrumb_its_links() {
     ] {
         assert!(tree.contains(line), "{line} is not in:\n{tree}");
     }
-    // The toolbar is 45 px under the top, the status bar 30 at the bottom of the window.
+    // The toolbar is 45 px under the top, the status bar 32 at the bottom of the window.
     let (run, bar) = (h.get_by_test_id("run").node(), h.get_by_test_id("statusbar").node());
     let (tools, bar) = (h.tree.window_rect(h.tree.parent(run).unwrap()), h.tree.window_rect(bar));
-    assert_eq!((tools.height, bar.y, bar.height), (45.0, 570.0, 30.0));
+    assert_eq!((tools.height, bar.y, bar.height), (45.0, 568.0, 32.0));
     // What is at the right is at the right: the toggle ends 8 px from the edge.
     let toggle = h.get_by_role(Role::Button, "Terminal").node();
     assert_eq!(

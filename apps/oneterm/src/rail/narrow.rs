@@ -41,7 +41,7 @@ pub(crate) fn narrow(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         boxed().align_items(Align::Stretch).text_color(token::TEXT_2).child(new),
     );
     column()
-        .width(48.0)
+        .width(40.0)
         .shrink(0.0)
         .bg(token::PANEL)
         .border_right(1.0)
@@ -70,7 +70,7 @@ fn boxed() -> quadra::Div {
         .border_color(token::LINE_STRONG)
 }
 
-/// A tab as its icon in a box of 44 px with its signal as a line of 22 by 4 under it, the one
+/// A tab as its icon in a box of 40 px with its signal as a line of 22 by 4 under it, the one
 /// that shows on the pressed editor colour with a short accent bar; its title and signal are
 /// its name. Its tooltip is two lines: where its shell is, and what it runs (read when it
 /// shows).
@@ -78,7 +78,7 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
     let (active, shows, closes) = (model.active(), model.clone(), model.clone());
     let on = move || active.get() == tab.id;
     let column = column()
-        .height(44.0)
+        .height(40.0)
         .shrink(0.0)
         .gap(token::SPACE_SM)
         .align_items(Align::Center)

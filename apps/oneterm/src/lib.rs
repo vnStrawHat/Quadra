@@ -155,7 +155,7 @@ impl OneTerm {
         // The cards stand at the bottom right, 12 px over the status bar, over the dock.
         let cards = div()
             .display(locked::shown(move || !lock.locked.get()))
-            .child(self.model.notices().above(30.0).host());
+            .child(self.model.notices().above(32.0).host());
         let windows = use_context::<quadra::Windows>();
         let closing = (self.model.clone(), window.clone());
         locked::watches(quadra_design::root(), lock)

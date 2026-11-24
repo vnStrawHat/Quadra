@@ -18,8 +18,8 @@ fn page() -> (Harness, Notices) {
     let mut h = Harness::new();
     h.tree.set_theme(Rc::new(dark().theme()));
     h.mount(move || {
-        // Above a status bar of 30 px.
-        let all = notices().above(30.0);
+        // Above a status bar of 32 px.
+        let all = notices().above(32.0);
         tell.set(Some(all));
         quadra_design::root().child(div().grow(1.0).child(text("content"))).child(all.host())
     });
@@ -64,14 +64,14 @@ fn cards_stack_at_the_bottom_right_until_closed_or_answered() {
     // 448 px wide, 12 from the right edge and from the status bar; the newest
     // is the lowest, 8 under the one before.
     let (saved, failed) = (card(&mut h, "Saved"), card(&mut h, "Upload failed"));
-    assert_eq!((saved.width, saved.right(), failed.bottom()), (448.0, 788.0, 600.0 - 30.0 - 12.0));
+    assert_eq!((saved.width, saved.right(), failed.bottom()), (448.0, 788.0, 600.0 - 32.0 - 12.0));
     assert_eq!(failed.y - saved.bottom(), 8.0);
 
     // Its button does what it says and closes the card; the other closes by its own.
     h.get_by_role(Role::Button, "Retry").click();
     settle(&mut h);
     assert_eq!((retried.get(), h.semantics().contains("Upload failed")), (1, false));
-    assert_eq!(card(&mut h, "Saved").bottom(), 558.0); // it takes the place at the bottom
+    assert_eq!(card(&mut h, "Saved").bottom(), 556.0); // it takes the place at the bottom
     h.get_by_role(Role::Button, "Dismiss notification").click();
     settle(&mut h);
     assert_eq!(h.tree.overlays().count(), 0);
@@ -86,7 +86,7 @@ fn a_toast_and_a_card_that_lasts_go_by_themselves() {
     settle(&mut h);
     // The toast is at the bottom centre; the cards in their corner.
     let toast = card(&mut h, "Copied");
-    assert_eq!(((toast.center().x - 400.0).abs() < 1.0, toast.bottom()), (true, 558.0));
+    assert_eq!(((toast.center().x - 400.0).abs() < 1.0, toast.bottom()), (true, 556.0));
     h.advance(Duration::from_secs(3));
     settle(&mut h);
     let tree = h.semantics();

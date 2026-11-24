@@ -126,10 +126,10 @@ fn a_folded_rail_says_each_tab_s_signal_as_a_coloured_line_under_its_icon() {
     a.h.settle();
     a.feed(0, b"\x1b]7501;state=blocked:id=deploy\x07");
     a.feed(1, b"\x1b]9;4;1;64\x07");
-    // Tabs of 44 px in a rail of 48; each says its signal in its name.
+    // Tabs of 40 px in a rail of 40 (the touch step); each says its signal in its name.
     let tabs = a.h.query(|n| n.semantics.role == Role::Tab);
     let first = a.h.tree.window_rect(tabs[0]);
-    assert_eq!((first.width, first.height), (47.0, 44.0), "48 with the line at its right");
+    assert_eq!((first.width, first.height), (39.0, 40.0), "40 with the line at its right");
     assert!(a.says("Terminal, blocked, needs permission"));
     assert!(a.says("Terminal, working, 64 percent"));
     assert_eq!(a.h.query(|n| n.semantics.role == Role::Tab && n.semantics.name == "Terminal").len(), 1);

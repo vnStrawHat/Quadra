@@ -64,9 +64,9 @@ fn full(model: &Model, folded: Signal<bool>) -> impl View + use<> {
         .child(div().grow(1.0).child(text("New terminal")))
         .child(div().text_size(12.0).text_color(token::TEXT_3).child(text("Ctrl-T")));
     let new = row()
-        .height(by_text(36.0))
+        .height(by_text(40.0))
         .padding_x(token::SPACE_SM)
-        .padding_y(token::SPACE_XS)
+        .padding_y(token::SPACE_SM)
         .border_bottom(1.0)
         .border_color(token::LINE_STRONG)
         .text_color(token::TEXT_2)
@@ -219,7 +219,8 @@ fn tab_row(model: &Model, tab: Tab) -> impl View + use<> {
         .justify(quadra::Justify::Center)
         .child(div().line_height(20.0 / 14.0).child(text(move || tab.title()).ellipsis()))
         .child(line);
-    let (short, tall) = (by_text(36.0), by_text(52.0));
+    // An item row; the touch step while it shows, for its second line.
+    let (short, tall) = (by_text(28.0), by_text(40.0));
     let face = row()
         .width(Length::Fill)
         .height(move || if on() { tall() } else { short() })

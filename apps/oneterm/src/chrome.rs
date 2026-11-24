@@ -61,7 +61,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .padding_right(token::SPACE_MD)
         .display(shown(move || settings.get()))
         .child(button("Done").on_click(move || open.set(false)));
-    titlebar("").height(38.0).control(mark).control(div().grow(1.0)).control(buttons).control(done)
+    titlebar("").control(mark).control(div().grow(1.0)).control(buttons).control(done)
 }
 
 /// Lock: its icon and the minutes before it locks (`9m`), muted; a click locks now.

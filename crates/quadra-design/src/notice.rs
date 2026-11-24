@@ -148,7 +148,7 @@ pub fn notices() -> Notices {
 }
 
 impl Notices {
-    /// Lifts the stacks over what is at the bottom of the window: 30 for a status bar.
+    /// Lifts the stacks over what is at the bottom of the window: 32 for a status bar.
     pub fn above(mut self, px: f32) -> Self {
         self.lift = px;
         self

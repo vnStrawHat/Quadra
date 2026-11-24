@@ -44,8 +44,8 @@ unexpectedly` with the report's name, whose Show report shows the report in the 
 
 Custom frame (`WindowOptions::custom_frame`), 1440×900 at most 85 % of the display, centred,
 at least 720×480 (`WindowOptions::min_size`; a smaller remembered place opens at it), its place
-remembered. Top to bottom: the title bar (38 px), the body, the
-status bar (30 px). Colours are the kit's roles; the accent is the theme's. The look follows
+remembered. Top to bottom: the title bar and, under the body, the status bar: each a bar
+of the design language (32 px). Colours are the kit's roles; the accent is the theme's. The look follows
 the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: the UI face at
 14 px on 23 px lines, labels 12 px on 19, the kit's mono face for paths, numbers and keys).
 
@@ -81,10 +81,10 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
 
 270 px on the panel colour (the setting, 140 to 400), a line on its right. A heading of 28 px
 ("Tabs", 12 px semibold, the secondary colour) with the count (mono, regular, the third text
-colour) and Collapse tabs to icons at its right; then, under a strong line, the tabs as the kit's tab rules turned on their side: a row of 36 px a tab, the full
+colour) and Collapse tabs to icons at its right; then, under a strong line, the tabs as the kit's tab rules turned on their side: an item row (28 px) a tab, the full
 width, no line between them (`panel_hover` at half under the pointer), 14 px from the left: an icon (the focused space's shell's, below, or a server when a space is
 remote; the third text colour unless active), the title, and at the end the tab's signal
-(below). The active row is 52 px, the editor colour in the accent's tint (`accent_tint` over `canvas`) and one
+(below). The active row is the touch step (40 px) for its second line, the editor colour in the accent's tint (`accent_tint` over `canvas`) and one
 pixel wider (over the rail's line), its title semibold, an accent bar of 3 px on its left, a
 second line in 12 px and the secondary colour (`2 ssh · 1 local · 3 spaces`), and Close tab at
 its end. A tab with a progress has a
@@ -96,7 +96,7 @@ count in mono at the right) of data rows (24 px, radius 6) under a line from the
 name, the address in mono at the right. The switch to horizontal tabs is in the settings.
 
 Collapsed (Collapse tabs to icons, in the heading or the status bar, or the setting) the rail is
-48 px (the canvas's option I): Expand tabs at the top, then a box of 44 px a tab, a line
+40 px (the canvas's option I): Expand tabs at the top, then a box of 40 px a tab, a line
 (`line_strong`) under each: its icon of 16 px (the secondary text colour, the accent while it
 shows) and 6 px under it its signal as a line of 22 by 4 with round ends: `warn` for blocked,
 `error` for error, `ok` for done; its progress as a meter (the accent filled to its part on

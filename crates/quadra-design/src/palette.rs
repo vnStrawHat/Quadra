@@ -244,7 +244,7 @@ fn palette<F: Fn() -> Vec<Command> + 'static>(p: Palette<F>) -> impl View + use<
         let rows = found.rows(face::parts(all.clone(), query, on, none.clone(), look), |_| 0, run.clone());
         let (enter, submit) = (run.clone(), run);
         let field = text_input(query).placeholder(&ask).on_submit(move |_| submit(on.get_untracked()));
-        let ask = crate::layout::hstack().height(by_text(37.0)).padding_x(token::SPACE_LG);
+        let ask = crate::layout::hstack().height(by_text(32.0)).padding_x(token::SPACE_LG);
         let ask = ask.border_bottom(1.0).border_color(token::LINE);
         let ask = ask.child(icon(icons::SEARCH).size(14.0).color(token::TEXT_3));
         let ask = ask.child(div().grow(1.0).child(field));

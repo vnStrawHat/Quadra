@@ -179,8 +179,15 @@ The pictures read pale. The palette was not the cause; four things were, and eac
 One exception with its reason in the code: a host key's fingerprint is mono at 12 px, a step
 under the text around it, so that its 50 characters stay one line to compare.
 
-**1Term's own shapes, kept**: the title bar of 38, the status bar of 30, the rail's tab rows
-(36, 52 for the active one) and its folded form (48 wide, 44 a tab) are the canvas the user
-drew for 1Term (specs/19). They are stated there and are not steps of the ladders.
+**1Term's own shapes, on the ladders too** (the user's decision, 2026-11-24). The canvas the
+user drew for 1Term gave it a title bar of 38, a status bar of 30, tab rows of 36 (52 for
+the one that shows) and a folded rail 48 wide with 44 a tab. Asked whether they stay, the
+user chose the ladders: the title bar and the status bar are bars (32), a tab of the rail is
+an item row (28) and the touch step (40) while it shows its second line, the folded rail is
+40 wide with 40 a tab, and New terminal is a control of 28 in a row of 40. With them go the
+two exceptions the kit itself kept: its status bar was 30 and the command palette's query
+row 36; both are bars. No height of a row or a bar in the kit or the apps is off the
+ladders now, but a toolbar (a bar with 6 above and below and its line: 45) and a menu's
+separator (a line with 4 above and below: 9), which are sums of steps.
 
 Nothing is owed.

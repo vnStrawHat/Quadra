@@ -53,7 +53,7 @@ pub(crate) fn open_window(windows: &quadra::Windows, model: &Model) {
             .child(div().font_weight(600).child(text("1Term Settings")));
         // Using the settings is using 1Term: idle starts again.
         crate::locked::watches(quadra_design::root(), model.lock())
-            .child(quadra_design::titlebar("").height(38.0).control(mark).control(div().grow(1.0)))
+            .child(quadra_design::titlebar("").control(mark).control(div().grow(1.0)))
             .child(page(&model))
     });
 }

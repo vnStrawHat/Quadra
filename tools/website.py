@@ -37,7 +37,7 @@ FONTS = "crates/quadra-design/fonts"
 FACES = [("IBM Plex Sans", "IBMPlexSans-Regular", 400, "normal"), ("IBM Plex Sans", "IBMPlexSans-Italic", 400, "italic"),
          ("IBM Plex Sans", "IBMPlexSans-SemiBold", 600, "normal"), ("Lilex", "Lilex-Regular", 400, "normal")]
 # The part of a picture of the gallery that is the page: without its sidebar and its bars.
-PAGE_BOX = (241, 32, 1200, 770)
+PAGE_BOX = (241, 32, 1200, 768)
 
 
 def tokens():

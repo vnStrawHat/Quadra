@@ -108,7 +108,11 @@ impl Choice {
         let cell = row().align_items(Align::Center).justify(Justify::Center).shrink(0.0);
         let cell = if crate::layout::fills() { cell.grow(1.0) } else { cell };
         // Inside the group's border: the group is the control's height.
-        let cell = cell.height(by_text(self.size.height() - 2.0)).padding_x(if small { 8.0 } else { 12.0 });
+        let cell = cell.height(by_text(self.size.height() - 2.0)).padding_x(if small {
+            token::SPACE_MD
+        } else {
+            token::SPACE_LG
+        });
         let cell = match small {
             true => cell.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height()),
             false => cell,

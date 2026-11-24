@@ -117,7 +117,8 @@ pub(super) fn page(
         let (on, kept) = (model.shown, model.groups[i].clone());
         // The first group that shows is nearer the title than the others are to each other.
         let first = memo(move || kept.iter().position(|kept| kept.get()));
-        let title = div().padding_top(if headed { 24.0 } else { 0.0 }).child(heading(page.title, 2));
+        let above: quadra_tree::Amount = if headed { token::SPACE_XXL.into() } else { 0.0.into() };
+        let title = div().padding_top(above).child(heading(page.title, 2));
         let title = match reset {
             Some(reset) => title.align_items(Align::Center).justify(Justify::Between).child(reset),
             None => title,

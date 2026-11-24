@@ -37,7 +37,7 @@ The palette keeps the kit's role names; each role is one token of the One themes
 | `overlay_bg` | the plane of every overlay: menus, tooltips, popovers, pickers, dialogs, toasts (the One themes give it the `panel`'s colour; another theme may set it apart) | `#1E2227` | `#EBEBEC` |
 | `raised` | filled controls (element background) | `#404754` | `#EBEBEC` |
 | `panel_hover`, `raised_hover` | ghost and filled hover | `#ABB2BF14` | `#DFDFE0` |
-| `press` | pressed, keyboard-highlighted rows | `#ABB2BF29` | `#CACACA` |
+| `press` | pressed, keyboard-highlighted rows, the track of a slider and of a progress bar | `#ABB2BF29` | `#CACACA` |
 | `line` | dividers, hairlines, the grid of tables | `#31363F` | `#DFDFE0` |
 | `line_strong` | outlines of controls, overlays and cards; tab and pane seams | `#3E4452` | `#C9C9CA` |
 | `border_focused` | focus border: the accent | `#74ADE8` | `#5C78E2` |
@@ -72,7 +72,8 @@ Icons take a text color (`text`, `text_2` for decoration, `accent_text` when tog
 
 - `accent` (`#74ADE8` / `#5C78E2`) is the editor cursor, a switch that is on, a checked
   box, the marks of what is chosen, the progress fill, the dirty dot and the fill of the
-  primary button. `accent_tint` (`#74ADE829` / `#5C78E229`, the accent at 16 %) fills what
+  primary button (under the pointer `accent_hover`, pressed `accent_press`, its words
+  `text_on_accent`, which a theme keeps at 3 to 1 or more against the accent). `accent_tint` (`#74ADE829` / `#5C78E229`, the accent at 16 %) fills what
   is chosen (a row of a list, of a tree, of a navigation; a segment; a day), a button that
   is on, and the primary button while it is off.
 - Feedback colors with a tint each for banners and tinted buttons. Error text is readable

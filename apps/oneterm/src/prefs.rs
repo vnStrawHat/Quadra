@@ -227,6 +227,15 @@ fn every_colour_theme_reads() {
     for (name, text) in crate::themes::THEMES {
         let theme = quadra_design::theme_from_json(text).unwrap_or_else(|e| panic!("{name}: {e:?}"));
         assert_ne!(theme.theme().color(quadra_design::token::CANVAS), quadra::Color::TRANSPARENT, "{name}");
+        // The words on the primary button read on its fill: 3 to 1 at the least.
+        let light = |role| {
+            let c: quadra::Color = theme.theme().color(role);
+            let part = |x: f32| if x <= 0.03928 { x / 12.92 } else { ((x + 0.055) / 1.055).powf(2.4) };
+            0.2126 * part(c.r) + 0.7152 * part(c.g) + 0.0722 * part(c.b) + 0.05
+        };
+        let (fill, words) =
+            (light(quadra_design::token::ACCENT), light(quadra_design::token::TEXT_ON_ACCENT));
+        assert!(fill.max(words) / fill.min(words) >= 3.0, "{name}: {}", fill.max(words) / fill.min(words));
     }
     assert_eq!(COLOUR_THEMES.len(), crate::themes::THEMES.len() + 1);
 }

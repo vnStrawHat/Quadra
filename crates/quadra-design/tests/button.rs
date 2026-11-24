@@ -109,9 +109,8 @@ fn buttons_have_the_sizes_and_the_colours_of_their_variants() {
     assert_eq!(p.look("save").0, p.is(token::ACCENT_TINT));
     p.dirty.set(true);
     p.h.frame();
-    // On, it is the accent, solid, with the canvas for its words.
-    let solid = colours.resolve(token::ACCENT.alpha(0.88));
-    assert_eq!(p.look("save"), (solid, p.is(token::ACCENT), p.is(token::CANVAS)));
+    // On, it is the accent, solid, with the words that read on it.
+    assert_eq!(p.look("save"), (p.is(token::ACCENT_HOVER), p.is(token::ACCENT), p.is(token::TEXT_ON_ACCENT)));
 }
 
 #[test]
@@ -136,17 +135,22 @@ fn a_click_and_the_keyboard_do_the_same_and_a_disabled_button_does_nothing() {
 
     p.dirty.set(true);
     p.h.frame();
+    // The solid one's border is the focus colour already: its focus is the text's colour.
+    p.h.key(Key::Tab, Mods::SHIFT);
+    p.h.key(Key::Tab, Mods::SHIFT);
+    p.h.frame();
+    assert_eq!((p.h.tree.focused(), p.look("save").1), (Some(p.node("save")), p.is(token::TEXT)));
     p.h.click(at.x, at.y);
     p.h.key(Key::Enter, Mods::NONE); // the click gave it the focus: Enter and Space press it
     p.h.key(Key::Space, Mods::NONE);
     assert_eq!(p.saved.get_untracked(), 3);
 
-    // A toggle: its owner turns it, and it shows the accent and the selected step while on.
+    // A toggle: its owner turns it, and it shows the accent and its tint while on.
     p.h.get_by_test_id("wrap").click();
     p.h.frame();
     assert!(p.wrap.get_untracked() && p.h.semantics().contains("Button \"Wrap\" [checked]"));
     let on = p.look("wrap");
-    assert_eq!((on.0, on.2), (p.is(token::PRESS), p.is(token::ACCENT_TEXT)));
+    assert_eq!((on.0, on.2), (p.is(token::ACCENT_TINT), p.is(token::ACCENT_TEXT)));
 }
 
 #[test]

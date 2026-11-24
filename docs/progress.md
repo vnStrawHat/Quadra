@@ -567,10 +567,12 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   widths of their own); the kit writes its distances and radii as tokens; the check reads
   what a call is given; a combobox fills its column; `NumberInput::unit`, `card_head_with`.
 - **Against paleness** (the user's decision, `decisions.md`): the primary button is the
-  accent, solid (its tint while off); headlines, card titles and group titles are semibold;
-  what is chosen in a list, a tree, a navigation and the settings' pages is the accent's
-  tint. The gallery and the apps write their distances as tokens; the check follows a
-  file's constants; a `Measure` carries its own number for a tree with no theme. Nothing of
+  accent, solid, by the theme's roles (its tint while off; a `text` border when focused by
+  keys); headlines, card titles and group titles are semibold; what is chosen (a row of a
+  list, a tree, a navigation, the settings' pages; a toggle that is on; 1Term's active tab
+  and the dock's picked row) is the accent's tint. Every theme of 1Term keeps the words on
+  the accent at 3 to 1 or more (seven corrected, one test). The gallery and the apps write their distances as tokens; the check follows
+  constants across files; a `Measure` carries its own number for a tree with no theme. Nothing of
   the design language is owed.
 
 ### One height for the controls of one line (2026-11-22)

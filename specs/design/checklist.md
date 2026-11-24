@@ -9,8 +9,8 @@ first part is what the gate checks; the second is what only a look can tell.
 fails on:
 
 - a number in what `.gap(..)`, `.gap_x(..)`, `.gap_y(..)`, `.padding(..)` and its sides are
-  given (written there, chosen between two, or kept in a `const` of the file and given by
-  its name) that is not 0, 1 or a step of the distance ladders (2, 4, 6, 8, 12, 16, 24, 32);
+  given (written there, chosen between two, or kept in a `const` of any file read and given
+  by its name) that is not 0, 1 or a step of the distance ladders (2, 4, 6, 8, 12, 16, 24, 32);
 - a literal in `.radius(..)` that is not 0 or a step of the radius ladder (2, 4, 6, 10);
 - a literal in `.text_size(..)` or `text(..).size(..)` that is not a step of the type scale
   (10, 12, 14, 16, 18, 23, 28).

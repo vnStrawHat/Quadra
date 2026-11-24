@@ -84,7 +84,7 @@ the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: 
 colour) and Collapse tabs to icons at its right; then, under a strong line, the tabs as the kit's tab rules turned on their side: a row of 36 px a tab, the full
 width, no line between them (`panel_hover` at half under the pointer), 14 px from the left: an icon (the focused space's shell's, below, or a server when a space is
 remote; the third text colour unless active), the title, and at the end the tab's signal
-(below). The active row is 52 px, the editor colour pressed (`press` over `canvas`) and one
+(below). The active row is 52 px, the editor colour in the accent's tint (`accent_tint` over `canvas`) and one
 pixel wider (over the rail's line), its title semibold, an accent bar of 3 px on its left, a
 second line in 12 px and the secondary colour (`2 ssh · 1 local · 3 spaces`), and Close tab at
 its end. A tab with a progress has a

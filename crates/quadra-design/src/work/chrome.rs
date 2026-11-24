@@ -76,7 +76,11 @@ fn tool(active: Signal<&'static str>, it: Activity) -> AnyView {
     // 9 px, ringed by the panel so it parts from the icon.
     let problem = matches!(it.tone, Tone::Danger | Tone::Warning);
     let fill = if problem { it.tone.role() } else { token::ACCENT };
-    let chip = row().height(by_text(14.0)).min_width(14.0).padding_x(if problem { 4.0 } else { 2.0 });
+    let chip = row().height(by_text(14.0)).min_width(14.0).padding_x(if problem {
+        token::SPACE_XS
+    } else {
+        token::SPACE_XXS
+    });
     let chip = chip.radius(token::RADIUS_SM).bg(fill).text_size(10.0);
     let chip = chip.text_color(token::TEXT_ON_ACCENT).align_items(Align::Center).justify(Justify::Center);
     let badge = match problem {

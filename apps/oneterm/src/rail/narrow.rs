@@ -98,7 +98,7 @@ fn face(model: &Model, tab: Tab) -> impl View + use<> {
         .top(0.0)
         .bottom(0.0)
         .right(-1.0)
-        .bg(token::PRESS)
+        .bg(token::ACCENT_TINT)
         .display(move || if on() { Display::Flex } else { Display::None })
         .child(div().absolute().left(0.0).top(8.0).bottom(8.0).width(3.0).radius(1.0).bg(token::ACCENT));
     tooltip(

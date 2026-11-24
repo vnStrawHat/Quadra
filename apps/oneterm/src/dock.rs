@@ -218,7 +218,7 @@ fn line(entry: &Entry, d: Dock) -> quadra::Div {
         .border_color(token::ACCENT.alpha(0.0))
         .hover(|s| s.bg(token::PANEL_HOVER))
         .selected(picked)
-        .when(State::SELECTED, |s| s.bg(token::PRESS).border_color(token::ACCENT))
+        .when(State::SELECTED, |s| s.bg(token::ACCENT_TINT).border_color(token::ACCENT))
         .role(Role::Button)
         .label(entry.name.clone())
         .child(div().text_color(tint).child(icon(shape).size(14.0)))

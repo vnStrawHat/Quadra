@@ -122,22 +122,30 @@ was silent, said two things, or did not match the kit. What they changed:
 The pictures read pale. The palette was not the cause; four things were, and each is changed:
 
 - **The primary button was a tint**, a step from a plain button, so a view had nowhere for
-  the eye to land. It is the accent, solid, with the canvas for its words; off, it is the
-  tint it was. One a view, as before: the accent is still a mark, and this is its one fill.
+  the eye to land. It is the accent, solid, by the theme's own roles (`accent_hover`,
+  `accent_press`, `text_on_accent` for its words); off, it is the tint it was. One a view,
+  as before: the accent is still a mark, and this is its one fill. Its border is the focus
+  colour already, so its focus by keys is a border in the text's colour. Seven of 1Term's
+  themes had words on the accent that could not be read (under 3 to 1); they are corrected,
+  and a test holds every theme to 3 to 1.
 - **Titles had the weight of body text.** A page's headline, a card's title and a group's
   title are semibold (600); size alone did not make a hierarchy.
 - **Too much was `text_2`.** A group's title in settings was muted at 16 px; it is `text`.
   `text_2` stays for what explains (a label over a field, a description, help).
 - **The accent was near absent**: a 2 px bar and the focus border. What is chosen in a
-  list, a tree, a navigation and the settings' pages is filled with the accent's tint in
-  place of the neutral `press`, which stays for the pressed and the keyboard's row.
+  list, a tree, a navigation and the settings' pages, a toggle button that is on, and in
+  1Term the active tab of the rail and the picked row of the dock, is filled with the
+  accent's tint in place of the neutral `press`, which stays for the pressed and the
+  keyboard's row.
 
 ## Done since (2026-11-24)
 
-- **The check follows a constant of the file.** A distance kept in a `const NAME: f32` and
-  given by its name is read as the number it is.
+- **The check follows a constant.** A distance kept in a `const NAME: f32` of any file read
+  and given by its name (or by its path) is read as the number it is.
 - **The gallery and the apps write tokens** where they wrote on-ladder literals, so a
-  theme's measures reach them as they reach the kit.
+  theme's measures reach them as they reach the kit; so do the distances the kit chose
+  between two (`if small { .. } else { .. }`). A number still written in a distance is a
+  factor of arithmetic (`side / 2.0`), not a distance.
 - **A measure carries its own number** (`Measure(index, own)`): a tree with no theme, or a
   theme with fewer measures, keeps a view's distances instead of collapsing them to 0.
 

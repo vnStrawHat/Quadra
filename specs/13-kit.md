@@ -165,8 +165,9 @@ As built so far:
   `.label(words)` (its name to a reader when it is not the visible words: "Reset Copy" for one
   of several "Reset"), `.on_click(|| ..)`. A click and `Confirm` do the same thing. Its colours are roles: the
   fill, the label, the fill under the pointer and while pressed, the border (specs/design,
-  "States"); a tinted button's hover is a role of its own (`accent_tint_hover`,
-  `error_tint_hover`: the tint 8 % towards its colour unless a theme says). The label is a
+  "States"): the primary one is the accent, solid (`accent`, `accent_hover`,
+  `accent_press`, its words `text_on_accent`; off, `accent_tint`); a tinted one's hover is a
+  role of its own (`error_tint_hover`: the tint 8 % towards its colour unless a theme says). The label is a
   text that takes the button's text colour. To a reader it is a button named by its label,
   pressed or not when it is a toggle.
 - **Smaller things.** A button shows a spinner before its label while `.loading(..)` says
@@ -283,7 +284,7 @@ As built so far:
   with the focus in the list the arrows move it and stop at the ends, Home and End go to
   them (key context `action::LIST`), the list scrolling to keep it in view. A double click
   or Enter is `.on_activate(|row| ..)`. A row is as wide as the list, 6 px beside what it
-  holds, filled under the pointer and with `press` when selected. `.empty(words)` is what a
+  holds, filled under the pointer and with `accent_tint` when selected. `.empty(words)` is what a
   list with no rows says.
 - **What shows and does nothing** (`display.rs`) is functions that give boxes and texts:
   `heading(words, level)` (23, 18, 16 px, then the size of text; regular weight; lines of

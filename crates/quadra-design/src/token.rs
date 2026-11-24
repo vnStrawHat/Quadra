@@ -81,7 +81,7 @@ roles! {
     ACCENT = "accent";
     ACCENT_HOVER = "accent_hover";
     ACCENT_PRESS = "accent_press";
-    /// The fill of a tinted button.
+    /// The fill of what is chosen, of a button that is on, of the primary button while it is off.
     ACCENT_TINT = "accent_tint";
     /// That fill under the pointer and while pressed. Unset, the tint a little towards the accent.
     ACCENT_TINT_HOVER = "accent_tint_hover";

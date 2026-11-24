@@ -55,7 +55,7 @@ pub fn sidebar_page() -> Div {
         div().grow(1.0).padding(token::SPACE_XL).child(hint(move || format!("Selected: {}", place.get())));
     page(
         "Sidebar",
-        "Sections of places. The current place is two tones up, the hovered one a tone.",
+        "Sections of places. The current place is in the accent's tint, the hovered one a tone up.",
         [demo(
             "Cluster navigation",
             framed(row().height(300.0).child(places).child(said)),

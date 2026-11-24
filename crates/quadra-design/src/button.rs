@@ -99,7 +99,7 @@ fn colors(variant: Variant) -> [Paint; 6] {
     let over = ERROR_TINT_HOVER.into();
     let (fill, label, hover, press, border, mark) = match variant {
         Variant::Primary => {
-            (ACCENT.into(), CANVAS, ACCENT.alpha(0.88), ACCENT.alpha(0.76), ACCENT.into(), none)
+            (ACCENT.into(), TEXT_ON_ACCENT, ACCENT_HOVER.into(), ACCENT_PRESS.into(), ACCENT.into(), none)
         }
         Variant::Danger => (ERROR_TINT.into(), TEXT, over, over, ERROR.alpha(0.42), ERROR.into()),
         Variant::Secondary => (none, TEXT, PANEL_HOVER.into(), PRESS.into(), LINE_STRONG.into(), none),
@@ -197,8 +197,9 @@ impl Button {
         let small = matches!(self.size, Size::Xs | Size::Sm);
         let face = row().align_items(Align::Center).justify(Justify::Center).gap(token::SPACE_XS).shrink(0.0);
         // An icon alone sits in a square; a label has 4 or 8 px beside it.
+        let beside = if small { token::SPACE_XS } else { token::SPACE_MD };
         let face = match self.label {
-            Some(_) => face.height(by_text(self.size.height())).padding_x(if small { 4.0 } else { 8.0 }),
+            Some(_) => face.height(by_text(self.size.height())).padding_x(beside),
             None => face.size(self.size.height(), self.size.height()),
         };
         let label = if self.muted { token::TEXT_2.into() } else { label };
@@ -207,30 +208,29 @@ impl Button {
             Size::Xs => face.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height()),
             _ => face,
         };
-        // A focus that came by the keyboard turns the border the focus colour; without a
-        // border it is a line of a pixel along the edge, which takes no room.
+        // A focus that came by the keyboard turns the border the focus colour (the text's on
+        // the solid one, whose border is that colour already); without a border it is a line
+        // of a pixel along the edge, which takes no room.
+        let solid = self.variant == Variant::Primary;
+        let ring = if solid { token::TEXT } else { token::BORDER_FOCUSED };
         let face = match bordered {
-            true => face
-                .border(1.0)
-                .border_color(border)
-                .hover(|s| s.bg(hover))
-                .focus_visible(|s| s.border_color(token::BORDER_FOCUSED)),
-            false => face.focus_visible(|s| s.outline(token::BORDER_FOCUSED)).hover(|s| s.bg(hover)),
+            true => face.border(1.0).border_color(border).focus_visible(|s| s.border_color(ring)),
+            false => face.focus_visible(|s| s.outline(token::BORDER_FOCUSED)),
         };
-        let face = face.active(|s| s.bg(press));
-        // On: the accent for the label, and the selected step for a button with no fill
-        // that has a label; an icon alone turns the accent and takes no fill.
+        let face = face.hover(|s| s.bg(hover)).active(|s| s.bg(press));
+        // On: the accent for the label (the solid one keeps its own), and the accent's tint for
+        // a button with no fill that has a label; an icon alone turns the accent and takes no fill.
         let face = match self.toggled {
             Some(_) => {
                 let filled = fill != Paint::default() || self.label.is_none();
-                let pressed = if filled { fill } else { token::PRESS.into() };
-                face.when(State::CHECKED, |s| s.text_color(token::ACCENT_TEXT).bg(pressed))
+                let pressed = if filled { fill } else { token::ACCENT_TINT.into() };
+                let on = if solid { label } else { token::ACCENT_TEXT.into() };
+                face.when(State::CHECKED, |s| s.text_color(on).bg(pressed))
             }
             None => face,
         };
         // Disabled: as it is at rest, whatever the pointer does, in the colour of what is off;
         // the solid one is its tint, which says less.
-        let solid = self.variant == Variant::Primary;
         let tint = [token::ACCENT_TINT.into(), token::ACCENT.alpha(0.42)];
         let [rest, edge] = if solid { tint } else { [fill, border] };
         let quiet = |s: quadra_view::Refine| s.bg(rest).border_color(edge).text_color(token::TEXT_DISABLED);
@@ -286,7 +286,8 @@ impl Button {
         };
         let Some(key) = self.shortcut else { return face };
         // On the solid one the key is the label's colour, dimmed; elsewhere, and off, muted.
-        let dim = move || if solid && !off.get() { token::CANVAS.alpha(0.7) } else { token::TEXT_2.into() };
+        let dim =
+            move || if solid && !off.get() { token::TEXT_ON_ACCENT.alpha(0.7) } else { token::TEXT_2.into() };
         face.child(div().text_color(dim).child(text(key).size(size::TEXT_SM.size)))
     }
 }

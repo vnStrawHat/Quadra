@@ -174,7 +174,7 @@ pub(crate) fn active_fill(
         .right(-wider)
         .bg(token::CANVAS)
         .display(move || if on() { Display::Flex } else { Display::None })
-        .child(div().grow(1.0).bg(token::PRESS))
+        .child(div().grow(1.0).bg(token::ACCENT_TINT))
         .child(bar)
 }
 

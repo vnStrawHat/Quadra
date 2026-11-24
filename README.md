@@ -80,3 +80,7 @@ rest. The binary is 2.81 MB. The GPU takes 42 to 151 µs a frame in these scenes
 1Term (`tools/doomfire.sh`): a fire demo that rewrites the whole screen every frame runs at
 576 to 627 fps in a 143×39 window (six runs), 62 to 68 MB/s through the Windows console host,
 which alone carries 71 MB/s.
+
+## Licence
+
+Apache-2.0 (`LICENSE`); what Quadra includes of others is listed in `NOTICE`.

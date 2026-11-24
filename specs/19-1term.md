@@ -538,14 +538,15 @@ thread never waits on the network.
   the Keys by their paths (`~/.ssh/id_ed25519`; a host's key not among them is offered too),
   beside the passphrase; for Auto and Password the password across, both with the
   eye that shows what was typed (a saved one is used when it is left empty, the empty password
-  else); for Auto and SSH agent a line of what they do. A new key adds a warning (`1Term has
-  not seen this host key before. Check the fingerprint with the host's owner.`) and `Trust
-  this key and add it to known hosts`, which the engine's question is then answered with.
+  else); for Auto and SSH agent a line of what they do. A new key adds a note (`1Term has
+  not seen this host's key. Its fingerprint is shown to check before it is trusted.`): no key
+  is trusted before it is seen, so nothing is ticked here; the engine's question is a step
+  of connecting (below), with the host, the key's kind and its fingerprint.
   Two checkboxes end it: `Save username, auth method and password (or passphrase) to this
   host`, which saves what worked once the shell is open (the secret sealed while the vault's
   key is in memory), and `Open in the current tab as a new space` (ticked by Connect in a new
   space). The foot: `Edit host…` at its left, Cancel and Connect (Enter), Connect off without
-  a username or while a new key is not trusted. The focus is in the first field missing: the
+  a username. The focus is in the first field missing: the
   user, the key file of Key file, the password of Password with none saved. Connecting, the
   body is the steps (Reach jump host, Reach host, Verify host key, Authenticate, each with
   what it is about: a check when done, a spinner under way, a dot to come, by the engine's

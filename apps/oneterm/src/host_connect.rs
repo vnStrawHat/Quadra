@@ -60,8 +60,7 @@ struct Form {
     failed: Signal<String>,
     /// The password was refused: the focus goes to it.
     refused: Signal<bool>,
-    /// A new host key is trusted; what worked is saved to the host; a space in this tab.
-    trust: Signal<bool>,
+    /// What worked is saved to the host; a space in this tab.
     save: Signal<bool>,
     here: Signal<bool>,
     /// The answer to what the server asks while connecting.
@@ -81,7 +80,6 @@ impl Form {
         self.key.set(key);
         self.failed.set(String::new());
         self.user.set(host.remote.target.user.clone());
-        self.trust.set(false);
         self.save.set(false);
         self.here.set(here);
         crate::vault::wipe(self.password);
@@ -100,7 +98,6 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
         password: s(),
         failed: s(),
         refused: b(),
-        trust: b(),
         save: b(),
         here: b(),
         answer: s(),
@@ -202,7 +199,6 @@ fn shown(model: &Model, host: Host, here: bool, open: Signal<bool>, form: Form) 
             }
         })
     };
-    let new_key = known.is_none();
     let title = format!("Connect to {name}");
     let (said, group) = (title.clone(), host.group.clone());
     let (editing, back, edited) = (model.ui().editing, opening.back, name.clone());
@@ -224,7 +220,7 @@ fn shown(model: &Model, host: Host, here: bool, open: Signal<bool>, form: Form) 
         .action("Connect", Variant::Primary, move || connect(&goes, &name, form))
         .shortcut("Enter")
         .stays_open()
-        .disabled(move || form.user.with(|it| it.trim().is_empty()) || (new_key && !form.trust.get()))
+        .disabled(move || form.user.with(|it| it.trim().is_empty()))
         .busy("Connecting\u{2026}", busy)
         .shown(move || !asking_now())
 }

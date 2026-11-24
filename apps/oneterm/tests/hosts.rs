@@ -48,10 +48,8 @@ impl App {
         self.h.settle();
     }
 
-    /// The Connect dialog's Connect, its new key trusted.
+    /// The Connect dialog's Connect.
     fn connect(&mut self) {
-        self.h.get_by_test_id("connect-trust").click();
-        self.h.settle();
         self.h.get_by_role(Role::Button, "Connect").click();
         self.h.settle();
     }

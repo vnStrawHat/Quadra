@@ -141,7 +141,7 @@ pub(super) fn body(
                 .child(says("Uses the keys loaded in ssh-agent, nothing to type.")),
         );
     if key_known.is_none() {
-        body = body.child(trust(form.trust));
+        body = body.child(new_key());
     }
     let save = checkbox(form.save).test_id("connect-save").label(move || match auth.get() {
         2 => "Save username, auth method and passphrase to this host".to_string(),
@@ -152,10 +152,10 @@ pub(super) fn body(
     body.child(quadra_design::vstack().child(save).child(here))
 }
 
-/// A host key 1Term has not seen: checked with its owner, trusted here.
-fn trust(trust: Signal<bool>) -> Div {
-    let words = "1Term has not seen this host key before. Check the fingerprint with the host's owner.";
-    let note = row()
+/// A host key 1Term has not seen: trusted where its fingerprint shows, once it connects.
+fn new_key() -> Div {
+    let words = "1Term has not seen this host's key. Its fingerprint is shown to check before it is trusted.";
+    row()
         .gap(token::SPACE_MD)
         .padding(token::SPACE_MD)
         .radius(token::RADIUS_MD)
@@ -163,7 +163,5 @@ fn trust(trust: Signal<bool>) -> Div {
         .border(1.0)
         .border_color(token::WARN.alpha(0.2))
         .child(icon(icons::TRIANGLE_ALERT).size(14.0).color(token::WARN))
-        .child(div().grow(1.0).min_width(0.0).text_color(token::TEXT).child(text(words)));
-    let tick = checkbox(trust).test_id("connect-trust").label("Trust this key and add it to known hosts");
-    quadra_design::vstack().child(note).child(tick)
+        .child(div().grow(1.0).min_width(0.0).text_color(token::TEXT).child(text(words)))
 }

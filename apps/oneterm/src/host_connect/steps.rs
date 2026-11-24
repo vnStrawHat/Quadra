@@ -99,13 +99,15 @@ fn line(step: &Step, when: std::cmp::Ordering) -> Div {
 fn question(ask: Ask, typed: Signal<String>, name: &str, answer: Rc<dyn Fn()>) -> Div {
     let passes = format!("Asked by {name}. 1Term passes your answer through and does not store it.");
     let (label, secret, again) = match ask {
-        Ask::HostKey { kind, fingerprint, .. } => {
-            let words =
-                "1Term has not seen this host key before. Continue trusts it and adds it to known hosts.";
+        Ask::HostKey { host, kind, fingerprint } => {
+            // Which host's: with a jump host two keys may be asked about.
+            let words = format!(
+                "1Term has not seen the key of {host} before. Check its fingerprint with the host's owner; Continue trusts it and adds it to known hosts."
+            );
             return column()
                 .gap(token::SPACE_XS)
                 .child(div().text_color(token::TEXT).child(text(words)))
-                .child(mono(format!("{kind} {fingerprint}"), 12.0, token::TEXT_2));
+                .child(mono(format!("{kind} {fingerprint}"), 12.0, token::TEXT));
         }
         Ask::User { .. } => ("Username", false, false),
         Ask::Password { again, .. } => ("Password", true, again),

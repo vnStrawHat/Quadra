@@ -1,7 +1,8 @@
 //! A saved host's Connect dialog (specs/19, "The rail") on real connections to the engine's
 //! test server on 127.0.0.1 (never another host): the focus in what is missing, Connecting…
 //! while it connects, a refused password and a failure as alerts with no tab, the user's
-//! `user@host:port` in the saved target's place. Every file is under `.tmp`.
+//! `user@host:port` in the saved target's place, a new key trusted where its fingerprint
+//! shows. Every file is under `.tmp`.
 
 use std::rc::Rc;
 use std::time::{Duration, Instant};
@@ -138,11 +139,9 @@ fn the_username_s_host_and_port_take_the_saved_ones_place_and_a_failure_is_an_al
     let tabs = a.tabs();
     a.click("far");
     assert!(a.focused("connect-password"), "Password with none saved\n{}", a.h.semantics());
-    // A key not in the known hosts: Connect is off until it is trusted.
-    assert!(a.h.has_text("New"), "{}", a.h.semantics());
-    assert!(a.h.query(|n| n.semantics.name == "Connect" && n.semantics.disabled).len() == 1);
-    a.h.get_by_test_id("connect-trust").click();
-    a.h.settle();
+    // A key not in the known hosts is said, and nothing is ticked to trust what is not seen.
+    assert!(a.h.has_text("New") && a.h.has_text("Not in known hosts"), "{}", a.h.semantics());
+    assert!(a.h.query(|n| n.semantics.name == "Connect" && n.semantics.disabled).is_empty());
     a.press_connect();
     a.wait(
         |a| a.h.has_text("Could not connect") && !a.h.query(|n| n.semantics.name == "Connect").is_empty(),
@@ -183,4 +182,43 @@ fn edit_host_returns_to_the_dialog_and_save_keeps_what_worked() {
     a.wait(|a| a.tabs() == tabs + 1 && a.welcomed(), "connected");
     let saved = a.model.hosts().into_iter().find(|it| it.name == "box").unwrap();
     assert_eq!(saved.remote.target.user, "tester");
+}
+
+#[test]
+fn a_new_host_key_is_trusted_where_its_fingerprint_shows() {
+    let mut a = app("connect-new-key");
+    // A second server, whose key the known hosts do not have.
+    let (other, _) = serve(52);
+    let known = folder("connect-new-key").join("known_hosts");
+    let has = |port: u16| std::fs::read_to_string(&known).unwrap_or_default().contains(&port.to_string());
+    a.save("fresh", &format!("tester@127.0.0.1:{other}"));
+    let tabs = a.tabs();
+    for trusts in [false, true] {
+        a.click("fresh");
+        a.h.get_by_test_id("connect-password").set_value("secret");
+        a.h.settle();
+        a.press_connect();
+        // The step says whose key it is and shows its fingerprint; nothing is written yet.
+        a.wait(
+            |a| a.h.has_text("Continue") && !a.h.query(|n| n.semantics.name.contains("SHA256:")).is_empty(),
+            "the key",
+        );
+        let whose = format!("the key of [127.0.0.1]:{other}");
+        assert!(!a.h.query(|n| n.semantics.name.contains(&whose)).is_empty(), "{}", a.h.semantics());
+        assert!(!has(other), "not trusted before it is seen");
+        let answer = if trusts { "Continue" } else { "Cancel" };
+        a.h.get_by_role(Role::Button, answer).click();
+        a.h.settle();
+        if !trusts {
+            // Given up: no tab, and the known hosts as they were.
+            a.wait(|a| !a.h.has_text("Continue"), "given up");
+            assert!(!has(other) && a.tabs() == tabs, "{}", a.h.semantics());
+            if a.h.has_text("Connect to fresh") {
+                a.h.get_by_role(Role::Button, "Cancel").click();
+                a.h.settle();
+            }
+        }
+    }
+    a.wait(|a| a.tabs() == tabs + 1 && a.welcomed(), "connected");
+    assert!(has(other), "trusted by Continue");
 }

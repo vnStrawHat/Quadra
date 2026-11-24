@@ -64,7 +64,7 @@ fn used(host: &Host, form: Form) -> crate::shells::Remote {
 }
 
 /// Follows the space connecting: placed once its shell opens (what worked saved to the host
-/// when asked); a new key trusted in the form is trusted when asked; a failure, or the
+/// when asked); a failure, or the
 /// password refused, ends it and says why.
 pub(super) fn watch(model: &Model, form: Form) {
     let (opening, model) = (model.ui().opening, model.clone());
@@ -83,9 +83,6 @@ pub(super) fn watch(model: &Model, form: Form) {
                     opening.space.set(None);
                     opening.host.set(None);
                     return model.place(space, form.here.get());
-                }
-                Phase::Ask(Ask::HostKey { .. }) if form.trust.get() => {
-                    return conn.answer(Some("yes".into()));
                 }
                 Phase::Ask(Ask::Failed { reason }) => crate::asking::sentence(&reason),
                 Phase::Ask(Ask::Password { again: true, .. }) => {

@@ -1,22 +1,22 @@
-//! The SFTP dock (specs/19, "M9 in detail"): 300 px at the workspace's right, the folder of
-//! the focused space's connection in a field, its entries, the transfers; files dropped on it
-//! upload.
+//! The SFTP dock (specs/19, "M9 in detail"): 460 px at the workspace's right, the folder of
+//! the focused space's connection in a field, its entries under a header of columns
+//! (`list.rs`), the transfers; files dropped on it upload.
 
-use oneterm_ssh::Entry;
 use quadra::{
-    Align, AnyView, DroppedFiles, Length, Paint, Role, State, View, by_text, column, div, dynamic, effect,
-    memo, row, signal, text,
+    Align, AnyView, DroppedFiles, Length, Role, View, by_text, column, div, dynamic, effect, memo, row,
+    signal, text,
 };
-use quadra_design::{Variant, button, context_menu, icon, icon_button, icons, input, token, tooltip};
+use quadra_design::{Variant, button, icon, icon_button, icons, input, token, tooltip};
 
 use crate::locked::shown;
 use crate::model::Model;
-use crate::panes::size;
 use crate::sftp::Dock;
 
 mod grip;
+mod list;
 mod menus;
 mod transfers;
+use list::{entries, header};
 pub(crate) use menus::{Ask, local as local_menu, remote as remote_menu, remote_area};
 use transfers::transfers;
 
@@ -118,6 +118,7 @@ fn panel(model: &Model, d: Dock) -> impl View + use<> {
         .drop_target(|s| s.bg(token::ACCENT_TINT))
         .child(head)
         .child(path(model, d))
+        .child(header(model, d))
         .child(entries(model, d))
         .child(transfers(d))
         .child(grip::grip(width))
@@ -151,81 +152,6 @@ fn path(model: &Model, d: Dock) -> impl View + use<> {
         .child(icon_button(icons::ARROW_RIGHT, "Go to the typed path").on_click(move || go(&goes)))
 }
 
-fn entries(model: &Model, d: Dock) -> impl View + use<> {
-    let (model, model_of) = (model.clone(), model.clone());
-    let list = dynamic(move || {
-        let said = d.said.get();
-        if said == crate::sftp::LOCAL {
-            return AnyView::new(local(&model));
-        }
-        if !said.is_empty() {
-            return AnyView::new(div().padding(token::SPACE_LG).text_color(token::TEXT_2).child(text(said)));
-        }
-        let all = crate::panes::visible(&d.entries.get(), d.hidden.get());
-        let mut list = column().width(Length::Fill);
-        let dir = d.dir.get_untracked();
-        if dir != "/" && !dir.is_empty() {
-            let (up, goes) = (dir.rsplit_once('/').map_or("/", |it| it.0).to_string(), model.clone());
-            let up = if up.is_empty() { "/".to_string() } else { up };
-            let entry = Entry { name: "..".into(), dir: true, size: 0, modified: 0 };
-            let line = line(&entry, d).label("Parent folder");
-            list = list.child(line.on_click(move |e| match e.clicks {
-                2 => d.load(&goes, Some(up.clone())),
-                _ => d.selected.set(Some("..".into())),
-            }));
-        }
-        for entry in all.iter().take(SHOWN) {
-            list = list.child(entry_row(&model, d, entry.clone()));
-        }
-        if all.len() > SHOWN {
-            list = list.child(
-                div()
-                    .padding(token::SPACE_MD)
-                    .text_color(token::TEXT_3)
-                    .child(text(format!("{} more", all.len() - SHOWN))),
-            );
-        }
-        AnyView::new(list)
-    });
-    let area = column().grow(1.0).min_height(0.0);
-    context_menu(quadra::scroll(signal(0.0), list).container(area), menus::remote_area(&model_of, d))
-}
-
-/// A row of 26 px: its icon, its name, its size; a row chosen has the press fill and a bar of
-/// the accent at its left, a file's icon in the accent.
-fn line(entry: &Entry, d: Dock) -> quadra::Div {
-    let (file, named) = (!entry.dir, entry.name.clone());
-    let picked = move || d.selected.with(|it| it.as_deref() == Some(named.as_str()));
-    let (tints, quiets) = (picked.clone(), picked.clone());
-    let tint = move || -> Paint {
-        match (file, tints()) {
-            (false, _) => token::HUE_BLUE.into(),
-            (true, true) => token::ACCENT.into(),
-            (true, false) => token::TEXT_2.into(),
-        }
-    };
-    let quiet = move || -> Paint { if quiets() { token::TEXT_2.into() } else { token::TEXT_3.into() } };
-    let shape = if entry.dir { icons::FOLDER } else { icons::FILE };
-    let size = if file { size(entry.size) } else { String::new() };
-    quadra_design::hstack()
-        .padding_left(token::SPACE_LG)
-        .padding_right(token::SPACE_LG)
-        .height(by_text(24.0))
-        .shrink(0.0)
-        .border_left(2.0)
-        .border_color(token::ACCENT.alpha(0.0))
-        .hover(|s| s.bg(token::PANEL_HOVER))
-        .selected(picked)
-        .when(State::SELECTED, |s| s.bg(token::ACCENT_TINT).border_color(token::ACCENT))
-        .role(Role::Button)
-        .label(entry.name.clone())
-        .child(div().text_color(tint).child(icon(shape).size(14.0)))
-        .child(div().grow(1.0).min_width(Length::Px(0.0)).child(text(entry.name.clone()).ellipsis()))
-        .child(
-            div().font_family(quadra_design::fonts::MONO).text_size(12.0).text_color(quiet).child(text(size)),
-        )
-}
-
 /// What the dock shows for a local space: why it is empty, and a button that shows the
 /// first tab with a remote space.
 fn local(model: &Model) -> impl View + use<> {
@@ -250,15 +176,4 @@ fn local(model: &Model) -> impl View + use<> {
         view = view.child(button(label).variant(Variant::Secondary).on_click(move || shows.show(id)));
     }
     view
-}
-
-/// A click chooses a row; two open a folder or download a file (a reader: the row's menu).
-fn entry_row(model: &Model, d: Dock, entry: Entry) -> impl View + use<> {
-    let (opens, kept) = (model.clone(), entry.clone());
-    let face = line(&entry, d).on_click(move |e| match (kept.dir, e.clicks) {
-        (true, 2) => d.load(&opens, Some(oneterm_ssh::join(&d.dir.get_untracked(), &kept.name))),
-        (false, 2) => d.download(&opens, &kept),
-        _ => d.selected.set(Some(kept.name.clone())),
-    });
-    context_menu(face, menus::remote(model, d, &entry))
 }

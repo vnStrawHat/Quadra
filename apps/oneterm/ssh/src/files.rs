@@ -17,13 +17,16 @@ const MOST: usize = 100_000;
 const CHUNK: usize = 64 * 1024;
 
 /// An entry of a remote folder.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Entry {
     pub name: String,
     pub dir: bool,
     pub size: u64,
     /// When it last changed, in seconds since 1970; 0 when the server does not say.
     pub modified: u64,
+    /// Its kind and permission bits, as `stat` gives them (`0o100644`); 0 when the server
+    /// does not say, and for a local file where the system has none.
+    pub mode: u32,
 }
 
 /// A remote path's properties.
@@ -79,7 +82,8 @@ impl Files {
             .map(|it| {
                 let meta = it.metadata();
                 let modified = meta.mtime.unwrap_or(0).into();
-                Entry { name: it.file_name(), dir: meta.is_dir(), size: meta.len(), modified }
+                let mode = meta.permissions.unwrap_or(0);
+                Entry { name: it.file_name(), dir: meta.is_dir(), size: meta.len(), modified, mode }
             })
             .collect();
         entries.sort_by(|a, b| {

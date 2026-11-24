@@ -55,7 +55,10 @@ fn a_folder_lists_folders_first_and_files_go_both_ways() {
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
     let modified = listed[0].modified;
     assert!(now.abs_diff(modified) < 60, "the mtime is told: {modified}");
-    assert_eq!(listed, [Entry { name: "copy.yaml".into(), dir: false, size: 200_000, modified }]);
+    assert_eq!(
+        listed,
+        [Entry { name: "copy.yaml".into(), dir: false, size: 200_000, modified, mode: 0o100644 }]
+    );
 
     files.mkdir("/home/old").unwrap();
     files.rename("/home/old", "/home/new").unwrap();

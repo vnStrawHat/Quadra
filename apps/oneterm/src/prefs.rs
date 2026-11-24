@@ -156,7 +156,7 @@ impl Prefs {
             rail_folded: s.value("tabs.rail_folded", false),
             dock_local: s.value("sftp.dock_open_local", false),
             dock_ssh: s.value("sftp.dock_open_ssh", true),
-            dock_width: s.value("sftp.dock_width", 300.0),
+            dock_width: s.value("sftp.dock_width", 460.0),
             tab_title: s.choice("tabs.title", &TITLES),
             keepalive_on: s.value("ssh.keepalive", true),
             log_local: s.value("logging.local", false),

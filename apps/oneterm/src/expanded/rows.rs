@@ -17,7 +17,7 @@ use crate::panes::{day, size};
 use crate::sftp::{Dock, Transfer};
 
 /// A value at the right of its column: mono, 12 px, the second colour.
-pub(super) fn cell(words: impl Into<String>, width: f32) -> quadra::Div {
+pub(crate) fn cell(words: impl Into<String>, width: f32) -> quadra::Div {
     row()
         .width(width)
         .shrink(0.0)
@@ -29,10 +29,12 @@ pub(super) fn cell(words: impl Into<String>, width: f32) -> quadra::Div {
 }
 
 /// A row of 26 px with a line under it: its icon, its name (and how it compares), its size and
-/// when it changed. Chosen: the accent at 10 % and a bar of it at its left.
+/// when it changed, and with `modes` its permissions. Chosen: the accent at 10 % and a bar of
+/// it at its left.
 pub(super) fn line(
     entry: &Entry,
     mark: Option<&'static str>,
+    modes: bool,
     chosen: impl Fn() -> bool + Clone + 'static,
 ) -> quadra::Div {
     let (file, picked) = (!entry.dir, chosen.clone());
@@ -65,6 +67,10 @@ pub(super) fn line(
         move || -> Paint { if chosen() { token::ACCENT.into() } else { token::ACCENT.alpha(0.0) } };
     let bar = div().position(Position::Absolute).left(Length::Px(0.0)).top(Length::Px(0.0));
     let bar = bar.bottom(Length::Px(0.0)).width(2.0).bg(bar_paint);
+    let permissions = match modes {
+        true => cell(crate::sftp::properties::letters(entry.mode), super::MODE),
+        false => div().display(quadra::Display::None),
+    };
     row()
         .align_items(Align::Center)
         .gap(token::SPACE_LG)
@@ -82,6 +88,7 @@ pub(super) fn line(
         .child(name)
         .child(cell(size, SIZE))
         .child(cell(day(entry.modified), MODIFIED))
+        .child(permissions)
 }
 
 /// `Transfers`, how many run and ended, the rate of those that run, then a row each.

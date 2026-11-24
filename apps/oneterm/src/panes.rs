@@ -79,6 +79,7 @@ fn list(dir: &Path) -> Result<Vec<Entry>, String> {
                 dir: meta.is_dir(),
                 size: meta.len(),
                 modified: since.map_or(0, |it| it.as_secs()),
+                mode: 0,
             })
         })
         .collect();
@@ -93,6 +94,8 @@ pub(crate) enum By {
     Name,
     Size,
     Modified,
+    /// The permission bits, as a number.
+    Mode,
 }
 
 /// A pane's order: its column, and whether the other way.
@@ -106,6 +109,7 @@ pub(crate) fn sorted(mut entries: Vec<Entry>, (by, back): Sort) -> Vec<Entry> {
             By::Name => named(),
             By::Size => a.size.cmp(&b.size).then_with(named),
             By::Modified => a.modified.cmp(&b.modified).then_with(named),
+            By::Mode => (a.mode & 0o7777).cmp(&(b.mode & 0o7777)).then_with(named),
         };
         b.dir.cmp(&a.dir).then(if back { order.reverse() } else { order })
     });
@@ -203,18 +207,25 @@ mod tests {
 
     #[test]
     fn panes_sort_by_a_column_with_folders_first() {
-        let e = |name: &str, dir, size, modified| Entry { name: name.into(), dir, size, modified };
+        let e = |name: &str, dir, size, modified| Entry {
+            name: name.into(),
+            dir,
+            size,
+            modified,
+            mode: 0o600 + size as u32,
+        };
         let all = vec![e("b", false, 1, 30), e("A", false, 9, 10), e("z", true, 0, 20), e("c", false, 5, 20)];
         let names = |sort| sorted(all.clone(), sort).into_iter().map(|it| it.name).collect::<Vec<_>>();
         assert_eq!(names((By::Name, false)), ["z", "A", "b", "c"]);
         assert_eq!(names((By::Name, true)), ["z", "c", "b", "A"]);
         assert_eq!(names((By::Size, true)), ["z", "A", "c", "b"]);
         assert_eq!(names((By::Modified, false)), ["z", "A", "c", "b"]);
+        assert_eq!(names((By::Mode, false)), ["z", "b", "c", "A"]);
     }
 
     #[test]
     fn hidden_names_and_comparisons() {
-        let at = |name: &str, modified| Entry { name: name.into(), dir: false, size: 1, modified };
+        let at = |name: &str, modified| Entry { name: name.into(), size: 1, modified, ..Entry::default() };
         let all = [at(".env", 1), at("a", 5)];
         assert_eq!(visible(&all, false), [at("a", 5)]);
         assert_eq!(visible(&all, true).len(), 2);

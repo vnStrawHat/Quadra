@@ -10,15 +10,25 @@ use crate::panes::{By, Sort};
 
 /// What a pane is told: its label, its folder, where to go, how to list it again.
 pub(super) struct Side {
+    /// Whether its entries have permissions to show: a server's.
+    pub modes: bool,
     pub label: &'static str,
     pub go_name: &'static str,
     pub again_name: &'static str,
 }
 
-pub(super) const LOCAL: Side =
-    Side { label: "Local", go_name: "Local: go to the typed path", again_name: "Refresh local" };
-pub(super) const REMOTE: Side =
-    Side { label: "Remote", go_name: "Remote: go to the typed path", again_name: "Refresh remote" };
+pub(super) const LOCAL: Side = Side {
+    modes: false,
+    label: "Local",
+    go_name: "Local: go to the typed path",
+    again_name: "Refresh local",
+};
+pub(super) const REMOTE: Side = Side {
+    modes: true,
+    label: "Remote",
+    go_name: "Remote: go to the typed path",
+    again_name: "Refresh remote",
+};
 
 /// A pane; `go` goes to what is typed in its field.
 pub(super) fn pane(
@@ -73,6 +83,10 @@ pub(super) fn pane(
         .child(heading(div().grow(1.0), "Name", By::Name, sort))
         .child(heading(cell(String::new(), SIZE), "Size", By::Size, sort))
         .child(heading(cell(String::new(), MODIFIED), "Modified", By::Modified, sort));
+    let header = match side.modes {
+        true => header.child(heading(cell(String::new(), super::MODE), "Permissions", By::Mode, sort)),
+        false => header,
+    };
     let rows = column().width(Length::Fill).child(rows);
     let list = quadra::scroll(signal(0.0), rows).container(column().grow(1.0).min_height(0.0));
     column()
@@ -87,7 +101,7 @@ pub(super) fn pane(
 }
 
 /// A column's label: a click sorts by it, again the other way; the column sorted by is marked.
-fn heading(cell: quadra::Div, label: &'static str, by: By, sort: Signal<Sort>) -> quadra::Div {
+pub(crate) fn heading(cell: quadra::Div, label: &'static str, by: By, sort: Signal<Sort>) -> quadra::Div {
     cell.role(Role::Button)
         .label(format!("Sort by {label}"))
         .child(text(move || match sort.get() {

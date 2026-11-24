@@ -637,6 +637,11 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     replaces has it (the user's correction, 2026-11-24: the picture of the icon, tried
     first, was not what was meant). About names the terminal engine's version from the lock
     file (`build.rs`): it said 0.2 while 0.4.2 was built in.
+- **The SFTP dock has a header of columns** (2026-11-24, the user's request): Name, Size,
+  Modified and Permissions, each sorting by a click as the expanded view's do (`dock/list.rs`;
+  `By::Mode`; the engine's `Entry` says its `mode`). The order is shared with the expanded
+  view's Remote pane, which says the permissions too. The dock is 460 px at first, and a
+  narrow one drops Permissions, then Modified. Tests: tests/dock_columns.rs.
 - **Startup commands are a list of the settings** (2026-11-24, the user's request): Settings,
   SSH & hosts has Startup commands (a name and a command each; Edit, Remove, Save command),
   and a host's dialog chooses one by name in a select where it had a field (`startup.rs`,

@@ -35,7 +35,7 @@ P2 milestones:
 |---|---|
 | M7 | the SSH engine (`apps/oneterm/ssh`): connect, host keys, authentication, the shell; quick connect from the `+` menu |
 | M8 | saved hosts: the rail's SSH hosts with a filter, the menu's search, Recent and groups, Add SSH host; the host and its latency in the status bar and the space's header; `n ssh · n local` |
-| M9 | the SFTP dock (300 px) and its expanded view: listing, moving about, upload and download, transfers |
+| M9 | the SFTP dock (460 px) and its expanded view: listing, moving about, upload and download, transfers |
 | M10 | jump hosts and port forwards |
 
 ## Window
@@ -67,7 +67,7 @@ the user's canvas "OneTerm" as revised on 2026-11-16 (the Quadra design language
   search are the rail's and the keys'. Then the window buttons, 36 px
   wide, 8 px after. In the settings only Done shows; locked, only "Locked" after the name, in
   the secondary colour.
-- **Body**: the rail (270 px, vertical tabs), the workspace, and from P2 the SFTP dock (300 px)
+- **Body**: the rail (270 px, vertical tabs), the workspace, and from P2 the SFTP dock (460 px)
   on the right.
 - **Status bar** (the chrome plane, a line over it, 12 px, groups split by 1×14 px lines):
   first Collapse tabs to icons (the rail's fold, an icon button in the accent); then the active
@@ -802,7 +802,8 @@ thread never waits on the network.
   target and renames it once whole, so a target is never half written; a cancelled or failed
   one removes its part. A remote name that would leave its folder as a local path (`/`, `\`,
   `:`, `..`, a control character) is refused.
-- **The dock**: at the workspace's right on the panel plane, 300 px at first; its left edge is
+- **The dock**: at the workspace's right on the panel plane, 460 px at first (300 until
+  2026-11-24, when it gained the columns below); its left edge is
   a seam (a 1 px line under a 6 px strip with the resize cursor) dragged to make it 220 to 800
   px wide, kept in the settings (`sftp.dock_width`). Opened and closed by the
   status bar's Toggle SFTP panel; it follows the focused space's connection, and each space
@@ -814,8 +815,15 @@ thread never waits on the network.
   tab with a remote space (`Show prod-api-01`). Its header (28 px, 12 px semibold in the
   secondary colour): `SFTP`, the host in the third colour, and Zoom SFTP (an icon button: the
   expanded view). Under it the folder in a mono field of 28 px (12 px) with Go to the typed path
-  after it (Enter goes too); then `..` and the entries as data rows (24 px): a folder icon (blue) or a
-  file icon, the name, the size in mono 12 px in the third colour (none for a folder). A click
+  after it (Enter goes too); then a header of the columns (the user's request, 2026-11-24;
+  `dock/list.rs`), as the expanded view's panes have: Name, Size (64 px), Modified (92 px) and
+  Permissions (84 px), the last three at the right; a click on one sorts by it, again the
+  other way, its label marked `↑` or `↓`, folders staying first, and the order is the
+  expanded view's Remote pane's too. Then `..` and the entries as data rows (24 px): a folder
+  icon (blue) or a file icon, the name, and in mono 12 px in the third colour the size (none
+  for a folder), when it changed (`Nov 16 10:52`) and its permissions (`drwxr-xr-x`, as the
+  server says them: `Entry::mode`; sorted as a number). A dock made narrow keeps the name its
+  room: Permissions show from 440 px, Modified from 340 px. A click
   selects a row (the press fill and a 2 px accent bar at its left, a file's icon in the
   accent); two on a folder (or on `..`) open it, two on a file download it to
   the user's Downloads folder (`name (1).ext` when the name is taken). The other button gives
@@ -852,7 +860,8 @@ thread never waits on the network.
   pane goes to the focused space's directory when it is a remote path), Show hidden files (an
   eye, toggled), and Zoom out (in the accent). Two panes, Local at the left and Remote at the
   right, each with a bar of 28 px: its label, its path in a mono field of 22 px, Go to the typed
-  path and Refresh; a header row (Name, Size 80 px, Modified 124 px, the last two at the right;
+  path and Refresh; a header row (Name, Size 80 px, Modified 124 px, and in the Remote pane
+  Permissions 92 px, a local file having none, those after the name at the right;
   a click sorts the pane by it, again the other way, its label marked `↑` or `↓`; folders stay
   first; each pane by name at first)
   and data rows (24 px) with a line under each: `..`, then the entries, size and time in mono 12 px

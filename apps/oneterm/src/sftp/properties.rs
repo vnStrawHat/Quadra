@@ -60,9 +60,17 @@ pub(crate) fn properties(d: Dock) -> impl View + use<> {
     dialog(ask.properties, "Properties", body).action("Close", Variant::Primary, || {})
 }
 
-/// `drwxr-xr-x (0755)`: the kind, rwx for the owner, the group and the others with the
-/// special bits as `s`, `S`, `t`, `T`, then the octal.
+/// `drwxr-xr-x (0755)`: [`letters`], then the octal.
 pub(crate) fn mode(mode: u32) -> String {
+    format!("{} ({:04o})", letters(mode), mode & 0o7777)
+}
+
+/// `drwxr-xr-x`: the kind, rwx for the owner, the group and the others with the special bits
+/// as `s`, `S`, `t`, `T`; nothing for no mode.
+pub(crate) fn letters(mode: u32) -> String {
+    if mode == 0 {
+        return String::new();
+    }
     let kind = match mode & 0o170000 {
         0o040000 => 'd',
         0o120000 => 'l',
@@ -85,7 +93,7 @@ pub(crate) fn mode(mode: u32) -> String {
             (false, false) => '-',
         });
     }
-    format!("{out} ({:04o})", mode & 0o7777)
+    out
 }
 
 /// `name (id)`, the id alone, or `-`.
@@ -105,6 +113,7 @@ mod tests {
     #[test]
     fn modes_and_owners() {
         assert_eq!(mode(0o100644), "-rw-r--r-- (0644)");
+        assert_eq!((super::letters(0o040755), super::letters(0)), ("drwxr-xr-x".to_string(), String::new()));
         assert_eq!(mode(0o040755), "drwxr-xr-x (0755)");
         assert_eq!(mode(0o120777), "lrwxrwxrwx (0777)");
         assert_eq!(mode(0o104755), "-rwsr-xr-x (4755)");

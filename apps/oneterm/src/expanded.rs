@@ -16,15 +16,19 @@ use crate::sftp::Dock;
 
 mod pane;
 mod rows;
+pub(crate) use pane::heading;
 use pane::{LOCAL, REMOTE, pane};
+pub(crate) use rows::cell;
 use rows::{line, transfers};
 
 const SIZE: f32 = 80.0;
 const MODIFIED: f32 = 124.0;
+/// The permissions, which the Remote pane has.
+const MODE: f32 = 92.0;
 
 /// The parent of a folder as a row, `..`, when it has one.
 fn parent() -> Entry {
-    Entry { name: "..".into(), dir: true, size: 0, modified: 0 }
+    Entry { name: "..".into(), dir: true, ..Entry::default() }
 }
 
 /// What stands for a list that cannot show: why.
@@ -38,8 +42,8 @@ fn said_row(said: String) -> AnyView {
 
 pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
     let (follow, compare) = (signal(false), signal(false));
-    let (local_sort, remote_sort): (Signal<Sort>, Signal<Sort>) =
-        (signal(Sort::default()), signal(Sort::default()));
+    // The Remote pane is in the dock's order, and the dock in its.
+    let (local_sort, remote_sort): (Signal<Sort>, Signal<Sort>) = (signal(Sort::default()), d.sort);
     follow_cwd(model, d, follow);
     let (host_of, refreshes, goes, gets, collapse) =
         (model.clone(), model.clone(), model.clone(), model.clone(), d.expanded);
@@ -84,7 +88,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         }
         let mut list = column().width(Length::Fill);
         if local.dir.with(|it| it.parent().is_some()) {
-            list = list.child(line(&parent(), None, || false).on_click(move |e| {
+            list = list.child(line(&parent(), None, false, || false).on_click(move |e| {
                 if e.clicks == 2 {
                     local.up();
                 }
@@ -92,7 +96,8 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         }
         for entry in all {
             let (name, picks, opens) = (entry.name.clone(), entry.name.clone(), entry.clone());
-            let line = line(&entry, None, move || local.selected.with(|it| it.as_deref() == Some(&name)));
+            let chosen = move || local.selected.with(|it| it.as_deref() == Some(&name));
+            let line = line(&entry, None, false, chosen);
             let line = line.on_click(move |e| match (opens.dir, e.clicks) {
                 (true, 2) => local.load(local.dir.get_untracked().join(&opens.name)),
                 _ => local.selected.set(Some(picks.clone())),
@@ -113,7 +118,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
         if dir != "/" && !dir.is_empty() {
             let (ups, up) = (remotes.clone(), dir.rsplit_once('/').map_or("/", |it| it.0).to_string());
             let up = if up.is_empty() { "/".to_string() } else { up };
-            list = list.child(line(&parent(), None, || false).on_click(move |e| {
+            list = list.child(line(&parent(), None, true, || false).on_click(move |e| {
                 if e.clicks == 2 {
                     d.load(&ups, Some(up.clone()));
                 }
@@ -124,7 +129,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
             let (name, picks, opens, goes) =
                 (entry.name.clone(), entry.name.clone(), entry.clone(), remotes.clone());
             let chosen = move || d.selected.with(|it| it.as_deref() == Some(&name));
-            let line = line(&entry, compared(&entry, &locals), chosen);
+            let line = line(&entry, compared(&entry, &locals), true, chosen);
             let line = line.on_click(move |e| match (opens.dir, e.clicks) {
                 (true, 2) => d.load(&goes, Some(oneterm_ssh::join(&d.dir.get_untracked(), &opens.name))),
                 _ => d.selected.set(Some(picks.clone())),

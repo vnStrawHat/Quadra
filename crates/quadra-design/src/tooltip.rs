@@ -17,7 +17,11 @@ use crate::popup::{hang, surface};
 use crate::token;
 
 fn tip_line(words: &str) -> Div {
-    row().gap(16.0).padding_x(8.0).padding_y(4.0).child(text(words.to_string()))
+    row()
+        .gap(token::SPACE_XL)
+        .padding_x(token::SPACE_MD)
+        .padding_y(token::SPACE_XS)
+        .child(text(words.to_string()))
 }
 
 fn tip_bubble(line: Div) -> Div {
@@ -109,14 +113,18 @@ impl<V: View + 'static> View for Tooltip<V> {
         let anchor = Anchor::Beside { node: of, side: self.side, along: Along::Center, gap: 6.0 };
         hang(cx, of, shown, anchor, move || {
             let said = words.0.clone();
-            let line = row().gap(16.0).padding_x(8.0).padding_y(4.0).child(text(move || said()));
+            let line = row()
+                .gap(token::SPACE_XL)
+                .padding_x(token::SPACE_MD)
+                .padding_y(token::SPACE_XS)
+                .child(text(move || said()));
             let line = match &words.1 {
                 Some(keys) => line.child(text(keys.clone()).color(token::TEXT_2)),
                 None => line,
             };
             let placed = signal(None);
             let bubble = match &content {
-                Some(build) => surface(1).role(Role::Tooltip).padding(12.0).child(build()),
+                Some(build) => surface(1).role(Role::Tooltip).padding(token::SPACE_LG).child(build()),
                 None => tip_bubble(line),
             };
             let bubble = bubble.child(arrow(placed));
@@ -130,7 +138,7 @@ impl<V: View + 'static> View for Tooltip<V> {
                         let line = |said: &str| text(said.to_string()).size(12.0).color(token::TEXT_2);
                         meta().lines().fold(column(), |lines, said| lines.child(line(said)))
                     });
-                    bubble.child(div().padding_x(8.0).padding_bottom(4.0).child(more))
+                    bubble.child(div().padding_x(token::SPACE_MD).padding_bottom(token::SPACE_XS).child(more))
                 }
                 None => bubble,
             }

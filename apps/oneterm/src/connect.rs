@@ -3,7 +3,7 @@
 //! whether it opens a tab or a space beside the focused one.
 
 use oneterm_ssh::Target;
-use quadra::{Display, Signal, View, column, div, row, signal, text};
+use quadra::{Display, Signal, View, column, div, signal, text};
 use quadra_design::{Notice, Tone, Variant, checkbox, field, input, select};
 
 use crate::model::Model;
@@ -42,18 +42,16 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
             .mono()
             .placeholder("user@host, host:port, or an ssh command line")
             .test_id("connect-target")
-            .width(414.0)
             .on_submit(move |_| {
                 if go(&submits, form) {
                     open.set(false);
                 }
             });
-        let key = input(form.key).placeholder("Path of the key file").test_id("connect-key").width(414.0);
+        let key = input(form.key).placeholder("Path of the key file").test_id("connect-key");
         let target = field("Target", typed).help("Accepts user@host, host:port, or a full ssh command line.");
-        let how = row().gap(12.0).child(field("Auth", select(AUTHS, form.auth).width(201.0))).child(field(
-            "Jump host",
-            select(lists.jump_choices(), form.jump).width(201.0).test_id("connect-jump"),
-        ));
+        let how = quadra_design::columns(2)
+            .child(field("Auth", select(AUTHS, form.auth)))
+            .child(field("Jump host", select(lists.jump_choices(), form.jump).test_id("connect-jump")));
         let boxes = column()
             .gap(4.0)
             .child(checkbox(form.sftp).label("Open SFTP alongside"))
@@ -61,7 +59,6 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
             .child(checkbox(form.here).label("Open in the current tab as a new space"));
         column()
             .gap(12.0)
-            .width(414.0)
             .child(text(
                 "Open a one-off SSH session. It is not added to your hosts unless you tick Save as host.",
             ))

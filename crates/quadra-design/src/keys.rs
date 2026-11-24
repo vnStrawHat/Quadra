@@ -47,8 +47,11 @@ impl KeyInput {
         });
         let frame = row().align_items(Align::Center).justify(Justify::Center);
         let frame = crate::layout::field_width(frame, self.width, 160.0);
-        let frame =
-            frame.height(by_text(crate::size::H_MD)).padding_x(8.0).radius(token::RADIUS_MD).border(1.0);
+        let frame = frame
+            .height(by_text(crate::size::H_MD))
+            .padding_x(token::SPACE_MD)
+            .radius(token::RADIUS_MD)
+            .border(1.0);
         let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG).cursor(Cursor::Pointer);
         let frame = frame.focus(|s| s.border_color(token::BORDER_FOCUSED));
         let frame = match self.label {

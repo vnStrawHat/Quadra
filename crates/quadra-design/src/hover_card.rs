@@ -8,6 +8,7 @@ use quadra_tree::{Along, Anchor, NodeId, Role, Side};
 use quadra_view::{MountCx, View};
 
 use crate::popup::{hang, surface};
+use crate::token;
 
 pub struct HoverCard<V, F> {
     of: V,
@@ -37,7 +38,9 @@ where
         let (content, shown) = (self.content, card.shown);
         let anchor = Anchor::Beside { node: of, side: Side::Below, along: Along::Start, gap: 6.0 };
         hang(cx, of, shown, anchor, move || {
-            card.keep(surface(1).role(Role::Group).padding(12.0).gap(8.0).child(content()))
+            card.keep(
+                surface(1).role(Role::Group).padding(token::SPACE_LG).gap(token::SPACE_MD).child(content()),
+            )
         });
         of
     }

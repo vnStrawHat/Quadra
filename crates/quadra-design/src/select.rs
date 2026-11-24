@@ -82,7 +82,8 @@ impl View for Select {
             move || -> Paint { if chosen.get() < count { token::TEXT.into() } else { token::TEXT_3.into() } };
         // The field look, 28 px high; pressed, not typed in, so it answers the pointer; the
         // border is where the focus shows.
-        let face = row().height(by_text(size::H_MD)).padding_x(8.0).gap(8.0).shrink(0.0);
+        let face =
+            row().height(by_text(size::H_MD)).padding_x(token::SPACE_MD).gap(token::SPACE_MD).shrink(0.0);
         let face = crate::layout::field_width(face, self.width, OWN);
         let face = face.align_items(Align::Center).radius(token::RADIUS_MD).bg(token::INPUT_BG);
         let face = face.border(1.0).border_color(token::LINE_STRONG).hover(|s| s.bg(token::PANEL_HOVER));

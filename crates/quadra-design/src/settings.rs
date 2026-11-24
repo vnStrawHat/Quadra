@@ -191,7 +191,7 @@ fn control(title: &str, control: AnyView, reset: Option<Reset>) -> Div {
     let changed = reset.changed;
     let back = icon_button(icons::UNDO, "").label(format!("Reset {title}"));
     let back = div().display(move || shown(changed.get())).child(back.on_click(move || reset.reset()));
-    at.align_items(Align::Center).gap(4.0).child(back).child(control)
+    at.align_items(Align::Center).gap(token::SPACE_XS).child(back).child(control)
 }
 
 /// Names the first switch, checkbox, input or slider under `id` that has no name: a reader

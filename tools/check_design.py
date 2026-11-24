@@ -14,14 +14,26 @@ ROOTS = ["crates/quadra-design/src", "examples/gallery/src", "apps"]
 DISTANCES = {0.0, 1.0, 2.0, 4.0, 6.0, 8.0, 12.0, 16.0, 24.0, 32.0}
 RADII = {0.0, 1.0, 2.0, 4.0, 6.0, 10.0}
 TEXT = {10.0, 12.0, 14.0, 16.0, 18.0, 23.0, 28.0}
-NUMBER = r"(-?\d+(?:\.\d+)?)"
+NUMBER = re.compile(r"(?<![\w.])\d+\.\d+(?![\w.])")
+# A call and its ladder: every number written in what the call is given is checked, so a
+# distance chosen between two (`if small { 4.0 } else { 8.0 }`) is too.
 CHECKS = [
     (re.compile(r"\.(?:gap|gap_x|gap_y|padding|padding_x|padding_y|padding_left|padding_right"
-                r"|padding_top|padding_bottom)\(" + NUMBER + r"\)"), DISTANCES, "distance"),
-    (re.compile(r"\.radius\(" + NUMBER + r"\)"), RADII, "radius"),
-    (re.compile(r"\.text_size\(" + NUMBER + r"\)"), TEXT, "text size"),
-    (re.compile(r"\btext\([^()]*(?:\([^()]*\)[^()]*)*\)\.size\(" + NUMBER + r"\)"), TEXT, "text size"),
+                r"|padding_top|padding_bottom)\("), DISTANCES, "distance"),
+    (re.compile(r"\.radius\("), RADII, "radius"),
+    (re.compile(r"\.text_size\("), TEXT, "text size"),
+    (re.compile(r"\btext\([^()]*(?:\([^()]*\)[^()]*)*\)\.size\("), TEXT, "text size"),
 ]
+
+
+def given(code, start):
+    """What a call is given: from `start` to the bracket that closes it, or the line's end."""
+    depth = 1
+    for at in range(start, len(code)):
+        depth += {"(": 1, ")": -1}.get(code[at], 0)
+        if depth == 0:
+            return code[start:at]
+    return code[start:]
 
 
 def sources():
@@ -44,11 +56,12 @@ def main():
             # The reason: on the line, or alone on the line before it.
             reason = "// design:" in line or lines[at - 2].strip().startswith("// design:")
             for pattern, ladder, kind in CHECKS:
-                for found in pattern.finditer(code):
-                    if float(found.group(1)) in ladder:
-                        continue
-                    entry = f"{path}:{at}: {kind} {found.group(1)}"
-                    (excused if reason else off).append(entry)
+                for call in pattern.finditer(code):
+                    for number in NUMBER.findall(given(code, call.end())):
+                        if float(number) in ladder:
+                            continue
+                        entry = f"{path}:{at}: {kind} {number}"
+                        (excused if reason else off).append(entry)
     if "--list" in sys.argv:
         print("\n".join(off + [it + " (with a reason)" for it in excused]))
     print(f"design: {len(off)} off the ladders, {len(excused)} with a reason")

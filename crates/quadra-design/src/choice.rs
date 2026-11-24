@@ -83,18 +83,23 @@ impl Choice {
         let ring = div()
             .size(12.0, 12.0)
             .shrink(0.0)
-            .radius(6.0)
+            .radius(token::RADIUS_MD)
             .border(1.0)
             .border_color(move || Paint::from(edge()));
         let ring = ring.bg(token::CANVAS).align_items(Align::Center).justify(Justify::Center);
-        let line = row().align_items(Align::Center).gap(6.0).child(ring.child(show(on, dot)));
+        let line = row().align_items(Align::Center).gap(token::SPACE_SM).child(ring.child(show(on, dot)));
         let Some(hint) = hint.filter(|hint| !hint.is_empty()) else { return line.child(text(label)) };
         // Under the label, past the ring and its gap; the option is named by its label alone.
         let told = NodeRef::new();
         // design: under the words, past the ring of 12 and its gap of 6
         let under = div().padding_left(18.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
         let under = under.node_ref(&told).child(text(hint.clone()));
-        column().gap(2.0).label(label.clone()).described_by(&told).child(line.child(text(label))).child(under)
+        column()
+            .gap(token::SPACE_XXS)
+            .label(label.clone())
+            .described_by(&told)
+            .child(line.child(text(label)))
+            .child(under)
     }
 
     /// A cell of a segmented control: tinted, with an accent label, when chosen.
@@ -147,8 +152,8 @@ impl Choice {
                 };
                 outlined.border_color(token::LINE_STRONG).overflow_y(Overflow::Hidden)
             }
-            (false, true) => group.gap(16.0),
-            (false, false) => group.direction(Direction::Column).gap(8.0),
+            (false, true) => group.gap(token::SPACE_XL),
+            (false, false) => group.direction(Direction::Column).gap(token::SPACE_MD),
         };
         group.children(parts)
     }

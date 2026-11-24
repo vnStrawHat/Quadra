@@ -15,7 +15,12 @@ use crate::{fonts, size, token};
 /// A toolbar: 45 px on the canvas with a line under it, its controls 4 px apart. Give it
 /// children; [`crate::vdivider`] splits groups.
 pub fn toolbar() -> Div {
-    let bar = row().align_items(Align::Center).gap(4.0).padding_x(8.0).padding_y(6.0).height(by_text(45.0));
+    let bar = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_XS)
+        .padding_x(token::SPACE_MD)
+        .padding_y(token::SPACE_SM)
+        .height(by_text(45.0));
     bar.shrink(0.0).bg(token::CANVAS).border_bottom(1.0).border_color(token::LINE)
 }
 
@@ -45,7 +50,12 @@ impl Statusbar {
 
 impl View for Statusbar {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let bar = row().align_items(Align::Center).gap(12.0).padding_x(8.0).height(by_text(30.0)).shrink(0.0);
+        let bar = row()
+            .align_items(Align::Center)
+            .gap(token::SPACE_LG)
+            .padding_x(token::SPACE_MD)
+            .height(by_text(30.0))
+            .shrink(0.0);
         let bar = bar.bg(token::STATUS_BG).border_top(1.0).border_color(token::LINE);
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());
         let bar = bar.role(Role::Group).test_id("statusbar");
@@ -55,7 +65,7 @@ impl View for Statusbar {
 
 /// An entry of a status bar: words, after an icon if there is one.
 pub fn status_item<M>(body: Option<&'static str>, words: impl IntoProp<String, M>) -> Div {
-    let item = row().align_items(Align::Center).gap(4.0);
+    let item = row().align_items(Align::Center).gap(token::SPACE_XS);
     let item = match body {
         Some(body) => item.child(icon(body).size(14.0).color(token::TEXT_2)),
         None => item,
@@ -90,7 +100,8 @@ pub fn breadcrumb<S: Into<String>>(
 
 impl View for Breadcrumb {
     fn mount(self, cx: &mut MountCx) -> NodeId {
-        let mut way = row().align_items(Align::Center).gap(8.0).font_family(fonts::MONO).min_width(0.0);
+        let mut way =
+            row().align_items(Align::Center).gap(token::SPACE_MD).font_family(fonts::MONO).min_width(0.0);
         way = way.text_color(token::TEXT_2);
         let last = self.parts.len().saturating_sub(1);
         for (i, part) in self.parts.into_iter().enumerate() {

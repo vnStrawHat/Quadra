@@ -21,7 +21,12 @@ const MOST: f32 = 450.0;
 /// A row that is chosen: 28 px high, 4 px in from the menu's edge, 8 px beside what it holds,
 /// 6 px between its parts, the shortcut at the right and 16 px from the label at least.
 fn face(item: &MenuItem, marks: bool) -> Div {
-    let face = row().height(by_text(ROW)).grow(1.0).padding_x(8.0).gap(6.0).radius(token::RADIUS_SM);
+    let face = row()
+        .height(by_text(ROW))
+        .grow(1.0)
+        .padding_x(token::SPACE_MD)
+        .gap(token::SPACE_SM)
+        .radius(token::RADIUS_SM);
     let face = face.align_items(Align::Center);
     let face = face.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
     let face = if item.danger { face.text_color(token::ERROR) } else { face };
@@ -38,7 +43,7 @@ fn face(item: &MenuItem, marks: bool) -> Div {
                 row()
                     .width(14.0)
                     .justify(Justify::Center)
-                    .child(div().size(10.0, 10.0).radius(2.0).bg(color)),
+                    .child(div().size(10.0, 10.0).radius(token::RADIUS_XS).bg(color)),
             ),
             _ => face.child(div().width(14.0)),
         },
@@ -78,21 +83,26 @@ pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
     let mut height = 8.0;
     for item in items {
         if item.separator {
-            let rule = div().height(9.0).padding_y(4.0).child(div().grow(1.0).bg(token::LINE_STRONG));
+            let rule =
+                div().height(9.0).padding_y(token::SPACE_XS).child(div().grow(1.0).bg(token::LINE_STRONG));
             lines.push(Line::Part(Box::new(rule)));
             height += 9.0;
             continue;
         }
         if item.heading {
             let words = text(item.label.clone()).size(size::TEXT_SM.size).color(token::TEXT_2);
-            let head = row().height(by_text(24.0)).padding_x(8.0).align_items(Align::Center).child(words);
+            let head = row()
+                .height(by_text(24.0))
+                .padding_x(token::SPACE_MD)
+                .align_items(Align::Center)
+                .child(words);
             lines.push(Line::Part(Box::new(head)));
             height += 20.0;
             continue;
         }
         height += ROW;
         let mut line = menu::Row::new(face(&item, marks), item.label.clone());
-        let (mut wrap, beside) = (div().padding_x(4.0), NodeRef::new());
+        let (mut wrap, beside) = (div().padding_x(token::SPACE_XS), NodeRef::new());
         if !item.items.is_empty() {
             // Beside the menu's edge, not over it: on its right, or on its left where only that
             // fits, its first row level with this one. It stands against a box as wide as the
@@ -111,7 +121,7 @@ pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
             (Some(wrap), item.disabled, item.checked, item.select.clone());
         lines.push(Line::Row(Box::new(line)));
     }
-    let list = menu::rows(column().min_width(200.0 - EDGE).padding_y(4.0), lines, ends);
+    let list = menu::rows(column().min_width(200.0 - EDGE).padding_y(token::SPACE_XS), lines, ends);
     // A long menu shows so much of itself, and scrolls.
     match height > MOST {
         true => column().child(scroll(signal(0.0), list).container(div().height(MOST))),

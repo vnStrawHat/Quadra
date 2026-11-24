@@ -8,7 +8,7 @@ use std::rc::Rc;
 use quadra_headless::pick::Found;
 pub(crate) use quadra_headless::pick::best;
 pub use quadra_headless::pick::{fuzzy, fuzzy_hits};
-use quadra_layout::{Align, Length};
+use quadra_layout::Length;
 use quadra_reactive::{Memo, Signal, memo, signal};
 use quadra_tree::NodeId;
 use quadra_view::{Div, MountCx, NodeRef, Place, View, by_text, column, div, row, scroll, text, text_input};
@@ -152,8 +152,9 @@ impl<F> Palette<F> {
         count: impl Fn(usize) -> String + 'static,
     ) -> Self {
         let hints: Vec<(String, String)> = hints.into_iter().map(|(k, d)| (k.into(), d.into())).collect();
-        let says =
-            move || row().gap(12.0).children(hints.iter().map(|(keys, does)| key_hint(keys, does.clone())));
+        let says = move || {
+            row().gap(token::SPACE_LG).children(hints.iter().map(|(keys, does)| key_hint(keys, does.clone())))
+        };
         self.foot = Some((Rc::new(says), Rc::new(count)));
         self
     }
@@ -243,7 +244,7 @@ fn palette<F: Fn() -> Vec<Command> + 'static>(p: Palette<F>) -> impl View + use<
         let rows = found.rows(face::parts(all.clone(), query, on, none.clone(), look), |_| 0, run.clone());
         let (enter, submit) = (run.clone(), run);
         let field = text_input(query).placeholder(&ask).on_submit(move |_| submit(on.get_untracked()));
-        let ask = row().align_items(Align::Center).gap(8.0).height(by_text(37.0)).padding_x(12.0);
+        let ask = crate::layout::hstack().height(by_text(37.0)).padding_x(token::SPACE_LG);
         let ask = ask.border_bottom(1.0).border_color(token::LINE);
         let ask = ask.child(icon(icons::SEARCH).size(14.0).color(token::TEXT_3));
         let ask = ask.child(div().grow(1.0).child(field));
@@ -272,8 +273,8 @@ fn palette<F: Fn() -> Vec<Command> + 'static>(p: Palette<F>) -> impl View + use<
                 let words = text(words).color(token::TEXT_3).size(TEXT_SM.size);
                 panel.child(
                     div()
-                        .padding_x(12.0)
-                        .padding_y(8.0)
+                        .padding_x(token::SPACE_LG)
+                        .padding_y(token::SPACE_MD)
                         .border_top(1.0)
                         .border_color(token::LINE)
                         .child(words),
@@ -292,7 +293,7 @@ fn palette<F: Fn() -> Vec<Command> + 'static>(p: Palette<F>) -> impl View + use<
 fn foot_line((keys, count): Foot, matches: Memo<Vec<usize>>) -> Div {
     let small = |line: quadra_view::TextView| line.color(token::TEXT_3).size(TEXT_SM.size);
     let says = row().shrink(0.0).child(small(text(move || count(matches.with(Vec::len)))));
-    let line = row().align_items(Align::Center).gap(8.0).height(by_text(28.0)).padding_x(12.0);
+    let line = crate::layout::hstack().height(by_text(28.0)).padding_x(token::SPACE_LG);
     let line = line.border_top(1.0).border_color(token::LINE);
     line.child(keys()).child(div().grow(1.0)).child(says)
 }

@@ -115,7 +115,7 @@ pub fn status_label(status: Status, words: &str) -> Div {
 pub fn status_label_sized(status: Status, words: &str, side: f32) -> Div {
     let words = if words.is_empty() { status.name() } else { words };
     let mark = status_mark_sized(status, side);
-    let line = row().align_items(Align::Center).gap(6.0).min_width(0.0).child(mark);
+    let line = row().align_items(Align::Center).gap(token::SPACE_SM).min_width(0.0).child(mark);
     line.child(text(words.to_string()).color(status.color()).ellipsis())
 }
 
@@ -132,6 +132,7 @@ pub fn status_dots(statuses: impl IntoIterator<Item = Status>, side: f32) -> Div
         }
     }
     let said: Vec<String> = counts.iter().map(|(s, n)| format!("{n} {}", s.name().to_lowercase())).collect();
+    // design: the gap is a share of the mark, whatever its size
     let line = row().align_items(Align::Center).gap((side / 2.5).round()).shrink(0.0);
     let line = line.role(Role::Image).label(said.join(", "));
     line.children(statuses.into_iter().map(|status| status_mark_sized(status, side)))

@@ -95,7 +95,8 @@ A card groups a few things on a plane: a 1 px `line_strong` border, radius 6, in
 things 8 apart. `card_head(title, more)` is its title (16) over a 12 px `text_2` line that
 says more, 2 apart; its facts are lines of a name and a `mono(..)` value (`hstack()` with a
 `spacer()`), or a `description_list`; a status is a line of its own under them; a
-`button_row()` ends it. A card holds no card. A large card (a group of settings) has inset 16 and rows 16
+`button_row()` ends it. `card_head_with(title, more, end)` puts one thing at the end of the
+head's first line: a status, a tag, a quiet button. A card holds no card. A large card (a group of settings) has inset 16 and rows 16
 apart, its title (16, `text_2`) over it, 8 apart.
 
 ## Panels and bars

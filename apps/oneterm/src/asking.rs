@@ -146,12 +146,11 @@ fn sign_in(
         "Passphrase" => "Wrong passphrase, please try again.",
         _ => "Permission denied, please try again.",
     };
-    let mut entry =
-        input(typed).label(name).test_id("sign-in").width(392.0).height(quadra_design::size::H_MD);
+    let mut entry = input(typed).label(name).test_id("sign-in").height(quadra_design::size::H_MD);
     if secret {
         entry = entry.password();
     }
-    let mut body = column().gap(12.0).width(416.0);
+    let mut body = column().gap(12.0);
     if again {
         body = body.child(div().text_color(token::ERROR).child(text(wrong)));
     }

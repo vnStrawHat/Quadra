@@ -65,7 +65,7 @@ fn line(
 
     let number = |n: &Option<usize>| {
         let cell = row().width(gutter).height(by_text(ROW)).align_items(Align::Center).shrink(0.0);
-        let cell = cell.justify(Justify::End).padding_right(8.0);
+        let cell = cell.justify(Justify::End).padding_right(token::SPACE_MD);
         let cell = cell.text_color(token::TEXT_3);
         match n {
             Some(n) => cell.child(text((n + 1).to_string())),

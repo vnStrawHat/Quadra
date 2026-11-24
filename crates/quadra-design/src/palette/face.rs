@@ -22,11 +22,15 @@ pub(super) fn parts(
     look: Look,
 ) -> Parts {
     let known = all.clone();
-    let empty =
-        move || div().padding_x(12.0).padding_y(4.0).child(text(none.to_string()).color(token::TEXT_2));
+    let empty = move || {
+        div()
+            .padding_x(token::SPACE_LG)
+            .padding_y(token::SPACE_XS)
+            .child(text(none.to_string()).color(token::TEXT_2))
+    };
     Parts {
-        list: Rc::new(|| column().grow(1.0).padding_y(4.0)),
-        line: Some(Rc::new(|| div().padding_x(4.0))),
+        list: Rc::new(|| column().grow(1.0).padding_y(token::SPACE_XS)),
+        line: Some(Rc::new(|| div().padding_x(token::SPACE_XS))),
         row: Rc::new(move |k, i| face(&all[i], &query.get_untracked(), k, on, look)),
         empty: Some(Rc::new(empty)),
         head: Some(Rc::new(move |before, i| heading(&known, before, i).map(|group| head(group, look)))),
@@ -42,7 +46,7 @@ pub(super) fn heading(all: &[Command], before: Option<usize>, i: usize) -> Optio
 
 fn head(group: Rc<str>, look: Look) -> Div {
     let words = text(group.to_string()).color(token::TEXT_3).size(TEXT_SM.size);
-    let line = row().align_items(Align::Center).height(by_text(look.head)).padding_x(12.0);
+    let line = row().align_items(Align::Center).height(by_text(look.head)).padding_x(token::SPACE_LG);
     line.role(Role::Heading).label(group.to_string()).child(words)
 }
 
@@ -52,8 +56,13 @@ fn head(group: Rc<str>, look: Look) -> Div {
 /// muted at the end, and the check has its slot on every row.
 fn face(command: &Command, query: &str, k: usize, on: Signal<usize>, look: Look) -> Div {
     let hits = fuzzy_hits(query, &command.title).unwrap_or_default();
-    let line = row().align_items(Align::Center).gap(8.0).grow(1.0).height(by_text(look.row)).padding_x(8.0);
-    let line = line.radius(4.0).label(command.title.clone());
+    let line = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_MD)
+        .grow(1.0)
+        .height(by_text(look.row))
+        .padding_x(token::SPACE_MD);
+    let line = line.radius(token::RADIUS_SM).label(command.title.clone());
     let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
     let line = line.child(chosen_mark(Side::Left, move || on.get() == k));
     let line = match &command.lead {
@@ -71,14 +80,14 @@ fn face(command: &Command, query: &str, k: usize, on: Signal<usize>, look: Look)
     let line = match (&command.status, &command.detail) {
         (Some((status, words)), detail) if !look.dense => {
             let phrase = detail.as_ref().map_or(words.clone(), |detail| format!("{words} · {detail}"));
-            let state = row().align_items(Align::Center).gap(6.0).shrink(0.0);
+            let state = row().align_items(Align::Center).gap(token::SPACE_SM).shrink(0.0);
             line.child(state.child(status_mark_sized(*status, 10.0)).child(small(phrase)))
         }
         (_, Some(detail)) => line.child(text(detail.clone()).color(token::TEXT_2).ellipsis()),
         _ => line,
     };
     // At the end, each part 8 px after the one before: "Enter" takes no room while hidden.
-    let part = || row().align_items(Align::Center).shrink(0.0).padding_left(8.0);
+    let part = || row().align_items(Align::Center).shrink(0.0).padding_left(token::SPACE_MD);
     let mut end = row().align_items(Align::Center).shrink(0.0);
     if let Some((_, words)) = command.status.as_ref().filter(|_| look.dense) {
         end = end.child(part().child(small(words.clone()).color(token::TEXT_3)));

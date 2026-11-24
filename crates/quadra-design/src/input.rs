@@ -202,7 +202,7 @@ impl Input {
             Some(id) => field.test_id(id),
             None => field,
         };
-        let frame = row().align_items(Align::Center).gap(4.0).padding_x(8.0);
+        let frame = row().align_items(Align::Center).gap(token::SPACE_XS).padding_x(token::SPACE_MD);
         let frame = match self.fill {
             true => frame.grow(1.0).width(0.0).min_width(Length::Px(0.0)),
             false => crate::layout::field_width(frame, self.width, self.own),

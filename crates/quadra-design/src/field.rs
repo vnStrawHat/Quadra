@@ -50,7 +50,7 @@ impl Field {
 impl View for Field {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let name = text(self.name.clone()).size(size::TEXT_SM.size).color(token::TEXT_2);
-        let head = row().gap(4.0).child(name);
+        let head = row().gap(token::SPACE_XS).child(name);
         let head = match self.required {
             true => head.child(text("*").size(size::TEXT_SM.size).color(token::ERROR)),
             false => head,
@@ -63,7 +63,7 @@ impl View for Field {
         // The error, or the help, or nothing: 12 px under the control.
         let under = dynamic(move || {
             let wrong = wrong.get();
-            let line = row().align_items(Align::Center).gap(4.0);
+            let line = row().align_items(Align::Center).gap(token::SPACE_XS);
             if !wrong.is_empty() {
                 let mark = icon(icons::CIRCLE_ALERT).size(12.0).color(token::ERROR);
                 line.child(mark).child(text(wrong).size(size::TEXT_SM.size).color(token::ERROR))
@@ -74,8 +74,10 @@ impl View for Field {
             }
         });
         // A group named by the label: a reader says it on the way to the control. The control
-        // keeps its own width (a segmented group, a switch); in a form it is the column's.
-        let all = column().gap(4.0).align_items(Align::Start).role(Role::Group).label(self.name);
+        // keeps its own width (a segmented group, a switch); in a form it is the column's,
+        // whatever it is wrapped in.
+        let across = if crate::layout::fills() { Align::Stretch } else { Align::Start };
+        let all = column().gap(token::SPACE_XS).align_items(across).role(Role::Group).label(self.name);
         all.child(head).child(self.control).child(under).mount(cx)
     }
 }
@@ -124,7 +126,7 @@ impl View for Textarea {
         // ponytail: it grows without end; a most of rows, with scrolling inside, when wanted.
         let least = self.rows as f32 * size::TEXT_MD.line + 14.0;
         let frame = crate::layout::field_width(column(), self.width, 240.0);
-        let frame = frame.min_height(least).padding_x(8.0).padding_y(6.0);
+        let frame = frame.min_height(least).padding_x(token::SPACE_MD).padding_y(token::SPACE_SM);
         let frame =
             frame.radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG).bg(token::INPUT_BG);
         let frame = frame.cursor(Cursor::Text).selection_color(token::SELECTION).role(Role::Group);

@@ -124,15 +124,18 @@ impl View for Sidebar {
             names.iter().filter(|(_, name)| name.contains(&asked)).map(|(id, _)| *id).collect::<Vec<_>>()
         });
         let shown = move |yes: bool| if yes && !folded.get() { Display::Flex } else { Display::None };
-        let mut places = column().padding_y(4.0);
+        let mut places = column().padding_y(token::SPACE_XS);
         if let Some(query) = query {
             places = places.child(search(query, kept, chosen).display(move || shown(true)));
         }
         for (title, items) in self.groups {
             let of: Vec<&'static str> = items.iter().map(|i| i.id).collect();
             if !title.is_empty() {
-                let title =
-                    div().padding_left(12.0).padding_top(12.0).padding_bottom(4.0).child(label(title));
+                let title = div()
+                    .padding_left(token::SPACE_LG)
+                    .padding_top(token::SPACE_LG)
+                    .padding_bottom(token::SPACE_XS)
+                    .child(label(title));
                 let any = move || kept.with(|kept| of.iter().any(|id| kept.contains(id)));
                 places = places.child(title.display(move || shown(any())));
             }
@@ -145,8 +148,11 @@ impl View for Sidebar {
                 }));
             }
         }
-        let none =
-            div().padding_x(12.0).padding_y(8.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
+        let none = div()
+            .padding_x(token::SPACE_LG)
+            .padding_y(token::SPACE_MD)
+            .text_size(size::TEXT_SM.size)
+            .text_color(token::TEXT_3);
         let none = none.display(move || shown(kept.with(Vec::is_empty))).child(text("No results"));
         places = places.child(none);
         let side = column().shrink(0.0).width(move || Length::Px(if folded.get() { 40.0 } else { width }));
@@ -158,8 +164,11 @@ impl View for Sidebar {
         let side = match self.head {
             Some(view) => {
                 let strip = row().align_items(Align::Center).shrink(0.0).height(by_text(28.0));
-                let strip =
-                    strip.padding_left(12.0).padding_right(4.0).border_bottom(1.0).border_color(token::LINE);
+                let strip = strip
+                    .padding_left(token::SPACE_LG)
+                    .padding_right(token::SPACE_XS)
+                    .border_bottom(1.0)
+                    .border_color(token::LINE);
                 let strip = strip.text_size(size::TEXT_SM.size).text_color(token::TEXT_2);
                 side.child(
                     strip
@@ -172,7 +181,8 @@ impl View for Sidebar {
         let side = side.child(places);
         let side = match self.foot {
             Some(view) => {
-                let foot = row().shrink(0.0).padding(8.0).border_top(1.0).border_color(token::LINE);
+                let foot =
+                    row().shrink(0.0).padding(token::SPACE_MD).border_top(1.0).border_color(token::LINE);
                 side.child(foot.display(move || shown(true)).child(view))
             }
             None => side,
@@ -192,7 +202,11 @@ fn place(
     counts: Option<Counts>,
 ) -> Div {
     let id = item.id;
-    let line = row().align_items(Align::Center).gap(6.0).height(by_text(28.0)).padding_x(12.0);
+    let line = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_SM)
+        .height(by_text(28.0))
+        .padding_x(token::SPACE_LG);
     let line = line.justify(move || if folded() { Justify::Center } else { Justify::Start });
     let (name, count) = (item.label.clone(), counts.clone());
     let line = line.cursor(Cursor::Pointer).label(move || match count.as_ref().and_then(|of| of(id)) {
@@ -237,5 +251,5 @@ fn search(
             chosen.set(first);
         }
     });
-    row().padding_x(8.0).padding_top(4.0).padding_bottom(4.0).child(field)
+    row().padding_x(token::SPACE_MD).padding_top(token::SPACE_XS).padding_bottom(token::SPACE_XS).child(field)
 }

@@ -20,7 +20,7 @@ pub(crate) fn shown(path: &str) -> String {
 
 /// A select of the keys that writes the path chosen to `key`; a key a host has that is not in
 /// the list is offered too.
-pub(crate) fn picker(model: &Model, key: Signal<String>, width: f32, id: &'static str) -> impl View + use<> {
+pub(crate) fn picker(model: &Model, key: Signal<String>, id: &'static str) -> impl View + use<> {
     let mut keys = model.prefs().ssh_keys.get_untracked();
     let had = key.get_untracked();
     if !had.is_empty() && !keys.contains(&had) {
@@ -34,7 +34,7 @@ pub(crate) fn picker(model: &Model, key: Signal<String>, width: f32, id: &'stati
             key.set(path.clone());
         }
     });
-    select(names, chosen).placeholder(none).width(width).test_id(id)
+    select(names, chosen).placeholder(none).test_id(id)
 }
 
 /// The settings' group: Add key… (the system's dialog, from `~/.ssh`), Find in ~/.ssh, and

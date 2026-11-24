@@ -121,7 +121,7 @@ fields, help lines, section labels, the first button of a row.
   (`columns(2)`): never more than two, and only fields that belong together (Address and
   Port, From and To). A field that holds a short value by nature may be told its width
   (`number_input(port).width(96.0)`); it then stands at the start of its row. A checkbox, a
-  switch and a button keep their own width everywhere. A combobox keeps its 280.
+  switch and a button keep their own width everywhere.
 - **A section in a form** (`section(title)`) is a field's distance from its neighbours (12)
   and holds what is optional or of another kind; put it last, since nothing marks its end
   but the form's.

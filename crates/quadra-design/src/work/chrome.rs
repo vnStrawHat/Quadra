@@ -76,12 +76,14 @@ fn tool(active: Signal<&'static str>, it: Activity) -> AnyView {
     // 9 px, ringed by the panel so it parts from the icon.
     let problem = matches!(it.tone, Tone::Danger | Tone::Warning);
     let fill = if problem { it.tone.role() } else { token::ACCENT };
-    let chip = row().height(by_text(14.0)).min_width(14.0).padding_x(if problem { 3.0 } else { 2.0 });
-    let chip = chip.radius(4.0).bg(fill).text_size(if problem { 10.0 } else { 9.0 });
+    let chip = row().height(by_text(14.0)).min_width(14.0).padding_x(if problem { 4.0 } else { 2.0 });
+    let chip = chip.radius(token::RADIUS_SM).bg(fill).text_size(10.0);
     let chip = chip.text_color(token::TEXT_ON_ACCENT).align_items(Align::Center).justify(Justify::Center);
     let badge = match problem {
         true => div().absolute().top(5.0).right(4.0),
-        false => div().absolute().top(-2.0).right(-4.0).radius(6.0).padding(1.0).bg(token::PANEL),
+        false => {
+            div().absolute().top(-2.0).right(-4.0).radius(token::RADIUS_MD).padding(1.0).bg(token::PANEL)
+        }
     };
     let badge = badge.display(shown).child(chip.child(text(words).weight(500)));
     let glyph = row().size(28.0, 28.0).align_items(Align::Center).justify(Justify::Center);
@@ -111,8 +113,8 @@ impl View for ActivityBar {
 /// The title strip of a panel: 28 px on the panel's plane over a line, the title muted.
 /// What is added to it (`.child(..)`) stands at its end: quiet icon buttons.
 pub fn panel_header(title: impl Into<String>) -> Div {
-    let strip = row().align_items(Align::Center).gap(4.0).height(by_text(28.0)).shrink(0.0);
-    let strip = strip.padding_left(8.0).padding_right(4.0).bg(token::PANEL);
+    let strip = row().align_items(Align::Center).gap(token::SPACE_XS).height(by_text(28.0)).shrink(0.0);
+    let strip = strip.padding_left(token::SPACE_MD).padding_right(token::SPACE_XS).bg(token::PANEL);
     let strip = strip.border_bottom(1.0).border_color(token::LINE);
     strip.child(text(title.into()).color(token::TEXT_2)).child(div().grow(1.0))
 }

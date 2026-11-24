@@ -34,8 +34,11 @@ impl Tabs {
 
     fn tab(&self, i: usize, label: String) -> Div {
         let (chosen, pill) = (self.chosen, self.pill);
-        let tab =
-            row().align_items(Align::Center).shrink(0.0).height(by_text(Size::Md.height())).padding_x(8.0);
+        let tab = row()
+            .align_items(Align::Center)
+            .shrink(0.0)
+            .height(by_text(Size::Md.height()))
+            .padding_x(token::SPACE_MD);
         let tab = tab.radius(token::RADIUS_MD).cursor(Cursor::Pointer);
         let tab = tab.text_color(if pill { token::TEXT } else { token::TEXT_2 });
         // Over the line under the row a fill would sit as a box on it: the label alone lights
@@ -58,7 +61,7 @@ impl View for Tabs {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let strip = chooser(quadra_headless::tabs(div(), self.labels.len(), self.chosen));
         let strip = match self.pill {
-            true => strip.gap(4.0),
+            true => strip.gap(token::SPACE_XS),
             false => strip.border_bottom(1.0).border_color(token::LINE),
         };
         let all = self.labels.iter().cloned().enumerate().map(|(i, label)| self.tab(i, label));

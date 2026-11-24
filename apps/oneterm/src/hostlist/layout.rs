@@ -12,11 +12,9 @@ use crate::locked::shown;
 use crate::model::Model;
 
 const H: f32 = size::H_MD;
-const HALF: f32 = 202.0;
-const FULL: f32 = 416.0;
 
 fn pair(a: impl View + 'static, b: impl View + 'static) -> Div {
-    div().grid([Track::fr(1.0), Track::fr(1.0)]).gap_x(12.0).child(a).child(b)
+    quadra_design::columns(2).child(a).child(b)
 }
 
 /// The header: the tag the host will have, and the title.
@@ -34,23 +32,22 @@ pub(super) fn head(form: Form, title: String) -> Div {
 
 /// The form; `confirming` puts the question of deleting it at its end.
 pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirming: Signal<bool>) -> Div {
-    let text_field = |value, hint: &str, id: &'static str, width: f32| {
-        input(value).placeholder(hint).test_id(id).width(width).height(H)
-    };
+    // No field has a width: each is as wide as its column of the dialog's body.
+    let text_field =
+        |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id).height(H);
     let auth = form.auth;
     let address = div()
         .grid([Track::fr(1.0), Track::px(88.0)])
         .gap_x(12.0)
-        .child(field("Address", text_field(form.target, "Host name or IP", "host-target", 316.0).mono()))
-        .child(field("Port", text_field(form.port, "22", "host-port", 88.0).mono()));
-    let user =
-        field("Username", text_field(form.user, "Ask when connecting", "host-user", HALF)).help("Optional.");
-    let jump = field("Jump host", select(model.jump_choices(), form.jump).width(HALF).test_id("host-jump"));
+        .child(field("Address", text_field(form.target, "Host name or IP", "host-target").mono()))
+        .child(field("Port", text_field(form.port, "22", "host-port").mono()));
+    let user = field("Username", text_field(form.user, "Ask when connecting", "host-user")).help("Optional.");
+    let jump = field("Jump host", select(model.jump_choices(), form.jump).test_id("host-jump"));
     let saved = editing.as_ref().and_then(|it| model.sealed(it)).is_some();
     let secret = dynamic(move || {
         let label = if auth.get() == 2 { "Passphrase" } else { "Password" };
         let entry = input(form.secret).password().reveal().placeholder(if saved { "Saved" } else { "" });
-        AnyView::new(field(label, entry.test_id("host-secret").width(HALF).height(H)))
+        AnyView::new(field(label, entry.test_id("host-secret").height(H)))
     });
     let secret = div().display(shown(move || matches!(auth.get(), 2 | 3))).child(secret);
     let hint =
@@ -60,16 +57,15 @@ pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirmin
             2 => "The passphrase is optional. Left empty, 1Term asks for it when you connect.",
             _ => "The password is optional. Left empty, 1Term asks for it when you connect.",
         }));
-    let how = pair(field("Auth method", select(AUTHS, auth).width(HALF)), secret);
+    let how = pair(field("Auth method", select(AUTHS, auth)), secret);
     let name = editing.clone().unwrap_or_default();
     let question =
         alert(Tone::Danger, &format!("Delete {name}?"), "Its saved password and startup command go too.");
     column()
         .gap(12.0)
-        .width(FULL)
-        .child(field("Name", text_field(form.name, "The host when empty", "host-name", FULL)))
+        .child(field("Name", text_field(form.name, "The host when empty", "host-name")))
         .child(pair(
-            field("Group", text_field(form.group, "Group", "host-group", HALF)),
+            field("Group", text_field(form.group, "Group", "host-group")),
             field("Colour tag", tag_picker(form.tag, form.group)),
         ))
         .child(address)
@@ -78,16 +74,16 @@ pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirmin
         .child(
             div()
                 .display(shown(move || auth.get() == 2))
-                .child(field("Key file", crate::sshkeys::picker(model, form.key, FULL, "host-key"))),
+                .child(field("Key file", crate::sshkeys::picker(model, form.key, "host-key"))),
         )
         .child(super::secret::fields(model, form))
         .child(field(
             "Startup command",
-            text_field(form.startup, "Written once the shell is open", "host-startup", FULL),
+            text_field(form.startup, "Written once the shell is open", "host-startup"),
         ))
         .child(field(
             "Forwards",
-            text_field(form.forwards, "8080:localhost:80 R9000:localhost:3000 D1080", "host-forwards", FULL),
+            text_field(form.forwards, "8080:localhost:80 R9000:localhost:3000 D1080", "host-forwards"),
         ))
         .child(div().display(shown(move || confirming.get())).child(question))
 }

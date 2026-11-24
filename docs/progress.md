@@ -563,8 +563,9 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   from compiled files, the design language, and a page for each of the gallery's pages with
   its pictures in both themes and its demos' code (the shots write `pages.json`); a markdown
   twin of every page, `llms.txt`, `llms-full.txt`. Built into `target/site`; not deployed.
-- **Owed**: the list at the end of `specs/design/decisions.md` (the apps' hand-laid dialogs,
-  tokens in place of on-ladder literals inside the kit).
+- **What was owed is done** (`decisions.md`): 1Term's dialogs take the kit's layout (no
+  widths of their own); the kit writes its distances and radii as tokens; the check reads
+  what a call is given; a combobox fills its column; `NumberInput::unit`, `card_head_with`.
 
 ### One height for the controls of one line (2026-11-22)
 

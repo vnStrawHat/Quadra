@@ -164,8 +164,8 @@ impl Tree {
 /// in the accent, unless it has a colour of its own.
 fn line(at: &Shown<Look>, (height, indent): (f32, f32), on: impl Fn() -> bool + Clone + 'static) -> Div {
     let left = 8.0 + at.depth as f32 * indent;
-    let mut line = row().align_items(Align::Center).gap(2.0).grow(1.0).height(by_text(height));
-    line = line.padding_left(left).padding_right(8.0).cursor(Cursor::Pointer);
+    let mut line = row().align_items(Align::Center).gap(token::SPACE_XXS).grow(1.0).height(by_text(height));
+    line = line.padding_left(left).padding_right(token::SPACE_MD).cursor(Cursor::Pointer);
     line = line.label(at.row.label.clone());
     for level in 0..at.depth {
         let guide = div().absolute().left(8.0 + level as f32 * indent + 7.0).top(0.0).bottom(0.0);
@@ -190,9 +190,10 @@ fn line(at: &Shown<Look>, (height, indent): (f32, f32), on: impl Fn() -> bool + 
         Some(color) => label.color(color),
         None => label,
     };
-    let line = line.child(div().padding_left(4.0).child(label));
-    let after =
-        |(words, color): &(String, Paint)| div().padding_left(6.0).child(text(words.clone()).color(*color));
+    let line = line.child(div().padding_left(token::SPACE_XS).child(label));
+    let after = |(words, color): &(String, Paint)| {
+        div().padding_left(token::SPACE_SM).child(text(words.clone()).color(*color))
+    };
     let line = match &at.row.detail {
         Some(detail) => line.child(after(detail)),
         None => line,
@@ -218,7 +219,7 @@ impl View for Tree {
                 if focused.get() && ring() { token::BORDER_FOCUSED.into() } else { Paint::default() }
             })
         };
-        let frame = column().grow(1.0).padding_y(4.0);
+        let frame = column().grow(1.0).padding_y(token::SPACE_XS);
         let base = tree::tree(self.roots, self.chosen, open, sizes.0, face).frame(frame);
         let base = match self.on_open {
             Some(told) => base.on_open(told),

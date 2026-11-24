@@ -14,7 +14,12 @@ use crate::{icons, size, token};
 
 /// A row of the column, 28 px: filled when chosen, its label a step heavier.
 fn line(title: &str, on: impl Fn() -> bool + 'static) -> Div {
-    let line = row().align_items(Align::Center).gap(8.0).min_height(by_text(28.0)).padding_x(8.0).shrink(0.0);
+    let line = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_MD)
+        .min_height(by_text(28.0))
+        .padding_x(token::SPACE_MD)
+        .shrink(0.0);
     let line = line.radius(token::RADIUS_MD).role(Role::TreeItem).label(title.to_string()).selected(on);
     let line = line.hover(|s| s.bg(token::PRESS.alpha(0.8)));
     line.when(State::SELECTED, |s| s.bg(token::PRESS).font_weight(500))
@@ -26,9 +31,10 @@ pub(super) fn nav(pages: &[SettingsPage], model: &Model, query: Option<Signal<St
     let side = column().width(251.0).shrink(0.0).bg(token::PANEL).role(Role::Tree);
     let mut side = side.border_right(1.0).border_color(token::LINE);
     if let Some(query) = query {
-        side = side.child(div().padding_top(12.0).padding_x(12.0).child(search(query, 226.0)));
+        side = side
+            .child(div().padding_top(token::SPACE_LG).padding_x(token::SPACE_LG).child(search(query, 226.0)));
     }
-    let mut list = column().gap(8.0).padding(12.0);
+    let mut list = column().gap(token::SPACE_MD).padding(token::SPACE_LG);
     for (i, page) in pages.iter().enumerate() {
         let (open, kept, searching) = (model.open[i], model.groups[i].clone(), model.searching);
         let (on, picked, page_kept) = (model.shown, model.picked, model.pages[i]);
@@ -63,7 +69,8 @@ pub(super) fn nav(pages: &[SettingsPage], model: &Model, query: Option<Signal<St
         });
         let head = opens(head, open).child(name).child(chevron);
 
-        let mut under = column().gap(4.0).padding_left(8.0).padding_y(2.0);
+        let mut under =
+            column().gap(token::SPACE_XS).padding_left(token::SPACE_MD).padding_y(token::SPACE_XXS);
         under = under.border_left(1.0).border_color(token::LINE_STRONG);
         for (g, group) in page.groups.iter().enumerate() {
             let (shows, pick) = (titled[g], model.clone());
@@ -71,8 +78,10 @@ pub(super) fn nav(pages: &[SettingsPage], model: &Model, query: Option<Signal<St
             let row = line(&group.title, chosen).display(move || shown(shows.get()));
             under = under.child(acts(row, move || pick.go(i, Some(g), 0.0)).child(text(group.title.clone())));
         }
-        let under =
-            column().padding_left(16.0).display(move || shown(open.get() && lists.get())).child(under);
+        let under = column()
+            .padding_left(token::SPACE_XL)
+            .display(move || shown(open.get() && lists.get()))
+            .child(under);
         let item = column().display(move || shown(!searching.get() || page_kept.get()));
         list = list.child(item.child(head).child(under));
     }
@@ -82,7 +91,7 @@ pub(super) fn nav(pages: &[SettingsPage], model: &Model, query: Option<Signal<St
 /// A setting: its title over a line about it, at most 60 % of the row; the control at the
 /// right.
 fn setting(row_: Setting, kept: Memo<bool>) -> Div {
-    let line = row().align_items(Align::Center).justify(Justify::Between).gap(12.0);
+    let line = row().align_items(Align::Center).justify(Justify::Between).gap(token::SPACE_LG);
     let line = line.display(move || shown(kept.get()));
     if row_.title.is_empty() && row_.about.is_empty() {
         return line.child(div().grow(1.0).min_width(0.0).child(row_.control));
@@ -99,16 +108,16 @@ fn setting(row_: Setting, kept: Memo<bool>) -> Div {
 /// A group: its title and a line about it, muted, over an outlined card of its rows; shown
 /// while `kept` holds, each row while `row(r)` does (what a search keeps).
 pub(super) fn group_card(group: SettingsGroup, kept: Memo<bool>, row: impl Fn(usize) -> Memo<bool>) -> Div {
-    let mut whole = column().gap(16.0).display(move || shown(kept.get()));
+    let mut whole = column().gap(token::SPACE_XL).display(move || shown(kept.get()));
     if !group.title.is_empty() {
         let title = text(group.title).size(size::TEXT_LG.size).color(token::TEXT_2).line_height(1.25);
-        let mut head = column().gap(4.0).child(title);
+        let mut head = column().gap(token::SPACE_XS).child(title);
         if !group.about.is_empty() {
             head = head.child(text(group.about).color(token::TEXT_2));
         }
         whole = whole.child(head.role(Role::Heading));
     }
-    let card = column().gap(16.0).padding(16.0).radius(token::RADIUS_MD);
+    let card = column().gap(token::SPACE_XL).padding(token::SPACE_XL).radius(token::RADIUS_MD);
     let card = card.border(1.0).border_color(token::LINE_STRONG);
     let rows = group.rows.into_iter().enumerate().map(|(r, line)| setting(line, row(r)));
     whole.child(card.children(rows.collect::<Vec<_>>()))
@@ -130,14 +139,19 @@ pub(super) fn page(pages: Vec<SettingsPage>, model: &Model, header: Vec<AnyView>
         let mut one = column().display(here);
         for (g, group) in page.groups.into_iter().enumerate() {
             let (kept, rows) = (model.groups[i][g], &model.rows[i][g]);
-            let whole = group_card(group, kept, |r| rows[r]).padding(16.0);
+            let whole = group_card(group, kept, |r| rows[r]).padding(token::SPACE_XL);
             one = one.child(whole.node_ref(&model.heads[i][g]));
         }
         all = all.child(one);
     }
-    let top = row().align_items(Align::Center).justify(Justify::Between).gap(8.0);
-    let top = top.child(titles).child(row().align_items(Align::Center).gap(4.0).children(header));
-    let head = column().gap(12.0).padding(16.0).shrink(0.0).border_bottom(1.0).border_color(token::LINE);
+    let top = row().align_items(Align::Center).justify(Justify::Between).gap(token::SPACE_MD);
+    let top = top.child(titles).child(row().align_items(Align::Center).gap(token::SPACE_XS).children(header));
+    let head = column()
+        .gap(token::SPACE_LG)
+        .padding(token::SPACE_XL)
+        .shrink(0.0)
+        .border_bottom(1.0)
+        .border_color(token::LINE);
     let abouts = abouts.display(move || shown(told.get(on.get()) == Some(&true)));
     let head = head.child(top).child(abouts);
     column().grow(1.0).min_width(0.0).child(head).child(scroll(model.scroll, model.scrolled(all)))

@@ -4,7 +4,7 @@
 use quadra_layout::{Align, Display, Justify};
 use quadra_prim::Color;
 use quadra_tree::{Role, Side, Token};
-use quadra_view::{Div, IntoProp, TextView, by_text, column, div, row, text};
+use quadra_view::{Div, IntoProp, TextView, View, by_text, column, div, row, text};
 
 use crate::{fonts, size, token};
 
@@ -67,7 +67,12 @@ pub fn badge(words: impl Into<String>, tone: Tone) -> Div {
 /// border, its tone at 16 % behind it, 6 px each side, radius 4.
 pub fn plain_badge(words: impl Into<String>, tone: Tone) -> Div {
     let tone = tone.role();
-    let chip = row().align_items(Align::Center).shrink(0.0).height(by_text(20.0)).padding_x(6.0).radius(4.0);
+    let chip = row()
+        .align_items(Align::Center)
+        .shrink(0.0)
+        .height(by_text(20.0))
+        .padding_x(token::SPACE_SM)
+        .radius(token::RADIUS_SM);
     let chip = chip.font_family(fonts::UI).bg(tone.alpha(0.16)).text_color(tone);
     let chip = chip.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());
     row().child(chip.child(text(words.into())))
@@ -80,8 +85,12 @@ pub fn tag(words: impl Into<String>) -> Div {
 }
 
 fn chip(height: f32) -> Div {
-    let chip =
-        row().align_items(Align::Center).shrink(0.0).height(by_text(height)).padding_x(6.0).border(1.0);
+    let chip = row()
+        .align_items(Align::Center)
+        .shrink(0.0)
+        .height(by_text(height))
+        .padding_x(token::SPACE_SM)
+        .border(1.0);
     let chip = chip.radius(token::RADIUS_MD).font_family(fonts::MONO);
     chip.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height())
 }
@@ -120,10 +129,14 @@ pub fn kbd(keys: &str) -> TextView {
 /// A hint: the keys in a small box tinted toward the accent, then what they do, in small
 /// mono italics in the colour of what is off.
 pub fn key_hint(keys: &str, does: impl Into<String>) -> Div {
-    let key = div().padding_x(4.0).radius(token::RADIUS_MD).border(1.0).border_color(token::TEXT.alpha(0.16));
+    let key = div()
+        .padding_x(token::SPACE_XS)
+        .radius(token::RADIUS_MD)
+        .border(1.0)
+        .border_color(token::TEXT.alpha(0.16));
     let key =
         key.bg(token::ACCENT_TEXT.alpha(0.1)).text_size(size::TEXT_XS.size).child(text(key_label(keys)));
-    let hint = row().align_items(Align::Center).gap(6.0).font_family(fonts::MONO).italic(true);
+    let hint = row().align_items(Align::Center).gap(token::SPACE_SM).font_family(fonts::MONO).italic(true);
     let hint = hint.text_color(token::TEXT_2).text_size(size::TEXT_SM.size);
     hint.child(key).child(text(does.into()))
 }
@@ -135,6 +148,7 @@ pub fn avatar(name: &str, side: f32) -> Div {
     let hue = name.bytes().fold(7u32, |hash, byte| hash.wrapping_mul(31).wrapping_add(byte as u32)) % 360;
     let disc = row().align_items(Align::Center).justify(Justify::Center).shrink(0.0).size(side, side);
     let disc = disc.radius(side / 2.0).bg(Color::hsla(hue as f32, 0.55, 0.55, 1.0)).text_color(Color::WHITE);
+    // design: the letters are a share of the disc, whatever its size
     let disc = disc.text_size(side * 0.4).line_height(1.0).font_weight(size::WEIGHT_STRONG);
     disc.role(Role::Image).label(name.to_string()).child(text(initials.to_uppercase()))
 }
@@ -142,7 +156,8 @@ pub fn avatar(name: &str, side: f32) -> Div {
 /// A card: a bordered box on the panel's plane, for what belongs together. Give it children;
 /// [`card_head`] is its title.
 pub fn card() -> Div {
-    let card = column().gap(8.0).padding(12.0).bg(token::PANEL).radius(token::RADIUS_MD);
+    let card =
+        column().gap(token::SPACE_MD).padding(token::SPACE_LG).bg(token::PANEL).radius(token::RADIUS_MD);
     card.border(1.0).border_color(token::LINE_STRONG)
 }
 
@@ -155,8 +170,14 @@ pub fn mono<M>(words: impl IntoProp<String, M>) -> Div {
 /// The head of a card: a title of 16 px over a muted line that says more, if there is one.
 pub fn card_head(title: impl Into<String>, more: impl Into<String>) -> Div {
     let (title, more) = (text(title.into()).size(size::TEXT_LG.size), more.into());
-    let head = column().gap(2.0).child(title);
+    let head = column().gap(token::SPACE_XXS).child(title);
     if more.is_empty() { head } else { head.child(label(more)) }
+}
+
+/// A card's head with something at its end: a status, a tag, a quiet button.
+pub fn card_head_with(title: impl Into<String>, more: impl Into<String>, end: impl View + 'static) -> Div {
+    let head = card_head(title, more).grow(1.0).min_width(0.0);
+    row().align_items(Align::Start).gap(token::SPACE_MD).child(head).child(end)
 }
 
 /// The mark of what is chosen (specs/design, principle 2): a bar of 2 px in the accent

@@ -72,7 +72,7 @@ pub(super) fn view(
         Some(Phase::Ask(ask)) => AnyView::new(question(ask, form.answer, &name, answer.clone())),
         _ => AnyView::new(div()),
     });
-    column().gap(12.0).width(416.0).child(lines).child(asked)
+    column().gap(12.0).child(lines).child(asked)
 }
 
 /// A step's line: a check when done, a spinner under way, a dot to come.
@@ -115,7 +115,7 @@ fn question(ask: Ask, typed: Signal<String>, name: &str, answer: Rc<dyn Fn()>) -
         Ask::Passphrase { again, .. } => ("Passphrase", true, again),
         Ask::Failed { .. } => return column(),
     };
-    let mut entry = input(typed).test_id("connect-answer").width(416.0).on_submit(move |_| answer());
+    let mut entry = input(typed).test_id("connect-answer").on_submit(move |_| answer());
     if secret {
         entry = entry.password().reveal();
     }

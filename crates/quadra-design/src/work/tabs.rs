@@ -110,7 +110,7 @@ fn field(tab: Signal<Tab>, editing: Signal<Option<String>>, rename: Rename, id: 
     let (submit, escape, leave) = (done.clone(), done.clone(), done);
     let input = text_input(value).size(13.0).on_submit(move |_| submit(true));
     let field = div().width(TITLE_MAX.min(160.0)).border(1.0).border_color(token::BORDER_FOCUSED);
-    let field = field.radius(token::RADIUS_SM).padding_x(2.0).child(input);
+    let field = field.radius(token::RADIUS_SM).padding_x(token::SPACE_XXS).child(input);
     let field = field.on_key_down(move |e| {
         if e.key == Key::Escape {
             e.stop();
@@ -131,7 +131,11 @@ fn field(tab: Signal<Tab>, editing: Signal<Option<String>>, rename: Rename, id: 
 
 /// What follows the pointer while a tab is dragged: its icon and its title on a chip.
 fn chip(tab: &Tab) -> Div {
-    let chip = row().align_items(Align::Center).gap(4.0).height(by_text(28.0)).padding_x(8.0);
+    let chip = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_XS)
+        .height(by_text(28.0))
+        .padding_x(token::SPACE_MD);
     let chip = match tab.icon {
         Some(body) => chip.child(icon(body).color(token::TEXT_2)),
         None => chip,
@@ -154,7 +158,12 @@ fn face(strip: &Strip, tab: Signal<Tab>, more: More) -> impl View + use<> {
     let dot = div().size(6.0, 6.0).radius(1.0).bg(token::ACCENT);
     let dot = dot.display(move || if tab.with(|tab| tab.dirty) { Display::Flex } else { Display::None });
     let mark = row().size(12.0, 12.0).align_items(Align::Center).justify(Justify::Center).child(dot);
-    let content = row().align_items(Align::Center).gap(4.0).padding_x(4.0).grow(1.0).child(mark);
+    let content = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_XS)
+        .padding_x(token::SPACE_XS)
+        .grow(1.0)
+        .child(mark);
     let content = match tab.with_untracked(|tab| tab.icon) {
         Some(body) => content.child(icon(body).color(token::TEXT_2)),
         None => content,
@@ -183,7 +192,7 @@ fn face(strip: &Strip, tab: Signal<Tab>, more: More) -> impl View + use<> {
             let room = row().size(14.0, 14.0).align_items(Align::Center).justify(Justify::Center);
             content.child(room.child(cross))
         }
-        None => content.padding_right(8.0),
+        None => content.padding_right(token::SPACE_MD),
     };
     let fill = move || -> Paint { if on.get() { token::CANVAS } else { token::TAB_BG }.into() };
     let face = row().shrink(0.0).cursor(Cursor::Pointer).border_color(token::LINE_STRONG);
@@ -245,7 +254,8 @@ impl View for TabStrip {
             };
             tabs.with_untracked(|all| all.iter().map(named).collect())
         };
-        let end = row().align_items(Align::Center).gap(4.0).padding_x(6.0).shrink(0.0);
+        let end =
+            row().align_items(Align::Center).gap(token::SPACE_XS).padding_x(token::SPACE_SM).shrink(0.0);
         let end = end.border_bottom(1.0).border_left(1.0).border_color(token::LINE_STRONG);
         let end = end.children(actions).child(menu_icon_button(icons::ELLIPSIS, "Tabs", list));
         let bar = row().height(by_text(32.0)).shrink(0.0).bg(token::TAB_BG);

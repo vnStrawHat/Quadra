@@ -194,7 +194,7 @@ impl Button {
         };
         let bordered = border != Paint::default();
         let small = matches!(self.size, Size::Xs | Size::Sm);
-        let face = row().align_items(Align::Center).justify(Justify::Center).gap(4.0).shrink(0.0);
+        let face = row().align_items(Align::Center).justify(Justify::Center).gap(token::SPACE_XS).shrink(0.0);
         // An icon alone sits in a square; a label has 4 or 8 px beside it.
         let face = match self.label {
             Some(_) => face.height(by_text(self.size.height())).padding_x(if small { 4.0 } else { 8.0 }),

@@ -229,13 +229,17 @@ impl Notices {
             None => words,
         };
         let close = icon_button(icons::X, "Dismiss notification").on_click(move || me.close(id));
-        let top = row().gap(8.0).child(div().padding_top(4.0).child(mark)).child(words).child(close);
-        let card = surface(2).width(448.0).padding(12.0).gap(8.0);
+        let top = row()
+            .gap(token::SPACE_MD)
+            .child(div().padding_top(token::SPACE_XS).child(mark))
+            .child(words)
+            .child(close);
+        let card = surface(2).width(448.0).padding(token::SPACE_LG).gap(token::SPACE_MD);
         let card = me.held(card, id).role(Role::Group).label(notice.title).child(top);
         if notice.actions.is_empty() {
             return card;
         }
-        let mut foot = row().gap(4.0).justify(Justify::End);
+        let mut foot = row().gap(token::SPACE_XS).justify(Justify::End);
         for (label, primary, act) in notice.actions {
             let variant = if primary { Variant::Primary } else { Variant::Secondary };
             let press = move || {
@@ -250,7 +254,11 @@ impl Notices {
     /// A toast: one line with its icon.
     fn line(&self, id: u64) -> Div {
         let Some(notice) = self.find(id) else { return div() };
-        let line = row().align_items(Align::Center).gap(8.0).padding_x(12.0).padding_y(6.0);
+        let line = row()
+            .align_items(Align::Center)
+            .gap(token::SPACE_MD)
+            .padding_x(token::SPACE_LG)
+            .padding_y(token::SPACE_SM);
         let line = line.child(mark(&notice, true)).child(text(notice.title.clone()));
         let line = surface(2).role(Role::Group).label(notice.title).child(line);
         self.held(line, id)
@@ -272,11 +280,11 @@ impl Notices {
                 Some(down) => Place::TopRight(right, 12.0 + down),
                 None => Place::BottomRight(right, 12.0 + lift),
             };
-            overlay(place, stack.container(column().gap(8.0)))
+            overlay(place, stack.container(column().gap(token::SPACE_MD)))
         };
         let toasts = move || {
             let stack = each(move || me.ids(true), |id| *id, move |id| me.line(id.get_untracked()));
-            let stack = stack.container(column().gap(8.0).align_items(Align::Center));
+            let stack = stack.container(column().gap(token::SPACE_MD).align_items(Align::Center));
             overlay(Place::Bottom(12.0 + lift), stack)
         };
         let none = || div().display(quadra_layout::Display::None);

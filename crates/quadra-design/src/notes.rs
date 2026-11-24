@@ -33,7 +33,7 @@ impl Tone {
 /// muted line that says more. Either of the two may be empty.
 pub fn alert(tone: Tone, title: &str, more: &str) -> Div {
     let role = tone.role();
-    let mut words = column().gap(2.0).grow(1.0);
+    let mut words = column().gap(token::SPACE_XXS).grow(1.0);
     if !title.is_empty() {
         words = words.child(text(title.to_string()));
     }
@@ -41,7 +41,11 @@ pub fn alert(tone: Tone, title: &str, more: &str) -> Div {
         words = words.child(text(more.to_string()).size(size::TEXT_SM.size).color(token::TEXT_2));
     }
     let mark = row().height(23.0).align_items(Align::Center).child(icon(tone.icon()).color(role));
-    let note = row().align_items(Align::Start).gap(8.0).padding(8.0).radius(token::RADIUS_MD);
+    let note = row()
+        .align_items(Align::Start)
+        .gap(token::SPACE_MD)
+        .padding(token::SPACE_MD)
+        .radius(token::RADIUS_MD);
     let note = note.bg(role.alpha(0.1)).border(1.0).border_color(role.alpha(0.2));
     let name = if title.is_empty() { more } else { title };
     note.role(Role::Group).label(name.to_string()).child(mark).child(words)
@@ -50,19 +54,20 @@ pub fn alert(tone: Tone, title: &str, more: &str) -> Div {
 /// What an empty place shows: a muted icon, why it is empty, a hint, and something to do
 /// about it.
 pub fn empty_state(body: &'static str, title: &str, hint: &str, action: impl View + 'static) -> Div {
-    let all = column().align_items(Align::Center).gap(4.0).padding(32.0).grow(1.0);
+    let all = column().align_items(Align::Center).gap(token::SPACE_XS).padding(token::SPACE_XXXL).grow(1.0);
     let all = all.child(icon(body).size(16.0).color(token::TEXT_3)).child(text(title.to_string()));
     let all = match hint.is_empty() {
         true => all,
         false => all.child(text(hint.to_string()).size(size::TEXT_SM.size).color(token::TEXT_2)),
     };
-    all.child(row().justify(Justify::Center).padding_top(8.0).child(action))
+    all.child(row().justify(Justify::Center).padding_top(token::SPACE_MD).child(action))
 }
 
 /// Terms and their values in two columns: the terms muted and as wide as the widest, the
 /// values in the room that is left. A value that can be copied is [`copyable`].
 pub fn description_list<S: Into<String>>(items: impl IntoIterator<Item = (S, AnyView)>) -> Div {
-    let mut grid = div().grid([Track::max_content(), Track::fr(1.0)]).gap_x(24.0).gap_y(8.0);
+    let mut grid =
+        div().grid([Track::max_content(), Track::fr(1.0)]).gap_x(token::SPACE_XXL).gap_y(token::SPACE_MD);
     for (term, value) in items {
         grid = grid.child(text(term.into()).color(token::TEXT_2)).child(value);
     }
@@ -96,6 +101,6 @@ pub fn copyable(value: impl Into<String>) -> AnyView {
         .role(Role::Button)
         .label(move || if done.get() { "Copied" } else { "Copy" }.to_string())
         .on_click(move |_| copy());
-    let line = row().align_items(Align::Center).gap(4.0).min_width(0.0);
+    let line = row().align_items(Align::Center).gap(token::SPACE_XS).min_width(0.0);
     AnyView::new(line.child(text(value).selectable()).child(button.child(mark)))
 }

@@ -93,21 +93,33 @@ was silent, said two things, or did not match the kit. What they changed:
   textarea and the foot with an aside are described as they are; how the facts and the status
   of a card are laid out; where a section goes in a form; what `form()` and `field(..)` return.
 
+## What was owed, and done (2026-11-24)
+
+- **1Term's dialogs take the kit's layout.** The host editor, Connect, Quick connect, the
+  sign-in question and the vault's unlock gave up their widths (202, 416, 392) and their own
+  grid of two: fields fill their columns and `columns(2)` puts two to a row.
+- **The kit names its tokens.** Every gap, padding and radius inside the kit that is a step
+  of a ladder is written as its token (`token::SPACE_MD`, `token::RADIUS_MD`), so a theme's
+  `measures` change the density and the corners of all of it at once.
+- **The check reads what a call is given**, not only a lone number: a distance chosen between
+  two (`if small { 4.0 } else { 2.0 }`) and one computed are seen. Four more were found and
+  put on the ladders or given their reason.
+- **From the trial**: a combobox is as wide as its column in a form, its list with it;
+  `number_input(..).unit("backups")` says what a number counts, muted, inside the field;
+  `card_head_with(title, more, end)` puts a status, a tag or a quiet button at the end of a
+  card's head; a control in a `field(..)` in a form fills its column whatever wraps it.
+- **The title bar**: `titlebar(..).height(38.0)` is the taller bar (1Term uses it); nothing
+  was missing but the sentence in components.md.
+
+## Decided, not owed
+
+- **A section in a form stands a field's distance (12) from its neighbours**, not a step
+  more. Its label (12 px, semibold, `text_2`) is the mark of the group; a wider gap in the
+  middle of a dialog read as a hole. It goes last, so that its end is the form's.
+
 ## Still owed
 
-- **The apps' views still write their own distances.** 1Term's dialogs are laid out by hand
-  to the app's design canvas (fixed widths of 202 and 416); they fit the 440 dialog and were
-  left. They move to `form()` and `columns(2)` when next touched.
-- **Tokens for literals.** The kit's own components write on-ladder numbers (`.gap(8.0)`)
-  where a token (`token::SPACE_MD`) would let a theme change the density of everything at
-  once. The check accepts both; a theme's `measures` reach the helpers, the containers and
-  what already names a token.
-- **The check reads literals in calls.** A distance computed (`if small { 3.0 } else { 2.0 }`)
-  or kept in a constant is not seen.
-- **From the trial, not done**: a combobox does not take its column's width in a form; a
-  number has no unit after it (`Keep [7] backups`); `card_head` has no place for a status or
-  an action at its right; the gap between a form's fields (12) is also the gap around a
-  section in it, where the rule of three distances asks for a step more.
-- **The title bar is 32 in the kit and 38 in an app whose title bar holds its tabs.** Both are
-  stated ([components.md](components.md)); one helper for the taller bar would end the
-  hand-built ones.
+- **The check does not follow a constant.** A distance kept in a `const` and passed by name
+  is not read; a constant is a decision someone named, and so far each is on a ladder.
+- **The gallery and the apps still write on-ladder literals** (`.gap(8.0)`) where the kit now
+  writes tokens. A theme's measures do not reach those.

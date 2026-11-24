@@ -56,12 +56,10 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
             .label("Master password")
             .password()
             .test_id("vault-password")
-            .width(392.0)
             .height(quadra_design::size::H_MD)
             .on_submit(move |_| submits());
         column()
             .gap(12.0)
-            .width(416.0)
             .child(div().text_color(token::ERROR).child(text(move || said.get())))
             .child(text("Saved passwords are sealed with the master password."))
             .child(field("Master password", entry))

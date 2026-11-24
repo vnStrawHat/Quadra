@@ -148,7 +148,7 @@ pub(crate) fn area(hsv: Signal<Hsv>, put: impl Fn(Hsv) + Copy + 'static) -> Div 
 pub(crate) fn hue_bar(hue: Signal<f32>) -> Div {
     let scale = Scale::new((0.0, 360.0), 1.0, 7.0, WIDE - 14.0);
     let hues = (0..=12).map(|i| Hsv { h: i as f32 * 30.0, s: 1.0, v: 1.0 }.color());
-    let rail = div().absolute().left(0.0).top(1.0).size(WIDE, 12.0).radius(6.0);
+    let rail = div().absolute().left(0.0).top(1.0).size(WIDE, 12.0).radius(token::RADIUS_MD);
     let rail = rail.gradient(Gradient::linear(0.0, hues));
     let shown = move || Hsv { h: hue.get(), s: 1.0, v: 1.0 }.color();
     let knob = ring(14.0).top(0.0).bg(shown);

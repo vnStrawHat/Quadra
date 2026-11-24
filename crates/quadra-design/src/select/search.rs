@@ -39,8 +39,13 @@ pub(super) fn searched(
     let on = found.on;
     let face = move |_: usize, i: usize| {
         let hits = fuzzy_hits(&query.get_untracked(), &options[i]).unwrap_or_default();
-        let line = row().align_items(Align::Center).gap(8.0).grow(1.0).height(by_text(ROW)).padding_x(6.0);
-        let line = line.radius(4.0).label(options[i].clone());
+        let line = row()
+            .align_items(Align::Center)
+            .gap(token::SPACE_MD)
+            .grow(1.0)
+            .height(by_text(ROW))
+            .padding_x(token::SPACE_SM);
+        let line = line.radius(token::RADIUS_SM).label(options[i].clone());
         let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
         let line = line.child(marked(&options[i], &hits)).child(div().grow(1.0));
         match i == chosen.get_untracked() {
@@ -50,11 +55,14 @@ pub(super) fn searched(
     };
     let parts = Parts {
         head: None,
-        list: Rc::new(|| column().grow(1.0).padding_y(4.0)),
-        line: Some(Rc::new(|| div().padding_x(4.0))),
+        list: Rc::new(|| column().grow(1.0).padding_y(token::SPACE_XS)),
+        line: Some(Rc::new(|| div().padding_x(token::SPACE_XS))),
         row: Rc::new(face),
         empty: Some(Rc::new(|| {
-            div().padding_x(12.0).padding_y(4.0).child(text("No match").color(token::TEXT_2))
+            div()
+                .padding_x(token::SPACE_LG)
+                .padding_y(token::SPACE_XS)
+                .child(text("No match").color(token::TEXT_2))
         })),
     };
     // With nothing typed the chosen option is the one the arrows start from; with a query,
@@ -65,7 +73,12 @@ pub(super) fn searched(
     };
     let rows = found.rows(parts, start, take);
     let field = text_input(query).placeholder(&ask).on_submit(move |_| take(on.get_untracked()));
-    let head = row().align_items(Align::Center).gap(6.0).height(by_text(32.0)).padding_x(8.0).shrink(0.0);
+    let head = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_SM)
+        .height(by_text(32.0))
+        .padding_x(token::SPACE_MD)
+        .shrink(0.0);
     let head = head.border_bottom(1.0).border_color(token::LINE);
     let head = head.child(icon(icons::SEARCH).size(12.0).color(token::TEXT_3));
     let head = head.child(div().grow(1.0).child(field));

@@ -57,12 +57,12 @@ pub(crate) fn scale(ends: (f32, f32), step: f32, width: f32) -> Scale {
 
 /// The track, and a knob with no place yet.
 pub(crate) fn rail(scale: Scale) -> Div {
-    let rail = div().absolute().left(8.0).top(8.0).height(4.0).radius(2.0);
+    let rail = div().absolute().left(8.0).top(8.0).height(4.0).radius(token::RADIUS_XS);
     rail.width(scale.track).bg(token::PRESS)
 }
 
 pub(crate) fn knob() -> Div {
-    let knob = div().absolute().top(4.0).size(12.0, 12.0).radius(6.0);
+    let knob = div().absolute().top(4.0).size(12.0, 12.0).radius(token::RADIUS_MD);
     knob.border(1.0).border_color(token::CANVAS)
 }
 
@@ -78,12 +78,12 @@ impl View for Slider {
         let tone = move |on: quadra_tree::Token| -> Paint {
             if off.get() { token::TEXT_DISABLED.into() } else { on.into() }
         };
-        let fill = div().absolute().left(8.0).top(8.0).height(4.0).radius(2.0);
+        let fill = div().absolute().left(8.0).top(8.0).height(4.0).radius(token::RADIUS_XS);
         let fill = fill.width(move || Length::Px(track * part())).bg(move || tone(token::ACCENT));
         let knob = knob().left(move || Length::Px(track * part() + 2.0));
         let (rail, knob) = (rail(scale), knob.bg(move || tone(token::TEXT)));
         let face: Div = div().size(self.width, 20.0).shrink(0.0).cursor(Cursor::Pointer).label(self.name);
-        let face = face.radius(4.0).focus_visible(|s| s.outline(token::BORDER_FOCUSED));
+        let face = face.radius(token::RADIUS_SM).focus_visible(|s| s.outline(token::BORDER_FOCUSED));
         slider::slider(face, value, scale, off).child(rail).child(fill).child(knob).mount(cx)
     }
 }

@@ -62,7 +62,11 @@ where
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (row_height, build) = (self.row_height, self.row);
         let line = move |index: Signal<usize>| {
-            let line = row().align_items(Align::Center).grow(1.0).height(by_text(row_height)).padding_x(6.0);
+            let line = row()
+                .align_items(Align::Center)
+                .grow(1.0)
+                .height(by_text(row_height))
+                .padding_x(token::SPACE_SM);
             let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
             line.child(build(index))
         };
@@ -74,7 +78,7 @@ where
         };
         let list = match self.empty {
             Some(words) => list.empty(move || {
-                let line = row().padding(12.0).justify(quadra_layout::Justify::Center);
+                let line = row().padding(token::SPACE_LG).justify(quadra_layout::Justify::Center);
                 line.text_color(token::TEXT_2).child(text(words.clone()))
             }),
             None => list,

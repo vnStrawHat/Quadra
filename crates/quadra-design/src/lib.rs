@@ -63,8 +63,8 @@ pub use date::{Date, DatePicker, calendar, date_picker};
 pub use dialog::{Dialog, Drawer, confirm, dialog, drawer};
 pub use diff::{Diff, DiffMode, Step, diff, diff_ids, diff_lines};
 pub use display::{
-    Tone, avatar, badge, card, card_head, chosen_mark, divider, heading, kbd, key_hint, key_label, label,
-    mono, plain_badge, tag, vdivider,
+    Tone, avatar, badge, card, card_head, card_head_with, chosen_mark, divider, heading, kbd, key_hint,
+    key_label, label, mono, plain_badge, tag, vdivider,
 };
 pub use field::{Field, Rule, Textarea, field, textarea, validate};
 pub use hover_card::{HoverCard, hover_card};

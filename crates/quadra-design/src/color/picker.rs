@@ -142,10 +142,11 @@ fn popover_body(
     let given =
         presets.iter().map(|(name, color)| swatch(name.clone(), (*color).into(), hex(*color), value, open));
     let swatches: Vec<Div> = default.into_iter().chain(given).collect();
-    let body = column().gap(12.0).padding(12.0).child(plane).child(hue_bar(hue)).child(field);
+    let body =
+        column().gap(token::SPACE_LG).padding(token::SPACE_LG).child(plane).child(hue_bar(hue)).child(field);
     match swatches.is_empty() {
         true => body,
-        false => body.child(row().width(WIDE).wrap(true).gap(6.0).children(swatches)),
+        false => body.child(row().width(WIDE).wrap(true).gap(token::SPACE_SM).children(swatches)),
     }
 }
 
@@ -154,9 +155,10 @@ impl View for ColorPicker {
         let (value, open, opener) = (self.value, signal(false), NodeRef::new());
         let (fallback, placeholder) = (self.fallback, self.placeholder);
         let empty = move || value.with(|it| it.trim().is_empty());
-        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0);
+        let face = row().align_items(Align::Center).gap(token::SPACE_SM).shrink(0.0);
         let face = crate::layout::field_width(face, self.width, 120.0).bg(token::INPUT_BG);
-        let face = face.height(by_text(size::H_MD)).padding_x(8.0).radius(token::RADIUS_MD).border(1.0);
+        let face =
+            face.height(by_text(size::H_MD)).padding_x(token::SPACE_MD).radius(token::RADIUS_MD).border(1.0);
         let face = face.border_color(token::LINE_STRONG).cursor(Cursor::Pointer);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));

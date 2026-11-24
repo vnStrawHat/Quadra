@@ -44,7 +44,11 @@ fn head(title: String, open: Signal<bool>) -> Div {
         let body = if open.get() { icons::CHEVRON_DOWN } else { icons::CHEVRON_RIGHT };
         icon(body).size(14.0).color(token::TEXT_2)
     };
-    let head = row().align_items(Align::Center).gap(4.0).padding_x(8.0).height(by_text(size::H_MD));
+    let head = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_XS)
+        .padding_x(token::SPACE_MD)
+        .height(by_text(size::H_MD));
     let head = head.cursor(Cursor::Pointer);
     let head = head.hover(|s| s.bg(token::PANEL_HOVER)).focus_visible(|s| s.bg(token::PANEL_HOVER));
     accordion_head(head, open).child(dynamic(chevron)).child(text(title))
@@ -57,8 +61,13 @@ impl View for Accordion {
             let head = head(title, open);
             // A line between a section and the one above it.
             let head = if i > 0 { head.border_top(1.0).border_color(token::LINE) } else { head };
-            let inside =
-                move || div().padding_left(24.0).padding_right(12.0).padding_bottom(12.0).child(body());
+            let inside = move || {
+                div()
+                    .padding_left(token::SPACE_XXL)
+                    .padding_right(token::SPACE_LG)
+                    .padding_bottom(token::SPACE_LG)
+                    .child(body())
+            };
             all = all.child(head).child(accordion_body(open, inside));
         }
         all.mount(cx)

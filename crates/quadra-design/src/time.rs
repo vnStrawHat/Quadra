@@ -51,7 +51,7 @@ fn part(
     read: impl Fn() -> u8 + Copy + 'static,
     write: impl Fn(u8) + Copy + 'static,
 ) -> Div {
-    let face = div().padding_x(2.0).radius(token::RADIUS_SM).focus(|s| s.bg(token::PRESS));
+    let face = div().padding_x(token::SPACE_XXS).radius(token::RADIUS_SM).focus(|s| s.bg(token::PRESS));
     base::part(face, name, (limit, step), read, write).child(text(move || format!("{:02}", read())))
 }
 
@@ -70,11 +70,16 @@ impl View for TimeInput {
             move || value.get().minute,
             move |minute| value.update(|time| time.minute = minute),
         );
-        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).height(by_text(size::H_MD));
+        let face =
+            row().align_items(Align::Center).gap(token::SPACE_SM).shrink(0.0).height(by_text(size::H_MD));
         let face = crate::layout::field_width(face, self.width, 120.0)
             .bg(token::INPUT_BG)
             .font_family(crate::fonts::MONO);
-        let face = face.padding_x(8.0).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
+        let face = face
+            .padding_x(token::SPACE_MD)
+            .radius(token::RADIUS_MD)
+            .border(1.0)
+            .border_color(token::LINE_STRONG);
         let face = face.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
         let time = move || value.get().to_string();
         let face = match self.label {

@@ -50,7 +50,7 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static, focused: bool
         let name = |i: u8| {
             cell().height(by_text(22.0)).child(text(words.day((first + i) % 7)).size(size::TEXT_SM.size))
         };
-        row().gap(2.0).text_color(token::TEXT_2).children((0..7).map(name).collect::<Vec<_>>())
+        row().gap(token::SPACE_XXS).text_color(token::TEXT_2).children((0..7).map(name).collect::<Vec<_>>())
     });
     // The days in weeks of seven, the first week begun where its first day falls.
     let take = picked.clone();
@@ -73,16 +73,17 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static, focused: bool
             };
             cells.push(on.child(text(day.to_string())));
         }
-        let mut weeks = column().gap(2.0);
+        let mut weeks = column().gap(token::SPACE_XXS);
         let mut cells = cells.into_iter().peekable();
         while cells.peek().is_some() {
-            weeks = weeks.child(row().gap(2.0).children(cells.by_ref().take(7).collect::<Vec<_>>()));
+            weeks =
+                weeks.child(row().gap(token::SPACE_XXS).children(cells.by_ref().take(7).collect::<Vec<_>>()));
         }
         weeks
     });
     // The arrows move the day by one and by a week, the pages by a month; the month that
     // shows follows the day. Enter takes it.
-    let grid = column().gap(2.0).focusable().radius(token::RADIUS_MD);
+    let grid = column().gap(token::SPACE_XXS).focusable().radius(token::RADIUS_MD);
     let grid = grid.focus_visible(|s| s.outline(token::BORDER_FOCUSED));
     let grid = grid.on_key_down(move |e| {
         let date = value.get_untracked();
@@ -112,7 +113,7 @@ fn month(value: Signal<Date>, picked: impl Fn() + Clone + 'static, focused: bool
         false => grid,
     };
     // The names of the days are the first row of the weeks: 2 px over the next.
-    column().gap(8.0).padding(8.0).child(head).child(grid.child(names).child(days))
+    column().gap(token::SPACE_MD).padding(token::SPACE_MD).child(head).child(grid.child(names).child(days))
 }
 
 /// A month calendar in the page: `value` holds the chosen day, and a click on a day writes
@@ -151,9 +152,14 @@ impl View for DatePicker {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (value, open, opener) = (self.value, signal(false), NodeRef::new());
         let (lang, said) = (language(), language());
-        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).height(by_text(size::H_MD));
+        let face =
+            row().align_items(Align::Center).gap(token::SPACE_SM).shrink(0.0).height(by_text(size::H_MD));
         let face = crate::layout::field_width(face, None, 180.0).bg(token::INPUT_BG);
-        let face = face.padding_x(8.0).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
+        let face = face
+            .padding_x(token::SPACE_MD)
+            .radius(token::RADIUS_MD)
+            .border(1.0)
+            .border_color(token::LINE_STRONG);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
         let date = move || lang.locale().date(value.get());

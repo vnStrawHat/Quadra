@@ -22,6 +22,7 @@ pub struct NumberInput {
     label: Option<Prop<String>>,
     test_id: Option<&'static str>,
     width: Option<f32>,
+    unit: Option<String>,
 }
 
 /// A field that edits `value`: whole numbers in steps of 1 unless told otherwise.
@@ -35,10 +36,17 @@ pub fn number_input(value: Signal<f64>) -> NumberInput {
         label: None,
         test_id: None,
         width: None,
+        unit: None,
     }
 }
 
 impl NumberInput {
+    /// What the number counts, said after it inside the field, muted: `7 backups`, `30 s`.
+    pub fn unit(mut self, words: impl Into<String>) -> Self {
+        self.unit = Some(words.into());
+        self
+    }
+
     /// How wide it is: its own width, or its column's in a form, unless told (a port: 96).
     pub fn width(mut self, px: f32) -> Self {
         self.width = Some(px);
@@ -107,7 +115,12 @@ impl View for NumberInput {
                 around.hover(|s| s.bg(token::LINE.alpha(0.4))).active(|s| s.bg(token::LINE.alpha(0.6)))
             };
             let side = || ghost(row().width(32.0).height(by_text(size::H_MD - 2.0)));
-            let middle = row().grow(1.0).justify(Justify::Center).cursor(Cursor::Text).child(field);
+            let middle = row().grow(1.0).justify(Justify::Center).align_items(Align::Center);
+            let middle = middle.gap(token::SPACE_XS).cursor(Cursor::Text).child(field);
+            let middle = match self.unit {
+                Some(unit) => middle.child(quadra_view::text(unit).color(token::TEXT_2)),
+                None => middle,
+            };
             let frame = crate::layout::field_width(around, self.width, 128.0)
                 .height(by_text(size::H_MD))
                 .radius(token::RADIUS_MD)
@@ -141,8 +154,12 @@ impl View for NumberInput {
         };
         let up = step(small(), number, true, icons::CHEVRON_UP, 10.0);
         let down = step(small(), number, false, icons::CHEVRON_DOWN, 10.0);
-        let field = field.build().padding_y(2.0).padding_right(2.0);
+        let field = field.build().padding_y(token::SPACE_XXS).padding_right(token::SPACE_XXS);
+        let field = match self.unit {
+            Some(unit) => field.child(div().shrink(0.0).child(quadra_view::text(unit).color(token::TEXT_2))),
+            None => field,
+        };
         let field = field.child(column().shrink(0.0).child(up).child(down));
-        around.child(field).mount(cx)
+        crate::layout::holder(around, self.width).child(field).mount(cx)
     }
 }

@@ -72,10 +72,15 @@ fn switch_track(on: Signal<bool>, off: Off) -> Div {
         (true, _) => Paint::from(token::TEXT_ON_ACCENT),
         (false, off) => token::TEXT.alpha(if off { 0.2 } else { 0.5 }),
     };
-    let track = row().size(32.0, 20.0).shrink(0.0).radius(10.0).padding_x(2.0).align_items(Align::Center);
+    let track = row()
+        .size(32.0, 20.0)
+        .shrink(0.0)
+        .radius(token::RADIUS_LG)
+        .padding_x(token::SPACE_XXS)
+        .align_items(Align::Center);
     let track = track.bg(fill).border(1.0).border_color(edge);
     let track = track.justify(move || if on.get() { Justify::End } else { Justify::Start });
-    let track = track.child(div().size(12.0, 12.0).radius(6.0).bg(knob));
+    let track = track.child(div().size(12.0, 12.0).radius(token::RADIUS_MD).bg(knob));
     // design: a switch is a pill, its ring half its height
     div().padding(1.0).shrink(0.0).radius(13.0).border(2.0).border_color(ring).child(track)
 }
@@ -116,7 +121,7 @@ impl Toggle {
         };
         let part = off.clone();
         let control = if self.is_switch { switch_track(on, part) } else { check_box(on, part, mixed) };
-        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).radius(token::RADIUS_SM);
+        let face = row().align_items(Align::Center).gap(token::SPACE_SM).shrink(0.0).radius(token::RADIUS_SM);
         let face = face.cursor(Cursor::Pointer);
         // The keyboard's focus is a line around the control and its label.
         let face = face.focus_visible(|s| s.outline(token::BORDER_FOCUSED));

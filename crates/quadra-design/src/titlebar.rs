@@ -107,20 +107,26 @@ impl View for Titlebar {
             let (open, opener) = (signal(false), NodeRef::new());
             let button =
                 icon_button(icons::MENU, "Menu").on_click(move || open.update(|open| *open = !*open));
-            let button = div().padding_left(4.0).child(div().node_ref(&opener).child(button));
+            let button = div().padding_left(token::SPACE_XS).child(div().node_ref(&opener).child(button));
             bar = bar.child(button).child(menu(open, &opener, move || items()));
         }
         if let Some(body) = self.icon {
-            bar = bar.child(div().padding_left(8.0).child(icon(body).size(14.0).color(token::TEXT_2)));
+            bar = bar
+                .child(div().padding_left(token::SPACE_MD).child(icon(body).size(14.0).color(token::TEXT_2)));
         }
         // An empty title takes no room: the app's controls start at the edge.
         if !matches!(&self.title, quadra_view::Prop::Value(words) if words.is_empty()) {
             bar = bar.child(match self.title_size {
-                Some(px) => div().padding_left(12.0).padding_right(8.0).text_size(px).child(text(self.title)),
-                None => div().padding_x(8.0).child(text(self.title)),
+                Some(px) => div()
+                    .padding_left(token::SPACE_LG)
+                    .padding_right(token::SPACE_MD)
+                    .text_size(px)
+                    .child(text(self.title)),
+                None => div().padding_x(token::SPACE_MD).child(text(self.title)),
             });
         }
-        bar = bar.child(row().align_items(Align::Center).gap(4.0).grow(1.0).children(self.controls));
+        bar = bar
+            .child(row().align_items(Align::Center).gap(token::SPACE_XS).grow(1.0).children(self.controls));
 
         // The glyphs of the system's own caption buttons, where it has a face of them.
         let families = cx.tree.fonts().borrow_mut().text.backend().families();

@@ -8,10 +8,6 @@ use super::{AUTHS, Form, Go, KEY, PASSWORD, USER};
 use crate::hosts::Host;
 use crate::locked::shown;
 
-/// Half the body, a gap of 12 between.
-const HALF: f32 = 202.0;
-const FULL: f32 = 416.0;
-
 /// The header's colour tag, title and group.
 pub(super) fn head(title: String, tag: quadra::Paint, group: String) -> Div {
     let mark = div().size(10.0, 10.0).shrink(0.0).radius(2.0).bg(tag);
@@ -38,7 +34,7 @@ fn hint(words: impl Fn() -> String + 'static) -> Div {
 }
 
 fn pair(a: impl View + 'static, b: impl View + 'static) -> Div {
-    div().grid([Track::fr(1.0), Track::fr(1.0)]).gap_x(12.0).child(a).child(b)
+    quadra_design::columns(2).child(a).child(b)
 }
 
 /// Address, jump host and host key: a label of 88 and its value.
@@ -84,9 +80,9 @@ pub(super) fn body(
     secret_at: &quadra::NodeRef,
 ) -> Div {
     let saved = model.sealed(&host.name).is_some();
-    let entry = |value: Signal<String>, id: &'static str, width: f32| {
+    let entry = |value: Signal<String>, id: &'static str| {
         let go = go.clone();
-        input(value).test_id(id).width(width).on_submit(move |_| go())
+        input(value).test_id(id).on_submit(move |_| go())
     };
     let focused = |view: Div, at: u8| match missing == at {
         true => view.on_mount(|tree, id| tree.after_layout(move |tree| _ = tree.focus_first(id))),
@@ -95,25 +91,25 @@ pub(super) fn body(
     let auth = form.auth;
     let saved_auth = form.saved_auth.get_untracked();
     let no_user = host.remote.target.user.is_empty();
-    let user = field("Username", entry(form.user, "connect-user", HALF).mono().placeholder("Required"));
+    let user = field("Username", entry(form.user, "connect-user").mono().placeholder("Required"));
     let user = if no_user { user.help("This host has no saved username.") } else { user };
     let how = column()
         .gap(4.0)
-        .child(field("Auth method", select(AUTHS, auth).width(HALF).test_id("connect-auth")))
+        .child(field("Auth method", select(AUTHS, auth).test_id("connect-auth")))
         .child(hint(move || match auth.get() == saved_auth {
             true => "Saved for this host.".into(),
             false => format!("Saved for this host: {}", AUTHS[saved_auth]),
         }));
     let saved_hint = if saved { "Saved" } else { "" };
-    let key = crate::sshkeys::picker(model, form.key, HALF, "connect-key");
-    let passphrase = entry(form.password, "connect-passphrase", HALF).password().reveal();
+    let key = crate::sshkeys::picker(model, form.key, "connect-key");
+    let passphrase = entry(form.password, "connect-passphrase").password().reveal();
     let passphrase = field(
         "Passphrase",
         passphrase.placeholder(if saved { "Saved" } else { "Empty if the key has none" }),
     );
     let passphrase = if saved { passphrase.help("Saved for this host.") } else { passphrase };
     let keys = pair(focused(div().child(field("Key file", key)), KEY), passphrase);
-    let password = entry(form.password, "connect-password", FULL).password().reveal().placeholder(saved_hint);
+    let password = entry(form.password, "connect-password").password().reveal().placeholder(saved_hint);
     let password = field("Password", password);
     let password = if saved { password.help("Saved for this host.") } else { password };
     let says = |words: &'static str| div().text_color(token::TEXT_2).child(text(words));
@@ -123,7 +119,6 @@ pub(super) fn body(
     });
     let mut body = column()
         .gap(12.0)
-        .width(FULL)
         .child(failure)
         .child(summary(host, key_known))
         .child(pair(focused(div().child(user), USER), how));

@@ -11,8 +11,8 @@ use quadra_tree::NodeId;
 use quadra_view::{IntoProp, MountCx, Prop, View, row};
 
 use crate::button::{Variant, button};
-use crate::icons;
 use crate::input::input;
+use crate::{icons, token};
 
 /// What asks the dialog, given the path the field holds: the path chosen, or none.
 type Browse = Rc<dyn Fn(&str) -> Option<PathBuf>>;
@@ -108,7 +108,7 @@ impl View for PathPicker {
                 value.set(chosen.display().to_string());
             }
         });
-        let whole = row().align_items(Align::Center).gap(8.0);
+        let whole = row().align_items(Align::Center).gap(token::SPACE_MD);
         let whole = match (self.fill, fill) {
             (true, _) => whole.grow(1.0).min_width(0.0),
             (false, true) => whole.width(quadra_layout::Length::Fill),

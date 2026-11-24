@@ -61,7 +61,7 @@ fn header(state: &Sheet, columns: &[Column], (pinned, sx, look): (usize, Signal<
             }
             _ => div(),
         });
-        let title = row().align_items(Align::Center).gap(4.0).grow(1.0).padding_left(look.pad);
+        let title = row().align_items(Align::Center).gap(token::SPACE_XS).grow(1.0).padding_left(look.pad);
         let title = title.overflow_x(Overflow::Hidden);
         let title = match at.counts() {
             true => title.justify(Justify::End).padding_right(2.0 * look.pad - GRIP),

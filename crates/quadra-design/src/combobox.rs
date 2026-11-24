@@ -59,16 +59,20 @@ impl View for Combobox {
         let (options, value, placeholder) = (self.options.clone(), self.value, self.placeholder);
         let face = move |_: usize, i: usize| {
             let hits = fuzzy_hits(&value.get_untracked(), &options[i]).unwrap_or_default();
-            let line =
-                row().align_items(Align::Center).grow(1.0).height(by_text(ROW)).padding_x(6.0).radius(4.0);
+            let line = row()
+                .align_items(Align::Center)
+                .grow(1.0)
+                .height(by_text(ROW))
+                .padding_x(token::SPACE_SM)
+                .radius(token::RADIUS_SM);
             let line = line.label(options[i].clone());
             let line = line.hover(|s| s.bg(token::PANEL_HOVER)).when(State::SELECTED, |s| s.bg(token::PRESS));
             line.child(marked(&options[i], &hits))
         };
         let parts = Parts {
             head: None,
-            list: Rc::new(|| column().grow(1.0).padding_y(4.0)),
-            line: Some(Rc::new(|| div().padding_x(4.0))),
+            list: Rc::new(|| column().grow(1.0).padding_y(token::SPACE_XS)),
+            line: Some(Rc::new(|| div().padding_x(token::SPACE_XS))),
             row: Rc::new(face),
             empty: None,
         };
@@ -81,19 +85,33 @@ impl View for Combobox {
             };
             field.on_submit(move |_| submit())
         };
-        let panel = |found: &quadra_headless::pick::Found, rows| {
+        // The list is as wide as the field: its 280, or its column's in a form.
+        let (wide, under) = (signal(280.0), Rc::new(std::cell::RefCell::new(None::<quadra_view::NodeRef>)));
+        let field_of = under.clone();
+        let fill = crate::layout::fills();
+        let panel = move |found: &quadra_headless::pick::Found, rows| {
             let matches = found.matches;
             let row_px = by_text(ROW);
             let tall = move || Length::Px((matches.get().len() as f32 * row_px() + 8.0).min(MOST));
-            surface(1).width(280.0).child(scroll(signal(0.0), rows).container(div().height(tall)))
+            let (field_of, fill) = (field_of.clone(), fill);
+            let list = surface(1).width(move || Length::Px(wide.get()));
+            let list = list.on_mount(move |tree, _| {
+                let field = field_of.borrow().as_ref().and_then(|field| field.get());
+                if let Some(field) = field.filter(|_| fill) {
+                    wide.set(tree.window_rect(field).width.max(280.0));
+                }
+            });
+            list.child(scroll(signal(0.0), rows).container(div().height(tall)))
         };
-        let place =
-            |anchor: &quadra_view::NodeRef| Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0);
+        let place = move |anchor: &quadra_view::NodeRef| {
+            *under.borrow_mut() = Some(anchor.clone());
+            Place::Beside(anchor.clone(), Side::Below, Along::Start, 4.0)
+        };
         let combo = quadra_headless::combobox(self.options, value, parts, field, panel, place);
-        match self.pick {
+        let combo = match self.pick {
             Some(pick) => combo.on_pick(move |i| pick(i)),
             None => combo,
-        }
-        .mount(cx)
+        };
+        crate::layout::holder(quadra_view::column(), None).child(combo).mount(cx)
     }
 }

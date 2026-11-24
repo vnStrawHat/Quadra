@@ -57,7 +57,7 @@ impl View for RangeSlider {
             slider::end(face, low, high, scale, of_low)
         };
         let from = move || track * scale.part(low.get());
-        let fill = div().absolute().top(8.0).height(4.0).radius(2.0).bg(token::ACCENT);
+        let fill = div().absolute().top(8.0).height(4.0).radius(token::RADIUS_XS).bg(token::ACCENT);
         let fill = fill.left(move || Length::Px(8.0 + from()));
         let fill = fill.width(move || Length::Px(track * scale.part(high.get()) - from()));
         let face: Div = div().size(self.width, 20.0).shrink(0.0).cursor(Cursor::Pointer).label(self.name);

@@ -277,7 +277,12 @@ impl View for MenuButton {
 
 /// The bar of an app's menus: 32 px on the chrome plane over a strong line.
 pub fn menubar(menus: impl IntoIterator<Item = MenuButton>) -> Div {
-    let bar = row().align_items(Align::Center).gap(4.0).padding_x(4.0).height(by_text(32.0)).shrink(0.0);
+    let bar = row()
+        .align_items(Align::Center)
+        .gap(token::SPACE_XS)
+        .padding_x(token::SPACE_XS)
+        .height(by_text(32.0))
+        .shrink(0.0);
     let bar = bar.bg(token::CHROME).border_bottom(1.0).border_color(token::LINE_STRONG);
     bar.children(menus.into_iter().map(|menu| menu.size(Size::Sm)).collect::<Vec<_>>())
 }

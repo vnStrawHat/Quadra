@@ -20,7 +20,7 @@ pub fn progress<M>(part: impl IntoProp<f32, M>) -> Div {
         Prop::Reactive(read) => Rc::from(read),
     };
     let (width, percent, number) = (part.clone(), part.clone(), part);
-    let fill = div().height(6.0).radius(2.0).bg(token::ACCENT);
+    let fill = div().height(6.0).radius(token::RADIUS_XS).bg(token::ACCENT);
     let fill = fill.width(move || Length::Pct(width().clamp(0.0, 1.0) * 100.0));
     let says = move || format!("{:.0}%", percent().clamp(0.0, 1.0) * 100.0);
     let range =
@@ -29,7 +29,7 @@ pub fn progress<M>(part: impl IntoProp<f32, M>) -> Div {
 }
 
 fn track() -> Div {
-    let track = div().size(200.0, 6.0).shrink(0.0).radius(2.0).bg(token::CHROME);
+    let track = div().size(200.0, 6.0).shrink(0.0).radius(token::RADIUS_XS).bg(token::CHROME);
     track.overflow_x(Overflow::Hidden)
 }
 
@@ -142,9 +142,16 @@ pub fn skeleton(width: f32, height: f32) -> Skeleton {
 impl View for Skeleton {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         // Two tones, the second over the first in a layer that fades in and out.
-        let over = div().absolute().left(0.0).top(0.0).right(0.0).bottom(0.0).radius(6.0).bg(token::PRESS);
+        let over = div()
+            .absolute()
+            .left(0.0)
+            .top(0.0)
+            .right(0.0)
+            .bottom(0.0)
+            .radius(token::RADIUS_MD)
+            .bg(token::PRESS);
         let over = over.mount(cx);
-        let block = div().width(self.width).height(self.height).shrink(0.0).radius(6.0);
+        let block = div().width(self.width).height(self.height).shrink(0.0).radius(token::RADIUS_MD);
         let block = block.bg(token::RAISED_HOVER).mount(cx);
         cx.tree.set_children(block, &[over]);
         cx.tree.make_layer(over, false);

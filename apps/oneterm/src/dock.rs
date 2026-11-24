@@ -207,9 +207,7 @@ fn line(entry: &Entry, d: Dock) -> quadra::Div {
     let quiet = move || -> Paint { if quiets() { token::TEXT_2.into() } else { token::TEXT_3.into() } };
     let shape = if entry.dir { icons::FOLDER } else { icons::FILE };
     let size = if file { size(entry.size) } else { String::new() };
-    row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    quadra_design::hstack()
         .padding_left(token::SPACE_LG)
         .padding_right(token::SPACE_LG)
         .height(by_text(24.0))

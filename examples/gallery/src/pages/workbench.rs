@@ -247,9 +247,5 @@ fn groups() -> Div {
         .resets(fps, false)
         .row("Vertical tabs", "Tabs in a list at the left instead of a strip above.", switch(vertical))
         .resets(vertical, false);
-    column()
-        .gap(token::SPACE_XXL)
-        .width(640.0)
-        .child(settings_group(theme_group))
-        .child(settings_group(interface))
+    quadra_design::sections().width(640.0).child(settings_group(theme_group)).child(settings_group(interface))
 }

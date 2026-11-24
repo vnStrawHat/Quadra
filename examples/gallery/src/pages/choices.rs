@@ -22,8 +22,7 @@ pub fn checkbox_page() -> Div {
     });
     let some = move || checks.iter().any(|check| check.get()) && !checks.iter().all(|check| check.get());
     let names = ["nginx", "redis", "postgres"];
-    let list = column()
-        .gap(token::SPACE_MD)
+    let list = quadra_design::vstack()
         .children(names.into_iter().zip(checks).map(|(name, on)| checkbox(on).label(name)));
     let several = stack()
         .child(checkbox(all).label("All services").indeterminate(some))

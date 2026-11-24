@@ -44,9 +44,7 @@ pub(super) fn pane(
         .fill()
         .label(format!("{} path", side.label))
         .on_submit(move |words| go(words.trim().to_string()));
-    let bar = row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    let bar = quadra_design::hstack()
         .padding_left(token::SPACE_LG)
         .padding_right(token::SPACE_SM)
         .height(by_text(28.0))

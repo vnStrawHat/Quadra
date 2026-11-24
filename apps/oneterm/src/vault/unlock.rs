@@ -4,8 +4,8 @@
 
 use std::rc::Rc;
 
-use quadra::{View, column, div, effect, signal, text, untrack};
-use quadra_design::{Variant, field, input, token};
+use quadra::{View, effect, signal, text, untrack};
+use quadra_design::{Variant, field, input};
 
 use crate::model::Model;
 
@@ -56,13 +56,10 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
             .label("Master password")
             .password()
             .test_id("vault-password")
-            .height(quadra_design::size::H_MD)
             .on_submit(move |_| submits());
-        column()
-            .gap(token::SPACE_LG)
-            .child(div().text_color(token::ERROR).child(text(move || said.get())))
+        quadra_design::form()
             .child(text("Saved passwords are sealed with the master password."))
-            .child(field("Master password", entry))
+            .child(field("Master password", entry).error(move || said.get()))
     };
     quadra_design::dialog(open, "Unlock saved passwords", body)
         .action("Cancel", Variant::Secondary, || {})

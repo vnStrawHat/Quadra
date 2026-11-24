@@ -5,7 +5,7 @@
 
 use std::rc::Rc;
 
-use quadra::{Align, Keymap, KeymapError, Keystroke, Role, Settings, Signal, effect, row, text, use_context};
+use quadra::{Keymap, KeymapError, Keystroke, Role, Settings, Signal, effect, text, use_context};
 use quadra_design::{SettingsGroup, key_input, token};
 use quadra_term::{TERMINAL_CONTEXT, TermCommand};
 
@@ -119,9 +119,7 @@ pub(crate) fn group() -> SettingsGroup {
             let names: Vec<&str> = same.map(|i| BINDINGS[i].name).collect();
             if names.is_empty() { String::new() } else { format!("Also {}", names.join(", ")) }
         };
-        let control = row()
-            .align_items(Align::Center)
-            .gap(token::SPACE_MD)
+        let control = quadra_design::hstack()
             .role(Role::Group)
             .label(b.name.to_string())
             .child(text(clash).color(token::WARN))

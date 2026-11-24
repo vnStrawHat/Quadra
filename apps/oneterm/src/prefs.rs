@@ -227,15 +227,30 @@ fn every_colour_theme_reads() {
     for (name, text) in crate::themes::THEMES {
         let theme = quadra_design::theme_from_json(text).unwrap_or_else(|e| panic!("{name}: {e:?}"));
         assert_ne!(theme.theme().color(quadra_design::token::CANVAS), quadra::Color::TRANSPARENT, "{name}");
-        // The words on the primary button read on its fill: 3 to 1 at the least.
-        let light = |role| {
-            let c: quadra::Color = theme.theme().color(role);
+        use quadra_design::token::*;
+        let (of, canvas) = (|role| theme.theme().color(role), theme.theme().color(CANVAS));
+        // What is chosen is tinted with the theme's own accent, not the kit's.
+        let (accent, tint): (quadra::Color, quadra::Color) = (of(ACCENT), of(ACCENT_TINT));
+        assert!(
+            tint.a > 0.0
+                && (text.contains("\"accent_tint\"") || quadra::Color { a: accent.a, ..tint } == accent),
+            "{name}"
+        );
+        // The words on the primary button read on its fill, at rest, under the pointer and
+        // pressed (a fill that lets the canvas through is read over it): 3 to 1 at the least.
+        let light = |c: quadra::Color| {
+            let c = canvas.lerp(quadra::Color { a: 1.0, ..c }, c.a);
             let part = |x: f32| if x <= 0.03928 { x / 12.92 } else { ((x + 0.055) / 1.055).powf(2.4) };
             0.2126 * part(c.r) + 0.7152 * part(c.g) + 0.0722 * part(c.b) + 0.05
         };
-        let (fill, words) =
-            (light(quadra_design::token::ACCENT), light(quadra_design::token::TEXT_ON_ACCENT));
-        assert!(fill.max(words) / fill.min(words) >= 3.0, "{name}: {}", fill.max(words) / fill.min(words));
+        for fill in [ACCENT, ACCENT_HOVER, ACCENT_PRESS] {
+            let (fill, words) = (light(of(fill)), light(of(TEXT_ON_ACCENT)));
+            assert!(
+                fill.max(words) / fill.min(words) >= 3.0,
+                "{name}: {}",
+                fill.max(words) / fill.min(words)
+            );
+        }
     }
     assert_eq!(COLOUR_THEMES.len(), crate::themes::THEMES.len() + 1);
 }

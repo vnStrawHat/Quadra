@@ -93,9 +93,7 @@ pub(super) fn transfers(d: Dock) -> impl View + use<> {
             format!("{running} active \u{B7} {} done", all.len() - running)
         })
     };
-    let head = row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    let head = quadra_design::hstack()
         .text_size(12.0)
         .text_color(token::TEXT_2)
         .child(div().font_weight(600).child(text("Transfers")))

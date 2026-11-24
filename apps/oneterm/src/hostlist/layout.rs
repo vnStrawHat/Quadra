@@ -31,7 +31,12 @@ pub(super) fn head(form: Form, title: String) -> Div {
 }
 
 /// The form; `confirming` puts the question of deleting it at its end.
-pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirming: Signal<bool>) -> Div {
+pub(super) fn body(
+    model: &Model,
+    form: Form,
+    editing: Option<String>,
+    confirming: Signal<bool>,
+) -> quadra_design::Form {
     // No field has a width: each is as wide as its column of the dialog's body.
     let text_field = |value, hint: &str, id: &'static str| input(value).placeholder(hint).test_id(id);
     let auth = form.auth;
@@ -60,8 +65,7 @@ pub(super) fn body(model: &Model, form: Form, editing: Option<String>, confirmin
     let name = editing.clone().unwrap_or_default();
     let question =
         alert(Tone::Danger, &format!("Delete {name}?"), "Its saved password and startup command go too.");
-    column()
-        .gap(token::SPACE_LG)
+    quadra_design::form()
         .child(field("Name", text_field(form.name, "The host when empty", "host-name")))
         .child(pair(
             field("Group", text_field(form.group, "Group", "host-group")),

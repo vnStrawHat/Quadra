@@ -57,9 +57,7 @@ fn tab_button(model: &Model, tab: Tab) -> impl View + use<> {
     let active = model.active();
     let on = move || active.get() == tab.id;
     let (shows, closes, moves, menu) = (model.clone(), model.clone(), model.clone(), model.clone());
-    let face = row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    let face = quadra_design::hstack()
         .padding_x(token::SPACE_LG)
         .max_width(240.0)
         .min_width(0.0)

@@ -76,12 +76,9 @@ fn card(model: &Model) -> Div {
         .reveal()
         .placeholder("Master password")
         .test_id("unlock")
-        .fill()
         .height(32.0) // the lg step: the one field of a sign-in card
         .on_submit(move |_| lock.unlock());
-    let head = row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    let head = quadra_design::hstack()
         .padding_x(token::SPACE_LG)
         .padding_top(token::SPACE_LG)
         .padding_bottom(token::SPACE_XS)
@@ -108,20 +105,14 @@ fn card(model: &Model) -> Div {
                 .child(icon(icons::BELL).size(14.0).color(token::ERROR))
                 .child(text(move || format!("{} new while locked", unread.get()))),
         );
+    // The card's body: a form, so that the field is as wide as the card; what is wrong with
+    // the password is said under it.
+    let said = quadra_design::field("Password", field).error(move || lock.said.get());
     let body = column()
-        .gap(token::SPACE_LG)
         .padding_x(token::SPACE_LG)
         .padding_bottom(token::SPACE_LG)
         .text_color(token::TEXT_2)
-        .child(text(why))
-        .child(quadra_design::field("Password", field))
-        .child(
-            div()
-                .text_color(token::ERROR)
-                .display(shown(move || !lock.said.with(String::is_empty)))
-                .child(text(move || lock.said.get())),
-        )
-        .child(foot);
+        .child(quadra_design::form().child(text(why)).child(said).child(foot));
     let unlock = button("Unlock")
         .variant(Variant::Primary)
         .shortcut("Enter")

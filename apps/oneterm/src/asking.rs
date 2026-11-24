@@ -116,13 +116,13 @@ pub(crate) fn dialogs(model: &Model) -> impl View + use<> {
 
 /// A fingerprint: mono, 12 px, on one line.
 fn mono(words: String) -> quadra::Div {
+    // design: a fingerprint is compared as one line: at 12 px its 50 characters fit the dialog
     div().font_family(fonts::MONO).text_size(12.0).text_color(token::TEXT).child(text(words))
 }
 
 fn host_key(asked: Option<(Phase, String)>) -> quadra::Div {
     let Some((Phase::Ask(Ask::HostKey { host, kind, fingerprint }), _)) = asked else { return column() };
-    column()
-        .gap(token::SPACE_MD)
+    quadra_design::vstack()
         .child(text(format!("The authenticity of host '{host}' can't be established.")))
         .child(
             column()
@@ -155,19 +155,19 @@ fn sign_in(
     if secret {
         entry = entry.password();
     }
-    let mut body = column().gap(token::SPACE_LG);
-    if again {
-        body = body.child(div().text_color(token::ERROR).child(text(wrong)));
-    }
-    body.child(text(said)).child(field(name, entry.on_submit(move |_| submit())))
+    // A try that failed is said under the field, by the field.
+    let wrong = if again { wrong } else { "" };
+    let entry = field(name, entry.on_submit(move |_| submit())).error(wrong.to_string());
+    column().gap(token::SPACE_LG).child(text(said)).child(entry)
 }
 
 fn failure(asked: Option<(Phase, String)>) -> quadra::Div {
     let Some((Phase::Ask(Ask::Failed { reason }), label)) = asked else { return column() };
-    column()
-        .gap(token::SPACE_MD)
-        .child(text(format!("Could not connect to {label}.")))
-        .child(quadra_design::alert(quadra_design::Tone::Danger, "", &sentence(&reason)))
+    quadra_design::vstack().child(text(format!("Could not connect to {label}."))).child(quadra_design::alert(
+        quadra_design::Tone::Danger,
+        "",
+        &sentence(&reason),
+    ))
 }
 
 /// The engine's reason as a sentence: its first letter upper case.

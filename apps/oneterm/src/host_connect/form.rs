@@ -40,9 +40,7 @@ fn pair(a: impl View + 'static, b: impl View + 'static) -> Div {
 /// Address, jump host and host key: a label of 88 and its value.
 fn summary(host: &Host, key: &Option<String>) -> Div {
     let target = &host.remote.target;
-    let address = row()
-        .gap(token::SPACE_MD)
-        .align_items(quadra::Align::Center)
+    let address = quadra_design::hstack()
         .child(mono(target.host.clone(), 13.0, token::TEXT))
         .child(div().text_size(12.0).text_color(token::TEXT_2).child(text(format!("port {}", target.port))));
     let jump = match host.jump.as_str() {
@@ -83,7 +81,7 @@ pub(super) fn body(
     key_known: &Option<String>,
     go: Go,
     secret_at: &quadra::NodeRef,
-) -> Div {
+) -> quadra_design::Form {
     let saved = model.sealed(&host.name).is_some();
     let entry = |value: Signal<String>, id: &'static str| {
         let go = go.clone();
@@ -122,8 +120,7 @@ pub(super) fn body(
         why if why.is_empty() => AnyView::new(div()),
         why => AnyView::new(alert(Tone::Danger, "Could not connect", &why)),
     });
-    let mut body = column()
-        .gap(token::SPACE_LG)
+    let mut body = quadra_design::form()
         .child(failure)
         .child(summary(host, key_known))
         .child(pair(focused(div().child(user), USER), how));
@@ -152,7 +149,7 @@ pub(super) fn body(
         _ => "Save username and auth method to this host".to_string(),
     });
     let here = checkbox(form.here).test_id("connect-here").label("Open in the current tab as a new space");
-    body.child(column().gap(token::SPACE_MD).child(save).child(here))
+    body.child(quadra_design::vstack().child(save).child(here))
 }
 
 /// A host key 1Term has not seen: checked with its owner, trusted here.
@@ -168,5 +165,5 @@ fn trust(trust: Signal<bool>) -> Div {
         .child(icon(icons::TRIANGLE_ALERT).size(14.0).color(token::WARN))
         .child(div().grow(1.0).min_width(0.0).text_color(token::TEXT).child(text(words)));
     let tick = checkbox(trust).test_id("connect-trust").label("Trust this key and add it to known hosts");
-    column().gap(token::SPACE_MD).child(note).child(tick)
+    quadra_design::vstack().child(note).child(tick)
 }

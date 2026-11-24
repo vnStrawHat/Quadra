@@ -58,8 +58,7 @@ pub(crate) fn dialog(model: &Model) -> impl View + use<> {
             .child(checkbox(form.sftp).label("Open SFTP alongside"))
             .child(checkbox(form.save).label("Save as host"))
             .child(checkbox(form.here).label("Open in the current tab as a new space"));
-        column()
-            .gap(token::SPACE_LG)
+        quadra_design::form()
             .child(text(
                 "Open a one-off SSH session. It is not added to your hosts unless you tick Save as host.",
             ))

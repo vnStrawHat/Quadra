@@ -92,9 +92,7 @@ pub fn kbd_page() -> Div {
 
 pub fn avatar_page() -> Div {
     let people = [("Nguyễn Văn An", 40.0), ("Trần Bình", 32.0), ("Lê Thị Cúc", 24.0), ("Ada Lovelace", 20.0)];
-    let author = row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    let author = quadra_design::hstack()
         .child(avatar("Ada Lovelace", 20.0))
         .child(text("Ada Lovelace").weight(size::WEIGHT_STRONG))
         .child(hint("committed 2 hours ago"))
@@ -157,7 +155,7 @@ pub fn progress_page() -> Div {
 
 pub fn spinner_page() -> Div {
     let sizes = line().children([12.0, 16.0, 24.0].map(|px| spinner().size(px)));
-    let inline = row().align_items(Align::Center).gap(token::SPACE_MD);
+    let inline = quadra_design::hstack();
     let inline = inline.child(spinner().size(12.0)).child(hint("Pulling image nginx:1.27…"));
     page(
         "Spinner",

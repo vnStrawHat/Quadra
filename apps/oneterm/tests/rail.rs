@@ -103,6 +103,8 @@ fn two_clicks_in_the_rail_rename_in_a_dialog_and_cancel_keeps_the_name() {
             && n.semantics.value.as_deref() == Some("Terminal")
     };
     assert_eq!(h.query(named).len(), 1, "the name as it is: {}", h.semantics());
+    let field = h.get_by_test_id("rename-tab").node();
+    assert_eq!(h.tree.window_rect(h.tree.parent(field).expect("its frame")).width, 334.0);
     h.get_by_test_id("rename-tab").set_value("logs");
     h.settle();
     h.get_by_role(Role::Button, "Cancel").click();

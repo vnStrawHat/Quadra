@@ -67,6 +67,10 @@ impl App {
     }
 
     fn unlock_with(&mut self, password: &str) {
+        // The field is as wide as the card's body.
+        let field = self.h.get_by_test_id("unlock").node();
+        let field = self.h.tree.window_rect(self.h.tree.parent(field).expect("its frame"));
+        assert_eq!(field.width, 414.0);
         self.h.get_by_test_id("unlock").set_value(password);
         self.h.settle();
         self.h.get_by_role(Role::Button, "Unlock").click();

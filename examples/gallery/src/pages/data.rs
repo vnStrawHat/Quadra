@@ -62,7 +62,7 @@ fn volumes() -> Div {
         let part = move || says.get().parse::<f32>().unwrap_or(0.0) / 100.0;
         let bar = meter(part).warn_at(0.85).height(4.0).width(120.0);
         let value = div().font_family(fonts::MONO).child(text(move || format!("{}%", says.get())));
-        row().align_items(Align::Center).gap(token::SPACE_MD).child(bar).child(value)
+        quadra_design::hstack().child(bar).child(value)
     });
     let open = Column::new("").width(90.0).unsorted().view(|_, _| button("Open").size(Size::Sm));
     let columns = [Column::new("Name").mono().width(200.0), used, Column::new("Note").muted().fill(), open];

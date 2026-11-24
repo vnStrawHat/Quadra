@@ -202,12 +202,5 @@ pub(crate) fn header_signal<F: Fn() -> String + 'static>(
         .font_family(fonts::MONO)
         .text_color(token::ACCENT)
         .child(text(move || progress.get().and_then(percent).map(|n| format!("{n}%")).unwrap_or_default()));
-    row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
-        .shrink(0.0)
-        .child(part)
-        .child(mark)
-        .child(note)
-        .child(named)
+    quadra_design::hstack().shrink(0.0).child(part).child(mark).child(note).child(named)
 }

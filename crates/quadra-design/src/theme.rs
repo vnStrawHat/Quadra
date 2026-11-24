@@ -50,7 +50,8 @@ const KEYS: [&str; 9] =
 
 /// Roles a theme may split off. One that a file does not list follows that file's own
 /// colours, not the colour the built-in theme derived for itself.
-const DERIVED: [Token; 14] = [
+const DERIVED: [Token; 15] = [
+    token::ACCENT_TINT,
     token::ACCENT_TINT_HOVER,
     token::ERROR_TINT_HOVER,
     token::INPUT_BG,
@@ -221,6 +222,22 @@ impl KitTheme {
     fn finished(mut self) -> KitTheme {
         use token::*;
         let unset = |theme: &KitTheme, role: Token| theme.color(role).is_transparent();
+        let tints = [(OK_TINT, self.color(OK).alpha(0.1)), (WARN_TINT, self.color(WARN).alpha(0.1))];
+        let tints = tints.into_iter().chain([
+            (ACCENT_TINT, self.color(ACCENT).alpha(0.16)),
+            (ERROR_TINT, self.color(ERROR).alpha(0.1)),
+            (SCROLL_THUMB, self.color(TEXT).alpha(0.3)),
+            // Whole bytes, as a file would hold it: a theme that is written out reads back equal.
+            (
+                ERROR_HOVER,
+                Color::parse_hex(&self.color(ERROR).lerp(self.color(CANVAS), 0.15).hex()).unwrap_or_default(),
+            ),
+        ]);
+        for (role, derived) in tints {
+            if unset(&self, role) {
+                self.set(role, derived);
+            }
+        }
         let follows = [
             (CHROME, PANEL),
             (STATUS_BG, CHROME),
@@ -239,21 +256,6 @@ impl KitTheme {
         for (role, other) in follows.into_iter().chain(SERIES.map(|series| (series, ACCENT))) {
             if unset(&self, role) {
                 self.set(role, self.color(other));
-            }
-        }
-        let tints = [(OK_TINT, self.color(OK).alpha(0.1)), (WARN_TINT, self.color(WARN).alpha(0.1))];
-        let tints = tints.into_iter().chain([
-            (ERROR_TINT, self.color(ERROR).alpha(0.1)),
-            (SCROLL_THUMB, self.color(TEXT).alpha(0.3)),
-            // Whole bytes, as a file would hold it: a theme that is written out reads back equal.
-            (
-                ERROR_HOVER,
-                Color::parse_hex(&self.color(ERROR).lerp(self.color(CANVAS), 0.15).hex()).unwrap_or_default(),
-            ),
-        ]);
-        for (role, derived) in tints {
-            if unset(&self, role) {
-                self.set(role, derived);
             }
         }
         // A tint under the pointer is pulled towards its colour; after the tints are known.

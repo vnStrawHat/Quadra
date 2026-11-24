@@ -64,6 +64,10 @@ fn dropped_files_upload_and_a_folder_is_made() {
     a.h.settle();
     a.h.get_by_role(Role::MenuItem, "New folder\u{2026}").click();
     a.h.settle();
+    // The one field of the dialog of 360 is as wide as its body: 12 from each side.
+    let field = a.h.get_by_test_id("sftp-name").node();
+    let field = a.h.tree.window_rect(a.h.tree.parent(field).expect("its frame"));
+    assert_eq!(field.width, 334.0);
     a.h.get_by_test_id("sftp-name").set_value("made");
     a.h.settle();
     a.h.get_by_test_id("sftp-name").focus();

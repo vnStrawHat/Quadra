@@ -93,8 +93,7 @@ pub fn tooltip_page() -> Div {
 pub fn popover_page() -> Div {
     let columns = popover_button("Columns", || {
         let title = text("Visible columns").weight(size::WEIGHT_STRONG);
-        column()
-            .gap(token::SPACE_MD)
+        quadra_design::vstack()
             .width(220.0)
             .child(title)
             .child(checkbox(signal(true)).label("Name"))
@@ -181,13 +180,7 @@ fn inspector<V: quadra::View + 'static>(body: impl Fn() -> V + 'static) -> Div {
         let kind = div().text_color(token::TEXT_3).child(text("Pod"));
         let name = div().font_family(quadra_design::fonts::MONO).child(text(move || shown.get()));
         let restart = button("Restart").size(Size::Sm);
-        row()
-            .align_items(Align::Center)
-            .gap(token::SPACE_MD)
-            .child(kind)
-            .child(name)
-            .child(div().grow(1.0))
-            .child(restart)
+        quadra_design::hstack().child(kind).child(name).child(div().grow(1.0)).child(restart)
     };
     let drawer = drawer(open, Edge::Right, "Pod", body).beside().head(head).size(340.0);
     let frame = row().height(240.0).border(1.0).border_color(token::LINE).radius(token::RADIUS_MD);

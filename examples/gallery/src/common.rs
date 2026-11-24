@@ -27,11 +27,8 @@ pub fn page(title: &str, about: &str, demos: impl IntoIterator<Item = Div>) -> D
     note("", about);
     let about = div().max_width(640.0).child(text(about.to_string()).color(token::TEXT_2).selectable());
     let head = column().gap(token::SPACE_SM).child(label(group)).child(heading(title, 1)).child(about);
-    let body = column()
-        .gap(token::SPACE_XXL)
-        .padding_x(token::SPACE_XXXL)
-        .padding_y(token::SPACE_XXL)
-        .max_width(1000.0);
+    let body =
+        quadra_design::sections().padding_x(token::SPACE_XXXL).padding_y(token::SPACE_XXL).max_width(1000.0);
     body.child(head).children(demos.into_iter().collect::<Vec<_>>())
 }
 

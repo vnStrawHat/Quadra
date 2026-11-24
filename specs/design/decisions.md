@@ -165,8 +165,19 @@ The pictures read pale. The palette was not the cause; four things were, and eac
   that only repeated a field's own are gone; the host filter fills the rail.
 - **Markdown's toolbar** is the kit's `toolbar()`, not a row of 36 of its own.
 - **Settings**: a select in a row is 240 in both apps (Markdown's were 200).
-- **A failure in a dialog** is the kit's alert, not a paragraph in the error colour; the
-  one weight of 700 is 600.
+- **A failure in a dialog** is the kit's alert, not a paragraph in the error colour; what
+  is wrong with a field (a wrong password, a try refused) is said under it by
+  `field(..).error(..)`, not by a red line above; the one weight of 700 is 600.
+- **Helpers where the apps wrote them out**: a column 8 apart is `vstack()`, a centred row 8
+  apart `hstack()`, a body 12 apart `form()` (31 places in the apps and the gallery). The
+  lock card's body is a form, so its field is the card's width by the kit.
+- **A theme's own tint.** What is chosen is the accent's tint, and 37 of 1Term's 38 themes
+  gave none: they showed the kit's blue under their own accent. A file that gives no tint
+  gets its accent at 16 %. A test holds every theme to that, and to words that read (3 to
+  1) on the accent at rest, under the pointer and pressed.
+
+One exception with its reason in the code: a host key's fingerprint is mono at 12 px, a step
+under the text around it, so that its 50 characters stay one line to compare.
 
 **1Term's own shapes, kept**: the title bar of 38, the status bar of 30, the rail's tab rows
 (36, 52 for the active one) and its folded form (48 wide, 44 a tab) are the canvas the user

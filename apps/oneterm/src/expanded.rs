@@ -53,9 +53,7 @@ pub(crate) fn view(model: &Model, d: Dock) -> impl View + use<> {
     let out = icon_button(icons::MINIMIZE_2, "Zoom out")
         .variant(Variant::Link)
         .on_click(move || collapse.set(false));
-    let head = row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    let head = quadra_design::hstack()
         .padding_left(token::SPACE_LG)
         .padding_right(token::SPACE_MD)
         .height(by_text(28.0))

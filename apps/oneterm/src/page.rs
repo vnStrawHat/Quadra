@@ -47,9 +47,7 @@ pub(crate) fn open_window(windows: &quadra::Windows, model: &Model) {
                 me.close_now();
             }
         });
-        let mark = row()
-            .align_items(Align::Center)
-            .gap(token::SPACE_MD)
+        let mark = quadra_design::hstack()
             .padding_left(token::SPACE_LG)
             .child(icon(icons::SETTINGS).size(16.0).color(token::ACCENT))
             .child(div().font_weight(600).child(text("1Term Settings")));
@@ -127,9 +125,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         .map(|dirs| dirs.config.join("settings.json").display().to_string())
         .unwrap_or_default();
     let advanced = SettingsGroup::new("Files").row("Settings file", &file, div());
-    let note = row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    let note = quadra_design::hstack()
         .text_color(token::TEXT_2)
         .child(icon(icons::INFO).size(14.0))
         .child(text(format!("Settings are saved to {file} as you change them.")));

@@ -75,7 +75,8 @@ Icons take a text color (`text`, `text_2` for decoration, `accent_text` when tog
   primary button (under the pointer `accent_hover`, pressed `accent_press`, its words
   `text_on_accent`, which a theme keeps at 3 to 1 or more against the accent). `accent_tint` (`#74ADE829` / `#5C78E229`, the accent at 16 %) fills what
   is chosen (a row of a list, of a tree, of a navigation; a segment; a day), a button that
-  is on, and the primary button while it is off.
+  is on, and the primary button while it is off. A theme file that gives an accent and no
+  tint gets its own accent at 16 %, not the tint of the theme it starts from.
 - Feedback colors with a tint each for banners and tinted buttons. Error text is readable
   (4.5:1 and more) on the canvas of its theme:
 

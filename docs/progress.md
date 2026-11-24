@@ -578,7 +578,10 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   body alone in the dialog of 360; hosts, SFTP entries and completions are data rows (24);
   the find bars' query is the md step in the editor, 1Term and Markdown; Markdown's toolbar
   is the kit's; a select in a settings row is 240 in both apps; a failure in a dialog is an
-  alert. 1Term's title bar, status bar and rail keep the user's canvas (specs/19).
+  alert, and what is wrong with a field is said under it. The apps and the gallery say
+  `vstack()`, `hstack()` and `form()` where they wrote them out. A theme file with no
+  `accent_tint` gets its own accent at 16 % (37 of 1Term's themes showed the kit's blue).
+  1Term's title bar, status bar and rail keep the user's canvas (specs/19).
 
 ### One height for the controls of one line (2026-11-22)
 

@@ -5,7 +5,7 @@
 use std::rc::Rc;
 use std::time::Duration;
 
-use quadra::{AnyView, Signal, View, column, div, interval, row, text, time, use_context};
+use quadra::{AnyView, Signal, View, div, interval, row, text, time, use_context};
 use quadra_design::{description_list, fonts, token, tooltip};
 use quadra_shell::{Meter, Usage};
 
@@ -72,7 +72,7 @@ fn value(seen: Signal<Option<Reading>>, of: impl Fn(&Reading) -> String + 'stati
 /// A column of the card: its heading, then terms and values.
 fn group(title: &'static str, items: Vec<(&'static str, AnyView)>) -> quadra::Div {
     let heading = div().font_weight(600).text_color(token::TEXT_2).child(text(title));
-    column().gap(token::SPACE_MD).child(heading).child(description_list(items))
+    quadra_design::vstack().child(heading).child(description_list(items))
 }
 
 /// The details: memory | processor, following the readings.

@@ -53,7 +53,7 @@ pub(super) fn view(
     form: Form,
     name: String,
     answer: Rc<dyn Fn()>,
-) -> Div {
+) -> quadra_design::Form {
     let place = last.split_once('@').map_or(last.clone(), |it| it.1.to_string());
     let user = last.split_once('@').map_or(String::new(), |it| it.0.to_string());
     let list = steps(&jump, place, known, user, form.auth.get_untracked());
@@ -72,7 +72,7 @@ pub(super) fn view(
         Some(Phase::Ask(ask)) => AnyView::new(question(ask, form.answer, &name, answer.clone())),
         _ => AnyView::new(div()),
     });
-    column().gap(token::SPACE_LG).child(lines).child(asked)
+    quadra_design::form().child(lines).child(asked)
 }
 
 /// A step's line: a check when done, a spinner under way, a dot to come.
@@ -84,9 +84,7 @@ fn line(step: &Step, when: std::cmp::Ordering) -> Div {
         .align_items(quadra::Align::Center)
         .justify(quadra::Justify::Center);
     let color = if when == Greater { token::TEXT_2 } else { token::TEXT };
-    row()
-        .gap(token::SPACE_MD)
-        .align_items(quadra::Align::Center)
+    quadra_design::hstack()
         .child(mark.child(match when {
             Less => AnyView::new(icon(icons::CIRCLE_CHECK).size(14.0).color(token::OK)),
             Equal => AnyView::new(spinner().size(14.0)),

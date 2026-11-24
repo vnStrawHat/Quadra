@@ -132,9 +132,7 @@ fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -
         Content::Binary(_) => "binary",
         Content::Text(_) => label(&edit.kind),
     };
-    let head = row()
-        .align_items(Align::Center)
-        .gap(token::SPACE_MD)
+    let head = quadra_design::hstack()
         .padding_x(token::SPACE_MD)
         .height(by_text(18.0))
         .shrink(0.0)

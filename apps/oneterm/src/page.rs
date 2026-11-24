@@ -227,7 +227,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
         vec![
             SettingsGroup::new("1Term")
                 .row("Version", "", text(env!("CARGO_PKG_VERSION")))
-                .row("Terminal engine", "", text("oneterm-vt 0.2"))
+                .row("Terminal engine", "", text(concat!("oneterm-vt ", env!("ONETERM_VT_VERSION"))))
                 .row("Built with", "", text("Quadra, a native UI framework on Direct3D 11 and DirectWrite"))
                 .row("License", "", text(env!("CARGO_PKG_LICENSE"))),
             crate::updates::group(p, d, model),

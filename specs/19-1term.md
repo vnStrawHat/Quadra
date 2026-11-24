@@ -49,8 +49,8 @@ of the design language (32 px). Colours are the kit's roles; the accent is the t
 the user's canvas "1Term" as revised on 2026-11-16 (the Quadra design language: the UI face at
 14 px on 23 px lines, labels 12 px on 19, the kit's mono face for paths, numbers and keys).
 
-- **Title bar** (the chrome plane, a line under it): the app's icon (the picture the
-  executable carries, `assets/logo.png`, 20 px) and
+- **Title bar** (the chrome plane, a line under it): the mark, a terminal's prompt (the kit's
+  `terminal` glyph, 20 px) in the brand's colour `#58C4DC`, the same in every theme, and
   "1Term" (13 px, semibold), 12 px from the left edge; then, right, icon buttons of 22 px with
   14 px icons, in this order: the
   bells and notices (M3: a bell and one count of bells not heard and notices not seen in mono,

@@ -63,9 +63,8 @@ impl App {
         self.h.query(|n| n.semantics.role == Role::Button && n.semantics.name == "Dismiss notification").len()
     }
 
-    /// The cards' pictures: every one but the title bar's mark.
     fn pictures(&self) -> usize {
-        self.h.query(|n| n.semantics.role == Role::Image && n.semantics.name != "1Term").len()
+        self.h.query(|n| n.semantics.role == Role::Image).len()
     }
 }
 

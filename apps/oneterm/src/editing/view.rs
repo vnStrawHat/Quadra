@@ -99,7 +99,7 @@ fn body(model: &Model, tab: Tab, space: &Space, edit: &Rc<FileEdit>) -> quadra::
     };
     let main = match &edit.content {
         Content::Binary(size) => AnyView::new(binary(*size)),
-        Content::Text(text) => AnyView::new(editing(edit, text)),
+        Content::Text(text) => AnyView::new(editing(edit, text, model.prefs().editor_wrap)),
     };
     let main = context_menu(main, menu(model, edit, id));
     let (saves, model_) = (edit.clone(), model.clone());
@@ -152,11 +152,21 @@ fn header(model: &Model, edit: &Rc<FileEdit>, on: impl Fn() -> bool + 'static) -
     }
     let (diffs, saves, model) = (edit.clone(), edit.clone(), model.clone());
     let small = |b: quadra_design::Button| b.size(Size::Xs).variant(Variant::Ghost);
-    head.child(small(button("Diff")).toggled(edit.diff).on_click(move || diffs.toggle_diff())).child(
-        small(button("Save"))
-            .disabled(move || !modified.try_get().unwrap_or(false))
-            .on_click(move || saves.save(&model, || {})),
-    )
+    let (wraps, wrapped) = (model.prefs().editor_wrap, edit.clone());
+    let wrap = move || {
+        wraps.update(|on| *on = !*on);
+        // The editor has the focus again, unless the diff shows in its place.
+        if !wrapped.diff.get_untracked() {
+            wrapped.focus();
+        }
+    };
+    head.child(small(button("Wrap")).toggled(wraps).on_click(wrap))
+        .child(small(button("Diff")).toggled(edit.diff).on_click(move || diffs.toggle_diff()))
+        .child(
+            small(button("Save"))
+                .disabled(move || !modified.try_get().unwrap_or(false))
+                .on_click(move || saves.save(&model, || {})),
+        )
 }
 
 /// `user@host:/full/path`: too long, its folder is cut and the file's name stays whole.
@@ -177,11 +187,12 @@ fn place(place: &str, on: impl Fn() -> bool + 'static) -> quadra::Div {
 
 /// The editor, coloured by the file's type, its gutter marking the changes against the base;
 /// while the diff shows, the diff in its place (the editor stays, with its undo).
-fn editing(edit: &Rc<FileEdit>, source: &str) -> quadra::Div {
+fn editing(edit: &Rc<FileEdit>, source: &str, wraps: quadra::Signal<bool>) -> quadra::Div {
     let shows = edit.diff;
     let code = editor(source.to_string())
         .path(edit.kind.clone())
         .font(13.0, 20.0)
+        .wrap_when(wraps)
         .base(edit.base.get_untracked())
         .changed(edit.modified)
         .keep(edit.doc.clone());

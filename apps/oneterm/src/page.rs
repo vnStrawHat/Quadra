@@ -179,6 +179,8 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
                     input(p.editor_args).label("Arguments"),
                 )
                 .back(p.editor_args, d.editor_args)
+                .row("Wrap long lines", "In 1Term's editor; else they scroll sideways.", switch(p.editor_wrap))
+                .back(p.editor_wrap, d.editor_wrap)
                 .row(
                     "Asked above",
                     "A file larger, in KB, is edited only when asked; 0, any.",

@@ -202,15 +202,19 @@ impl FileEdit {
         });
     }
 
+    /// Gives the editor the focus: after a button of its header.
+    pub fn focus(&self) {
+        if let Some((handle, id)) = self.widget.borrow().clone() {
+            handle.with(move |tree| tree.focus(id));
+        }
+    }
+
     /// Shows the diff of the text as it is now against the base, or the editor again.
     pub fn toggle_diff(self: &Rc<Self>) {
         if self.diff.get_untracked() {
             self.diff.set(false);
             // The editor again, with the focus.
-            if let Some((handle, id)) = self.widget.borrow().clone() {
-                handle.with(move |tree| tree.focus(id));
-            }
-            return;
+            return self.focus();
         }
         let me = self.clone();
         self.text(move |text, _| {

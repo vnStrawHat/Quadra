@@ -584,6 +584,12 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   alert, and what is wrong with a field is said under it. The apps and the gallery say
   `vstack()`, `hstack()` and `form()` where they wrote them out. A theme file with no
   `accent_tint` gets its own accent at 16 % (37 of 1Term's themes showed the kit's blue).
+- **1Term's editor wraps long lines; the editor is the editor under its last line** (2026-11-24):
+  `editor(..).wrap_when(signal)` wraps an editor that shows (rows made again; text, cursors and
+  undo kept); 1Term's header has Wrap and its settings "Wrap long lines" (`sftp.editor_wrap`,
+  off at first). The widget is as high as its view at least: under the last line of a short
+  file the wheel with Shift scrolled nothing sideways and a press did not reach the editor.
+  Tests: `quadra-code` tests/editor.rs and tests/wrap_when.rs, 1Term tests/editing_menu.rs.
 - **1Term: a folded tab with no signal has its icon in the middle; a space header's words too**
   (2026-11-24): the hidden line's box kept its gap and lifted the icon 3 px; a line of 18 in
   the header's 17 stood the mono words a pixel low and off the other face's baseline.

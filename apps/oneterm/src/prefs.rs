@@ -98,6 +98,8 @@ pub struct Prefs {
     pub editor: Signal<usize>,
     pub editor_program: Signal<String>,
     pub editor_args: Signal<String>,
+    /// The editor of 1Term wraps long lines.
+    pub editor_wrap: Signal<bool>,
     pub edit_limit_kb: Signal<f64>,
 }
 
@@ -168,6 +170,7 @@ impl Prefs {
             editor: s.choice("sftp.editor", &crate::sftp::EDITORS),
             editor_program: s.value("sftp.editor_program", String::new()),
             editor_args: s.value("sftp.editor_args", String::new()),
+            editor_wrap: s.value("sftp.editor_wrap", false),
             edit_limit_kb: s.value("sftp.edit_max_kb", 1024.0),
         }
     }

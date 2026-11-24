@@ -1,7 +1,8 @@
 //! The editor space's menu (specs/19, "Editing in 1Term") on a real connection to the engine's
 //! test server on 127.0.0.1: a right click gives Copy, Paste and Find, the editor's own
 //! commands, and Close, which asks with changes; a binary file's menu has Close alone. The
-//! clipboard is the harness's.
+//! clipboard is the harness's. And Wrap in its header, which breaks long lines at the space's
+//! width.
 
 use std::rc::Rc;
 use std::time::{Duration, Instant};
@@ -186,4 +187,50 @@ fn the_editor_s_menu_copies_pastes_finds_and_closes() {
     }
     a.h.settle();
     assert_eq!(items(&a), ["Close"]);
+}
+
+#[test]
+fn wrap_breaks_long_lines_at_the_space_s_width_and_back() {
+    let mut a = app("edit-wrap", "In 1Term");
+    a.edit("config.yaml");
+    a.wait(|a| a.shows("/home/config.yaml"), "the editor space");
+    a.h.type_text(&"wide ".repeat(60));
+    a.h.settle();
+    let text = a.editor();
+    let inputs = a.h.query(|n| n.semantics.role == Role::TextInput);
+    let is = |a: &mut App, id| a.h.tree.widget_mut::<quadra_code::EditorWidget>(id).is_some();
+    let id = inputs.into_iter().find(|&id| is(&mut a, id)).unwrap();
+    // A press of the pointer on Wrap, which takes the focus as a press does.
+    let tap = |a: &mut App| {
+        let node = a.h.get_by_role(Role::Button, "Wrap").node();
+        let at = a.h.tree.window_rect(node).center();
+        a.h.click(at.x, at.y);
+        a.h.settle();
+    };
+    let rows = |a: &mut App| a.h.tree.widget_mut::<quadra_code::EditorWidget>(id).unwrap().row_count();
+    assert_eq!(rows(&mut a), 3);
+    // Well under its three lines the space is still the editor: Shift and the wheel scroll it.
+    let under = quadra::Point::new(a.h.tree.window_rect(id).center().x, 400.0);
+    a.h.tree.wheel(quadra::Point::new(0.0, -3.0), false, under, Mods::SHIFT);
+    a.h.settle();
+    assert!(a.h.tree.widget_mut::<quadra_code::EditorWidget>(id).unwrap().scroll_x > 0.0);
+    // Wrap, in the header: the long line takes rows; the text and the focus are as they were.
+    tap(&mut a);
+    assert!(rows(&mut a) > 3 && a.h.semantics().contains("Button \"Wrap\" [checked]"));
+    assert_eq!(a.editor(), text);
+    a.h.type_text("x");
+    a.h.settle();
+    assert_eq!(a.editor(), text.map(|it| it.replacen("wide name", "wide xname", 1)));
+    tap(&mut a);
+    assert_eq!(rows(&mut a), 3);
+    // While the diff shows, Wrap leaves the focus where it is: nothing is typed behind it.
+    let text = a.editor();
+    a.h.get_by_role(Role::Button, "Diff").click();
+    a.h.settle();
+    tap(&mut a);
+    a.h.type_text("unseen");
+    a.h.settle();
+    a.h.get_by_role(Role::Button, "Diff").click();
+    a.h.settle();
+    assert_eq!(a.editor(), text);
 }

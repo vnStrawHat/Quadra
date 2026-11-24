@@ -713,7 +713,11 @@ thread never waits on the network.
   third colour, `● Modified` in the warning colour while the text is not the base (`Saving…`
   while it is sent), Diff (toggled: the kit's `diff` of the base and the text, three lines of
   context, in the editor's place, the editor kept with its undo; `No changes.` when there are
-  none) and Save (disabled with no changes), ghost buttons of 18 px. Ctrl+S (the context
+  none) and Save (disabled with no changes), ghost buttons of 18 px; before them Wrap
+  (toggled: the setting "Wrap long lines", `sftp.editor_wrap`, off at first, under Editor in
+  the settings: a long line goes on to the rows under it at the space's width, the kit's soft
+  wrap; while it is off a long line scrolls sideways, by the wheel with Shift or turned
+  sideways, and with the caret). Ctrl+S (the context
   `file_edit`) or Save writes the text to the copy in the data folder, with the line ends the
   file had, and uploads it on the connection the file came from; a card says it was saved or
   why not, and once saved the text is the base. A right click opens its menu (while the

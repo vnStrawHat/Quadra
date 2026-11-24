@@ -559,6 +559,9 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
 - **The trial**: an agent given the folder alone wrote a dialog with a form and a card that
   compiled and were laid out right undrawn; what it found wrong or missing is fixed in the
   kit and the text (`decisions.md`, "The trial"; `tests/layout.rs`).
+- **The website's colours and faces are the kit's** (2026-11-24): `tools/website.py` writes
+  the two themes' roles (`crates/quadra-design/themes`) and the kit's font files before
+  `site/site.css`, which names no colour of its own; they were typed by hand and had drifted.
 - **The website** (`tools/website.py`, `site/`): an introduction, a guide whose code is quoted
   from compiled files, the design language, and a page for each of the gallery's pages with
   its pictures in both themes and its demos' code (the shots write `pages.json`); a markdown

@@ -15,6 +15,7 @@ import io
 import json
 import os
 import re
+import json
 import shutil
 import struct
 import sys
@@ -27,8 +28,31 @@ SHOTS = ".tmp/shots"
 GUIDE = ["getting-started", "concepts", "views", "agents"]
 DESIGN = ["README", "principles", "color", "type", "space", "layout", "controls", "surfaces", "data",
           "components", "patterns", "checklist", "decisions"]
+# The roles of the kit's themes the site's stylesheet names (`--canvas`, `--text-2`, ..), and
+# the kit's faces it is set in.
+ROLES = ["canvas", "panel", "chrome", "panel_hover", "line", "line_strong", "text", "text_2", "text_3",
+         "accent", "accent_text", "accent_tint"]
+THEMES = "crates/quadra-design/themes"
+FONTS = "crates/quadra-design/fonts"
+FACES = [("IBM Plex Sans", "IBMPlexSans-Regular", 400, "normal"), ("IBM Plex Sans", "IBMPlexSans-Italic", 400, "italic"),
+         ("IBM Plex Sans", "IBMPlexSans-SemiBold", 600, "normal"), ("Lilex", "Lilex-Regular", 400, "normal")]
 # The part of a picture of the gallery that is the page: without its sidebar and its bars.
 PAGE_BOX = (241, 32, 1200, 770)
+
+
+def tokens():
+    """The stylesheet's head: the two themes' colours as they are in the kit, and its faces."""
+    def colours(name):
+        palette = json.loads(read(f"{THEMES}/{name}.json"))["palette"]
+        return " ".join(f"--{role.replace('_', '-')}: {palette[role]};" for role in ROLES)
+    light, dark = colours("one-light"), colours("one-dark-pro")
+    faces = "".join(
+        f'@font-face {{ font-family: "{family}"; src: url("fonts/{file}.ttf"); font-weight: {weight}; '
+        f"font-style: {style}; font-display: swap }}\n" for family, file, weight, style in FACES)
+    # The viewer's own choice (`data-theme` on the root) wins over the system's, both ways.
+    return (f"{faces}:root {{ {light} color-scheme: light }}\n"
+            f'@media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) {{ {dark} color-scheme: dark }} }}\n'
+            f':root[data-theme="dark"] {{ {dark} color-scheme: dark }}\n')
 
 
 def read(path):
@@ -148,7 +172,12 @@ class Site:
         for page in self.pages:
             write(f"{self.out}/{page['path']}.html", self.page(page))
             write(f"{self.out}/{page['path']}.md", page["markdown"])
-        shutil.copyfile("site/site.css", f"{self.out}/site.css")
+        write(f"{self.out}/site.css", tokens() + read("site/site.css"))
+        os.makedirs(f"{self.out}/fonts", exist_ok=True)
+        for _, file, _, _ in FACES:
+            shutil.copyfile(f"{FONTS}/{file}.ttf", f"{self.out}/fonts/{file}.ttf")
+        for licence in ("OFL-plex-sans.txt", "OFL-lilex.txt"):
+            shutil.copyfile(f"{FONTS}/{licence}", f"{self.out}/fonts/{licence}")
         lines = ["# Quadra", "", "> " + self.pages[0]["summary"], "",
                  "Every page of the site has a markdown twin: the same path ending in `.md`. "
                  "`llms-full.txt` is all of them in one file.", ""]

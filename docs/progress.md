@@ -603,8 +603,9 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     the focus where it is.
   - Taking over from OneTerm 0.6 (`import.rs`; specs/19, "Taking over from OneTerm 0.6"): its saved
     sessions as hosts (names made unique, jump hosts by name, forwards, colours) and a few
-    of its terminal's settings, once at the user's own start and by Import from OneTerm 0.6 in
-    the settings (tests/import.rs).
+    of its terminal's settings, once at the user's own start, with nothing asked or shown (the
+    user's decision, 2026-11-24: the card and the settings' Import button of the first build
+    are gone; tests/import.rs).
   - The vault in OneTerm 0.6's format, and its saved passwords taken as they are (the user's
     decision, 2026-11-24; specs/19, "Saved passwords"): Argon2id (`argon2`, specs/01 R15)
     and `otv1:` envelopes bound to the target (`vault/format.rs`), checked against

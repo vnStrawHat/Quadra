@@ -47,7 +47,7 @@ pub fn adopt(roots: &[PathBuf]) {
 }
 
 /// OneTerm 0.6's folder: `.OneTerm` in the user's.
-pub(crate) fn folder() -> Option<PathBuf> {
+fn folder() -> Option<PathBuf> {
     std::env::var_os("USERPROFILE").map(|home| PathBuf::from(home).join(".OneTerm"))
 }
 
@@ -123,7 +123,7 @@ impl Model {
     /// colours, then its saved passwords: how many hosts, how many passwords, and how many
     /// passwords could not be taken. `settings` (the first start alone) takes the terminal's
     /// settings too.
-    pub fn take_over(&self, folder: &Path, settings: bool) -> (usize, usize, usize) {
+    pub fn take_over(&self, folder: &Path) -> (usize, usize, usize) {
         let saved = std::fs::read_to_string(folder.join("ssh_session.json")).unwrap_or_default();
         let have: Vec<String> = self.hosts().into_iter().map(|it| it.name).collect();
         let all = sessions(&saved);
@@ -132,13 +132,13 @@ impl Model {
             self.save_host(taken.host.clone());
             self.set_host_tag(&taken.host.name, taken.colour.as_deref());
         }
-        let terminal = std::fs::read_to_string(folder.join("terminal.json")).ok().filter(|_| settings);
+        let terminal = std::fs::read_to_string(folder.join("terminal.json")).ok();
         if let Some(Ok(terminal)) = terminal.as_deref().map(parse_json) {
             self.take_settings(&terminal);
         }
         // The proxy its updates went through, so the next one arrives the same way. Whether
         // certificates are checked is not taken: off is chosen here, knowingly.
-        let updates = std::fs::read_to_string(folder.join("update_config.json")).ok().filter(|_| settings);
+        let updates = std::fs::read_to_string(folder.join("update_config.json")).ok();
         let updates = updates.as_deref().and_then(|it| parse_json(it).ok());
         let proxy = updates.as_ref().and_then(|it| text(it, "proxy_url")).map(str::trim);
         if let Some(proxy) = proxy.filter(|it| !it.is_empty()) {
@@ -197,71 +197,20 @@ impl Model {
         number(&ssh, "keepalive_max").into_iter().for_each(|it| p.keepalive_max.set(it));
     }
 
-    /// What a start of the app does once: takes over from OneTerm 0.6's folder, and says what it
-    /// took. A trial run (`ONETERM_HOME`) and a test take nothing: the app's `main` asks.
+    /// What a start of the app does once: takes over from OneTerm 0.6's folder, with nothing
+    /// asked and nothing shown; the log says what was taken. A trial run (`ONETERM_HOME`) and
+    /// a test take nothing: the app's `main` asks.
     pub fn take_over_once(&self) {
         let done = self.prefs().taken_over;
         if done.get_untracked() {
             return;
         }
         done.set(true);
-        // Nothing taken is nothing to say at a start; the settings' button says it.
-        let took = folder().filter(|it| it.is_dir()).map(|it| self.take_over(&it, true));
-        took.filter(|it| *it != (0, 0, 0)).into_iter().for_each(|it| self.say_taken(it));
-    }
-
-    /// A card that says what was taken over.
-    pub(crate) fn say_taken(&self, (hosts, passwords, left): (usize, usize, usize)) {
-        let count = |n: usize, one: &str| format!("{n} {one}{}", if n == 1 { "" } else { "s" });
-        let (h, p) = (count(hosts, "host"), count(passwords, "saved password"));
-        let mut body = match (hosts, passwords) {
-            (0, 0) => "OneTerm 0.6 saved no host or password that is not here already.".to_string(),
-            (_, 0) => format!("{h} taken over from OneTerm 0.6."),
-            (0, _) => format!("{p} taken over from OneTerm 0.6."),
-            _ => format!("{h} and {p} taken over from OneTerm 0.6."),
-        };
-        if passwords > 0 {
-            body += " The master password is the one set in OneTerm 0.6.";
+        if let Some((hosts, passwords, left)) =
+            folder().filter(|it| it.is_dir()).map(|it| self.take_over(&it))
+        {
+            let took = format!("{hosts} hosts and {passwords} saved passwords taken over from OneTerm 0.6");
+            quadra::log::info("import", format!("{took}; {left} saved passwords could not be"));
         }
-        if left > 0 {
-            body += &format!(" {} could not be taken: OneTerm asks again.", count(left, "saved password"));
-        }
-        self.notify(quadra_design::Notice::new("OneTerm 0.6").body(body));
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn sessions_become_hosts_by_name_with_their_ways_in() {
-        let json = r##"{"schema_version":2,"next_session_id":9,"sessions":[
-            {"id":1,"label":"prod","host":"10.0.0.1","port":22,"username":"deploy","group":"infra",
-             "color":"#56B6C2","sealed_password":"otv1:AAEC"},
-            {"id":4,"label":"prod","host":"10.0.0.2","port":2222,"username":"ops","group":null,
-             "auth_method":"private_key","key_path":"C:/keys/id","jump_host":1,
-             "port_forwards":[{"kind":"local","bind":"127.0.0.1","bind_port":8080,"target_host":"db","target_port":5432},
-                              {"kind":"dynamic","bind":"127.0.0.1","bind_port":1080}]},
-            {"id":5,"label":"","host":"10.0.0.3","auth_method":"agent"},
-            {"id":6,"label":"no address"}]}"##;
-        let all = sessions(json);
-        let names: Vec<&str> = all.iter().map(|it| it.host.name.as_str()).collect();
-        assert_eq!(names, ["prod", "prod (2)", "10.0.0.3"]);
-        let (first, second) = (&all[0], &all[1]);
-        assert_eq!((first.host.address(), first.host.group.as_str()), ("deploy@10.0.0.1".into(), "infra"));
-        assert!(first.sealed.is_some() && first.colour.as_deref() == Some("#56B6C2"));
-        assert_eq!(first.host.remote.auth, Auth::Password);
-        assert_eq!(second.host.address(), "ops@10.0.0.2:2222");
-        assert_eq!(
-            (second.host.jump.as_str(), &second.host.remote.auth),
-            ("prod", &Auth::Key("C:/keys/id".into()))
-        );
-        let ways: Vec<String> = second.host.remote.forwards.iter().map(Forward::label).collect();
-        assert_eq!(ways, ["8080:db:5432", "D1080"]);
-        assert_eq!(all[2].host.remote.auth, Auth::Agent);
-        // The first version was the list itself; what is no such file gives nothing.
-        assert_eq!(sessions(r#"[{"label":"old","host":"h","port":22}]"#).len(), 1);
-        assert!(sessions("not json").is_empty() && sessions("{}").is_empty());
     }
 }

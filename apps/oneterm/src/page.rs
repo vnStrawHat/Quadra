@@ -260,15 +260,4 @@ fn hosts(p: Prefs, model: &Model) -> SettingsGroup {
     SettingsGroup::new("Hosts")
         .row("Saved hosts", "Edit or remove a host from its menu in the rail.", saved)
         .row("Recent", "Recent connections, listed in the New terminal menu.", lately)
-        .row(
-            "OneTerm 0.6",
-            "Add the hosts and passwords OneTerm 0.6 and earlier saved that are not here yet.",
-            {
-                let model = model.clone();
-                button("Import from OneTerm 0.6").variant(Variant::Secondary).on_click(move || {
-                    let took = crate::import::folder().map_or((0, 0, 0), |it| model.take_over(&it, false));
-                    model.say_taken(took);
-                })
-            },
-        )
 }

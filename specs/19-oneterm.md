@@ -449,10 +449,13 @@ tried; not in a trial run under `ONETERM_HOME`, nor in a test) OneTerm takes ove
   has a vault of its own already (a master password set here
   first), it is kept and no password is taken.
 
-A card says how many hosts and saved passwords were taken over, that the master password is
-OneTerm 0.6's, and how many passwords could not be taken. Settings, SSH & hosts has **Import
-from OneTerm 0.6**, which does the same again for what OneTerm does not have yet (no settings) and
-says so. OneTerm 0.6's files are read and never changed.
+Taking over is automatic: nothing is asked, nothing is shown, and nothing in the settings
+imports (the user's decision, 2026-11-24; a card said what was taken and the settings had an
+Import button before). To the user it is the same app in a newer version: the hosts are in
+the rail, and the saved passwords open with the master password as before. The log says how
+many hosts and saved passwords were taken and how many passwords could not be. It happens
+once: what OneTerm 0.6 saves afterwards is not taken. OneTerm 0.6's files are read and never
+changed.
 
 ## Updates
 

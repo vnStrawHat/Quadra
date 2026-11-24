@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use oneterm::{NewSession, OneTerm};
-use quadra::{Settings, provide};
+use quadra::{Role, Settings, provide};
 use quadra_term::echo;
 use quadra_testing::Harness;
 
@@ -76,14 +76,14 @@ fn the_vault_and_its_saved_passwords_come_as_they_are() {
     let secrets = settings.value("ssh.secrets", Vec::<Vec<String>>::new());
     let vault = settings.value("ssh.vault", String::new());
     // Hosts taken while OneTerm 0.6's vault could not be read: the password is not, and it is said.
-    assert_eq!(model.take_over(&folder, false), (2, 0, 1));
+    assert_eq!(model.take_over(&folder), (2, 0, 1));
     assert!(vault.get().is_empty() && secrets.get().is_empty());
     // With the vault there, the password arrives for the host that is here already.
     std::fs::write(folder.join("vault.json"), VAULT).unwrap();
-    assert_eq!(model.take_over(&folder, false), (0, 1, 0));
+    assert_eq!(model.take_over(&folder), (0, 1, 0));
     assert_eq!(secrets.get(), [["prod".to_string(), SEALED.to_string()]]);
     assert!(vault.get().contains("3f9c0a4e8b1d4c27a6e2f0b9c1d2e3f4"), "{}", vault.get());
-    assert_eq!(model.take_over(&folder, false), (0, 0, 0), "nothing twice");
+    assert_eq!(model.take_over(&folder), (0, 0, 0), "nothing twice");
     // OneTerm 0.6's master password is OneTerm's: it opens the vault, and another does not.
     let lock = model.lock();
     assert!(lock.can_lock() && lock.key.get_untracked().is_none());
@@ -100,7 +100,7 @@ fn the_vault_and_its_saved_passwords_come_as_they_are() {
     let hosts = settings.value("ssh.hosts", Vec::<Vec<String>>::new());
     hosts.update(|rows| rows[0][2] = "deploy@10.0.0.2".into());
     h.settle();
-    assert_eq!(model.take_over(&folder, false), (0, 0, 1));
+    assert_eq!(model.take_over(&folder), (0, 0, 1));
     assert!(secrets.get().is_empty());
 }
 
@@ -113,7 +113,7 @@ fn a_vault_of_oneterm_s_own_is_kept_and_takes_no_password_of_another() {
     model.lock().set_password(String::new(), "mine".into(), move |_| told.set(true));
     wait(&mut h, || done.get());
     let own = settings.value("ssh.vault", String::new()).get();
-    assert_eq!(model.take_over(&folder, false), (2, 0, 1));
+    assert_eq!(model.take_over(&folder), (2, 0, 1));
     assert_eq!(settings.value("ssh.vault", String::new()).get(), own);
     assert!(settings.value("ssh.secrets", Vec::<Vec<String>>::new()).get().is_empty());
     h.settle();
@@ -128,7 +128,7 @@ fn hosts_and_the_terminal_s_settings_are_taken_over_and_a_host_there_is_left() {
     let updates = r#"{"proxy_url":"http://proxy.corp:3128","verify_certificates":false}"#;
     std::fs::write(folder.join("update_config.json"), updates).unwrap();
 
-    assert_eq!(model.take_over(&folder, true), (2, 0, 1));
+    assert_eq!(model.take_over(&folder), (2, 0, 1));
     h.settle();
     let rows = settings.value("ssh.hosts", Vec::<Vec<String>>::new()).get();
     assert_eq!(rows[0][..4], ["prod", "infra", "deploy@10.0.0.1", "Password"].map(String::from));
@@ -142,9 +142,13 @@ fn hosts_and_the_terminal_s_settings_are_taken_over_and_a_host_there_is_left() {
     // The rail lists them, in their group.
     assert!(h.has_text("prod") && h.has_text("lab"), "{}", h.semantics());
 
-    // Again: nothing new, and a setting changed since stays.
-    settings.value("terminal.font_family", String::new()).set("Mine".into());
-    assert_eq!(model.take_over(&folder, false), (0, 0, 1));
+    // Again: no host twice.
+    assert_eq!(model.take_over(&folder), (0, 0, 1));
     assert_eq!(settings.value("ssh.hosts", Vec::<Vec<String>>::new()).get().len(), 2);
-    assert_eq!(settings.value("terminal.font_family", String::new()).get(), "Mine");
+    // Nothing in the settings imports: taking over is the start's, once.
+    h.get_by_role(Role::Button, "Settings").click();
+    h.settle();
+    h.get_by_role(Role::TreeItem, "SSH & hosts").click();
+    h.settle();
+    assert!(h.has_text("Saved hosts") && !h.has_text("Import from OneTerm 0.6"), "{}", h.semantics());
 }

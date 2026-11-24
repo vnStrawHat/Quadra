@@ -141,9 +141,16 @@ place; the derived keys `verify_password` compares are wiped too.
 ## Fetching
 
 For an app that reads something from the network (the updater, specs/22):
-`http_get(url, headers, body) -> Result<u16, String>` is a GET by the OS's own HTTP (WinHTTP),
-so the proxy the system is set to (found by itself), its certificates and its TLS are the
-ones used, and no HTTP or TLS code is linked in. `headers` are sent as given, the
+`http_get(url, headers, network, body) -> Result<u16, String>` is a GET by the OS's own HTTP
+(WinHTTP), so its certificates and its TLS are the ones used, and no HTTP or TLS code is
+linked in. `network` is a `Network { proxy, verify_tls }`, by default the proxy the system is
+set to (found by itself) and certificates checked. `proxy: Some("host:port")` names an HTTP
+proxy by hand (an `http://` before it is taken off; an address that is none, SOCKS or one
+with a name and a password in it, is an error before anything is asked: a proxy that asks
+for a name is not served yet; a server of this machine itself, `127.0.0.1`, is asked
+without the proxy, which is the OS's rule). `verify_tls: false` takes a server's certificate whoever
+signed it and whatever name, date and use it says: for a network that opens TLS on the way,
+at the cost that whoever stands there can answer in the server's place. `headers` are sent as given, the
 `User-Agent` among them being the agent; `body` is given what comes piece by piece (64 KiB
 at most) whatever the status, and stops the GET by answering `false` (the error `stopped`).
 The answer is the status; an error says in words what failed (no connection, cut off).

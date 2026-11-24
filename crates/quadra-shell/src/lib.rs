@@ -65,6 +65,23 @@ pub use win::{cycles_per_second, private_memory, process_cycles, window_shown};
 pub use win::{derive_key, http_get, open, random_bytes, random_key, seal, sha256};
 pub use zeroize::{Zeroize, Zeroizing};
 
+/// How a fetch reaches a server (specs/16, "Fetching").
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Network {
+    /// An HTTP proxy named by hand, `host:port` (an `http://` before it is taken off). None is
+    /// the system's, found as the OS finds it.
+    pub proxy: Option<String>,
+    /// Whether a server's certificate is checked. Off, whoever stands on the way can answer in
+    /// the server's place: for a network that opens TLS on the way, and nothing else.
+    pub verify_tls: bool,
+}
+
+impl Default for Network {
+    fn default() -> Network {
+        Network { proxy: None, verify_tls: true }
+    }
+}
+
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,
 /// `("Images", "*.png;*.jpg")`), whether several may be chosen, and where it starts.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

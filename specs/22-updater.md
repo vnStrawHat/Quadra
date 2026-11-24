@@ -37,7 +37,9 @@ taken too. GitHub publishes each asset's SHA-256 (`digest`, `sha256:<hex>`) by i
 `Updater::new(repo, app, version, cache)` describes the app that runs: `repo` is
 `owner/name`, `version` what runs (`env!("CARGO_PKG_VERSION")`), `cache` a folder of the
 app's for what is fetched; `target` (this build's, `<arch>-pc-windows-msvc`), `api`
-(`https://api.github.com`) and `home` (the folder of the running program) are filled in and,
+(`https://api.github.com`), `home` (the folder of the running program) and `network` (the
+system's proxy, certificates checked: `quadra_shell::Network`, which an app sets from its own
+settings before it checks or fetches) are filled in and,
 as every field, can be set, which is how a test names a server and folders of its own.
 
 `check() -> Result<Option<Release>, Error>` asks `GET <api>/repos/<repo>/releases/latest`,

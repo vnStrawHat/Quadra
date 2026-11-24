@@ -1,15 +1,21 @@
-//! A GET over the OS's HTTP (specs/16, "Fetching"): WinHTTP, so the system's proxy, its
-//! certificates and its TLS are the ones used, and no HTTP or TLS code is linked in.
+//! A GET over the OS's HTTP (specs/16, "Fetching"): WinHTTP, so the system's proxy (or one
+//! named by hand), its certificates and its TLS are the ones used, and no HTTP or TLS code is
+//! linked in.
 
 use core::ffi::c_void;
 
 use windows::Win32::Networking::WinHttp::{
-    WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_FLAG_SECURE, WINHTTP_OPEN_REQUEST_FLAGS,
-    WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_QUERY_STATUS_CODE, WinHttpCloseHandle, WinHttpConnect, WinHttpOpen,
-    WinHttpOpenRequest, WinHttpQueryHeaders, WinHttpReadData, WinHttpReceiveResponse, WinHttpSendRequest,
+    SECURITY_FLAG_IGNORE_CERT_CN_INVALID, SECURITY_FLAG_IGNORE_CERT_DATE_INVALID,
+    SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE, SECURITY_FLAG_IGNORE_UNKNOWN_CA,
+    WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_ACCESS_TYPE_NAMED_PROXY, WINHTTP_FLAG_SECURE,
+    WINHTTP_OPEN_REQUEST_FLAGS, WINHTTP_OPTION_SECURITY_FLAGS, WINHTTP_QUERY_FLAG_NUMBER,
+    WINHTTP_QUERY_STATUS_CODE, WinHttpCloseHandle, WinHttpConnect, WinHttpOpen, WinHttpOpenRequest,
+    WinHttpQueryHeaders, WinHttpReadData, WinHttpReceiveResponse, WinHttpSendRequest, WinHttpSetOption,
     WinHttpSetTimeouts,
 };
 use windows::core::{Error, PCWSTR, w};
+
+use crate::Network;
 
 /// A handle of WinHTTP, closed when dropped.
 struct Handle(*mut c_void);
@@ -28,8 +34,12 @@ impl Drop for Handle {
     }
 }
 
+/// What failed and why: the OS's words, or its code where it has none (WinHTTP's own errors).
 fn failed(what: &str, why: &Error) -> String {
-    format!("{what}: {}", why.message())
+    match why.message() {
+        words if words.is_empty() => format!("{what}: error {}", why.code().0 & 0xFFFF),
+        words => format!("{what}: {words}"),
+    }
 }
 
 fn wide(text: &str) -> Vec<u16> {
@@ -51,17 +61,30 @@ fn parts(url: &str) -> Option<(bool, &str, u16, &str)> {
     (!host.is_empty()).then_some((secure, host, port, path))
 }
 
+/// A proxy named by hand as WinHTTP names one: `host:port`.
+/// ponytail: an HTTP proxy that asks no name: no SOCKS, no `user:password@`. A proxy that
+/// asks for them answers 407; `WinHttpSetCredentials` when one is met.
+fn named(proxy: &str) -> Result<String, String> {
+    let name = proxy.trim().trim_end_matches('/');
+    let name = name.strip_prefix("http://").unwrap_or(name);
+    let fits = !name.is_empty() && !name.contains(['/', '@', '=', ';', ' ']);
+    fits.then(|| name.to_string()).ok_or_else(|| format!("not an HTTP proxy's address (host:port): {proxy}"))
+}
+
 /// GETs `url` with `headers` (the agent is the `User-Agent` among them) and gives `body` what
 /// comes, piece by piece, until it answers `false`: the status, or why there is none. Redirects
-/// are followed, never from https to http. It blocks: an app calls it on the pool. Resolving
+/// are followed, never from https to http. `network` says the proxy and whether the
+/// server's certificate is checked. It blocks: an app calls it on the pool. Resolving
 /// and connecting give up after 10 s, a silence of the server after 30 s.
 /// ponytail: no address in brackets (`[::1]`); parsed when a server is named by one.
 pub fn http_get(
     url: &str,
     headers: &[(&str, &str)],
+    network: &Network,
     body: &mut dyn FnMut(&[u8]) -> bool,
 ) -> Result<u16, String> {
     let (secure, host, port, path) = parts(url).ok_or_else(|| format!("not an http address: {url}"))?;
+    let proxy = network.proxy.as_deref().map(named).transpose()?.map(|it| wide(&it));
     let agent = headers.iter().find(|it| it.0.eq_ignore_ascii_case("user-agent")).map_or("quadra", |it| it.1);
     let lines: String = headers.iter().map(|(name, value)| format!("{name}: {value}\r\n")).collect();
     let (agent, host, path) = (wide(agent), wide(host), wide(path));
@@ -72,7 +95,11 @@ pub fn http_get(
     // locals told with their lengths.
     unsafe {
         let none = PCWSTR::null();
-        let opened = WinHttpOpen(PCWSTR(agent.as_ptr()), WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, none, none, 0);
+        let (how, through) = match &proxy {
+            Some(proxy) => (WINHTTP_ACCESS_TYPE_NAMED_PROXY, PCWSTR(proxy.as_ptr())),
+            None => (WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, none),
+        };
+        let opened = WinHttpOpen(PCWSTR(agent.as_ptr()), how, through, none, 0);
         let session = Handle::of(opened, "no session")?;
         WinHttpSetTimeouts(session.0, 10_000, 10_000, 30_000, 30_000)
             .map_err(|e| failed("no timeouts", &e))?;
@@ -87,6 +114,15 @@ pub fn http_get(
             flags,
         );
         let request = Handle::of(asked, "no request")?;
+        if secure && !network.verify_tls {
+            // Whoever signed the certificate, whatever name, date and use it says.
+            let any = SECURITY_FLAG_IGNORE_UNKNOWN_CA
+                | SECURITY_FLAG_IGNORE_CERT_CN_INVALID
+                | SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
+                | SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE;
+            WinHttpSetOption(Some(request.0), WINHTTP_OPTION_SECURITY_FLAGS, Some(&any.to_ne_bytes()))
+                .map_err(|e| failed("certificates still checked", &e))?;
+        }
         WinHttpSendRequest(request.0, (!lines.is_empty()).then_some(&lines[..]), None, 0, 0, 0)
             .map_err(|e| failed("not sent", &e))?;
         WinHttpReceiveResponse(request.0, core::ptr::null_mut()).map_err(|e| failed("no answer", &e))?;
@@ -128,5 +164,17 @@ mod tests {
         assert_eq!(parts("ftp://example.com/"), None);
         assert_eq!(parts("https:///nothing"), None);
         assert_eq!(parts("http://host:port/"), None);
+    }
+
+    #[test]
+    fn a_proxy_is_a_host_and_a_port() {
+        use super::named;
+        assert_eq!(named(" http://proxy.example:8080/ ").as_deref(), Ok("proxy.example:8080"));
+        assert_eq!(named("10.0.0.1:3128").as_deref(), Ok("10.0.0.1:3128"));
+        for no in
+            ["", "socks5://127.0.0.1:1080", "https://proxy:443", "user:secret@proxy:8080", "http=a;https=b"]
+        {
+            assert!(named(no).is_err(), "{no}");
+        }
     }
 }

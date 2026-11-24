@@ -81,6 +81,9 @@ pub struct Updater {
     pub home: PathBuf,
     /// Where a package is fetched to and unpacked; the app's own folder for it.
     pub cache: PathBuf,
+    /// The proxy asked through and whether certificates are checked: the system's proxy and
+    /// checked, unless the app's settings say otherwise.
+    pub network: Network,
 }
 
 impl Updater {
@@ -96,6 +99,7 @@ impl Updater {
             api: "https://api.github.com".into(),
             home: home.unwrap_or_default(),
             cache: cache.into(),
+            network: Network::default(),
         }
     }
 
@@ -124,15 +128,21 @@ impl Updater {
         let headers = self.headers(accept);
         let headers: Vec<(&str, &str)> =
             headers.iter().map(|(name, value)| (*name, value.as_str())).collect();
-        http_get(url, &headers, body)
+        http_get(url, &headers, &self.network, body)
     }
 }
 
+pub use quadra_shell::Network;
 #[cfg(windows)]
 use quadra_shell::{http_get, sha256};
 
 #[cfg(not(windows))]
-fn http_get(_: &str, _: &[(&str, &str)], _: &mut dyn FnMut(&[u8]) -> bool) -> Result<u16, String> {
+fn http_get(
+    _: &str,
+    _: &[(&str, &str)],
+    _: &Network,
+    _: &mut dyn FnMut(&[u8]) -> bool,
+) -> Result<u16, String> {
     Err("no HTTP on this system yet".into())
 }
 #[cfg(not(windows))]

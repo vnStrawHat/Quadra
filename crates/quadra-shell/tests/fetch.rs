@@ -5,7 +5,7 @@
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 
-use quadra_shell::{http_get, sha256};
+use quadra_shell::{Network, http_get, sha256};
 
 /// Serves `answers` (a status line's end and a body), one a connection, and gives what each
 /// request said.
@@ -35,14 +35,15 @@ fn a_get_gives_the_status_and_the_body_piece_by_piece() {
     let (at, served) = serve(vec![("200 OK", big.clone()), ("404 Not Found", b"none".to_vec())]);
     let mut got = Vec::new();
     let headers = [("User-Agent", "fetch-test/1.0"), ("Accept", "application/json")];
-    let status = http_get(&format!("{at}/a/file?x=1"), &headers, &mut |piece| {
+    let net = Network::default();
+    let status = http_get(&format!("{at}/a/file?x=1"), &headers, &net, &mut |piece| {
         got.extend_from_slice(piece);
         true
     });
     assert_eq!(status, Ok(200));
     assert!(got == big, "{} bytes of {}", got.len(), big.len());
     let mut none = Vec::new();
-    let status = http_get(&format!("{at}/missing"), &[], &mut |piece| {
+    let status = http_get(&format!("{at}/missing"), &[], &net, &mut |piece| {
         none.extend_from_slice(piece);
         true
     });
@@ -59,7 +60,8 @@ fn a_get_gives_the_status_and_the_body_piece_by_piece() {
 fn a_body_refused_stops_the_get_and_no_server_is_an_error() {
     let (at, served) = serve(vec![("200 OK", vec![7; 500_000])]);
     let mut pieces = 0;
-    let stopped = http_get(&at, &[], &mut |_| {
+    let net = Network::default();
+    let stopped = http_get(&at, &[], &net, &mut |_| {
         pieces += 1;
         false
     });
@@ -67,8 +69,8 @@ fn a_body_refused_stops_the_get_and_no_server_is_an_error() {
     served.join().unwrap();
     // The port of a listener that is gone: nothing answers there.
     let gone = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
-    assert!(http_get(&format!("http://{gone}/"), &[], &mut |_| true).is_err());
-    assert!(http_get("file:///c:/windows/win.ini", &[], &mut |_| true).is_err());
+    assert!(http_get(&format!("http://{gone}/"), &[], &net, &mut |_| true).is_err());
+    assert!(http_get("file:///c:/windows/win.ini", &[], &net, &mut |_| true).is_err());
 }
 
 #[test]
@@ -78,4 +80,21 @@ fn sha_256_by_its_known_answers() {
     let abc = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
     assert_eq!(sha256(b"").map(hex).as_deref(), Some(empty));
     assert_eq!(sha256(b"abc").map(hex).as_deref(), Some(abc));
+}
+
+#[test]
+fn a_proxy_named_by_hand_is_asked_in_the_server_s_place() {
+    let (at, served) = serve(vec![("200 OK", b"through".to_vec())]);
+    let net = Network { proxy: Some(at), ..Network::default() };
+    let mut got = Vec::new();
+    // A server no name leads to: only the proxy can answer, and it is told the whole address.
+    let status = http_get("http://server.invalid/a/file", &[], &net, &mut |piece| {
+        got.extend_from_slice(piece);
+        true
+    });
+    assert_eq!((status, got), (Ok(200), b"through".to_vec()));
+    assert!(served.join().unwrap()[0].starts_with("GET http://server.invalid/a/file "));
+    // What names no HTTP proxy is refused before anything is asked.
+    let net = Network { proxy: Some("socks5://127.0.0.1:1080".into()), ..Network::default() };
+    assert!(http_get("http://server.invalid/", &[], &net, &mut |_| true).is_err());
 }

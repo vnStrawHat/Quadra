@@ -584,6 +584,15 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   alert, and what is wrong with a field is said under it. The apps and the gallery say
   `vstack()`, `hstack()` and `form()` where they wrote them out. A theme file with no
   `accent_tint` gets its own accent at 16 % (37 of 1Term's themes showed the kit's blue).
+- **1Term, what the walk said to put right** (2026-11-24). A new host key is trusted at the
+  step that shows whose it is and its fingerprint: the tick that trusted it unseen is gone
+  (tests/connect_host.rs). A changed host key offers Close first (`oneterm_ssh::key_changed`;
+  tests/asking.rs). The settings' words are a reader's (a default is "Default"; no row is
+  explained by a sequence's number alone). The Advanced page says the file this run saves to
+  and shows its folder (tests/settings_reset.rs). Lock after steps as every number does.
+  Locked, the status bar's meter says no name (tests/lock.rs). The kit's colour picker says
+  a preset by its name and, empty, the placeholder told (`By group`; design tests/pickers.rs).
+  The cards over the settings were the harness's alone: the app's settings are a window.
 - **1Term, a walk through its screens** (2026-11-24; `oneterm-shots` draws each page of the
   settings, `page-0` to `page-10`): the status bar showed a folder alone for a shell with no
   directory and two lines side by side for a remote space not connected; a space header said

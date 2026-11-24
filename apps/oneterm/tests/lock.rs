@@ -135,8 +135,13 @@ fn a_locked_window_refuses_the_app_keys_and_hides_cards() {
     s.feeder().feed(b"\x1b]9;secret result\x07", Instant::now());
     a.h.settle();
     assert!(!a.says("secret result"), "a card would show what a program said");
+    // The meter goes on, with its percentage and without the name of what reports it.
+    s.feeder().feed(b"\x1b]9;4;1;64\x07\x1b]7501;state=working:id=payroll\x07", Instant::now());
+    a.h.settle();
+    assert!(a.says("64%") && !a.says("payroll"), "{}", a.h.semantics());
     assert!(a.says("1 sessions connected \u{B7} 1 notices"));
     a.unlock_with("pw");
+    assert!(a.says("payroll"), "{}", a.h.semantics());
     assert_eq!(a.tabs(), 1, "Ctrl+T did nothing while locked");
 }
 

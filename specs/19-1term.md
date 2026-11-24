@@ -401,7 +401,8 @@ accent and "1Term is locked" (16 px), "Locked after N minutes idle. Your session
 running." in the secondary colour, the field labelled Password (32 px) with Show password at
 its end, then in 12 px `n sessions connected` after a green dot and `n new while locked` after
 a bell in the error colour; a footer over a line with Unlock (primary, `Enter` after it) at the
-right. The status bar shows only a lock and "Locked, details hidden", the progress meter and
+right. The status bar shows only a lock and "Locked, details hidden", the progress meter (its
+line and its percentage, without the name of what reports it: that is a detail) and
 the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep running.
 
 ### M6 in detail

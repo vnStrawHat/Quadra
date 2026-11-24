@@ -109,7 +109,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         .child(icon(icons::LOCK).size(14.0).color(token::HUE_PURPLE))
         .child(text("Locked, details hidden"));
     let shows = move || prefs.show_usage.get() || prefs.show_fps.get();
-    let (meter, metered) = meter(model);
+    let (meter, metered) = meter(model, open);
     let rec = logging(model);
     let left_side = groups(
         part().gap(token::SPACE_LG),
@@ -182,8 +182,9 @@ fn traffic(model: &Model) -> impl Fn() -> String + 'static {
 }
 
 /// The progress of the tab that shows, else of the first that reports one: the id of what
-/// reports it (`build`), a line of 56 px and the percentage; and whether it shows.
-fn meter(model: &Model) -> (quadra::Div, When) {
+/// reports it (`build`; not while locked: a detail), a line of 56 px and the percentage; and
+/// whether it shows.
+fn meter(model: &Model, open: impl Fn() -> bool + 'static) -> (quadra::Div, When) {
     let (model, shows) = (model.clone(), model.prefs().progress_bar);
     // The first space that reports a part done, and the id of what it runs (OSC 7501).
     let found = quadra::memo(move || {
@@ -205,7 +206,7 @@ fn meter(model: &Model) -> (quadra::Div, When) {
     let name = move || found.with(|it| it.as_ref().map(|it| it.1.clone()).unwrap_or_default());
     let meter = part()
         .label("Progress")
-        .child(div().max_width(Length::Px(120.0)).child(text(name).ellipsis()))
+        .child(div().max_width(Length::Px(120.0)).display(shown(open)).child(text(name).ellipsis()))
         .child(div().width(56.0).height(2.0).bg(token::LINE_STRONG).child(fill))
         .child(value(move || {
             found.with(|it| it.as_ref().map(|it| format!("{}%", it.0)).unwrap_or_default())

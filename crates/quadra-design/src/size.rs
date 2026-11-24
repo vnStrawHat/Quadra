@@ -1,4 +1,4 @@
-//! The numbers of the design language (specs/behaviour/15, "Type" and "Space, size, shape"):
+//! The numbers of the design language (specs/design, "Type" and "Space, size, shape"):
 //! every one a pixel at 100 % scale.
 
 /// A step of the type scale: the size of the text, and the height of its lines.
@@ -37,14 +37,12 @@ pub const H_SM: f32 = 22.0;
 pub const H_MD: f32 = 28.0;
 pub const H_LG: f32 = 32.0;
 
-/// Checkboxes and keys.
+/// The radii (specs/design/space.md): marks; small things and what is inside a rounded
+/// thing; controls, cards and small overlays; what floats and is large.
+pub const RADIUS_XS: f32 = 2.0;
 pub const RADIUS_SM: f32 = 4.0;
-/// Buttons, list rows, chips.
 pub const RADIUS_MD: f32 = 6.0;
-/// Inputs, segmented groups, code blocks.
-pub const RADIUS_LG: f32 = 6.0;
-/// Every overlay: menus, tooltips, popovers, dialogs, toasts.
-pub const RADIUS_XL: f32 = 10.0;
+pub const RADIUS_LG: f32 = 10.0;
 
 /// Regular text, and what is emphasized or a heading.
 pub const WEIGHT_NORMAL: u16 = 400;

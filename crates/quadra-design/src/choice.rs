@@ -1,4 +1,4 @@
-//! One choice of a few (specs/behaviour/15, "Components"): the radio group and the segmented
+//! One choice of a few (specs/design, "Components"): the radio group and the segmented
 //! control. Each takes the signal that holds which option is chosen, and writes it.
 
 use quadra_layout::{Align, Direction, Justify, Overflow};
@@ -78,7 +78,7 @@ impl Choice {
     /// An option of a radio group: a ring of 12 px, of the accent with a dot of 6 in it when
     /// chosen.
     fn radio(label: String, hint: Option<&String>, on: impl Fn() -> bool + Copy + 'static) -> Div {
-        let dot = || div().size(6.0, 6.0).radius(3.0).bg(token::ACCENT);
+        let dot = || div().size(6.0, 6.0).radius(3.0).bg(token::ACCENT); // design: a radio's dot is a circle
         let edge = move || if on() { token::ACCENT } else { token::LINE_STRONG };
         let ring = div()
             .size(12.0, 12.0)
@@ -91,6 +91,7 @@ impl Choice {
         let Some(hint) = hint.filter(|hint| !hint.is_empty()) else { return line.child(text(label)) };
         // Under the label, past the ring and its gap; the option is named by its label alone.
         let told = NodeRef::new();
+        // design: under the words, past the ring of 12 and its gap of 6
         let under = div().padding_left(18.0).text_size(size::TEXT_SM.size).text_color(token::TEXT_3);
         let under = under.node_ref(&told).child(text(hint.clone()));
         column().gap(2.0).label(label.clone()).described_by(&told).child(line.child(text(label))).child(under)
@@ -137,7 +138,7 @@ impl Choice {
             group.disabled(self.disabled).when(State::DISABLED, |s| s.text_color(token::TEXT_DISABLED));
         let group = match (self.segmented, self.horizontal) {
             (true, _) => {
-                let outlined = group.radius(token::RADIUS_LG).border(1.0).shrink(0.0);
+                let outlined = group.radius(token::RADIUS_MD).border(1.0).shrink(0.0);
                 outlined.border_color(token::LINE_STRONG).overflow_y(Overflow::Hidden)
             }
             (false, true) => group.gap(16.0),
@@ -147,9 +148,9 @@ impl Choice {
     }
 }
 
-/// The corners of the cell at `i` of `count` in a frame of `RADIUS_LG` with a border of 1.
+/// The corners of the cell at `i` of `count` in a frame of `RADIUS_MD` with a border of 1.
 fn ends(i: usize, count: usize) -> Corners {
-    let r = size::RADIUS_LG - 1.0;
+    let r = size::RADIUS_MD - 1.0;
     let (first, last) = (if i == 0 { r } else { 0.0 }, if i + 1 == count { r } else { 0.0 });
     Corners { top_left: first, bottom_left: first, top_right: last, bottom_right: last }
 }

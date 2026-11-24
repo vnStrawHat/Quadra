@@ -20,13 +20,13 @@ pub struct ColorInput {
     value: Signal<String>,
     placeholder: String,
     label: Option<Prop<String>>,
-    width: f32,
+    width: Option<f32>,
     fallback: Paint,
 }
 
 /// A field, 120 px wide, for a colour written `#rrggbb` (or `#rrggbbaa`) in `value`.
 pub fn color_input(value: Signal<String>) -> ColorInput {
-    ColorInput { value, placeholder: String::new(), label: None, width: 120.0, fallback: Paint::default() }
+    ColorInput { value, placeholder: String::new(), label: None, width: None, fallback: Paint::default() }
 }
 
 impl ColorInput {
@@ -43,7 +43,7 @@ impl ColorInput {
     }
 
     pub fn width(mut self, px: f32) -> Self {
-        self.width = px;
+        self.width = Some(px);
         self
     }
 
@@ -62,7 +62,10 @@ impl View for ColorInput {
         let swatch =
             swatch.border_color(token::LINE_STRONG).bg(move || typed().map_or(fallback, Paint::from));
         let invalid = move || typed().is_none() && !value.with(|it| it.trim().is_empty());
-        let mut field = input(value).placeholder(&self.placeholder).width(self.width).invalid(invalid);
+        let mut field = input(value).placeholder(&self.placeholder).own_width(120.0).invalid(invalid);
+        if let Some(px) = self.width {
+            field = field.width(px);
+        }
         field.before = Some(AnyView::new(swatch));
         if let Some(name) = self.label {
             field = field.label(name);

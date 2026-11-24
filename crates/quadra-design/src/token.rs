@@ -1,4 +1,4 @@
-//! The roles of the design language (specs/behaviour/15, "Tokens"): what a style names in
+//! The roles of the design language (specs/design, "Tokens"): what a style names in
 //! place of a colour, and a theme file gives a colour to under the same name in lower case.
 
 use quadra_tree::{Measure, Token};
@@ -108,7 +108,7 @@ roles! {
     SUCCEEDED = "succeeded";
     TERMINATING = "terminating";
     UNKNOWN = "unknown";
-    /// Hues that tell kinds apart (specs/behaviour/15, principle 9): the state of a file,
+    /// Hues that tell kinds apart (specs/design, principle 9): the state of a file,
     /// kinds of files and objects, counts of diagnostics. Never alone: a shape, letter or
     /// label goes with each.
     HUE_RED = "hue_red";
@@ -199,34 +199,42 @@ pub const HUES: [Token; 7] = [HUE_RED, HUE_ORANGE, HUE_YELLOW, HUE_GREEN, HUE_CY
 pub const SERIES: [Token; 8] =
     [SERIES_1, SERIES_2, SERIES_3, SERIES_4, SERIES_5, SERIES_6, SERIES_7, SERIES_8];
 
-/// The measures of the design language (behaviour/15): the radii of controls, the spaces
+/// The measures of the design language (specs/design): the radii of controls, the spaces
 /// between things, and times in milliseconds. A theme file's `measures` may give them other
 /// numbers under these names; the order is that of their numbers.
-pub const MEASURES: [(&str, f32); 11] = [
+pub const MEASURES: [(&str, f32); 14] = [
+    ("radius_xs", 2.0),
     ("radius_sm", 4.0),
     ("radius_md", 6.0),
-    ("radius_lg", 6.0),
-    ("radius_xl", 10.0),
+    ("radius_lg", 10.0),
+    ("space_xxs", 2.0),
     ("space_xs", 4.0),
-    ("space_sm", 8.0),
-    ("space_md", 12.0),
-    ("space_lg", 16.0),
-    ("space_xl", 24.0),
+    ("space_sm", 6.0),
+    ("space_md", 8.0),
+    ("space_lg", 12.0),
+    ("space_xl", 16.0),
+    ("space_xxl", 24.0),
+    ("space_xxxl", 32.0),
     ("duration_fast", 150.0),
     ("duration_slow", 400.0),
 ];
 
-/// Checkboxes and keys; buttons, list rows, chips; inputs, segmented groups, code blocks;
-/// every overlay.
-pub const RADIUS_SM: Measure = Measure(0);
-pub const RADIUS_MD: Measure = Measure(1);
-pub const RADIUS_LG: Measure = Measure(2);
-pub const RADIUS_XL: Measure = Measure(3);
-pub const SPACE_XS: Measure = Measure(4);
-pub const SPACE_SM: Measure = Measure(5);
-pub const SPACE_MD: Measure = Measure(6);
-pub const SPACE_LG: Measure = Measure(7);
-pub const SPACE_XL: Measure = Measure(8);
+/// The radii (specs/design/space.md): marks; small things and what is inside a rounded thing;
+/// controls, cards and small overlays; what floats and is large.
+pub const RADIUS_XS: Measure = Measure(0);
+pub const RADIUS_SM: Measure = Measure(1);
+pub const RADIUS_MD: Measure = Measure(2);
+pub const RADIUS_LG: Measure = Measure(3);
+/// The distances (specs/design/space.md): 2, 4, 6 and 8 inside a thing; 12, 16, 24 and 32
+/// between things and around them.
+pub const SPACE_XXS: Measure = Measure(4);
+pub const SPACE_XS: Measure = Measure(5);
+pub const SPACE_SM: Measure = Measure(6);
+pub const SPACE_MD: Measure = Measure(7);
+pub const SPACE_LG: Measure = Measure(8);
+pub const SPACE_XL: Measure = Measure(9);
+pub const SPACE_XXL: Measure = Measure(10);
+pub const SPACE_XXXL: Measure = Measure(11);
 /// What comes and goes (a toast), and what fades slowly (a scroll thumb).
-pub const DURATION_FAST: Measure = Measure(9);
-pub const DURATION_SLOW: Measure = Measure(10);
+pub const DURATION_FAST: Measure = Measure(12);
+pub const DURATION_SLOW: Measure = Measure(13);

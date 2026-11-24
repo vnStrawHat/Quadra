@@ -200,7 +200,7 @@ pub fn dialog_page() -> Div {
         about,
         [demo(
             "Modal",
-            column().child(ask.on_click(move || open.set(true))).child(scale),
+            row().child(ask.on_click(move || open.set(true))).child(scale),
             "dialog(open, \"Scale deployment\", || body)",
         )],
     )

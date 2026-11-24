@@ -66,7 +66,7 @@ pub fn code_box(lang: &str, source: &str, on_link: &Option<OnLink>) -> Div {
         piece.link.iter().fold(run, |run, url| run.link(url))
     };
     let runs: Vec<_> = pieces(lang, &source.replace('\t', "    ")).into_iter().map(run).collect();
-    let frame = column().padding(12.0).radius(token::RADIUS_LG).bg(token::CANVAS).border(1.0);
+    let frame = column().padding(12.0).radius(token::RADIUS_MD).bg(token::CANVAS).border(1.0);
     let frame = frame
         .border_color(token::LINE_STRONG)
         .font_family(fonts::MONO)

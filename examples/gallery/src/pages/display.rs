@@ -173,7 +173,7 @@ pub fn skeleton_page() -> Div {
 
 pub fn card_page() -> Div {
     let metric = |title: &str, about: &str, value: &str| {
-        let value = div().font_family(fonts::MONO).child(text(value.to_string()).size(22.0));
+        let value = div().font_family(fonts::MONO).child(text(value.to_string()).size(23.0));
         card().child(card_head(title, about)).child(value)
     };
     let metrics = line()

@@ -1,4 +1,4 @@
-//! The cards layout of settings (behaviour/15, "Settings, cards"): a column of 250 px with
+//! The cards layout of settings (specs/design, "Settings, cards"): a column of 250 px with
 //! icons, a header for the page, the groups as outlined cards.
 
 use quadra_layout::{Align, Justify, Length};
@@ -63,7 +63,7 @@ pub(super) fn nav(pages: &[SettingsPage], model: &Model, query: Option<Signal<St
         });
         let head = opens(head, open).child(name).child(chevron);
 
-        let mut under = column().gap(4.0).padding_left(10.0).padding_y(2.0);
+        let mut under = column().gap(4.0).padding_left(8.0).padding_y(2.0);
         under = under.border_left(1.0).border_color(token::LINE_STRONG);
         for (g, group) in page.groups.iter().enumerate() {
             let (shows, pick) = (titled[g], model.clone());
@@ -72,7 +72,7 @@ pub(super) fn nav(pages: &[SettingsPage], model: &Model, query: Option<Signal<St
             under = under.child(acts(row, move || pick.go(i, Some(g), 0.0)).child(text(group.title.clone())));
         }
         let under =
-            column().padding_left(14.0).display(move || shown(open.get() && lists.get())).child(under);
+            column().padding_left(16.0).display(move || shown(open.get() && lists.get())).child(under);
         let item = column().display(move || shown(!searching.get() || page_kept.get()));
         list = list.child(item.child(head).child(under));
     }
@@ -108,7 +108,7 @@ pub(super) fn group_card(group: SettingsGroup, kept: Memo<bool>, row: impl Fn(us
         }
         whole = whole.child(head.role(Role::Heading));
     }
-    let card = column().gap(16.0).padding(16.0).radius(token::RADIUS_LG);
+    let card = column().gap(16.0).padding(16.0).radius(token::RADIUS_MD);
     let card = card.border(1.0).border_color(token::LINE_STRONG);
     let rows = group.rows.into_iter().enumerate().map(|(r, line)| setting(line, row(r)));
     whole.child(card.children(rows.collect::<Vec<_>>()))

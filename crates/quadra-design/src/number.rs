@@ -1,4 +1,4 @@
-//! The number input (specs/behaviour/15, "Number input"): a field that holds a number, with
+//! The number input (specs/design, "Number input"): a field that holds a number, with
 //! a pair of chevrons at its end, inside it, or as a stepper: one frame with a minus, the
 //! value and a plus. The up and down arrows step it.
 
@@ -100,7 +100,10 @@ impl View for NumberInput {
             };
             let side = || ghost(row().width(32.0).height(by_text(size::H_MD - 2.0)));
             let middle = row().grow(1.0).justify(Justify::Center).cursor(Cursor::Text).child(field);
-            let frame = around.width(128.0).height(by_text(size::H_MD)).radius(token::RADIUS_LG).border(1.0);
+            let frame = crate::layout::field_width(around, None, 128.0)
+                .height(by_text(size::H_MD))
+                .radius(token::RADIUS_MD)
+                .border(1.0);
             let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG);
             let frame = frame.overflow_x(quadra_layout::Overflow::Hidden).selection_color(token::SELECTION);
             let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
@@ -109,7 +112,7 @@ impl View for NumberInput {
             let frame = frame.child(step(side(), number, false, icons::MINUS, 16.0)).child(middle);
             return frame.child(step(side(), number, true, icons::PLUS, 16.0)).mount(cx);
         }
-        let field = input(words).width(140.0).invalid(wrong);
+        let field = input(words).own_width(140.0).invalid(wrong);
         let field = match self.test_id {
             Some(id) => field.test_id(id),
             None => field,

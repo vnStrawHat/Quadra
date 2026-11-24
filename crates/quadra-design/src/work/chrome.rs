@@ -77,11 +77,11 @@ fn tool(active: Signal<&'static str>, it: Activity) -> AnyView {
     let problem = matches!(it.tone, Tone::Danger | Tone::Warning);
     let fill = if problem { it.tone.role() } else { token::ACCENT };
     let chip = row().height(by_text(14.0)).min_width(14.0).padding_x(if problem { 3.0 } else { 2.0 });
-    let chip = chip.radius(7.0).bg(fill).text_size(if problem { 10.0 } else { 9.0 });
+    let chip = chip.radius(4.0).bg(fill).text_size(if problem { 10.0 } else { 9.0 });
     let chip = chip.text_color(token::TEXT_ON_ACCENT).align_items(Align::Center).justify(Justify::Center);
     let badge = match problem {
         true => div().absolute().top(5.0).right(4.0),
-        false => div().absolute().top(-2.0).right(-4.0).radius(8.0).padding(1.0).bg(token::PANEL),
+        false => div().absolute().top(-2.0).right(-4.0).radius(6.0).padding(1.0).bg(token::PANEL),
     };
     let badge = badge.display(shown).child(chip.child(text(words).weight(500)));
     let glyph = row().size(28.0, 28.0).align_items(Align::Center).justify(Justify::Center);

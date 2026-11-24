@@ -32,11 +32,11 @@ pub(crate) struct Look {
 }
 
 impl Look {
-    /// Dense: a header of 26 px in 12 px text, 12 px from a row's start to its first words
+    /// Dense: a header of 24 px in 12 px text, 12 px from a row's start to its first words
     /// and between the columns' words.
     pub(crate) fn of(dense: bool) -> Look {
         match dense {
-            true => Look { head: 26.0, pad: 6.0, edge: 6.0, dense },
+            true => Look { head: 24.0, pad: 6.0, edge: 6.0, dense },
             false => Look { head: 28.0, pad: 8.0, edge: 0.0, dense },
         }
     }

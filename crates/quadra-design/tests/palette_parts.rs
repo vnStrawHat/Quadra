@@ -173,7 +173,7 @@ fn a_dense_picker_has_mono_names_muted_states_a_footnote_and_keys_as_hints() {
     });
     settle(&mut h);
     let rows = h.query(|n| n.semantics.role == Role::ListItem);
-    assert_eq!(rows.iter().map(|&row| h.tree.window_rect(row).height).collect::<Vec<_>>(), [23.0, 23.0]);
+    assert_eq!(rows.iter().map(|&row| h.tree.window_rect(row).height).collect::<Vec<_>>(), [24.0, 24.0]);
     // "Enter" only in the foot, a key as a key; the names in mono; the states' words muted.
     let enter = key_label("enter");
     assert_eq!(h.query(|n| n.semantics.name == enter).len(), 1);

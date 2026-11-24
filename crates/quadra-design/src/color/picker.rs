@@ -1,4 +1,4 @@
-//! The colour picker of the kit (specs/13, `color_picker`; behaviour/15, "Color picker"): a
+//! The colour picker of the kit (specs/13, `color_picker`; specs/design, "Color picker"): a
 //! field that shows a colour and opens a popover to choose another, by its saturation and
 //! brightness, its hue, its hex or one of a few given.
 
@@ -13,7 +13,7 @@ use quadra_view::{AnyView, Div, IntoProp, MountCx, NodeRef, Prop, View, by_text,
 
 use super::area::{Hsv, WIDE, area, hex, hue_bar};
 use super::color_input;
-use crate::popup::popover;
+use crate::popup::bare_popover;
 use crate::{size, token};
 
 /// A field that opens a popover to choose a colour; see [`color_picker`].
@@ -23,7 +23,7 @@ pub struct ColorPicker {
     fallback: Option<Paint>,
     placeholder: String,
     label: Option<Prop<String>>,
-    width: f32,
+    width: Option<f32>,
     test_id: Option<&'static str>,
 }
 
@@ -36,7 +36,7 @@ pub fn color_picker(value: Signal<String>) -> ColorPicker {
         fallback: None,
         placeholder: "Default".to_string(),
         label: None,
-        width: 120.0,
+        width: None,
         test_id: None,
     }
 }
@@ -68,7 +68,7 @@ impl ColorPicker {
     }
 
     pub fn width(mut self, px: f32) -> Self {
-        self.width = px;
+        self.width = Some(px);
         self
     }
 
@@ -154,7 +154,8 @@ impl View for ColorPicker {
         let (value, open, opener) = (self.value, signal(false), NodeRef::new());
         let (fallback, placeholder) = (self.fallback, self.placeholder);
         let empty = move || value.with(|it| it.trim().is_empty());
-        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).width(self.width);
+        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0);
+        let face = crate::layout::field_width(face, self.width, 120.0).bg(token::INPUT_BG);
         let face = face.height(by_text(size::H_MD)).padding_x(8.0).radius(token::RADIUS_MD).border(1.0);
         let face = face.border_color(token::LINE_STRONG).cursor(Cursor::Pointer);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
@@ -184,7 +185,7 @@ impl View for ColorPicker {
         let words = div().min_width(0.0).text_color(tone).child(text(said));
         let face = face.child(mark).child(words);
         let presets = self.presets;
-        let body = popover(open, &opener, move || popover_body(value, open, &presets, fallback));
+        let body = bare_popover(open, &opener, move || popover_body(value, open, &presets, fallback));
         div().shrink(0.0).child(face).child(AnyView::new(body)).mount(cx)
     }
 }

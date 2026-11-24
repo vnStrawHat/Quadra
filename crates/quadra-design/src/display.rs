@@ -153,7 +153,7 @@ pub fn card_head(title: impl Into<String>, more: impl Into<String>) -> Div {
     if more.is_empty() { head } else { head.child(label(more)) }
 }
 
-/// The mark of what is chosen (specs/behaviour/15, principle 2): a bar of 2 px in the accent
+/// The mark of what is chosen (specs/design, principle 2): a bar of 2 px in the accent
 /// along one edge of the box it is put in, over what is there and taking no room, shown
 /// while `on` says. Along the left it stops 4 px short of the ends.
 pub fn chosen_mark(side: Side, on: impl Fn() -> bool + 'static) -> Div {

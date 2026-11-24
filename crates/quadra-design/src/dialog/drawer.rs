@@ -1,4 +1,4 @@
-//! The drawer (specs/behaviour/15, "Dialog"): a dialog along an edge of the window, over
+//! The drawer (specs/design, "Dialog"): a dialog along an edge of the window, over
 //! it or beside the content.
 
 use std::rc::Rc;
@@ -7,7 +7,7 @@ use quadra_headless::dialog as base;
 use quadra_prim::{Ease, Point};
 use quadra_reactive::{Signal, on_cleanup};
 use quadra_tree::NodeId;
-use quadra_view::{AnyView, Div, MountCx, NodeRef, View, column, div, row, show, timeline};
+use quadra_view::{AnyView, Div, MountCx, NodeRef, View, column, row, show, timeline};
 
 use super::{Head, head};
 use crate::popup::{EDGE, Edge, popup};
@@ -103,7 +103,8 @@ where
                 Edge::Bottom => page.height(size - line),
                 _ => page.width(size - line),
             };
-            let middle = div().grow(1.0).padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2);
+            let middle = column().grow(1.0).gap(token::SPACE_LG).padding_x(token::SPACE_LG);
+            let middle = middle.padding_bottom(token::SPACE_LG).text_color(token::TEXT_2);
             // It slides in from its edge: put past it, then moved to its place over 200 ms.
             let away = match edge {
                 Edge::Left => Point::new(-size, 0.0),

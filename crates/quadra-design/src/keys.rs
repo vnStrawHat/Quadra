@@ -1,4 +1,4 @@
-//! The key input of the kit (specs/behaviour/15, "Key input"): `quadra_headless::keys` in the
+//! The key input of the kit (specs/design, "Key input"): `quadra_headless::keys` in the
 //! frame of a text input. It says the keys, "Press keys…" while it records, and "Not bound"
 //! while the value is empty.
 
@@ -14,13 +14,13 @@ use crate::token;
 pub struct KeyInput {
     value: Signal<String>,
     label: Option<Prop<String>>,
-    width: f32,
+    width: Option<f32>,
 }
 
 /// A field that records a keystroke into `value` (`ctrl-shift-t`; empty: unbound), 160 px
 /// wide unless told otherwise.
 pub fn key_input(value: Signal<String>) -> KeyInput {
-    KeyInput { value, label: None, width: 160.0 }
+    KeyInput { value, label: None, width: None }
 }
 
 impl KeyInput {
@@ -31,7 +31,7 @@ impl KeyInput {
     }
 
     pub fn width(mut self, px: f32) -> Self {
-        self.width = px;
+        self.width = Some(px);
         self
     }
 
@@ -45,9 +45,10 @@ impl KeyInput {
             };
             AnyView::new(words)
         });
-        let frame = row().align_items(Align::Center).justify(Justify::Center).width(self.width);
+        let frame = row().align_items(Align::Center).justify(Justify::Center);
+        let frame = crate::layout::field_width(frame, self.width, 160.0);
         let frame =
-            frame.height(by_text(crate::size::H_MD)).padding_x(8.0).radius(token::RADIUS_LG).border(1.0);
+            frame.height(by_text(crate::size::H_MD)).padding_x(8.0).radius(token::RADIUS_MD).border(1.0);
         let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG).cursor(Cursor::Pointer);
         let frame = frame.focus(|s| s.border_color(token::BORDER_FOCUSED));
         let frame = match self.label {

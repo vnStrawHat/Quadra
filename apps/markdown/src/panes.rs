@@ -105,7 +105,7 @@ fn empty(m: &Model) -> Div {
     column()
         .align_items(quadra::Align::Center)
         .gap(16.0)
-        .padding_top(96.0)
+        .padding_top(96.0) // design: the room over an empty pane's words
         .text_color(token::TEXT_3)
         .display(move || if text.with(String::is_empty) { Display::Flex } else { Display::None })
         .child(crate::logo::logo(96.0))

@@ -7,14 +7,14 @@ use crate::common::{demo, line, page};
 
 /// A card whose changes of style take 160 ms.
 fn card(title: &str) -> Div {
-    let card = div().size(150.0, 90.0).padding(14.0).radius(token::RADIUS_LG).bg(token::RAISED);
+    let card = div().size(150.0, 90.0).padding(12.0).radius(token::RADIUS_MD).bg(token::RAISED);
     let card = card.border(1.0).border_color(token::LINE).cursor(Cursor::Pointer).transition(160);
     card.child(text(title.to_string()).weight(size::WEIGHT_STRONG))
 }
 
 /// A dot that plays a timeline, in the room a card takes.
 fn dot(plays: Timeline) -> Div {
-    let dot = div().size(22.0, 22.0).radius(5.0).bg(token::ACCENT).animate(plays);
+    let dot = div().size(22.0, 22.0).radius(4.0).bg(token::ACCENT).animate(plays);
     row().size(150.0, 90.0).align_items(Align::Center).justify(Justify::Center).child(dot)
 }
 

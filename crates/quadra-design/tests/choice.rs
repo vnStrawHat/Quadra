@@ -1,4 +1,4 @@
-//! The controls that hold a choice (specs/behaviour/15): a checkbox and a switch are on or
+//! The controls that hold a choice (specs/design): a checkbox and a switch are on or
 //! off, a radio group and a segmented control hold one of a few. Each writes the signal it
 //! was given, by the pointer, by the keyboard, or when a reader asks.
 

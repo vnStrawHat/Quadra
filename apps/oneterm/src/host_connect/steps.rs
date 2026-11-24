@@ -90,7 +90,7 @@ fn line(step: &Step, when: std::cmp::Ordering) -> Div {
         .child(mark.child(match when {
             Less => AnyView::new(icon(icons::CIRCLE_CHECK).size(14.0).color(token::OK)),
             Equal => AnyView::new(spinner().size(14.0)),
-            Greater => AnyView::new(div().size(6.0, 6.0).radius(3.0).bg(token::TEXT_3)),
+            Greater => AnyView::new(div().size(6.0, 6.0).radius(1.0).bg(token::TEXT_3)),
         }))
         .child(div().text_color(color).child(text(step.label)))
         .child(mono(step.detail.clone(), 12.0, token::TEXT_2))

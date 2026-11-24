@@ -23,7 +23,7 @@ pub(crate) fn title_bar(model: &Model) -> impl View + use<> {
         .gap(4.0)
         .padding_left(12.0)
         .child(icon(MARK).size(16.0).color(token::ACCENT))
-        .child(div().padding_x(4.0).text_size(13.0).font_weight(600).child(text("1Term")))
+        .child(div().padding_x(4.0).text_size(14.0).font_weight(600).child(text("1Term")))
         .child(locked);
     let (open, hosts, vertical) = (seen.ui().settings, seen.ui().hosts, seen.vertical());
     // With the tabs in a strip, the hosts are a panel this opens.

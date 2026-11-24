@@ -1,4 +1,4 @@
-//! The dialog (specs/behaviour/15, "Dialog"): a question the user answers before going on,
+//! The dialog (specs/design, "Dialog"): a question the user answers before going on,
 //! and the drawer, which is one along an edge of the window.
 //! It hangs 80 px from the top of the window, centred, with no backdrop: the cross at the end
 //! of its title, Escape or a press outside gives it up.
@@ -48,6 +48,7 @@ pub struct Dialog<F> {
     body: F,
     actions: Vec<Action>,
     own: Option<Head>,
+    width: f32,
 }
 
 /// A dialog shown while `open` is true: a title over what `body` builds, each time it opens.
@@ -56,10 +57,16 @@ where
     V: View + 'static,
     F: Fn() -> V + 'static,
 {
-    Dialog { open, title: title.into(), body, actions: Vec::new(), own: None }
+    Dialog { open, title: title.into(), body, actions: Vec::new(), own: None, width: 440.0 }
 }
 
 impl<F> Dialog<F> {
+    /// How wide it is: 440 unless told (360 for a question, 560 for two columns of fields).
+    pub fn width(mut self, px: f32) -> Self {
+        self.width = px;
+        self
+    }
+
     /// A button at the foot of the dialog, from the left to the right in the order given.
     /// Pressing it runs `f` and closes the dialog.
     pub fn action(mut self, label: impl Into<String>, variant: Variant, f: impl Fn() + 'static) -> Self {
@@ -158,8 +165,8 @@ fn head(title: &str, own: Option<AnyView>, open: Signal<bool>) -> Div {
         Some(own) => column().grow(1.0).min_width(0.0).align_items(Align::Stretch).child(own),
         None => div().grow(1.0).font_weight(600).child(text(title.to_string()).size(size::TEXT_LG.size)),
     };
-    let head = row().align_items(Align::Center).gap(4.0).padding_x(12.0).padding_top(8.0);
-    head.padding_bottom(4.0).child(headline).child(cross)
+    let head = row().align_items(Align::Center).gap(token::SPACE_MD).padding(token::SPACE_LG);
+    head.padding_bottom(token::SPACE_MD).child(headline).child(cross)
 }
 
 /// A question with two answers: `yes` does `on_yes`, Cancel does nothing, and both close the
@@ -177,7 +184,7 @@ pub fn confirm(
         title,
         Box::new(move || AnyView::new(text(message.clone()))) as Box<dyn Fn() -> AnyView>,
     );
-    ask.action("Cancel", Variant::Secondary, || {}).action(yes, Variant::Primary, on_yes)
+    ask.width(360.0).action("Cancel", Variant::Secondary, || {}).action(yes, Variant::Primary, on_yes)
 }
 
 impl<V, F> View for Dialog<F>
@@ -187,11 +194,15 @@ where
 {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (open, title, body, actions) = (self.open, self.title, self.body, Rc::new(self.actions));
-        let own = self.own;
+        let (own, width) = (self.own, self.width);
         let content = move || {
             let head = head(&title, own.as_ref().map(|own| own()), open);
-            let middle = div().padding_x(12.0).padding_y(8.0).text_color(token::TEXT_2).child(body());
-            let page = base::page(column().width(440.0 - EDGE), title.clone());
+            // The body: a column 12 in from the sides and the foot, its things 12 apart, the
+            // fields in it as wide as it is.
+            let middle = column().gap(token::SPACE_LG).padding_x(token::SPACE_LG);
+            let middle = middle.padding_bottom(token::SPACE_LG).text_color(token::TEXT_2);
+            let middle = middle.child(Filled(body()));
+            let page = base::page(column().width(width - EDGE), title.clone());
             let page = page.child(head).child(middle);
             if actions.is_empty() {
                 return page;
@@ -204,8 +215,12 @@ where
 
 /// The seam and the buttons: those at the start, room, then the others at the end.
 fn foot(open: Signal<bool>, actions: &[Action]) -> Div {
-    let mut foot =
-        row().gap(4.0).padding(8.0).align_items(Align::Center).border_top(1.0).border_color(token::LINE);
+    // A quiet button at the start has no edge of its own: its label, 8 inside it, stands on
+    // the body's left edge.
+    let lead = if actions.iter().any(|it| it.start) { token::SPACE_XS } else { token::SPACE_LG };
+    let foot = row().gap(token::SPACE_MD).padding_left(lead).padding_right(token::SPACE_LG);
+    let foot = foot.padding_y(token::SPACE_MD);
+    let mut foot = foot.align_items(Align::Center).border_top(1.0).border_color(token::LINE);
     let starts = actions.iter().filter(|it| it.start);
     let ends = actions.iter().filter(|it| !it.start);
     for at in starts {
@@ -252,4 +267,13 @@ fn face(open: Signal<bool>, at: &Action) -> Div {
         false => quadra_layout::Display::None,
     };
     div().display(display).child(face)
+}
+
+/// What a container's body holds, mounted so that its fields fill their columns.
+pub(crate) struct Filled<V>(pub V);
+
+impl<V: View> View for Filled<V> {
+    fn mount(self, cx: &mut MountCx) -> NodeId {
+        crate::layout::filled(cx, self.0)
+    }
 }

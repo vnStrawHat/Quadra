@@ -1,4 +1,4 @@
-//! The text input of the kit (specs/behaviour/15, "Text input"): the field of `quadra-view` in
+//! The text input of the kit (specs/design, "Text input"): the field of `quadra-view` in
 //! a frame. The frame's border says where the focus is and whether the value is accepted.
 
 use quadra_layout::{Align, Length};
@@ -18,7 +18,9 @@ pub struct Input {
     password: bool,
     invalid: Prop<bool>,
     disabled: Prop<bool>,
-    width: f32,
+    /// The width it was told, and its own.
+    width: Option<f32>,
+    own: f32,
     lead: Option<&'static str>,
     /// What stands before the text in place of an icon: a colour's swatch.
     pub(crate) before: Option<AnyView>,
@@ -47,7 +49,8 @@ pub fn input(value: Signal<String>) -> Input {
         password: false,
         invalid: Prop::Value(false),
         disabled: Prop::Value(false),
-        width: 240.0,
+        width: None,
+        own: 240.0,
         lead: None,
         before: None,
         clears: false,
@@ -93,7 +96,13 @@ impl Input {
     }
 
     pub fn width(mut self, px: f32) -> Self {
-        self.width = px;
+        self.width = Some(px);
+        self
+    }
+
+    /// The width of the control built on this field, unless it is told one or is in a form.
+    pub(crate) fn own_width(mut self, px: f32) -> Self {
+        self.own = px;
         self
     }
 
@@ -196,7 +205,7 @@ impl Input {
         let frame = row().align_items(Align::Center).gap(4.0).padding_x(8.0);
         let frame = match self.fill {
             true => frame.grow(1.0).width(0.0).min_width(Length::Px(0.0)),
-            false => frame.width(self.width),
+            false => crate::layout::field_width(frame, self.width, self.own),
         };
         let frame = match self.height {
             Some(px) => frame.height(by_text(px)),
@@ -204,7 +213,7 @@ impl Input {
         };
         let frame = if self.mono { frame.font_family(fonts::MONO) } else { frame };
         let frame = if self.small { frame.text_size(size::TEXT_SM.size) } else { frame };
-        let frame = frame.radius(token::RADIUS_LG).border(1.0);
+        let frame = frame.radius(token::RADIUS_MD).border(1.0);
         let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG).cursor(Cursor::Text);
         let frame = frame.selection_color(token::SELECTION);
         // The border is where the focus shows; a value that is not accepted keeps the

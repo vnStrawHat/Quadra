@@ -10,7 +10,7 @@ pub fn page(title: &str, about: &str, demos: impl IntoIterator<Item = Div>) -> D
     let group = PAGES.iter().find(|page| page.title == title).map_or("Overview", |page| page.group);
     let about = div().max_width(640.0).child(text(about.to_string()).color(token::TEXT_2).selectable());
     let head = column().gap(6.0).child(label(group)).child(heading(title, 1)).child(about);
-    let body = column().gap(20.0).padding_x(32.0).padding_y(28.0).max_width(1000.0);
+    let body = column().gap(24.0).padding_x(32.0).padding_y(24.0).max_width(1000.0);
     body.child(head).children(demos.into_iter().collect::<Vec<_>>())
 }
 
@@ -19,13 +19,13 @@ pub fn page(title: &str, about: &str, demos: impl IntoIterator<Item = Div>) -> D
 pub fn demo(title: &str, content: impl View + 'static, code: &str) -> Div {
     let strip = || row().align_items(Align::Center).padding_x(12.0).bg(token::PANEL);
     let head = strip().height(28.0).border_bottom(1.0).border_color(token::LINE).child(label(title));
-    let body = column().padding(20.0).bg(token::CANVAS).child(content);
+    let body = column().padding(16.0).bg(token::CANVAS).child(content);
     let framed = column().border(1.0).border_color(token::LINE).child(head).child(body);
     if code.is_empty() {
         return framed;
     }
     let code = text(code.to_string()).size(size::TEXT_SM.size).color(token::TEXT_2).selectable();
-    let foot = strip().padding_y(7.0).border_top(1.0).border_color(token::LINE).font_family(fonts::MONO);
+    let foot = strip().padding_y(8.0).border_top(1.0).border_color(token::LINE).font_family(fonts::MONO);
     framed.child(foot.child(code))
 }
 
@@ -42,7 +42,7 @@ pub fn stack() -> Div {
 /// A row of settings: what it sets and a line about it at the left, its control at the right.
 pub fn setting(title: &str, about: &str, control: impl View + 'static) -> Div {
     let words = column().gap(2.0).grow(1.0).child(text(title.to_string())).child(hint(about));
-    let item = row().align_items(Align::Center).gap(16.0).padding_y(10.0);
+    let item = row().align_items(Align::Center).gap(16.0).padding_y(8.0);
     item.border_bottom(1.0).border_color(token::LINE).child(words).child(control)
 }
 

@@ -20,7 +20,7 @@ pub fn progress<M>(part: impl IntoProp<f32, M>) -> Div {
         Prop::Reactive(read) => Rc::from(read),
     };
     let (width, percent, number) = (part.clone(), part.clone(), part);
-    let fill = div().height(6.0).radius(3.0).bg(token::ACCENT);
+    let fill = div().height(6.0).radius(2.0).bg(token::ACCENT);
     let fill = fill.width(move || Length::Pct(width().clamp(0.0, 1.0) * 100.0));
     let says = move || format!("{:.0}%", percent().clamp(0.0, 1.0) * 100.0);
     let range =
@@ -29,7 +29,7 @@ pub fn progress<M>(part: impl IntoProp<f32, M>) -> Div {
 }
 
 fn track() -> Div {
-    let track = div().size(200.0, 6.0).shrink(0.0).radius(3.0).bg(token::CHROME);
+    let track = div().size(200.0, 6.0).shrink(0.0).radius(2.0).bg(token::CHROME);
     track.overflow_x(Overflow::Hidden)
 }
 

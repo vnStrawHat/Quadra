@@ -1,4 +1,4 @@
-//! The parts of the colour picker's popover (specs/13, `color_picker`; behaviour/15, "Color
+//! The parts of the colour picker's popover (specs/13, `color_picker`; specs/design, "Color
 //! picker"): the area of saturation and brightness, the bar of the hues, and the sums between
 //! a hue, saturation and brightness and the red, green and blue of a colour.
 
@@ -154,6 +154,7 @@ pub(crate) fn hue_bar(hue: Signal<f32>) -> Div {
     let knob = ring(14.0).top(0.0).bg(shown);
     let knob = knob.left(move || Length::Px(scale.track * scale.part(hue.get())));
     let face = div().size(WIDE, 14.0).shrink(0.0).cursor(Cursor::Pointer).label("Hue".to_string());
+    // design: the knob is a ring, half its 14 px
     let face = face.radius(7.0).focus_visible(|s| s.outline(token::BORDER_FOCUSED));
     slider::slider(face, hue, scale, memo(|| false)).child(rail).child(knob)
 }

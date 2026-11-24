@@ -1,4 +1,4 @@
-//! The bars and the sidebar of a window (specs/behaviour/15, "Chrome"): the toolbar, the
+//! The bars and the sidebar of a window (specs/design, "Chrome"): the toolbar, the
 //! status bar and what stands in it, the breadcrumb, the marks of a status, and the places
 //! of an app in a sidebar that folds.
 
@@ -134,7 +134,7 @@ fn a_place_of_a_sidebar_is_chosen_by_a_click_or_the_arrows_and_the_sidebar_folds
     let (side, inbox) =
         (h.query(|n| n.semantics.role == Role::Tree)[0], h.get_by_role(Role::TreeItem, "Inbox").node());
     assert_eq!(h.tree.rect(side).size(), Size::new(240.0, 600.0));
-    assert_eq!(h.tree.rect(inbox).size(), Size::new(239.0, 26.0)); // less the line at its edge
+    assert_eq!(h.tree.rect(inbox).size(), Size::new(239.0, 28.0)); // less the line at its edge
     assert_eq!(h.tree.paint_style(inbox).background, dark().theme().resolve(token::PRESS.into()));
 
     h.get_by_role(Role::TreeItem, "All notes").click();

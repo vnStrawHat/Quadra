@@ -1,4 +1,4 @@
-//! Icons (specs/behaviour/15, "Space, size, shape"): Lucide outlines on a grid of 24, shown
+//! Icons (specs/design, "Space, size, shape"): Lucide outlines on a grid of 24, shown
 //! at 10, 12, 14 or 16 px in the colour of the text around them.
 
 use std::cell::RefCell;

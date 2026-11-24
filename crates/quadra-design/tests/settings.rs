@@ -57,7 +57,7 @@ fn item(h: &Harness, name: &str) -> Option<bool> {
 fn top_of(h: &Harness, name: &str) -> f32 {
     let said = h.query(|n| n.semantics.name == name);
     let rects = said.iter().map(|id| h.tree.window_rect(*id));
-    rects.filter(|rect| rect.x > 260.0).map(|rect| rect.y).next().expect("the page says it")
+    rects.filter(|rect| rect.x > 250.0).map(|rect| rect.y).next().expect("the page says it")
 }
 
 #[test]

@@ -1,4 +1,4 @@
-//! Themes of what the system is set to (specs/12; behaviour/15, "Themes"): its high
+//! Themes of what the system is set to (specs/12; specs/design, "Themes"): its high
 //! contrast, where the user chose a few colours that read well together and every role
 //! takes one of them (written as a theme file over the built-in theme of its lightness);
 //! and its accent, for an app that takes it.

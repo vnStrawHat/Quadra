@@ -21,10 +21,10 @@ pub(crate) fn bar(model: &Model, files: &Files) -> impl View + use<> {
     let outline =
         icon_button(icons::PANEL_LEFT, "Outline").on_click(move || outlined.update(|on| *on = !*on));
     let (m, changed) = (model.clone(), model.changed);
-    let name = div().font_weight(600).text_size(13.0).child(text(move || m.name()));
+    let name = div().font_weight(600).text_size(14.0).child(text(move || m.name()));
     let dot = div()
         .size(6.0, 6.0)
-        .radius(3.0)
+        .radius(4.0)
         .bg(token::ACCENT)
         .label("Unsaved changes")
         .role(quadra::Role::Image)

@@ -1,4 +1,4 @@
-//! The command palette (specs/behaviour/15, "Picker / command palette"): a query over the
+//! The command palette (specs/design, "Picker / command palette"): a query over the
 //! commands that match it, whatever the case and the accents, the best first.
 
 use std::rc::Rc;

@@ -1,4 +1,4 @@
-//! The title bar of a window with its own frame (specs/behaviour/15, "Title bar"): the bar
+//! The title bar of a window with its own frame (specs/design, "Title bar"): the bar
 //! the window is dragged by, with the app's menu and title at its left, the app's controls,
 //! and the buttons that minimize, maximize and close at its right.
 

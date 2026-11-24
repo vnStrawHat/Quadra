@@ -1,4 +1,4 @@
-//! The controls that are on or off (specs/behaviour/15, "Components"): the checkbox and the
+//! The controls that are on or off (specs/design, "Components"): the checkbox and the
 //! switch. Each takes the signal that holds its value, and writes it.
 
 use std::rc::Rc;
@@ -76,6 +76,7 @@ fn switch_track(on: Signal<bool>, off: Off) -> Div {
     let track = track.bg(fill).border(1.0).border_color(edge);
     let track = track.justify(move || if on.get() { Justify::End } else { Justify::Start });
     let track = track.child(div().size(12.0, 12.0).radius(6.0).bg(knob));
+    // design: a switch is a pill, its ring half its height
     div().padding(1.0).shrink(0.0).radius(13.0).border(2.0).border_color(ring).child(track)
 }
 

@@ -19,7 +19,7 @@ use crate::{icons, token};
 type Told = Box<dyn Fn(&str)>;
 
 const INDENT: f32 = 20.0;
-const ROW: f32 = 26.0;
+const ROW: f32 = 24.0;
 
 /// A thing of a tree: what it is known by, what it is called, and what is in it.
 #[derive(Clone, Debug, Default, PartialEq)]

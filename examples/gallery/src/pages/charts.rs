@@ -115,7 +115,7 @@ pub fn bar_chart_page() -> Div {
 fn topology(lit: quadra::Signal<Option<Hit>>) -> Graph {
     let node = |id: &'static str, kind: &'static str, status: Status, (x, y): (f32, f32)| {
         let face = move || {
-            let line = row().align_items(Align::Center).gap(6.0).height(40.0).padding_x(10.0);
+            let line = row().align_items(Align::Center).gap(6.0).height(40.0).padding_x(12.0);
             let line = line.bg(token::PANEL).radius(6.0).border(1.0).border_color(token::LINE_STRONG);
             line.child(status_mark(status)).child(plain_badge(kind, Tone::Primary)).child(text(id))
         };

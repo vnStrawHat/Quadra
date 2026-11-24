@@ -1,4 +1,4 @@
-//! Quadra's kit (specs/13; the design language is specs/behaviour/15): the roles a theme
+//! Quadra's kit (specs/13; the design language is specs/design): the roles a theme
 //! gives colours to, the themes, and the components built on them: a look over the
 //! components of `quadra-headless` (specs/17).
 
@@ -19,6 +19,7 @@ mod icon;
 pub mod icons;
 mod input;
 mod keys;
+mod layout;
 mod list;
 mod menu;
 mod meter;
@@ -70,6 +71,7 @@ pub use hover_card::{HoverCard, hover_card};
 pub use icon::icon;
 pub use input::{Input, input};
 pub use keys::{KeyInput, key_input};
+pub use layout::{Form, button_row, columns, form, hstack, section, section_label, sections, spacer, vstack};
 pub use list::{List, list};
 pub use menu::{
     ContextMenu, MenuButton, MenuItem, context_menu, menu, menu_beside, menu_button, menu_icon_button,

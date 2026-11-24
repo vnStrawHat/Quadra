@@ -1,4 +1,4 @@
-//! The status of a workload (specs/behaviour/15, "Accent and feedback"): each has a colour
+//! The status of a workload (specs/design, "Accent and feedback"): each has a colour
 //! and a shape of its own, so it reads without colour too.
 
 use quadra_layout::{Align, Justify};

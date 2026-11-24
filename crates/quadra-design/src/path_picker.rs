@@ -1,4 +1,4 @@
-//! The file and folder pickers of the kit (specs/13, `file_picker`; behaviour/15, "File and
+//! The file and folder pickers of the kit (specs/13, `file_picker`; specs/design, "File and
 //! folder picker"): a path in an input, and a button that asks the system's dialog for one.
 //! The dialog is the app's (`quadra-shell`'s), given as `browse`: the kit asks no OS itself.
 
@@ -24,7 +24,7 @@ pub struct PathPicker {
     folder: bool,
     placeholder: String,
     label: Option<Prop<String>>,
-    width: f32,
+    width: Option<f32>,
     fill: bool,
     test_id: Option<&'static str>,
 }
@@ -39,7 +39,7 @@ pub fn file_picker(value: Signal<String>, browse: impl Fn(&str) -> Option<PathBu
         folder: false,
         placeholder: String::new(),
         label: None,
-        width: 240.0,
+        width: None,
         fill: false,
         test_id: None,
     }
@@ -68,7 +68,7 @@ impl PathPicker {
 
     /// The field's width: 240 px unless told.
     pub fn width(mut self, px: f32) -> Self {
-        self.width = px;
+        self.width = Some(px);
         self
     }
 
@@ -89,7 +89,9 @@ impl View for PathPicker {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (value, browse) = (self.value, self.browse);
         let mut field = input(value).placeholder(&self.placeholder);
-        field = if self.fill { field.fill() } else { field.width(self.width) };
+        // In a form with no width told, the path takes the room the button leaves.
+        let fill = self.fill || (self.width.is_none() && crate::layout::fills());
+        field = if fill { field.fill() } else { field.width(self.width.unwrap_or(240.0)) };
         if let Some(name) = self.label {
             field = field.label(name);
         }
@@ -107,7 +109,11 @@ impl View for PathPicker {
             }
         });
         let whole = row().align_items(Align::Center).gap(8.0);
-        let whole = if self.fill { whole.grow(1.0).min_width(0.0) } else { whole.shrink(0.0) };
+        let whole = match (self.fill, fill) {
+            (true, _) => whole.grow(1.0).min_width(0.0),
+            (false, true) => whole.width(quadra_layout::Length::Fill),
+            (false, false) => whole.shrink(0.0),
+        };
         whole.child(field).child(pick).mount(cx)
     }
 }

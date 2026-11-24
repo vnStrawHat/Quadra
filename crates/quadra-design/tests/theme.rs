@@ -1,4 +1,4 @@
-//! The kit's themes (specs/behaviour/15, "Themes"): the two built-in ones give every role a
+//! The kit's themes (specs/design, "Themes"): the two built-in ones give every role a
 //! colour, a file lists only what differs from the theme of its mode, roles a file leaves
 //! unset follow its own colours, and what is wrong in a file is named by its path.
 
@@ -121,10 +121,10 @@ fn a_theme_file_gives_measures_other_numbers() {
         (6.0, 150.0)
     );
     let round =
-        theme_from_json(r##"{"mode": "dark", "measures": {"radius_md": 8, "space_sm": 10}}"##).unwrap();
+        theme_from_json(r##"{"mode": "dark", "measures": {"radius_md": 8, "space_md": 10}}"##).unwrap();
     let theme = round.theme();
     assert_eq!(
-        (theme.measure(token::RADIUS_MD), theme.measure(token::SPACE_SM), theme.measure(token::RADIUS_SM)),
+        (theme.measure(token::RADIUS_MD), theme.measure(token::SPACE_MD), theme.measure(token::RADIUS_SM)),
         (8.0, 10.0, 4.0)
     );
     let error = |text: &str| theme_from_json(text).unwrap_err().0;

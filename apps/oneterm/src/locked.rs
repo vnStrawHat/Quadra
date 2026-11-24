@@ -149,7 +149,7 @@ fn card(model: &Model) -> Div {
         .right(0.0)
         .bottom(0.0)
         .align_items(Align::Center)
-        .padding_top(42.0)
+        .padding_top(48.0) // design: the room over the lock card's mark
         .padding_x(16.0)
         .backdrop_blur(BLUR)
         .bg(token::SCRIM)

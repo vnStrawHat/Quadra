@@ -1,4 +1,4 @@
-//! Notifications and toasts (specs/behaviour/15, "Notifications"): cards stacked at the
+//! Notifications and toasts (specs/design, "Notifications"): cards stacked at the
 //! bottom right of the window that stay until closed, and short lines at the bottom centre
 //! that go by themselves. The app holds a [`Notices`], tells it what to show, and mounts its
 //! [`Notices::host`] once in the window.
@@ -229,7 +229,7 @@ impl Notices {
             None => words,
         };
         let close = icon_button(icons::X, "Dismiss notification").on_click(move || me.close(id));
-        let top = row().gap(8.0).child(div().padding_top(3.0).child(mark)).child(words).child(close);
+        let top = row().gap(8.0).child(div().padding_top(4.0).child(mark)).child(words).child(close);
         let card = surface(2).width(448.0).padding(12.0).gap(8.0);
         let card = me.held(card, id).role(Role::Group).label(notice.title).child(top);
         if notice.actions.is_empty() {
@@ -250,7 +250,7 @@ impl Notices {
     /// A toast: one line with its icon.
     fn line(&self, id: u64) -> Div {
         let Some(notice) = self.find(id) else { return div() };
-        let line = row().align_items(Align::Center).gap(8.0).padding_x(10.0).padding_y(6.0);
+        let line = row().align_items(Align::Center).gap(8.0).padding_x(12.0).padding_y(6.0);
         let line = line.child(mark(&notice, true)).child(text(notice.title.clone()));
         let line = surface(2).role(Role::Group).label(notice.title).child(line);
         self.held(line, id)

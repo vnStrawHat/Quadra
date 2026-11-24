@@ -13,7 +13,7 @@ use crate::sftp::{Dock, Transfer};
 pub(super) fn transfers(d: Dock) -> impl View + use<> {
     let list = dynamic(move || {
         let list = column().width(Length::Fill).gap(8.0).padding_x(12.0);
-        let mut list = list.padding_top(6.0).padding_bottom(10.0).text_size(12.0);
+        let mut list = list.padding_top(6.0).padding_bottom(12.0).text_size(12.0);
         for transfer in d.transfers.get() {
             list = list.child(transfer_row(d, transfer));
         }

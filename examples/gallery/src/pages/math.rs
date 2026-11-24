@@ -31,7 +31,7 @@ $$
 pub fn math_page() -> Div {
     let display = SAMPLES
         .iter()
-        .fold(column().gap(18.0).text_size(20.0), |all, source| all.child(formula(source).display()));
+        .fold(column().gap(16.0).text_size(18.0), |all, source| all.child(formula(source).display()));
     let line = rich_text([
         span("The sides of a right triangle have "),
         formula("a^2+b^2=c^2").span(),

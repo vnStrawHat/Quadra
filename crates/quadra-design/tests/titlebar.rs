@@ -1,4 +1,4 @@
-//! The title bar (specs/behaviour/15, "Title bar"): the window is dragged by it, what the
+//! The title bar (specs/design, "Title bar"): the window is dragged by it, what the
 //! app puts in it stays the app's, and its three buttons ask the window.
 
 use std::rc::Rc;

@@ -1,4 +1,4 @@
-//! The tooltip (specs/behaviour/15, "Tooltip"): a few words about what the pointer rests on,
+//! The tooltip (specs/design, "Tooltip"): a few words about what the pointer rests on,
 //! shown after half a second and gone when the pointer leaves or presses. It never takes
 //! the focus, and it adds no node around the view it is about: the layout does not know.
 //! An arrow on the bubble's edge points at the view's middle, on the side it shows on.

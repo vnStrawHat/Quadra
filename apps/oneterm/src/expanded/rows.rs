@@ -112,7 +112,7 @@ pub(super) fn transfers(d: Dock) -> impl View + use<> {
         .gap(6.0)
         .padding_x(12.0)
         .padding_top(6.0)
-        .padding_bottom(10.0)
+        .padding_bottom(12.0)
         .shrink(0.0)
         .bg(token::PANEL)
         .border_top(1.0)

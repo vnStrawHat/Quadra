@@ -1,4 +1,4 @@
-//! The bars of a window under its title (specs/behaviour/15, "Chrome"): the toolbar, the
+//! The bars of a window under its title (specs/design, "Chrome"): the toolbar, the
 //! status bar and what stands in it, and the breadcrumb.
 
 use std::rc::Rc;

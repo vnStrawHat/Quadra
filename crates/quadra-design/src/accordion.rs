@@ -58,7 +58,7 @@ impl View for Accordion {
             // A line between a section and the one above it.
             let head = if i > 0 { head.border_top(1.0).border_color(token::LINE) } else { head };
             let inside =
-                move || div().padding_left(26.0).padding_right(12.0).padding_bottom(12.0).child(body());
+                move || div().padding_left(24.0).padding_right(12.0).padding_bottom(12.0).child(body());
             all = all.child(head).child(accordion_body(open, inside));
         }
         all.mount(cx)

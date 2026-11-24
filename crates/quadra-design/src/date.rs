@@ -13,7 +13,7 @@ use quadra_view::{Div, IntoProp, MountCx, NodeRef, Prop, View, by_text, column, 
 
 use crate::button::icon_button;
 use crate::icon::icon;
-use crate::popup::popover;
+use crate::popup::bare_popover;
 use crate::{icons, size, token};
 
 pub use quadra_app::time::Date;
@@ -151,8 +151,8 @@ impl View for DatePicker {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (value, open, opener) = (self.value, signal(false), NodeRef::new());
         let (lang, said) = (language(), language());
-        let face =
-            row().align_items(Align::Center).gap(6.0).shrink(0.0).width(180.0).height(by_text(size::H_MD));
+        let face = row().align_items(Align::Center).gap(6.0).shrink(0.0).height(by_text(size::H_MD));
+        let face = crate::layout::field_width(face, None, 180.0).bg(token::INPUT_BG);
         let face = face.padding_x(8.0).radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG);
         let face = face.hover(|s| s.bg(token::PANEL_HOVER).border_color(token::LINE_STRONG));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
@@ -170,7 +170,7 @@ impl View for DatePicker {
         let face = face.child(icon(icons::CALENDAR).size(14.0).color(token::TEXT_2));
         let face = face.child(text(move || said.locale().date(value.get())));
         // A day chosen closes the calendar.
-        let days = popover(open, &opener, move || month(value, move || open.set(false), true));
+        let days = bare_popover(open, &opener, move || month(value, move || open.set(false), true));
         div().shrink(0.0).child(face).child(days).mount(cx)
     }
 }

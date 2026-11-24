@@ -80,7 +80,7 @@ impl View for Field {
 pub struct Textarea {
     value: Signal<String>,
     rows: u32,
-    width: f32,
+    width: Option<f32>,
     placeholder: String,
     label: Option<Prop<String>>,
 }
@@ -88,7 +88,7 @@ pub struct Textarea {
 /// A field of several lines that edits `value`, in the frame of an input: 240 px wide and
 /// at least three lines tall unless told, growing with what it holds.
 pub fn textarea(value: Signal<String>) -> Textarea {
-    Textarea { value, rows: 3, width: 240.0, placeholder: String::new(), label: None }
+    Textarea { value, rows: 3, width: None, placeholder: String::new(), label: None }
 }
 
 impl Textarea {
@@ -99,7 +99,7 @@ impl Textarea {
     }
 
     pub fn width(mut self, px: f32) -> Self {
-        self.width = px;
+        self.width = Some(px);
         self
     }
 
@@ -120,9 +120,10 @@ impl View for Textarea {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         // ponytail: it grows without end; a most of rows, with scrolling inside, when wanted.
         let least = self.rows as f32 * size::TEXT_MD.line + 14.0;
-        let frame = column().width(self.width).min_height(least).padding_x(8.0).padding_y(6.0);
+        let frame = crate::layout::field_width(column(), self.width, 240.0);
+        let frame = frame.min_height(least).padding_x(8.0).padding_y(6.0);
         let frame =
-            frame.radius(token::RADIUS_LG).border(1.0).border_color(token::LINE_STRONG).bg(token::INPUT_BG);
+            frame.radius(token::RADIUS_MD).border(1.0).border_color(token::LINE_STRONG).bg(token::INPUT_BG);
         let frame = frame.cursor(Cursor::Text).selection_color(token::SELECTION).role(Role::Group);
         let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
         let frame = frame.when(State::INVALID, |s| s.border_color(token::ERROR));

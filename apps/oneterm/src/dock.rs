@@ -159,7 +159,7 @@ fn entries(model: &Model, d: Dock) -> impl View + use<> {
             return AnyView::new(local(&model));
         }
         if !said.is_empty() {
-            return AnyView::new(div().padding(10.0).text_color(token::TEXT_2).child(text(said)));
+            return AnyView::new(div().padding(12.0).text_color(token::TEXT_2).child(text(said)));
         }
         let all = crate::panes::visible(&d.entries.get(), d.hidden.get());
         let mut list = column().width(Length::Fill);
@@ -210,7 +210,7 @@ fn line(entry: &Entry, d: Dock) -> quadra::Div {
     row()
         .align_items(Align::Center)
         .gap(8.0)
-        .padding_left(10.0)
+        .padding_left(12.0)
         .padding_right(12.0)
         .height(by_text(26.0))
         .shrink(0.0)
@@ -240,7 +240,7 @@ fn local(model: &Model) -> impl View + use<> {
         .grow(1.0)
         .align_items(Align::Center)
         .justify(quadra::Justify::Center)
-        .gap(10.0)
+        .gap(8.0)
         .padding(24.0)
         .text_size(12.0)
         .text_color(token::TEXT_2)

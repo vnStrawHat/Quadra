@@ -100,7 +100,7 @@ fn rows_show_as_their_columns_say_and_are_sorted_by_a_click_on_a_title() {
     // The header is 28 px and a row 26: of a thousand rows, those of the window are mounted.
     let rows = p.h.query(|n| n.semantics.role == Role::Row);
     let (head, first) = (p.h.tree.window_rect(rows[0]), p.h.tree.window_rect(rows[1]));
-    assert_eq!((head.height, first.y, first.height, rows.len() < 40), (28.0, 28.0, 26.0, true));
+    assert_eq!((head.height, first.y, first.height, rows.len() < 40), (28.0, 28.0, 24.0, true));
     assert_eq!(p.names()[..3], ["pod-0000", "pod-0001", "pod-0002"]);
     assert_eq!(
         [age_text(45), age_text(720), age_text(10_800), age_text(518_400)],
@@ -126,7 +126,7 @@ fn rows_show_as_their_columns_say_and_are_sorted_by_a_click_on_a_title() {
 #[test]
 fn rows_are_selected_by_the_pointer_and_the_keys_and_copied() {
     let mut p = page();
-    let y = |row: f32| 28.0 + 26.0 * row + 13.0;
+    let y = |row: f32| 28.0 + 24.0 * row + 12.0;
     p.click(50.0, y(2.0), Mods::NONE);
     assert_eq!(p.chosen.get_untracked(), [2]);
     p.click(50.0, y(4.0), Mods::CTRL); // with Ctrl: one more, or one less
@@ -229,7 +229,7 @@ fn a_pinned_column_stays_while_the_others_scroll_and_hidden_ones_do_not_show() {
 fn a_cursor_on_cells_is_moved_by_the_arrows_and_the_pointer_and_copies_its_cell() {
     let column = signal(0);
     let mut p = page_with(Some(column));
-    let y = |row: f32| 28.0 + 26.0 * row + 13.0;
+    let y = |row: f32| 28.0 + 24.0 * row + 12.0;
     // A click puts it on a cell; to a reader that cell is selected, and its row is.
     p.click(250.0, y(2.0), Mods::NONE);
     assert_eq!((column.get_untracked(), p.chosen.get_untracked()), (1, vec![2]));

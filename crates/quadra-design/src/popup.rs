@@ -13,12 +13,13 @@ pub(crate) use quadra_headless::popup::{Shown, hang};
 
 use crate::token;
 
-/// The plane of every overlay, the menu plane: the overlay's fill, a quiet border, small
-/// corners, and the shadow of its level above the window (1: menus, tooltips, popovers;
-/// 2: dialogs, notifications).
+/// The plane of every overlay (specs/design/surfaces.md): the overlay's fill, a quiet border,
+/// and the corners and shadow of its level above the window (1: menus, tooltips, popovers,
+/// a control's corners; 2: dialogs, notifications, the large ones).
 pub(crate) fn surface(level: u8) -> Div {
     let plane = column().bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE);
-    plane.radius(token::RADIUS_SM).elevation(level)
+    let corners = if level >= 2 { token::RADIUS_LG } else { token::RADIUS_MD };
+    plane.radius(corners).elevation(level)
 }
 
 /// What the border of the plane adds to the width of what it holds: a popup that is so wide
@@ -56,9 +57,20 @@ pub(crate) fn below(opener: &NodeRef) -> Place {
     Place::Beside(opener.clone(), Side::Below, Along::Start, 4.0)
 }
 
-/// Shows what `content` builds, in a popup below `opener`, while `open` is true. `content`
-/// runs each time the popup opens.
+/// Shows what `content` builds, in a popup below `opener`, while `open` is true: 12 px in
+/// from its edges, its things 8 apart (specs/design/surfaces.md). `content` runs each time
+/// the popup opens.
 pub fn popover<V, F>(open: Signal<bool>, opener: &NodeRef, content: F) -> impl View + use<V, F>
+where
+    V: View + 'static,
+    F: Fn() -> V + 'static,
+{
+    let padded = move || column().padding(token::SPACE_LG).gap(token::SPACE_MD).child(content());
+    popup(open, (below(opener), 1), Some(opener.clone()), padded)
+}
+
+/// A popover whose content has its own inset: a picker's.
+pub(crate) fn bare_popover<V, F>(open: Signal<bool>, opener: &NodeRef, content: F) -> impl View + use<V, F>
 where
     V: View + 'static,
     F: Fn() -> V + 'static,

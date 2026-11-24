@@ -1,4 +1,4 @@
-//! The menu (specs/behaviour/15, "Menu"): rows that do something, in a popup. The arrows move
+//! The menu (specs/design, "Menu"): rows that do something, in a popup. The arrows move
 //! a highlight, Enter does what the highlighted row does, and doing it closes the menu.
 
 mod rows;
@@ -224,8 +224,7 @@ pub fn menu_icon_button(
     MenuButton { face: icon_button(body, name), ..menu_button("", items) }
 }
 
-/// A button that opens a popover under itself, with what `content` builds each time, 12 px
-/// in from its edge.
+/// A button that opens a popover under itself, with what `content` builds each time.
 pub fn popover_button<V: View + 'static>(
     label: impl Into<String>,
     content: impl Fn() -> V + 'static,
@@ -233,7 +232,7 @@ pub fn popover_button<V: View + 'static>(
     let content = Rc::new(content);
     let under = move |open: Signal<bool>, opener: &NodeRef| {
         let content = content.clone();
-        AnyView::new(popover(open, opener, move || div().padding(12.0).child(content())))
+        AnyView::new(popover(open, opener, move || content()))
     };
     MenuButton { face: button(label.into()), under: Rc::new(under) }
 }

@@ -5,7 +5,7 @@ use quadra_design::{dark, icons, light};
 
 use crate::pages::{
     actions, charts, choices, data, diagram, diff, display, editor, fields, image, layout, live, markdown,
-    math, motion, navigation, overlays, overview, pickers, rich, status, workbench,
+    math, motion, navigation, overlays, overview, patterns, pickers, rich, status, workbench,
 };
 use crate::shell::Gallery;
 
@@ -25,6 +25,9 @@ pub const PAGES: &[PageInfo] = &[
     info("typography", "Typography", "Overview", icons::TYPE),
     info("colors", "Colors", "Overview", icons::PALETTE),
     info("icons", "Icons", "Overview", icons::STAR),
+    info("composition", "Composition", "Patterns", icons::LAYERS),
+    info("form-dialog", "Dialog with a form", "Patterns", icons::MONITOR),
+    info("settings-rows", "Settings rows", "Patterns", icons::SETTINGS),
     info("button", "Button", "Actions", icons::SQUARE_CHECK),
     info("icon-button", "Icon button", "Actions", icons::SETTINGS),
     info("toggle-button", "Toggle button", "Actions", icons::BOLD),
@@ -111,6 +114,9 @@ pub fn make(id: &str, gallery: Gallery) -> Div {
         "typography" => overview::typography_page(),
         "colors" => overview::colors_page(&if gallery.dark.get() { dark() } else { light() }),
         "icons" => overview::icons_page(),
+        "composition" => patterns::composition_page(),
+        "form-dialog" => patterns::form_dialog_page(),
+        "settings-rows" => patterns::settings_rows_page(),
         "button" => actions::button_page(),
         "icon-button" => actions::icon_button_page(),
         "toggle-button" => actions::toggle_button_page(),

@@ -1,4 +1,4 @@
-//! The faces bundled with the kit (specs/behaviour/15, "Type"): IBM Plex Sans for the UI and
+//! The faces bundled with the kit (specs/design, "Type"): IBM Plex Sans for the UI and
 //! Lilex for code, both under the SIL Open Font License (`fonts/OFL-plex-sans.txt`,
 //! `fonts/OFL-lilex.txt`).
 

@@ -39,6 +39,9 @@ look=$(grep -rnE '\b(Token|Paint|Color)\b|\.(bg|radius|radii|border|border_color
 # 6. Dependencies (specs/01, R15).
 tools/cargo.sh metadata --no-deps --format-version 1 | PYTHONUTF8=1 python tools/check_deps.py || fail=1
 
+# 6b. The design language's ladders (specs/design/checklist.md).
+PYTHONUTF8=1 python tools/check_design.py || fail=1
+
 # 7. Format, lints, tests.
 tools/cargo.sh fmt --all --check || say 'check: run tools/cargo.sh fmt --all'
 tools/cargo.sh clippy --workspace --all-targets --quiet -- -D warnings || say 'check: clippy failed'

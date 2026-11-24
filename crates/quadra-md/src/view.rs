@@ -1,4 +1,4 @@
-//! The view of a document (specs/13, "Markdown"; its look is behaviour/15, "Type"): the
+//! The view of a document (specs/13, "Markdown"; its look is specs/design, "Type"): the
 //! blocks in a column, each a child of its own that stays while its source does.
 
 mod code;

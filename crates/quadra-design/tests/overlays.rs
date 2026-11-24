@@ -1,4 +1,4 @@
-//! The tooltip and the dialog (specs/behaviour/15): a tooltip shows after the pointer has
+//! The tooltip and the dialog (specs/design): a tooltip shows after the pointer has
 //! rested half a second and never takes the focus; a dialog hangs under the top of the
 //! window, takes the focus, and is given up by Escape or answered by one of its buttons.
 

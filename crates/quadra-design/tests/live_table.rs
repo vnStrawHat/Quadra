@@ -133,7 +133,7 @@ fn a_cell_that_says_something_else_is_tinted_and_the_tint_fades() {
     assert_eq!(marks, [0, 0, 1, 0, 0, 0, 0]);
     let mark = tints(&h, 2)[0];
     let rect = h.tree.window_rect(mark);
-    assert_eq!((rect.x, rect.width, rect.height, h.tree.pose(mark).opacity), (200.0, 100.0, 25.0, 1.0));
+    assert_eq!((rect.x, rect.width, rect.height, h.tree.pose(mark).opacity), (200.0, 100.0, 23.0, 1.0));
 
     // It fades by the clock: a frame writes its opacity, and lays out and paints nothing.
     h.advance(Duration::from_millis(400));

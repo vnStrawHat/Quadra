@@ -1,4 +1,4 @@
-//! The rows of a menu (specs/behaviour/15, "Menu"): what each looks like, and where the menu
+//! The rows of a menu (specs/design, "Menu"): what each looks like, and where the menu
 //! a row opens stands.
 
 use std::rc::Rc;
@@ -45,7 +45,7 @@ fn face(item: &MenuItem, marks: bool) -> Div {
     };
     let face = face.child(text(item.label.clone()));
     let face = match &item.detail {
-        Some(words) => face.child(div().text_size(11.0).text_color(token::TEXT_2).child(text(words.clone()))),
+        Some(words) => face.child(div().text_size(12.0).text_color(token::TEXT_2).child(text(words.clone()))),
         None => face,
     };
     let face = face.child(div().grow(1.0).min_width(16.0));
@@ -66,7 +66,7 @@ fn face(item: &MenuItem, marks: bool) -> Div {
 
 /// A dot of 7 px.
 fn dot(color: quadra_tree::Token) -> Div {
-    div().size(7.0, 7.0).radius(3.5).bg(color)
+    div().size(7.0, 7.0).radius(1.0).bg(color)
 }
 
 /// The rows of a menu as a view: the headless crate's (`quadra_headless::menu`) with the kit's faces.
@@ -85,7 +85,7 @@ pub(crate) fn rows(items: Vec<MenuItem>, ends: Ends) -> Div {
         }
         if item.heading {
             let words = text(item.label.clone()).size(size::TEXT_SM.size).color(token::TEXT_2);
-            let head = row().height(by_text(20.0)).padding_x(10.0).align_items(Align::Center).child(words);
+            let head = row().height(by_text(24.0)).padding_x(8.0).align_items(Align::Center).child(words);
             lines.push(Line::Part(Box::new(head)));
             height += 20.0;
             continue;

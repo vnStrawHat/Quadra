@@ -112,7 +112,7 @@ fn a_row_of_a_list_is_selected_by_a_click_or_the_keys_and_kept_in_view() {
     assert!(p.h.semantics().contains("ListItem \"Row 3\" [selected]"));
     let (line, colour) = (p.h.get_by_role(Role::ListItem, "Row 3").node(), dark().theme());
     // A row is 23 px tall and as wide as the list.
-    assert_eq!(p.h.tree.rect(line).size(), quadra_prim::Size::new(800.0, 23.0));
+    assert_eq!(p.h.tree.rect(line).size(), quadra_prim::Size::new(800.0, 24.0));
     assert_eq!(p.h.tree.paint_style(line).background, colour.resolve(token::PRESS.into()));
 
     // The press gave the list the focus: the arrows move the selection and stop at the ends.

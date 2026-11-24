@@ -113,7 +113,7 @@ fn a_cell_is_one_line_cut_where_its_column_ends() {
     let glyphs = layers.flat_map(|(layer, y)| layer.instances().iter().map(move |i| (i, y)));
     let glyphs = glyphs.filter(|(i, _)| i.flags & quadra_render::FLAG_GLYPH != 0);
     let lowest = glyphs.map(|(i, y)| i.bounds[1] + i.bounds[3] + y).fold(0.0f32, f32::max);
-    assert!(lowest > 0.0 && lowest <= 28.0 + 2.0 * 26.0, "{lowest}");
+    assert!(lowest > 0.0 && lowest <= 28.0 + 2.0 * 24.0, "{lowest}");
 }
 
 #[test]
@@ -175,7 +175,7 @@ fn a_dense_table_has_a_lower_header_in_small_muted_words_and_12_px_between_words
     // The header: 26 px, its titles 12 px in the second text colour, the first 12 px in.
     let title = h.get_by_text("Name").node();
     let head = h.query(|n| n.semantics.role == Role::Row)[0];
-    assert_eq!(h.tree.window_rect(head).height, 26.0);
+    assert_eq!(h.tree.window_rect(head).height, 24.0);
     assert_eq!(h.tree.inherited(title).style.size, 12.0);
     assert_eq!(h.tree.inherited(title).color, theme.resolve(token::TEXT_2.into()));
     let words = h.tree.children(title)[0];

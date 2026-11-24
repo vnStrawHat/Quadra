@@ -1,4 +1,4 @@
-//! The searched menu (specs/behaviour/15, "Menu"): the select's search head over a menu's rows,
+//! The searched menu (specs/design, "Menu"): the select's search head over a menu's rows,
 //! which are asked again as the field changes; Enter does the first row that can be done.
 
 use std::rc::Rc;
@@ -44,7 +44,7 @@ where
             }
         });
         let head =
-            row().align_items(Align::Center).gap(6.0).height(by_text(32.0)).padding_x(10.0).shrink(0.0);
+            row().align_items(Align::Center).gap(6.0).height(by_text(32.0)).padding_x(12.0).shrink(0.0);
         let head = head.border_bottom(1.0).border_color(token::LINE);
         let head = head
             .child(icon(icons::SEARCH).size(12.0).color(token::TEXT_3))

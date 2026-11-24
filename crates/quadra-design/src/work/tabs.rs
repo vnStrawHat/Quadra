@@ -151,7 +151,7 @@ fn face(strip: &Strip, tab: Signal<Tab>, more: More) -> impl View + use<> {
         let (i, at) = (tabs.with(|all| all.iter().position(|tab| tab.id == mine)), active.get());
         (i.unwrap_or(0), tabs.with(|all| all.iter().position(|tab| tab.id == at)))
     });
-    let dot = div().size(6.0, 6.0).radius(3.0).bg(token::ACCENT);
+    let dot = div().size(6.0, 6.0).radius(1.0).bg(token::ACCENT);
     let dot = dot.display(move || if tab.with(|tab| tab.dirty) { Display::Flex } else { Display::None });
     let mark = row().size(12.0, 12.0).align_items(Align::Center).justify(Justify::Center).child(dot);
     let content = row().align_items(Align::Center).gap(4.0).padding_x(4.0).grow(1.0).child(mark);

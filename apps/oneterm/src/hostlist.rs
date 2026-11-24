@@ -76,7 +76,7 @@ pub(crate) fn hosts(model: &Model) -> impl View + use<> {
             // A group's hosts stand under a line from its chevron; those of no group do not.
             let mut under = column().gap(1.0).width(Length::Fill);
             if !group.is_empty() {
-                under = under.padding_left(5.0).border_left(1.0).border_color(token::LINE);
+                under = under.padding_left(4.0).border_left(1.0).border_color(token::LINE);
             }
             for host in hosts.iter().filter(|it| it.group == group && !closed) {
                 under = under.child(host_row(&shown, host.clone()));

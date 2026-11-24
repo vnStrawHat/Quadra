@@ -1,4 +1,4 @@
-//! Settings (specs/13, "Components"; behaviour/15, "Settings"): the preferences of an app in
+//! Settings (specs/13, "Components"; specs/design, "Settings"): the preferences of an app in
 //! pages. A column of the pages at the left; the chosen page at the right, a row for each
 //! setting: what it is called and a line about it, then its control. The app owns the
 //! controls, the text searched for and the chosen page; the component keeps which pages are
@@ -87,7 +87,7 @@ impl SettingsGroup {
 }
 
 /// A group of settings on its own, in any page: its title over an outlined card of its rows,
-/// each a title and a line about it at the left and its control at the right (behaviour/15,
+/// each a title and a line about it at the left and its control at the right (specs/design,
 /// "Settings, cards"). The groups of `settings(..).cards()` look so.
 pub fn settings_group(group: SettingsGroup) -> Div {
     let always = memo(|| true);
@@ -168,7 +168,7 @@ impl Settings {
         self
     }
 
-    /// The layout of outlined cards (behaviour/15, "Settings, cards").
+    /// The layout of outlined cards (specs/design, "Settings, cards").
     pub fn cards(mut self) -> Self {
         self.cards = true;
         self

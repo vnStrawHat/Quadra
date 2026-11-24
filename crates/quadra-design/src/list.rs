@@ -1,4 +1,4 @@
-//! The list (specs/behaviour/15, "List row"): the headless crate's (`quadra_headless::list`) with the
+//! The list (specs/design, "List row"): the headless crate's (`quadra_headless::list`) with the
 //! kit's rows: 23 px unless told, 6 px beside what they hold, filled under the pointer and
 //! when selected.
 
@@ -31,7 +31,7 @@ where
     V: View + 'static,
     F: Fn(Signal<usize>) -> V + 'static,
 {
-    List { count: Box::new(count), selected, row, row_height: 23.0, activate: None, empty: None }
+    List { count: Box::new(count), selected, row, row_height: 24.0, activate: None, empty: None }
 }
 
 impl<F> List<F> {

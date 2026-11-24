@@ -1,4 +1,4 @@
-//! More of the menu (specs/behaviour/15, "Menu"): a menu at the pointer for the other button,
+//! More of the menu (specs/design, "Menu"): a menu at the pointer for the other button,
 //! a row that opens a menu beside itself, the names of groups, and a menu too long to show
 //! whole.
 

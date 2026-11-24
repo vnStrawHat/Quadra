@@ -52,9 +52,9 @@ impl Page {
 #[test]
 fn a_button_and_the_rows_of_a_list_grow_with_the_text() {
     let mut p = page();
-    assert_eq!(p.look(), (28.0, vec![(0.0, 23.0), (23.0, 23.0), (46.0, 23.0)]));
+    assert_eq!(p.look(), (28.0, vec![(0.0, 24.0), (24.0, 24.0), (48.0, 24.0)]));
     p.set(1.5);
-    assert_eq!(p.look(), (42.0, vec![(0.0, 34.5), (34.5, 34.5), (69.0, 34.5)]));
+    assert_eq!(p.look(), (42.0, vec![(0.0, 36.0), (36.0, 36.0), (72.0, 36.0)]));
     p.set(1.0);
-    assert_eq!(p.look(), (28.0, vec![(0.0, 23.0), (23.0, 23.0), (46.0, 23.0)]));
+    assert_eq!(p.look(), (28.0, vec![(0.0, 24.0), (24.0, 24.0), (48.0, 24.0)]));
 }

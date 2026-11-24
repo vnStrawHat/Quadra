@@ -1,4 +1,4 @@
-//! The command palette (specs/behaviour/15, "Picker / command palette"): what the app can
+//! The command palette (specs/design, "Picker / command palette"): what the app can
 //! do, found by typing a few letters of it. A query over the rows that match, in groups
 //! under headings, hung under the top of the window or under the control that opens it.
 
@@ -166,7 +166,7 @@ impl<F> Palette<F> {
 
     /// Rows of 23 px, a state's mark first and a slot for the check: a picker of names.
     pub fn dense(mut self) -> Self {
-        (self.look.row, self.look.head, self.look.dense) = (23.0, 20.0, true);
+        (self.look.row, self.look.head, self.look.dense) = (24.0, 24.0, true);
         self
     }
 

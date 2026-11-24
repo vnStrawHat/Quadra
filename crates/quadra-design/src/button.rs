@@ -1,4 +1,4 @@
-//! The button (specs/behaviour/15, "Components"): a label that does something when it is
+//! The button (specs/design, "Components"): a label that does something when it is
 //! clicked, or when Enter or Space is pressed while it has the focus. A ghost has no fill
 //! until the pointer is over it; an outlined one has a hairline border; a tinted one a fill
 //! at low opacity, a border of its colour and an icon in it; a link is accent text.

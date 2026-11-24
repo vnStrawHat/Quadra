@@ -192,7 +192,7 @@ fn place(
     counts: Option<Counts>,
 ) -> Div {
     let id = item.id;
-    let line = row().align_items(Align::Center).gap(6.0).height(by_text(26.0)).padding_x(12.0);
+    let line = row().align_items(Align::Center).gap(6.0).height(by_text(28.0)).padding_x(12.0);
     let line = line.justify(move || if folded() { Justify::Center } else { Justify::Start });
     let (name, count) = (item.label.clone(), counts.clone());
     let line = line.cursor(Cursor::Pointer).label(move || match count.as_ref().and_then(|of| of(id)) {

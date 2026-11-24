@@ -154,7 +154,7 @@ pub fn table(
     let columns = columns.into_iter().collect();
     let (rows, cell) = (Rc::new(rows), Rc::new(cell));
     let (chosen, key, hidden, column, changes) = (None, None, None, None, None);
-    let (row_height, pinned, activate) = (26.0, 0, None);
+    let (row_height, pinned, activate) = (24.0, 0, None);
     let dense = false;
     Table { columns, rows, cell, chosen, key, row_height, hidden, pinned, column, changes, activate, dense }
 }

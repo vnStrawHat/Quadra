@@ -26,8 +26,8 @@ One that is not there is its words:
 
 /// A box of 150 by 96 with the hills fitted one way, and how under it.
 fn fitted(fit: Fit, how: &'static str) -> Div {
-    let picture = image(HILLS).width(150.0).height(96.0).fit(fit).radius(size::RADIUS_LG).label(how);
-    let frame = div().bg(token::PANEL).radius(token::RADIUS_LG).child(picture);
+    let picture = image(HILLS).width(150.0).height(96.0).fit(fit).radius(size::RADIUS_MD).label(how);
+    let frame = div().bg(token::PANEL).radius(token::RADIUS_MD).child(picture);
     let said = text(how).size(size::TEXT_SM.size).color(token::TEXT_2);
     column().gap(6.0).align_items(Align::Center).child(frame).child(said)
 }
@@ -41,13 +41,13 @@ fn dropped() -> Div {
     });
     let frame = div().width(320.0).height(160.0).align_items(Align::Center).justify(Justify::Center);
     let frame = frame.border(1.0).border_color(token::LINE_STRONG).border_style(BorderStyle::Dashed);
-    let frame = frame.radius(token::RADIUS_LG).drop_target(|s| s.bg(token::ACCENT_TINT));
+    let frame = frame.radius(token::RADIUS_MD).drop_target(|s| s.bg(token::ACCENT_TINT));
     frame.on_drop(move |files: &DroppedFiles, _| file.set(files.0.first().cloned())).child(shown)
 }
 
 pub fn image_page() -> Div {
     let sizes = [96.0, 64.0, 40.0, 24.0, 16.0].map(|side| image(MARK).width(side).label("The mark"));
-    let marks = row().gap(16.0).align_items(Align::End).padding(12.0).radius(token::RADIUS_LG);
+    let marks = row().gap(16.0).align_items(Align::End).padding(12.0).radius(token::RADIUS_MD);
     let fits = [(Fit::Contain, "Contain"), (Fit::Cover, "Cover"), (Fit::Fill, "Fill")];
     page(
         "Image",
@@ -60,7 +60,7 @@ pub fn image_page() -> Div {
             ),
             demo(
                 "A box of another shape",
-                row().gap(20.0).children(fits.map(|(fit, how)| fitted(fit, how))),
+                row().gap(24.0).children(fits.map(|(fit, how)| fitted(fit, how))),
                 "image(file).width(150.0).height(96.0).fit(Fit::Cover).radius(6.0)",
             ),
             demo(

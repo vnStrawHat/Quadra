@@ -129,7 +129,7 @@ fn groups(p: Prefs, d: Prefs, model: &Model) -> Vec<Vec<SettingsGroup>> {
     let advanced = SettingsGroup::new("Files").row("Settings file", &file, div());
     let note = row()
         .align_items(Align::Center)
-        .gap(10.0)
+        .gap(8.0)
         .text_color(token::TEXT_2)
         .child(icon(icons::INFO).size(14.0))
         .child(text(format!("Settings are saved to {file} as you change them.")));

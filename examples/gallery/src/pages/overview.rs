@@ -23,7 +23,7 @@ pub fn start_page() -> Div {
     let mut list = column();
     for (i, (title, about)) in principles.into_iter().enumerate() {
         let words = column().gap(2.0).child(text(title).weight(size::WEIGHT_STRONG)).child(hint(about));
-        let item = row().gap(16.0).padding_y(10.0).border_bottom(1.0).border_color(token::LINE);
+        let item = row().gap(16.0).padding_y(8.0).border_bottom(1.0).border_color(token::LINE);
         list = list.child(item.child(div().width(24.0).child(mono(format!("0{}", i + 1)))).child(words));
     }
     let keys = [
@@ -133,7 +133,7 @@ pub fn colors_page(theme: &KitTheme) -> Div {
         let plane = plane.bg(OVERLAY_BG).border(1.0).border_color(LINE_STRONG).radius(radius);
         plane.elevation(level).child(hint(name))
     };
-    let levels = line().child(raised(size::RADIUS_LG, 1, "menu")).child(raised(size::RADIUS_XL, 2, "dialog"));
+    let levels = line().child(raised(size::RADIUS_MD, 1, "menu")).child(raised(size::RADIUS_LG, 2, "dialog"));
     let about = format!(
         "Design roles of the current theme ({}). Components read roles, never raw colors.",
         theme.name

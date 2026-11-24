@@ -1,4 +1,4 @@
-//! The select (specs/behaviour/15, "Select"): a button that shows which of a few options is
+//! The select (specs/design, "Select"): a button that shows which of a few options is
 //! chosen, and a menu of them with a check on that one; or, for many, a list under a field
 //! that narrows it (`search.rs`).
 
@@ -20,7 +20,7 @@ use crate::{icons, size, token};
 pub struct Select {
     options: Rc<Vec<String>>,
     chosen: Signal<usize>,
-    width: f32,
+    width: Option<f32>,
     placeholder: String,
     /// What the field of a select that is searched says while it is empty.
     search: Option<String>,
@@ -32,12 +32,12 @@ pub struct Select {
 pub fn select<S: Into<String>>(options: impl IntoIterator<Item = S>, chosen: Signal<usize>) -> Select {
     let options = Rc::new(options.into_iter().map(Into::into).collect());
     let (placeholder, search, label, test_id) = (String::new(), None, None, None);
-    Select { options, chosen, width: 160.0, placeholder, search, label, test_id }
+    Select { options, chosen, width: None, placeholder, search, label, test_id }
 }
 
 impl Select {
     pub fn width(mut self, px: f32) -> Self {
-        self.width = px;
+        self.width = Some(px);
         self
     }
 
@@ -69,6 +69,9 @@ impl Select {
     }
 }
 
+/// A select's own width.
+const OWN: f32 = 160.0;
+
 impl View for Select {
     fn mount(self, cx: &mut MountCx) -> NodeId {
         let (chosen, open, opener) = (self.chosen, signal(false), NodeRef::new());
@@ -77,10 +80,12 @@ impl View for Select {
         let value = Rc::new(move || options.get(chosen.get()).cloned().unwrap_or_else(|| none.clone()));
         let tone =
             move || -> Paint { if chosen.get() < count { token::TEXT.into() } else { token::TEXT_3.into() } };
-        // Filled, with a hairline border, 28 px high; the border is where the focus shows.
-        let face = row().width(self.width).height(by_text(size::H_MD)).padding_x(8.0).gap(8.0).shrink(0.0);
-        let face = face.align_items(Align::Center).radius(token::RADIUS_MD).bg(token::RAISED);
-        let face = face.border(1.0).border_color(token::LINE_STRONG).hover(|s| s.bg(token::RAISED_HOVER));
+        // The field look, 28 px high; pressed, not typed in, so it answers the pointer; the
+        // border is where the focus shows.
+        let face = row().height(by_text(size::H_MD)).padding_x(8.0).gap(8.0).shrink(0.0);
+        let face = crate::layout::field_width(face, self.width, OWN);
+        let face = face.align_items(Align::Center).radius(token::RADIUS_MD).bg(token::INPUT_BG);
+        let face = face.border(1.0).border_color(token::LINE_STRONG).hover(|s| s.bg(token::PANEL_HOVER));
         let face = face.focus_visible(|s| s.border_color(token::BORDER_FOCUSED));
         let face = face.expanded(open);
         let face = face.cursor(Cursor::Pointer).node_ref(&opener);
@@ -99,7 +104,10 @@ impl View for Select {
         };
         let face = face.child(div().grow(1.0).text_color(tone).child(text(move || value())));
         let face = face.child(icon(icons::CHEVRONS_UP_DOWN).size(12.0).color(token::TEXT_2));
-        let (options, width) = (self.options, self.width);
+        // The menu is as wide as the field at least: the field's width when it opens.
+        let (options, width) = (self.options, self.width.unwrap_or(OWN));
+        let field = opener.clone();
+        let wide = move |tree: &quadra_tree::Tree| field.get().map_or(width, |it| tree.window_rect(it).width);
         if let Some(ask) = self.search {
             let wide = width.max(220.0) - EDGE;
             let list = popup(open, listing(below(&opener)), Some(opener.clone()), move || {
@@ -119,7 +127,9 @@ impl View for Select {
         let ends = move || Ends { done: Rc::new(move || open.set(false)), leave: None };
         // As wide as the field at least.
         let list = popup(open, listing(below(&opener)), Some(opener.clone()), move || {
-            rows(items(), ends()).min_width(width - EDGE)
+            let (least, wide) = (signal(width - EDGE), wide.clone());
+            let list = rows(items(), ends()).min_width(move || quadra_layout::Length::Px(least.get()));
+            list.on_mount(move |tree, _| least.set(wide(tree) - EDGE))
         });
         column().child(face).child(list).mount(cx)
     }

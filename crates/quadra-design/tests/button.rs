@@ -1,4 +1,4 @@
-//! The button (specs/behaviour/15): its sizes and the colours of its variants and states come
+//! The button (specs/design): its sizes and the colours of its variants and states come
 //! from the theme, a click and the keyboard do the same thing, and a disabled one does
 //! nothing. On the fake backend a character is 0.6 of the text size wide.
 

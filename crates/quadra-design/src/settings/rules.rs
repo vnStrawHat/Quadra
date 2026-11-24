@@ -1,4 +1,4 @@
-//! The rules layout of settings (behaviour/15, "Settings"): groups under small mono headers,
+//! The rules layout of settings (specs/design, "Settings"): groups under small mono headers,
 //! a hairline under every row.
 
 use quadra_layout::{Align, Justify};
@@ -24,10 +24,10 @@ pub(super) fn nav(
     query: Option<Signal<String>>,
     hint: Option<(String, String)>,
 ) -> Div {
-    let side = column().width(226.0).shrink(0.0).padding(10.0).gap(2.0).role(Role::Tree);
+    let side = column().width(226.0).shrink(0.0).padding(12.0).gap(2.0).role(Role::Tree);
     let mut side = side.border_right(1.0).border_color(token::LINE_STRONG);
     if let Some(query) = query {
-        side = side.child(div().padding_bottom(10.0).child(search(query, 205.0)));
+        side = side.child(div().padding_bottom(12.0).child(search(query, 201.0)));
     }
     let mut list = column().gap(2.0);
     for (i, page) in pages.iter().enumerate() {
@@ -37,8 +37,8 @@ pub(super) fn nav(
             let (kept, model) = (model.groups[i][g], model.clone());
             let line = row()
                 .align_items(Align::Center)
-                .min_height(by_text(26.0))
-                .padding_left(28.0)
+                .min_height(by_text(28.0))
+                .padding_left(24.0)
                 .padding_right(6.0);
             let line = line.shrink(0.0).radius(token::RADIUS_MD).text_color(token::TEXT_2);
             let line = line.role(Role::TreeItem).label(group.title.clone());
@@ -51,7 +51,7 @@ pub(super) fn nav(
     side = side.child(scroll(signal(0.0), list));
     match hint {
         Some((keys, does)) => {
-            let foot = div().padding_top(10.0).border_top(1.0).border_color(token::LINE);
+            let foot = div().padding_top(12.0).border_top(1.0).border_color(token::LINE);
             side.child(foot.child(key_hint(&keys, does)))
         }
         None => side,
@@ -69,7 +69,7 @@ fn page_row(i: usize, page: &SettingsPage, model: &Model) -> Div {
         e.stop(); // the chevron opens; it does not choose the page
     });
     let chevron = chevron.child(dynamic(move || body().size(12.0).color(token::TEXT_2)));
-    let line = row().align_items(Align::Center).gap(6.0).min_height(by_text(28.0)).padding_x(5.0).shrink(0.0);
+    let line = row().align_items(Align::Center).gap(6.0).min_height(by_text(28.0)).padding_x(6.0).shrink(0.0);
     let line = line.radius(token::RADIUS_MD).border(1.0).border_color(token::LINE.alpha(0.0));
     let line = line.role(Role::TreeItem).label(page.title.clone()).selected(move || on.get() == i);
     let line = line.hover(|s| s.bg(token::PANEL_HOVER));
@@ -103,7 +103,7 @@ pub(super) fn page(
     header: Vec<AnyView>,
 ) -> Region {
     let headed = !header.is_empty();
-    let mut all = column().padding_left(40.0).padding_right(32.0).padding_y(TOP);
+    let mut all = column().padding_left(32.0).padding_right(32.0).padding_y(TOP);
     if headed {
         all = all.child(row().align_items(Align::Center).gap(4.0).children(header));
     }

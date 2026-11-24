@@ -86,7 +86,7 @@ fn rows_open_and_close_what_they_hold_by_the_pointer() {
     let mut p = page();
     assert_eq!(p.rows(), ["> src", "> docs", "README.md"]);
     let src = p.h.get_by_role(Role::TreeItem, "src").node();
-    assert_eq!(p.h.tree.rect(src).height, 26.0);
+    assert_eq!(p.h.tree.rect(src).height, 24.0);
     // A click selects; a second one on what holds something opens it, and another closes it.
     assert_eq!(p.click("src"), ["> src*", "> docs", "README.md"]);
     assert_eq!(p.click("src"), ["v src*", "  > kit", "  main.rs", "> docs", "README.md"]);

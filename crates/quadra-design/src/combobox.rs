@@ -16,7 +16,7 @@ use crate::popup::surface;
 use crate::{icons, token};
 
 /// The height of an option, and the most of the list that shows.
-const ROW: f32 = 23.0;
+const ROW: f32 = 24.0;
 const MOST: f32 = 240.0;
 
 type Pick = Rc<dyn Fn(usize)>;
@@ -74,7 +74,7 @@ impl View for Combobox {
         };
         let label = self.label;
         let field = move |submit: Rc<dyn Fn()>| {
-            let field = input(value).placeholder(&placeholder).icon(icons::SEARCH).width(280.0);
+            let field = input(value).placeholder(&placeholder).icon(icons::SEARCH).own_width(280.0);
             let field = match label {
                 Some(name) => field.label(name),
                 None => field,

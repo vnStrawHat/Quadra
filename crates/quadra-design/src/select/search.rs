@@ -1,4 +1,4 @@
-//! The select that is searched (behaviour/15, "Select"): a field over the options narrows them
+//! The select that is searched (specs/design, "Select"): a field over the options narrows them
 //! as it is typed into, the best match first; the arrows move over what is left, and Enter or
 //! a click takes one (`quadra_headless::pick`).
 
@@ -15,7 +15,7 @@ use crate::palette::{best, fuzzy_hits, marked};
 use crate::{icons, token};
 
 /// The height of an option, and the most of the list that shows.
-const ROW: f32 = 23.0;
+const ROW: f32 = 24.0;
 const MOST: f32 = 280.0;
 
 /// What the popup of a select that is searched holds, `width` wide.
@@ -54,7 +54,7 @@ pub(super) fn searched(
         line: Some(Rc::new(|| div().padding_x(4.0))),
         row: Rc::new(face),
         empty: Some(Rc::new(|| {
-            div().padding_x(10.0).padding_y(4.0).child(text("No match").color(token::TEXT_2))
+            div().padding_x(12.0).padding_y(4.0).child(text("No match").color(token::TEXT_2))
         })),
     };
     // With nothing typed the chosen option is the one the arrows start from; with a query,

@@ -1,4 +1,4 @@
-//! The kit's text input (specs/behaviour/15): a field in a frame whose border says where the
+//! The kit's text input (specs/design): a field in a frame whose border says where the
 //! focus is and whether the value is accepted; a placeholder stands in it while it is empty.
 
 use std::rc::Rc;

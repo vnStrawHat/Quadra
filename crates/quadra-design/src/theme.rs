@@ -1,4 +1,4 @@
-//! Themes (specs/behaviour/15, "Themes"): a colour for each role, read from a JSON file. A
+//! Themes (specs/design, "Themes"): a colour for each role, read from a JSON file. A
 //! file names its mode and lists colours under the names of the roles; it starts from the
 //! built-in theme of its mode, so a new theme lists only what differs. The built-in themes
 //! are such files.
@@ -67,7 +67,7 @@ const DERIVED: [Token; 14] = [
     token::CYAN,
 ];
 
-/// The shadows of the levels above the window (specs/behaviour/15, "Elevation"): how far
+/// The shadows of the levels above the window (specs/design, "Elevation"): how far
 /// down each one is, how blurred, and how black; for a menu, then a dialog, under a light
 /// theme and under a dark one, where a light shadow would not show.
 type Set = &'static [(f32, f32, f32)];

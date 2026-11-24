@@ -46,7 +46,7 @@ pub(super) fn list(shown: Shown, most: impl Fn() -> usize + 'static) -> Div {
         }
     });
     let plane = column().bg(token::OVERLAY_BG).border(1.0).border_color(token::LINE_STRONG);
-    let plane = plane.radius(token::RADIUS_XL).elevation(1).padding(4.0).min_width(180.0);
+    let plane = plane.radius(token::RADIUS_LG).elevation(1).padding(4.0).min_width(180.0);
     plane.font_family(fonts::MONO).role(Role::List).label("Suggestions").child(rows)
 }
 

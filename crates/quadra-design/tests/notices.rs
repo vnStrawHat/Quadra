@@ -1,4 +1,4 @@
-//! Notifications and toasts (specs/behaviour/15, "Notifications"): cards stacked at the
+//! Notifications and toasts (specs/design, "Notifications"): cards stacked at the
 //! bottom right that stay until closed or answered, and lines at the bottom centre that go
 //! by themselves.
 

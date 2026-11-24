@@ -5,3 +5,4 @@
 *.pdb
 CLAUDE.local.md
 tools/__pycache__/
+.claude/

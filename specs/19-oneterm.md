@@ -504,8 +504,10 @@ release carries `oneterm-<version>-x86_64-pc-windows-msvc.zip`, holding
 `NOTICE` and `THIRD-PARTY-NOTICES.txt` (`scripts/notices.py`: the console host's notice, the
 licences of the kit's icons and faces, and every crate the binary is built from with its
 licence files) (`scripts/build-release.sh`, "The repository", which makes the zip and its
-`.sha256`, prints the SHA-256, and publishes nothing; here `tools/release.sh` runs it); OneTerm's versions go on from that app's (0.7.0 the first, the package's own version
-in `apps/oneterm/crates/app/Cargo.toml`). The executable's icon is that app's (`assets/logo.ico`, its
+`.sha256`, prints the SHA-256, and publishes nothing; here `tools/release.sh` runs it); OneTerm's versions go on from that app's: 0.7.0 is the first. The package's own version
+in `apps/oneterm/crates/app/Cargo.toml` is the version last released, 0.6.11 until then: the
+user bumps it themselves, by the release workflow, so the next release is 0.7.0 (the user's
+decision, 2026-11-25). A build before that says 0.6.11 in About and takes 0.7.0 as an update. The executable's icon is that app's (`assets/logo.ico`, its
 48 and 96 px images; specs/16, "An executable's icon"), which the window takes too.
 
 Settings, About has the group **Updates** (`updates.rs`):
@@ -1016,10 +1018,19 @@ nowhere while the app is here). They follow OneTerm 0.6's, so that releasing sta
 was, and differ where the app does: one target (Windows x86_64), steps in bash, and the
 version read from `crates/app/Cargo.toml`.
 
+- `deny.toml`, at the root: the dependency policy `cargo deny check licenses bans advisories
+  sources` holds the graph for Windows to, as OneTerm 0.6's did. Licences: the permissive
+  ones the graph has (Apache-2.0, MIT, BSD-3-Clause, ISC, Zlib, Unicode-3.0), the workspace's
+  own crates checked too; another licence fails until it is decided there. Bans:
+  `portable-pty` and `openssl-sys`; two versions of one crate warn. Advisories: RustSec's,
+  unmaintained failing for what the workspace names itself, and one ignored with its reason
+  (RUSTSEC-2023-0071, `rsa`, which comes with `russh` at a pinned version). Sources:
+  crates.io, and by git Quadra's repository and the engine's, nothing else.
 - `ci.yml`: on a push to `main` and on a pull request that touch what is built; a newer run
   of a ref cancels the one in progress. On Windows: no PowerShell and no source file over
   300 lines, the release notes script's cases, `cargo fmt --check`, `cargo clippy -D
-  warnings`, `cargo test`, with the lock file as committed.
+  warnings`, `cargo test`, with the lock file as committed. A second job runs cargo-deny
+  over `deny.toml`, by the action OneTerm 0.6's workflow pins.
 - `release.yml`: run by hand with a bump (patch, minor, major) or by a pushed tag `v*`.
   *prepare* works out the version (by hand: the app's bumped, or the app's again when the
   head is a release commit that was never published; by a tag: the tag's, which the app's
@@ -1029,13 +1040,14 @@ version read from `crates/app/Cargo.toml`.
   manifest and the lock file as `chore(release): v<version>` on top of the branch as it is
   then; it creates the release `OneTerm <version>` at the tag `v<version>` with the zip and
   `SHA256SUMS`. Actions are pinned by commit, the same commits OneTerm 0.6's workflows pin.
-  A bump starts from the manifest's version: 0.7.0, which the manifest has already, is
-  released by its tag, and a run by hand from there gives the version after.
+  A bump starts from the manifest's version, which is the version last released: from
+  0.6.11, a minor bump releases 0.7.0.
 
 Checked here (2026-11-25): the export with Quadra by path resolves with the toolchain's own
 cargo, passes the workflow's format check, lints and tests, and makes its asset with its own
 script; with Quadra named by git, this checkout by a file address, it resolves and builds
-(the notices then list Quadra's crates among those from outside). Not checked, as they need
+(the notices then list Quadra's crates among those from outside); cargo-deny 0.22.1 passes
+all four checks on the export. Not checked, as they need
 the repository: a run of either workflow, and Quadra fetched from its remote (the commit
 must be on it first). The engine's repository and Quadra's must be readable by the runner.
 

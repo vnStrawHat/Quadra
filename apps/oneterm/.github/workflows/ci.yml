@@ -1,6 +1,7 @@
 # OneTerm's checks: on a push to main and on a pull request that touches what is built.
-# One job on Windows, the one system OneTerm runs on: format, lints, tests. Steps run in
-# bash; the repository has no PowerShell.
+# Two jobs: on Windows, the one system OneTerm runs on, format, lints and tests; and the
+# dependency policy of deny.toml by cargo-deny: licences, bans, advisories, sources.
+# Steps run in bash; the repository has no PowerShell.
 name: CI
 
 on:
@@ -11,6 +12,7 @@ on:
       - "Cargo.lock"
       - "rust-toolchain.toml"
       - "rustfmt.toml"
+      - "deny.toml"
       - "crates/**"
       - "scripts/**"
       - ".github/**"
@@ -20,6 +22,7 @@ on:
       - "Cargo.lock"
       - "rust-toolchain.toml"
       - "rustfmt.toml"
+      - "deny.toml"
       - "crates/**"
       - "scripts/**"
       - ".github/**"
@@ -34,6 +37,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  cargo-deny:
+    name: Licenses, bans, advisories, sources (cargo-deny)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: cargo deny check
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check licenses bans advisories sources
+
   quality:
     name: Format, lints, tests
     runs-on: windows-latest

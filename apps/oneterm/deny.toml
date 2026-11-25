@@ -1,0 +1,66 @@
+# cargo-deny's configuration for OneTerm (specs/19, "The repository"):
+#     cargo deny check licenses bans advisories sources
+# The CI workflow runs it in its job cargo-deny (.github/workflows/ci.yml).
+
+[graph]
+# The one platform OneTerm ships for: crates that only other platforms build stay out.
+targets = ["x86_64-pc-windows-msvc"]
+all-features = true
+
+[output]
+feature-depth = 1
+
+[licenses]
+version = 2
+# The permissive licences the graph has. A crate under another one fails the check until the
+# licence is decided here.
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+]
+confidence-threshold = 0.8
+
+# The workspace's own crates, Quadra's and the engine's are checked as the others are.
+[licenses.private]
+ignore = false
+
+[bans]
+# Two versions of one crate come with russh's families; a warning, not a failure.
+multiple-versions = "warn"
+wildcards = "allow"
+highlight = "all"
+workspace-default-features = "allow"
+external-default-features = "allow"
+deny = [
+    { crate = "portable-pty", reason = "a local shell's pseudo console is the terminal engine's own (oneterm-vt)" },
+    { crate = "openssl-sys", reason = "SSH's crypto is ring's; no native OpenSSL is linked" },
+]
+
+# RustSec's advisories.
+[advisories]
+version = 2
+db-path = "$CARGO_HOME/advisory-dbs"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "warn"
+# Unmaintained fails for what the workspace's crates name themselves; what comes with them
+# moves when they do.
+unmaintained = "workspace"
+ignore = [
+    # The Marvin timing side channel of RSA private-key operations. `rsa` comes with russh,
+    # which pins the version; OneTerm signs with it only when a user's own key is an RSA key.
+    { id = "RUSTSEC-2023-0071", reason = "rsa comes with russh, which pins its version" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# Quadra and the terminal engine are taken by git.
+allow-git = [
+    "https://github.com/vnStrawHat/Quadra",
+    "https://github.com/vnStrawHat/oneterm-vt",
+]

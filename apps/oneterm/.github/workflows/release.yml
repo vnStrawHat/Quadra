@@ -13,7 +13,8 @@
 #
 # The version is the app's: `version` in crates/app/Cargo.toml, read with
 #   sed -n 's/^version = "\(.*\)"/\1/p' crates/app/Cargo.toml | head -1
-# It is what About shows and what the updater compares.
+# It is what About shows and what the updater compares. The manifest has the version last
+# released, and a bump starts from it: from 0.6.11, a minor bump releases 0.7.0.
 
 name: Release
 

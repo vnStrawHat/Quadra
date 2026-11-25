@@ -658,8 +658,12 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   its own `scripts/build-release.sh` makes the asset there, fetching the console host; with
   Quadra named by git (this checkout by a file address) it resolves and builds. Not done, as
   they need the repository: the workflows have never run, and Quadra was not fetched from
-  its remote, which needs the commit there. 0.7.0 itself is released by its tag: a bump by
-  hand starts from the manifest's version.
+  its remote, which needs the commit there. The manifest's version is 0.6.11, the version
+  last released, so that the user's own bump by the release workflow gives 0.7.0 (the user's
+  decision, 2026-11-25). The CI has OneTerm 0.6's dependency policy job: cargo-deny over
+  `deny.toml` (licences, bans, advisories, sources), which passes on the export
+  (cargo-deny 0.22.1; one advisory ignored with its reason, `rsa` through `russh`, as
+  OneTerm 0.6 ignored it).
 - **The SFTP dock has a header of columns** (2026-11-24, the user's request): Name, Size,
   Modified and Permissions, each sorting by a click as the expanded view's do (`dock/list.rs`;
   `By::Mode`; the engine's `Entry` says its `mode`). The order is shared with the expanded

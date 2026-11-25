@@ -197,7 +197,7 @@ The remote was set up since: `origin`, github.com/vnStrawHat/Quadra.
 | Name | OneTerm. The app was named 1Term until this day; OneTerm 0.6 names the versions before 0.7, on another toolkit. Every mention is renamed and the folders of the name before are taken along (19) |
 | Licence | Apache-2.0, as OneTerm 0.6's |
 | Saved passwords | OneTerm's vault is OneTerm 0.6's format (Argon2id); its vault and sealed passwords are taken as they are, with nothing asked. Breaking what a build of before saved is accepted (19, "Saved passwords") |
-| The executable | `oneterm.exe` with OneTerm 0.6's icon; the title bar's mark is OneTerm 0.6's too, the prompt glyph in its brand colour; versions go on from OneTerm 0.6's, 0.7.0 the first |
+| The executable | `oneterm.exe` with OneTerm 0.6's icon; the title bar's mark is OneTerm 0.6's too, the prompt glyph in its brand colour; versions go on from OneTerm 0.6's, 0.7.0 the first: the manifest has 0.6.11, the version last released, and the user bumps it by the release workflow (the user's decision, 2026-11-25) |
 | Updates | A crate of Quadra's for any app that updates through GitHub: `quadra-updater` (22) |
 | Other systems | Linux and macOS are left for later |
 | Where OneTerm lives | In Quadra for now. At a time of the user's choosing the user splits the app out of Quadra into github.com/vnStrawHat/OneTerm, in place of what is there, and releases 0.7.0 from that repository. Until then nothing is published: `tools/release.sh` only builds the asset. `apps/oneterm` has the shape of that repository, with its scripts and workflows, since 2026-11-25 (19, "The repository") |

@@ -5,7 +5,7 @@ hosts, an SFTP dock, command completion, a master password. It is built on
 [Quadra](https://github.com/vnStrawHat/Quadra), a native GPU-rendered UI framework, and on
 the terminal engine `oneterm-vt`.
 
-Versions go on from 0.7.0. OneTerm 0.6 and before were built on another toolkit; 0.7 is made
+Versions go on from 0.7.0, the release after 0.6.11. OneTerm 0.6 and before were built on another toolkit; 0.7 is made
 to take over their hosts, saved passwords and settings at its first start, and to be the
 update their updater installs.
 
@@ -20,7 +20,7 @@ update their updater installs.
 | `crates/shots` | The app's screens drawn to pictures without a window |
 | `scripts` | The release asset, the console host, the notices, the release notes |
 | `specs` | What the app does: `19-oneterm.md`, `20-complete.md` |
-| `.github/workflows` | `ci.yml` (format, lints, tests) and `release.yml` |
+| `.github/workflows` | `ci.yml` (format, lints, tests; licences, bans, advisories and sources by cargo-deny, `deny.toml`) and `release.yml` |
 
 ## Build
 
@@ -29,6 +29,7 @@ Windows, the Rust toolchain `rust-toolchain.toml` pins, Git Bash for the scripts
 ```sh
 cargo run -p oneterm-app          # the app
 cargo test --workspace            # its tests: no window, no GPU; SSH against 127.0.0.1 only
+cargo deny check licenses bans advisories sources   # the dependency policy (deny.toml)
 scripts/conpty.sh                 # Microsoft's newer console host beside the binaries (optional)
 scripts/build-release.sh          # dist/oneterm-<version>-<target>.zip and its .sha256
 ```
@@ -40,8 +41,8 @@ OneTerm.
 
 The app's version is `version` in `crates/app/Cargo.toml`. The workflow **Release** is run
 by hand with a bump (patch, minor, major), or by pushing a tag `v<version>` once the manifest
-has that version. A bump starts from the manifest's version, so the first release of a
-version the manifest already has, 0.7.0 itself, is made by its tag. It builds the asset with `scripts/build-release.sh`, commits the bump as
+has that version. The manifest has the version last released: 0.6.11 now, so that a minor
+bump releases 0.7.0. It builds the asset with `scripts/build-release.sh`, commits the bump as
 `chore(release): v<version>` and publishes the release with the zip and `SHA256SUMS`. The
 app's updater asks a release for `oneterm-<version>-x86_64-pc-windows-msvc.zip` and checks
 the digest GitHub publishes for it.

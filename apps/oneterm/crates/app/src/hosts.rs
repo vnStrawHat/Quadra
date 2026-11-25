@@ -1,4 +1,4 @@
-//! Saved hosts and the recent ones (specs/19, "M8 in detail"): rows of words in the
+//! Saved hosts and the recent ones (specs/oneterm, "M8 in detail"): rows of words in the
 //! settings, so the file reads as the page does.
 
 use std::path::PathBuf;

@@ -1,4 +1,4 @@
-//! Shell integration against the shells of this machine (specs/19, "M4 in detail"), each behind
+//! Shell integration against the shells of this machine (specs/oneterm, "M4 in detail"), each behind
 //! a real pseudo console: Command Prompt and Windows PowerShell, which every Windows has, and
 //! Git's bash where it is installed. Each says its directory and marks its prompt; bash marks a
 //! command's start and its end with the status. Skipped where no console can be made.

@@ -1,4 +1,4 @@
-//! Saved hosts (specs/19, "M8 in detail"): added in the dialog, listed in the rail by group,
+//! Saved hosts (specs/oneterm, "M8 in detail"): added in the dialog, listed in the rail by group,
 //! filtered, connected to on a click (recent, counted on the tab, named in the status bar),
 //! saved from quick connect. The sessions are `echo()`: no host is reached.
 

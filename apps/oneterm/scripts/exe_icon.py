@@ -1,5 +1,5 @@
 """scripts/exe_icon.py <file.exe>: the icon groups of an executable's resources and the sizes of
-their images, read from its PE headers; it fails when there is none (specs/16, "An
+their images, read from its PE headers; it fails when there is none (Quadra's specs/16, "An
 executable's icon")."""
 import struct
 import sys

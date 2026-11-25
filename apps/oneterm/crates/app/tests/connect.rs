@@ -1,4 +1,4 @@
-//! Quick connect (specs/19, "M7 in detail"): the dialog makes the launch of a tab or a space,
+//! Quick connect (specs/oneterm, "M7 in detail"): the dialog makes the launch of a tab or a space,
 //! and a target that does not read is said. No host is ever reached: the sessions are
 //! `echo()` (the Connect dialogs on real connections are `tests/asking.rs`).
 

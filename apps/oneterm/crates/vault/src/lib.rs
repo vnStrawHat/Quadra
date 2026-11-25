@@ -1,4 +1,4 @@
-//! Saved passwords (specs/19, "Saved passwords"): a data key sealed under the master
+//! Saved passwords (specs/oneterm, "Saved passwords"): a data key sealed under the master
 //! password in a vault's document, each secret sealed under the data key in an envelope, both
 //! as OneTerm 0.6 writes them (`format.rs`). The data key is in memory only, once the master
 //! password was typed; the master password itself is kept nowhere: it is the one that opens

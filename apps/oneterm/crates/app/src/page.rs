@@ -1,4 +1,4 @@
-//! The settings page (specs/19, "Settings"): it takes the window's body while it is open, in
+//! The settings page (specs/oneterm, "Settings"): it takes the window's body while it is open, in
 //! the kit's layout of cards: the pages with their icons and a search in the column, each
 //! page's title and what it is about, its groups. Each control writes a setting, which saves it.
 

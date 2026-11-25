@@ -1,4 +1,4 @@
-//! An upload onto a name the folder shown already has asks first (specs/19, "M9 in
+//! An upload onto a name the folder shown already has asks first (specs/oneterm, "M9 in
 //! detail"), on a real connection to the engine's test server on 127.0.0.1: Skip leaves what
 //! is there, Replace sends over it, and what was not there goes without a question.
 

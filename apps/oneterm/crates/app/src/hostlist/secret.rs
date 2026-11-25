@@ -1,4 +1,4 @@
-//! A host's password or key passphrase in its dialog (specs/19, "Saved passwords"): saved
+//! A host's password or key passphrase in its dialog (specs/oneterm, "Saved passwords"): saved
 //! sealed with the master password, which is asked for while its key is not in memory, or set
 //! there when there is none.
 

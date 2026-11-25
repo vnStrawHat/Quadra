@@ -1,4 +1,4 @@
-//! Editing a remote file (specs/19, "M9 in detail"): it is downloaded to the app's data
+//! Editing a remote file (specs/oneterm, "M9 in detail"): it is downloaded to the app's data
 //! folder, then opened in a space of OneTerm (`crate::editing`), or in the editor the settings
 //! name and sent back each time it is saved.
 

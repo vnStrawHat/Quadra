@@ -7,7 +7,7 @@ key and mouse encoders, the pseudo console. Quadra writes none of that again; be
 the reference for what the user sees, and its model, parser and limits sections are the engine's
 (its `docs/user/limits.md`).
 
-Resumed by the user on 2026-11-15 for the OneTerm app (19). It was on hold since 2026-11-11.
+Resumed by the user on 2026-11-15 for the OneTerm app (`apps/oneterm/specs`). It was on hold since 2026-11-11.
 
 ## Pieces
 
@@ -287,7 +287,7 @@ shell's handle.
   wheel), `alternate_scroll` (on the alternate screen the wheel sends arrows even when the
   program did not ask). A right press the program does not take is left to what is around the
   view: the app's context menu (`quadra_design::context_menu` around the terminal).
-- What the user sends, for an app that repeats it elsewhere (input channels, specs/19):
+- What the user sends, for an app that repeats it elsewhere (input channels, apps/oneterm/specs/oneterm.md):
   `Session::on_input(f)` (one hook; another replaces it) is told each `Input` after it is
   written: `Keys(bytes)` as the view encoded a key, typed text or Tab, `Text(text)` typed or
   committed by an input method, `Paste(text)` from the view's paste or `Session::paste`;
@@ -321,7 +321,7 @@ shell's handle.
 
 ## The command line
 
-What any completion needs, with no knowledge of commands (specs/20 is OneTerm's):
+What any completion needs, with no knowledge of commands (apps/oneterm/specs/completion.md is OneTerm's):
 
 - `Session::command_line()` is a signal of `CommandLine { text, at_prompt, alt_screen, caret }`,
   followed from the first call on: after each burst of output, a focus change and a resize it is

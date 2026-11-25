@@ -1,4 +1,4 @@
-//! How signals look (specs/19, "Signals"): a tab's signal at the end of its row, its icon, the
+//! How signals look (specs/oneterm, "Signals"): a tab's signal at the end of its row, its icon, the
 //! seam bar of its progress, the second line of its row, a space header's signal.
 
 use quadra::{Align, AnyView, Display, Length, Role, View, div, dynamic, row, text};

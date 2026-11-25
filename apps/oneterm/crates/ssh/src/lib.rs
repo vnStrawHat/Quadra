@@ -1,4 +1,4 @@
-//! OneTerm's SSH (specs/19, "SSH (P2)"): `russh` on a `tokio` runtime of its own, behind a
+//! OneTerm's SSH (specs/oneterm, "SSH (P2)"): `russh` on a `tokio` runtime of its own, behind a
 //! blocking API of the shape of `quadra_term::Pty`. What the engine asks (a host key, a
 //! password) it asks the app, which answers with [`Ssh::answer`].
 
@@ -68,7 +68,7 @@ pub struct Hop {
     pub auth: Auth,
 }
 
-/// Which way a forward carries connections (specs/19, "M10 in detail").
+/// Which way a forward carries connections (specs/oneterm, "M10 in detail").
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Way {
     /// A port here carried to a host and port as the server sees them.

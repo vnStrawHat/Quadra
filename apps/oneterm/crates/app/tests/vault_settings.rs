@@ -1,4 +1,4 @@
-//! Settings written before the vault was of OneTerm 0.6's format (specs/19, "Saved passwords"):
+//! Settings written before the vault was of OneTerm 0.6's format (specs/oneterm, "Saved passwords"):
 //! the hash of the master password, the first vault and its secrets are forgotten when they
 //! are read; a vault of today's format stays, and is a master password.
 

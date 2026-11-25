@@ -1,6 +1,6 @@
 //! OneTerm in a real window:
 //!
-//!     tools/cargo.sh run -p oneterm-app
+//!     scripts/cargo.sh run -p oneterm-app
 //!
 //! With `ONETERM_HOME=.tmp/oneterm` its settings and log go there instead of the user's folders.
 
@@ -12,7 +12,7 @@ use oneterm::{NewSession, OneTerm, keymap, start, theme};
 use quadra::{AppDirs, WindowOptions};
 
 fn main() -> quadra::Result<()> {
-    // After an update: what the version before left moved aside goes (specs/22).
+    // After an update: what the version before left moved aside goes (Quadra's specs/22).
     quadra_updater::started();
     let mut app = quadra::app()?;
     // ONETERM_HOME puts the settings and the log in one folder (a trial run); else the user's.

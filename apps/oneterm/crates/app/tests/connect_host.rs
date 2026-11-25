@@ -1,4 +1,4 @@
-//! A saved host's Connect dialog (specs/19, "The rail") on real connections to the engine's
+//! A saved host's Connect dialog (specs/oneterm, "The rail") on real connections to the engine's
 //! test server on 127.0.0.1 (never another host): the focus in what is missing, Connecting…
 //! while it connects, a refused password and a failure as alerts with no tab, the user's
 //! `user@host:port` in the saved target's place, a new key trusted where its fingerprint

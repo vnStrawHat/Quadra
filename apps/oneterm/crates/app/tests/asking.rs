@@ -1,4 +1,4 @@
-//! The Connect dialogs (specs/19, "M7 in detail") on real connections to the engine's test
+//! The Connect dialogs (specs/oneterm, "M7 in detail") on real connections to the engine's test
 //! servers on 127.0.0.1 (never another host), started from Quick connect: an unknown host
 //! trusted or cancelled, a wrong then a right password, a user not given, a changed key, a
 //! port that never speaks cancelled, one nobody listens on. Every file is under `.tmp`; the

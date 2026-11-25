@@ -1,5 +1,5 @@
-//! OneTerm's updates (specs/19, "Updates"): whether a newer release is published where OneTerm's
-//! are, and installing it, by `quadra-updater` (specs/22). Checking and fetching run on the
+//! OneTerm's updates (specs/oneterm, "Updates"): whether a newer release is published where OneTerm's
+//! are, and installing it, by `quadra-updater` (Quadra's specs/22). Checking and fetching run on the
 //! pool; nothing is installed unasked, and nothing restarts but by its button.
 
 use std::sync::Arc;

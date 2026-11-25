@@ -1,4 +1,4 @@
-//! The way to the target (specs/19, "M10 in detail"): through each jump host's
+//! The way to the target (specs/oneterm, "M10 in detail"): through each jump host's
 //! `direct-tcpip` channel, signed in at every hop.
 
 use std::sync::Arc;

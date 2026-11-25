@@ -1,4 +1,4 @@
-//! A folder's tree carried either way (specs/19, "M9 in detail"): its folders made, its files
+//! A folder's tree carried either way (specs/oneterm, "M9 in detail"): its folders made, its files
 //! copied one by one with the progress over all their bytes.
 
 use std::path::{Path, PathBuf};

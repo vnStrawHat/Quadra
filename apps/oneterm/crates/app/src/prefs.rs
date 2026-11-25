@@ -1,5 +1,5 @@
-//! OneTerm's settings (specs/19, "Settings"): each a signal of the app's `Settings`, saved to
-//! `settings.json` as it changes (specs/15). A choice is kept as its words, so the file
+//! OneTerm's settings (specs/oneterm, "Settings"): each a signal of the app's `Settings`, saved to
+//! `settings.json` as it changes (Quadra's specs/15). A choice is kept as its words, so the file
 //! reads as the page does.
 
 use std::rc::Rc;

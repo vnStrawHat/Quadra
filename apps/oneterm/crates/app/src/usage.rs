@@ -1,4 +1,4 @@
-//! What OneTerm's process uses (specs/19, "M4 in detail"): read every 2 s from the context's
+//! What OneTerm's process uses (specs/oneterm, "M4 in detail"): read every 2 s from the context's
 //! `Meter` (the OS's where there is none), the status bar's CPU and RAM, and the tooltip of
 //! details under the pointer.
 

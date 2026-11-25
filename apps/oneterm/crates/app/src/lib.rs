@@ -1,4 +1,4 @@
-//! OneTerm (specs/19): the window, its title bar, the rail of tabs, the workspace of spaces,
+//! OneTerm (specs/oneterm): the window, its title bar, the rail of tabs, the workspace of spaces,
 //! the status bar. Where a session's program comes from is the caller's: a local shell in the
 //! app ([`local_shell`]), `quadra_term::echo` in tests.
 
@@ -94,7 +94,7 @@ impl OneTerm {
         OneTerm { model: Model::new(new_session, Prefs::load()), clock: signal(String::new()), now }
     }
 
-    /// Says the last run crashed (specs/19, "Window"): a card whose Show report shows the
+    /// Says the last run crashed (specs/oneterm, "Window"): a card whose Show report shows the
     /// report in the file manager.
     pub fn crashed(&self, report: &std::path::Path) {
         let opener = use_context::<Rc<dyn quadra_shell::Opener>>();

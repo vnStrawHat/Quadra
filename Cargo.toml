@@ -9,7 +9,7 @@ rust-version = "1.96"
 license = "Apache-2.0"
 publish = false
 
-# What OneTerm's crates name with `workspace = true` (specs/19, "The repository"): their
+# What OneTerm's crates name with `workspace = true` (apps/oneterm/specs/oneterm.md, "The repository"): their
 # manifests read the same here and in a repository of the app's own, whose root manifest
 # (apps/oneterm/Cargo.root.toml) names the same crates of Quadra by its git address.
 [workspace.dependencies]
@@ -43,7 +43,7 @@ unsafe_code = "forbid"
 [profile.dev]
 debug = "line-tables-only"
 
-# A vault's key takes 64 MiB and three passes of Argon2id (specs/19, "Saved passwords"):
+# A vault's key takes 64 MiB and three passes of Argon2id (apps/oneterm/specs/oneterm.md, "Saved passwords"):
 # seconds unoptimized, so a debug build and its tests optimize these two.
 [profile.dev.package.argon2]
 opt-level = 3

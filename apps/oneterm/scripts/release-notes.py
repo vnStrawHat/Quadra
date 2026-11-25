@@ -1,5 +1,5 @@
 """scripts/release-notes.py <range> [previous tag]: a release's notes on stdout, from the
-subjects of the commits in a git range (the release workflow's; specs/19, "The repository").
+subjects of the commits in a git range (the release workflow's; specs/oneterm, "The repository").
 Conventional Commits are grouped by type, a scope set in bold, each line linked to its commit
 (GITHUB_REPOSITORY names the repository); breaking changes are listed first as well; the
 commit that bumps the version is left out."""

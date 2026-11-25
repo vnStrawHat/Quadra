@@ -1,4 +1,4 @@
-//! A bell's sound and flash (specs/19, "Settings", Signals): each bell plays the system's
+//! A bell's sound and flash (specs/oneterm, "Settings", Signals): each bell plays the system's
 //! default sound, or tints its space for a moment, as the setting says; counted either way.
 
 use std::cell::RefCell;

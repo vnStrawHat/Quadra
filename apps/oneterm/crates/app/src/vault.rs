@@ -1,4 +1,4 @@
-//! Saved passwords in the app (specs/19, "Saved passwords"): the vault's document is the
+//! Saved passwords in the app (specs/oneterm, "Saved passwords"): the vault's document is the
 //! setting `ssh.vault`, each host's sealed secret a row of `ssh.secrets`; the sealing itself
 //! is the crate `oneterm-vault`. Here: which secret is a host's, what a connection takes of
 //! them, and the dialog that asks for the master password (`unlock.rs`).

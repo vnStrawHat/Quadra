@@ -1,4 +1,4 @@
-//! The local shells (specs/19, "M4 in detail"): those found on this machine, and what a new
+//! The local shells (specs/oneterm, "M4 in detail"): those found on this machine, and what a new
 //! space is started with.
 
 use std::path::PathBuf;

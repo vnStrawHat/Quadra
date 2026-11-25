@@ -1,4 +1,4 @@
-//! The server's key against the known hosts (specs/19, "M7 in detail"): a known one goes on,
+//! The server's key against the known hosts (specs/oneterm, "M7 in detail"): a known one goes on,
 //! one never seen is asked, a changed one is refused with where the key known is.
 
 use std::path::PathBuf;

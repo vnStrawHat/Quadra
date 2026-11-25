@@ -1,4 +1,4 @@
-//! Matching and ranking (specs/20, "A suggestion").
+//! Matching and ranking (specs/completion, "A suggestion").
 
 use crate::catalog::Source;
 use crate::engine::{Kind, Suggestion};

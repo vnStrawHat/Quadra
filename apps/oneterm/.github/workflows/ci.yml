@@ -1,6 +1,6 @@
 # OneTerm's checks: on a push to main and on a pull request that touches what is built.
-# Two jobs: on Windows, the one system OneTerm runs on, format, lints and tests; and the
-# dependency policy of deny.toml by cargo-deny: licences, bans, advisories, sources.
+# Two jobs: on Windows, the one system OneTerm runs on, the gate (scripts/check.sh); and
+# the dependency policy of deny.toml by cargo-deny: licences, bans, advisories, sources.
 # Steps run in bash; the repository has no PowerShell.
 name: CI
 
@@ -48,7 +48,7 @@ jobs:
           command: check licenses bans advisories sources
 
   quality:
-    name: Format, lints, tests
+    name: The gate (format, lints, tests)
     runs-on: windows-latest
     defaults:
       run:
@@ -73,22 +73,7 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2 tag, 2026-07-23
 
-      - name: No PowerShell, no source file over 300 lines
-        run: |
-          set -euo pipefail
-          ps1="$(git ls-files '*.ps1')"
-          [ -z "$ps1" ] || { echo "::error::PowerShell scripts are not allowed: $ps1"; exit 1; }
-          long="$(git ls-files '*.rs' '*.sh' '*.py' | xargs wc -l | awk '$2 != "total" && $1 > 300 { print $2 " (" $1 " lines)" }')"
-          [ -z "$long" ] || { echo "::error::files over 300 lines: $long"; exit 1; }
-
-      - name: The release notes script
-        run: python scripts/release-notes.py --check
-
-      - name: Format
-        run: cargo fmt --all -- --check
-
-      - name: Lints
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
-
-      - name: Tests
-        run: cargo test --workspace --locked
+      # The gate a developer runs: no PowerShell, no long file, the design's ladders, the
+      # release notes script's cases, format, lints, tests with the lock file as committed.
+      - name: The gate
+        run: bash scripts/check.sh

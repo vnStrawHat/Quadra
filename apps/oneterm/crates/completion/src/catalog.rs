@@ -1,4 +1,4 @@
-//! The catalogs: commands, their options and subcommands, read from JSON (specs/20, "Catalogs").
+//! The catalogs: commands, their options and subcommands, read from JSON (specs/completion, "Catalogs").
 
 use quadra_data::{Value, parse_json};
 

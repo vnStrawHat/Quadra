@@ -1,4 +1,4 @@
-//! Rename tab (specs/19, "Rail"): in the rail at its width a tab is renamed in a dialog, its
+//! Rename tab (specs/oneterm, "Rail"): in the rail at its width a tab is renamed in a dialog, its
 //! name in a field; Enter or Rename keeps it (an empty one gives the program's title back),
 //! Cancel, Escape or the cross leave it as it was.
 

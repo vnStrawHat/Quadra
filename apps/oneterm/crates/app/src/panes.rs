@@ -1,4 +1,4 @@
-//! The local side of the expanded SFTP view (specs/19, "M9 in detail"): a folder of this
+//! The local side of the expanded SFTP view (specs/oneterm, "M9 in detail"): a folder of this
 //! machine, listed on the pool; and what both sides share: hidden names, the comparison, how
 //! sizes, times and free names read.
 

@@ -1,4 +1,4 @@
-//! The line left of the cursor, as tokens (specs/20, "A suggestion").
+//! The line left of the cursor, as tokens (specs/completion, "A suggestion").
 
 /// The line as the engine reads it at the cursor.
 #[derive(Debug, PartialEq)]

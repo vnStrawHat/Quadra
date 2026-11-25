@@ -1,4 +1,4 @@
-//! The catalogs: the bundled files, reading one, and which command wins (specs/20, "Catalogs").
+//! The catalogs: the bundled files, reading one, and which command wins (specs/completion, "Catalogs").
 
 use std::path::Path;
 

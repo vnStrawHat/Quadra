@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# scripts/conpty.sh [folder...]: Microsoft's console host for OneTerm (specs/19, "The console
+# scripts/conpty.sh [folder...]: Microsoft's console host for OneTerm (specs/oneterm, "The console
 # host"). Fetches the pinned NuGet package into .cache/conpty at the root of the workspace
 # once, checks its SHA-256, and copies conpty.dll and OpenConsole.exe into each folder given,
 # or beside the binaries cargo builds: target/debug, target/release, target/dist and
-# target/dist/examples. CARGO names the cargo that says where the workspace is.
+# target/dist/examples. CARGO names another cargo than scripts/cargo.sh.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
-root="$("${CARGO:-cargo}" locate-project --workspace --message-format plain --manifest-path "$here/../crates/app/Cargo.toml")"
+root="$("${CARGO:-$here/cargo.sh}" locate-project --workspace --message-format plain --manifest-path "$here/../crates/app/Cargo.toml")"
 root="$(dirname "$(cygpath -u "$root" 2>/dev/null || echo "$root")")"
 version=1.25.260930003
 sha256=02b07b349af66d801159bdf9e440d4a1ce78bb951f37fc8609731665afdae7ee

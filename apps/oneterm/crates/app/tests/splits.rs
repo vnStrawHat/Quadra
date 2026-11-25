@@ -1,4 +1,4 @@
-//! Splits (specs/19, "Spaces"): a tab that arranges itself beside the rail and in the strip
+//! Splits (specs/oneterm, "Spaces"): a tab that arranges itself beside the rail and in the strip
 //! until its layout is the user's; a space split to each side, nested; the spaces in the
 //! tree's reading order; a run along one axis shared evenly; a seam dragged; a close.
 

@@ -1,4 +1,4 @@
-//! Redaction before a line is kept (specs/20, "History").
+//! Redaction before a line is kept (specs/completion, "History").
 
 use oneterm_completion::redact::{contains_secret, redact};
 

@@ -1,4 +1,4 @@
-//! The bars (specs/19, "Window"): the title bar's bells and notices between Search and Lock,
+//! The bars (specs/oneterm, "Window"): the title bar's bells and notices between Search and Lock,
 //! with the tabs in the rail and in a strip, gone while locked and in the settings; the status
 //! bar's clock by the app's time, and the card of what OneTerm uses from the fake meter.
 
@@ -113,7 +113,7 @@ fn the_clock_says_the_date_and_the_time_and_only_its_text_is_painted_again_each_
     let (stats, _) = a.h.frame_if_needed().expect("the clock changed");
     assert!(a.h.has_text("2026-11-16 20:45:08"));
     // The clock's text alone is painted again, and laid out: asked again its four requests, it
-    // answers the same size, so nothing above it runs (specs/06, "Measuring leaves").
+    // answers the same size, so nothing above it runs (Quadra's specs/06, "Measuring leaves").
     assert_eq!((stats.bindings_run, stats.nodes_styled, stats.nodes_painted), (1, 0, 1), "{stats:?}");
     assert_eq!((stats.nodes_laid_out, stats.nodes_measured), (4, 4), "{stats:?}");
 }

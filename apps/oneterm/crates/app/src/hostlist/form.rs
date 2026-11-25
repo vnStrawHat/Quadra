@@ -1,4 +1,4 @@
-//! The dialogs that save a host (specs/19, "M8 in detail"): Add SSH host and Edit SSH host,
+//! The dialogs that save a host (specs/oneterm, "M8 in detail"): Add SSH host and Edit SSH host,
 //! with the password or passphrase saved sealed (`vault.rs`).
 
 use oneterm_ssh::Target;

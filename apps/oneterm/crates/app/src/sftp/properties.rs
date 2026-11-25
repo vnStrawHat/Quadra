@@ -1,4 +1,4 @@
-//! An entry's properties (specs/19, "M9 in detail"): asked of the server again, shown in a
+//! An entry's properties (specs/oneterm, "M9 in detail"): asked of the server again, shown in a
 //! dialog as a description list.
 
 use oneterm_ssh::{Entry, join};

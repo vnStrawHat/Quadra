@@ -1,4 +1,4 @@
-//! The engine: suggestions at the cursor, and the history (specs/20).
+//! The engine: suggestions at the cursor, and the history (specs/completion).
 
 use std::ops::Range;
 

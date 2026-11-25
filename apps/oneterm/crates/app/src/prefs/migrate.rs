@@ -1,14 +1,14 @@
-//! OneTerm's settings of an older shape brought to today's (specs/15, "Settings").
+//! OneTerm's settings of an older shape brought to today's (Quadra's specs/15, "Settings").
 
 use quadra::Settings;
 
 /// - Version 1: settings of version 0 kept a hash of the master password, and a vault and
-///   secrets of OneTerm's first format, which nothing opens any more (specs/19, "Saved
+///   secrets of OneTerm's first format, which nothing opens any more (specs/oneterm, "Saved
 ///   passwords"): they are forgotten, the hash above all. What is of today's format stays.
-/// - Version 2: the same settings written as objects in objects (specs/15); the file is
+/// - Version 2: the same settings written as objects in objects (Quadra's specs/15); the file is
 ///   written so at once.
 /// - Version 3: a host's startup command was its own words, and is the name of a command of
-///   the list (specs/19, "Startup commands"): each becomes one, named by its words.
+///   the list (specs/oneterm, "Startup commands"): each becomes one, named by its words.
 pub(super) fn migrate(s: &Settings) {
     s.migrate(3, |from, all| {
         if from < 1 {

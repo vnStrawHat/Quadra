@@ -1,4 +1,4 @@
-//! Uploads from the dock (specs/19, "M9 in detail"): local files and folders' trees to the
+//! Uploads from the dock (specs/oneterm, "M9 in detail"): local files and folders' trees to the
 //! folder shown, and the question before one goes over a name the folder already has.
 
 use std::path::{Path, PathBuf};

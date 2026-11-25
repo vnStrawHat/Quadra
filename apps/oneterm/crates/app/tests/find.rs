@@ -1,4 +1,4 @@
-//! Finding in a space (specs/19, "Find"): Ctrl+F opens the bar with the focus in its query,
+//! Finding in a space (specs/oneterm, "Find"): Ctrl+F opens the bar with the focus in its query,
 //! the count follows what is typed, Enter, Shift+Enter and F3 step, the bar survives its view
 //! being built again, Escape closes it and gives the focus back to the terminal.
 

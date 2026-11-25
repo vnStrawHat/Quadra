@@ -1,4 +1,4 @@
-//! The lines run this session, per family (specs/20, "History").
+//! The lines run this session, per family (specs/completion, "History").
 
 /// A line that was run, how often, and when last (in lines recorded).
 #[derive(Clone, Debug, PartialEq)]

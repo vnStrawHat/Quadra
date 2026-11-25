@@ -1,4 +1,4 @@
-//! The dock's transfers (specs/19, "M9 in detail"): each with its arrow, `Uploading name` or
+//! The dock's transfers (specs/oneterm, "M9 in detail"): each with its arrow, `Uploading name` or
 //! `Downloading name`, its state, a cross and a bar of 2 px.
 
 use std::rc::Rc;

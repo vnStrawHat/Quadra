@@ -1,5 +1,5 @@
 """scripts/notices.py <package> <out>: the notices of what a package's binary holds, for a
-release (specs/19, "Updates"). It reads `cargo metadata` for the target on stdin and writes:
+release (specs/oneterm, "Updates"). It reads `cargo metadata` for the target on stdin and writes:
 what ships beside the binary (scripts/notices), the kit's icons and faces, and every crate
 from outside the workspace the binary is built from (build scripts' crates left out), each
 with its licence and the licence and notice files of its source, a text that several share

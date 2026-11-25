@@ -1,4 +1,4 @@
-//! What crosses the network (specs/19, "Window"): the first hop's socket, counted both ways;
+//! What crosses the network (specs/oneterm, "Window"): the first hop's socket, counted both ways;
 //! the jump hosts' traffic goes through it too.
 
 use std::io;

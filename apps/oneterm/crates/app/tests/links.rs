@@ -1,4 +1,4 @@
-//! Links in a space (specs/19, "Spaces"), the shell faked: an https link Ctrl+clicked opens, an
+//! Links in a space (specs/oneterm, "Spaces"), the shell faked: an https link Ctrl+clicked opens, an
 //! http one asks and opens on Open, a `javascript:` one is refused with a card; the menu of
 //! the other button opens and copies a link. And the card of a crash, whose Show report
 //! reveals the report through the same shell.

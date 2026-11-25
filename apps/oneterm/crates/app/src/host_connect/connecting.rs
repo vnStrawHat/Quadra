@@ -1,4 +1,4 @@
-//! A saved host's connection from its Connect dialog (specs/19, "The rail"): made as the form
+//! A saved host's connection from its Connect dialog (specs/oneterm, "The rail"): made as the form
 //! says, followed until its shell opens, then placed; what worked saved when asked.
 
 use oneterm_ssh::Ask;

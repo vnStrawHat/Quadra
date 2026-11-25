@@ -1,4 +1,4 @@
-//! Input channels (specs/19, "Spaces"): spaces that joined one get what is typed in any of
+//! Input channels (specs/oneterm, "Spaces"): spaces that joined one get what is typed in any of
 //! them, a paste bracketed as each one's program asked; a chip names the channel; leave,
 //! close, the tab's all, and an ended program leaves.
 

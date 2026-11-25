@@ -1,4 +1,4 @@
-//! A transfer of the dock (specs/19, "M9 in detail"): how far it is and how it ended; one
+//! A transfer of the dock (specs/oneterm, "M9 in detail"): how far it is and how it ended; one
 //! waiting its turn keeps its work until the dock starts it.
 
 use std::cell::RefCell;

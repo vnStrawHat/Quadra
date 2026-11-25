@@ -1,4 +1,4 @@
-//! A remote file edited in OneTerm (specs/19, "Spaces" and "M9 in detail"): a space beside the
+//! A remote file edited in OneTerm (specs/oneterm, "Spaces" and "M9 in detail"): a space beside the
 //! terminals that holds the file in the kit's code editor, coloured by its type, with a diff
 //! of the changes; Ctrl+S sends it back. A binary file says so and is not edited.
 

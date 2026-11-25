@@ -1,4 +1,4 @@
-//! The settings of completion (specs/19, "Completion"): signals of the app's `Settings` under
+//! The settings of completion (specs/oneterm, "Completion"): signals of the app's `Settings` under
 //! `completion.*`, and the engine's `Config` they make.
 
 use std::rc::Rc;

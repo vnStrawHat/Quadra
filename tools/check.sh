@@ -30,7 +30,7 @@ for toml in crates/*/Cargo.toml bench/*/Cargo.toml apps/oneterm/crates/*/Cargo.t
 		say "check: $toml must have [lints] workspace = true (specs/01, R16)"
 done
 
-# 4b. OneTerm in a repository of its own (specs/19, "The repository"): its root manifest
+# 4b. OneTerm in a repository of its own (apps/oneterm/specs/oneterm.md, "The repository"): its root manifest
 #     there names all that its crates take of the workspace here; one toolchain, one format.
 for name in $(grep -ohE '^[a-z-]+(\.workspace = true| = \{ workspace = true)' apps/oneterm/crates/*/Cargo.toml |
 	grep -oE '^[a-z-]+' | sort -u); do

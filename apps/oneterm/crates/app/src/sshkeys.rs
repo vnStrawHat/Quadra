@@ -1,4 +1,4 @@
-//! The key files hosts sign in with (specs/19, "Keys"): a list in the setting `ssh.keys`,
+//! The key files hosts sign in with (specs/oneterm, "Keys"): a list in the setting `ssh.keys`,
 //! kept on the SSH & hosts page, chosen by name in the hosts' dialogs.
 
 use std::path::{Path, PathBuf};

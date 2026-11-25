@@ -1,4 +1,4 @@
-//! The horizontal variant of the tabs (specs/19, "Rail"): a strip of 32 px and its line under
+//! The horizontal variant of the tabs (specs/oneterm, "Rail"): a strip of 32 px and its line under
 //! the title bar, a tab a button split by lines (the one that shows on the pressed editor
 //! colour, semibold, an accent line along its top and Close tab; a progress is a bar along
 //! its bottom), New terminal after the last, and "Vertical tabs" at the end.

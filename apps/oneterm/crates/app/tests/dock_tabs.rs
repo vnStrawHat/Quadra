@@ -1,4 +1,4 @@
-//! The SFTP dock (specs/19, "M9 in detail"): each space keeps its own, and its left edge is
+//! The SFTP dock (specs/oneterm, "M9 in detail"): each space keeps its own, and its left edge is
 //! dragged to make it wider.
 
 use quadra::Role;

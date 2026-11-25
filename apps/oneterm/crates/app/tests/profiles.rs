@@ -1,4 +1,4 @@
-//! A space's lines are read by its shell (specs/19, "Spaces"; specs/18, "Semantic
+//! A space's lines are read by its shell (specs/oneterm, "Spaces"; Quadra's specs/18, "Semantic
 //! highlighting"): Command Prompt's, PowerShell's, else a Unix shell's.
 
 use std::cell::RefCell;

@@ -1,4 +1,4 @@
-//! The editor space (specs/19, "Spaces"): its header of 18 px (the full remote path, the type,
+//! The editor space (specs/oneterm, "Spaces"): its header of 18 px (the full remote path, the type,
 //! whether it has changes, Diff and Save), the editor or the diff in its place, and the
 //! question when it closes with changes.
 

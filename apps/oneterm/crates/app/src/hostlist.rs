@@ -1,4 +1,4 @@
-//! The rail's SSH hosts (specs/19, "M8 in detail"): a filter, the hosts by group, each
+//! The rail's SSH hosts (specs/oneterm, "M8 in detail"): a filter, the hosts by group, each
 //! connecting on a click, and the dialog that adds one.
 
 mod form;

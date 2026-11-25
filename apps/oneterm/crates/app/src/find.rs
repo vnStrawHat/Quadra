@@ -1,4 +1,4 @@
-//! Finding in a space (specs/19, "Find"): the find bar at the top right of a space, over its
+//! Finding in a space (specs/oneterm, "Find"): the find bar at the top right of a space, over its
 //! terminal, opened by the action `Find` (`Ctrl+F`): the query and its switches, where the
 //! current match is of how many, the next and the one before, and Close.
 

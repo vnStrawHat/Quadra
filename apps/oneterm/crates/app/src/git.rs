@@ -1,4 +1,4 @@
-//! The status bar's git (specs/19, "M4 in detail"): the branch of the repository the focused
+//! The status bar's git (specs/oneterm, "M4 in detail"): the branch of the repository the focused
 //! space is in, read from its `.git`, and the commits ahead of its upstream, how many files
 //! changed and the lines added and removed, from `git` run on the pool with no window. Read
 //! again when the directory changes and every 10 s.

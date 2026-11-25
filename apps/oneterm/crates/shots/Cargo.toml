@@ -1,6 +1,6 @@
 [package]
 name = "oneterm-shots"
-description = "OneTerm's screens drawn without a window, to compare with its design (specs/19)"
+description = "OneTerm's screens drawn without a window, to compare with its design (specs/oneterm)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

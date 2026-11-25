@@ -1,4 +1,4 @@
-//! The SFTP dock's columns (specs/19, "M9 in detail"): a header that sorts, each entry's
+//! The SFTP dock's columns (specs/oneterm, "M9 in detail"): a header that sorts, each entry's
 //! permissions, and the columns a narrow dock has no room for.
 
 use quadra::Role;

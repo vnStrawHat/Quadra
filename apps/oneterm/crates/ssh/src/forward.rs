@@ -1,4 +1,4 @@
-//! A connection's forwards (specs/19, "M10 in detail"): local ports carried through
+//! A connection's forwards (specs/oneterm, "M10 in detail"): local ports carried through
 //! `direct-tcpip` channels, ports the server is asked to listen on carried back here, and a
 //! SOCKS5 proxy whose connections go out from the server.
 

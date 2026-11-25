@@ -1,4 +1,4 @@
-//! What the engine asks the app (specs/19, "M7 in detail"): an [`Ask`] told as an [`Event`]
+//! What the engine asks the app (specs/oneterm, "M7 in detail"): an [`Ask`] told as an [`Event`]
 //! from the engine's threads, answered by `Ssh::answer`; and what it writes to the space.
 
 use std::path::PathBuf;

@@ -4,3 +4,6 @@
 .cache/
 *.pdb
 __pycache__/
+.private/
+.claude/
+CLAUDE.local.md

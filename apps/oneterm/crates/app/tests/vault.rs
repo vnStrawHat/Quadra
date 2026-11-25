@@ -1,4 +1,4 @@
-//! Saved passwords and Connect all (specs/19, "Saved passwords", "M8 in detail") on real
+//! Saved passwords and Connect all (specs/oneterm, "Saved passwords", "M8 in detail") on real
 //! connections to the engine's test server on 127.0.0.1 (never another host): a password
 //! saved sealed signs in by itself, the master password opens the vault when its key is not
 //! in memory, a group connects all its hosts, a startup command is written once the shell

@@ -1,4 +1,4 @@
-//! The settings of how terminals look and behave (specs/19, "Settings"): the pages
+//! The settings of how terminals look and behave (specs/oneterm, "Settings"): the pages
 //! Appearance and Terminal.
 
 use std::rc::Rc;

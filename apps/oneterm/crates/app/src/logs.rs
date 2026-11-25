@@ -1,4 +1,4 @@
-//! A space's log (specs/19, "Settings"): new local shells and new SSH spaces as the settings
+//! A space's log (specs/oneterm, "Settings"): new local shells and new SSH spaces as the settings
 //! say, or from a space's menu; a file a space in the folder set, its lines in local time.
 
 use std::path::PathBuf;

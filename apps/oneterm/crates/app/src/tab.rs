@@ -1,4 +1,4 @@
-//! A tab and its spaces (specs/19, "Spaces"), and what the app's keys ask for.
+//! A tab and its spaces (specs/oneterm, "Spaces"), and what the app's keys ask for.
 
 use quadra::{Action, Scope, Signal};
 use quadra_term::Session;

@@ -1,4 +1,4 @@
-//! Suggestions over a small catalog (specs/20, "A suggestion").
+//! Suggestions over a small catalog (specs/completion, "A suggestion").
 
 use oneterm_completion::{Catalog, Config, Engine, Family, Group, Kind, Source, Sources, Suggestion};
 

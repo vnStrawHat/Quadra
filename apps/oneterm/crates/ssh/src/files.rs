@@ -1,4 +1,4 @@
-//! A connection's files over SFTP (specs/19, "M9 in detail"). Each call blocks on the
+//! A connection's files over SFTP (specs/oneterm, "M9 in detail"). Each call blocks on the
 //! engine's runtime: an app makes them on its pool, never on its UI thread.
 
 use std::io::Write;

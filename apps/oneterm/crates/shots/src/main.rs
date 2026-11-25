@@ -1,8 +1,8 @@
 //! OneTerm's screens drawn without a window, to pictures, to compare with its design canvas
-//! (specs/19): the software device, the real text, the headless platform, `echo()` sessions
+//! (specs/oneterm): the software device, the real text, the headless platform, `echo()` sessions
 //! fed what the canvas shows. Nothing shows on the desktop.
 //!
-//!     tools/cargo.sh run -p oneterm-app-shots -- [out dir] [scene ..]
+//!     scripts/cargo.sh run -p oneterm-shots -- [out dir] [scene ..]
 //!
 //! Scenes: main, collapsed, horizontal, menu, connect, add, settings, lock, sftp, gutter (main
 //! with the terminals' gutter on), usage (the pointer resting on RAM: its card), find (the

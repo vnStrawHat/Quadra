@@ -1,4 +1,4 @@
-//! The Connect dialogs' scenes (specs/19, "M7 in detail"): a tab connected to the engine's
+//! The Connect dialogs' scenes (specs/oneterm, "M7 in detail"): a tab connected to the engine's
 //! test servers on 127.0.0.1 (never another host), its files under `.tmp/ssh-tests`, left
 //! at the question the scene shows.
 

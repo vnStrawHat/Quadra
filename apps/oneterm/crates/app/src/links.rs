@@ -1,4 +1,4 @@
-//! Links in a space's terminal (specs/19, "Spaces"): Ctrl+click, or the menu's Open link,
+//! Links in a space's terminal (specs/oneterm, "Spaces"): Ctrl+click, or the menu's Open link,
 //! goes through a policy of the target and its visible text: opened by the shell's opener,
 //! asked about first in a dialog, or refused with a card saying why.
 

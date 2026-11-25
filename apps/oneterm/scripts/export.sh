@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # scripts/export.sh <folder> [quadra]: OneTerm as a repository of its own, written into an
-# empty folder (specs/19, "The repository"). Run from Quadra's repository, where the app is
-# built until the user moves it: the folder gets the app's tracked files as they are, the
-# root manifest (Cargo.root.toml as Cargo.toml), the specs the code refers to (specs/19 and
-# 20), and a lock file with the versions Quadra's has.
+# empty folder (specs/oneterm, "The repository"). Run from Quadra's repository, where the app
+# is built until the user moves it: the folder gets the app's tracked files as they are, the
+# root manifest (Cargo.root.toml as Cargo.toml) and a lock file with the versions Quadra's
+# has. What is Quadra's alone stays behind: this script, Cargo.root.toml, and what README.md,
+# CLAUDE.md and the spec mark as such.
 #
 # Quadra is named by its git address at the commit checked out here, which has to be on the
 # remote for anyone else to build it. With a second argument, the path of a checkout of
@@ -26,11 +27,10 @@ mkdir -p "$out"
 [ -z "$(ls -A "$out")" ] || { echo "export: $out is not empty" >&2; exit 1; }
 git ls-files -z | xargs -0 cp --parents -t "$out"
 rm "$out/Cargo.root.toml" "$out/scripts/export.sh"
-# The README's section on living here does not go along.
-sed -i '/^## Inside Quadra/,/^## Licence/{/^## Licence/!d}' "$out/README.md"
+for file in README.md CLAUDE.md specs/oneterm.md; do
+	sed '/^<!-- quadra-only -->$/,/^<!-- \/quadra-only -->$/d' "$file" | cat -s > "$out/$file"
+done
 sed "s|@\(quadra[a-z-]*\)@|$from|" Cargo.root.toml > "$out/Cargo.toml"
-mkdir -p "$out/specs"
-cp "$top/specs/19-oneterm.md" "$top/specs/20-complete.md" "$out/specs/"
 # Quadra's lock file: cargo keeps its versions and drops what this workspace does not build.
 cp "$top/Cargo.lock" "$out/"
 (cd "$out" && cargo metadata --format-version 1 > /dev/null)

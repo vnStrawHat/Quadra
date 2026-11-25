@@ -1,4 +1,4 @@
-//! Command completion in a space (specs/19, "Completion"): sessions that echo what they are
+//! Command completion in a space (specs/oneterm, "Completion"): sessions that echo what they are
 //! written as a shell would, prompts marked by OSC 133, the overlay that opens on typing, the
 //! keys that choose and accept, what is written to the program, Escape, the gating.
 

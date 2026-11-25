@@ -1,4 +1,4 @@
-//! A saved host's Connect dialog (specs/19, "The rail"): `Connect to <name>`, what is saved
+//! A saved host's Connect dialog (specs/oneterm, "The rail"): `Connect to <name>`, what is saved
 //! in fields to change for this connection; the tab, or the space, opens only once the shell
 //! is open, a failure is an alert in the dialog.
 

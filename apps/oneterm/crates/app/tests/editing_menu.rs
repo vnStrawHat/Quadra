@@ -1,4 +1,4 @@
-//! The editor space's menu (specs/19, "Editing in OneTerm") on a real connection to the engine's
+//! The editor space's menu (specs/oneterm, "Editing in OneTerm") on a real connection to the engine's
 //! test server on 127.0.0.1: a right click gives Copy, Paste and Find, the editor's own
 //! commands, and Close, which asks with changes; a binary file's menu has Close alone. The
 //! clipboard is the harness's. And Wrap in its header, which breaks long lines at the space's

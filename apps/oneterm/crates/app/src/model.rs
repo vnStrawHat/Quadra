@@ -1,4 +1,4 @@
-//! Tabs and spaces (specs/19, "Rail", "Spaces"): a tab holds spaces side by side, each a
+//! Tabs and spaces (specs/oneterm, "Rail", "Spaces"): a tab holds spaces side by side, each a
 //! session. They live in the model's scope, not in the views that show them: a tab that is
 //! not shown keeps its programs running, and one made by a key has a scope to live in.
 
@@ -144,7 +144,7 @@ impl Model {
         Space { id, session, scope, remote, channel, edit: None }
     }
 
-    /// A space that runs no program, an editor's (specs/19, "Spaces"): its session is never
+    /// A space that runs no program, an editor's (specs/oneterm, "Spaces"): its session is never
     /// connected; `make` builds the file it edits in its scope.
     pub(crate) fn editor_space(
         &self,

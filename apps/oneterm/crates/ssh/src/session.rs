@@ -1,4 +1,4 @@
-//! A connection from start to end (specs/19, "M7 in detail"): the socket, the host key, the
+//! A connection from start to end (specs/oneterm, "M7 in detail"): the socket, the host key, the
 //! authentication, the shell, and what the shell's channel says until it closes.
 
 use std::future::{Future, poll_fn};
@@ -125,7 +125,7 @@ async fn shell(options: &Options, prompt: Arc<Prompt>, shared: &Arc<Shared>) -> 
     for task in forwards {
         task.abort();
     }
-    // The files go with the shell (specs/19).
+    // The files go with the shell (specs/oneterm).
     *shared.handle.lock().unwrap_or_else(|e| e.into_inner()) = None;
     *shared.files.lock().unwrap_or_else(|e| e.into_inner()) = None;
     // The target first, then the jump hosts inward out.

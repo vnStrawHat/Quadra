@@ -1,4 +1,4 @@
-//! Quick connect (specs/19, "M7 in detail"): a target as one types it to `ssh`, how to sign
+//! Quick connect (specs/oneterm, "M7 in detail"): a target as one types it to `ssh`, how to sign
 //! in and through which host, whether the SFTP dock opens with it, whether it is saved, and
 //! whether it opens a tab or a space beside the focused one.
 

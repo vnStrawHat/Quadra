@@ -1,4 +1,4 @@
-//! OneTerm on the headless platform with an `echo()` session (specs/19, "Tests"): the title
+//! OneTerm on the headless platform with an `echo()` session (specs/oneterm, "Tests"): the title
 //! bar, the terminal with the focus from the start, the status bar's directory (the clock:
 //! `tests/bars.rs`).
 

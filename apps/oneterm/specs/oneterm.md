@@ -1,25 +1,33 @@
-# 19. OneTerm
+# OneTerm
 
-OneTerm is a terminal app for local shells, and later SSH and SFTP, in `apps/oneterm` (a set
-of crates, "The repository"; the app is the package `oneterm-app`, its library and its binary
-`oneterm`). It is the user's terminal app of that name built again on Quadra:
-its versions go on from 0.7.0, and **OneTerm 0.6** in this spec is every version before, built
-on another toolkit, whose updater starts `oneterm.exe`. Until 2026-11-24 the app was named
-1Term (the user's decision that day gave it the name of what it replaces); the folders it
-kept under that name are taken along ("Taking over from OneTerm 0.6"). Started 2026-11-15 by the user's decision, before the other apps.
-Its look is the user's design (the canvas "1Term", by the name then: main window, horizontal tabs variant, the `+`
-menu, settings, the lock screen, SFTP), drawn with `quadra-design` in the kit's language; OneTerm 0.6
-(a clone to read in `.cache/vendor/oneterm-app`) is the
-reference for behaviour and settings the design leaves open. The terminal is `quadra-term` (18).
+OneTerm is a terminal app for Windows: local shells, SSH and SFTP, in tabs and spaces side by
+side. It is a set of crates ("The repository"); the app is the package `oneterm-app`, its
+library and its binary `oneterm`. It is the user's terminal app of that name built again on
+Quadra (github.com/vnStrawHat/Quadra), a native GPU-rendered UI framework: its versions go on
+from 0.7.0, and **OneTerm 0.6** in this spec is every version before, built on another
+toolkit, whose updater starts `oneterm.exe` (this repository's history up to the tag
+`v0.6.11`). The work started on 2026-11-15 inside Quadra's repository, where the app was
+named 1Term until 2026-11-24 (the user's decision that day gave it the name of what it
+replaces); the folders it kept under that name are taken along ("Taking over from OneTerm
+0.6").
+
+Its look is the user's design (the canvas "1Term", by the name then: main window, horizontal
+tabs variant, the `+` menu, settings, the lock screen, SFTP), drawn with Quadra's kit
+(`quadra-design`) in the kit's design language; OneTerm 0.6 is the reference for behaviour
+and settings the design leaves open. The terminal is Quadra's `quadra-term` (Quadra's
+specs/18) over the user's engine `oneterm-vt`. The user's decisions and the dependencies
+admitted are in `decisions.md`; what is done, in `docs/progress.md`.
+
+A reference written "Quadra's specs/NN" is to a file of Quadra's repository.
 
 ## Phases
 
 | Phase | Contents |
 |---|---|
 | **P1 Local** | the window, tabs and spaces, local shells, the terminal signals, the `+` menu, the status bar, settings, the lock screen |
-| **P2 Remote** | SSH over `russh` on a `tokio` runtime of its own with `ring` for its crypto (the user's choice, 2026-11-15; specs/01, R15), saved hosts in the rail, quick connect, the SFTP dock and its expanded view |
+| **P2 Remote** | SSH over `russh` on a `tokio` runtime of its own with `ring` for its crypto (the user's choice, 2026-11-15; `decisions.md`), saved hosts in the rail, quick connect, the SFTP dock and its expanded view |
 
-P1 milestones, each committed green on `tools/check.sh prod` before the next:
+P1 milestones, each committed green on the gate before the next:
 
 | Id | Contents |
 |---|---|
@@ -34,15 +42,15 @@ P2 milestones:
 
 | Id | Contents |
 |---|---|
-| M7 | the SSH engine (`apps/oneterm/crates/ssh`): connect, host keys, authentication, the shell; quick connect from the `+` menu |
+| M7 | the SSH engine (`crates/ssh`): connect, host keys, authentication, the shell; quick connect from the `+` menu |
 | M8 | saved hosts: the rail's SSH hosts with a filter, the menu's search, Recent and groups, Add SSH host; the host and its latency in the status bar and the space's header; `n ssh · n local` |
 | M9 | the SFTP dock (460 px) and its expanded view: listing, moving about, upload and download, transfers |
 | M10 | jump hosts and port forwards |
 
 ## Window
 
-Crashes: with its folders OneTerm writes a report of a panic (specs/15) and, through
-`quadra_shell::crash_reports` (specs/16), of a crash that is no panic (a minidump and the log's
+Crashes: with its folders OneTerm writes a report of a panic (Quadra's specs/15) and, through
+`quadra_shell::crash_reports` (Quadra's specs/16), of a crash that is no panic (a minidump and the log's
 last lines) to `crashes` in its data folder. The next start shows a warning card, `OneTerm closed
 unexpectedly` with the report's name, whose Show report shows the report in the file manager
 (`Opener::reveal`); each report is told once (`App::last_crash`). Nothing is sent anywhere.
@@ -122,7 +130,7 @@ as, `cmd.exe`), then, smaller and muted, the shell's program and the command it 
 process the shell started, as its command line (`pwsh.exe · npm run dev`), or with none
 running the shell's full path (`C:\Program Files\PowerShell\7\pwsh.exe`; `ssh
 deploy@staging-db-01` for a remote space). The command is read from the OS when the tooltip
-shows (`quadra_shell::shell_process`, specs/16), never while it does not. Then New terminal: a row of 40
+shows (`quadra_shell::shell_process`, Quadra's specs/16), never while it does not. Then New terminal: a row of 40
 under a strong line, in it, 4 px from its seams and 6 from its sides, the expanded rail's box
 of a dashed 1 px strong line (radius 6, the hover fill inside it) around the `+`; the `+` menu
 at its right.
@@ -143,7 +151,7 @@ a panel of 248 px at the left.
 
 ## Spaces
 
-A space's terminal reads its lines by its shell (specs/18, `ShellProfile`): `cmd.exe` as
+A space's terminal reads its lines by its shell (Quadra's specs/18, `ShellProfile`): `cmd.exe` as
 Command Prompt's, `powershell.exe` and `pwsh.exe` as PowerShell's, anything else (Git Bash,
 WSL, a host over SSH) as a Unix shell's, by the file name of what it started.
 
@@ -186,7 +194,7 @@ icons; a program that reports the mouse takes the press instead.
 Input channels (broadcast typing): five, A to E. A space that joined one sends what is typed in
 it to the other members of that channel, in any tab: keys as its view encoded them, typed text
 and pastes as each member's own program asked (bracketed or not), through
-`Session::on_input` and `Session::deliver` (specs/18, "Input"); mouse reports, focus reports and
+`Session::on_input` and `Session::deliver` (Quadra's specs/18, "Input"); mouse reports, focus reports and
 replies are not sent. The space's menu has Input channel, a submenu: Channel A to E (the
 space's own checked; choosing one joins it, leaving any other), then while a member Leave
 channel and Close channel X (every member leaves), then in a tab of more than one space Join
@@ -197,7 +205,7 @@ a 14 px square, radius 3, its bold letter in 10 px on the channel's colour (the 
 takes that colour. A space made by a split or a duplicate is in no channel; a space leaves its
 channel when its program ends or it closes. Membership is not saved.
 
-Links (specs/18, "Input") open on Ctrl+click, or Open link in the menu, through the app's policy,
+Links (Quadra's specs/18, "Input") open on Ctrl+click, or Open link in the menu, through the app's policy,
 a pure function of the target and the visible text: `https` opens through the shell's `Opener`;
 `http`, a port that is not the scheme's own, or an OSC 8 link whose visible text looks like an
 address of another host (a word like "click here" is no address) first asks, in a dialog that
@@ -210,7 +218,7 @@ address, or a target over 256 KiB is refused, with a card saying why.
 `Ctrl+F` (the binding `find` of the Keybindings page; bound for the whole window, so the keys
 reach a shell only once unbound there) opens a find bar at the top right of the focused space,
 over its terminal, and puts the focus in its query; pressed again it gives the focus back to the
-query. The bar is one row of the kit's pieces, 4 px inside its plane (specs/design/controls.md,
+query. The bar is one row of the kit's pieces, 4 px inside its plane (Quadra's specs/design/controls.md,
 "A find bar"): the query (`input`, the md step, 220 wide or less in a narrow space (96 at least: the bar stays inside it), the search
 icon before it, placeholder and name "Find"; the error colour
 while it finds nothing), the switches Match case, Whole word and Regular expression as toggled icon buttons (the
@@ -218,7 +226,7 @@ icons `case-sensitive`, `whole-word`, `regex`: the accent while on), the count i
 text colour in a box of 64 px so the row does not move ("3 of 12", "No results" in the third,
 nothing while the query is empty), a rule, then Previous match and Next match (off while
 nothing is found) and Close as icon buttons; on the overlay colour with a line, the middle
-radius and the first elevation. Typing finds at once (specs/18, "Find"); Enter and F3
+radius and the first elevation. Typing finds at once (Quadra's specs/18, "Find"); Enter and F3
 go to the next match, Shift+Enter and Shift+F3 to the one before, wrapping; Escape or Close
 ends finding and gives the focus back to the terminal. Closed, the bar keeps its query: opened
 again, it finds it again. Open, it stays open with its query when the space's view is built
@@ -227,10 +235,10 @@ again (a tab shown again, the tabs moved to a strip): it is built from the sessi
 
 ## Completion
 
-A space completes the command being typed (specs/20, the engine; the app makes one `Engine` in
+A space completes the command being typed (specs/completion, the engine; the app makes one `Engine` in
 its model when first asked, so the history is the session's, shared by the tabs). The family of a space is
 `force_family`, else `Family::detect` of the local shell's program (the OS's: `cmd`), and Unix
-for an SSH space. The overlay follows the terminal's `command_line` (specs/18) and asks
+for an SSH space. The overlay follows the terminal's `command_line` (Quadra's specs/18) and asks
 `Engine::suggest(text, text.len(), family)`: nothing while completion is off, on the alternate
 screen (`disable_in_alt_screen`), away from a prompt (`require_prompt_region`), without the
 caret, or after Escape until the line changes. It stands under the caret at the start of the
@@ -386,13 +394,13 @@ system's dialog, empty for `session-logs` in the app's data folder; the formats 
 its name the shell's or the host's, lines stamped in local time; a space's menu has Start or Stop
 logging, and a log that cannot be opened is a card), Keybindings (a row an action, known by a stable id: `new_tab` Ctrl+T, `split` Ctrl+D ("Split the space", Split space), `split_right` Ctrl+Shift+Right, `split_left` Ctrl+Shift+Left, `split_up` Ctrl+Shift+Up, `split_down` Ctrl+Shift+Down, `close_space` Ctrl+W, `focus_next` Ctrl+Alt+Right, `focus_previous` Ctrl+Alt+Left, `lock` Ctrl+Shift+L, `quick_connect` Ctrl+Shift+K, `settings` Ctrl+, (the Settings window, or the page where none opens), `dock` Ctrl+Shift+B (the SFTP dock), `select_all` Ctrl+Shift+A, `find` Ctrl+F (the find bar, "Find") and `clear` (unbound: the scrollback) on the focused space, `duplicate` (unbound: the tab), `zoom_in` Ctrl+=, `zoom_out` Ctrl+- and `zoom_reset` Ctrl+0
 (the terminal's text size, Appearance's, a point a step within 6 to 48, back to 15), `quit`
-Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V, and through a terminal's history `scroll_page_up` Shift+PageUp, `scroll_page_down` Shift+PageDown, `scroll_top` Ctrl+Shift+Home, `scroll_bottom` Ctrl+Shift+End (specs/18, "Input"); each with its `key_input` and the kit's Reset as on the other pages (and the page's Reset all), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the settings file this run saves to, a trial run's folder too, and Show in folder: the file selected in the file manager, or its folder, made if need be, while nothing is written yet), About (the version, the engine, the license).
+Ctrl+Shift+Q (closes the window), and in a terminal `copy` Ctrl+Shift+C and `paste` Ctrl+Shift+V, and through a terminal's history `scroll_page_up` Shift+PageUp, `scroll_page_down` Shift+PageDown, `scroll_top` Ctrl+Shift+Home, `scroll_bottom` Ctrl+Shift+End (Quadra's specs/18, "Input"); each with its `key_input` and the kit's Reset as on the other pages (and the page's Reset all), and a warning on each of two actions that have one keystroke. A setting `keys.<id>` a row: absent, the default; empty, unbound; Reset writes the default back. The keymap is built again from the defaults and these whenever one changes and put in `app_keymap()`; a value that is no keystroke is the default. Ctrl+Insert, Shift+Insert and Tab in a terminal stay as they are), Advanced (the settings file this run saves to, a trial run's folder too, and Show in folder: the file selected in the file manager, or its folder, made if need be, while nothing is written yet), About (the version, the engine, the license).
 Saved to `settings.json` in the app's
-folder as they change (specs/15). Every setting of a page has the
-kit's Reset (specs/13, `settings`), its numbers in the kit's stepper (`number_input(..).stepper()`), back to the default the app reads it with (`Prefs::load`; the
+folder as they change (Quadra's specs/15). Every setting of a page has the
+kit's Reset (Quadra's specs/13, `settings`), its numbers in the kit's stepper (`number_input(..).stepper()`), back to the default the app reads it with (`Prefs::load`; the
 defaults are those of settings in memory, written once), and each page its Reset all; the master
 password, the saved hosts and the recent targets are data, not settings, and have none. Appearance: the theme (System, Dark, Light), and a colour theme over
-it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/crates/app/themes`, made by
+it (37 of the user's terminal's palettes as files of the kit's theme format, `crates/app/themes`, made by
 `.tmp/gen_themes.py` from colours alone; "Default", the kit's, when none: a saved name no theme has reads as it); the terminal's text (font family,
 chosen from the families of the machine in a select with a search, the first "Default" for none (the kit's mono face); fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
 Nerd Font"; size, 15; weight, Normal and Thin to Black; line height, 1.2; the cell's width, 0 for the advance of `0`, up to
@@ -402,7 +410,7 @@ the reference's Auto and On do the same, so it is a switch) and colours over the
 (foreground, background, cursor, selection, the gutter's, as `#rrggbb` in the kit's `color_picker`, its swatch and
 code the theme's colour while it is empty: the gutter's text and clock the foreground mixed half with the
 background, its background the background, its line number `#2b7f99` by default; the minimum contrast, 4.5, from 1, off, to 21; the sixteen ANSI colours, a row a
-colour with its normal and bright fields), the view's `TermLook` (specs/18). Keys: `terminal.font_fallbacks`,
+colour with its normal and bright fields), the view's `TermLook` (Quadra's specs/18). Keys: `terminal.font_fallbacks`,
 `terminal.cell_width`, `terminal.padding.top` (`right`, `bottom`, `left`), `terminal.colors.min_contrast`,
 `terminal.colors.ansi.red` (`black` to `white`, `bright_black` to `bright_white`), `terminal.ligatures`, `terminal.grayscale`,
 `terminal.semantic_highlighting`:
@@ -412,7 +420,7 @@ program and its arguments typed, `terminal.shell_program`, `terminal.shell_args`
 home, last used: the directory a local shell said last, kept across runs as
 `terminal.last_dir`, home when it is no longer there), Force links (`terminal.force_hyperlink`, on: `FORCE_HYPERLINK=1` for a new local shell), Shell integration (`terminal.shell_integration`, on; "M4 in detail"); Mouse & wheel: the context menu, copy on select, middle-click paste (all on),
 the wheel's speed (1, from 0.1 to 10), alternate scroll (on: arrows to a full-screen program),
-the view's `TermSettings` (specs/18). A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound (the system's
+the view's `TermSettings` (Quadra's specs/18). A choice is saved as its words. Signals: OSC 7501 shown on tab and header / tab only / ignored; OSC 9;4 on tab, status bar; bell: badge and count / badge and sound (the system's
 default sound, at once for each bell however the space is looked at) / badge and flash (the
 space's terminal tinted the selection colour for 120 ms) / ignore; OSC 9: toast 6 s / until dismissed / silent.
 
@@ -494,21 +502,20 @@ changed.
 
 ## Updates
 
-OneTerm updates itself through `quadra-updater` (specs/22) from the releases of
-`vnStrawHat/OneTerm`: the updater of OneTerm 0.6 looks there, so its last version updates to
-0.7.0, and the app goes on from the same place. The
-user splits OneTerm out of Quadra into that repository and releases 0.7.0 from it, at a time
-of their choosing (00, the decisions of 2026-11-24); nothing is published before. A
+OneTerm updates itself through `quadra-updater` (Quadra's specs/22) from the releases of
+`vnStrawHat/OneTerm`, this repository: the updater of OneTerm 0.6 looks there, so its last
+version updates to 0.7.0, and the app goes on from the same place. Releasing is the user's
+act, at a time of their choosing (`decisions.md`); nothing is published by a script. A
 release carries `oneterm-<version>-x86_64-pc-windows-msvc.zip`, holding
 `oneterm-<version>-x86_64-pc-windows-msvc/` with `oneterm.exe`, the console host, `LICENSE`,
 `NOTICE` and `THIRD-PARTY-NOTICES.txt` (`scripts/notices.py`: the console host's notice, the
 licences of the kit's icons and faces, and every crate the binary is built from with its
 licence files) (`scripts/build-release.sh`, "The repository", which makes the zip and its
-`.sha256`, prints the SHA-256, and publishes nothing; here `tools/release.sh` runs it); OneTerm's versions go on from that app's: 0.7.0 is the first. The package's own version
-in `apps/oneterm/crates/app/Cargo.toml` is the version last released, 0.6.11 until then: the
+`.sha256`, prints the SHA-256, and publishes nothing). OneTerm's versions go on from that
+app's: 0.7.0 is the first. The package's own version in `crates/app/Cargo.toml` is the version last released, 0.6.11 until then: the
 user bumps it themselves, by the release workflow, so the next release is 0.7.0 (the user's
 decision, 2026-11-25). A build before that says 0.6.11 in About and takes 0.7.0 as an update. The executable's icon is that app's (`assets/logo.ico`, its
-48 and 96 px images; specs/16, "An executable's icon"), which the window takes too.
+48 and 96 px images; Quadra's specs/16, "An executable's icon"), which the window takes too.
 
 Settings, About has the group **Updates** (`updates.rs`):
 
@@ -578,7 +585,7 @@ the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep 
 
 ## SSH (P2)
 
-The engine is the crate `oneterm-ssh` (`apps/oneterm/crates/ssh`), the one place `russh` and `tokio`
+The engine is the crate `oneterm-ssh` (`crates/ssh`), the one place `russh` and `tokio`
 are named: a runtime of two worker threads, made when the first connection starts, behind a
 blocking API of the shape of `quadra_term::Pty`: `Ssh::connect(options, output, told,
 exited)`, `write`, `resize`, `close`, and `answer` and `cancel` for the Connect dialogs. The UI
@@ -619,7 +626,7 @@ thread never waits on the network.
   not `password` (a server of PAM): each of its prompts is answered with the password. After the third wrong
   password: `permission denied`. An RSA key signs with the hash the server names in
   `server-sig-algs`.
-- **The Connect dialogs** (the kit's dialog, `apps/oneterm/crates/app/src/asking.rs`): a remote space
+- **The Connect dialogs** (the kit's dialog, `crates/app/src/asking.rs`): a remote space
   keeps its connection's phase (`Connecting`, a question, failed, done) with its session, and
   the window shows the focused space's, one dialog for each phase, swapped as the phase moves;
   a space whose connection is done or local shows none. Giving a dialog up (its cross, Escape,
@@ -661,7 +668,7 @@ thread never waits on the network.
   (`tests/asking.rs`) drive the dialogs through the semantic tree against the same servers:
   an unknown host trusted (its key written) or cancelled, a right and a wrong password and
   Retry, a missing user asked, a changed key shown, Connecting closing by itself.
-  `apps/oneterm/crates/shots` draws them (`ask-connecting`, `ask-host`, `ask-sign-in`,
+  `crates/shots` draws them (`ask-connecting`, `ask-host`, `ask-sign-in`,
   `ask-failed`) against those servers.
 
 ### M8 in detail
@@ -755,7 +762,7 @@ thread never waits on the network.
   vault's id of 16 random bytes, the cost of Argon2id (version 19; a new vault takes 64 MiB,
   3 passes, 1 lane; a document asking for less than 19 MiB and 2 passes or more than 1 GiB,
   16 passes and 4 lanes is not derived with), a salt of 16 bytes, and a random data key of
-  32 bytes sealed (AES-256-GCM, `quadra_shell::seal`, specs/16) under the key the master
+  32 bytes sealed (AES-256-GCM, `quadra_shell::seal`, Quadra's specs/16) under the key the master
   password derives. What is sealed is an envelope: `otv1:` and the padded base64 of the
   id's first 8 bytes, the nonce of 12, the ciphertext, the tag of 16. A seal is bound
   (AES-GCM's associated data) to `oneterm-vault`, a zero byte, the layout's version 1, the
@@ -764,7 +771,7 @@ thread never waits on the network.
   its target, each with its length in 4 bytes before it. A host's secret is such an
   envelope in `ssh.secrets` (rows of the host's name and that): one copied to a host of
   another target, or sealed by another vault, does not open. Argon2id is the `argon2` crate
-  (specs/01, R15), wiped of its memory after. Settings of before this format (version 0: a
+  (`decisions.md`), wiped of its memory after. Settings of before this format (version 0: a
   PBKDF2 hash of the master password in `security.password`, a vault `v1$...`, secrets
   `sv1:` and `sv2:`) are forgotten when they are read: nothing opens them any more, and the
   hash is not left in the file. The data key is in memory only, from the
@@ -914,14 +921,14 @@ thread never waits on the network.
   Its session is never connected and keeps the connection of the file, so the dock follows it
   and shows the dock of the space the file came from; it is no session connected on the lock
   card, and the tab's title is the file's name.
-- **Sessions keep app data**: `Session::keep(Rc<dyn Any>)` and `kept::<T>()` (specs/18), how
+- **Sessions keep app data**: `Session::keep(Rc<dyn Any>)` and `kept::<T>()` (Quadra's specs/18), how
   the app finds a remote space's `Ssh`.
 
 ### The console host
 
-OneTerm's folder holds `conpty.dll` and `OpenConsole.exe` beside `oneterm.exe` (specs/01, R15):
+OneTerm's folder holds `conpty.dll` and `OpenConsole.exe` beside `oneterm.exe` (`decisions.md`):
 `oneterm-vt` uses them before the system's host, which passes about half as much output
-(specs/14, "Terminal throughput"). `scripts/conpty.sh` fetches the pinned package into
+(Quadra's specs/14, "Terminal throughput"). `scripts/conpty.sh` fetches the pinned package into
 `.cache/conpty` at the workspace's root, checks it and copies the two files to
 `target/debug`, `target/release`, `target/dist` and `target/dist/examples`, or to the
 folders given; `scripts/build-release.sh` puts them in the package, and the licence's notice
@@ -952,16 +959,17 @@ folders given; `scripts/build-release.sh` puts them in the package, and the lice
 
 ## The repository
 
-The user will move OneTerm into a repository of its own, the one OneTerm 0.6 is in, when they
-choose (00, the decisions of 2026-11-24). Until then it is built and gated here, and
-`apps/oneterm` has the shape that repository will have (the user's decision, 2026-11-25), so
-that moving it is copying it:
+OneTerm's repository is github.com/vnStrawHat/OneTerm, the one OneTerm 0.6 was in: its
+history up to the tag `v0.6.11` is that app, and one commit, marked as a breaking change,
+puts this one in the place of that one's source (the user's plan, 2026-11-25). The
+repository, its tags and its releases are kept, so the updater of OneTerm 0.6 finds 0.7.0
+where it looks.
 
 | Crate | Package | What it is |
 |---|---|---|
 | `crates/app` | `oneterm-app` | The app: its library (`oneterm`, what tests and the shots tool drive) and its binary `oneterm`; its themes, its icon, its tests |
 | `crates/ssh` | `oneterm-ssh` | SSH and SFTP ("SSH (P2)") |
-| `crates/completion` | `oneterm-completion` | Command completion (20) |
+| `crates/completion` | `oneterm-completion` | Command completion (`completion.md`) |
 | `crates/vault` | `oneterm-vault` | Saved passwords: the vault's document and envelopes, sealing and opening; it knows nothing of the app ("Saved passwords") |
 | `crates/shots` | `oneterm-shots` | The app's screens drawn to pictures without a window |
 
@@ -970,29 +978,38 @@ crates and OneTerm has not is Quadra's now (the terminal's view, the theme, the 
 the engine's own repository (`oneterm-vt`); the app's views stay one crate, as they share one
 model.
 
-**Manifests.** A crate's manifest reads the same here and there: what it takes of Quadra and
-of OneTerm's other crates it names with `workspace = true`, as it does its edition, licence
-and lints. Here the root manifest's `[workspace.dependencies]` names them by path. The app's
+**Quadra** is taken by git at one commit: the root manifest's `[workspace.dependencies]`
+names each crate of Quadra's the app's crates take, all at the same `rev`, and the crates
+name them with `workspace = true`, as they do each other. Moving to a newer Quadra is
+changing that commit in the one file and running the gate. The terminal engine comes with
+`quadra-term`, at the tag Quadra pins. A change the app needs in the framework is made in
+Quadra's repository first.
+
+**Manifests.** A crate inherits its edition, licence and lints from the workspace. The app's
 version is written in `crates/app/Cargo.toml`, the one place a release reads and bumps; the
-other crates are never published and take the workspace's.
+other crates are never published and take the workspace's. The lock file is committed, and
+the gate and the CI build with it as it is.
 
-**Scratch files.** Tests write under `.tmp` of the crate they run in, or of the app's root
-(`crates/<name>/../../.tmp`): inside the project here, inside the repository there.
+**Scratch files.** Tests write under `.tmp` of the crate they run in, or of the repository's
+root (`crates/<name>/../../.tmp`); downloads go to `.cache`; a release is staged in `dist`.
+All three are ignored by git, and nothing is written outside the repository but cargo's own
+build output.
 
-**The root's files.** `apps/oneterm` holds what the repository's root will: `LICENSE` and
-`NOTICE` (the app's own, which a release carries), `README.md`, `.gitignore`,
-`.gitattributes`, `rust-toolchain.toml` and `rustfmt.toml` (copies of Quadra's; the gate
-fails when one differs), and
-`Cargo.root.toml`, the root manifest: the workspace of `crates/*`, the keys the crates
-inherit, the lints, the profiles (`dist`, and the vault's two crates optimized in a debug
-build), and each crate of Quadra the app's crates take, written `@quadra-<name>@` where its
-source goes. It cannot be `Cargo.toml` while the crates are members of Quadra's workspace;
-the gate fails when a crate of OneTerm takes a name of the workspace that file does not have.
+**The root's files.** `Cargo.toml` (the workspace of `crates/*`, the keys the crates inherit,
+the lints, the profiles: `dist`, and the vault's two crates optimized in a debug build),
+`Cargo.lock`, `rust-toolchain.toml` and `rustfmt.toml` (as Quadra's), `deny.toml`, `LICENSE`
+and `NOTICE` (which a release carries), `README.md`, `CLAUDE.md` (the working notes),
+`.gitignore`, `.gitattributes`.
 
-**Scripts** (`scripts/`, bash and Python; no PowerShell), which find the workspace's root
-through cargo and so run the same here and there; `CARGO` names another cargo (here
-`tools/cargo.sh`, which keeps temp files in the project):
+**Scripts** (`scripts/`, bash and Python; no PowerShell). They find the workspace's root
+through cargo; `CARGO` names another cargo than `scripts/cargo.sh`:
 
+- `cargo.sh <args>`: cargo from any folder, with the build's temp files in `.tmp`.
+- `check.sh [prod]`: the gate. No PowerShell, no source file over 300 lines, the design
+  language's ladders in the views (`check_design.py`, the ladders of Quadra's design
+  language), the release notes script's own cases, then `cargo fmt --check`, `cargo clippy -D
+  warnings` and `cargo test` with the lock file as committed; `prod` also builds and tests
+  in release. It runs checks of the machine kept out of git, where there are any.
 - `build-release.sh`: the release asset. The binary in the `dist` profile with
   `scripts/app.manifest` embedded (the manifest and the icon are checked to be in it,
   `exe_icon.py`), staged with the console host, `LICENSE`, `NOTICE` and the notices in
@@ -1005,17 +1022,9 @@ through cargo and so run the same here and there; `CARGO` names another cargo (h
 - `release-notes.py <range> [previous tag]`: a release's notes from the subjects of the
   commits: Conventional Commits grouped by type, breaking changes first, each linked to its
   commit, the commit that bumps the version left out (`--check` runs its own cases).
-- `export.sh <folder> [path of a checkout of Quadra]`, in Quadra's repository only: writes
-  the repository into an empty folder: the tracked files of `apps/oneterm`, `Cargo.root.toml`
-  as `Cargo.toml`, specs 19 and 20 as `specs/`, and Quadra's lock file, which cargo then
-  cuts down to what this workspace builds. Quadra is named by its git address and the commit
-  checked out, and the script refuses a commit that is on no remote branch; with the path of
-  a checkout it is named by path, to try the folder on this machine. Neither this script nor
-  `Cargo.root.toml` goes along, nor the README's section on living in Quadra's repository.
 
-**Workflows** (`.github/workflows`, read by GitHub only at a repository's root: they run
-nowhere while the app is here). They follow OneTerm 0.6's, so that releasing stays what it
-was, and differ where the app does: one target (Windows x86_64), steps in bash, and the
+**Workflows** (`.github/workflows`). They follow OneTerm 0.6's, so that releasing stays what
+it was, and differ where the app does: one target (Windows x86_64), steps in bash, and the
 version read from `crates/app/Cargo.toml`.
 
 - `deny.toml`, at the root: the dependency policy `cargo deny check licenses bans advisories
@@ -1027,10 +1036,9 @@ version read from `crates/app/Cargo.toml`.
   (RUSTSEC-2023-0071, `rsa`, which comes with `russh` at a pinned version). Sources:
   crates.io, and by git Quadra's repository and the engine's, nothing else.
 - `ci.yml`: on a push to `main` and on a pull request that touch what is built; a newer run
-  of a ref cancels the one in progress. On Windows: no PowerShell and no source file over
-  300 lines, the release notes script's cases, `cargo fmt --check`, `cargo clippy -D
-  warnings`, `cargo test`, with the lock file as committed. A second job runs cargo-deny
-  over `deny.toml`, by the action OneTerm 0.6's workflow pins.
+  of a ref cancels the one in progress. One job on Windows runs the gate
+  (`scripts/check.sh`); a second runs cargo-deny over `deny.toml`, by the action OneTerm
+  0.6's workflow pins.
 - `release.yml`: run by hand with a bump (patch, minor, major) or by a pushed tag `v*`.
   *prepare* works out the version (by hand: the app's bumped, or the app's again when the
   head is a release commit that was never published; by a tag: the tag's, which the app's
@@ -1043,14 +1051,41 @@ version read from `crates/app/Cargo.toml`.
   A bump starts from the manifest's version, which is the version last released: from
   0.6.11, a minor bump releases 0.7.0.
 
-Checked here (2026-11-25): the export with Quadra by path resolves with the toolchain's own
-cargo, passes the workflow's format check, lints and tests, and makes its asset with its own
-script; with Quadra named by git, this checkout by a file address, it resolves and builds
-(the notices then list Quadra's crates among those from outside); cargo-deny 0.22.1 passes
-all four checks on the export. With the commits on the remote, the export as it will be
-used, Quadra fetched from its repository at the commit, resolves, builds and passes
-cargo-deny. Not checked, as it needs the repository: a run of either workflow. The engine's
-repository and Quadra's must be readable by the runner.
+The engine's repository and Quadra's must be readable by the runner. A run of either
+workflow has not been seen yet (`docs/progress.md`).
+
+<!-- quadra-only -->
+### While the app is in Quadra's repository
+
+Until the user moves it, the app is the folder `apps/oneterm` of Quadra's repository, laid
+out as the repository above (the user's decision, 2026-11-25), and it is built and gated
+there:
+
+- Its crates are members of Quadra's workspace, whose root manifest names Quadra's crates
+  and OneTerm's by path under `[workspace.dependencies]`; so a crate's manifest reads the
+  same in both places. The root manifest the repository will have is `Cargo.root.toml`,
+  with `@quadra-<name>@` where each crate's source goes: it cannot be `Cargo.toml` while
+  the crates are members of another workspace.
+- Quadra's gate (`tools/check.sh`) is the gate: it also fails when a crate of OneTerm takes
+  a name of the workspace `Cargo.root.toml` does not have, and when `rust-toolchain.toml`
+  or `rustfmt.toml` here is not the copy of Quadra's. Quadra's `tools/release.sh` runs
+  `scripts/build-release.sh` with Quadra's cargo, and `tools/package.sh oneterm` still
+  packages the app for a trial.
+- `scripts/export.sh <folder> [path of a checkout of Quadra]` writes the repository into an
+  empty folder: the tracked files of `apps/oneterm`, `Cargo.root.toml` as `Cargo.toml`, and
+  Quadra's lock file, which cargo then cuts down to what this workspace builds. Quadra is
+  named by its git address and the commit checked out, and the script refuses a commit that
+  is on no remote branch; with the path of a checkout it is named by path, to try the
+  folder on that machine. What is marked as Quadra's alone does not go along: this section,
+  its like in `README.md` and `CLAUDE.md`, `Cargo.root.toml` and the script itself. **The
+  export is what goes into the app's repository, not the folder as it is.**
+- The workflows are read by GitHub only at a repository's root: they run nowhere while the
+  app is here.
+
+Checked there (2026-11-25): the export with Quadra fetched from its remote resolves with the
+toolchain's own cargo, passes its gate and cargo-deny, and makes its asset with its own
+script.
+<!-- /quadra-only -->
 
 ## Tests
 

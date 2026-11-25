@@ -1,4 +1,4 @@
-//! OSC 99 notifications as cards (specs/19, "Signals"): buttons, opening, a card that takes
+//! OSC 99 notifications as cards (specs/oneterm, "Signals"): buttons, opening, a card that takes
 //! the place of one with its id, and what the program asked to hear, written back to it; when
 //! one wants to show, its icon, its sound, and what OneTerm says it does.
 

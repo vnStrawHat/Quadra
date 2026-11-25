@@ -61,7 +61,7 @@ implementation is its reference. Its specs, its tests and its own measurements
   the like); a box of a line of text in the kit is `.height(by_text(px))`; a change to what the
   tree tells a reader goes through `semantics_changed`; a chart line never shows steps; the
   Win32 clipboard is never run by a test.
-- OneTerm (`apps/oneterm`, specs/19): a trial run takes `ONETERM_HOME=.tmp/oneterm` so it writes
+- OneTerm (`apps/oneterm`): it is laid out as a project of its own, which the user will put in the repository OneTerm 0.6 is in. Its specs are `apps/oneterm/specs` (specs first holds there too), its progress `apps/oneterm/docs/progress.md`, and `apps/oneterm/CLAUDE.md` is that project's notes: while the app is here, this file's rules and this gate (`tools/check.sh`) are the ones that hold. A trial run takes `ONETERM_HOME=.tmp/oneterm` so it writes
   nothing outside the project; SSH tests only against servers of the test process on
   127.0.0.1. The user's engine `oneterm-vt` (`.cache/vendor/oneterm-vt`) and OneTerm 0.6, the
   app's versions before 0.7 on another toolkit (`.cache/vendor/oneterm-app`, the reference for
@@ -84,10 +84,10 @@ starts Git Bash; `GIT_BASH` names another `bash.exe`).
 | The bench app | `tools/bench.sh` builds `target/dist/compare.exe` (the dist profile: release with fat LTO, what ships and is measured); with scene names it runs them headless with pass timings; `tools/bench.sh compare [runs]` measures the four scenes' real windows from outside (`target/dist/run.exe`) into `.tmp/bench/compare.json`; `tools/bench.sh incremental` prints what a change costs against the size of the UI; `BENCH_GPU=1` adds the GPU's time to a windowed scene's passes |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
 | Terminal throughput | `tools/doomfire.sh [seconds]`: the fire demo (`bench/doomfire`) fed to the engine, through the console host alone, and in a real OneTerm window (specs/14) |
-| OneTerm's console host | `CARGO=$PWD/tools/cargo.sh apps/oneterm/scripts/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (specs/19); OneTerm uses the system's without them |
+| OneTerm's console host | `CARGO=$PWD/tools/cargo.sh apps/oneterm/scripts/conpty.sh` puts Microsoft's newer `conpty.dll` and `OpenConsole.exe` beside the binaries (apps/oneterm/specs/oneterm.md); OneTerm uses the system's without them |
 | A release package | `tools/package.sh gallery` puts `gallery.exe` with `tools/app.manifest` embedded in `target/package/gallery/` |
-| OneTerm's release asset | `tools/release.sh` (the app's `scripts/build-release.sh` with this repository's cargo) makes `dist/oneterm-<version>-x86_64-pc-windows-msvc.zip`, its `.sha256` and prints the SHA-256 (specs/19, "Updates"); it publishes nothing |
-| OneTerm as a repository of its own | `apps/oneterm/scripts/export.sh <empty folder> [path of this checkout]` writes it out (specs/19, "The repository"): the app's files, `Cargo.root.toml` as the root manifest, specs 19 and 20, a lock file. Quadra is named by git at the commit checked out (which must be on the remote), or by the path given, to try it here. Its workflows (`apps/oneterm/.github`) run nowhere while the app is here |
+| OneTerm's release asset | `tools/release.sh` (the app's `scripts/build-release.sh` with this repository's cargo) makes `dist/oneterm-<version>-x86_64-pc-windows-msvc.zip`, its `.sha256` and prints the SHA-256 (apps/oneterm/specs/oneterm.md, "Updates"); it publishes nothing |
+| OneTerm as a repository of its own | `apps/oneterm/scripts/export.sh <empty folder> [path of this checkout]` writes it out (apps/oneterm/specs/oneterm.md, "The repository"): the app's files (its own README, CLAUDE.md, specs and progress among them, less what they mark as Quadra's alone), `Cargo.root.toml` as the root manifest, a lock file. That export, not the folder as it is, is what goes into the app's repository. Quadra is named by git at the commit checked out (which must be on the remote), or by the path given, to try it here. Its workflows (`apps/oneterm/.github`) run nowhere while the app is here |
 | The gallery | `tools/cargo.sh run -p quadra-gallery` (`examples/gallery`: a page a component) |
 | Numbers off the design's ladders | `python tools/check_design.py --list` |
 | The website | `tools/shots.sh dark && tools/shots.sh light`, then `python tools/website.py` builds `target/site` (open `index.html`): the introduction and the guide from `site/`, the design language from `specs/design`, a page a component from the gallery's pages, their words and pictures; a markdown twin of every page, `llms.txt` and `llms-full.txt` for agents. The guide's code is quoted from compiled files (`examples/gallery/examples/guide.rs`). Not deployed |
@@ -133,9 +133,9 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-md` | Markdown: parser, outline, view, formulas, diagrams |
 | `quadra-code` | The code editor: buffer, tokenizers, highlighter, find |
 | `quadra-term` | The terminal view over `oneterm-vt`: grid, input, find, links |
-| `apps/oneterm` | OneTerm, the terminal app (specs/19), in the shape of a repository of its own: `crates/app` (package `oneterm-app`, library and binary `oneterm`) |
+| `apps/oneterm` | OneTerm, the terminal app (apps/oneterm/specs/oneterm.md), in the shape of a repository of its own: `crates/app` (package `oneterm-app`, library and binary `oneterm`) |
 | `apps/oneterm/crates/ssh` | OneTerm's SSH and SFTP over `russh` |
-| `apps/oneterm/crates/completion` | OneTerm's command completion (specs/20) |
+| `apps/oneterm/crates/completion` | OneTerm's command completion (apps/oneterm/specs/completion.md) |
 | `apps/oneterm/crates/vault` | OneTerm's saved passwords: the vault's format, sealing and opening |
 | `apps/oneterm/crates/shots` | OneTerm's screens drawn to pictures |
 | `apps/markdown` | Markdown, the app that reads and edits `.md` files (specs/21) |

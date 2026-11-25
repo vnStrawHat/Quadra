@@ -1,4 +1,4 @@
-//! Splitting and closing spaces (specs/19, "Spaces"): a tab's spaces are the leaves of a
+//! Splitting and closing spaces (specs/oneterm, "Spaces"): a tab's spaces are the leaves of a
 //! pane tree, its groups their ids; the list of spaces is kept in the tree's reading order.
 //! A tab arranges its spaces by itself until a split to a side or a seam dragged makes the
 //! tree the user's.

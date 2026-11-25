@@ -1,4 +1,4 @@
-//! Closing what holds editors with changes not saved (specs/19, "Editing in OneTerm"): a space,
+//! Closing what holds editors with changes not saved (specs/oneterm, "Editing in OneTerm"): a space,
 //! a tab, the other tabs or the window ask first, one editor at a time.
 
 use std::rc::Rc;

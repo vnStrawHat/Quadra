@@ -1,4 +1,4 @@
-//! A program's notifications as cards (specs/19, "Signals"): OSC 9 and 777 words, and OSC 99
+//! A program's notifications as cards (specs/oneterm, "Signals"): OSC 9 and 777 words, and OSC 99
 //! in full: buttons, opening, closing and the reports a program asked for, a card that takes
 //! the place of one with its id, the program's close and its question of what still shows,
 //! when it wants to show, its icon and its sound.

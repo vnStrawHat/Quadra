@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools/release.sh: OneTerm's release asset (specs/19, "Updates"), made by the app's own
+# tools/release.sh: OneTerm's release asset (apps/oneterm/specs/oneterm.md, "Updates"), made by the app's own
 # script, apps/oneterm/scripts/build-release.sh, with this repository's cargo, so that temp
 # files stay in the project: dist/oneterm-<version>-<target>.zip, its .sha256, and the folder
 # zipped. It publishes nothing.

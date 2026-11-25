@@ -1,4 +1,4 @@
-//! Settings go back to their defaults (specs/19, "Settings"): a changed setting has its Reset,
+//! Settings go back to their defaults (specs/oneterm, "Settings"): a changed setting has its Reset,
 //! and a page its Reset all.
 
 use std::rc::Rc;

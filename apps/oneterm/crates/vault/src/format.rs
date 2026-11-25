@@ -1,4 +1,4 @@
-//! What a vault is written as (specs/19, "Saved passwords"): the document of OneTerm 0.6's
+//! What a vault is written as (specs/oneterm, "Saved passwords"): the document of OneTerm 0.6's
 //! `vault.json`, and its `otv1:` envelopes, byte for byte, so what OneTerm 0.6 sealed OneTerm opens.
 //!
 //! A document names the vault (16 bytes), the cost of Argon2id, its salt, and the data key

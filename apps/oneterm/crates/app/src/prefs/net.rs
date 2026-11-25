@@ -1,4 +1,4 @@
-//! The network's settings (specs/19, "Network"): the proxy and whether certificates are
+//! The network's settings (specs/oneterm, "Network"): the proxy and whether certificates are
 //! checked, for what the app fetches over HTTP, which is its updates.
 
 use quadra::{Settings, Signal};

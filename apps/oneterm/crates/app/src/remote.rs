@@ -1,4 +1,4 @@
-//! A space's remote shell: a session over `oneterm-ssh` (specs/19, "M7 in detail"). What the
+//! A space's remote shell: a session over `oneterm-ssh` (specs/oneterm, "M7 in detail"). What the
 //! engine asks while it connects is kept with the session as its [`Conn`], which the Connect
 //! dialogs show (`asking.rs`); the session is linked to the engine from the start.
 

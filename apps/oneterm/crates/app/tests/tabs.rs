@@ -1,4 +1,4 @@
-//! Tabs and spaces (specs/19, "Rail", "Spaces") on `echo()` sessions: made, split, focused,
+//! Tabs and spaces (specs/oneterm, "Rail", "Spaces") on `echo()` sessions: made, split, focused,
 //! closed by keys, chosen and closed in the rail; a program that ended closes on a key.
 
 use std::cell::RefCell;

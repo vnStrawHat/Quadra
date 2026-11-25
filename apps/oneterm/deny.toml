@@ -1,4 +1,4 @@
-# cargo-deny's configuration for OneTerm (specs/19, "The repository"):
+# cargo-deny's configuration for OneTerm (specs/oneterm, "The repository"):
 #     cargo deny check licenses bans advisories sources
 # The CI workflow runs it in its job cargo-deny (.github/workflows/ci.yml).
 

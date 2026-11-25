@@ -1,4 +1,4 @@
-//! Startup commands (specs/19, "Startup commands"): what is written once a host's shell is
+//! Startup commands (specs/oneterm, "Startup commands"): what is written once a host's shell is
 //! open, kept by name in the setting `ssh.startup_commands`, managed on the SSH & hosts page
 //! and chosen by name in a host's dialog.
 

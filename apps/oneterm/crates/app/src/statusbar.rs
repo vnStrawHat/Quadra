@@ -1,4 +1,4 @@
-//! The status bar (specs/19, "Window"): 30 px on the chrome plane, 12 px, its groups parted by
+//! The status bar (specs/oneterm, "Window"): 30 px on the chrome plane, 12 px, its groups parted by
 //! rules of 1×14: the rail's fold; the focused space's directory (a click copies it); git; a
 //! red dot that blinks while it logs; at the right the progress, a remote space's network,
 //! OneTerm's processor and memory

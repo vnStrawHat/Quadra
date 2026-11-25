@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/build-release.sh: OneTerm's release asset (specs/19, "Updates" and "The
+# scripts/build-release.sh: OneTerm's release asset (specs/oneterm, "Updates" and "The
 # repository"), the one script a developer and the release workflow both run.
 #
 # It builds the binary in the dist profile with scripts/app.manifest embedded by the linker,
@@ -10,11 +10,11 @@
 #   oneterm-<version>-<target>.zip.sha256   "<hex>  <name>.zip", as `sha256sum -c` reads it
 # <version> is the app's (crates/app/Cargo.toml), <target> the machine's. It publishes nothing.
 #
-# CARGO names the cargo to run (Quadra's repository gives its own, tools/release.sh).
+# CARGO names another cargo than scripts/cargo.sh.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here/.."
-cargo="${CARGO:-cargo}"
+cargo="${CARGO:-$here/cargo.sh}"
 root="$("$cargo" locate-project --workspace --message-format plain)"
 root="$(dirname "$(cygpath -u "$root" 2>/dev/null || echo "$root")")"
 target="${CARGO_TARGET_DIR:-$root/target}"

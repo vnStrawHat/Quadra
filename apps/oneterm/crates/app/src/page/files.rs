@@ -1,4 +1,4 @@
-//! The settings' files (specs/19, "Settings"): the settings file and its folder on the
+//! The settings' files (specs/oneterm, "Settings"): the settings file and its folder on the
 //! Advanced page, and the logging of spaces, a group of the Terminal page.
 
 use quadra::{row, text};

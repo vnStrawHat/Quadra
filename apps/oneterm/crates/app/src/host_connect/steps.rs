@@ -1,4 +1,4 @@
-//! The Connect dialog while it connects (specs/19, "The rail"): the steps, done, under way and
+//! The Connect dialog while it connects (specs/oneterm, "The rail"): the steps, done, under way and
 //! to come, and what the server asks on the way, answered in the dialog.
 
 use std::rc::Rc;

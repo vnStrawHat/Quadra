@@ -1,4 +1,4 @@
-//! What OneTerm takes over from OneTerm 0.6, its versions before 0.7 (specs/19, "Taking over from
+//! What OneTerm takes over from OneTerm 0.6, its versions before 0.7 (specs/oneterm, "Taking over from
 //! OneTerm 0.6"): the sessions saved in its folder as hosts, and at the first start the settings
 //! of its terminal that have one here. Its vault and the passwords it sealed come as they
 //! are: OneTerm's vault is of the same format (`vault.rs`).

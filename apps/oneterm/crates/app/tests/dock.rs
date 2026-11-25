@@ -1,4 +1,4 @@
-//! The SFTP dock (specs/19, "M9 in detail") on a real connection to the engine's test server
+//! The SFTP dock (specs/oneterm, "M9 in detail") on a real connection to the engine's test server
 //! on 127.0.0.1, whose files are a folder of `.tmp`: it lists the home folder, opens a folder
 //! and goes back by the path, downloads on two clicks to the folder set, uploads what is
 //! dropped, makes a folder, and says a local space is not one.

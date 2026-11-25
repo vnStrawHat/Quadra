@@ -1,4 +1,4 @@
-//! Each space's dock (specs/19, "M9 in detail"): the folder, its entries, the entry chosen and
+//! Each space's dock (specs/oneterm, "M9 in detail"): the folder, its entries, the entry chosen and
 //! the transfers stay with the space they were made in, and come back when it shows again.
 
 use std::collections::HashMap;

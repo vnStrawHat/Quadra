@@ -1,4 +1,4 @@
-//! Shell integration (specs/19, "M4 in detail"): what a shell OneTerm found is started with so
+//! Shell integration (specs/oneterm, "M4 in detail"): what a shell OneTerm found is started with so
 //! that it says where it is (OSC 9;9, OSC 7) and where its prompts, commands and outputs
 //! begin and end (OSC 133), and writes UTF-8. A program the user typed is left as typed.
 

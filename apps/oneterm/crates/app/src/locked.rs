@@ -1,4 +1,4 @@
-//! How the lock looks (specs/19, "Lock"): the card where dialogs hang, what the
+//! How the lock looks (specs/oneterm, "Lock"): the card where dialogs hang, what the
 //! window counts as being used, and the Security & lock page of the settings.
 
 use quadra::{

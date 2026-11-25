@@ -1,4 +1,4 @@
-//! Redaction: what is taken out of a line before the history keeps it (specs/20, "History").
+//! Redaction: what is taken out of a line before the history keeps it (specs/completion, "History").
 //!
 //! The command and every flag stay; the values of secret flags, secret assignments, credentials
 //! in URLs and tokens shaped like keys go. `contains_secret` asks the same of a line at

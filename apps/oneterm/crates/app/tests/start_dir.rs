@@ -1,4 +1,4 @@
-//! Where a new tab's shell starts (specs/19, "Settings", Terminal): the last directory a local
+//! Where a new tab's shell starts (specs/oneterm, "Settings", Terminal): the last directory a local
 //! shell said, kept in the settings, and home when it is gone.
 
 use std::cell::RefCell;

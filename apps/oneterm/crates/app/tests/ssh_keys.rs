@@ -1,4 +1,4 @@
-//! The key files hosts sign in with (specs/19, "Keys"): kept on the SSH & hosts page with
+//! The key files hosts sign in with (specs/oneterm, "Keys"): kept on the SSH & hosts page with
 //! their fingerprints, and chosen by name in the Connect dialog, which signs in with the one
 //! chosen. A real connection to the engine's test server on 127.0.0.1; every file is under
 //! `.tmp`.

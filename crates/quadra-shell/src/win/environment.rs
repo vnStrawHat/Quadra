@@ -1,4 +1,4 @@
-//! The user's environment as the registry says it now (specs/19, "M4 in detail"): what a
+//! The user's environment as the registry says it now (apps/oneterm/specs/oneterm.md, "M4 in detail"): what a
 //! new shell gets, so a variable set after the app started is in it.
 
 use windows::Win32::Foundation::{CloseHandle, HANDLE};

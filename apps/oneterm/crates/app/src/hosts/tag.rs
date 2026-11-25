@@ -1,4 +1,4 @@
-//! A saved host's colour tag (specs/19, "M8 in detail"): the eighth word of its row, one of
+//! A saved host's colour tag (specs/oneterm, "M8 in detail"): the eighth word of its row, one of
 //! seven hues by its name (so it follows the theme) or any colour as `#rrggbb`; else none, and
 //! the host has its group's.
 

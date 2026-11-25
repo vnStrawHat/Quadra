@@ -1,4 +1,4 @@
-//! The dock's left edge (specs/19, "M9 in detail"): a 6 px strip over the 1 px line, dragged
+//! The dock's left edge (specs/oneterm, "M9 in detail"): a 6 px strip over the 1 px line, dragged
 //! to make the dock 220 to 800 px wide; the width is a setting.
 
 use std::cell::Cell;

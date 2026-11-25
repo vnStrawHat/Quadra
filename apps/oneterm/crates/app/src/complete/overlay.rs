@@ -1,4 +1,4 @@
-//! The list of suggestions (specs/19, "Completion"): on the plane of the kit's popups, rows as a
+//! The list of suggestions (specs/oneterm, "Completion"): on the plane of the kit's popups, rows as a
 //! menu's in the mono face, a window of `max_visible_items` that follows the chosen row.
 
 use oneterm_completion::{Kind, Suggestion};

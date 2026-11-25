@@ -1,4 +1,4 @@
-//! Unlock saved passwords (specs/19, "Saved passwords"): connecting to hosts with saved
+//! Unlock saved passwords (specs/oneterm, "Saved passwords"): connecting to hosts with saved
 //! secrets while the data key is not in memory asks the master password first; Cancel
 //! connects without them.
 

@@ -1,4 +1,4 @@
-//! Settings (specs/19, "Settings"): the page writes them, and the app follows them: new
+//! Settings (specs/oneterm, "Settings"): the page writes them, and the app follows them: new
 //! spaces, the signals, the tabs' place.
 
 use std::cell::RefCell;

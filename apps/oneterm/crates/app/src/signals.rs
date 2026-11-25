@@ -1,4 +1,4 @@
-//! What programs signal (specs/19, "Signals"): OSC 7501 status, OSC 9;4 progress, the bell in
+//! What programs signal (specs/oneterm, "Signals"): OSC 7501 status, OSC 9;4 progress, the bell in
 //! a space that is not looked at, OSC 9 notifications. A tab sums its spaces; seeing a tab
 //! clears its bells and the "done" it showed.
 

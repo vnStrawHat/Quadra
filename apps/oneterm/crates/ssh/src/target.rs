@@ -1,4 +1,4 @@
-//! Where to connect (specs/19, "M7 in detail"): read from what a user types.
+//! Where to connect (specs/oneterm, "M7 in detail"): read from what a user types.
 
 /// A user at a host and port; the user is empty when none was given (connecting asks).
 #[derive(Clone, Debug, PartialEq, Eq)]

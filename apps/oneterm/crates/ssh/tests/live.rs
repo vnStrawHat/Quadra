@@ -1,4 +1,4 @@
-//! The engine against a `russh` server in this process on 127.0.0.1 (specs/19, "M7 in
+//! The engine against a `russh` server in this process on 127.0.0.1 (specs/oneterm, "M7 in
 //! detail"; never another host): host keys unknown, known and changed, the password and a
 //! key file and its passphrase, a user not given, typing, a resize, the exit status, a
 //! connection dropped, a cancel. The questions are answered as the app answers them. Every

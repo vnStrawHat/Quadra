@@ -1,4 +1,4 @@
-//! The engine's files over SFTP (specs/19, "M9 in detail") against the test server, whose
+//! The engine's files over SFTP (specs/oneterm, "M9 in detail") against the test server, whose
 //! files are a folder of `.tmp`: home, listing in order, download and upload through a part
 //! file, a cancelled transfer leaving nothing, a folder made and removed, a path's properties.
 

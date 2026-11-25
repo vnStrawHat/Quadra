@@ -1,7 +1,6 @@
-# OneTerm's root manifest (specs/19, "The repository"). In a repository of the app's own this
-# is Cargo.toml. In Quadra's repository, where the crates below are members of Quadra's
-# workspace, it is Cargo.root.toml, with a mark where each crate of Quadra is taken from:
-# scripts/export.sh writes the source there.
+# OneTerm's root manifest (specs/oneterm, "The repository"). Each crate of Quadra the app's
+# crates take is named once here, all at one commit; the crates name them with
+# `workspace = true`.
 
 [workspace]
 resolver = "3"
@@ -45,7 +44,7 @@ unsafe_code = "forbid"
 [profile.dev]
 debug = "line-tables-only"
 
-# A vault's key takes 64 MiB and three passes of Argon2id (specs/19, "Saved passwords"):
+# A vault's key takes 64 MiB and three passes of Argon2id (specs/oneterm, "Saved passwords"):
 # seconds unoptimized, so a debug build and its tests optimize these two.
 [profile.dev.package.argon2]
 opt-level = 3

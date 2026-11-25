@@ -1,4 +1,4 @@
-//! The SFTP dock (specs/19, "M9 in detail"): 460 px at the workspace's right, the folder of
+//! The SFTP dock (specs/oneterm, "M9 in detail"): 460 px at the workspace's right, the folder of
 //! the focused space's connection in a field, its entries under a header of columns
 //! (`list.rs`), the transfers; files dropped on it upload.
 

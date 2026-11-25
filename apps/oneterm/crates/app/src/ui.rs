@@ -1,5 +1,5 @@
 //! What is open over the window, and the parts of the app that are neither a tab nor a
-//! setting (specs/19).
+//! setting (specs/oneterm).
 
 use quadra::{Signal, signal};
 

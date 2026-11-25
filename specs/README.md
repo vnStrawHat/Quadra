@@ -34,8 +34,7 @@ tests and Quadra's own measurements (`docs/benchmarks.md`) are the reference.
 | [16-shell.md](16-shell.md) | Dialogs, opening, tray and notifications, one instance, crash reports, packaging |
 | [17-headless.md](17-headless.md) | Components without a look: parts, the behaviour's numbers, open tokens, what moves out of the kit |
 | [18-term.md](18-term.md) | The terminal: a session over the `oneterm-vt` engine, its view, input and delivery |
-| [19-oneterm.md](19-oneterm.md) | OneTerm, the terminal app: phases, window, tabs and spaces, signals, settings, lock |
-| [20-complete.md](20-complete.md) | OneTerm's command completion: families, catalogs, the line at the cursor, ranking, history, redaction |
+| [OneTerm's specs](../apps/oneterm/specs/README.md) | OneTerm, the terminal app, and its command completion: with the app, in `apps/oneterm/specs` (they were 19 and 20 here until 2026-11-25), as it moves to a repository of its own |
 | [21-markdown.md](21-markdown.md) | Markdown, the app that reads and edits `.md` files: layouts, files, panes that scroll by headings, the toolbar, the logo |
 | [22-updater.md](22-updater.md) | The updater: an app's newer releases from GitHub, checked against their digest, installed while the app runs |
 
@@ -64,4 +63,4 @@ files above.
 | [21-markdown-app](behaviour/21-markdown-app.md) | Markdown rendering rules, math, diagrams | 13 |
 
 Not carried: the V specs of the old architecture (00, 01, 03, 06, 07, 11, 12, 14), the gap
-analysis (20), and the apps (22–27): OneTerm (19) follows the user's own terminal app where its design is silent.
+analysis (20), and the apps (22–27): OneTerm (`apps/oneterm/specs`) follows the user's own terminal app where its design is silent.

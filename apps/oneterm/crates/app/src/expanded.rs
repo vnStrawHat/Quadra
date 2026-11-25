@@ -1,4 +1,4 @@
-//! The expanded SFTP view (specs/19, "M9 in detail"): in the workspace's place, Local at the
+//! The expanded SFTP view (specs/oneterm, "M9 in detail"): in the workspace's place, Local at the
 //! left and Remote at the right, the transfer buttons between, the transfers under both. The
 //! canvas gives the layout; the kit's tokens and parts draw it.
 

@@ -1,4 +1,4 @@
-//! The Connect dialogs (specs/19, "M7 in detail"): the focused space's connection while it is
+//! The Connect dialogs (specs/oneterm, "M7 in detail"): the focused space's connection while it is
 //! made, one dialog for each phase (connecting, an unknown host, signing in, a failure),
 //! swapped as the phase moves. Giving one up is its Cancel or Close.
 

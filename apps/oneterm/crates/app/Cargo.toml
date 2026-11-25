@@ -1,7 +1,7 @@
 [package]
 name = "oneterm-app"
-description = "OneTerm: a terminal app of local shells, in tabs and spaces side by side (specs/19)"
-# OneTerm's versions go on from those of the app it replaces (specs/19, "Updates"): this is
+description = "OneTerm: a terminal app of local shells, in tabs and spaces side by side (specs/oneterm)"
+# OneTerm's versions go on from those of the app it replaces (specs/oneterm, "Updates"): this is
 # the version last released, and the release workflow bumps it, to 0.7.0 the first time.
 version = "0.6.11"
 edition.workspace = true

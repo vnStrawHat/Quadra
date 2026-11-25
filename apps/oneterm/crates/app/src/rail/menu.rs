@@ -1,4 +1,4 @@
-//! The `+` menu (specs/19, "The `+` menu"): Local shell, the other shells found, Quick
+//! The `+` menu (specs/oneterm, "The `+` menu"): Local shell, the other shells found, Quick
 //! connect, Split current space, the recent targets, the hosts by group, Add SSH host, under a
 //! field: what is typed narrows it.
 

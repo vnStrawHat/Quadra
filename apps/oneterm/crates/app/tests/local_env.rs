@@ -1,4 +1,4 @@
-//! What a new local shell is told (specs/19, "M4 in detail"): Force links, on until its switch
+//! What a new local shell is told (specs/oneterm, "M4 in detail"): Force links, on until its switch
 //! in the settings turns it off.
 
 use std::cell::RefCell;

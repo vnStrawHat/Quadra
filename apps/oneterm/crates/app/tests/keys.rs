@@ -1,4 +1,4 @@
-//! The Keybindings page (specs/19, "Settings"): an action's keys are recorded, unbound and
+//! The Keybindings page (specs/oneterm, "Settings"): an action's keys are recorded, unbound and
 //! reset there, kept as `keys.<id>`, and the app's keymap follows; two actions on one
 //! keystroke are said.
 

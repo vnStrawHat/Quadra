@@ -5,8 +5,8 @@
 # be in its binary, with tools/app.manifest embedded by the linker, put in
 # target/package/<name>/ (or in the folder PACKAGE_OUT names; specs/16, "Packaging"). Fonts
 # and images are in the binary (specs/15, "Assets"); OneTerm's folder also holds its console
-# host and the host's notice (specs/19, "The console host"). OneTerm's release asset is made
-# by its own script (tools/release.sh; specs/19, "The repository").
+# host and the host's notice (apps/oneterm/specs/oneterm.md, "The console host"). OneTerm's release asset is made
+# by its own script (tools/release.sh; apps/oneterm/specs/oneterm.md, "The repository").
 # ponytail: no installer or version resource; an MSIX package when an app ships.
 set -euo pipefail
 cd "$(dirname "$0")/.."

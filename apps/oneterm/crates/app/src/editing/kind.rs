@@ -1,4 +1,4 @@
-//! What a file is (specs/19, "M9 in detail"): text or binary, and the type that colours it,
+//! What a file is (specs/oneterm, "M9 in detail"): text or binary, and the type that colours it,
 //! by its name, else by the program its first line names (`#!/usr/bin/env python3`).
 
 use quadra_code::{Tokenizer, tokenizer_for};

@@ -1,4 +1,4 @@
-//! Close tab (specs/19, "Rail"): the tab that shows has it at its end, in the rail and in the
+//! Close tab (specs/oneterm, "Rail"): the tab that shows has it at its end, in the rail and in the
 //! strip; a press on it closes that tab and leaves the other one showing.
 
 use std::rc::Rc;

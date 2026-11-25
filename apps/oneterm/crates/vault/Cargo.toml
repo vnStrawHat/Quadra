@@ -1,6 +1,6 @@
 [package]
 name = "oneterm-vault"
-description = "OneTerm's saved passwords: the vault's document and envelopes, sealing and opening (specs/19)"
+description = "OneTerm's saved passwords: the vault's document and envelopes, sealing and opening (specs/oneterm)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

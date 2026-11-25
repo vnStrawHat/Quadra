@@ -1,4 +1,4 @@
-//! Command completion in a space (specs/19, "Completion"): the engine of specs/20, one for
+//! Command completion in a space (specs/oneterm, "Completion"): the engine of specs/completion, one for
 //! the app, and an overlay under the caret that follows the terminal's command line and takes
 //! its keys before the shell while it is open.
 

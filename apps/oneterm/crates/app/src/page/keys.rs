@@ -1,4 +1,4 @@
-//! The Keybindings page (specs/19, "Settings"): a row an action, with its keys, Reset, and a
+//! The Keybindings page (specs/oneterm, "Settings"): a row an action, with its keys, Reset, and a
 //! warning when another action has the same keys. Each action's keys are the setting
 //! `keys.<id>`: absent, its default; empty, unbound. The keymap is built again from them
 //! whenever one changes, and put in the app's (`app_keymap()`).

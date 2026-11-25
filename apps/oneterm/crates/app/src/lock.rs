@@ -1,4 +1,4 @@
-//! The lock (specs/19, "Lock", "M6 in detail"): with a master password, the window locks
+//! The lock (specs/oneterm, "Lock", "M6 in detail"): with a master password, the window locks
 //! after a time idle or at once, and only the password opens it. Five wrong tries start a
 //! back-off. The password is the one that opens the vault (`vault.rs`), tried on the pool.
 
@@ -47,7 +47,7 @@ impl Lock {
             prefs,
             owner: Scope::current(),
         };
-        // With a vault the window opens locked (specs/19, "M6 in detail").
+        // With a vault the window opens locked (specs/oneterm, "M6 in detail").
         if untrack(|| lock.can_lock()) {
             lock.locked.set(true);
         }

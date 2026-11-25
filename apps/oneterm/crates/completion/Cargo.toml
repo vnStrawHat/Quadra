@@ -1,6 +1,6 @@
 [package]
 name = "oneterm-completion"
-description = "OneTerm's command completion: catalogs, the line at the cursor, ranking, history, redaction (specs/20)"
+description = "OneTerm's command completion: catalogs, the line at the cursor, ranking, history, redaction (specs/completion)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

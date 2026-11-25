@@ -1,4 +1,4 @@
-//! What the SFTP dock shows and does (specs/19, "M9 in detail"): the folder of the focused
+//! What the SFTP dock shows and does (specs/oneterm, "M9 in detail"): the folder of the focused
 //! space's connection, its entries, the transfers. Every call of the engine runs on the pool;
 //! its answer comes back to the UI thread.
 

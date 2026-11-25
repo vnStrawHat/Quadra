@@ -1,4 +1,4 @@
-//! The workspace (specs/19, "Spaces"): the spaces of the tab that shows, where its pane tree
+//! The workspace (specs/oneterm, "Spaces"): the spaces of the tab that shows, where its pane tree
 //! puts them, each with its header of 18 px; the focused one has an accent ring (in the colour
 //! of its input channel). A space whose program ended says so, and a key then closes it.
 
@@ -226,7 +226,7 @@ fn flash(s: &Session) -> impl quadra::View + use<> {
     div().absolute().top(0.0).left(0.0).right(0.0).bottom(0.0).display(shown).bg(token::SELECTION)
 }
 
-/// The space's menu for the other button (specs/19, "Spaces"), when the settings have it; the
+/// The space's menu for the other button (specs/oneterm, "Spaces"), when the settings have it; the
 /// terminal follows the settings of the pointer and the wheel.
 fn menu_of(
     model: &Model,

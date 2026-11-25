@@ -1,4 +1,4 @@
-//! The Connect dialog's form (specs/19, "The rail"): what the host is (its address, jump host
+//! The Connect dialog's form (specs/oneterm, "The rail"): what the host is (its address, jump host
 //! and host key), then the fields to change for this connection, two to a row.
 
 use quadra::{AnyView, Div, Signal, Track, View, column, div, dynamic, row, text};

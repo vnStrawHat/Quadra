@@ -1,4 +1,4 @@
-//! The signals (specs/19, "Signals") from bytes fed to `echo()` sessions: OSC 7501 on the
+//! The signals (specs/oneterm, "Signals") from bytes fed to `echo()` sessions: OSC 7501 on the
 //! tab and the header, OSC 9;4 on the tab and the status bar, a bell in a space not looked
 //! at, OSC 9 cards and the count of what came unseen.
 

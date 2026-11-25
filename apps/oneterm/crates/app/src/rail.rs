@@ -1,4 +1,4 @@
-//! The rail (specs/19, "Rail"): 270 px of tabs on the panel colour, a heading with the count,
+//! The rail (specs/oneterm, "Rail"): 270 px of tabs on the panel colour, a heading with the count,
 //! a row of 36 px a tab (the kit's tab rules on their side), "New terminal", the SSH hosts. A
 //! click shows a tab, the middle button closes it, two clicks rename it (a dialog), the right button
 //! opens its menu, and rows drag to reorder.

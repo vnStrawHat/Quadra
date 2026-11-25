@@ -1,4 +1,4 @@
-//! The dock's list (specs/19, "M9 in detail"): a header of the columns, a click on one
+//! The dock's list (specs/oneterm, "M9 in detail"): a header of the columns, a click on one
 //! sorting by it, then `..` and the entries as rows. A column the dock is too narrow for is
 //! not shown.
 

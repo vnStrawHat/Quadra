@@ -1,4 +1,4 @@
-//! Updates (specs/19, "Updates"): the About page's row from the check to the files in place,
+//! Updates (specs/oneterm, "Updates"): the About page's row from the check to the files in place,
 //! and the card a start shows, against a server of the test on 127.0.0.1 that answers as
 //! GitHub does. OneTerm's folder here is the test's, under `.tmp`; Restart is not pressed.
 #![cfg(windows)]

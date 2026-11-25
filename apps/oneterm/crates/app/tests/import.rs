@@ -1,4 +1,4 @@
-//! Taking over from OneTerm 0.6 (specs/19, "Taking over from OneTerm 0.6"): its saved sessions become
+//! Taking over from OneTerm 0.6 (specs/oneterm, "Taking over from OneTerm 0.6"): its saved sessions become
 //! hosts with their colours, its terminal's settings are taken at the first pass alone, and a
 //! host OneTerm has is left as it is. The folder is the test's, under `.tmp`.
 

@@ -1,4 +1,4 @@
-//! The settings of how terminals look (specs/19, "Settings"): signals of the app's `Settings`
+//! The settings of how terminals look (specs/oneterm, "Settings"): signals of the app's `Settings`
 //! under `terminal.*`, and the view's `TermLook` they make.
 
 use quadra::{Color, Settings, Signal};

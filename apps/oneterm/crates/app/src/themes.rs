@@ -1,4 +1,4 @@
-//! The colour themes OneTerm ships besides the kit's two (specs/19, "Settings"): files of the
+//! The colour themes OneTerm ships besides the kit's two (specs/oneterm, "Settings"): files of the
 //! kit's theme format (`quadra_design::theme_from_json`), written by `.tmp/gen_themes.py`.
 
 /// Each theme: its name and its file.

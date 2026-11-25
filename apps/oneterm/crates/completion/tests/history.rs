@@ -1,4 +1,4 @@
-//! The session's history and the settings (specs/20, "History", "Config", "Families").
+//! The session's history and the settings (specs/completion, "History", "Config", "Families").
 
 use oneterm_completion::{Config, Engine, Family};
 

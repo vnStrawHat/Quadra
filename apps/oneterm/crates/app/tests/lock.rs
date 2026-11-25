@@ -1,4 +1,4 @@
-//! The lock (specs/19, "Lock"): the password set on the settings page, locking at once and
+//! The lock (specs/oneterm, "Lock"): the password set on the settings page, locking at once and
 //! after a time idle, what a locked window hides and refuses, the back-off, unlocking.
 
 use std::rc::Rc;

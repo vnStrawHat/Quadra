@@ -1,4 +1,4 @@
-//! The SFTP menus for the other button (specs/19, "M9 in detail"), shared by the dock and the
+//! The SFTP menus for the other button (specs/oneterm, "M9 in detail"), shared by the dock and the
 //! expanded view, and the dialogs they open: a new folder's name, a new name, a delete asked,
 //! an entry's properties.
 
@@ -206,7 +206,7 @@ pub(crate) fn dialogs(model: &Model, d: Dock) -> impl View + use<> {
         };
         field("Name", input(ask.name).test_id("sftp-name").on_submit(submit))
     };
-    // A question, or one field: the dialog of 360 (specs/design/surfaces.md).
+    // A question, or one field: the dialog of 360 (Quadra's specs/design/surfaces.md).
     let folder = dialog(ask.folder, "New folder", body.clone())
         .width(360.0)
         .action("Cancel", Variant::Secondary, || {})

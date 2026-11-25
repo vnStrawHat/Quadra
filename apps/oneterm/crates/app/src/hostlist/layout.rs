@@ -1,4 +1,4 @@
-//! What the host editor shows (specs/19, "M8 in detail"), two fields to a row: name; group and
+//! What the host editor shows (specs/oneterm, "M8 in detail"), two fields to a row: name; group and
 //! colour tag; address and port; username and jump host; auth and its password or passphrase,
 //! the key file; the master password when one is needed; startup command and forwards.
 

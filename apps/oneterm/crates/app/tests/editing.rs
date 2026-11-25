@@ -1,4 +1,4 @@
-//! Editing a remote file (specs/19, "Spaces" and "M9 in detail") on a real connection to the
+//! Editing a remote file (specs/oneterm, "Spaces" and "M9 in detail") on a real connection to the
 //! engine's test server on 127.0.0.1: Edit opens a space of OneTerm with the file coloured by its
 //! type, the header says it has changes and shows their diff, Ctrl+S sends it back, closing
 //! with changes asks, a binary file is not edited. The external editor is tests/dock.rs's.

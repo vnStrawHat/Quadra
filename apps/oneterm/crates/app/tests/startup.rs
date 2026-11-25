@@ -1,4 +1,4 @@
-//! Startup commands (specs/19, "Startup commands"): kept by name on the SSH & hosts page, and
+//! Startup commands (specs/oneterm, "Startup commands"): kept by name on the SSH & hosts page, and
 //! what a host's own command of before becomes.
 
 use std::rc::Rc;

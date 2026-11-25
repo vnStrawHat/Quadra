@@ -1,4 +1,4 @@
-//! An icon for each kind of shell (specs/19, "M4 in detail"): stroked outlines on a grid of 24,
+//! An icon for each kind of shell (specs/oneterm, "M4 in detail"): stroked outlines on a grid of 24,
 //! as the kit's, drawn for OneTerm; known by the shell's name or its program's file name.
 
 use quadra_design::icons;

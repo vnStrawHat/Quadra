@@ -1,4 +1,4 @@
-//! Proving who the user is (specs/19, "M7 in detail"): `none` first, then the agent, the usual
+//! Proving who the user is (specs/oneterm, "M7 in detail"): `none` first, then the agent, the usual
 //! key files, the password (by `password` or `keyboard-interactive`), by the option `Auth`.
 
 use std::path::Path;

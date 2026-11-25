@@ -1,4 +1,4 @@
-//! OneTerm's command completion (specs/20): from the line at the prompt and its cursor, a short
+//! OneTerm's command completion (specs/completion): from the line at the prompt and its cursor, a short
 //! ranked list of what may be typed next. The engine has no view; the terminal's overlay asks it.
 
 mod catalog;

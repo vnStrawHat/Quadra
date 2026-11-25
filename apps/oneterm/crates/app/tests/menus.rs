@@ -1,4 +1,4 @@
-//! A space's menu for the other button (specs/19, "Spaces"): what it does to the terminal and
+//! A space's menu for the other button (specs/oneterm, "Spaces"): what it does to the terminal and
 //! the spaces, and the setting that turns it off.
 
 use std::cell::RefCell;

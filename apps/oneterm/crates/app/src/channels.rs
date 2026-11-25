@@ -1,4 +1,4 @@
-//! Input channels (specs/19, "Spaces"): five, A to E. What is typed in a space of a channel
+//! Input channels (specs/oneterm, "Spaces"): five, A to E. What is typed in a space of a channel
 //! goes to the other members, in any tab; the space's menu joins and leaves, its header shows
 //! a chip of the channel's colour.
 

@@ -1,7 +1,7 @@
 //! OneTerm in a real window whose one space runs the fire demo through the pseudo console
-//! (specs/14, "Terminal throughput"); it ends when the demo has written its summary.
+//! (Quadra's specs/14, "Terminal throughput"); it ends when the demo has written its summary.
 //!
-//!     tools/doomfire.sh [seconds]
+//! Quadra's bench runs it (`tools/doomfire.sh [seconds]` in Quadra's repository).
 //!
 //! `DOOMFIRE` names the demo's program, `DOOMFIRE_OUT` the file of its summary, and
 //! `DOOMFIRE_SECONDS` how long it burns. Settings and the log go to `.tmp/oneterm-bench`.

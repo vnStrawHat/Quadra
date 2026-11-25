@@ -1,4 +1,4 @@
-//! The settings of command completion (specs/19, "Completion"), a group of the Terminal page.
+//! The settings of command completion (specs/oneterm, "Completion"), a group of the Terminal page.
 
 use quadra_design::{SettingsGroup, number_input, select, switch};
 

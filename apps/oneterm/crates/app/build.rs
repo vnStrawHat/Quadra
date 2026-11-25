@@ -1,4 +1,4 @@
-//! Links `assets/logo.ico` as the executable's icon (specs/16, "An executable's icon"), and
+//! Links `assets/logo.ico` as the executable's icon (Quadra's specs/16, "An executable's icon"), and
 //! tells the app which terminal engine it is built with: the version the lock file names.
 
 fn main() {

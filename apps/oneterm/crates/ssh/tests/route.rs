@@ -1,4 +1,4 @@
-//! Jump hosts and local forwards (specs/19, "M10 in detail") between servers of this process
+//! Jump hosts and local forwards (specs/oneterm, "M10 in detail") between servers of this process
 //! on 127.0.0.1, never another host: a shell through a jump host, a jump host whose key
 //! changed named in the error, a local port carried to a server's port, and a port that
 //! cannot listen said in the space; a remote forward carried back here, and the SOCKS5 proxy
@@ -89,9 +89,10 @@ fn forwards_read_and_write_their_words() {
     }
 }
 
-/// A port nothing listens on, for now.
-fn free() -> u16 {
-    TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port()
+/// Ports nothing listens on, for now: held together while they are read, so they differ.
+fn free<const N: usize>() -> [u16; N] {
+    let held: [TcpListener; N] = std::array::from_fn(|_| TcpListener::bind("127.0.0.1:0").unwrap());
+    held.map(|it| it.local_addr().unwrap().port())
 }
 
 /// Connects to a port until it answers: a forward starts once the shell is open.
@@ -121,7 +122,7 @@ fn a_remote_port_is_carried_back_and_a_socks_proxy_goes_out_from_the_server() {
             let _ = socket.write_all(b"from here");
         }
     });
-    let (remote, socks) = (free(), free());
+    let [remote, socks] = free();
     let mut o = options(port, &dir, Auth::Key(id));
     o.forwards = [format!("R{remote}:127.0.0.1:{here_port}"), format!("D{socks}")]
         .iter()

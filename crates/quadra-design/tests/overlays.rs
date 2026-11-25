@@ -89,6 +89,11 @@ fn a_tooltip_shows_after_the_pointer_has_rested_and_goes_when_it_leaves() {
     let (arrow, shown) = arrow_of(&p.h);
     assert!((arrow.center().x - button.center().x).abs() <= 1.0, "{arrow:?} {button:?}");
     assert_eq!((arrow.bottom(), shown), (tip.y + 1.0, 1), "{arrow:?} {tip:?}");
+    // The arrow's box reaches over the button's edge: the pointer there is still the button's.
+    assert!(arrow.y < button.bottom() - 2.0, "{arrow:?} {button:?}");
+    p.h.pointer(PointerInput::Move, at.x, button.bottom() - 2.0);
+    p.wait(100);
+    assert!(p.h.semantics().contains("Tooltip"));
 
     p.h.pointer(PointerInput::Move, 600.0, 500.0); // away: it goes
     p.settle();

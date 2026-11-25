@@ -665,6 +665,12 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   `deny.toml` (licences, bans, advisories, sources), which passes on the export
   (cargo-deny 0.22.1; one advisory ignored with its reason, `rsa` through `russh`, as
   OneTerm 0.6 ignored it).
+- **A tooltip's arrow lets the pointer through** (2026-11-25): the arrow's box, 12 px with
+  the triangle in half of it, reaches 5 px over the view's edge and took the pointer there,
+  so the view lost it and the tooltip closed in the frame that opened it, again and again
+  while the pointer rested. Found by the first run of OneTerm's CI: on a runner of 4
+  processors the status bar's share has two digits and the test's pointer was under the
+  arrow. The box is inert (`tooltip.rs`). Tests: tests/overlays.rs.
 - **OneTerm reads as a project of its own** (2026-11-25, the user's request, for their plan
   to put the folder in the place of the source of the repository OneTerm 0.6 is in, in one
   commit): its specs moved from `specs/19` and `specs/20` to `apps/oneterm/specs`

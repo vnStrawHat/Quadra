@@ -205,7 +205,8 @@ fn arrow_svgs(side: Side) -> [Rc<Svg>; 2] {
     [svg(turned(0.0)), svg(turned(e))]
 }
 
-/// The arrow, out of the bubble's flow, where `placed` says once the bubble is laid out.
+/// The arrow, out of the bubble's flow, where `placed` says once the bubble is laid out. Its
+/// box reaches over the view's edge and is not there for the pointer: the view keeps it.
 fn arrow(placed: Signal<Option<(Side, Point)>>) -> Div {
     // Against the bubble's padding box: one pixel in from its corner, past its border.
     let at = move |y: bool| {
@@ -214,7 +215,7 @@ fn arrow(placed: Signal<Option<(Side, Point)>>) -> Div {
             Length::Px(if y { p.y } else { p.x } - 1.0)
         }
     };
-    let mut boxed = div().absolute().width(ARROW).height(ARROW).left(at(false)).top(at(true));
+    let mut boxed = div().absolute().inert(true).width(ARROW).height(ARROW).left(at(false)).top(at(true));
     for side in [Side::Above, Side::Below, Side::Left, Side::Right] {
         let [outer, inner] = arrow_svgs(side);
         let on = move || match placed.get() {

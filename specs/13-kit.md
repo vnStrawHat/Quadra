@@ -803,7 +803,8 @@ of the window) and the shadow of its level.
 - `tooltip("Save the file", view).keys("Ctrl-S")`: the words show above the view (below it
   where there is no room), centred and 6 px off it, once the pointer has rested on it for
   half a second, and go when it leaves or presses. The words may change (a closure or a
-  signal): the bubble and the description a reader is told follow. A tooltip never has the focus. It adds
+  signal): the bubble and the description a reader is told follow. Its arrow is drawn only:
+  the pointer goes through the arrow's box, which reaches over the view's edge, to the view. A tooltip never has the focus. It adds
   no node: the tooltip's node is the view's own, the handlers are put on it, and the bubble
   is an overlay opened by hand (`popup::hang`: an overlay against an anchor while a signal
   is true, in a scope of its own under that of the view).

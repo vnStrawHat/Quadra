@@ -30,6 +30,17 @@ for toml in crates/*/Cargo.toml bench/*/Cargo.toml apps/oneterm/crates/*/Cargo.t
 		say "check: $toml must have [lints] workspace = true (specs/01, R16)"
 done
 
+# 4b. OneTerm in a repository of its own (specs/19, "The repository"): its root manifest
+#     there names all that its crates take of the workspace here; one toolchain, one format.
+for name in $(grep -ohE '^[a-z-]+(\.workspace = true| = \{ workspace = true)' apps/oneterm/crates/*/Cargo.toml |
+	grep -oE '^[a-z-]+' | sort -u); do
+	grep -q "^$name = " apps/oneterm/Cargo.root.toml ||
+		say "check: apps/oneterm/Cargo.root.toml does not name $name, which a crate of OneTerm takes of the workspace"
+done
+for copy in rust-toolchain.toml rustfmt.toml; do
+	cmp -s "$copy" "apps/oneterm/$copy" || say "check: apps/oneterm/$copy is not the copy of $copy"
+done
+
 # 5. No look in the headless crate components (specs/17, "The crate"): no colour, role, paint, radius,
 #    border, shadow or cursor; sizes are passed in by the kit.
 look=$(grep -rnE '\b(Token|Paint|Color)\b|\.(bg|radius|radii|border|border_color|elevation|cursor|outline)\(' \

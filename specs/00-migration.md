@@ -200,4 +200,4 @@ The remote was set up since: `origin`, github.com/vnStrawHat/Quadra.
 | The executable | `oneterm.exe` with OneTerm 0.6's icon; the title bar's mark is OneTerm 0.6's too, the prompt glyph in its brand colour; versions go on from OneTerm 0.6's, 0.7.0 the first |
 | Updates | A crate of Quadra's for any app that updates through GitHub: `quadra-updater` (22) |
 | Other systems | Linux and macOS are left for later |
-| Where OneTerm lives | In Quadra for now. At a time of the user's choosing the user splits the app out of Quadra into github.com/vnStrawHat/OneTerm, in place of what is there, and releases 0.7.0 from that repository. Until then nothing is published: `tools/release.sh` only builds the asset |
+| Where OneTerm lives | In Quadra for now. At a time of the user's choosing the user splits the app out of Quadra into github.com/vnStrawHat/OneTerm, in place of what is there, and releases 0.7.0 from that repository. Until then nothing is published: `tools/release.sh` only builds the asset. `apps/oneterm` has the shape of that repository, with its scripts and workflows, since 2026-11-25 (19, "The repository") |

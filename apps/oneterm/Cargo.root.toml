@@ -1,0 +1,59 @@
+# OneTerm's root manifest (specs/19, "The repository"). In a repository of the app's own this
+# is Cargo.toml. In Quadra's repository, where the crates below are members of Quadra's
+# workspace, it is Cargo.root.toml, with a mark where each crate of Quadra is taken from:
+# scripts/export.sh writes the source there.
+
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+# The crates that are never published. The app's own version, the one a release reads and
+# bumps, is written in crates/app/Cargo.toml.
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.96"
+license = "Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+quadra = { @quadra@ }
+quadra-app = { @quadra-app@ }
+quadra-async = { @quadra-async@ }
+quadra-build = { @quadra-build@ }
+quadra-code = { @quadra-code@ }
+quadra-data = { @quadra-data@ }
+quadra-design = { @quadra-design@ }
+quadra-native-win = { @quadra-native-win@ }
+quadra-platform = { @quadra-platform@ }
+quadra-prim = { @quadra-prim@ }
+quadra-render = { @quadra-render@ }
+quadra-shell = { @quadra-shell@ }
+quadra-term = { @quadra-term@ }
+quadra-testing = { @quadra-testing@ }
+quadra-tree = { @quadra-tree@ }
+quadra-updater = { @quadra-updater@ }
+oneterm-app = { path = "crates/app" }
+oneterm-completion = { path = "crates/completion" }
+oneterm-ssh = { path = "crates/ssh" }
+oneterm-vault = { path = "crates/vault" }
+
+# Unsafe code is Quadra's, at the OS boundary; none is written here.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[profile.dev]
+debug = "line-tables-only"
+
+# A vault's key takes 64 MiB and three passes of Argon2id (specs/19, "Saved passwords"):
+# seconds unoptimized, so a debug build and its tests optimize these two.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
+
+# What ships: release, with the whole program optimized at once (scripts/build-release.sh).
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1

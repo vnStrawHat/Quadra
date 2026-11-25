@@ -11,7 +11,7 @@ This product includes software developed by third parties:
     from the NuGet package Microsoft.Windows.Console.ConPTY
     (https://github.com/microsoft/terminal), Copyright (c) Microsoft Corporation,
     licensed under the MIT License; the notice goes with the package
-    (tools/notices/conpty.txt).
+    (apps/oneterm/scripts/notices/conpty.txt).
   * The kit's icons are Lucide's (https://lucide.dev), licensed under the ISC
     License, with portions under the MIT License; see
     crates/quadra-design/LICENSE-lucide.txt.

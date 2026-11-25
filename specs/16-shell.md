@@ -214,5 +214,5 @@ code is the crate `quadra-build`, which depends on nothing: an app names it unde
 (Markdown's and OneTerm's do). It is a crate, where it was a file of `tools/` taken by path
 until 2026-11-25, so that an app in a repository of its own has it as it has the rest of
 Quadra. `tools/package.sh`
-fails when an app's binary has no icon. ponytail: no installer or version resource yet; an
+fails when an app's binary has no icon (`tools/exe_icon.py`), as OneTerm's own release script does. ponytail: no installer or version resource yet; an
 MSIX package when an app ships.

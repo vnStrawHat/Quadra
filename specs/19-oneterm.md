@@ -501,10 +501,10 @@ user splits OneTerm out of Quadra into that repository and releases 0.7.0 from i
 of their choosing (00, the decisions of 2026-11-24); nothing is published before. A
 release carries `oneterm-<version>-x86_64-pc-windows-msvc.zip`, holding
 `oneterm-<version>-x86_64-pc-windows-msvc/` with `oneterm.exe`, the console host, `LICENSE`,
-`NOTICE` and `THIRD-PARTY-NOTICES.txt` (`tools/notices.py`: the console host's notice, the
+`NOTICE` and `THIRD-PARTY-NOTICES.txt` (`scripts/notices.py`: the console host's notice, the
 licences of the kit's icons and faces, and every crate the binary is built from with its
-licence files) (`tools/release.sh`, which makes the zip and prints its SHA-256, and publishes
-nothing); OneTerm's versions go on from that app's (0.7.0 the first, the package's own version
+licence files) (`scripts/build-release.sh`, "The repository", which makes the zip and its
+`.sha256`, prints the SHA-256, and publishes nothing; here `tools/release.sh` runs it); OneTerm's versions go on from that app's (0.7.0 the first, the package's own version
 in `apps/oneterm/crates/app/Cargo.toml`). The executable's icon is that app's (`assets/logo.ico`, its
 48 and 96 px images; specs/16, "An executable's icon"), which the window takes too.
 
@@ -919,10 +919,11 @@ thread never waits on the network.
 
 OneTerm's folder holds `conpty.dll` and `OpenConsole.exe` beside `oneterm.exe` (specs/01, R15):
 `oneterm-vt` uses them before the system's host, which passes about half as much output
-(specs/14, "Terminal throughput"). `tools/conpty.sh` fetches the pinned package into
-`.cache/conpty`, checks it and copies the two files to `target/debug`, `target/release`,
-`target/dist` and `target/dist/examples`; `tools/package.sh oneterm` puts them in the package with the
-license's notice. Without them every space still runs, on the system's host.
+(specs/14, "Terminal throughput"). `scripts/conpty.sh` fetches the pinned package into
+`.cache/conpty` at the workspace's root, checks it and copies the two files to
+`target/debug`, `target/release`, `target/dist` and `target/dist/examples`, or to the
+folders given; `scripts/build-release.sh` puts them in the package, and the licence's notice
+(`scripts/notices/conpty.txt`) into its notices. Without them every space still runs, on the system's host.
 
 ### M10 in detail
 
@@ -975,6 +976,63 @@ other crates are never published and take the workspace's.
 
 **Scratch files.** Tests write under `.tmp` of the crate they run in, or of the app's root
 (`crates/<name>/../../.tmp`): inside the project here, inside the repository there.
+
+**The root's files.** `apps/oneterm` holds what the repository's root will: `LICENSE` and
+`NOTICE` (the app's own, which a release carries), `README.md`, `.gitignore`,
+`.gitattributes`, `rust-toolchain.toml` and `rustfmt.toml` (copies of Quadra's; the gate
+fails when one differs), and
+`Cargo.root.toml`, the root manifest: the workspace of `crates/*`, the keys the crates
+inherit, the lints, the profiles (`dist`, and the vault's two crates optimized in a debug
+build), and each crate of Quadra the app's crates take, written `@quadra-<name>@` where its
+source goes. It cannot be `Cargo.toml` while the crates are members of Quadra's workspace;
+the gate fails when a crate of OneTerm takes a name of the workspace that file does not have.
+
+**Scripts** (`scripts/`, bash and Python; no PowerShell), which find the workspace's root
+through cargo and so run the same here and there; `CARGO` names another cargo (here
+`tools/cargo.sh`, which keeps temp files in the project):
+
+- `build-release.sh`: the release asset. The binary in the `dist` profile with
+  `scripts/app.manifest` embedded (the manifest and the icon are checked to be in it,
+  `exe_icon.py`), staged with the console host, `LICENSE`, `NOTICE` and the notices in
+  `dist/oneterm-<version>-<target>/` at the workspace's root, zipped beside it as
+  `oneterm-<version>-<target>.zip`, with `oneterm-<version>-<target>.zip.sha256` (the digest,
+  two spaces, the zip's name: what `sha256sum -c` reads). The names and the folder `dist`
+  are those of OneTerm 0.6's releases.
+- `conpty.sh` ("The console host"), `notices.py` ("Updates"; it reads `cargo metadata` on
+  its input, and finds the kit's licences where cargo has the kit).
+- `release-notes.py <range> [previous tag]`: a release's notes from the subjects of the
+  commits: Conventional Commits grouped by type, breaking changes first, each linked to its
+  commit, the commit that bumps the version left out (`--check` runs its own cases).
+- `export.sh <folder> [path of a checkout of Quadra]`, in Quadra's repository only: writes
+  the repository into an empty folder: the tracked files of `apps/oneterm`, `Cargo.root.toml`
+  as `Cargo.toml`, specs 19 and 20 as `specs/`, and Quadra's lock file, which cargo then
+  cuts down to what this workspace builds. Quadra is named by its git address and the commit
+  checked out, and the script refuses a commit that is on no remote branch; with the path of
+  a checkout it is named by path, to try the folder on this machine. Neither this script nor
+  `Cargo.root.toml` goes along.
+
+**Workflows** (`.github/workflows`, read by GitHub only at a repository's root: they run
+nowhere while the app is here). They follow OneTerm 0.6's, so that releasing stays what it
+was, and differ where the app does: one target (Windows x86_64), steps in bash, and the
+version read from `crates/app/Cargo.toml`.
+
+- `ci.yml`: on a push to `main` and on a pull request that touch what is built; a newer run
+  of a ref cancels the one in progress. On Windows: no PowerShell and no source file over
+  300 lines, the release notes script's cases, `cargo fmt --check`, `cargo clippy -D
+  warnings`, `cargo test`, with the lock file as committed.
+- `release.yml`: run by hand with a bump (patch, minor, major) or by a pushed tag `v*`.
+  *prepare* works out the version (by hand: the app's bumped, or the app's again when the
+  head is a release commit that was never published; by a tag: the tag's, which the app's
+  must be). *build* writes the version into the manifest (by hand), runs
+  `scripts/build-release.sh` and keeps the zip and its `.sha256`. *release* writes
+  `SHA256SUMS`, the notes since the release published before, and, by hand, commits the
+  manifest and the lock file as `chore(release): v<version>` on top of the branch as it is
+  then; it creates the release `OneTerm <version>` at the tag `v<version>` with the zip and
+  `SHA256SUMS`. Actions are pinned by commit, the same commits OneTerm 0.6's workflows pin.
+
+Not checked from here, as they need the repository: a run of either workflow, and the export
+with Quadra named by git (the commit must be on the remote first). The engine's repository
+and Quadra's must be readable by the runner.
 
 ## Tests
 

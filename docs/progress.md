@@ -633,7 +633,8 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
     (the crate `quadra-build` since 2026-11-25, shared with Markdown's build script); the zip
     `oneterm-0.7.0-x86_64-pc-windows-msvc.zip` holds the folder of that name with the
     console host, LICENSE, NOTICE and the notices of 180 crates, the icons and the faces
-    (`tools/notices.py`). Nothing is published by the tools.
+    (`tools/notices.py` then; the app's `scripts/notices.py` since 2026-11-25). Nothing is
+    published by the tools.
   - The title bar's mark is the prompt glyph in the brand's colour `#58C4DC`, as the app it
     replaces has it (the user's correction, 2026-11-24: the picture of the icon, tried
     first, was not what was meant). About names the terminal engine's version from the lock
@@ -646,6 +647,17 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   Their manifests name Quadra's crates and each other with `workspace = true`, so they read
   the same in a workspace of the app's own. An executable's icon is linked by the crate
   `quadra-build` (was a file of `tools/` taken by path; specs/16), which Markdown uses too.
+  The folder has what the repository will have: `Cargo.root.toml` (its root manifest),
+  `scripts/` (`build-release.sh`: `dist/oneterm-<version>-<target>.zip` and its `.sha256`,
+  which `tools/release.sh` runs with this repository's cargo; `conpty.sh`, `notices.py`,
+  `release-notes.py`, moved or made from `tools/`), `.github/workflows` (`ci.yml`: format,
+  lints, tests; `release.yml`: by hand with a bump or by a tag `v*`, as OneTerm 0.6 was
+  released, on Windows alone and in bash), `LICENSE`, `NOTICE`, `README.md`.
+  `scripts/export.sh <folder>` writes the repository out; tried here with Quadra named by
+  path: it resolves with the toolchain's cargo, its format check, lints and tests pass, and
+  its own `scripts/build-release.sh` makes the asset there, fetching the console host. Not done, as
+  they need the repository: the workflows have never run, and the export with Quadra named
+  by git needs the commit on the remote.
 - **The SFTP dock has a header of columns** (2026-11-24, the user's request): Name, Size,
   Modified and Permissions, each sorting by a click as the expanded view's do (`dock/list.rs`;
   `By::Mode`; the engine's `Entry` says its `mode`). The order is shared with the expanded

@@ -1,0 +1,81 @@
+# OneTerm's checks: on a push to main and on a pull request that touches what is built.
+# One job on Windows, the one system OneTerm runs on: format, lints, tests. Steps run in
+# bash; the repository has no PowerShell.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "rustfmt.toml"
+      - "crates/**"
+      - "scripts/**"
+      - ".github/**"
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "rustfmt.toml"
+      - "crates/**"
+      - "scripts/**"
+      - ".github/**"
+
+permissions:
+  contents: read
+
+# One run per ref: a newer push to the same branch or pull request cancels the run in
+# progress. Releases have a group of their own (release.yml).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Format, lints, tests
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Read the pinned toolchain
+        id: toolchain
+        run: |
+          set -euo pipefail
+          channel="$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)"
+          [ -n "$channel" ] || { echo "::error::rust-toolchain.toml has no channel"; exit 1; }
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Install the Rust toolchain
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # 2026-07-23
+        with:
+          toolchain: ${{ steps.toolchain.outputs.channel }}
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2 tag, 2026-07-23
+
+      - name: No PowerShell, no source file over 300 lines
+        run: |
+          set -euo pipefail
+          ps1="$(git ls-files '*.ps1')"
+          [ -z "$ps1" ] || { echo "::error::PowerShell scripts are not allowed: $ps1"; exit 1; }
+          long="$(git ls-files '*.rs' '*.sh' '*.py' | xargs wc -l | awk '$2 != "total" && $1 > 300 { print $2 " (" $1 " lines)" }')"
+          [ -z "$long" ] || { echo "::error::files over 300 lines: $long"; exit 1; }
+
+      - name: The release notes script
+        run: python scripts/release-notes.py --check
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Lints
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Tests
+        run: cargo test --workspace --locked

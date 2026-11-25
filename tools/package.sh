@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# tools/package.sh <example|oneterm|markdown>: the shipped binary (the dist profile) of examples/<example> (the package
-# quadra-<example>, whose binary is <example>), of OneTerm (apps/oneterm, binary oneterm) or of
-# Markdown (apps/markdown); an app's icon is checked to be in its binary,
-# with tools/app.manifest embedded by the linker, put in target/package/<name>/ (or in the
-# folder PACKAGE_OUT names; specs/16,
-# "Packaging"). Fonts and images are in the binary (specs/15, "Assets"); OneTerm's folder also
-# holds its console host and the host's notice (specs/19, "The console host").
+# tools/package.sh <example|oneterm|markdown>: the shipped binary (the dist profile) of
+# examples/<example> (the package quadra-<example>, whose binary is <example>), of OneTerm
+# (apps/oneterm, binary oneterm) or of Markdown (apps/markdown); an app's icon is checked to
+# be in its binary, with tools/app.manifest embedded by the linker, put in
+# target/package/<name>/ (or in the folder PACKAGE_OUT names; specs/16, "Packaging"). Fonts
+# and images are in the binary (specs/15, "Assets"); OneTerm's folder also holds its console
+# host and the host's notice (specs/19, "The console host"). OneTerm's release asset is made
+# by its own script (tools/release.sh; specs/19, "The repository").
 # ponytail: no installer or version resource; an MSIX package when an app ships.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -31,7 +32,7 @@ if [ "$name" = markdown ] || [ "$name" = oneterm ]; then
 	python tools/exe_icon.py "$out/$bin.exe" > /dev/null
 fi
 if [ "$name" = oneterm ]; then
-	tools/conpty.sh "$out" > /dev/null
-	cp tools/notices/conpty.txt "$out/THIRD-PARTY-NOTICES.txt"
+	CARGO="$PWD/tools/cargo.sh" bash apps/oneterm/scripts/conpty.sh "$out" > /dev/null
+	cp apps/oneterm/scripts/notices/conpty.txt "$out/THIRD-PARTY-NOTICES.txt"
 fi
 echo "package: $out/$bin.exe ($(du -k "$out/$bin.exe" | cut -f1) KB)"

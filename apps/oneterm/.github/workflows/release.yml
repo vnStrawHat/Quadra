@@ -1,0 +1,275 @@
+# OneTerm's release, as OneTerm 0.6 was released.
+#
+# It starts in one of two ways:
+#   - run by hand (workflow_dispatch) with a bump: patch, minor or major. The next version is
+#     worked out, the asset is built with it, and only once the build is done are the bump
+#     committed and the release published.
+#   - a pushed tag v*: the version is the tag's and must already be the app's.
+#
+# One target, Windows x86_64: the system OneTerm runs on. The asset is made by
+# scripts/build-release.sh, the script a developer runs: dist/oneterm-<version>-<target>.zip,
+# the name the app's updater asks a release for, with its .sha256. The release also carries
+# SHA256SUMS.
+#
+# The version is the app's: `version` in crates/app/Cargo.toml, read with
+#   sed -n 's/^version = "\(.*\)"/\1/p' crates/app/Cargo.toml | head -1
+# It is what About shows and what the updater compares.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+# No two releases of one ref at once; one in progress is never cancelled.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  MANIFEST: crates/app/Cargo.toml
+
+jobs:
+  # The version, the tag and the commit the later jobs build: worked out from the bump, or
+  # read from the tag.
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.dispatch.outputs.version || steps.tagpush.outputs.version }}
+      tag: ${{ steps.dispatch.outputs.tag || steps.tagpush.outputs.tag }}
+      ref: ${{ steps.dispatch.outputs.ref || steps.tagpush.outputs.ref }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # By hand: the next version. If the app's version is already published, it is bumped.
+      # If the head is a release commit not yet published (a run that failed after the
+      # bump), its version is used again so that no number is skipped.
+      - id: dispatch
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          CURRENT="$(sed -n 's/^version = "\(.*\)"/\1/p' "$MANIFEST" | head -1)"
+          BUMPED="$(echo "$CURRENT" | awk -F. -v kind="${{ inputs.bump }}" '{
+            major = $1 + 0; minor = $2 + 0; patch = $3 + 0
+            if (kind == "major") { major++; minor = 0; patch = 0 }
+            else if (kind == "minor") { minor++; patch = 0 }
+            else { patch++ }
+            print major "." minor "." patch
+          }')"
+          HEAD_SUBJECT="$(git log -1 --pretty=%s)"
+          if gh release view "v${CURRENT}" >/dev/null 2>&1; then
+            NEW="$BUMPED"
+          elif [[ "${HEAD_SUBJECT}" == chore\(release\):* ]]; then
+            NEW="$CURRENT"
+          else
+            NEW="$BUMPED"
+          fi
+          echo "==> Release version $NEW (the app's is $CURRENT)"
+          echo "version=${NEW}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${NEW}" >> "$GITHUB_OUTPUT"
+          echo "ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # A tag: its version, which the app's must already be.
+      - id: tagpush
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          CURRENT="$(sed -n 's/^version = "\(.*\)"/\1/p' "$MANIFEST" | head -1)"
+          if [ "$CURRENT" != "$VERSION" ]; then
+            echo "::error::the app's version ($CURRENT) is not the tag's ($VERSION): bump $MANIFEST and commit before tagging."
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "ref=${TAG}" >> "$GITHUB_OUTPUT"
+
+  # The asset: built, staged and zipped by scripts/build-release.sh, then kept for the last job.
+  build:
+    needs: prepare
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+
+      # Cargo writes the app's new version into Cargo.lock during the build below.
+      - name: Apply the release version
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.prepare.outputs.version }}"
+          awk -v v="$VERSION" '!d && /^version = "/ { print "version = \"" v "\""; d = 1; next } { print }' \
+            "$MANIFEST" > "$MANIFEST.tmp" && mv "$MANIFEST.tmp" "$MANIFEST"
+
+      - name: Verify the release version
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.prepare.outputs.version }}"
+          CURRENT="$(sed -n 's/^version = "\(.*\)"/\1/p' "$MANIFEST" | head -1)"
+          if [ "$CURRENT" != "$VERSION" ]; then
+            echo "::error::the app's version ($CURRENT) is not the release's ($VERSION)."
+            exit 1
+          fi
+
+      - name: Read the pinned toolchain
+        id: toolchain
+        run: |
+          set -euo pipefail
+          channel="$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)"
+          [ -n "$channel" ] || { echo "::error::rust-toolchain.toml has no channel"; exit 1; }
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Install the Rust toolchain and target
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # 2026-07-23
+        with:
+          toolchain: ${{ steps.toolchain.outputs.channel }}
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2 tag, 2026-07-23
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build and stage the release
+        run: bash scripts/build-release.sh
+
+      - name: Verify the staged archive
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.prepare.outputs.version }}"
+          ARCHIVE="dist/oneterm-${VERSION}-${{ matrix.target }}.${{ matrix.archive }}"
+          [ -f "${ARCHIVE}" ] || { echo "::error::expected archive not found: ${ARCHIVE}"; exit 1; }
+          [ -f "${ARCHIVE}.sha256" ] || { echo "::error::expected checksum not found: ${ARCHIVE}.sha256"; exit 1; }
+          ls -la dist
+
+      - name: Upload the asset
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: oneterm-${{ matrix.target }}
+          path: |
+            dist/oneterm-${{ needs.prepare.outputs.version }}-${{ matrix.target }}.${{ matrix.archive }}
+            dist/oneterm-${{ needs.prepare.outputs.version }}-${{ matrix.target }}.${{ matrix.archive }}.sha256
+
+  # The release: the assets, SHA256SUMS, the notes; by hand, the bump is committed first.
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+          fetch-depth: 0 # the whole history, for the notes
+
+      - name: Download the assets
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      # One file of every checksum, as `sha256sum -c` reads it, beside the archives.
+      - name: Write SHA256SUMS
+        run: |
+          set -euo pipefail
+          cd artifacts
+          rm -f SHA256SUMS
+          cat ./*.sha256 | sort -k2 > SHA256SUMS
+          rm -f ./*.sha256
+          sha256sum -c SHA256SUMS
+          cat SHA256SUMS
+
+      # Since the release published before this one, not the tag before: a tag whose release
+      # failed is no boundary.
+      - name: Write the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ needs.prepare.outputs.tag }}"
+          RELEASE_REF="${{ needs.prepare.outputs.ref }}"
+          PREV_TAG="$(gh release list --exclude-drafts --exclude-pre-releases --limit 20 --json tagName --jq '.[].tagName' 2>/dev/null | awk -v tag="${TAG}" '$0 != tag { print; exit }' || true)"
+          if [ -n "${PREV_TAG}" ]; then
+            RANGE="${PREV_TAG}..${RELEASE_REF}"
+          else
+            RANGE="${RELEASE_REF}"
+          fi
+          python3 scripts/release-notes.py "${RANGE}" "${PREV_TAG}" > notes.md
+          cat notes.md
+
+      - name: Commit the version bump and create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.prepare.outputs.version }}"
+          TAG="v${VERSION}"
+          ls -la artifacts/
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [[ "${GITHUB_REF}" != refs/heads/* ]]; then
+              echo "::error::a release run by hand must run from a branch."
+              exit 1
+            fi
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            awk -v v="$VERSION" '!d && /^version = "/ { print "version = \"" v "\""; d = 1; next } { print }' \
+              "$MANIFEST" > "$MANIFEST.tmp" && mv "$MANIFEST.tmp" "$MANIFEST"
+            cargo update --workspace --offline --quiet || cargo update --workspace --quiet
+            git add "$MANIFEST" Cargo.lock
+            if ! git diff --cached --quiet; then
+              git commit -m "chore(release): v${VERSION}"
+            fi
+            # The build takes a while: if the branch moved meanwhile, the release commit is
+            # put on top of it. A conflict in the manifest (another bump) stops the release.
+            git fetch origin "${GITHUB_REF_NAME}"
+            if ! git rebase "origin/${GITHUB_REF_NAME}"; then
+              git rebase --abort || true
+              echo "::error::could not put the release commit on origin/${GITHUB_REF_NAME}: settle the version and run again."
+              exit 1
+            fi
+            git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}"
+            gh release create "${TAG}" \
+              --target "$(git rev-parse HEAD)" \
+              --title "OneTerm ${VERSION}" \
+              --notes-file notes.md \
+              artifacts/oneterm-* artifacts/SHA256SUMS
+          else
+            gh release create "${TAG}" \
+              --title "OneTerm ${VERSION}" \
+              --notes-file notes.md \
+              artifacts/oneterm-* artifacts/SHA256SUMS
+          fi

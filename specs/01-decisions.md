@@ -155,7 +155,7 @@ implementation described by specs 00–14 of the V repository.
 
   Beside the crates, one binary: **Microsoft's console host** (`conpty.dll` and
   `OpenConsole.exe` of the NuGet package `Microsoft.Windows.Console.ConPTY`, MIT, version
-  1.25.260930003, the package's SHA-256 checked by `tools/conpty.sh`), put beside OneTerm's
+  1.25.260930003, the package's SHA-256 checked by OneTerm's `scripts/conpty.sh`), put beside OneTerm's
   executable, where `oneterm-vt` finds it before the system's. The user's choice
   (2026-11-15), for throughput: the system's host passes 336 fps of the fire demo at 147 by
   40, this one 627 (specs/14). Removing it costs half of that; a terminal still works on the

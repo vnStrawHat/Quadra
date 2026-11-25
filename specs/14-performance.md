@@ -99,7 +99,7 @@ writes `<cols>x<rows> <frames> frames <fps> fps <bytes> bytes a frame`):
 The goal is the best fps there is: OneTerm's is to come as near the feed's as the console host
 lets it, and never below the poor band. A fourth number, `doomfire-conpty`, is that host's
 own ceiling: the demo through the pseudo console with its output read and dropped. OneTerm
-ships a newer host than the system's (specs/01, R15): `tools/conpty.sh` puts it beside the
+ships a newer host than the system's (specs/01, R15): OneTerm's `scripts/conpty.sh` puts it beside the
 binaries, and every number of OneTerm is taken with it.
 
 ## Baselines

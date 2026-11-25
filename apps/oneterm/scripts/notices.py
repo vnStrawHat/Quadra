@@ -1,12 +1,12 @@
-"""tools/notices.py <package> <out>: the notices of what a package's binary holds, for a release
-(specs/19, "Updates"): what ships beside it (tools/notices), the kit's icons and faces, and
-every crate from outside the workspace the binary is built from (cargo's own graph for the
-Windows target, build scripts' crates left out), each with its licence and the licence and
-notice files of its source, a text that several share printed once."""
+"""scripts/notices.py <package> <out>: the notices of what a package's binary holds, for a
+release (specs/19, "Updates"). It reads `cargo metadata` for the target on stdin and writes:
+what ships beside the binary (scripts/notices), the kit's icons and faces, and every crate
+from outside the workspace the binary is built from (build scripts' crates left out), each
+with its licence and the licence and notice files of its source, a text that several share
+printed once."""
 import glob
 import json
 import os
-import subprocess
 import sys
 
 
@@ -16,9 +16,8 @@ def read(path):
 
 def main():
     package, out = sys.argv[1], sys.argv[2]
-    asked = ["bash", "tools/cargo.sh", "metadata", "--format-version", "1"]
-    asked += ["--filter-platform", "x86_64-pc-windows-msvc"]
-    meta = json.loads(subprocess.run(asked, capture_output=True, check=True, encoding="utf-8").stdout)
+    here = os.path.dirname(os.path.abspath(__file__))
+    meta = json.load(sys.stdin)
     crates = {p["id"]: p for p in meta["packages"]}
     nodes = {n["id"]: n for n in meta["resolve"]["nodes"]}
     seen, todo = set(), [next(p["id"] for p in meta["packages"] if p["name"] == package)]
@@ -31,8 +30,9 @@ def main():
     outside = sorted((crates[i] for i in seen if crates[i]["source"]), key=lambda p: (p["name"], p["version"]))
 
     parts = ["Notices of what this program holds and ships with."]
-    parts += [read(f) for f in sorted(glob.glob("tools/notices/*.txt"))]
-    kit = "crates/quadra-design"
+    parts += [read(f) for f in sorted(glob.glob(os.path.join(here, "notices", "*.txt")))]
+    # The kit is where cargo has it: a folder of this repository, or a checkout of Quadra's.
+    kit = os.path.dirname(next(p["manifest_path"] for p in meta["packages"] if p["name"] == "quadra-design"))
     for name, file in [("Lucide icons", "LICENSE-lucide.txt"), ("Lilex", "fonts/OFL-lilex.txt"),
                        ("IBM Plex Sans", "fonts/OFL-plex-sans.txt")]:
         parts.append(f"{name}\n\n{read(os.path.join(kit, file))}")

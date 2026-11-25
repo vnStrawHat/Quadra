@@ -190,7 +190,7 @@ the writer sees it. Release builds.
 | The console host alone | 200x50 | 235 | 155 | 36 |
 | **OneTerm**, release, a real window of 1440 by 900 (`tools/doomfire.sh 15`) | 147x40 | **340** | 109 | 37 |
 | Feed | 147x40 | 1,447 to 1,465 (a snapshot holds the lock 53 µs) | 109 | 158 |
-| The console host 1.25.260930003 beside the binary (`tools/conpty.sh`), alone | 147x40 | 627 to 634 | 109 | 68 |
+| The console host 1.25.260930003 beside the binary (`tools/conpty.sh` then, OneTerm's `scripts/conpty.sh` since 2026-11-25), alone | 147x40 | 627 to 634 | 109 | 68 |
 | The console host 1.25 alone | 200x50 | 434 | 155 | 66 |
 | **OneTerm with the console host 1.25** | 147x40 | **592 to 593** | 109 | 64 |
 | OneTerm on 2026-11-16: ligatures, semantic highlighting and a minimum contrast on (its defaults), padding 0/5/0/10 | 143x39 | **591** | 105 | 64 |

@@ -923,6 +923,7 @@ name = "markdown"
 version = "0.1.0"
 dependencies = [
  "quadra",
+ "quadra-build",
  "quadra-code",
  "quadra-design",
  "quadra-md",
@@ -1052,13 +1053,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
-name = "oneterm"
+name = "oneterm-app"
 version = "0.7.0"
 dependencies = [
- "argon2",
- "oneterm-complete",
+ "oneterm-completion",
  "oneterm-ssh",
+ "oneterm-vault",
  "quadra",
+ "quadra-build",
  "quadra-code",
  "quadra-data",
  "quadra-design",
@@ -1071,10 +1073,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "oneterm-complete"
+name = "oneterm-completion"
 version = "0.1.0"
 dependencies = [
  "quadra-data",
+]
+
+[[package]]
+name = "oneterm-shots"
+version = "0.1.0"
+dependencies = [
+ "oneterm-app",
+ "oneterm-ssh",
+ "quadra",
+ "quadra-app",
+ "quadra-async",
+ "quadra-design",
+ "quadra-native-win",
+ "quadra-platform",
+ "quadra-prim",
+ "quadra-term",
 ]
 
 [[package]]
@@ -1086,6 +1104,15 @@ dependencies = [
  "russh-sftp",
  "tokio",
  "zeroize",
+]
+
+[[package]]
+name = "oneterm-vault"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "quadra-data",
+ "quadra-shell",
 ]
 
 [[package]]
@@ -1433,22 +1460,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quadra-bench-oneterm-shots"
-version = "0.1.0"
-dependencies = [
- "oneterm",
- "oneterm-ssh",
- "quadra",
- "quadra-app",
- "quadra-async",
- "quadra-design",
- "quadra-native-win",
- "quadra-platform",
- "quadra-prim",
- "quadra-term",
-]
-
-[[package]]
 name = "quadra-bench-runner"
 version = "0.1.0"
 dependencies = [
@@ -1469,6 +1480,10 @@ dependencies = [
  "quadra-prim",
  "quadra-render",
 ]
+
+[[package]]
+name = "quadra-build"
+version = "0.1.0"
 
 [[package]]
 name = "quadra-code"

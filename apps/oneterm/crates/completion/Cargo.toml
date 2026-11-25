@@ -1,0 +1,14 @@
+[package]
+name = "oneterm-completion"
+description = "OneTerm's command completion: catalogs, the line at the cursor, ranking, history, redaction (specs/20)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+quadra-data.workspace = true

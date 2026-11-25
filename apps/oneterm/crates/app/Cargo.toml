@@ -1,0 +1,42 @@
+[package]
+name = "oneterm-app"
+description = "OneTerm: a terminal app of local shells, in tabs and spaces side by side (specs/19)"
+# OneTerm's versions go on from those of the app it replaces (specs/19, "Updates").
+version = "0.7.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+# The library keeps the app's name: tests and the shots tool drive it as `oneterm`.
+[lib]
+name = "oneterm"
+
+[[bin]]
+name = "oneterm"
+path = "src/main.rs"
+
+[dependencies]
+quadra.workspace = true
+quadra-code.workspace = true
+quadra-data.workspace = true
+quadra-design.workspace = true
+oneterm-completion.workspace = true
+oneterm-ssh.workspace = true
+oneterm-vault.workspace = true
+quadra-shell.workspace = true
+quadra-updater.workspace = true
+quadra-term = { workspace = true, features = ["pty"] }
+quadra-tree.workspace = true
+
+[build-dependencies]
+quadra-build.workspace = true
+
+[dev-dependencies]
+oneterm-ssh = { workspace = true, features = ["testing"] }
+quadra-render.workspace = true
+quadra-testing.workspace = true
+quadra-tree.workspace = true

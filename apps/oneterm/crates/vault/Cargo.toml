@@ -1,0 +1,17 @@
+[package]
+name = "oneterm-vault"
+description = "OneTerm's saved passwords: the vault's document and envelopes, sealing and opening (specs/19)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Argon2id alone, with no password-hash strings: the vault calls the function itself.
+argon2 = { version = "0.6", default-features = false, features = ["zeroize"] }
+quadra-data.workspace = true
+quadra-shell.workspace = true

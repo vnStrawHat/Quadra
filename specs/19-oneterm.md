@@ -1,7 +1,8 @@
 # 19. OneTerm
 
-OneTerm is a terminal app for local shells, and later SSH and SFTP, in `apps/oneterm` (package
-`oneterm`, binary `oneterm`). It is the user's terminal app of that name built again on Quadra:
+OneTerm is a terminal app for local shells, and later SSH and SFTP, in `apps/oneterm` (a set
+of crates, "The repository"; the app is the package `oneterm-app`, its library and its binary
+`oneterm`). It is the user's terminal app of that name built again on Quadra:
 its versions go on from 0.7.0, and **OneTerm 0.6** in this spec is every version before, built
 on another toolkit, whose updater starts `oneterm.exe`. Until 2026-11-24 the app was named
 1Term (the user's decision that day gave it the name of what it replaces); the folders it
@@ -33,7 +34,7 @@ P2 milestones:
 
 | Id | Contents |
 |---|---|
-| M7 | the SSH engine (`apps/oneterm/ssh`): connect, host keys, authentication, the shell; quick connect from the `+` menu |
+| M7 | the SSH engine (`apps/oneterm/crates/ssh`): connect, host keys, authentication, the shell; quick connect from the `+` menu |
 | M8 | saved hosts: the rail's SSH hosts with a filter, the menu's search, Recent and groups, Add SSH host; the host and its latency in the status bar and the space's header; `n ssh · n local` |
 | M9 | the SFTP dock (460 px) and its expanded view: listing, moving about, upload and download, transfers |
 | M10 | jump hosts and port forwards |
@@ -391,7 +392,7 @@ folder as they change (specs/15). Every setting of a page has the
 kit's Reset (specs/13, `settings`), its numbers in the kit's stepper (`number_input(..).stepper()`), back to the default the app reads it with (`Prefs::load`; the
 defaults are those of settings in memory, written once), and each page its Reset all; the master
 password, the saved hosts and the recent targets are data, not settings, and have none. Appearance: the theme (System, Dark, Light), and a colour theme over
-it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/themes`, made by
+it (37 of the user's terminal's palettes as files of the kit's theme format, `apps/oneterm/crates/app/themes`, made by
 `.tmp/gen_themes.py` from colours alone; "Default", the kit's, when none: a saved name no theme has reads as it); the terminal's text (font family,
 chosen from the families of the machine in a select with a search, the first "Default" for none (the kit's mono face); fallback fonts, families separated by commas, at first "Symbols Nerd Font Mono, Symbols
 Nerd Font"; size, 15; weight, Normal and Thin to Black; line height, 1.2; the cell's width, 0 for the advance of `0`, up to
@@ -504,7 +505,7 @@ release carries `oneterm-<version>-x86_64-pc-windows-msvc.zip`, holding
 licences of the kit's icons and faces, and every crate the binary is built from with its
 licence files) (`tools/release.sh`, which makes the zip and prints its SHA-256, and publishes
 nothing); OneTerm's versions go on from that app's (0.7.0 the first, the package's own version
-in `apps/oneterm/Cargo.toml`). The executable's icon is that app's (`assets/logo.ico`, its
+in `apps/oneterm/crates/app/Cargo.toml`). The executable's icon is that app's (`assets/logo.ico`, its
 48 and 96 px images; specs/16, "An executable's icon"), which the window takes too.
 
 Settings, About has the group **Updates** (`updates.rs`):
@@ -575,7 +576,7 @@ the clock. Five wrong tries start a back-off (2, 4, 8, 16, 30 s). Sessions keep 
 
 ## SSH (P2)
 
-The engine is the crate `oneterm-ssh` (`apps/oneterm/ssh`), the one place `russh` and `tokio`
+The engine is the crate `oneterm-ssh` (`apps/oneterm/crates/ssh`), the one place `russh` and `tokio`
 are named: a runtime of two worker threads, made when the first connection starts, behind a
 blocking API of the shape of `quadra_term::Pty`: `Ssh::connect(options, output, told,
 exited)`, `write`, `resize`, `close`, and `answer` and `cancel` for the Connect dialogs. The UI
@@ -616,7 +617,7 @@ thread never waits on the network.
   not `password` (a server of PAM): each of its prompts is answered with the password. After the third wrong
   password: `permission denied`. An RSA key signs with the hash the server names in
   `server-sig-algs`.
-- **The Connect dialogs** (the kit's dialog, `apps/oneterm/src/asking.rs`): a remote space
+- **The Connect dialogs** (the kit's dialog, `apps/oneterm/crates/app/src/asking.rs`): a remote space
   keeps its connection's phase (`Connecting`, a question, failed, done) with its session, and
   the window shows the focused space's, one dialog for each phase, swapped as the phase moves;
   a space whose connection is done or local shows none. Giving a dialog up (its cross, Escape,
@@ -658,7 +659,7 @@ thread never waits on the network.
   (`tests/asking.rs`) drive the dialogs through the semantic tree against the same servers:
   an unknown host trusted (its key written) or cancelled, a right and a wrong password and
   Retry, a missing user asked, a changed key shown, Connecting closing by itself.
-  `bench/oneterm-shots` draws them (`ask-connecting`, `ask-host`, `ask-sign-in`,
+  `apps/oneterm/crates/shots` draws them (`ask-connecting`, `ask-host`, `ask-sign-in`,
   `ask-failed`) against those servers.
 
 ### M8 in detail
@@ -747,7 +748,7 @@ thread never waits on the network.
   fingerprint cut to its ends with `· passphrase` when one locks it (`oneterm_ssh::key_info`,
   read without the passphrase), or `Not found` or `Not an OpenSSH private key`; Remove. No
   dialog picks a file: a host's key is chosen by name from these.
-- **Saved passwords** are kept as OneTerm 0.6 keeps them (`vault/format.rs`), so what it saved
+- **Saved passwords** are kept as OneTerm 0.6 keeps them (the crate `oneterm-vault`, `format.rs`), so what it saved
   opens here. The vault in `ssh.vault` is the document of its `vault.json` (schema 1): the
   vault's id of 16 random bytes, the cost of Argon2id (version 19; a new vault takes 64 MiB,
   3 passes, 1 lane; a document asking for less than 19 MiB and 2 passes or more than 1 GiB,
@@ -945,6 +946,35 @@ license's notice. Without them every space still runs, on the system's host.
   A forward that cannot listen, or that the server refuses, is one line in the space; the
   shell stays up. A saved host keeps its forwards as a seventh word joined by spaces, typed
   so in Add SSH host (Forwards, `8080:localhost:80 R9000:localhost:3000 D1080`).
+
+## The repository
+
+The user will move OneTerm into a repository of its own, the one OneTerm 0.6 is in, when they
+choose (00, the decisions of 2026-11-24). Until then it is built and gated here, and
+`apps/oneterm` has the shape that repository will have (the user's decision, 2026-11-25), so
+that moving it is copying it:
+
+| Crate | Package | What it is |
+|---|---|---|
+| `crates/app` | `oneterm-app` | The app: its library (`oneterm`, what tests and the shots tool drive) and its binary `oneterm`; its themes, its icon, its tests |
+| `crates/ssh` | `oneterm-ssh` | SSH and SFTP ("SSH (P2)") |
+| `crates/completion` | `oneterm-completion` | Command completion (20) |
+| `crates/vault` | `oneterm-vault` | Saved passwords: the vault's document and envelopes, sealing and opening; it knows nothing of the app ("Saved passwords") |
+| `crates/shots` | `oneterm-shots` | The app's screens drawn to pictures without a window |
+
+The names are those of OneTerm 0.6's crates where it had the same part. What that app had as
+crates and OneTerm has not is Quadra's now (the terminal's view, the theme, the updater) or
+the engine's own repository (`oneterm-vt`); the app's views stay one crate, as they share one
+model.
+
+**Manifests.** A crate's manifest reads the same here and there: what it takes of Quadra and
+of OneTerm's other crates it names with `workspace = true`, as it does its edition, licence
+and lints. Here the root manifest's `[workspace.dependencies]` names them by path. The app's
+version is written in `crates/app/Cargo.toml`, the one place a release reads and bumps; the
+other crates are never published and take the workspace's.
+
+**Scratch files.** Tests write under `.tmp` of the crate they run in, or of the app's root
+(`crates/<name>/../../.tmp`): inside the project here, inside the repository there.
 
 ## Tests
 

@@ -18,7 +18,7 @@ implementation is its reference. Its specs, its tests and its own measurements
    `docs(specs): ...`, `refactor: ...`, `test: ...`, `chore: ...`, `perf: ...`; `!` or a
    `BREAKING CHANGE:` footer for breaking API changes). Scopes are crate names without the
    `quadra-` prefix (prim, reactive, layout, text, render, platform, tree, view, async, a11y,
-   app, native, shell, updater, testing, headless, design, code, md, data, viz, term), the apps `oneterm`
+   app, build, native, shell, updater, testing, headless, design, code, md, data, viz, term), the apps `oneterm`
    and `markdown`, or specs, tools.
 4. **Never test the real clipboard.**
 5. **Commit each finished part** once `tools/check.sh prod` exits 0, then go on with the
@@ -120,6 +120,7 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-async` | Timers, tasks, the background pool, inboxes |
 | `quadra-a11y` | The semantic tree, for assistive technology and tests |
 | `quadra-app` | Windows, the frame loop, settings, the log, time, language |
+| `quadra-build` | For an app's build script: the executable's icon |
 | `quadra-native-win` | Windows: D3D11, DirectWrite, Win32, UI Automation (`unsafe` allowed) |
 | `quadra-shell` | OS services: dialogs, opener, tray, one instance, crash reports (`unsafe` allowed) |
 | `quadra-updater` | An app's updates from GitHub Releases: check, fetch and verify, install while it runs (specs/22) |
@@ -131,13 +132,15 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-md` | Markdown: parser, outline, view, formulas, diagrams |
 | `quadra-code` | The code editor: buffer, tokenizers, highlighter, find |
 | `quadra-term` | The terminal view over `oneterm-vt`: grid, input, find, links |
-| `apps/oneterm` | OneTerm, the terminal app (specs/19) |
-| `apps/oneterm/ssh` | OneTerm's SSH and SFTP over `russh` |
-| `apps/oneterm/complete` | OneTerm's command completion (specs/20) |
+| `apps/oneterm` | OneTerm, the terminal app (specs/19), in the shape of a repository of its own: `crates/app` (package `oneterm-app`, library and binary `oneterm`) |
+| `apps/oneterm/crates/ssh` | OneTerm's SSH and SFTP over `russh` |
+| `apps/oneterm/crates/completion` | OneTerm's command completion (specs/20) |
+| `apps/oneterm/crates/vault` | OneTerm's saved passwords: the vault's format, sealing and opening |
+| `apps/oneterm/crates/shots` | OneTerm's screens drawn to pictures |
 | `apps/markdown` | Markdown, the app that reads and edits `.md` files (specs/21) |
 | `examples/gallery` | Every kit component on a page: the kit's acceptance test |
 | `examples/plain` | A second kit over the headless components |
 | `bench/compare` | The comparison bench's four scenes |
 | `bench/runner` | The comparison bench's runner: measures an app from outside |
 | `bench/doomfire` | Terminal throughput by the fire demo |
-| `bench/shots`, `bench/oneterm-shots`, `bench/markdown-shots` | The gallery's, OneTerm's and Markdown's screens drawn to pictures |
+| `bench/shots`, `bench/markdown-shots` | The gallery's and Markdown's screens drawn to pictures |

@@ -208,8 +208,11 @@ packaged so, and Markdown (`tools/package.sh markdown`).
 
 **An executable's icon.** An app's build script turns an `.ico` file into a resource file of
 an icon group (resource 1, its images 1 to n) and links it with the binaries: written by the
-script itself, as the format is a few headers, so no resource compiler is needed: the
-script is `tools/icon_resource.rs`, which an app's `build.rs` takes by path and calls
-(`icon_resource::link("assets/logo.ico")`; Markdown's and OneTerm's do). `tools/package.sh`
+script itself, as the format is a few headers, so no resource compiler is needed. The
+code is the crate `quadra-build`, which depends on nothing: an app names it under
+`[build-dependencies]` and its `build.rs` calls `quadra_build::icon("assets/logo.ico")`
+(Markdown's and OneTerm's do). It is a crate, where it was a file of `tools/` taken by path
+until 2026-11-25, so that an app in a repository of its own has it as it has the rest of
+Quadra. `tools/package.sh`
 fails when an app's binary has no icon. ponytail: no installer or version resource yet; an
 MSIX package when an app ships.

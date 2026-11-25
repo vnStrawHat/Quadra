@@ -25,5 +25,8 @@ quadra-tree = { path = "../../crates/quadra-tree" }
 quadra-vector = { path = "../../crates/quadra-vector" }
 quadra-view = { path = "../../crates/quadra-view" }
 
+[build-dependencies]
+quadra-build = { path = "../../crates/quadra-build" }
+
 [dev-dependencies]
 quadra-testing = { path = "../../crates/quadra-testing" }

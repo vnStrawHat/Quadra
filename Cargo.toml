@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*", "bench/*", "examples/*", "apps/*", "apps/oneterm/ssh", "apps/oneterm/complete"]
+members = ["crates/*", "bench/*", "examples/*", "apps/markdown", "apps/oneterm/crates/*"]
 
 [workspace.package]
 version = "0.1.0"
@@ -8,6 +8,31 @@ edition = "2024"
 rust-version = "1.96"
 license = "Apache-2.0"
 publish = false
+
+# What OneTerm's crates name with `workspace = true` (specs/19, "The repository"): their
+# manifests read the same here and in a repository of the app's own, whose root manifest
+# (apps/oneterm/Cargo.root.toml) names the same crates of Quadra by its git address.
+[workspace.dependencies]
+quadra = { path = "crates/quadra" }
+quadra-app = { path = "crates/quadra-app" }
+quadra-async = { path = "crates/quadra-async" }
+quadra-build = { path = "crates/quadra-build" }
+quadra-code = { path = "crates/quadra-code" }
+quadra-data = { path = "crates/quadra-data" }
+quadra-design = { path = "crates/quadra-design" }
+quadra-native-win = { path = "crates/quadra-native-win" }
+quadra-platform = { path = "crates/quadra-platform" }
+quadra-prim = { path = "crates/quadra-prim" }
+quadra-render = { path = "crates/quadra-render" }
+quadra-shell = { path = "crates/quadra-shell" }
+quadra-term = { path = "crates/quadra-term" }
+quadra-testing = { path = "crates/quadra-testing" }
+quadra-tree = { path = "crates/quadra-tree" }
+quadra-updater = { path = "crates/quadra-updater" }
+oneterm-app = { path = "apps/oneterm/crates/app" }
+oneterm-completion = { path = "apps/oneterm/crates/completion" }
+oneterm-ssh = { path = "apps/oneterm/crates/ssh" }
+oneterm-vault = { path = "apps/oneterm/crates/vault" }
 
 # specs/01, R16: every crate inherits this except the two that hold OS code.
 [workspace.lints.rust]

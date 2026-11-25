@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 name="${1:?usage: tools/package.sh <example|oneterm|markdown>}"
 case "$name" in
-oneterm) crate=oneterm bin=oneterm ;;
+oneterm) crate=oneterm-app bin=oneterm ;;
 markdown) crate=markdown bin=markdown ;;
 *)
 	[ -d "examples/$name" ] || { echo "package: no examples/$name" >&2; exit 1; }

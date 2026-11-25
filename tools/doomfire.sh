@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 seconds="${1:-15}"
 tools/cargo.sh build --profile dist -p quadra-bench-doomfire 2>&1 | grep -E "^(error|warning)" -A12 || true
-tools/cargo.sh build --profile dist -p oneterm --example doomfire 2>&1 | grep -E "^(error|warning)" -A12 || true
+tools/cargo.sh build --profile dist -p oneterm-app --example doomfire 2>&1 | grep -E "^(error|warning)" -A12 || true
 mkdir -p .tmp/oneterm-bench
 rm -rf .tmp/oneterm-bench/defaults # a window of the default settings, whatever a run before changed
 tools/conpty.sh > /dev/null

@@ -51,9 +51,9 @@ Built and tested without the real thing; each wants a look before it is relied o
 - Certificates unchecked (the network's setting): built, not exercised against a server
   with a bad certificate. Proxies: HTTP ones named `host:port` only; no SOCKS, no
   credentials in the address.
-- The workflows: neither `ci.yml` nor `release.yml` has run on GitHub. What they call was
-  run by hand on an export of the repository: the gate, cargo-deny 0.22.1 (all four
-  checks), and `scripts/build-release.sh`.
+- The release workflow: `release.yml` has not run on GitHub; `scripts/build-release.sh`,
+  which it calls, was run by hand. `ci.yml` runs there since 2026-11-25 (the gate on
+  Windows, cargo-deny).
 - A real window's drag across monitors, DPI change and snap are checks by hand.
 
 ## Known limits

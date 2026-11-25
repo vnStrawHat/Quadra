@@ -684,7 +684,12 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   repository's rules and gate hold, and this log goes on for it.
   The same day the user decided where the old app's source goes: the one commit moves it
   into `.archived/` of that repository and puts the export in its place; the texts say so and
-  the export's gate leaves that folder out.
+  the export's gate leaves that folder out. Made that day at the user's word: the commit
+  `0bc0260` of github.com/vnStrawHat/OneTerm (`feat!: OneTerm reborn on Quadra`), with
+  Quadra at `f5895c6`; the tree under `.archived/` is the tree of `v0.6.11`. Its CI ran
+  first on a pull request, where it found the tooltip's arrow (above), then on `main`:
+  both jobs pass. No tag, no bump, no release: those are the user's. The app is in both
+  repositories until the user says where the work goes on.
 - **The SFTP dock has a header of columns** (2026-11-24, the user's request): Name, Size,
   Modified and Permissions, each sorting by a click as the expanded view's do (`dock/list.rs`;
   `By::Mode`; the engine's `Entry` says its `mode`). The order is shared with the expanded

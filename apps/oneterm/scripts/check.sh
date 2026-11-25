@@ -10,8 +10,9 @@ cd "$here/.."
 export LC_ALL=C.UTF-8
 cargo="${CARGO:-$here/cargo.sh}"
 fail=0
+# .archived is OneTerm 0.6's source, kept as it was: no check reads it.
 say() { echo "$*"; fail=1; }
-files() { find . \( -name target -o -name dist -o -name .git -o -name .tmp -o -name .cache -o -name .private \) -prune -o -type f "$@" -print; }
+files() { find . \( -name target -o -name dist -o -name .git -o -name .tmp -o -name .cache -o -name .private -o -name .archived \) -prune -o -type f "$@" -print; }
 
 # 1. No PowerShell.
 ps1=$(files -name '*.ps1')

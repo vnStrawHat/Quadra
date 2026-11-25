@@ -5,8 +5,8 @@ side. It is a set of crates ("The repository"); the app is the package `oneterm-
 library and its binary `oneterm`. It is the user's terminal app of that name built again on
 Quadra (github.com/vnStrawHat/Quadra), a native GPU-rendered UI framework: its versions go on
 from 0.7.0, and **OneTerm 0.6** in this spec is every version before, built on another
-toolkit, whose updater starts `oneterm.exe` (this repository's history up to the tag
-`v0.6.11`). The work started on 2026-11-15 inside Quadra's repository, where the app was
+toolkit, whose updater starts `oneterm.exe` (its source is `.archived/` of this
+repository). The work started on 2026-11-15 inside Quadra's repository, where the app was
 named 1Term until 2026-11-24 (the user's decision that day gave it the name of what it
 replaces); the folders it kept under that name are taken along ("Taking over from OneTerm
 0.6").
@@ -959,11 +959,15 @@ folders given; `scripts/build-release.sh` puts them in the package, and the lice
 
 ## The repository
 
-OneTerm's repository is github.com/vnStrawHat/OneTerm, the one OneTerm 0.6 was in: its
-history up to the tag `v0.6.11` is that app, and one commit, marked as a breaking change,
-puts this one in the place of that one's source (the user's plan, 2026-11-25). The
-repository, its tags and its releases are kept, so the updater of OneTerm 0.6 finds 0.7.0
-where it looks.
+OneTerm's repository is github.com/vnStrawHat/OneTerm, the one OneTerm 0.6 was in. One
+commit, marked as a breaking change, moves that app's source, as it was at the tag
+`v0.6.11`, into the folder `.archived/` and puts this app in its place (the user's
+decision, 2026-11-25). The repository, its tags and its releases are kept, so the updater
+of OneTerm 0.6 finds 0.7.0 where it looks.
+
+`.archived/` is kept to read, file for file as it was: it is a workspace of its own that
+nothing builds, the workflows in it run nowhere, and the gate (`scripts/check.sh`) leaves
+it out. Nothing in it is edited.
 
 | Crate | Package | What it is |
 |---|---|---|

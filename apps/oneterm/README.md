@@ -7,8 +7,8 @@ OneTerm is native and GPU-rendered. It is built in Rust on
 DirectWrite, over the terminal engine [oneterm-vt](https://github.com/vnStrawHat/oneterm-vt).
 
 **0.7 is OneTerm built again.** Versions up to 0.6.11 were another app on another toolkit,
-for Windows, Linux and macOS; their source is this repository's history up to the tag
-`v0.6.11`. From 0.7.0 OneTerm is this app, for Windows x86_64 alone for now. It is made to
+for Windows, Linux and macOS; their source is kept in `.archived/`, as it was at the tag
+`v0.6.11`, to read: nothing builds it. From 0.7.0 OneTerm is this app, for Windows x86_64 alone for now. It is made to
 take over the hosts, saved passwords and settings of 0.6 at its first start, with nothing
 asked, and to be the update the updater of 0.6 installs.
 
@@ -74,6 +74,7 @@ SFTP tests connect only to servers of the test process on 127.0.0.1.
 | `scripts` | The gate, the release asset, the console host, the notices, the release notes |
 | `specs` | What the app does, written before the code: `oneterm.md`, `completion.md`, `decisions.md` |
 | `docs/progress.md` | What is done, and what was never run for real |
+| `.archived` | OneTerm 0.6's source as it was at `v0.6.11`: kept to read, built and checked by nothing |
 | `.github/workflows` | `ci.yml` (the gate; licences, bans, advisories and sources by cargo-deny, `deny.toml`) and `release.yml` |
 
 Quadra is taken by git at one commit, named in the root `Cargo.toml`; the framework is

@@ -3,9 +3,10 @@
 OneTerm is a terminal app for Windows: local shells, SSH and SFTP, in tabs and spaces side by
 side. It is built in Rust on Quadra (github.com/vnStrawHat/Quadra), the user's native
 GPU-rendered UI framework, over the user's terminal engine `oneterm-vt`. Versions before 0.7
-("OneTerm 0.6") were another app on another toolkit, in this repository's history up to the
-tag `v0.6.11`: the reference for behaviour and settings the design leaves open, to read with
-`git show v0.6.11:<path>`, never to bring back.
+("OneTerm 0.6") were another app on another toolkit. Its source is kept in `.archived/`, as
+it was at the tag `v0.6.11`: the reference for behaviour and settings the design leaves
+open. It is read, never edited, built or brought back; the gate leaves it out, and its own
+`CLAUDE.md` and `AGENTS.md` were for that app, not for this one.
 
 ## Hard rules from the user (never break them)
 
@@ -88,6 +89,7 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 - `specs/README.md` indexes the specs: `specs/oneterm.md` (the app), `specs/completion.md`
   (the completion engine), `specs/decisions.md` (the user's decisions, the dependencies).
 - `docs/progress.md`: what is done, what was never run for real, the known limits.
+- `.archived/`: OneTerm 0.6's source, to read only (above).
 - `.github/workflows`: `ci.yml` (the gate on Windows, cargo-deny) and `release.yml` (run by
   the user: by hand with a bump, or by a tag `v*`).
 

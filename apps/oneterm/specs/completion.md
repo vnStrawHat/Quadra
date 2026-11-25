@@ -3,7 +3,7 @@
 The engine of OneTerm's command completion, in `crates/completion` (package
 `oneterm-completion`): from the line at the prompt and its cursor, a short ranked list of what
 may be typed next. It has no view; the terminal's overlay asks it and draws what it gives.
-OneTerm 0.6's completion engine (`crates/completion` at the tag `v0.6.11` of this
+OneTerm 0.6's completion engine (`.archived/crates/completion` of this
 repository) is the reference for behaviour; the crate has its name since 2026-11-25
 (`oneterm-complete` before).
 

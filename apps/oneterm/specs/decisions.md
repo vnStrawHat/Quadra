@@ -19,7 +19,7 @@ the specs and the code follow it.
 | 2026-11-24 | Other systems | Windows x86_64 alone; Linux and macOS are left for later |
 | 2026-11-24 | Shipped code and the OS's programs | Shipped code starts no program that Windows may not have (no `tar.exe`, no `curl.exe`): an API of the OS or an admitted crate does the work |
 | 2026-11-24 | Settings file | `settings.json` is written as objects in objects, not as dotted keys |
-| 2026-11-25 | The repository | OneTerm lives in github.com/vnStrawHat/OneTerm, the repository of OneTerm 0.6: its source there is replaced by this app in one commit marked as a breaking change, the repository, its tags and its releases kept |
+| 2026-11-25 | The repository | OneTerm lives in github.com/vnStrawHat/OneTerm, the repository of OneTerm 0.6: one commit marked as a breaking change moves that app's source into the folder `.archived/` and puts this app in its place, the repository, its tags and its releases kept |
 | 2026-11-25 | Crates | A set of crates named as OneTerm 0.6's were where the part is the same: `app`, `ssh`, `completion`, `vault` (`oneterm.md`, "The repository") |
 | 2026-11-25 | The CI | It keeps the flow of OneTerm 0.6's, the dependency policy job (cargo-deny: licences, bans, advisories) included |
 | 2026-11-25 | Versions | The next release is 0.7.0, and the user bumps to it themselves: the manifest has the version last released (0.6.11), and the release workflow's bump writes the new one. Publishing a release, and making its tag, are the user's acts |

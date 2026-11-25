@@ -1047,9 +1047,10 @@ Checked here (2026-11-25): the export with Quadra by path resolves with the tool
 cargo, passes the workflow's format check, lints and tests, and makes its asset with its own
 script; with Quadra named by git, this checkout by a file address, it resolves and builds
 (the notices then list Quadra's crates among those from outside); cargo-deny 0.22.1 passes
-all four checks on the export. Not checked, as they need
-the repository: a run of either workflow, and Quadra fetched from its remote (the commit
-must be on it first). The engine's repository and Quadra's must be readable by the runner.
+all four checks on the export. With the commits on the remote, the export as it will be
+used, Quadra fetched from its repository at the commit, resolves, builds and passes
+cargo-deny. Not checked, as it needs the repository: a run of either workflow. The engine's
+repository and Quadra's must be readable by the runner.
 
 ## Tests
 

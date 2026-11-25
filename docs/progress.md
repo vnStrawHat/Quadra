@@ -656,9 +656,10 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   `scripts/export.sh <folder>` writes the repository out; tried here with Quadra named by
   path: it resolves with the toolchain's cargo, its format check, lints and tests pass, and
   its own `scripts/build-release.sh` makes the asset there, fetching the console host; with
-  Quadra named by git (this checkout by a file address) it resolves and builds. Not done, as
-  they need the repository: the workflows have never run, and Quadra was not fetched from
-  its remote, which needs the commit there. The manifest's version is 0.6.11, the version
+  Quadra named by git (this checkout by a file address) it resolves and builds. Once pushed
+  (2026-11-25), the export as it will be used, Quadra fetched from its remote at the
+  commit, resolves, builds and passes cargo-deny. Not done, as it needs the repository:
+  the workflows have never run. The manifest's version is 0.6.11, the version
   last released, so that the user's own bump by the release workflow gives 0.7.0 (the user's
   decision, 2026-11-25). The CI has OneTerm 0.6's dependency policy job: cargo-deny over
   `deny.toml` (licences, bans, advisories, sources), which passes on the export

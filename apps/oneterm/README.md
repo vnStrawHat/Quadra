@@ -5,9 +5,9 @@ hosts, an SFTP dock, command completion, a master password. It is built on
 [Quadra](https://github.com/vnStrawHat/Quadra), a native GPU-rendered UI framework, and on
 the terminal engine `oneterm-vt`.
 
-Versions go on from 0.7.0. OneTerm 0.6 and before were built on another toolkit; 0.7 takes
-over their hosts, saved passwords and settings at its first start, and their updater installs
-it.
+Versions go on from 0.7.0. OneTerm 0.6 and before were built on another toolkit; 0.7 is made
+to take over their hosts, saved passwords and settings at its first start, and to be the
+update their updater installs.
 
 ## Layout
 
@@ -40,7 +40,8 @@ OneTerm.
 
 The app's version is `version` in `crates/app/Cargo.toml`. The workflow **Release** is run
 by hand with a bump (patch, minor, major), or by pushing a tag `v<version>` once the manifest
-has that version. It builds the asset with `scripts/build-release.sh`, commits the bump as
+has that version. A bump starts from the manifest's version, so the first release of a
+version the manifest already has, 0.7.0 itself, is made by its tag. It builds the asset with `scripts/build-release.sh`, commits the bump as
 `chore(release): v<version>` and publishes the release with the zip and `SHA256SUMS`. The
 app's updater asks a release for `oneterm-<version>-x86_64-pc-windows-msvc.zip` and checks
 the digest GitHub publishes for it.

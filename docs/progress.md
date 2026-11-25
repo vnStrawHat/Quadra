@@ -655,9 +655,11 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   released, on Windows alone and in bash), `LICENSE`, `NOTICE`, `README.md`.
   `scripts/export.sh <folder>` writes the repository out; tried here with Quadra named by
   path: it resolves with the toolchain's cargo, its format check, lints and tests pass, and
-  its own `scripts/build-release.sh` makes the asset there, fetching the console host. Not done, as
-  they need the repository: the workflows have never run, and the export with Quadra named
-  by git needs the commit on the remote.
+  its own `scripts/build-release.sh` makes the asset there, fetching the console host; with
+  Quadra named by git (this checkout by a file address) it resolves and builds. Not done, as
+  they need the repository: the workflows have never run, and Quadra was not fetched from
+  its remote, which needs the commit there. 0.7.0 itself is released by its tag: a bump by
+  hand starts from the manifest's version.
 - **The SFTP dock has a header of columns** (2026-11-24, the user's request): Name, Size,
   Modified and Permissions, each sorting by a click as the expanded view's do (`dock/list.rs`;
   `By::Mode`; the engine's `Entry` says its `mode`). The order is shared with the expanded

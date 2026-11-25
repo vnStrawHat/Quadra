@@ -1009,7 +1009,7 @@ through cargo and so run the same here and there; `CARGO` names another cargo (h
   cuts down to what this workspace builds. Quadra is named by its git address and the commit
   checked out, and the script refuses a commit that is on no remote branch; with the path of
   a checkout it is named by path, to try the folder on this machine. Neither this script nor
-  `Cargo.root.toml` goes along.
+  `Cargo.root.toml` goes along, nor the README's section on living in Quadra's repository.
 
 **Workflows** (`.github/workflows`, read by GitHub only at a repository's root: they run
 nowhere while the app is here). They follow OneTerm 0.6's, so that releasing stays what it
@@ -1029,10 +1029,15 @@ version read from `crates/app/Cargo.toml`.
   manifest and the lock file as `chore(release): v<version>` on top of the branch as it is
   then; it creates the release `OneTerm <version>` at the tag `v<version>` with the zip and
   `SHA256SUMS`. Actions are pinned by commit, the same commits OneTerm 0.6's workflows pin.
+  A bump starts from the manifest's version: 0.7.0, which the manifest has already, is
+  released by its tag, and a run by hand from there gives the version after.
 
-Not checked from here, as they need the repository: a run of either workflow, and the export
-with Quadra named by git (the commit must be on the remote first). The engine's repository
-and Quadra's must be readable by the runner.
+Checked here (2026-11-25): the export with Quadra by path resolves with the toolchain's own
+cargo, passes the workflow's format check, lints and tests, and makes its asset with its own
+script; with Quadra named by git, this checkout by a file address, it resolves and builds
+(the notices then list Quadra's crates among those from outside). Not checked, as they need
+the repository: a run of either workflow, and Quadra fetched from its remote (the commit
+must be on it first). The engine's repository and Quadra's must be readable by the runner.
 
 ## Tests
 

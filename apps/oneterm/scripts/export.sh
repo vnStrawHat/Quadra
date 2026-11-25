@@ -26,6 +26,8 @@ mkdir -p "$out"
 [ -z "$(ls -A "$out")" ] || { echo "export: $out is not empty" >&2; exit 1; }
 git ls-files -z | xargs -0 cp --parents -t "$out"
 rm "$out/Cargo.root.toml" "$out/scripts/export.sh"
+# The README's section on living here does not go along.
+sed -i '/^## Inside Quadra/,/^## Licence/{/^## Licence/!d}' "$out/README.md"
 sed "s|@\(quadra[a-z-]*\)@|$from|" Cargo.root.toml > "$out/Cargo.toml"
 mkdir -p "$out/specs"
 cp "$top/specs/19-oneterm.md" "$top/specs/20-complete.md" "$out/specs/"

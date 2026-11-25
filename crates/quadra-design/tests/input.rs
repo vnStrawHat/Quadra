@@ -72,6 +72,44 @@ fn the_frame_shows_the_focus_and_what_is_not_accepted() {
 }
 
 #[test]
+fn underlined_the_frame_is_a_line_under_text_that_stands_where_a_box_s_does() {
+    let (name, boxed, wrong, off) =
+        (signal(String::new()), signal(String::new()), signal(false), signal(false));
+    let mut h = Harness::new();
+    let theme = dark();
+    h.tree.set_theme(Rc::new(theme.theme()));
+    h.mount(move || {
+        let line = input(name).underlined().placeholder("Name").invalid(wrong).disabled(off).test_id("line");
+        let boxed = input(boxed).placeholder("Boxed").test_id("boxed");
+        quadra_design::root().child(quadra_view::row().child(line).child(boxed))
+    });
+    h.frame();
+    let (field, other) = (h.get_by_test_id("line").node(), h.get_by_test_id("boxed").node());
+    let frame = h.tree.parent(field).unwrap();
+    // The field's size; a line under it alone, and nothing inside left and right.
+    assert_eq!(h.tree.rect(frame).size(), quadra_prim::Size::new(240.0, 28.0));
+    let border = h.tree.layout_style(frame).border;
+    assert_eq!((border.top, border.left, border.right, border.bottom), (0.0, 0.0, 0.0, 1.0));
+    assert_eq!((h.tree.rect(field).x, h.tree.rect(field).width), (0.0, 240.0));
+    // Beside a boxed field its text is on the same line.
+    assert_eq!(h.tree.window_rect(field).y, h.tree.window_rect(other).y);
+    let look = |h: &Harness| (h.tree.paint_style(frame).background, h.tree.paint_style(frame).border_color);
+    let none = quadra_prim::Color::TRANSPARENT;
+    assert_eq!(look(&h), (none, theme.color(token::LINE_STRONG)));
+    // The line says the focus and what is not accepted; disabled, it is a step back, with no fill.
+    h.get_by_test_id("line").focus();
+    h.frame();
+    assert_eq!(look(&h), (none, theme.color(token::BORDER_FOCUSED)));
+    wrong.set(true);
+    h.frame();
+    assert_eq!(look(&h), (none, theme.color(token::ERROR)));
+    wrong.set(false);
+    off.set(true);
+    h.frame();
+    assert_eq!(look(&h), (none, theme.color(token::LINE)));
+}
+
+#[test]
 fn a_colour_input_shows_its_colour_or_the_fallback_and_refuses_what_is_no_colour() {
     let accent = signal(String::new());
     let mut h = Harness::new();

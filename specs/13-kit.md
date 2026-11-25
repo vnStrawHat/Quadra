@@ -202,7 +202,10 @@ As built so far:
   border, 8 px either side of a line of text, 28 high (the md control height) and 240 wide
   unless told):
   `.placeholder(..)`, `.password()`, `.icon(body)` before the text, `.invalid(..)`,
-  `.disabled(..)`, `.width(..)`, `.on_submit(..)`, `.test_id(..)`. The border is where the
+  `.disabled(..)`, `.width(..)`, `.on_submit(..)`, `.test_id(..)`; `.underlined()` is its
+  second look (specs/design/controls.md): a line under the text in place of the box, no
+  fill, the text from the line's start, on the baseline a box's text has. The border (the
+  line, underlined) is where the
   focus shows; a value that is not accepted has the colour of errors with the focus or
   without (the state `INVALID`, applied after every other); a disabled field is a step back
   and takes neither the focus nor text. A reader hears `.label(words)` as its name, or the

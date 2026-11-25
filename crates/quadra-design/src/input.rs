@@ -1,5 +1,6 @@
 //! The text input of the kit (specs/design, "Text input"): the field of `quadra-view` in
 //! a frame. The frame's border says where the focus is and whether the value is accepted.
+//! Underlined, the frame is a line under the text and no box.
 
 use quadra_layout::{Align, Length};
 use quadra_platform::Cursor;
@@ -33,6 +34,7 @@ pub struct Input {
     height: Option<f32>,
     fill: bool,
     reveal: bool,
+    underlined: bool,
     test_id: Option<&'static str>,
     submit: Option<Submit>,
 }
@@ -60,6 +62,7 @@ pub fn input(value: Signal<String>) -> Input {
         height: None,
         fill: false,
         reveal: false,
+        underlined: false,
         test_id: None,
         submit: None,
     }
@@ -149,6 +152,13 @@ impl Input {
         self
     }
 
+    /// The second look: no fill and no box, a line under the text, which says the focus
+    /// and a value not accepted as the box's border does.
+    pub fn underlined(mut self) -> Self {
+        self.underlined = true;
+        self
+    }
+
     /// The value shows, and can be selected and copied, and not typed over.
     pub fn readonly(mut self) -> Self {
         self.readonly = true;
@@ -202,7 +212,16 @@ impl Input {
             Some(id) => field.test_id(id),
             None => field,
         };
-        let frame = row().align_items(Align::Center).gap(token::SPACE_XS).padding_x(token::SPACE_MD);
+        let frame = row().align_items(Align::Center).gap(token::SPACE_XS);
+        // Underlined, the text starts where the line does, and stands where a box's would:
+        // the pixel over it is the border a box has there.
+        let underlined = self.underlined;
+        let frame = match underlined {
+            true => frame.padding_top(1.0).border_bottom(1.0),
+            false => {
+                frame.padding_x(token::SPACE_MD).radius(token::RADIUS_MD).border(1.0).bg(token::INPUT_BG)
+            }
+        };
         let frame = match self.fill {
             true => frame.grow(1.0).width(0.0).min_width(Length::Px(0.0)),
             false => crate::layout::field_width(frame, self.width, self.own),
@@ -213,14 +232,16 @@ impl Input {
         };
         let frame = if self.mono { frame.font_family(fonts::MONO) } else { frame };
         let frame = if self.small { frame.text_size(size::TEXT_SM.size) } else { frame };
-        let frame = frame.radius(token::RADIUS_MD).border(1.0);
-        let frame = frame.bg(token::INPUT_BG).border_color(token::LINE_STRONG).cursor(Cursor::Text);
+        let frame = frame.border_color(token::LINE_STRONG).cursor(Cursor::Text);
         let frame = frame.selection_color(token::SELECTION);
         // The border is where the focus shows; a value that is not accepted keeps the
         // colour of errors with the focus or without; a disabled field is a step back.
         let frame = frame.focus_within(|s| s.border_color(token::BORDER_FOCUSED));
         let frame = frame.disabled(self.disabled);
-        let frame = frame.when(State::DISABLED, |s| s.bg(token::PANEL).text_color(token::TEXT_DISABLED));
+        let frame = frame.when(State::DISABLED, move |s| {
+            let s = s.text_color(token::TEXT_DISABLED);
+            if underlined { s.border_color(token::LINE) } else { s.bg(token::PANEL) }
+        });
         let frame = frame.invalid(self.invalid).when(State::INVALID, |s| s.border_color(token::ERROR));
         let frame = match (self.lead, self.before) {
             (Some(body), _) => frame.child(icon(body).color(token::TEXT_2)),

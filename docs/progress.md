@@ -665,6 +665,12 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   `deny.toml` (licences, bans, advisories, sources), which passes on the export
   (cargo-deny 0.22.1; one advisory ignored with its reason, `rsa` through `russh`, as
   OneTerm 0.6 ignored it).
+- **An underlined text input** (2026-11-25, the user's request): `input(..).underlined()`
+  is a line under the text in place of the box: no fill, no room inside left and right
+  (drawn with and without: specs/design/decisions.md), the height and the baseline of a
+  boxed field, the line's colour for the focus and a value not accepted. The text input
+  alone has it. Tests: quadra-design tests/input.rs; the gallery's Text input page shows
+  it.
 - **A session's grid is a signal** (2026-11-25, issue 45): `Session::grid()` is the grid's
   size as a view last sized it, written in `Session::resize` where the size differs, so a
   session with no link of the app's has it too; what an app shows of it follows the window.

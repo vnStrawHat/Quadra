@@ -33,6 +33,14 @@ same height, the same corners, the same border colour, their text on one baselin
   before the text (`ssh`), `.mono()` the mono face, `.small()` 12 px text in a 22 px field
   (bars), `.fill()` takes the room left in a row; `.reveal()` gives a password a 22 px eye
   inside its end. `.height(px)` only for a bar that has another row height.
+  **Underlined** (`.underlined()`) is its second look, for a value typed where a box
+  would be one box too many (a name edited in place, a quiet row of a panel): no fill, no
+  box, no corners, a 1 px `line_strong` line under it alone; nothing inside left and right,
+  so the text starts where the line does, on the edge of the label over it. Its height,
+  width, text and baseline are the field's. The line says the states as the box's border
+  does: focus `border_focused`, invalid `error`; disabled, `text_disabled` over a line a step
+  back (`line`), and no fill.
+  One look a group of fields: a form is boxes or lines, not both.
 - **Textarea**: the field look, three lines tall unless told (`.rows(n)`), 8 inside left and
   right and 6 above and below; it grows with its lines.
 - **Select**: the field look with a 12 px up-down chevron in `text_2` at its end, 8 from

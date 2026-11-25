@@ -19,6 +19,14 @@ pub fn text_input_page() -> Div {
     let states = line()
         .child(input(fixed).readonly().width(240.0))
         .child(input(signal(String::new())).placeholder("Disabled").disabled(true).width(240.0));
+    let (title, host, off) = (signal(String::new()), signal(String::new()), signal(String::new()));
+    let underlined = stack()
+        .child(input(title).underlined().placeholder("Untitled").width(320.0))
+        .child(
+            input(signal(String::new())).underlined().placeholder("Filter").icon(icons::SEARCH).width(320.0),
+        )
+        .child(field("Host", input(host).underlined().placeholder("Host name or IP").width(320.0)))
+        .child(input(off).underlined().placeholder("Disabled").disabled(true).width(320.0));
     let about = "One line of text with grapheme-aware editing, undo/redo, clipboard and IME composition \
                  (Telex/VNI).";
     page(
@@ -32,6 +40,7 @@ pub fn text_input_page() -> Div {
                 ".icon(icons::SEARCH)",
             ),
             demo("Read-only and disabled", states, ".readonly()  .disabled(true)"),
+            demo("Underlined", underlined, "input(title).underlined()"),
         ],
     )
 }

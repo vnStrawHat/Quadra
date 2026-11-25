@@ -200,4 +200,13 @@ lower than a panel's header; 32 / 28 keeps the title bar and makes the status ba
 row, as tall as a panel's header, its buttons 3 above and below. 32 / 28 it is, for the
 kit's `statusbar()` and OneTerm's own.
 
+**The text input has an underlined look** (the user's request, 2026-11-25): a line under
+the text in place of the box (controls.md). The one choice in it was the room inside left
+and right. Drawn both ways, alone, with an icon and under a field's label: with the box's
+8 the text stands in from the line's start and from the label over it, two left edges
+where nothing shows why; with none there is one edge. None it is. The line stays 1 px with
+the focus, which its colour says as on a box, so nothing moves when the focus comes. Only
+the text input has the look: the fields built on it (number, colour, combobox, the
+pickers) carry buttons and swatches a box holds together, and none was asked for.
+
 Nothing is owed.

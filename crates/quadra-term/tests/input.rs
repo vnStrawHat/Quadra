@@ -5,7 +5,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use quadra_platform::{Key, Mods, MouseButton};
 use quadra_prim::Point;
@@ -158,6 +158,46 @@ fn shift_selects_over_a_program_that_reports_the_mouse() {
     // Without it the program has the mouse again.
     press(&mut t, PointerInput::Down, x0, Mods::NONE);
     assert_eq!(t.taken(), b"\x1b[<0;1;1M");
+}
+
+#[test]
+fn two_clicks_select_a_word_three_the_line_and_shift_goes_on_from_the_selection() {
+    let mut t = term();
+    t.feed(b"hello world\r\nnext");
+    let at = |col: usize| Term::cell(0, col).0;
+    let y = Term::cell(0, 0).1;
+    let send = |t: &mut Term, input, x: f32, mods| {
+        let now = t.h.now();
+        t.h.tree.pointer(input, MouseButton::Left, Point::new(x, y), mods, now);
+        t.h.settle();
+    };
+    let click = |t: &mut Term, x: f32, mods| {
+        send(t, PointerInput::Down, x, mods);
+        send(t, PointerInput::Up, x, mods);
+        t.s.selection_text()
+    };
+    assert_eq!(click(&mut t, at(1), Mods::NONE), None);
+    assert_eq!(click(&mut t, at(1), Mods::NONE).as_deref(), Some("hello"));
+    // Shift after two clicks reaches by words; a third click is the line.
+    assert_eq!(click(&mut t, at(8), Mods::SHIFT).as_deref(), Some("hello world"));
+    t.h.advance(Duration::from_secs(1));
+    for _ in 0..2 {
+        click(&mut t, at(1), Mods::NONE);
+    }
+    let line = click(&mut t, at(1), Mods::NONE).unwrap();
+    assert_eq!(line.trim_end(), "hello world");
+    // A click, then Shift and a click further on the row: the text between.
+    t.h.advance(Duration::from_secs(1));
+    assert_eq!(click(&mut t, at(1) - 2.0, Mods::NONE), None);
+    assert_eq!(click(&mut t, at(6) + 2.0, Mods::SHIFT).as_deref(), Some("ello w"));
+    // After a drag, Shift and a click moves the selection's end and keeps its start.
+    t.h.advance(Duration::from_secs(1));
+    send(&mut t, PointerInput::Down, at(0) - 2.0, Mods::NONE);
+    send(&mut t, PointerInput::Move, at(4), Mods::NONE);
+    send(&mut t, PointerInput::Up, at(4), Mods::NONE);
+    assert_eq!(t.s.selection_text().as_deref(), Some("hello"));
+    assert_eq!(click(&mut t, at(8) + 2.0, Mods::SHIFT).as_deref(), Some("hello wor"));
+    assert_eq!(click(&mut t, at(2) + 2.0, Mods::SHIFT).as_deref(), Some("hel"));
 }
 
 #[test]

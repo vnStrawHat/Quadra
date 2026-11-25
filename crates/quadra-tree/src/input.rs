@@ -42,7 +42,8 @@ pub struct PointerEvent {
     /// pointer is.
     pub size: Size,
     pub mods: Mods,
-    /// For a click: 1, or 2 for a double click, and so on.
+    /// For a click: 1, or 2 for a double click, and so on. For a press: the count its click
+    /// would have. 0 for anything else.
     pub clicks: u8,
     /// For the wheel: how far to scroll, in pixels. Positive `y` is towards the start of the
     /// content. A handler that scrolls takes what it used off it; what is left goes on up.

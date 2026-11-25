@@ -32,7 +32,10 @@ The path is the target and its ancestors.
 - **Pointer capture**: a handler of pointer-down may call `e.capture_pointer()`. Moves and the
   release then go to that node wherever the pointer is, until release or the node is removed.
 - **Click** is synthesized on release, for nodes on both the press path and the release path.
-  Double and triple clicks are counted by time and distance.
+  Double and triple clicks are counted by time and distance. A press says the count its
+  click would have (`e.clicks`: 1, then 2, 3 for one that follows a click closely), so a
+  view that selects at the press starts a word or a line there and a drag goes on by
+  them; a move and a release say none.
 - **Wheel** bubbles until a scroll container consumes it; what it cannot consume continues up.
   A line of the wheel is 40 logical pixels; a touchpad reports pixels. The event carries how
   far to scroll, and a container takes off it what it scrolled, so a list at its end hands

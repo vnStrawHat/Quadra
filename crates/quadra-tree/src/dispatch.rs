@@ -59,7 +59,9 @@ impl Tree {
                     if button == MouseButton::Left {
                         self.drag_press(&path, at);
                     }
-                    self.input.capture = self.dispatch_pointer(PointerKind::Down, target, button, 0).captured;
+                    let clicks = self.click_count(button, at, now);
+                    self.input.capture =
+                        self.dispatch_pointer(PointerKind::Down, target, button, clicks).captured;
                 }
                 PointerInput::Up => self.release(button, at, now),
             }
@@ -94,17 +96,21 @@ impl Tree {
         let shared =
             under.map(|u| self.path(u)).and_then(|path| path.into_iter().find(|n| pressed.contains(n)));
         if let Some(target) = shared.filter(|&n| self.is_alive(n)) {
-            let again = self.input.last_click.filter(|&(when, place, which, _)| {
-                let (dx, dy) = (at.x - place.x, at.y - place.y);
-                which == button
-                    && now.duration_since(when) <= MULTI_CLICK
-                    && dx.hypot(dy) <= MULTI_CLICK_DISTANCE
-            });
-            let clicks = again.map_or(1, |(.., count)| count.saturating_add(1));
+            let clicks = self.click_count(button, at, now);
             self.input.last_click = Some((now, at, button, clicks));
             self.dispatch_pointer(PointerKind::Click, target, button, clicks);
         }
         self.rehover(); // the capture is over: what is under the pointer may be something else
+    }
+
+    /// The count a click of `button` at `at` has now: one more than the last click's when it
+    /// follows it closely in time and place. A press is told it too, before its click is.
+    fn click_count(&self, button: MouseButton, at: Point, now: Instant) -> u8 {
+        let again = self.input.last_click.filter(|&(when, place, which, _)| {
+            let (dx, dy) = (at.x - place.x, at.y - place.y);
+            which == button && now.duration_since(when) <= MULTI_CLICK && dx.hypot(dy) <= MULTI_CLICK_DISTANCE
+        });
+        again.map_or(1, |(.., count)| count.saturating_add(1))
     }
 
     /// Runs the handlers of a kind along the path of `target`: from the root down those that

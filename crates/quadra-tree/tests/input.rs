@@ -149,6 +149,9 @@ fn a_click_is_a_press_and_a_release_that_share_a_node() {
     let clicks: Rc<RefCell<Vec<u8>>> = Rc::default();
     let seen = clicks.clone();
     p.w.tree.on_pointer(p.button, PointerKind::Click, move |e| seen.borrow_mut().push(e.clicks));
+    let presses: Rc<RefCell<Vec<u8>>> = Rc::default();
+    let seen = presses.clone();
+    p.w.tree.on_pointer(p.button, PointerKind::Down, move |e| seen.borrow_mut().push(e.clicks));
     p.listen(p.card, PointerKind::Click, "card");
 
     p.click(10.0, 10.0);
@@ -166,6 +169,7 @@ fn a_click_is_a_press_and_a_release_that_share_a_node() {
 
     // Clicks close in time and place count up; a late one starts again.
     clicks.borrow_mut().clear();
+    presses.borrow_mut().clear();
     p.now += Duration::from_secs(2);
     p.click(10.0, 10.0);
     p.now += Duration::from_millis(200);
@@ -175,6 +179,8 @@ fn a_click_is_a_press_and_a_release_that_share_a_node() {
     p.now += Duration::from_millis(900);
     p.click(11.0, 11.0);
     assert_eq!(*clicks.borrow(), [1, 2, 3, 1]);
+    // Each press said the count its click then had: a view may select by it at the press.
+    assert_eq!(*presses.borrow(), [1, 2, 3, 1]);
 }
 
 #[test]

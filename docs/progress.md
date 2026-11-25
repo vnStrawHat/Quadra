@@ -665,6 +665,13 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   `deny.toml` (licences, bans, advisories, sources), which passes on the export
   (cargo-deny 0.22.1; one advisory ignored with its reason, `rsa` through `russh`, as
   OneTerm 0.6 ignored it).
+- **A press says its count; the terminal selects by it, and with Shift** (2026-11-25,
+  issue 46): two clicks in a terminal selected no word and three no line, because the
+  view chooses the kind of selection at the press and the tree gave a press no count
+  (only its click had one). `Tree::pointer` now tells a press the count its click would
+  have (`PointerEvent::clicks`, specs/09). Shift and a press goes on from the selection
+  there is, its start and kind kept, where it used to drop it (specs/18). Tests:
+  quadra-tree tests/input.rs, quadra-term tests/input.rs.
 - **An underlined text input** (2026-11-25, the user's request): `input(..).underlined()`
   is a line under the text in place of the box: no fill, no room inside left and right
   (drawn with and without: specs/design/decisions.md), the height and the baseline of a

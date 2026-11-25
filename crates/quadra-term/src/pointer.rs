@@ -1,6 +1,7 @@
 //! The terminal and the pointer (specs/18, "Input"): with mouse reporting on and Shift not
 //! held, presses, drags and the wheel go to the program; otherwise a press and a drag select
-//! (two clicks a word, three the line, Alt a block; copied on release when the settings say),
+//! (two clicks a word, three the line, Alt a block, Shift on from the selection there is;
+//! copied on release when the settings say),
 //! the middle button pastes when they say, a right press is left to the app's menu, and the
 //! wheel scrolls the history, or sends arrows on the alternate screen.
 
@@ -144,14 +145,22 @@ pub(crate) fn pointer(
                 let (pos, side): (Pos, Side) = engine.term.hit_test(row, col);
                 match kind {
                     PointerKind::Down if pressed == Some(TerminalMouseButton::Left) => {
+                        // With Shift the selection there is goes on to the press, its start
+                        // and its kind kept; with none, the press starts one as any does.
+                        let goes_on = mods.contains(Mods::SHIFT) && {
+                            engine.term.selection_update(pos, side);
+                            engine.term.has_selection()
+                        };
                         let kind = match clicks {
                             _ if mods.contains(Mods::ALT) => SelectionKind::Block,
                             2 => SelectionKind::Semantic,
                             3.. => SelectionKind::Lines,
                             _ => SelectionKind::Simple,
                         };
-                        engine.term.selection_clear();
-                        engine.term.selection_start(pos, side, kind);
+                        if !goes_on {
+                            engine.term.selection_clear();
+                            engine.term.selection_start(pos, side, kind);
+                        }
                     }
                     PointerKind::Move | PointerKind::Up if selects => engine.term.selection_update(pos, side),
                     _ => return,

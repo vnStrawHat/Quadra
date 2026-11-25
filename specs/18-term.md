@@ -247,8 +247,12 @@ shell's handle.
   selection's text. Both through the clipboard the app provides (specs/09); never the real one
   in a test.
 - Pointer: with mouse reporting on and Shift not held, presses, releases, drags and the wheel
-  go to the program (`encode_mouse_*`); otherwise a press and drag select (double-click a word,
-  triple-click a line), and the wheel scrolls the history (three rows a notch), or sends
+  go to the program (`encode_mouse_*`); otherwise a press and drag select (a second press a
+  word, a third the line, by the count the tree gives a press, specs/09, and the drag after
+  it goes on by words or lines; Alt a block). Shift and a press takes the selection there is
+  to the cell pressed: its start and its kind are kept (after two clicks it reaches by
+  words), and a drag goes on from there; with no selection it starts one as a press without
+  Shift does. The wheel scrolls the history (three rows a notch), or sends
   arrows on the alternate screen when the program asked for alternate scroll.
 - The pointer's shape is the program's when it names one (OSC 22, CSS names: `default` an
   arrow, `pointer` a hand, `grab` a hand and `grabbing` Move since the system has no closed

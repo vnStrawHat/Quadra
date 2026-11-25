@@ -63,6 +63,9 @@ shell's handle.
   `Session::when_sized(f)` runs `f` once with the grid's size when a view has sized it (at
   once if one has): a transport that tells its program the size only at start (a pseudo
   console) starts there, so a program that reads its size once reads the real one.
+  `Session::grid()` is a signal of the grid's size as a view last sized it (80 by 24 until
+  one has), written where the size differs, whatever the session's link: what an app shows
+  of it (`120 × 32`) follows the window, a split, the font's size.
 - Per row: one quad per run of equal background; a glyph per cell at its column (a wide cell
   spans two), from the mono face (bold and italic faces for those attributes); underline and
   strike as quads; inverse swaps, faint is the foreground at 60 %, hidden draws no glyph.
@@ -375,7 +378,8 @@ What any completion needs, with no knowledge of commands (apps/oneterm/specs/com
 
 `title`, `cwd`, `bells` (a count), `progress` (OSC 9;4: none, a part, indeterminate, error,
 paused), `status` (OSC 7501) and `status_name` (the id of the record the summary is, the latest
-of the strongest: `deploy`), `exited` (the code once the program ended), and each notification
+of the strongest: `deploy`), `exited` (the code once the program ended), `grid` (the grid's
+size, above), and each notification
 (OSC 9, 777, 99) as an event (`on_notification`): a `Notice` holds its id, the sequence it came from (`source`), title, body,
 buttons, urgency, expiry, when it wants to show (`occasion`), its sound as named, its icon
 names, its icon's data (`Arc<[u8]>`, empty without) and the id it is kept under, and what it

@@ -665,6 +665,10 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   `deny.toml` (licences, bans, advisories, sources), which passes on the export
   (cargo-deny 0.22.1; one advisory ignored with its reason, `rsa` through `russh`, as
   OneTerm 0.6 ignored it).
+- **A session's grid is a signal** (2026-11-25, issue 45): `Session::grid()` is the grid's
+  size as a view last sized it, written in `Session::resize` where the size differs, so a
+  session with no link of the app's has it too; what an app shows of it follows the window.
+  `Session::size()` still reads the engine. Tests: quadra-term tests/session.rs.
 - **The status bar is lower than the title bar** (2026-11-25, the user's decision: with both
   at 32 OneTerm's window was out of balance, and 38 for the title bar had been too tall):
   the status bar is an item row, 28, the title bar stays a bar of 32. The pairs 38 / 32,

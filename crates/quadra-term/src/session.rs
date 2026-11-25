@@ -69,6 +69,7 @@ pub(crate) struct Shared {
     status_name: Signal<String>,
     exited: Signal<Option<i32>>,
     link_note: Signal<String>,
+    grid: Signal<Size>,
     notices: RefCell<Vec<Rc<NoticeFn>>>,
     /// What the app keeps with the session.
     kept: RefCell<Vec<Rc<dyn std::any::Any>>>,
@@ -140,6 +141,7 @@ impl Session {
             status_name: signal(String::new()),
             exited: signal(None),
             link_note: signal(String::new()),
+            grid: signal(Size { rows: 24, cols: 80 }),
             notices: RefCell::new(Vec::new()),
             kept: RefCell::new(Vec::new()),
             clipboard: RefCell::new(None),
@@ -216,6 +218,7 @@ impl Session {
             }
             engine.term.resize(size, self.0.policy);
         }
+        self.0.grid.set(size);
         self.refind(); // a reflow gives the rows new ids
         self.with_link(|link| (link.resize)(size));
     }
@@ -223,11 +226,6 @@ impl Session {
     /// How many rows of history the engine keeps from now on.
     pub fn set_scrollback(&self, rows: u32) {
         self.engine().term.set_scrollback_limit(rows);
-    }
-
-    /// The grid's size.
-    pub fn size(&self) -> Size {
-        lock(&self.0.engine).term.size()
     }
 
     /// Keeps a value of the app's with the session, for as long as the session lives: a

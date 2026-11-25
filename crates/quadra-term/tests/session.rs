@@ -11,7 +11,7 @@ use quadra_term::vt::{Progress, ResizePolicy, Size};
 use quadra_term::{Link, Notice, ProgramState, Session, TerminalWidget, bind_keys, echo, terminal};
 use quadra_testing::Harness;
 use quadra_tree::{Keymap, NodeId, Role};
-use quadra_view::column;
+use quadra_view::{column, text};
 
 struct Term {
     h: Harness,
@@ -111,6 +111,34 @@ fn the_box_sizes_the_engine_and_then_the_link() {
     let told = late.clone();
     t.s.connect(Link::new(|_| {}).on_resize(move |size| told.borrow_mut().push(size)));
     assert_eq!(*late.borrow(), [Size { rows: 8, cols: 64 }]);
+}
+
+#[test]
+fn the_grid_is_a_signal_that_follows_the_window() {
+    // An echo session, which has no link of the app's, in a box that fills the window.
+    let mut h = Harness::new();
+    h.size = quadra_prim::Size::new(400.0, 200.0);
+    let slot = Rc::new(RefCell::new(None));
+    let out = slot.clone();
+    h.mount(move || {
+        let s = echo();
+        *out.borrow_mut() = Some(s.clone());
+        let grid = s.grid();
+        let said = text(move || format!("{} x {}", grid.get().cols, grid.get().rows));
+        column().child(said).child(terminal(&s).font(10.0, 14.0))
+    });
+    let s: Session = slot.borrow().clone().unwrap();
+    assert_eq!(s.grid().get_untracked(), Size { rows: 24, cols: 80 }, "until a view sizes it");
+    h.settle();
+    let shown = |s: &Session| format!("{} x {}", s.size().cols, s.size().rows);
+    let first = s.size();
+    assert_ne!(first, Size { rows: 24, cols: 80 });
+    assert!(h.has_text(&shown(&s)), "{}", h.semantics());
+    h.size = quadra_prim::Size::new(520.0, 340.0);
+    h.frame(); // a frame gives the tree the window's new size
+    h.settle();
+    assert!(s.size().cols > first.cols && s.size().rows > first.rows, "{:?}", s.size());
+    assert!(h.has_text(&shown(&s)), "{}", h.semantics());
 }
 
 #[test]

@@ -31,7 +31,7 @@ first ones give way (they shorten with an ellipsis).
 
 ## Status bar
 
-30 tall on `chrome`, 8 at its ends, its items 12 apart, labels 12. Panel toggles are 22 px icon
+28 tall, lower than the title bar, on `chrome`, 8 at its ends, its items 12 apart, labels 12. Panel toggles are 22 px icon
 buttons with 14 px icons in `text_2`; one that is on has its icon in the accent and no fill.
 Groups are split by a 1 × 14 `line_strong` divider. Counts of diagnostics are in their hues
 beside their icons. A status item with more to say says it in a tooltip, not in the bar.

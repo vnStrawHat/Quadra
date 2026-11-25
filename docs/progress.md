@@ -665,6 +665,14 @@ text 6 px from each side; they were 16 and 18 in 10 px, small beside 14 px text.
   `deny.toml` (licences, bans, advisories, sources), which passes on the export
   (cargo-deny 0.22.1; one advisory ignored with its reason, `rsa` through `russh`, as
   OneTerm 0.6 ignored it).
+- **The status bar is lower than the title bar** (2026-11-25, the user's decision: with both
+  at 32 OneTerm's window was out of balance, and 38 for the title bar had been too tall):
+  the status bar is an item row, 28, the title bar stays a bar of 32. The pairs 38 / 32,
+  38 / 28, 32 / 28 and 32 / 24 were drawn and compared (specs/design/decisions.md). The
+  kit's `statusbar()` and OneTerm's own follow, with what stands on the bar (notification
+  cards, `.above(28.0)`); the design language's texts, which said 30 in two places and 32
+  in two, say 28. Tests: quadra-design tests/bars.rs, tests/notices.rs; OneTerm
+  tests/bars.rs.
 - **A tooltip's arrow lets the pointer through** (2026-11-25): the arrow's box, 12 px with
   the triangle in half of it, reaches 5 px over the view's edge and took the pointer there,
   so the view lost it and the tooltip closed in the frame that opened it, again and again

@@ -45,7 +45,7 @@ pub struct Gallery {
 
 impl Gallery {
     pub fn new(page: &'static str, dark: bool) -> Gallery {
-        let notices = notices().above(32.0);
+        let notices = notices().above(28.0);
         Gallery { page: signal(page), dark: signal(dark), notices, palette: signal(false) }
     }
 

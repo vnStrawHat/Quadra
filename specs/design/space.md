@@ -53,12 +53,14 @@ control they are centred on it.
 | Step | Height | Used for |
 |---|---|---|
 | data | 24 | what there are hundreds of: list rows, tree rows, table rows, log lines, variables |
-| **item** | **28** | what is chosen from: menu rows, navigation rows, options of a select, tabs of a panel, a panel's header |
+| **item** | **28** | what is chosen from: menu rows, navigation rows, options of a select, tabs of a panel, a panel's header; the status bar |
 | bar | 32 | a strip of the window: the tab strip, a toolbar's row, a title bar, the search head of a menu |
 | touch | 40 | a row that is only an icon (an activity bar, a folded rail) |
 
 A bar's height is its row; where it holds controls smaller than its row they are centred
-(22 px buttons in a 32 px bar: 5 above and below). The status bar is a bar like the others.
+(22 px buttons in a 32 px bar: 5 above and below). The status bar is the exception: it is
+lower than the title bar, an item row (28, its 22 px buttons 3 above and below), so that
+the window's top edge is the heavier of the two.
 A row of two lines (a title and a line about it, 2 apart) is the touch step, 40.
 
 ## Radii
@@ -132,7 +134,7 @@ backdrop behind a dialog: a click outside dismisses it.
 | tab strip | 32 |
 | toolbar | 32 row with 6 above and below, a `line` under it |
 | panel header | 28 |
-| status bar | 30 |
+| status bar | 28 (lower than the title bar) |
 | activity bar | 40 wide |
 | splitter | 1 px `line_strong`, 6 px grab area |
 | scrollbar | a 6 px thumb, 4 from the edge |

@@ -137,7 +137,7 @@ pub(crate) fn status_bar(model: &Model, clock: Signal<String>, now: Clock) -> im
         .align_items(Align::Center)
         .gap(token::SPACE_LG)
         .padding_x(token::SPACE_MD)
-        .height(by_text(32.0))
+        .height(by_text(28.0))
         .shrink(0.0)
         .bg(token::STATUS_BG)
         .border_top(1.0)

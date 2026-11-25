@@ -36,6 +36,7 @@ story, with its tests and pictures, is in that repository's `docs/progress.md` a
 - Startup commands as a list of the settings, chosen by name in a host's dialog.
 - The SFTP dock's header of columns that sort (Name, Size, Modified, Permissions).
 - The status bar's git says the lines added and removed.
+- 2026-11-25: the status bar is 28 px, lower than the title bar (32): the user's decision.
 - 2026-11-25: the app is a set of crates (`app`, `ssh`, `completion`, `vault`, `shots`) with
   its own scripts (the gate, the release asset), workflows (CI with the dependency policy,
   release) and specs, laid out as this repository.

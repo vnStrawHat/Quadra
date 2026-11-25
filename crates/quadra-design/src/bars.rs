@@ -54,7 +54,7 @@ impl View for Statusbar {
             .align_items(Align::Center)
             .gap(token::SPACE_LG)
             .padding_x(token::SPACE_MD)
-            .height(by_text(32.0))
+            .height(by_text(28.0))
             .shrink(0.0);
         let bar = bar.bg(token::STATUS_BG).border_top(1.0).border_color(token::LINE);
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());

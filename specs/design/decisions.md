@@ -108,7 +108,8 @@ was silent, said two things, or did not match the kit. What they changed:
   `number_input(..).unit("backups")` says what a number counts, muted, inside the field;
   `card_head_with(title, more, end)` puts a status, a tag or a quiet button at the end of a
   card's head; a control in a `field(..)` in a form fills its column whatever wraps it.
-- **The title bar**: `titlebar(..).height(38.0)` is the taller bar (OneTerm uses it); nothing
+- **The title bar**: `titlebar(..).height(38.0)` is the taller bar (OneTerm used it until
+  2026-11-24, and is a bar of 32 since); nothing
   was missing but the sentence in components.md.
 
 ## Decided, not owed
@@ -189,5 +190,14 @@ two exceptions the kit itself kept: its status bar was 30 and the command palett
 row 36; both are bars. No height of a row or a bar in the kit or the apps is off the
 ladders now, but a toolbar (a bar with 6 above and below and its line: 45) and a menu's
 separator (a line with 4 above and below: 9), which are sums of steps.
+
+**The status bar is lower than the title bar** (the user's decision, 2026-11-25). With both
+at 32 the user found OneTerm's window out of balance: the title bar has to be the taller
+of the two, and 38, which it had before, was a little too tall. Left to choose, the pairs
+were drawn and compared (title / status): 38 / 32 and 38 / 28 bring back the height the
+user took away; 32 / 24 leaves the bar's 22 px buttons 1 px above and below and makes it
+lower than a panel's header; 32 / 28 keeps the title bar and makes the status bar an item
+row, as tall as a panel's header, its buttons 3 above and below. 32 / 28 it is, for the
+kit's `statusbar()` and OneTerm's own.
 
 Nothing is owed.

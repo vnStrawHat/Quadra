@@ -116,7 +116,7 @@ apart, its title (16, `text_2`) over it, 8 apart.
   the row. `.pill()`: no line, the chosen one `accent_tint`.
 - **Toolbar**: a row of 32 with 6 above and below on `canvas`, a `line` under it; breadcrumbs
   in mono `text_2` split by `›` in `text_3`.
-- **Status bar**: 32 on `status_bg`, a `line` over it, 12 px text in `text_2`, values in
+- **Status bar**: 28 on `status_bg`, a `line` over it, 12 px text in `text_2`, values in
   mono `text`; groups 12 apart with 1 × 14 `line_strong` rules; 8 from its ends; panel
   switches are 22 px icon buttons whose on state is an accent icon.
 - **Activity bar**: 40 wide; an item is 40 × 40 with a 16 px icon; the active one has a 2 px

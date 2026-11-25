@@ -326,7 +326,7 @@ As built so far:
   otherwise; close turns `#E81120` under the pointer. They ask the window (`window()`),
   and are buttons to a reader.
 - **The bars** (`bars.rs`). `toolbar()` is a box of 45 px on the canvas with a line under
-  it, its children 4 px apart. `statusbar().left(view).right(view)` is the strip of 32 px
+  it, its children 4 px apart. `statusbar().left(view).right(view)` is the strip of 28 px (lower than a title bar)
   at the bottom of a window, in 12 px text, under a `LINE` as the toolbar is over one; in it stand `status_item(icon, words)`,
   `status_button(icon, name, on)` (an icon toggle: muted, the accent while on, never
   filled; a toggled button that is an icon alone takes no fill anywhere) and
@@ -853,7 +853,7 @@ of the window) and the shadow of its level.
   .lasts(time))` is a card of 448 px on the panel's plane at the level of dialogs, with the
   icon of its tone, a close button, and its buttons at the right, each of which does what it
   says and closes the card. Cards stack in the bottom right corner, 12 px from the edges
-  (`.above(30.0)` lifts them over a status bar), the newest the lowest, 8 px apart, and
+  (`.above(28.0)` lifts them over a status bar), the newest the lowest, 8 px apart, and
   stay until closed unless they say how long they last. `.on_open(f)` makes the card's words
   a button named by its title: a click does `f` and closes the card. `.on_close(f)` runs once
   when the card goes, however it goes (its close button, its time, a button, `close`), but

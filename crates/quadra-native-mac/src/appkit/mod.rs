@@ -8,6 +8,7 @@ mod input;
 mod keys;
 mod look;
 mod menu;
+mod place;
 mod view;
 mod window;
 

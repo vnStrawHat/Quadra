@@ -43,8 +43,10 @@ pub struct WindowOptions {
     pub placement: Option<Placement>,
 }
 
-/// Where a window is, as the OS keeps it: its frame when it is not maximized, in device
-/// pixels of the desktop, and whether it is maximized. What the app stores and gives back.
+/// Where a window is, as the OS keeps it: its frame when it is not maximized and whether it
+/// is maximized. What the app stores and gives back, and reads nothing from: the frame is
+/// in the units of the OS's desktop (device pixels on Windows; on macOS points from the
+/// bottom left of the first display, the frame as it is when zoomed).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Placement {
     pub x: i32,

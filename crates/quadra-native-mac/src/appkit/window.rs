@@ -23,6 +23,7 @@ use super::Shared;
 use super::access::Access;
 use super::delivery::Delivery;
 use super::look;
+use super::place;
 use super::view::View;
 
 /// What a window, its view and its delegate share.
@@ -165,18 +166,9 @@ impl MacWindow {
         let delegate: Retained<Delegate> = unsafe { msg_send![super(delegate), init] };
         window.setDelegate(Some(ProtocolObject::from_ref(&*delegate)));
         match options.placement {
-            Some(place) => {
-                let frame = NSRect::new(
-                    NSPoint::new(place.x.into(), place.y.into()),
-                    NSSize::new(place.width.into(), place.height.into()),
-                );
-                window.setFrame_display(frame, false);
-                if place.maximized {
-                    window.zoom(None);
-                }
-            }
-            None if options.centered => window.center(),
-            None => {}
+            Some(place) if place::put(mtm, &window, place) => {}
+            _ if options.centered => window.center(),
+            _ => {}
         }
         if options.visible {
             window.makeKeyAndOrderFront(None);
@@ -272,16 +264,7 @@ impl PlatformWindow for MacWindow {
         }
     }
 
-    /// The window's frame as AppKit keeps it: in points, from the bottom left of the
-    /// first display.
     fn placement(&self) -> Placement {
-        let frame = self.window.frame();
-        Placement {
-            x: frame.origin.x as i32,
-            y: frame.origin.y as i32,
-            width: frame.size.width as i32,
-            height: frame.size.height as i32,
-            maximized: self.window.isZoomed(),
-        }
+        place::of(&self.window)
     }
 }

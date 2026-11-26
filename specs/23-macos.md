@@ -219,6 +219,11 @@ renderer and Core Text.
   app decides (15, "Closing"). No item takes a key an app may want for itself: closing with
   Command-W is the app's binding. Its titles are in English.
   The code editor's keys follow (09).
+- **A placement** (15, "Window state") is the window's frame in the desktop's points, from
+  the bottom left of the first display, as AppKit keeps it: one space holds displays of
+  every scale, so nothing is counted in device pixels. A window opens at a place it is given
+  only when a display shows 64 points of it each way (`appkit/place.rs`); a zoomed window
+  comes back by its frame.
 - **Readers** (12, "Accessibility"): the window's semantic tree is told to the system's
   accessibility by the adapter of `accesskit` for macOS (`appkit/access.rs`), which gives
   the view a class of its own over the view's before the view is in a window. Tested by
@@ -226,8 +231,7 @@ renderer and Core Text.
 - **Not yet**: an app's own menus in the menu
   bar, and the bar in the app's language; the system's
   three buttons at the middle of a title bar taller than the system's, and their room given
-  back while the window fills the screen; a placement is the window's frame in points from
-  the bottom left of the first display, not yet in the device pixels the trait says.
+  back while the window fills the screen.
 
 Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:
 a real window that is not shown, what the loop gives the handler (timers, a frame, a wake

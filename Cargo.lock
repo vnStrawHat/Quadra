@@ -1387,6 +1387,7 @@ dependencies = [
  "quadra-platform",
  "quadra-prim",
  "quadra-reactive",
+ "quadra-render",
  "quadra-tree",
  "quadra-view",
 ]

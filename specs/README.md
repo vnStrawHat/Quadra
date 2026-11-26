@@ -37,6 +37,7 @@ tests and Quadra's own measurements (`docs/benchmarks.md`) are the reference.
 | [OneTerm's specs](../apps/oneterm/specs/README.md) | OneTerm, the terminal app, and its command completion: with the app, in `apps/oneterm/specs` (they were 19 and 20 here until 2026-11-25), as it moves to a repository of its own |
 | [21-markdown.md](21-markdown.md) | Markdown, the app that reads and edits `.md` files: layouts, files, panes that scroll by headings, the toolbar, the logo |
 | [22-updater.md](22-updater.md) | The updater: an app's newer releases from GitHub, checked against their digest, installed while the app runs |
+| [23-macos.md](23-macos.md) | macOS, the second system: what is built again, how it is developed from Windows, what is left out, the milestones |
 
 Reading order: 00, 01, 02, 03, 04, 05, then the rest.
 

@@ -28,8 +28,10 @@
 //! - The components and their look are the crate `quadra-design`; what the OS does beyond
 //!   windows (dialogs, the tray, one instance) is `quadra-shell`, which an app adds itself.
 
+#[cfg(windows)]
 use std::rc::Rc;
 
+#[cfg(windows)]
 use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
 pub use quadra_app::{
@@ -64,9 +66,11 @@ pub use quadra_view::{
 
 /// An app on the backends of this operating system: Win32 windows, the D3D11 renderer and
 /// DirectWrite text.
+#[cfg(windows)]
 pub type App = quadra_app::App<D3d11Renderer>;
 
 /// Makes the app: the platform, the GPU device and the text backend.
+#[cfg(windows)]
 pub fn app() -> Result<App> {
     let platform = WinPlatform::new()?;
     // Before the renderer: its worker starts the GPU driver, which holds up whatever loads
@@ -74,4 +78,16 @@ pub fn app() -> Result<App> {
     let text = DirectWrite::new().map_err(AppError::Text)?;
     let renderer = D3d11Renderer::starting(&platform);
     Ok(App::with(Rc::new(platform), renderer, Box::new(text)))
+}
+
+/// An app where Quadra has no native crate yet (specs/23): the type an app names, so that
+/// it builds and its tests run there; [`app`] makes none.
+#[cfg(not(windows))]
+pub type App = quadra_app::App<quadra_render::NullRenderer>;
+
+/// Says that Quadra opens no window on this operating system yet (specs/23).
+#[cfg(not(windows))]
+pub fn app() -> Result<App> {
+    let why = "Quadra has no native backend for this operating system yet";
+    Err(AppError::Platform(quadra_platform::PlatformError(why.to_string())))
 }

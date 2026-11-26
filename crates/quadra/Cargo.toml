@@ -14,9 +14,16 @@ workspace = true
 quadra-app = { path = "../quadra-app" }
 quadra-async = { path = "../quadra-async" }
 quadra-layout = { path = "../quadra-layout" }
-quadra-native-win = { path = "../quadra-native-win" }
 quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }
 quadra-reactive = { path = "../quadra-reactive" }
 quadra-tree = { path = "../quadra-tree" }
 quadra-view = { path = "../quadra-view" }
+
+# The native crate of the operating system (specs/10, "The native crate").
+[target.'cfg(windows)'.dependencies]
+quadra-native-win = { path = "../quadra-native-win" }
+
+# No native crate yet (specs/23): the facade still names an app's type, on no GPU.
+[target.'cfg(not(windows))'.dependencies]
+quadra-render = { path = "../quadra-render" }

@@ -221,7 +221,10 @@ a Mac Metal, Core Text and Image I/O, with the headless platform, as on Windows.
 job draws every page of the dark theme after the tests (`tools/shots.sh dark`): a page that
 does not draw fails the job. The pictures are kept with the run for fourteen days
 (`gallery-dark-macos`, for who is signed in to GitHub), and the run's notice says how many
-there are. They are not compared with the Windows ones yet.
+there are. They are not compared with the Windows ones yet. A commit whose message has a
+line `ci-show: page page ..` is shown those pictures, made small, as notices of the run,
+which `tools/ci_mac.sh` writes to `.tmp/ci/`: the way to look at a page drawn on a Mac from
+a machine that is none.
 
 ## Milestones
 

@@ -65,6 +65,18 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # The pictures a commit asks to see (a line `ci-show: page page ..` in its message),
+      # made small, as notices of the run: for who works on the port with no Mac and no right
+      # to the run's files. `tools/ci_mac.sh` writes them out as files again.
+      - name: Show the pictures asked for
+        if: always()
+        run: |
+          for page in $(git log -1 --format=%B | sed -n 's/^ci-show: *//p' | grep -Eo '[a-z0-9-]+' | head -n 8); do
+            [ -f ".tmp/shots/dark/$page.png" ] || continue
+            sips -Z 640 ".tmp/shots/dark/$page.png" --out small.png > /dev/null
+            echo "::notice title=picture $page::$(base64 < small.png | tr -d '\n')"
+          done
+
       # What ran, as a notice of the run: the tests that passed, the native crate's own, and
       # how many pictures of the gallery were drawn.
       - name: Say what passed

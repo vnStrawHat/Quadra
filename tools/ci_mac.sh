@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Waits for the macOS job of the branch's commit (pushed) and prints what it said (specs/23):
 # tools/ci_mac.sh [branch]. The job's log needs rights to the repository; what it says as
-# annotations of the run (what passed, the end of what failed) is public, and read here.
+# annotations of the run (what passed, the end of what failed) is public, and read here. The
+# pictures of the gallery a commit asked to see (a line `ci-show: page page ..` in its
+# message) come the same way, and are written to .tmp/ci/<page>.png.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 api=https://api.github.com/repos/vnStrawHat/Quadra
@@ -23,14 +25,20 @@ until state=$(curl -s "$api/actions/runs/$run" |
 done
 echo "$state"
 curl -s "$api/actions/runs/$run/jobs" | PYTHONUTF8=1 python -c "
-import json, sys, urllib.request
+import base64, json, os, re, sys, urllib.request
 for job in json.load(sys.stdin).get('jobs', []):
     for step in job['steps']:
         if step['conclusion'] not in ('success', 'skipped'):
             print('step:', step['name'], step['conclusion'])
     said = json.load(urllib.request.urlopen('$api/check-runs/%d/annotations' % job['id']))
     for note in said:
-        if note.get('title'):
+        title = note.get('title') or ''
+        if re.fullmatch('picture [a-z0-9-]+', title):
+            os.makedirs('.tmp/ci', exist_ok=True)
+            file = '.tmp/ci/%s.png' % title.split()[1]
+            open(file, 'wb').write(base64.b64decode(note.get('message') or ''))
+            print('-- picture |', file, os.path.getsize(file), 'bytes')
+        elif title:
             print('--', note.get('annotation_level'), '|', note.get('title'))
             print((note.get('message') or '')[-6000:])
 "

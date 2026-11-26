@@ -1,44 +1,32 @@
 #!/usr/bin/env bash
-# Waits for the macOS job of the branch's commit (pushed) and prints what it said (specs/23):
-# tools/ci_mac.sh [branch]. The job's log needs rights to the repository; what it says as
-# annotations of the run (what passed, the end of what failed) is public, and read here. The
-# pictures of the gallery a commit asked to see (a line `ci-show: page page ..` in its
-# message) come the same way, and are written to .tmp/ci/<page>.png.
+# Waits for the macOS job of the branch's commit (pushed) and says what it did (specs/23):
+# tools/ci_mac.sh [branch]. It asks GitHub through `gh`, signed in (`gh auth login`): the
+# run's notice (the tests that passed), the end of the log of what failed, and the pictures
+# of the gallery the job drew on the Mac, which it puts in .tmp/ci/mac-dark.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-api=https://api.github.com/repos/vnStrawHat/Quadra
+# Where the installer of Windows puts it, for a shell opened before it was installed.
+gh=$(command -v gh || echo "/c/Program Files/GitHub CLI/gh.exe")
 branch="${1:-macos}"
-# The run of the branch's commit as it is here: it appears a while after the push. Few
-# requests: GitHub answers sixty an hour to who has no token.
 want=$(git rev-parse "$branch")
-until run=$(curl -s "$api/actions/runs?branch=$branch&per_page=5" | python -c "
-import json, sys
-print(next(r['id'] for r in json.load(sys.stdin).get('workflow_runs', []) if r['head_sha'] == '$want'))
-" 2>/dev/null); do
-	sleep 30
+# The run appears a while after the push.
+until run=$("$gh" run list --workflow macOS --commit "$want" --limit 1 --json databaseId \
+	--jq '.[0].databaseId') && [ -n "$run" ]; do
+	sleep 20
 done
 echo "run $run: https://github.com/vnStrawHat/Quadra/actions/runs/$run"
-until state=$(curl -s "$api/actions/runs/$run" |
-	python -c "import json,sys; d=json.load(sys.stdin); print(d.get('status'), d.get('conclusion'), d.get('head_sha','')[:7])") &&
-	[ "${state%% *}" = completed ]; do
-	sleep 45
-done
-echo "$state"
-curl -s "$api/actions/runs/$run/jobs" | PYTHONUTF8=1 python -c "
-import base64, json, os, re, sys, urllib.request
-for job in json.load(sys.stdin).get('jobs', []):
-    for step in job['steps']:
-        if step['conclusion'] not in ('success', 'skipped'):
-            print('step:', step['name'], step['conclusion'])
-    said = json.load(urllib.request.urlopen('$api/check-runs/%d/annotations' % job['id']))
-    for note in said:
-        title = note.get('title') or ''
-        if re.fullmatch('picture [a-z0-9-]+', title):
-            os.makedirs('.tmp/ci', exist_ok=True)
-            file = '.tmp/ci/%s.png' % title.split()[1]
-            open(file, 'wb').write(base64.b64decode(note.get('message') or ''))
-            print('-- picture |', file, os.path.getsize(file), 'bytes')
-        elif title:
-            print('--', note.get('annotation_level'), '|', note.get('title'))
-            print((note.get('message') or '')[-6000:])
-"
+"$gh" run watch "$run" --interval 30 > /dev/null 2>&1 || true
+"$gh" run view "$run" --json conclusion,headSha --jq '"\(.conclusion) \(.headSha[0:7])"'
+job=$("$gh" run view "$run" --json jobs --jq '.jobs[0].databaseId')
+"$gh" api "repos/{owner}/{repo}/check-runs/$job/annotations" \
+	--jq '.[] | select(.title == "Tests on a Mac") | .message' || true
+# What failed: the log's lines less the job's and the step's names, and less what cargo
+# says of every crate.
+"$gh" run view "$run" --log-failed 2> /dev/null | cut -f3- |
+	grep -vE ' +(Compiling|Checking|Downloading|Downloaded|Fresh) ' | tail -n 150 || true
+rm -rf .tmp/ci/mac-dark
+if "$gh" run download "$run" -n gallery-dark-macos -D .tmp/ci/mac-dark 2> /dev/null; then
+	echo "pictures: .tmp/ci/mac-dark ($(find .tmp/ci/mac-dark -name '*.png' | wc -l) of them)"
+else
+	echo "pictures: none"
+fi

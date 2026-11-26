@@ -11,8 +11,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use markdown::{Driver, MdApp, Model, SIDE_BY_SIDE, keymap};
-use quadra_app::{App, AppError};
-use quadra_native_win::{D3d11Renderer, DirectWrite};
+use quadra_app::App;
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 
 /// A section of 25 lines.
@@ -32,7 +31,7 @@ type Presented = Rc<Cell<(u64, Instant)>>;
 
 /// Passes, the window's clock moved 75 ms between them, for `ms` at least and then until two
 /// in a row present nothing; the time from `start` to the last frame presented.
-fn settle(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, seen: &Presented, ms: u64) -> Duration {
+fn settle(platform: &HeadlessPlatform, app: &mut App<crate::Gpu>, seen: &Presented, ms: u64) -> Duration {
     let start = Instant::now();
     let (mut still, mut passes) = (0, 0u64);
     while passes * 75 < ms || still < 2 {
@@ -53,9 +52,7 @@ pub fn large(out: &std::path::Path) -> Result<(), Box<dyn Error>> {
         let lines = text.lines().count();
         let file = out.join(format!("large-{sections}.md"));
         std::fs::write(&file, &text)?;
-        let platform = HeadlessPlatform::new();
-        let words = DirectWrite::new().map_err(AppError::Text)?;
-        let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(words));
+        let (platform, app) = crate::app()?;
         let seen: Presented = Rc::new(Cell::new((0, Instant::now())));
         let told = seen.clone();
         let app = app.on_presented(move |_| told.set((told.get().0 + 1, Instant::now())));

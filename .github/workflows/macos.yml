@@ -64,12 +64,21 @@ jobs:
           echo "== the bundle" | tee -a check_mac.log
           PACKAGE_PROFILE=dev bash tools/package_mac.sh markdown 2>&1 | tee -a check_mac.log
 
+      # Markdown's screens the same way (specs/23, M3): the app as it is on a Mac.
+      - name: Markdown's screens as pictures
+        run: |
+          set -o pipefail
+          echo "== Markdown's screens" | tee -a check_mac.log
+          bash tools/cargo.sh run -q -p quadra-bench-markdown-shots -- .tmp/shots/markdown 2>&1 | tee -a check_mac.log
+
       - name: Keep the pictures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: gallery-dark-macos
-          path: .tmp/shots/dark
+          path: |
+            .tmp/shots/dark
+            .tmp/shots/markdown
           if-no-files-found: ignore
           retention-days: 14
 

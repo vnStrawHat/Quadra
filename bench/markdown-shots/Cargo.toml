@@ -20,9 +20,15 @@ quadra-app = { path = "../../crates/quadra-app" }
 quadra-async = { path = "../../crates/quadra-async" }
 quadra-code = { path = "../../crates/quadra-code" }
 quadra-design = { path = "../../crates/quadra-design" }
-quadra-native-win = { path = "../../crates/quadra-native-win" }
 quadra-platform = { path = "../../crates/quadra-platform" }
 quadra-layout = { path = "../../crates/quadra-layout" }
 quadra-prim = { path = "../../crates/quadra-prim" }
 quadra-vector = { path = "../../crates/quadra-vector" }
 quadra-view = { path = "../../crates/quadra-view" }
+
+# The renderer and the text of the system the pictures are drawn on.
+[target.'cfg(windows)'.dependencies]
+quadra-native-win = { path = "../../crates/quadra-native-win" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+quadra-native-mac = { path = "../../crates/quadra-native-mac" }

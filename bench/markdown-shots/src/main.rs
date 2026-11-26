@@ -1,5 +1,6 @@
-//! The Markdown app's screens drawn without a window, to pictures (specs/21): the software
-//! device, the real text, the headless platform. Nothing shows on the desktop.
+//! The Markdown app's screens drawn without a window, to pictures (specs/21): the renderer
+//! and the text of the system it runs on (the software device on Windows), the headless
+//! platform. Nothing shows on the desktop.
 //!
 //!     tools/cargo.sh run -p quadra-bench-markdown-shots -- [out dir] [scene ..]
 //!
@@ -24,7 +25,10 @@ use std::time::Duration;
 
 use markdown::{MdApp, Model, PREVIEW, RAW, SIDE_BY_SIDE, keymap};
 use quadra_app::{App, AppError};
-use quadra_native_win::{D3d11Renderer, DirectWrite};
+#[cfg(target_os = "macos")]
+use quadra_native_mac::{CoreText as Fonts, MetalRenderer as Gpu};
+#[cfg(windows)]
+use quadra_native_win::{D3d11Renderer as Gpu, DirectWrite as Fonts};
 use quadra_platform::{HeadlessPlatform, Platform, WindowOptions};
 
 const SCENES: [(&str, usize); 10] = [
@@ -40,7 +44,20 @@ const SCENES: [(&str, usize); 10] = [
     ("find-raw", RAW),
 ];
 
-fn pass(platform: &HeadlessPlatform, app: &mut App<D3d11Renderer>, ms: u64) {
+/// An app on no display, drawn by the renderer and the text of the system it runs on, as an
+/// app of that system (its window buttons, its names of keys).
+fn app() -> Result<(HeadlessPlatform, App<Gpu>), Box<dyn Error>> {
+    let platform = HeadlessPlatform::new();
+    platform.as_the_system();
+    let text = Fonts::new().map_err(AppError::Text)?;
+    #[cfg(windows)]
+    let gpu = Gpu::new(true)?;
+    #[cfg(target_os = "macos")]
+    let gpu = Gpu::new()?;
+    Ok((platform.clone(), App::with(Rc::new(platform), gpu, Box::new(text))))
+}
+
+fn pass(platform: &HeadlessPlatform, app: &mut App<Gpu>, ms: u64) {
     for _ in 0..ms.div_ceil(75) {
         quadra_async::wait_idle(Duration::from_secs(10));
         platform.waker().wake();
@@ -72,9 +89,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         large::large(&out)?;
     }
     for (scene, layout) in SCENES.iter().filter(|(it, _)| wanted(it)) {
-        let platform = HeadlessPlatform::new();
-        let text = DirectWrite::new().map_err(AppError::Text)?;
-        let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
+        let (platform, app) = app()?;
         let mut app = quadra_design::install(app, &quadra_design::dark())?.keymap(keymap());
         markdown::plain_code(&mut app);
         let built: Rc<RefCell<Option<Model>>> = Rc::default();
@@ -120,9 +135,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 /// The logo at 256 px on the dark canvas and on the light, side by side.
 fn logo(out: &std::path::Path) -> Result<(), Box<dyn Error>> {
-    let platform = HeadlessPlatform::new();
-    let text = DirectWrite::new().map_err(AppError::Text)?;
-    let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
+    let (platform, app) = app()?;
     let mut app = quadra_design::install(app, &quadra_design::dark())?;
     let window = app.open_window(WindowOptions::new("Logo").size(640.0, 320.0), || {
         let tile = |bg: quadra_prim::Color| {
@@ -148,9 +161,7 @@ fn logo(out: &std::path::Path) -> Result<(), Box<dyn Error>> {
 
 /// The settings window, at its page `first`.
 fn settings(out: &std::path::Path, scene: &str, first: usize) -> Result<(), Box<dyn Error>> {
-    let platform = HeadlessPlatform::new();
-    let text = DirectWrite::new().map_err(AppError::Text)?;
-    let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
+    let (platform, app) = app()?;
     let mut app = quadra_design::install(app, &quadra_design::dark())?;
     let window = app.open_window(WindowOptions::new("Markdown Settings").size(980.0, 680.0), move || {
         let model = Model::new();

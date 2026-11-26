@@ -70,8 +70,8 @@ The user's machine runs Windows; a Mac is not at hand yet.
 `tools/check_mac.sh` names the packages that are not built for macOS; the list is what is
 left of the port, and a milestone ends by taking names off it:
 
-- `quadra-native-win`, and the tools that measure or draw with it (the comparison bench and
-  its runner, the fire demo, the tool that draws Markdown's screens) (M2, M5).
+- `quadra-native-win`, and the tools that measure with it (the comparison bench and its
+  runner, the fire demo) (M2, M5).
 - Every package of OneTerm, for good (Goals).
 
 Where Quadra has no native crate at all (not Windows, not macOS), `quadra::App` is an app on
@@ -264,6 +264,10 @@ Windows, so the app `markdown` builds for macOS and its tests run on the runner;
 of one instance runs there too. What shows something to the user (a panel, an alert, what
 `open` opens) is tried by hand on a real Mac. Not yet: an item in the menu bar for the
 tray, process usage, and what M4 needs (sealing, hashing, fetching).
+
+The tool that draws Markdown's screens (`bench/markdown-shots`) draws with the system it
+runs on, as the gallery's does: the CI's job draws them on a Mac after the gallery's pages
+and keeps them with the run, so the app is seen as Metal and Core Text draw it.
 
 ### The app bundle
 

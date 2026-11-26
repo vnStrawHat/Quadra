@@ -67,7 +67,7 @@ no controls. Neither has a foot: what is in it acts at once.
 - A separator is a 1 px `line` edge to edge, 4 above and below. A heading is 24 tall,
   12 px `text_2`.
 - A destructive row (`.danger()`) is `error`. A row may say a few words after its label in
-  12 px `text_2` (`.detail(..)`).
+  12 px `text_2` (`.detail(..)`): to a reader the row's description, not part of its name.
 - A long menu is capped at half the window or 450 px and scrolls.
 - A searched menu has a head of 32 over its rows (a 12 px search icon in `text_3`, the
   field, a `line` under it), is 360 wide, and Enter does the first row that can be done.

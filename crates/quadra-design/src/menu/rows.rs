@@ -49,8 +49,14 @@ fn face(item: &MenuItem, marks: bool) -> Div {
         },
     };
     let face = face.child(text(item.label.clone()));
+    // The detail is the row's description to a reader, not part of its name.
     let face = match &item.detail {
-        Some(words) => face.child(div().text_size(12.0).text_color(token::TEXT_2).child(text(words.clone()))),
+        Some(words) => {
+            let told = NodeRef::new();
+            let words =
+                div().text_size(12.0).text_color(token::TEXT_2).node_ref(&told).child(text(words.clone()));
+            face.described_by(&told).child(words)
+        }
         None => face,
     };
     let face = face.child(div().grow(1.0).min_width(16.0));

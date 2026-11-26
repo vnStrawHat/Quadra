@@ -795,6 +795,9 @@ Measured on each control mounted with its defaults (specs/design, Control height
 A select's value or placeholder is one line, cut with an ellipsis when the field is narrower
 (2026-11-26, issue #47; `crates/quadra-design/tests/select_line.rs`): it wrapped and spilled
 out of the field.
+A select's options may have a detail each (`.details(..)`, 2026-11-26, issue #48), shown after
+the name in the menu and not in the field; a menu row's detail is its description to a reader
+(`DescribedBy` its text).
 
 ### The move loop keeps drawing (2026-11-22)
 

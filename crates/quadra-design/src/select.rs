@@ -19,6 +19,8 @@ use crate::{icons, size, token};
 
 pub struct Select {
     options: Rc<Vec<String>>,
+    /// A few words of each option in its menu row alone ("" for none).
+    details: Rc<Vec<String>>,
     chosen: Signal<usize>,
     width: Option<f32>,
     placeholder: String,
@@ -32,7 +34,7 @@ pub struct Select {
 pub fn select<S: Into<String>>(options: impl IntoIterator<Item = S>, chosen: Signal<usize>) -> Select {
     let options = Rc::new(options.into_iter().map(Into::into).collect());
     let (placeholder, search, label, test_id) = (String::new(), None, None, None);
-    Select { options, chosen, width: None, placeholder, search, label, test_id }
+    Select { options, details: Rc::default(), chosen, width: None, placeholder, search, label, test_id }
 }
 
 impl Select {
@@ -45,6 +47,13 @@ impl Select {
     /// (`usize::MAX` says nothing is chosen yet).
     pub fn placeholder(mut self, words: impl Into<String>) -> Self {
         self.placeholder = words.into();
+        self
+    }
+
+    /// A few words of each option, in order, after its name in the menu and not in the field
+    /// ("" for an option with none); to a reader its row's description.
+    pub fn details<S: Into<String>>(mut self, words: impl IntoIterator<Item = S>) -> Self {
+        self.details = Rc::new(words.into_iter().map(Into::into).collect());
         self
     }
 
@@ -119,10 +128,15 @@ impl View for Select {
             return crate::layout::holder(column(), told).child(face).child(list).mount(cx);
         }
         // The chosen option has a quiet check before it; with none chosen, no room is kept.
+        let details = self.details;
         let items = move || {
             let on = chosen.get_untracked();
             let item = |(i, name): (usize, &String)| {
                 let item = MenuItem::new(name.clone()).on_select(move || chosen.set(i));
+                let item = match details.get(i).filter(|it| !it.is_empty()) {
+                    Some(words) => item.detail(words.clone()),
+                    None => item,
+                };
                 if i == on { item.checked(true).quiet() } else { item }
             };
             options.iter().enumerate().map(item).collect()

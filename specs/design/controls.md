@@ -45,7 +45,9 @@ same height, the same corners, the same border colour, their text on one baselin
   right and 6 above and below; it grows with its lines.
 - **Select**: the field look with a 12 px up-down chevron in `text_2` at its end, 8 from
   the value; 160 wide alone. Its menu is the menu (surfaces.md) as wide as the field or
-  wider, a 14 px check in `accent_text` on the chosen row. Searched (`.searchable(ask)`): a
+  wider, a 14 px check in `accent_text` on the chosen row; an option may say a few words in
+  its row alone, as a row's detail (`.details(..)`, the field keeps the name). Searched
+  (`.searchable(ask)`): a
   search head over the rows (surfaces.md, Menu).
 - **Combobox**: a text input whose list of matches is a menu under it, 280 wide alone.
 - **Number input**: a text input 140 wide alone with an up and a down chevron (10 px icons

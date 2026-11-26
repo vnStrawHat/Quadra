@@ -417,7 +417,9 @@ As built so far:
   and not typed over; `select(..).placeholder(words)` says the words, muted, while `chosen`
   is the index of no option (`usize::MAX`: nothing chosen yet), and its value or placeholder
   is one line, cut with an ellipsis when the field is narrower (its menu shows each option
-  whole); `textarea(value)` is a
+  whole); `.details(words)` gives each option a detail ("" for none) shown after its name
+  in the menu alone, as a menu row's `.detail(..)` (the menu that is not searched);
+  `textarea(value)` is a
   builder (`.rows(..)`, `.width(..)`, `.placeholder(..)`).
 - **`number_input(value)`** is an input that holds a number (`.range(..)`, `.step(..)`,
   `.decimals(..)`), 140 px with a pair of chevrons inside it at its end that step it, or

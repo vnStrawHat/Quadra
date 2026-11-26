@@ -24,7 +24,8 @@ impl Action for TermCommand {
 }
 
 /// Binds Tab and Shift+Tab to the program, and copy and paste to Ctrl+Shift+C and V (and
-/// Ctrl+Insert, Shift+Insert), while a terminal has the focus.
+/// Ctrl+Insert, Shift+Insert), while a terminal has the focus. On a Mac Command with C and V
+/// copy and paste too: Control is the key that is the program's there (`key_event`).
 pub fn bind_keys(keymap: &mut Keymap) {
     let keys = [
         ("tab", TermCommand::Tab(false)),
@@ -41,19 +42,30 @@ pub fn bind_keys(keymap: &mut Keymap) {
     for (keys, command) in keys {
         keymap.bind_in(TERMINAL_CONTEXT, keys, command).expect("the terminal's bindings are well formed");
     }
+    for (keys, command) in [("ctrl-c", TermCommand::Copy), ("ctrl-v", TermCommand::Paste)] {
+        keymap.bind_in_on_mac(TERMINAL_CONTEXT, keys, command).expect("as above");
+    }
 }
 
 /// The engine's key for a platform key with its modifiers, or `None` when typing gives it as
 /// text: a printable key without Ctrl or Alt, or with both (AltGr).
-pub(crate) fn key_event(key: Key, mods: Mods, repeat: bool) -> Option<KeyEvent> {
-    let (ctrl, alt) = (mods.contains(Mods::CTRL), mods.contains(Mods::ALT));
+///
+/// On a Mac (`mac`; specs/23, "Keys"): the program's Control is the key the platform calls
+/// `SUPER`, a key held with Command is the app's and never the program's, and Option with a
+/// key that types gives what the layout says, as text.
+pub(crate) fn key_event(key: Key, mods: Mods, repeat: bool, mac: bool) -> Option<KeyEvent> {
+    let held = |it| mods.contains(it);
+    let (ctrl, alt, super_key) = match mac {
+        true if held(Mods::CTRL) => return None,
+        true => (held(Mods::SUPER), held(Mods::ALT), false),
+        false => (held(Mods::CTRL), held(Mods::ALT), held(Mods::SUPER)),
+    };
     let spec = match named(key) {
         Some(named) => KeySpec::Named(named),
-        None if ctrl != alt => KeySpec::Character(printable(key)?.to_string()),
+        None if ctrl != alt && (ctrl || !mac) => KeySpec::Character(printable(key)?.to_string()),
         None => return None,
     };
-    let mods =
-        KeyMods { shift: mods.contains(Mods::SHIFT), ctrl, alt, super_key: mods.contains(Mods::SUPER) };
+    let mods = KeyMods { shift: held(Mods::SHIFT), ctrl, alt, super_key };
     let mut event = KeyEvent::new(spec, mods);
     if repeat {
         event.kind = KeyEventKind::Repeat;
@@ -63,8 +75,8 @@ pub(crate) fn key_event(key: Key, mods: Mods, repeat: bool) -> Option<KeyEvent> 
 
 /// A key let go of: a named key, or one that types a character (its unshifted one). The
 /// engine reports it only to a program that asked for event types.
-pub(crate) fn release_event(key: Key, mods: Mods) -> Option<KeyEvent> {
-    let mut event = key_event(key, mods, false).or_else(|| {
+pub(crate) fn release_event(key: Key, mods: Mods, mac: bool) -> Option<KeyEvent> {
+    let mut event = key_event(key, mods, false, mac).or_else(|| {
         let shift = KeyMods { shift: mods.contains(Mods::SHIFT), ..KeyMods::default() };
         Some(KeyEvent::new(KeySpec::Character(printable(key)?.to_string()), shift))
     })?;
@@ -133,13 +145,23 @@ mod tests {
 
     #[test]
     fn a_printable_key_is_the_terminals_only_with_ctrl_or_alt() {
-        assert!(key_event(Key::A, Mods::NONE, false).is_none());
-        assert!(key_event(Key::A, Mods::CTRL | Mods::ALT, false).is_none()); // AltGr types
-        let ctrl = key_event(Key::C, Mods::CTRL, false).expect("Ctrl+C is a key");
+        assert!(key_event(Key::A, Mods::NONE, false, false).is_none());
+        assert!(key_event(Key::A, Mods::CTRL | Mods::ALT, false, false).is_none()); // AltGr types
+        let ctrl = key_event(Key::C, Mods::CTRL, false, false).expect("Ctrl+C is a key");
         assert_eq!(ctrl.key, KeySpec::Character("c".into()));
         assert_eq!(
-            key_event(Key::Up, Mods::NONE, false).map(|e| e.key),
+            key_event(Key::Up, Mods::NONE, false, false).map(|e| e.key),
             Some(KeySpec::Named(NamedKey::ArrowUp))
         );
+    }
+
+    #[test]
+    fn on_a_mac_control_is_the_programs_and_command_and_option_are_not() {
+        let control = key_event(Key::C, Mods::SUPER, false, true).expect("Control+C is a key");
+        assert!(control.mods.ctrl && !control.mods.super_key);
+        assert!(key_event(Key::C, Mods::CTRL, false, true).is_none(), "Command+C is the app's");
+        assert!(key_event(Key::Left, Mods::CTRL, false, true).is_none());
+        assert!(key_event(Key::A, Mods::ALT, false, true).is_none(), "Option+A types");
+        assert!(key_event(Key::Left, Mods::ALT, false, true).is_some_and(|it| it.mods.alt));
     }
 }

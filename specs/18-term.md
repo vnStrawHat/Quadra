@@ -243,6 +243,13 @@ shell's handle.
   unshifted character): the engine writes it only for a program that asked for event types
   (kitty's report-event-types), as a game or a key viewer does. A key the app's keymap binds (copy, paste, new tab) is the
   app's first: the view is a focus scope's leaf, and bindings run before it.
+- On a Mac (23, "Keys"; the view knows by the `KeyNames` the app provides): the program's
+  Control is the key the platform calls `SUPER`, so Control with C interrupts; a key held
+  with Command is the app's and never the program's, and Command with C and V copy and
+  paste (bindings for a Mac alone, beside the others); Option with a key that types is
+  left to the layout, which types its character, while Option with a named key (an arrow)
+  is Alt to the program. ponytail: the mouse's reports and a modifier pressed alone are told
+  as on Windows; Option as Meta is a setting when an app asks for it.
 - Paste: `Terminal::encode_paste(text)` (bracketed when asked, controls dropped). Copy: the
   selection's text. Both through the clipboard the app provides (specs/09); never the real one
   in a test.
@@ -420,6 +427,9 @@ done, idle. OSC 133 A (a new prompt) drops working, blocked and idle. `?` is ans
 - `tests/look.rs`: a new look sizes the grid again in the same view; the padding a side, the
   cell's width and the fallback families reach what is drawn; minimum contrast moves a glyph's
   colour until the ratio holds and leaves a 24-bit one alone.
+- `tests/mac_keys.rs`: on a Mac Control with C writes the interrupt, Command and Option
+  with a key that types write nothing. `tests/pty.rs` (the `pty` feature): a command behind
+  the console, `cmd` on Windows and `sh` over the POSIX pty, gives its output and its exit.
 - `tests/input.rs`: keys in normal and application cursor mode, Ctrl and Alt; paste bracketed;
   a drag selects and copy gives its text (the harness's clipboard); the wheel scrolls history,
   and goes to a program that reports the mouse.

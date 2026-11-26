@@ -204,8 +204,8 @@ renderer and Core Text.
   one, `Mods::SUPER` (10, "Modifiers"); Option is `Mods::ALT`. So the kit's bindings, a
   Command-click that adds to a selection and a Command-wheel that zooms need nothing of
   their own. A press of the left button with Control held is the right button's. Shortcuts
-  are written in the Mac's signs (`KeyNames::Signs`: `⇧⌘P`). The terminal (M4) sends
-  control characters for `SUPER` here, and copies with `CTRL`.
+  are written in the Mac's signs (`KeyNames::Signs`: `⇧⌘P`). The terminal sends
+  control characters for `SUPER` here, and copies with `CTRL` (18, "Input").
   The keys of text are the Mac's (09, "On a Mac"): Option with an arrow goes by a word,
   Command with one to an end; back and forward are Command with a bracket.
 - **Drops** from other programs (10, "Drops from the OS"): the view takes files and text
@@ -261,6 +261,15 @@ of one instance runs there too. What shows something to the user (a panel, an al
 `open` opens) is tried by hand on a real Mac. Not yet: an item in the menu bar for the
 tray, process usage, an app bundle (`Info.plist`, with the kinds of file an app opens),
 and what M4 needs (sealing, hashing, fetching).
+
+## The terminal (M4, started)
+
+`quadra-term` with its `pty` feature builds for macOS: the local shell is behind the POSIX
+pty of `oneterm-vt`, on the same poller and thread as the pseudo console of Windows.
+`tools/check_mac.sh` checks the feature, which nothing else built for macOS turns on, and
+on a Mac runs its test (a command through `sh`). Keys are a Mac's (18, "Input"). Not yet:
+a terminal in an app built for macOS (the gallery has none on either system), and the
+updater's app bundle.
 
 ## Milestones
 

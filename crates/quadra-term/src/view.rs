@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use oneterm_vt::input::{KeyMods, KeySpec, NamedKey};
-use quadra_platform::{Clipboard, Cursor, Key, Mods, Platform};
+use quadra_platform::{Clipboard, Cursor, Key, KeyNames, Mods, Platform};
 use quadra_reactive::{Signal, on_cleanup, signal, use_context};
 use quadra_tree::{NodeId, Style, Tree};
 use quadra_view::{MountCx, View};
@@ -170,8 +170,10 @@ impl View for Terminal {
         let takes =
             move |first: &Option<Rc<KeyFirst>>, key, mods| first.as_ref().is_some_and(|f| f(key, mods));
         let (writer, s, asked) = (cx.handle.clone(), session.clone(), first.clone());
+        // The system's own way with modifiers (`key_event`), as the app says it.
+        let mac = use_context::<KeyNames>() == Some(KeyNames::Signs);
         cx.tree.on_key(id, true, move |e| {
-            let Some(event) = key_event(e.key, e.mods, e.repeat) else { return };
+            let Some(event) = key_event(e.key, e.mods, e.repeat, mac) else { return };
             if takes(&asked, e.key, e.mods) {
                 return e.stop();
             }
@@ -182,7 +184,7 @@ impl View for Terminal {
         });
         let (writer, s) = (cx.handle.clone(), session.clone());
         cx.tree.on_key(id, false, move |e| {
-            let event = release_event(e.key, e.mods);
+            let event = release_event(e.key, e.mods, mac);
             let bytes = event.and_then(|it| s.engine().term.encode_key_event(&it)).unwrap_or_default();
             let s = s.clone(); // after the press, which is written the same way
             writer.with(move |_| s.write(&bytes));

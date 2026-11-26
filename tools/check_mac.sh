@@ -15,10 +15,14 @@ not_yet="quadra-native-win quadra-bench-markdown-shots quadra-bench-compare
 not_ours="oneterm-app oneterm-ssh oneterm-vault oneterm-completion oneterm-shots"
 
 skip() { for name in "$@"; do printf -- '--exclude %s ' "$name"; done; }
+# The terminal's local shell, over the POSIX pty (M4): a feature nothing built here turns on.
+pty="-p quadra-term --features pty"
 
 if [ "$(uname)" = Darwin ]; then
 	# shellcheck disable=SC2046
 	tools/cargo.sh clippy --workspace --all-targets --keep-going $(skip $not_yet $not_ours) -- -D warnings
+	# shellcheck disable=SC2086
+	tools/cargo.sh clippy $pty --all-targets -- -D warnings
 	# The native crate's tests on their own, between two marks: the job says what each did.
 	failed=0
 	echo "== quadra-native-mac"
@@ -26,10 +30,14 @@ if [ "$(uname)" = Darwin ]; then
 	echo "== the rest"
 	# shellcheck disable=SC2046
 	tools/cargo.sh test --workspace --no-fail-fast $(skip $not_yet $not_ours quadra-native-mac) || failed=1
+	# shellcheck disable=SC2086
+	tools/cargo.sh test $pty --test pty || failed=1
 	[ "$failed" = 0 ]
 else
 	# shellcheck disable=SC2046
 	tools/cargo.sh clippy --workspace --all-targets --keep-going --target "$target" \
 		$(skip $not_yet $not_ours) -- -D warnings
+	# shellcheck disable=SC2086
+	tools/cargo.sh clippy $pty --all-targets --target "$target" -- -D warnings
 fi
 echo "check_mac: ok"

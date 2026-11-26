@@ -1,7 +1,8 @@
-//! A shell behind the pseudo console (specs/18, "Tests"): `cmd /c echo` gives its output and
-//! its exit. Skipped where no console can be made.
+//! A shell behind the pseudo console (specs/18, "Tests"): `cmd /c echo`, or `sh -c echo`
+//! where the console is a POSIX one, gives its output and its exit. Skipped where no
+//! console can be made.
 
-#![cfg(all(windows, feature = "pty"))]
+#![cfg(feature = "pty")]
 
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
@@ -14,7 +15,11 @@ fn a_command_gives_its_output_and_its_exit() {
     let out = Arc::new(Mutex::new(Vec::new()));
     let (seen, (ended, end)) = (out.clone(), channel());
     let options = PtyOptions {
-        program: Some(("cmd.exe".into(), vec!["/c".into(), "echo".into(), "quadra-pty".into()])),
+        program: Some(if cfg!(windows) {
+            ("cmd.exe".into(), vec!["/c".into(), "echo".into(), "quadra-pty".into()])
+        } else {
+            ("/bin/sh".into(), vec!["-c".into(), "echo quadra-pty".into()])
+        }),
         rows: 24,
         cols: 80,
         ..PtyOptions::default()

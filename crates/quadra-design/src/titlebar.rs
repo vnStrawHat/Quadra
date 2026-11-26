@@ -134,7 +134,8 @@ impl View for Titlebar {
         bar = bar
             .child(row().align_items(Align::Center).gap(token::SPACE_XS).grow(1.0).children(self.controls));
         if controls != WindowControls::App {
-            return bar.mount(cx);
+            // No caption buttons end the bar: the app's controls keep off the edge.
+            return bar.padding_right(token::SPACE_XS).mount(cx);
         }
 
         // The glyphs of the system's own caption buttons, where it has a face of them.

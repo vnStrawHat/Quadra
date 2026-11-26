@@ -104,10 +104,12 @@ impl Keystroke {
         let mut mods = Mods::NONE;
         for part in parts {
             mods |= match part {
-                "ctrl" => Mods::CTRL,
+                // The key shortcuts are held with: Ctrl, and Command on a Mac.
+                "ctrl" | "cmd" => Mods::CTRL,
                 "shift" => Mods::SHIFT,
                 "alt" => Mods::ALT,
-                "super" | "cmd" | "win" => Mods::SUPER,
+                // The system's other: the Windows key, and Control on a Mac.
+                "super" | "win" => Mods::SUPER,
                 _ => return Err(wrong()),
             };
         }

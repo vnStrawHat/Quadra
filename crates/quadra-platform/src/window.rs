@@ -136,8 +136,7 @@ pub enum WindowControls {
 }
 
 impl WindowControls {
-    /// As the system the program is built for has them: for a platform that opens no window
-    /// of the system's.
+    /// As the system the program is built for has them, where a window cannot say.
     pub const fn of_system() -> WindowControls {
         if cfg!(target_os = "macos") { WindowControls::System { leading: 78.0 } } else { WindowControls::App }
     }
@@ -207,9 +206,10 @@ pub trait PlatformWindow {
     /// keyboard, as far as the OS lets this process.
     fn to_front(&self);
     fn is_maximized(&self) -> bool;
-    /// Who draws the buttons of the window, when it has its own frame.
+    /// Who draws the buttons of the window, when it has its own frame: the app, unless a
+    /// platform says its system does.
     fn controls(&self) -> WindowControls {
-        WindowControls::of_system()
+        WindowControls::App
     }
     /// Where the window is now: what [`WindowOptions::placement`] opens it at again.
     fn placement(&self) -> Placement;

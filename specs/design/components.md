@@ -15,7 +15,8 @@ tabs or a search field makes it 38 tall so that 28 px controls have 5 above and 
 
 On macOS the system draws the window's three buttons itself, at the left: the bar leaves
 them their room (as wide as the system says, 78 where it does not), begins after it, and has
-no caption buttons at its right, so the app's controls reach the edge.
+no caption buttons at its right: the app's controls end 4 from the edge, as the menu's
+button begins 4 from the other on Windows.
 
 ## Toolbar and breadcrumbs
 
@@ -114,7 +115,10 @@ dragged; its 14 px track is the grip.
 
 - **Key text**: one run a keystroke, the modifiers then the key joined by `-`, in the order
   Ctrl, Win, Alt, Shift (`Ctrl-Shift-P`), chords split by a space, in `text_2`; `key_label`
-  writes this form, `key_text(keys, t)` the theme's.
+  writes this form, `key_text(keys, t)` the theme's. On a Mac the keys are the system's
+  signs with nothing between them, in its order (Control, Option, Shift, Command, then the
+  key: `⇧⌘P`), Command standing where a binding says `ctrl`; a chord is still split by a
+  space (`⌘K ⌘S`).
 - **Key hint** (`key_hint`): the keys in a box (radius 6, 4 inside, a 1 px border of `text` at
   16 %) at 10 px, then what they do, all mono italic 12 in `text_disabled`.
 - **Kbd** (`kbd`): the keys alone, mono 12, for a menu row's right end or a button's label.

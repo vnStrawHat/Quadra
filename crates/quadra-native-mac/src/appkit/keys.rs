@@ -4,14 +4,15 @@
 use objc2_app_kit::NSEventModifierFlags;
 use quadra_platform::{Key, Mods};
 
-/// The modifiers of an event. Command is the Super key, Option the Alt key.
+/// The modifiers of an event, as a Mac holds them (10, "Modifiers"): Command is the key of
+/// shortcuts, `CTRL`; Control is the system's other, `SUPER`; Option is `ALT`.
 pub(crate) fn mods(flags: NSEventModifierFlags) -> Mods {
     let mut mods = Mods::NONE;
     for (flag, held) in [
         (NSEventModifierFlags::Shift, Mods::SHIFT),
-        (NSEventModifierFlags::Control, Mods::CTRL),
+        (NSEventModifierFlags::Control, Mods::SUPER),
         (NSEventModifierFlags::Option, Mods::ALT),
-        (NSEventModifierFlags::Command, Mods::SUPER),
+        (NSEventModifierFlags::Command, Mods::CTRL),
     ] {
         if flags.contains(flag) {
             mods |= held;
@@ -24,9 +25,9 @@ pub(crate) fn mods(flags: NSEventModifierFlags) -> Mods {
 pub(crate) fn flag_of(key: Key) -> Option<NSEventModifierFlags> {
     Some(match key {
         Key::Shift => NSEventModifierFlags::Shift,
-        Key::Ctrl => NSEventModifierFlags::Control,
+        Key::Ctrl => NSEventModifierFlags::Command,
         Key::Alt => NSEventModifierFlags::Option,
-        Key::Super => NSEventModifierFlags::Command,
+        Key::Super => NSEventModifierFlags::Control,
         Key::CapsLock => NSEventModifierFlags::CapsLock,
         _ => return None,
     })
@@ -69,9 +70,9 @@ pub(crate) fn key(code: u16) -> Key {
         0x7E => Key::Up,
         0x7D => Key::Down,
         0x38 | 0x3C => Key::Shift,
-        0x3B | 0x3E => Key::Ctrl,
+        0x3B | 0x3E => Key::Super,
         0x3A | 0x3D => Key::Alt,
-        0x37 | 0x36 => Key::Super,
+        0x37 | 0x36 => Key::Ctrl,
         0x39 => Key::CapsLock,
         0x6E => Key::Menu,
         0x1B => Key::Minus,
@@ -98,7 +99,11 @@ mod tests {
         assert_eq!((key(0x00), key(0x06), key(0x1D), key(0x19)), (Key::A, Key::Z, Key::Digit0, Key::Digit9));
         assert_eq!((key(0x7A), key(0x6F), key(0x24), key(0x7E)), (Key::F1, Key::F12, Key::Enter, Key::Up));
         assert_eq!(key(0xFF), Key::Unknown);
+        // Command is the key of shortcuts, Control the system's other one.
         let held = mods(NSEventModifierFlags::Shift | NSEventModifierFlags::Command);
-        assert!(held.contains(Mods::SHIFT | Mods::SUPER) && !held.contains(Mods::CTRL));
+        assert!(held.contains(Mods::SHIFT | Mods::CTRL) && !held.contains(Mods::SUPER));
+        assert_eq!(mods(NSEventModifierFlags::Control), Mods::SUPER);
+        assert_eq!((key(0x37), key(0x3B)), (Key::Ctrl, Key::Super));
+        assert_eq!(flag_of(Key::Ctrl), Some(NSEventModifierFlags::Command));
     }
 }

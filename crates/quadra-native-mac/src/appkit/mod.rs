@@ -23,8 +23,8 @@ use objc2_app_kit::{
 };
 use objc2_foundation::{NSDate, NSDefaultRunLoopMode, NSPoint, NSString, NSTimeZone};
 use quadra_platform::{
-    Appearance, Clipboard, ImageDecoder, Platform, PlatformError, PlatformHandler, PlatformWindow, TimerId,
-    Waker, WindowOptions,
+    Appearance, Clipboard, ImageDecoder, KeyNames, Platform, PlatformError, PlatformHandler, PlatformWindow,
+    TimerId, Waker, WindowOptions,
 };
 
 use delivery::Delivery;
@@ -250,6 +250,10 @@ impl Platform for MacPlatform {
     fn utc_offset(&self, unix_seconds: i64) -> i32 {
         let then = NSDate::dateWithTimeIntervalSince1970(unix_seconds as f64);
         NSTimeZone::localTimeZone().secondsFromGMTForDate(&then) as i32
+    }
+
+    fn key_names(&self) -> KeyNames {
+        KeyNames::Signs
     }
 
     /// As the app is shown now.

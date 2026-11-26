@@ -8,7 +8,9 @@ use quadra_prim::{Point, Size};
 use crate::keys::Key;
 use crate::system::{Appearance, Dropped};
 
-/// The modifier keys held down.
+/// The modifier keys held down. `CTRL` is the key shortcuts are held with: Ctrl, and
+/// Command on a Mac. `SUPER` is the system's other one: the Windows key, and Control on a
+/// Mac (10, "Modifiers").
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Mods(u8);
 

@@ -104,6 +104,7 @@ impl<R: Renderer> App<R> {
             provide(Images::new(platform.image_decoder()));
             provide(platform.clipboard());
             provide(platform.clone()); // the user's time zone (`time::local_now`)
+            provide(platform.key_names());
             let theme = signal(Rc::<Theme>::default());
             provide(theme);
             let settings = Settings::memory();

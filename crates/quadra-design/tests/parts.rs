@@ -64,8 +64,26 @@ fn what_shows_is_sized_and_named_by_the_design_language() {
     assert_eq!(key_label("ctrl-k ctrl-s"), "Ctrl-K Ctrl-S");
     assert_eq!(
         (key_label("alt-pageup"), key_label("ctrl-minus"), key_label("cmd-enter")),
-        ("Alt-PageUp".to_string(), "Ctrl--".to_string(), "Win-Enter".to_string())
+        ("Alt-PageUp".to_string(), "Ctrl--".to_string(), "Ctrl-Enter".to_string())
     );
+    assert_eq!(key_label("win-shift-s"), "Win-Shift-S");
+}
+
+#[test]
+fn a_shortcut_is_written_as_the_system_writes_it() {
+    use quadra_platform::KeyNames;
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.mount(|| {
+        // As an app on a Mac says it.
+        quadra_reactive::provide(KeyNames::Signs);
+        let keys = ["shift-ctrl-p", "ctrl-k ctrl-s", "alt-left", "win-a", "cmd-enter", "f5", "ctrl-minus"];
+        quadra_design::root().children(keys.map(|keys| text(key_label(keys))))
+    });
+    h.frame();
+    for written in ["⇧⌘P", "⌘K ⌘S", "⌥←", "⌃A", "⌘↩", "F5", "⌘-"] {
+        assert!(h.has_text(written), "{written} is not in:\n{}", h.semantics());
+    }
 }
 
 #[test]

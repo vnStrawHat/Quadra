@@ -5,8 +5,8 @@ use quadra::Token;
 use quadra::{Div, column, div, dynamic, row, signal};
 use quadra_design::{
     Command, MenuItem, NavItem, Size, Status, breadcrumb, button, command_palette, icon, icon_button, icons,
-    kbd, menu_button, menubar, sidebar, status_item, status_label_sized, statusbar, token, toolbar, tooltip,
-    vdivider,
+    kbd, key_label, menu_button, menubar, sidebar, status_item, status_label_sized, statusbar, token,
+    toolbar, tooltip, vdivider,
 };
 
 use crate::common::{demo, framed, hint, line, page};
@@ -105,13 +105,15 @@ pub fn breadcrumb_page() -> Div {
 pub fn menubar_page() -> Div {
     let file = || {
         vec![
-            MenuItem::new("New file").keys("Ctrl-N"),
-            MenuItem::new("Open…").keys("Ctrl-O"),
+            MenuItem::new("New file").keys(key_label("ctrl-n")),
+            MenuItem::new("Open…").keys(key_label("ctrl-o")),
             MenuItem::separator(),
             MenuItem::new("Exit"),
         ]
     };
-    let edit = || vec![MenuItem::new("Undo").keys("Ctrl-Z"), MenuItem::new("Redo").keys("Ctrl-Y")];
+    let edit = || {
+        vec![MenuItem::new("Undo").keys(key_label("ctrl-z")), MenuItem::new("Redo").keys(key_label("ctrl-y"))]
+    };
     let bar = menubar([menu_button("File", file), menu_button("Edit", edit), menu_button("View", edit)]);
     page(
         "Menu bar",

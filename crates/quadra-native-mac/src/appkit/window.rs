@@ -42,6 +42,8 @@ pub(crate) struct State {
     pub caret: Cell<Option<Rect>>,
     /// How many UTF-16 units an input method is composing.
     pub marked: Cell<usize>,
+    /// The left button went down with Control held: the press is the right button's.
+    pub as_right: Cell<bool>,
 }
 
 impl State {
@@ -137,6 +139,7 @@ impl MacWindow {
             cursor: RefCell::new(look::cursor(Cursor::Arrow)),
             caret: Cell::new(None),
             marked: Cell::new(0),
+            as_right: Cell::new(false),
         });
         let view = View::new(mtm, state.clone(), content);
         window.setContentView(Some(&view));

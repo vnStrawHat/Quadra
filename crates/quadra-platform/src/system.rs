@@ -27,6 +27,23 @@ impl Default for Appearance {
     }
 }
 
+/// How the system writes the keys of a shortcut, which what shows one follows.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum KeyNames {
+    /// Words joined by "-": "Ctrl-Shift-P" (Windows).
+    #[default]
+    Words,
+    /// The Mac's signs, the key last: "⇧⌘P".
+    Signs,
+}
+
+impl KeyNames {
+    /// As the system the program is built for writes them.
+    pub const fn of_system() -> KeyNames {
+        if cfg!(target_os = "macos") { KeyNames::Signs } else { KeyNames::Words }
+    }
+}
+
 /// The colours a system paints its own controls with.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct SystemColors {

@@ -50,6 +50,19 @@ impl View {
         true
     }
 
+    /// The button of a press of the left one: the right one's while Control is held, as a
+    /// Mac has it.
+    pub(super) fn left_down(&self, event: &NSEvent) -> MouseButton {
+        let other = event.modifierFlags().contains(NSEventModifierFlags::Control);
+        self.ivars().as_right.set(other);
+        if other { MouseButton::Right } else { MouseButton::Left }
+    }
+
+    /// The button the release that ends that press is of.
+    pub(super) fn left_up(&self) -> MouseButton {
+        if self.ivars().as_right.replace(false) { MouseButton::Right } else { MouseButton::Left }
+    }
+
     pub(super) fn pointer(&self, event: &NSEvent, kind: PointerKind, button: MouseButton) {
         let (at, mods) = (self.place(event), keys::mods(event.modifierFlags()));
         self.ivars().send(PlatformEvent::Pointer { kind, button, at, mods });

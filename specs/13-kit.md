@@ -297,7 +297,8 @@ As built so far:
   control height, in 12 px mono text 6 px from each side; a badge is a faint tint of its
   tone), `plain_badge(words, tone)` (a word, not code: the kind of an object; 20 px, 12 px
   in the UI face, no border, its tone at 16 % behind it, 6 px each side), `kbd("ctrl-s")` and `key_label` (shortcuts are
-  written "Ctrl-Shift-P", the modifiers in the order Ctrl, Win, Alt, Shift), `avatar(name,
+  written as the system writes them, 10: "Ctrl-Shift-P", the modifiers in the order Ctrl, Win, Alt, Shift; on a Mac
+  "⇧⌘P", signs in Apple's order with Command for `ctrl` and signs for Enter, Backspace, Delete, Escape, Tab and the arrows), `avatar(name,
   side)` (the initials on a colour that is the name's own; images later), `card()` with
   `card_head(title, more)`, `divider()` and `vdivider()`.
 - **What says something in the flow** (`notes.rs`). `alert(tone, title, more)` is a box

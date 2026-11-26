@@ -82,13 +82,13 @@ define_class!(
         #[unsafe(method(mouseDown:))]
         fn mouse_down(&self, event: &NSEvent) {
             if !self.on_caption(event) {
-                self.pointer(event, PointerKind::Down, MouseButton::Left);
+                self.pointer(event, PointerKind::Down, self.left_down(event));
             }
         }
 
         #[unsafe(method(mouseUp:))]
         fn mouse_up(&self, event: &NSEvent) {
-            self.pointer(event, PointerKind::Up, MouseButton::Left);
+            self.pointer(event, PointerKind::Up, self.left_up());
         }
 
         #[unsafe(method(rightMouseDown:))]

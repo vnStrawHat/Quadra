@@ -42,6 +42,7 @@ here changes what a Windows build is or measures.
 | Bindings to Apple's APIs | A crate may provide them, as `windows` does on Windows. Which ones is written in 01 (R15) and `tools/check_deps.py` when M2 first names them, as for any crate |
 | OneTerm | Not ported here (Goals) |
 | Pushes | Claude may push the branch `macos` unasked, to have the CI run; every other branch is asked for, as before |
+| Where Windows and macOS do a thing differently | On macOS, as macOS does: Command for shortcuts and the Mac's signs for them, the system's own window buttons at the left |
 
 ## How it is developed without a Mac
 
@@ -200,14 +201,19 @@ renderer and Core Text.
   Graphics at the size asked for into premultiplied RGBA in sRGB, the frames of a GIF whole
   with their times. The other formats that move show their first frame.
 - **The handler is never entered twice**, as on Windows: what arrives while it runs waits.
-- **Keys**: Command is `Mods::SUPER`, Option is `Mods::ALT`, Control is `Mods::CTRL`.
-  **Open**: on a Mac a shortcut is held with Command where Windows holds Ctrl, and the kit's
-  key bindings say `ctrl`; whether a binding names a "primary" modifier, or the keymap is
-  another one on a Mac, is a decision of the keymap (09), not taken yet.
-- **Not yet**: the semantic tree for readers (`update_semantics`); drops from other
-  programs; the system's three buttons at the middle of a title bar taller than the
-  system's, and their room given back while the window fills the screen; a placement is the window's frame in points from the bottom
-  left of the first display, not yet in the device pixels the trait says; the menu bar.
+- **Keys, as a Mac has them** (the user's decision, 2026-11-26: on macOS, as macOS does).
+  Command is the key shortcuts are held with, `Mods::CTRL`, and Control the system's other
+  one, `Mods::SUPER` (10, "Modifiers"); Option is `Mods::ALT`. So the kit's bindings, a
+  Command-click that adds to a selection and a Command-wheel that zooms need nothing of
+  their own. A press of the left button with Control held is the right button's. Shortcuts
+  are written in the Mac's signs (`KeyNames::Signs`: `⇧⌘P`). The terminal (M4) sends
+  control characters for `SUPER` here, and copies with `CTRL`.
+- **Not yet**: the keys of text as a Mac has them (Option and Command with the arrows), and
+  the menu bar with what a Mac's user finds in it (Quit, Hide, the window's own); the
+  semantic tree for readers (`update_semantics`); drops from other programs; the system's
+  three buttons at the middle of a title bar taller than the system's, and their room given
+  back while the window fills the screen; a placement is the window's frame in points from
+  the bottom left of the first display, not yet in the device pixels the trait says.
 
 Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:
 a real window that is not shown, what the loop gives the handler (timers, a frame, a wake

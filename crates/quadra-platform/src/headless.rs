@@ -14,8 +14,8 @@ use quadra_prim::{Rect, Size};
 use crate::clipboard::{Clipboard, MemoryClipboard};
 use crate::event::PlatformEvent;
 use crate::platform::{Platform, PlatformError, PlatformHandler, TimerId, Waker};
-use crate::system::Appearance;
-use crate::window::{Cursor, Placement, PlatformWindow, WindowId, WindowOptions, at_least};
+use crate::system::{Appearance, KeyNames};
+use crate::window::{Cursor, PlatformWindow, WindowControls, WindowId, WindowOptions, at_least};
 
 mod window;
 
@@ -40,6 +40,7 @@ struct WindowState {
     maximized: Cell<bool>,
     /// Where the window is on a desktop of no displays: any place is on one.
     at: Cell<(i32, i32)>,
+    controls: WindowControls,
 }
 
 struct Inner {
@@ -56,6 +57,9 @@ struct Inner {
     decoder: RefCell<Arc<dyn crate::image::ImageDecoder>>,
     utc_offset: Cell<i32>,
     appearance: Cell<Appearance>,
+    /// It says of the window's buttons and of the names of keys what the system it is built
+    /// for does (`as_the_system`), not what every test may rely on.
+    system: Cell<bool>,
 }
 
 #[derive(Clone)]
@@ -84,6 +88,7 @@ impl HeadlessPlatform {
             decoder: RefCell::new(Arc::new(crate::image::FlatImages)),
             utc_offset: Cell::new(0),
             appearance: Cell::new(Appearance::default()),
+            system: Cell::new(false),
         }))
     }
 
@@ -126,32 +131,6 @@ impl HeadlessPlatform {
     /// The cursor a window was last given.
     pub fn cursor(&self, window: WindowId) -> Option<Cursor> {
         self.window(window).map(|w| w.cursor.get())
-    }
-
-    /// Whether a window was minimized, and whether it is maximized.
-    pub fn is_minimized(&self, window: WindowId) -> bool {
-        self.window(window).is_some_and(|w| w.minimized.get())
-    }
-
-    pub fn is_maximized(&self, window: WindowId) -> bool {
-        self.window(window).is_some_and(|w| w.maximized.get())
-    }
-
-    /// Where a window is: as it was opened, moved and resized.
-    pub fn placement(&self, window: WindowId) -> Option<Placement> {
-        self.window(window).map(|w| HeadlessWindow(w).placement())
-    }
-
-    /// The user moves a window.
-    pub fn move_window(&self, window: WindowId, x: i32, y: i32) {
-        if let Some(w) = self.window(window) {
-            w.at.set((x, y));
-        }
-    }
-
-    /// The title a window was last given.
-    pub fn title(&self, window: WindowId) -> Option<String> {
-        self.window(window).map(|w| w.title.borrow().clone())
     }
 
     /// The offset of the time zone the platform says, in seconds: 0 unless a test sets it.
@@ -256,6 +235,7 @@ impl Platform for HeadlessPlatform {
             minimized: Cell::new(false),
             maximized: Cell::new(placed.is_some_and(|p| p.maximized)),
             at: Cell::new(placed.map_or((0, 0), |p| (p.x, p.y))),
+            controls: if self.0.system.get() { WindowControls::of_system() } else { WindowControls::App },
         });
         self.0.windows.borrow_mut().push(Rc::downgrade(&state));
         Ok(Box::new(HeadlessWindow(state)))
@@ -296,5 +276,9 @@ impl Platform for HeadlessPlatform {
 
     fn appearance(&self) -> Appearance {
         self.0.appearance.get()
+    }
+
+    fn key_names(&self) -> KeyNames {
+        if self.0.system.get() { KeyNames::of_system() } else { KeyNames::Words }
     }
 }

@@ -3,8 +3,8 @@
 use quadra::{Align, AnyView, Div, Justify, Role, column, div, row, signal, text};
 use quadra_design::{
     Edge, MenuItem, Notice, Size, Tone, Variant, badge, button, checkbox, confirm, context_menu,
-    description_list, dialog, drawer, hover_card, icon_button, icons, menu_button, popover_button, size,
-    token, tooltip,
+    description_list, dialog, drawer, hover_card, icon_button, icons, key_label, menu_button, popover_button,
+    size, token, tooltip,
 };
 
 use crate::common::{demo, hint, line, page};
@@ -15,7 +15,7 @@ fn demo_menu(gallery: Gallery) -> Vec<MenuItem> {
         gallery.notices.toast(Tone::Success, "Đã sao chép");
     };
     vec![
-        MenuItem::new("Sao chép").icon(icons::COPY).keys("Ctrl-C").on_select(copied),
+        MenuItem::new("Sao chép").icon(icons::COPY).keys(key_label("ctrl-c")).on_select(copied),
         MenuItem::new("Đổi tên").icon(icons::PENCIL).keys("F2"),
         MenuItem::new("Không khả dụng").disabled(true),
         MenuItem::separator(),
@@ -75,7 +75,7 @@ pub fn tooltip_page() -> Div {
     let hover = line()
         .child(tooltip("Tooltips appear after 500 ms", button("Hover me").test_id("tt-btn")))
         .child(tooltip("Refresh", icon_button(icons::REFRESH_CW, "Refresh")).keys("F5"));
-    let detail = tooltip("Deploy to staging", button("Deploy")).keys("Ctrl-Shift-D");
+    let detail = tooltip("Deploy to staging", button("Deploy")).keys(key_label("ctrl-shift-d"));
     page(
         "Tooltip",
         "A short label after a 500 ms hover. Never put actions inside.",

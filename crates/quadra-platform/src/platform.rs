@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use crate::clipboard::Clipboard;
 use crate::event::PlatformEvent;
 use crate::image::ImageDecoder;
-use crate::system::Appearance;
+use crate::system::{Appearance, KeyNames};
 use quadra_prim::Point;
 
 use crate::window::{HitRegion, PlatformWindow, WindowId, WindowOptions};
@@ -65,6 +65,11 @@ pub trait Platform {
     fn utc_offset(&self, unix_seconds: i64) -> i32;
     /// How the user set the system to look. The headless platform's is set by its test.
     fn appearance(&self) -> Appearance;
+    /// How the system writes the keys of a shortcut: in words, unless a platform says its
+    /// system does otherwise.
+    fn key_names(&self) -> KeyNames {
+        KeyNames::Words
+    }
 }
 
 /// The app's side. It is never entered twice: what an OS call inside a handler sets off is

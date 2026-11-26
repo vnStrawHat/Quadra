@@ -161,6 +161,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(&out)?;
 
     let platform = HeadlessPlatform::new();
+    // A picture is what a user of this system sees: its window buttons, its names of keys.
+    platform.as_the_system();
     platform.set_image_decoder(std::sync::Arc::new(Codecs));
     let text = Fonts::new().map_err(AppError::Text)?;
     #[cfg(windows)]

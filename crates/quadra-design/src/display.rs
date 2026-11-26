@@ -2,7 +2,9 @@
 //! headings and labels, badges and tags, keys, an avatar, a card, dividers.
 
 use quadra_layout::{Align, Display, Justify};
+use quadra_platform::KeyNames;
 use quadra_prim::Color;
+use quadra_reactive::use_context;
 use quadra_tree::{Role, Side, Token};
 use quadra_view::{Div, IntoProp, TextView, View, by_text, column, div, row, text};
 
@@ -96,25 +98,51 @@ fn chip(height: f32) -> Div {
     chip.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height())
 }
 
-/// A binding as the kit shows shortcuts: "ctrl-shift-p" is "Ctrl-Shift-P", the modifiers in
-/// the order Ctrl, Win, Alt, Shift; the strokes of a chord keep the space between them.
+/// A binding as the kit shows shortcuts, the way the system writes them (`KeyNames`, 10):
+/// in words "ctrl-shift-p" is "Ctrl-Shift-P", the modifiers in the order Ctrl, Win, Alt,
+/// Shift; in the Mac's signs it is "⇧⌘P", in Apple's order, Command for what a binding
+/// calls `ctrl`. The strokes of a chord keep the space between them. The app says which
+/// to a view being built; asked elsewhere, it is words.
 pub fn key_label(keys: &str) -> String {
+    let signs = use_context::<KeyNames>() == Some(KeyNames::Signs);
     let stroke = |stroke: &str| {
-        let lower = stroke.to_lowercase().replace("super", "win").replace("cmd", "win");
+        let lower = stroke.to_lowercase().replace("super", "win").replace("cmd", "ctrl");
         let mut parts: Vec<&str> = lower.split('-').collect();
         let key = parts.pop().unwrap_or_default();
-        let held = ["ctrl", "win", "alt", "shift"].into_iter().filter(|held| parts.contains(held));
-        let mut out: Vec<String> = held.map(capital).collect();
-        out.push(match key {
+        let key = match key {
             "minus" => "-".to_string(),
             "plus" => "+".to_string(),
             "pageup" => "PageUp".to_string(),
             "pagedown" => "PageDown".to_string(),
-            key => capital(key),
-        });
-        out.join("-")
+            key => SIGNS.iter().find(|(name, _)| signs && *name == key).map_or_else(|| capital(key), sign),
+        };
+        if signs {
+            let held = [("win", "⌃"), ("alt", "⌥"), ("shift", "⇧"), ("ctrl", "⌘")];
+            let held = held.into_iter().filter(|(name, _)| parts.contains(name));
+            return held.map(|(_, sign)| sign).chain([key.as_str()]).collect();
+        }
+        let held = ["ctrl", "win", "alt", "shift"].into_iter().filter(|held| parts.contains(held));
+        held.map(capital).chain([key]).collect::<Vec<_>>().join("-")
     };
     keys.split(' ').map(stroke).collect::<Vec<_>>().join(" ")
+}
+
+/// The keys a Mac writes as a sign.
+const SIGNS: [(&str, &str); 10] = [
+    ("enter", "↩"),
+    ("backspace", "⌫"),
+    ("delete", "⌦"),
+    ("escape", "⎋"),
+    ("esc", "⎋"),
+    ("tab", "⇥"),
+    ("left", "←"),
+    ("right", "→"),
+    ("up", "↑"),
+    ("down", "↓"),
+];
+
+fn sign(named: &(&str, &str)) -> String {
+    named.1.to_string()
 }
 
 fn capital(word: &str) -> String {

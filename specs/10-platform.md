@@ -79,7 +79,20 @@ pub trait PlatformHandler {
   `System { leading }` on macOS, where the system draws its three over the content's left
   end and a title bar leaves them `leading` logical pixels. The app gives it to the
   window's views as context; a platform that opens no window of the system's (the headless
-  one) says what the system it is built for does, so pictures drawn on a Mac are a Mac's.
+  one) says the app draws them, so that a test says the same on every machine, until it
+  is told to be as the system it is built for (`HeadlessPlatform::as_the_system`, for the
+  tool that draws pictures: a picture drawn on a Mac is a Mac's).
+- **Modifiers.** `Mods::CTRL` is the key shortcuts are held with: Ctrl on Windows, Command
+  on a Mac. `Mods::SUPER` is the system's other one: the Windows key, and Control on a Mac.
+  A platform reports its keys so (as Qt does), and the keys themselves the same way
+  (`Key::Ctrl` is a Command key on a Mac). So a binding written `ctrl-s`, a click with
+  `CTRL` held that adds to a selection, a wheel with it that zooms, are what each system's
+  user expects, with nothing above the platform asking which system it is. What needs the
+  Control key itself on a Mac (a terminal's control characters) reads `SUPER` there.
+- **How keys are written** is the system's too (`Platform::key_names`): `KeyNames::Words`
+  ("Ctrl-Shift-P") or `KeyNames::Signs`, the Mac's ("⇧⌘P"). The app gives it to views as
+  context, and what shows a shortcut follows it (13, `key_label`); the headless platform
+  says words until it is told to be as the system.
 - **What a view asks of its window.** `quadra_view::window()` gives the window the calling
   view is in: `.minimize()`, `.toggle_maximize()`, `.close()` (as the close button of the
   OS: the app decides), `.set_title(words)` (what the OS shows of it: its frame, the taskbar),

@@ -99,9 +99,11 @@ mod mac {
         // a content 200 high.
         let at = NSPoint::new(30.0, 160.0);
         let none = NSEventModifierFlags::empty();
-        for kind in [NSEventType::LeftMouseDown, NSEventType::LeftMouseUp] {
+        let presses = [NSEventType::LeftMouseDown, NSEventType::LeftMouseUp];
+        let held = [NSEventModifierFlags::Shift, NSEventModifierFlags::Control];
+        for (held, kind) in held.into_iter().flat_map(|held| presses.map(|kind| (held, kind))) {
             let press = NSEvent::mouseEventWithType_location_modifierFlags_timestamp_windowNumber_context_eventNumber_clickCount_pressure(
-                kind, at, NSEventModifierFlags::Shift, 0.0, number, None, 0, 1, 1.0,
+                kind, at, held, 0.0, number, None, 0, 1, 1.0,
             );
             let press = press.expect("a mouse event");
             match kind {
@@ -247,6 +249,10 @@ mod mac {
         let place = |wanted: &PlatformEvent| events.iter().position(|it| it == wanted);
         let (down, up) = (place(&press(PointerKind::Down)), place(&press(PointerKind::Up)));
         assert!(down.is_some() && down < up, "a press and a release, from the top left: {said}");
+        // With Control held the press is the right button's, and Control is `SUPER`.
+        let other = |kind| PlatformEvent::Pointer { kind, button: MouseButton::Right, at, mods: Mods::SUPER };
+        let (other_down, other_up) = (place(&other(PointerKind::Down)), place(&other(PointerKind::Up)));
+        assert!(up < other_down && other_down < other_up, "a press with Control: {said}");
         let key = PlatformEvent::Key { key: Key::A, code: 0, mods: Mods::NONE, down: true, repeat: false };
         let (key, text) = (place(&key), place(&PlatformEvent::Text("a".to_string())));
         assert!(up < key && key < text, "the key, then what it types: {said}");

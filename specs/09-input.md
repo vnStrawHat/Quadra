@@ -158,7 +158,9 @@ ctrl-1 = tabs::select 0
 How a key press is decided:
 
 - A keystroke is written `ctrl-shift-p`, `f5`, `alt-enter`; a binding may be a sequence
-  (`ctrl-k ctrl-c`). While a sequence is being typed its keys are taken; a key that continues
+  (`ctrl-k ctrl-c`). `ctrl` (also written `cmd`) is the key shortcuts are held with: Ctrl,
+  and Command on a Mac; `super` (also `win`) is the system's other one: the Windows key, and
+  Control on a Mac (10, "Modifiers"). One keymap serves both systems. While a sequence is being typed its keys are taken; a key that continues
   no binding drops the sequence and is an ordinary key. A modifier pressed on its way to a
   keystroke is not one.
 - Among the bindings a keystroke completes, the one whose context is nearest the focus wins;

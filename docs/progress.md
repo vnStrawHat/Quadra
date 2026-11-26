@@ -792,6 +792,9 @@ key input, a segmented group (was 22, its cells now 26 inside the border), besid
 selects and the date and time pickers that were 28 already. A text input was 37 (at least 32
 and its padding), the key input and the stepper 32; the Browse button of a path picker is md.
 Measured on each control mounted with its defaults (specs/design, Control heights).
+A select's value or placeholder is one line, cut with an ellipsis when the field is narrower
+(2026-11-26, issue #47; `crates/quadra-design/tests/select_line.rs`): it wrapped and spilled
+out of the field.
 
 ### The move loop keeps drawing (2026-11-22)
 

@@ -415,7 +415,9 @@ As built so far:
   part.
 - More of the fields: `input(..).readonly()` shows a value that can be selected and copied
   and not typed over; `select(..).placeholder(words)` says the words, muted, while `chosen`
-  is the index of no option (`usize::MAX`: nothing chosen yet); `textarea(value)` is a
+  is the index of no option (`usize::MAX`: nothing chosen yet), and its value or placeholder
+  is one line, cut with an ellipsis when the field is narrower (its menu shows each option
+  whole); `textarea(value)` is a
   builder (`.rows(..)`, `.width(..)`, `.placeholder(..)`).
 - **`number_input(value)`** is an input that holds a number (`.range(..)`, `.step(..)`,
   `.decimals(..)`), 140 px with a pair of chevrons inside it at its end that step it, or

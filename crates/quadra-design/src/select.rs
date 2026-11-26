@@ -103,7 +103,9 @@ impl View for Select {
             }
             None => face,
         };
-        let face = face.child(div().grow(1.0).text_color(tone).child(text(move || value())));
+        // One line: what does not fit is cut with an ellipsis (the menu shows it whole).
+        let value = text(move || value()).ellipsis();
+        let face = face.child(div().grow(1.0).min_width(0.0).text_color(tone).child(value));
         let face = face.child(icon(icons::CHEVRONS_UP_DOWN).size(12.0).color(token::TEXT_2));
         // The menu is as wide as the field at least: the field's width when it opens.
         let (options, width, told) = (self.options, self.width.unwrap_or(OWN), self.width);

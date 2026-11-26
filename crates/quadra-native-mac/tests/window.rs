@@ -21,8 +21,8 @@ mod mac {
     use objc2::runtime::AnyObject;
     use objc2::{MainThreadMarker, msg_send};
     use objc2_app_kit::{
-        NSAppearance, NSAppearanceCustomization, NSAppearanceNameAqua, NSAppearanceNameDarkAqua, NSEvent,
-        NSEventModifierFlags, NSEventType, NSView, NSWindow,
+        NSAppearance, NSAppearanceCustomization, NSAppearanceNameAqua, NSAppearanceNameDarkAqua,
+        NSApplication, NSEvent, NSEventModifierFlags, NSEventType, NSView, NSWindow,
     };
     use objc2_foundation::{NSNotFound, NSPoint, NSRange, NSRect, NSSize, NSString};
     use quadra_native_mac::{MacPlatform, MetalRenderer};
@@ -131,7 +131,10 @@ mod mac {
         let name = unsafe { if dark { NSAppearanceNameDarkAqua } else { NSAppearanceNameAqua } };
         window.setAppearance(NSAppearance::appearanceNamed(name).as_deref());
         window.setContentSize(NSSize::new(400.0, 240.0));
+        // The window's own close, then the menu bar's Quit, which asks the window too and
+        // ends no process.
         window.performClose(None);
+        NSApplication::sharedApplication(MainThreadMarker::new().unwrap()).terminate(None);
     }
 
     impl PlatformHandler for Seen {
@@ -278,7 +281,10 @@ mod mac {
         let turned =
             events.iter().any(|it| matches!(it, PlatformEvent::Appearance(now) if now.dark != looks.dark));
         assert!(turned, "the window's other appearance: {said}");
-        assert_eq!(events.last(), Some(&PlatformEvent::CloseRequested), "{said}");
+        let asked = events.iter().rev().take_while(|it| **it == PlatformEvent::CloseRequested).count();
+        assert_eq!(asked, 2, "the window's close, then Quit: {said}");
+        let bar = NSApplication::sharedApplication(MainThreadMarker::new().unwrap()).mainMenu();
+        assert_eq!(bar.map(|bar| bar.numberOfItems()), Some(2), "the app's menu and the window's");
         assert_eq!(seen.window.size(), Size::new(400.0, 240.0));
     }
 }

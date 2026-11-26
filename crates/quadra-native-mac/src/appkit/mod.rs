@@ -5,10 +5,11 @@ mod delivery;
 mod input;
 mod keys;
 mod look;
+mod menu;
 mod view;
 mod window;
 
-use std::cell::{Cell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::VecDeque;
 use std::ptr::NonNull;
 use std::rc::{Rc, Weak};
@@ -49,6 +50,8 @@ pub(crate) struct Shared {
     quitting: Cell<bool>,
     /// A waker fired, and the event that turns the loop for it is posted.
     woken: Arc<AtomicBool>,
+    /// What answers the menu bar's Quit: the application holds it weakly.
+    delegate: OnceCell<objc2::rc::Retained<menu::AppDelegate>>,
 }
 
 impl Shared {
@@ -142,7 +145,7 @@ impl MacPlatform {
             .ok_or_else(|| PlatformError("AppKit runs on the main thread alone".to_string()))?;
         // An app with a place in the Dock and a menu bar, whatever started it.
         NSApplication::sharedApplication(mtm).setActivationPolicy(NSApplicationActivationPolicy::Regular);
-        Ok(MacPlatform(Rc::new(Shared {
+        let shared = Rc::new(Shared {
             mtm,
             windows: RefCell::new(Vec::new()),
             queue: RefCell::new(VecDeque::new()),
@@ -152,7 +155,10 @@ impl MacPlatform {
             next_id: Cell::new(0),
             quitting: Cell::new(false),
             woken: Arc::new(AtomicBool::new(false)),
-        })))
+            delegate: OnceCell::new(),
+        });
+        let _ = shared.delegate.set(menu::install(mtm, &shared));
+        Ok(MacPlatform(shared))
     }
 }
 

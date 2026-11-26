@@ -57,6 +57,18 @@ impl Shared {
         region
     }
 
+    /// The menu bar's Quit: every window is asked to close, and with none the loop ends.
+    pub(crate) fn close_all(&self) {
+        let open: Vec<WindowId> =
+            self.windows.borrow().iter().filter_map(|it| it.upgrade()).map(|it| it.id).collect();
+        if open.is_empty() {
+            self.quitting.set(true);
+        }
+        for window in open {
+            self.deliver(Delivery::Event(window, PlatformEvent::CloseRequested));
+        }
+    }
+
     /// Gives each window that asked for a frame its frame.
     pub(crate) fn frames(&self) {
         let asking: Vec<WindowId> = {

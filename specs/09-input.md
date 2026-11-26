@@ -160,7 +160,16 @@ How a key press is decided:
 - A keystroke is written `ctrl-shift-p`, `f5`, `alt-enter`; a binding may be a sequence
   (`ctrl-k ctrl-c`). `ctrl` (also written `cmd`) is the key shortcuts are held with: Ctrl,
   and Command on a Mac; `super` (also `win`) is the system's other one: the Windows key, and
-  Control on a Mac (10, "Modifiers"). One keymap serves both systems. While a sequence is being typed its keys are taken; a key that continues
+  Control on a Mac (10, "Modifiers"). One keymap serves both systems.
+- **On a Mac** the keys of text are the Mac's: `Keymap::as_a_mac_has_them`, which the app
+  applies to its keymap where the platform writes keys in the Mac's signs. Option with an
+  arrow goes by a word and Command with one to the end of the line (left, right) or of the
+  text (up, down), with Shift to select; Option-Backspace and Option-Delete take a word,
+  Command-Backspace the line before the caret. Back and forward are Command with `[` and
+  `]`, not Option with an arrow. These lie over the built-in bindings and under every
+  binding added after them (a kit's, the app's, the user's). What a PC and a Mac share
+  stays (Home, End, the clipboard's keys with Command). The code editor's own keys are not
+  the Mac's yet. While a sequence is being typed its keys are taken; a key that continues
   no binding drops the sequence and is an ordinary key. A modifier pressed on its way to a
   keystroke is not one.
 - Among the bindings a keystroke completes, the one whose context is nearest the focus wins;

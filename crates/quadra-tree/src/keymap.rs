@@ -14,6 +14,7 @@ use crate::field::TextCommand;
 
 mod context;
 mod file;
+mod mac;
 mod text;
 
 use context::Context;
@@ -138,18 +139,21 @@ pub(crate) enum Match {
 /// context, so the user's are added after the defaults.
 pub struct Keymap {
     bindings: Vec<Binding>,
+    /// How many of them, the first ones, are those every keymap has.
+    built_in: usize,
 }
 
 impl Default for Keymap {
     /// The bindings every window has: Tab and Shift+Tab move the focus.
     fn default() -> Keymap {
-        let mut keymap = Keymap { bindings: Vec::new() };
+        let mut keymap = Keymap { bindings: Vec::new(), built_in: 0 };
         let tab = Keystroke { key: Key::Tab, mods: Mods::NONE };
         keymap.push(vec![tab], None, FocusNext);
         keymap.push(vec![Keystroke { mods: Mods::SHIFT, ..tab }], None, FocusPrevious);
         keymap.push(vec![Keystroke { key: Key::Left, mods: Mods::ALT }], None, GoBack);
         keymap.push(vec![Keystroke { key: Key::Right, mods: Mods::ALT }], None, GoForward);
         keymap.text_bindings();
+        keymap.built_in = keymap.bindings.len();
         keymap
     }
 }

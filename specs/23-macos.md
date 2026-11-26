@@ -208,8 +208,16 @@ renderer and Core Text.
   their own. A press of the left button with Control held is the right button's. Shortcuts
   are written in the Mac's signs (`KeyNames::Signs`: `⇧⌘P`). The terminal (M4) sends
   control characters for `SUPER` here, and copies with `CTRL`.
-- **Not yet**: the keys of text as a Mac has them (Option and Command with the arrows), and
-  the menu bar with what a Mac's user finds in it (Quit, Hide, the window's own); the
+  The keys of text are the Mac's (09, "On a Mac"): Option with an arrow goes by a word,
+  Command with one to an end; back and forward are Command with a bracket.
+- **The menu bar** has what a Mac's user finds in every app's, with the keys the system
+  keeps for it: the app's own menu (Hide with Command-H, Hide Others, Show All, Quit with
+  Command-Q) and Window (Minimize with Command-M, Zoom, and the windows the system lists).
+  Quit ends no process: every window is asked to close, as its close button asks, and the
+  app decides (15, "Closing"). No item takes a key an app may want for itself: closing with
+  Command-W is the app's binding. Its titles are in English.
+- **Not yet**: the code editor's keys as a Mac has them; an app's own menus in the menu
+  bar, and the bar in the app's language; the
   semantic tree for readers (`update_semantics`); drops from other programs; the system's
   three buttons at the middle of a title bar taller than the system's, and their room given
   back while the window fills the screen; a placement is the window's frame in points from

@@ -23,7 +23,9 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use quadra_async::{Executor, Timers};
-use quadra_platform::{Appearance, Cursor, Platform, PlatformError, PlatformWindow, WindowId, WindowOptions};
+use quadra_platform::{
+    Appearance, Cursor, KeyNames, Platform, PlatformError, PlatformWindow, WindowId, WindowOptions,
+};
 use quadra_prim::{Color, Rect};
 use quadra_reactive::{Scope, Signal, memo, provide, signal};
 use quadra_render::{DeviceSize, Pixels, RenderError, Renderer, SurfaceId};
@@ -114,7 +116,7 @@ impl<R: Renderer> App<R> {
             let size = signal(TextSize::default());
             provide(size);
             provide(TextScale(memo(move || size.get().factors(appearance.get().text_scale).1)));
-            let keymap = signal(Rc::new(Keymap::default()));
+            let keymap = signal(Rc::new(of_system(&*platform, Keymap::default())));
             provide(keymap);
             (theme, settings, appearance, keymap)
         });
@@ -174,7 +176,7 @@ impl<R: Renderer> App<R> {
     /// The app's key bindings: its defaults, then the user's (specs/09). Windows opened
     /// before and after use them.
     pub fn keymap(self, keymap: Keymap) -> App<R> {
-        self.keymap.set_always(Rc::new(keymap));
+        self.keymap.set_always(Rc::new(of_system(&*self.platform, keymap)));
         self
     }
 
@@ -265,6 +267,14 @@ impl<R: Renderer> Drop for App<R> {
 }
 
 /// The size of a window's content in device pixels.
+/// A keymap as the system the app runs on has its keys (specs/09, "On a Mac").
+fn of_system(platform: &dyn Platform, keymap: Keymap) -> Keymap {
+    match platform.key_names() {
+        KeyNames::Signs => keymap.as_a_mac_has_them(),
+        KeyNames::Words => keymap,
+    }
+}
+
 fn device_size(window: &dyn PlatformWindow) -> DeviceSize {
     let (size, scale) = (window.size(), window.scale());
     DeviceSize { width: (size.width * scale).round() as u32, height: (size.height * scale).round() as u32 }

@@ -26,7 +26,7 @@ pub(crate) fn carried(board: &NSPasteboard) -> Option<Dropped> {
         .iter()
         .flat_map(|items| items.iter())
         .filter_map(|item| item.stringForType(file))
-        .filter_map(|url| NSURL::URLWithString(&url)?.to_file_path())
+        .filter_map(|url| crate::opens::file_path(&*NSURL::URLWithString(&url)?))
         .collect();
     if !files.is_empty() {
         return Some(Dropped::Files(files));
@@ -96,8 +96,8 @@ mod tests {
         assert!(board.setString_forType(&NSString::from_str("việt"), text));
         assert_eq!(carried(&board), Some(Dropped::Text("việt".into())));
         board.clearContents();
-        assert!(board.setString_forType(&NSString::from_str("file:///tmp/a%20b.txt"), file));
-        assert_eq!(carried(&board), Some(Dropped::Files(vec![PathBuf::from("/tmp/a b.txt")])));
+        assert!(board.setString_forType(&NSString::from_str("file:///tmp/a%20vi%E1%BB%87t.txt"), file));
+        assert_eq!(carried(&board), Some(Dropped::Files(vec![PathBuf::from("/tmp/a việt.txt")])));
         board.clearContents();
     }
 }

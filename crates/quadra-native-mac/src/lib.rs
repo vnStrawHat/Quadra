@@ -12,4 +12,4 @@ pub use appkit::MacPlatform;
 pub use coretext::{CoreText, SYSTEM_FAMILY};
 pub use images::ImageIo;
 pub use metal::MetalRenderer;
-pub use opens::on_open_files;
+pub use opens::{file_path, on_open_files};

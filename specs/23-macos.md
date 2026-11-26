@@ -276,7 +276,9 @@ Markdown's, with the binary the tests built, and so checks its `Info.plist` and 
 signature. The application's delegate takes the files the system asks it to open
 (`application:openURLs:`) and gives their paths to who listens
 (`quadra_native_mac::on_open_files`; what is asked before anyone listens is kept), which
-is the shell's first instance. Tested by sending the delegate what AppKit sends
+is the shell's first instance. A path taken from a URL (here, a drop, a panel) has the
+URL's own characters (`file_path`): the file system's way of writing it takes accented
+letters apart. Tested by sending the delegate what AppKit sends
 (`tests/opens.rs`); a file opened from the Finder is tried by hand.
 
 ## The terminal (M4, started)

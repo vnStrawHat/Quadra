@@ -5,6 +5,16 @@
 use std::path::PathBuf;
 use std::sync::{Mutex, PoisonError};
 
+use objc2_foundation::NSURL;
+
+/// The path a file's URL names, in the characters the URL has. The path as the file system
+/// writes it (`to_file_path`) has every accented letter taken apart, which is not the name
+/// the user sees or an app compares.
+pub fn file_path(url: &NSURL) -> Option<PathBuf> {
+    let path = url.path().filter(|_| url.isFileURL())?;
+    Some(PathBuf::from(path.to_string()))
+}
+
 type Listener = Box<dyn FnMut(Vec<PathBuf>) + Send>;
 
 /// Who is told, and what was asked before anyone listened.

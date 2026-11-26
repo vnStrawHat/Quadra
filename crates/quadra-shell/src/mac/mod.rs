@@ -64,7 +64,7 @@ fn open_dialog(of: &FileDialog, folders: bool) -> Vec<PathBuf> {
     if panel.runModal() != NSModalResponseOK {
         return Vec::new();
     }
-    panel.URLs().iter().filter_map(|url| url.to_file_path()).collect()
+    panel.URLs().iter().filter_map(|url| quadra_native_mac::file_path(&url)).collect()
 }
 
 impl Dialogs for MacShell {
@@ -78,7 +78,7 @@ impl Dialogs for MacShell {
         if panel.runModal() != NSModalResponseOK {
             return None;
         }
-        panel.URL()?.to_file_path()
+        quadra_native_mac::file_path(&*panel.URL()?)
     }
 
     fn pick_folder(&self, dialog: &FileDialog) -> Option<PathBuf> {

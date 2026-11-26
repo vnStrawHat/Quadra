@@ -69,6 +69,6 @@ cat > "$app/Contents/Info.plist" <<EOF
 </plist>
 EOF
 plutil -lint "$app/Contents/Info.plist" > /dev/null
-codesign --force --sign - "$app" 2> /dev/null
+codesign --force --sign - "$app"
 codesign --verify "$app"
 echo "package_mac: $app ($(du -sk "$app" | cut -f1) KB${icon_key:+, with its icon})"

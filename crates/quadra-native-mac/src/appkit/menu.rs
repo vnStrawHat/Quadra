@@ -38,7 +38,7 @@ define_class!(
         /// Files opened from the Finder or by `open`, for who listens (`opens.rs`).
         #[unsafe(method(application:openURLs:))]
         fn open_urls(&self, _app: &NSApplication, urls: &NSArray<NSURL>) {
-            crate::opens::opened(urls.iter().filter_map(|url| url.to_file_path()).collect());
+            crate::opens::opened(urls.iter().filter_map(|url| crate::opens::file_path(&url)).collect());
         }
     }
 );

@@ -1,14 +1,14 @@
 //! A window (specs/10): an `NSWindow` whose content is the one view the scene is drawn in,
 //! and whose delegate tells the handler what the window is asked.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{DefinedClass, MainThreadOnly, define_class, msg_send};
 use objc2_app_kit::{
-    NSApplication, NSBackingStoreType, NSScreen, NSWindow, NSWindowDelegate, NSWindowStyleMask,
+    NSApplication, NSBackingStoreType, NSCursor, NSScreen, NSWindow, NSWindowDelegate, NSWindowStyleMask,
     NSWindowTitleVisibility,
 };
 use objc2_foundation::{NSNotification, NSObject, NSObjectProtocol, NSPoint, NSRect, NSSize, NSString};
@@ -21,6 +21,7 @@ use quadra_prim::{Rect, Size};
 
 use super::Shared;
 use super::delivery::Delivery;
+use super::look;
 use super::view::View;
 
 /// What a window, its view and its delegate share.
@@ -32,6 +33,11 @@ pub(crate) struct State {
     /// The size and the scale the handler was last told: AppKit sets a view's size more
     /// often than it changes.
     pub told: Cell<(Size, f32)>,
+    /// The window has the app's own frame: the app says what a point of it is.
+    pub custom_frame: bool,
+    /// The pointer's shape over the content, and AppKit's cursor of it.
+    pub shape: Cell<Cursor>,
+    pub cursor: RefCell<Retained<NSCursor>>,
 }
 
 impl State {
@@ -122,6 +128,9 @@ impl MacWindow {
             shared: Rc::downgrade(shared),
             wants_frame: Cell::new(false),
             told: Cell::new((Size::ZERO, 0.0)),
+            custom_frame: options.custom_frame,
+            shape: Cell::new(Cursor::Arrow),
+            cursor: RefCell::new(look::cursor(Cursor::Arrow)),
         });
         let view = View::new(mtm, state.clone(), content);
         window.setContentView(Some(&view));
@@ -189,8 +198,15 @@ impl PlatformWindow for MacWindow {
         self.state.wants_frame.set(true);
     }
 
-    // Not yet (specs/23, "The platform"): the pointer's shape, input methods, readers.
-    fn set_cursor(&self, _cursor: Cursor) {}
+    /// The view's cursor rectangle is made again with the new shape.
+    fn set_cursor(&self, cursor: Cursor) {
+        if self.state.shape.replace(cursor) != cursor {
+            *self.state.cursor.borrow_mut() = look::cursor(cursor);
+            self.window.invalidateCursorRectsForView(&self.view);
+        }
+    }
+
+    // Not yet (specs/23, "The platform"): input methods, readers.
 
     fn set_text_input(&self, _caret: Option<Rect>) {}
 

@@ -1,7 +1,8 @@
 //! How the platform reaches the app's handler (specs/10, "The handler is never entered
 //! twice"): what arrives while a handler method runs waits in a queue.
 
-use quadra_platform::{PlatformEvent, TimerId, WindowId};
+use quadra_platform::{HitRegion, PlatformEvent, TimerId, WindowId};
+use quadra_prim::Point;
 
 use super::Shared;
 
@@ -39,6 +40,21 @@ impl Shared {
             }
         }
         self.busy.set(false);
+    }
+
+    /// Asks the handler what a point of a window is to the system. It must be answered at
+    /// once: while a handler method runs, or before there is a handler, the point is the
+    /// app's.
+    pub(crate) fn hit_test(&self, window: WindowId, at: Point) -> HitRegion {
+        let Some(mut handler) = self.handler.get() else { return HitRegion::Client };
+        if self.busy.replace(true) {
+            return HitRegion::Client;
+        }
+        // SAFETY: as in `drain`: `busy` makes this the only reference to the handler.
+        let region = unsafe { handler.as_mut() }.hit_test(window, at);
+        self.busy.set(false);
+        self.drain(); // what arrived while it answered
+        region
     }
 
     /// Gives each window that asked for a frame its frame.

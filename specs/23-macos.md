@@ -169,23 +169,35 @@ renderer and Core Text.
   While the user drags the window's edge the loop does not turn, so a resize gives the app
   its frame at once. A size is told once: AppKit sets a view's size more often than it
   changes.
+- **The pointer's shape** is a cursor rectangle over all of the view, made again when the
+  app sets another shape. AppKit names no cursor for a diagonal resize, a move, waiting,
+  progress and help before macOS 15: those are the ones the system's own apps show, asked
+  for by name, and the arrow on a system that has them no more.
+- **The appearance** is read from AppKit's own: dark or light, more contrast (the user's
+  "Increase contrast"), the accent colour. The view tells a change of it
+  (`viewDidChangeEffectiveAppearance`). The system's own colours and a size of text are not
+  said: macOS has no contrast themes, and no text size for all apps.
+- **A window with its own frame** has the content under a transparent title bar, with the
+  system's three buttons over it. A press where the app says its title bar is
+  (`hit_test`: `Caption`) is the system's: the window is dragged by it
+  (`performWindowDragWithEvent`), and zoomed by a second press. `Maximize` is the app's
+  own, as the system shows nothing over it. Never run yet: the test's window is not shown.
 - **The handler is never entered twice**, as on Windows: what arrives while it runs waits.
 - **Keys**: Command is `Mods::SUPER`, Option is `Mods::ALT`, Control is `Mods::CTRL`.
   **Open**: on a Mac a shortcut is held with Command where Windows holds Ctrl, and the kit's
   key bindings say `ctrl`; whether a binding names a "primary" modifier, or the keymap is
   another one on a Mac, is a decision of the keymap (09), not taken yet.
-- **Not yet**: the pointer's shape (`set_cursor`); input methods (`set_text_input`,
-  composition); the semantic tree for readers (`update_semantics`); changes of the system's
-  appearance, of which only dark or light is read; drops from other programs; the system's
-  image codecs (the decoder is the one of flat test images); what a point of a window with
-  its own frame is to the system (`hit_test`), whose title bar is only made transparent; a
-  placement is the window's frame in points from the bottom left of the first display, not
-  yet in the device pixels the trait says; the menu bar.
+- **Not yet**: input methods (`set_text_input`, composition); the semantic tree for readers
+  (`update_semantics`); drops from other programs; the system's image codecs (the decoder
+  is the one of flat test images); where the system's three buttons are, for a title bar of
+  the kit to leave them room; a placement is the window's frame in points from the bottom
+  left of the first display, not yet in the device pixels the trait says; the menu bar.
 
 Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:
 a real window that is not shown, what the loop gives the handler (timers, a frame, a wake
 from another thread), AppKit's events sent to the window from inside the handler and what
-they arrive as, and frames drawn into the window's layer.
+they arrive as (a press, a key and its text, the other appearance, a new size, a request to
+close), a cursor for every shape, and frames drawn into the window's layer.
 
 ## Milestones
 

@@ -18,12 +18,15 @@ mod mac {
     use std::time::Duration;
 
     use objc2::MainThreadMarker;
-    use objc2_app_kit::{NSEvent, NSEventModifierFlags, NSEventType, NSView, NSWindow};
+    use objc2_app_kit::{
+        NSAppearance, NSAppearanceCustomization, NSAppearanceNameAqua, NSAppearanceNameDarkAqua, NSEvent,
+        NSEventModifierFlags, NSEventType, NSView, NSWindow,
+    };
     use objc2_foundation::{NSPoint, NSSize, NSString};
     use quadra_native_mac::{MacPlatform, MetalRenderer};
     use quadra_platform::{
-        Key, Mods, MouseButton, Platform, PlatformEvent, PlatformHandler, PlatformWindow, PointerKind,
-        TimerId, WindowHandle, WindowId, WindowOptions,
+        Cursor, Key, Mods, MouseButton, Platform, PlatformEvent, PlatformHandler, PlatformWindow,
+        PointerKind, TimerId, WindowHandle, WindowId, WindowOptions,
     };
     use quadra_prim::{Color, Point, Rect, Size};
     use quadra_render::{Clip, DeviceSize, Quad, Renderer, Scene, SurfaceTarget};
@@ -48,11 +51,11 @@ mod mac {
         (view, view.window().expect("the view is in its window"))
     }
 
-    /// A press and a release of the left button, a key that types "a", a new size and a
-    /// request to close, as AppKit gives them: from inside the handler, so each arrives
-    /// after it. The key goes through the window; the press is given to the view itself,
+    /// A press and a release of the left button, a key that types "a", the other appearance
+    /// (dark, of a light one), a new size and a request to close, as AppKit gives them: from
+    /// inside the handler, so each arrives after it. The key goes through the window; the press is given to the view itself,
     /// as a window that is not shown passed none on (seen on GitHub's Mac).
-    fn post(window: &dyn PlatformWindow) {
+    fn post(window: &dyn PlatformWindow, dark: bool) {
         let (view, window) = ns_window(window);
         let number = window.windowNumber();
         // In the window's points, from its bottom left: 30 from the left, 40 from the top of
@@ -74,6 +77,9 @@ mod mac {
             NSEventType::KeyDown, at, none, 0.0, number, None, &a, &a, false, 0,
         );
         window.sendEvent(&key.expect("a key event"));
+        // SAFETY: AppKit's constants, read and never written.
+        let name = unsafe { if dark { NSAppearanceNameDarkAqua } else { NSAppearanceNameAqua } };
+        window.setAppearance(NSAppearance::appearanceNamed(name).as_deref());
         window.setContentSize(NSSize::new(400.0, 240.0));
         window.performClose(None);
     }
@@ -92,7 +98,7 @@ mod mac {
             if id == self.ticks.1 {
                 // The one that fires once: the events, a frame asked for, a wake from another
                 // thread.
-                post(&*self.window);
+                post(&*self.window, !self.platform.appearance().dark);
                 self.window.request_frame();
                 let waker = self.platform.waker();
                 std::thread::spawn(move || waker.wake()).join().unwrap();
@@ -115,6 +121,26 @@ mod mac {
         assert_eq!(window.size(), Size::new(320.0, 200.0));
         assert!(window.scale() >= 1.0);
         assert!(platform.utc_offset(0).abs() <= 14 * 3600);
+        let looks = platform.appearance();
+        assert!(looks.accent.is_some() && looks.text_scale == 1.0, "{looks:?}");
+        // Every shape has a cursor, those AppKit does not name among them.
+        for shape in [
+            Cursor::Text,
+            Cursor::Pointer,
+            Cursor::Crosshair,
+            Cursor::Move,
+            Cursor::NotAllowed,
+            Cursor::ResizeHorizontal,
+            Cursor::ResizeVertical,
+            Cursor::ResizeNwse,
+            Cursor::ResizeNesw,
+            Cursor::Wait,
+            Cursor::Progress,
+            Cursor::Help,
+            Cursor::Arrow,
+        ] {
+            window.set_cursor(shape);
+        }
 
         // A frame into the window's layer: drawn and shown without an error, on a window
         // that is on no display (there may be nothing to draw into then, which is no error).
@@ -173,6 +199,9 @@ mod mac {
             .filter_map(|it| if let PlatformEvent::Resize { size, .. } = it { Some(*size) } else { None })
             .collect();
         assert_eq!(sizes, [Size::new(320.0, 200.0), Size::new(400.0, 240.0)], "each size once: {said}");
+        let turned =
+            events.iter().any(|it| matches!(it, PlatformEvent::Appearance(now) if now.dark != looks.dark));
+        assert!(turned, "the window's other appearance: {said}");
         assert_eq!(events.last(), Some(&PlatformEvent::CloseRequested), "{said}");
         assert_eq!(seen.window.size(), Size::new(400.0, 240.0));
     }

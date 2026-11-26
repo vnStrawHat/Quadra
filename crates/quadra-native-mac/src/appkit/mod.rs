@@ -3,6 +3,7 @@
 
 mod delivery;
 mod keys;
+mod look;
 mod view;
 mod window;
 
@@ -252,9 +253,8 @@ impl Platform for MacPlatform {
         NSTimeZone::localTimeZone().secondsFromGMTForDate(&then) as i32
     }
 
-    /// Dark or light, as the app is shown now.
+    /// As the app is shown now.
     fn appearance(&self) -> Appearance {
-        let name = NSApplication::sharedApplication(self.0.mtm).effectiveAppearance().name();
-        Appearance { dark: name.to_string().contains("Dark"), ..Appearance::default() }
+        look::appearance(&NSApplication::sharedApplication(self.0.mtm).effectiveAppearance())
     }
 }

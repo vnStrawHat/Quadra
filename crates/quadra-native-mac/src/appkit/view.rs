@@ -7,14 +7,15 @@ use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, Sel};
 use objc2::{AnyThread, DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
 use objc2_app_kit::{
-    NSEvent, NSEventModifierFlags, NSResponder, NSTrackingArea, NSTrackingAreaOptions, NSView,
+    NSAppearanceCustomization, NSEvent, NSEventModifierFlags, NSResponder, NSTrackingArea,
+    NSTrackingAreaOptions, NSView,
 };
 use objc2_foundation::{NSArray, NSObject, NSObjectProtocol, NSRect, NSSize, NSString};
-use quadra_platform::{MouseButton, PlatformEvent, PointerKind};
+use quadra_platform::{HitRegion, MouseButton, PlatformEvent, PointerKind};
 use quadra_prim::{Point, Size};
 
-use super::keys;
 use super::window::State;
+use super::{keys, look};
 
 define_class!(
     // SAFETY: `NSView` is made to be subclassed, and the class has no `Drop`.
@@ -57,9 +58,26 @@ define_class!(
             self.resized();
         }
 
+        /// The system, or the app for this window, changed how apps look.
+        #[unsafe(method(viewDidChangeEffectiveAppearance))]
+        fn appearance_changed(&self) {
+            // SAFETY: as above.
+            let _: () = unsafe { msg_send![super(self), viewDidChangeEffectiveAppearance] };
+            self.ivars().send(PlatformEvent::Appearance(look::appearance(&self.effectiveAppearance())));
+        }
+
+        /// AppKit asks where the pointer has which shape: the one the app set, over all of
+        /// the view.
+        #[unsafe(method(resetCursorRects))]
+        fn reset_cursor_rects(&self) {
+            self.addCursorRect_cursor(self.bounds(), &self.ivars().cursor.borrow());
+        }
+
         #[unsafe(method(mouseDown:))]
         fn mouse_down(&self, event: &NSEvent) {
-            self.pointer(event, PointerKind::Down, MouseButton::Left);
+            if !self.on_caption(event) {
+                self.pointer(event, PointerKind::Down, MouseButton::Left);
+            }
         }
 
         #[unsafe(method(mouseUp:))]
@@ -209,6 +227,24 @@ impl View {
     fn place(&self, event: &NSEvent) -> Point {
         let at = self.convertPoint_fromView(event.locationInWindow(), None);
         Point::new(at.x as f32, at.y as f32)
+    }
+
+    /// A press on what the app says is its title bar: the window is dragged by it, and
+    /// zoomed by a second press. The press is the system's then, not the app's.
+    fn on_caption(&self, event: &NSEvent) -> bool {
+        let state = self.ivars();
+        let (Some(shared), Some(window)) = (state.shared.upgrade(), self.window()) else { return false };
+        if !state.custom_frame || shared.hit_test(state.id, self.place(event)) != HitRegion::Caption {
+            return false;
+        }
+        // ponytail: a second press zooms; what the user chose for it in the system's
+        // settings (minimize, nothing) when someone asks.
+        if event.clickCount() == 2 {
+            window.zoom(None)
+        } else {
+            window.performWindowDragWithEvent(event)
+        }
+        true
     }
 
     fn pointer(&self, event: &NSEvent, kind: PointerKind, button: MouseButton) {

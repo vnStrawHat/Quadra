@@ -1,0 +1,112 @@
+# A question asked once (specs/23, M2): does GitHub's Mac have Metal, enough to draw a scene
+# without a window and read its pixels back? Run by a push to the branch of the port that
+# changes this file; the answer is a notice of the run. Removed once it is written down.
+name: Metal probe
+
+on:
+  push:
+    branches: [macos]
+    paths: [".github/workflows/metal-probe.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Is there Metal on the runner
+    runs-on: macos-latest
+    steps:
+      - name: Draw a triangle without a window and read a pixel back
+        run: |
+          cat > probe.swift <<'EOF'
+          import Foundation
+          import Metal
+
+          var said: [String] = []
+          func end() -> Never {
+              print(said.joined(separator: "\n"))
+              exit(0)
+          }
+          guard let device = MTLCreateSystemDefaultDevice() else {
+              said.append("device: none")
+              end()
+          }
+          said.append("device: \(device.name)")
+          said.append("low power \(device.isLowPower), headless \(device.isHeadless), unified memory \(device.hasUnifiedMemory)")
+          said.append("all devices: \(MTLCopyAllDevices().map { $0.name })")
+          do {
+              let shaders = """
+              #include <metal_stdlib>
+              using namespace metal;
+              struct Out { float4 at [[position]]; };
+              vertex Out vs(uint id [[vertex_id]]) {
+                  float2 corners[3] = { float2(-1, -1), float2(3, -1), float2(-1, 3) };
+                  Out out;
+                  out.at = float4(corners[id], 0, 1);
+                  return out;
+              }
+              fragment float4 fs() { return float4(0.25, 0.5, 0.75, 1.0); }
+              """
+              let library = try device.makeLibrary(source: shaders, options: nil)
+              said.append("shaders: compiled")
+              let pipeline = MTLRenderPipelineDescriptor()
+              pipeline.vertexFunction = library.makeFunction(name: "vs")
+              pipeline.fragmentFunction = library.makeFunction(name: "fs")
+              pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
+              pipeline.rasterSampleCount = 4
+              let state = try device.makeRenderPipelineState(descriptor: pipeline)
+              said.append("pipeline: made, 4 samples")
+
+              let size = MTLTextureDescriptor.texture2DDescriptor(
+                  pixelFormat: .bgra8Unorm, width: 64, height: 64, mipmapped: false)
+              size.usage = [.renderTarget, .shaderRead]
+              size.storageMode = .shared
+              guard let target = device.makeTexture(descriptor: size) else {
+                  said.append("target: not made")
+                  end()
+              }
+              let many = MTLTextureDescriptor.texture2DDescriptor(
+                  pixelFormat: .bgra8Unorm, width: 64, height: 64, mipmapped: false)
+              many.textureType = .type2DMultisample
+              many.sampleCount = 4
+              many.usage = .renderTarget
+              many.storageMode = .private
+              guard let samples = device.makeTexture(descriptor: many) else {
+                  said.append("multisample target: not made")
+                  end()
+              }
+              let pass = MTLRenderPassDescriptor()
+              pass.colorAttachments[0].texture = samples
+              pass.colorAttachments[0].resolveTexture = target
+              pass.colorAttachments[0].loadAction = .clear
+              pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+              pass.colorAttachments[0].storeAction = .multisampleResolve
+              guard let queue = device.makeCommandQueue(), let commands = queue.makeCommandBuffer(),
+                    let encoder = commands.makeRenderCommandEncoder(descriptor: pass) else {
+                  said.append("commands: not made")
+                  end()
+              }
+              encoder.setRenderPipelineState(state)
+              encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+              encoder.endEncoding()
+              let began = Date()
+              commands.commit()
+              commands.waitUntilCompleted()
+              said.append("commands: status \(commands.status.rawValue), error \(String(describing: commands.error)), \(Int(Date().timeIntervalSince(began) * 1000)) ms")
+              var pixel = [UInt8](repeating: 0, count: 4)
+              target.getBytes(&pixel, bytesPerRow: 4, from: MTLRegionMake2D(32, 32, 1, 1), mipmapLevel: 0)
+              said.append("pixel (b g r a): \(pixel), wanted [191, 128, 64, 255]")
+          } catch {
+              said.append("failed: \(error)")
+          }
+          end()
+          EOF
+          {
+            sw_vers | tr '\n' ' '
+            echo
+            system_profiler SPDisplaysDataType | grep -E "Chipset|Type|Vendor|Metal|VRAM|Cores" | sed 's/^ *//'
+            swiftc -O probe.swift -o probe 2>&1 | tail -n 20
+            ./probe 2>&1 | tail -n 20
+          } > said.txt || true
+          cat said.txt
+          echo "::notice title=Metal probe::$(sed 's/%/%25/g' said.txt | awk '{ printf "%s%%0A", $0 }')"

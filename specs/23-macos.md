@@ -34,13 +34,14 @@ here changes what a Windows build is or measures.
 | Pseudo terminal (18) | ConPTY | the POSIX pty of `oneterm-vt` |
 | Updates (22) | an `.exe` replaced while it runs | an app bundle; decided when an app ships there |
 
-The bindings are a decision of M2 (01, R15: a new crate is admitted there first).
+## Decisions taken by the user (2026-11-26)
 
-## Open decision: the renderer
-
-A Metal backend written for Quadra, as the D3D11 one was (07), or one backend over a crate
-that draws on both systems. The first is what the goals above say and what `Renderer` was cut
-for; it is the plan unless the user decides otherwise before M2. M0 and M1 do not depend on it.
+| Question | Decision |
+|---|---|
+| The renderer | A Metal backend written for Quadra, as the D3D11 one was (07): no crate that draws for both systems |
+| Bindings to Apple's APIs | A crate may provide them, as `windows` does on Windows. Which ones is written in 01 (R15) and `tools/check_deps.py` when M2 first names them, as for any crate |
+| OneTerm | Not ported here (Goals) |
+| Pushes | Claude may push the branch `macos` unasked, to have the CI run; every other branch is asked for, as before |
 
 ## How it is developed without a Mac
 

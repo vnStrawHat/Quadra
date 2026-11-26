@@ -81,7 +81,7 @@ starts Git Bash; `GIT_BASH` names another `bash.exe`).
 | Gate | `tools/check.sh` |
 | Release gate | `tools/check.sh prod`; run both before saying done |
 | One crate's tests | `tools/cargo.sh test -p quadra-prim` |
-| The workspace for macOS | `tools/check_mac.sh`: from Windows, clippy for `aarch64-apple-darwin` (nothing is linked); on a Mac (the CI, `.github/workflows/macos.yml`), clippy and the tests. It names what is not built for macOS yet (specs/23) |
+| The workspace for macOS | `tools/check_mac.sh`: from Windows, clippy for `aarch64-apple-darwin` (nothing is linked); on a Mac (the CI, `.github/workflows/macos.yml`), clippy and the tests. It names what is not built for macOS yet (specs/23). `tools/ci_mac.sh [branch]` waits for the job of the branch's newest commit and prints what it said |
 | The bench app | `tools/bench.sh` builds `target/dist/compare.exe` (the dist profile: release with fat LTO, what ships and is measured); with scene names it runs them headless with pass timings; `tools/bench.sh compare [runs]` measures the four scenes' real windows from outside (`target/dist/run.exe`) into `.tmp/bench/compare.json`; `tools/bench.sh incremental` prints what a change costs against the size of the UI; `BENCH_GPU=1` adds the GPU's time to a windowed scene's passes |
 | A window's pixels | `python tools/shot.py "Window title" .tmp/shots/name.png` while the app runs |
 | Terminal throughput | `tools/doomfire.sh [seconds]`: the fire demo (`bench/doomfire`) fed to the engine, through the console host alone, and in a real OneTerm window (specs/14) |
@@ -124,7 +124,7 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-app` | Windows, the frame loop, settings, the log, time, language |
 | `quadra-build` | For an app's build script: the executable's icon |
 | `quadra-native-win` | Windows: D3D11, DirectWrite, Win32, UI Automation (`unsafe` allowed) |
-| `quadra-native-mac` | macOS (specs/23): Core Text so far; built for macOS alone, an empty crate elsewhere (`unsafe` allowed) |
+| `quadra-native-mac` | macOS (specs/23): Metal and Core Text so far; built for macOS alone, an empty crate elsewhere (`unsafe` allowed) |
 | `quadra-shell` | OS services: dialogs, opener, tray, one instance, crash reports (`unsafe` allowed) |
 | `quadra-updater` | An app's updates from GitHub Releases: check, fetch and verify, install while it runs (specs/22) |
 | `quadra-testing` | The test harness: no OS, no GPU, fixed text |

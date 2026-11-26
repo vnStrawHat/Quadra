@@ -6,7 +6,7 @@
 
 use std::rc::Rc;
 
-use quadra_native_mac::{CoreText, SYSTEM_FAMILY};
+use quadra_native_mac::{CoreText, MetalRenderer, SYSTEM_FAMILY};
 use quadra_text::{FaceId, FontKey, GlyphFormat, TextBackend};
 
 fn key(family: &str) -> FontKey {
@@ -242,4 +242,29 @@ fn right_to_left_text_has_its_levels_and_a_word_comes_in_visual_order() {
     // A number in a word keeps its order, to the left of the letters before it.
     let mixed: Vec<u32> = ct.shape("אב12", face, 16.0).iter().map(|g| g.cluster).collect();
     assert_eq!(mixed, [4, 5, 2, 0]);
+}
+
+#[test]
+fn text_goes_from_a_view_to_pixels() {
+    use quadra_prim::{Color, Size};
+    use quadra_render::{DeviceSize, Renderer, SurfaceTarget};
+    use quadra_tree::{Fonts, Tree};
+    use quadra_view::{column, mount_root, text};
+    let fonts = Fonts::new(Box::new(CoreText::new().unwrap()));
+    let mut tree = Tree::new(fonts.clone());
+    let mut r = MetalRenderer::new().unwrap();
+    let surface = r.create_surface(SurfaceTarget::Offscreen, DeviceSize { width: 160, height: 60 }).unwrap();
+    mount_root(&mut tree, column().padding(10.0).child(text("Hill").size(32.0)));
+    tree.frame(Size::new(160.0, 60.0), 1.0);
+    r.sync_atlas(fonts.borrow_mut().glyphs.core_mut()).unwrap();
+    r.draw(surface, tree.scene_mut(), Color::WHITE).unwrap();
+    let pixels = r.read_pixels(surface).unwrap();
+    let dark = |x: u32, y: u32| pixels.rgba[((y * 160 + x) * 4) as usize] < 0x40;
+    let ink = (0..60).flat_map(|y| (0..160).map(move |x| (x, y))).filter(|&(x, y)| dark(x, y));
+    let ink: Vec<(u32, u32)> = ink.collect();
+    assert!(ink.len() > 150, "{} dark pixels", ink.len()); // the stems of four letters
+    let (left, right) = (ink.iter().map(|p| p.0).min().unwrap(), ink.iter().map(|p| p.0).max().unwrap());
+    let (top, bottom) = (ink.iter().map(|p| p.1).min().unwrap(), ink.iter().map(|p| p.1).max().unwrap());
+    assert!((10..18).contains(&left) && (45..85).contains(&right), "{left}..{right}");
+    assert!((10..28).contains(&top) && (34..50).contains(&bottom), "{top}..{bottom}");
 }

@@ -11,7 +11,8 @@ ADMITTED = {
     "windows", "windows-core", "accesskit", "accesskit_windows", "serde", "serde_json", "regex-lite",
     "oneterm-vt", "polling", "russh", "russh-sftp", "tokio", "zeroize", "argon2", "miniz_oxide",
     # Apple's frameworks, for macOS alone (specs/23).
-    "objc2-core-foundation", "objc2-core-graphics", "objc2-core-text",
+    "objc2", "objc2-foundation", "objc2-core-foundation", "objc2-core-graphics", "objc2-core-text",
+    "objc2-metal",
 }
 
 meta = json.load(sys.stdin)

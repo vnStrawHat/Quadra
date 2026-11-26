@@ -20,8 +20,14 @@ skip() { for name in "$@"; do printf -- '--exclude %s ' "$name"; done; }
 if [ "$(uname)" = Darwin ]; then
 	# shellcheck disable=SC2046
 	tools/cargo.sh clippy --workspace --all-targets --keep-going $(skip $not_yet $not_ours) -- -D warnings
+	# The native crate's tests on their own, between two marks: the job says what each did.
+	failed=0
+	echo "== quadra-native-mac"
+	tools/cargo.sh test -p quadra-native-mac --no-fail-fast || failed=1
+	echo "== the rest"
 	# shellcheck disable=SC2046
-	tools/cargo.sh test --workspace --no-fail-fast $(skip $not_yet $not_ours)
+	tools/cargo.sh test --workspace --no-fail-fast $(skip $not_yet $not_ours quadra-native-mac) || failed=1
+	[ "$failed" = 0 ]
 else
 	# shellcheck disable=SC2046
 	tools/cargo.sh clippy --workspace --all-targets --keep-going --target "$target" \

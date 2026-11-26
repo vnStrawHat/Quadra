@@ -117,6 +117,32 @@ frameworks (01, R15), each with the features used and no more.
 
 Its tests (`tests/coretext.rs`) run on a Mac alone: the CI.
 
+### Rendering: Metal (`MetalRenderer`, as built)
+
+The Windows renderer's twin (07): the same instances, a buffer a layer brought in step with
+what the layer says changed, the scene's steps drawn as runs of instances of one pipeline.
+
+- **The shader** is `shaders/prims.metal`: the Windows shader (`prims.hlsl`) in Metal's
+  language, line for line. One thing is not carried: the second output that blends a glyph
+  smoothed by subpixel a channel at a time, as macOS smooths none so; blending is
+  premultiplied alpha. It is compiled from its source when the device is made (a library
+  built ahead by Xcode's tools waits for a Mac and for start-up to be measured, M5).
+- **A frame** is one command buffer. A layer's instances are a buffer in memory the CPU and
+  the GPU share, bound to both stages, read by index; a run's constants are copied into the
+  commands; the run is a strip of four vertices an instance. A layer of which nothing is
+  inside its scissor draws nothing.
+- **A blurring box**: the pass ends, what is drawn under the box is copied into a texture
+  and its mips are made, and a pass that keeps what is drawn begins.
+- **Atlases** are texture arrays, grown by a copy of their slices; a slot whose texture does
+  not exist yet is bound to a texture of one pixel (a draw may read none that is not bound).
+- **Surfaces**: a texture that is drawn into and read back, RGBA of 8 bits, in shared
+  memory (Apple's silicon). A window's surface comes with the AppKit platform; `draw` waits
+  for the GPU, as what was drawn is read next.
+- **Not yet**: a window's surface and its pacing; what a frame cost the GPU (`RenderStats::gpu`).
+
+Its tests are the Windows renderer's, on this one (`tests/pixels.rs`, `text.rs`,
+`gradient.rs`, `mask.rs`, `backdrop.rs`): the two are held to the same pixels.
+
 ## Milestones
 
 | | Builds | Exit |

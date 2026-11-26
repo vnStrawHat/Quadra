@@ -167,7 +167,8 @@ renderer and Core Text.
   (`interpretKeyEvents`, which gives it as `insertText:`). The window's delegate tells a
   request to close (answered no: the app closes a window by dropping it) and the focus.
   While the user drags the window's edge the loop does not turn, so a resize gives the app
-  its frame at once.
+  its frame at once. A size is told once: AppKit sets a view's size more often than it
+  changes.
 - **The handler is never entered twice**, as on Windows: what arrives while it runs waits.
 - **Keys**: Command is `Mods::SUPER`, Option is `Mods::ALT`, Control is `Mods::CTRL`.
   **Open**: on a Mac a shortcut is held with Command where Windows holds Ctrl, and the kit's

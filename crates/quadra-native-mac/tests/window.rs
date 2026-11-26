@@ -40,18 +40,20 @@ mod mac {
         ticks: (TimerId, TimerId),
     }
 
-    /// The window's own object, from its view.
-    fn ns_window(window: &dyn PlatformWindow) -> objc2::rc::Retained<NSWindow> {
+    /// The window's view and its own object.
+    fn ns_window(window: &dyn PlatformWindow) -> (&NSView, objc2::rc::Retained<NSWindow>) {
         let WindowHandle::AppKit { view } = window.handle() else { panic!("not an AppKit window") };
         // SAFETY: the address is of the window's content view, alive as long as the window.
         let view = unsafe { &*(view as *const NSView) };
-        view.window().expect("the view is in its window")
+        (view, view.window().expect("the view is in its window"))
     }
 
-    /// Sends the window a press and a release of the left button, a key that types "a", and
-    /// a request to close, as AppKit would: from inside the handler, so each arrives after it.
+    /// A press and a release of the left button, a key that types "a", a new size and a
+    /// request to close, as AppKit gives them: from inside the handler, so each arrives
+    /// after it. The key goes through the window; the press is given to the view itself,
+    /// as a window that is not shown passed none on (seen on GitHub's Mac).
     fn post(window: &dyn PlatformWindow) {
-        let window = ns_window(window);
+        let (view, window) = ns_window(window);
         let number = window.windowNumber();
         // In the window's points, from its bottom left: 30 from the left, 40 from the top of
         // a content 200 high.
@@ -61,7 +63,11 @@ mod mac {
             let press = NSEvent::mouseEventWithType_location_modifierFlags_timestamp_windowNumber_context_eventNumber_clickCount_pressure(
                 kind, at, NSEventModifierFlags::Shift, 0.0, number, None, 0, 1, 1.0,
             );
-            window.sendEvent(&press.expect("a mouse event"));
+            let press = press.expect("a mouse event");
+            match kind {
+                NSEventType::LeftMouseDown => view.mouseDown(&press),
+                _ => view.mouseUp(&press),
+            }
         }
         let a = NSString::from_str("a");
         let key = NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(
@@ -162,10 +168,11 @@ mod mac {
         let key = PlatformEvent::Key { key: Key::A, code: 0, mods: Mods::NONE, down: true, repeat: false };
         let (key, text) = (place(&key), place(&PlatformEvent::Text("a".to_string())));
         assert!(up < key && key < text, "the key, then what it types: {said}");
-        let resized = events.iter().any(|it| {
-            matches!(it, PlatformEvent::Resize { size, scale } if *size == Size::new(400.0, 240.0) && *scale >= 1.0)
-        });
-        assert!(resized, "the content's new size: {said}");
+        let sizes: Vec<Size> = events
+            .iter()
+            .filter_map(|it| if let PlatformEvent::Resize { size, .. } = it { Some(*size) } else { None })
+            .collect();
+        assert_eq!(sizes, [Size::new(320.0, 200.0), Size::new(400.0, 240.0)], "each size once: {said}");
         assert_eq!(events.last(), Some(&PlatformEvent::CloseRequested), "{said}");
         assert_eq!(seen.window.size(), Size::new(400.0, 240.0));
     }

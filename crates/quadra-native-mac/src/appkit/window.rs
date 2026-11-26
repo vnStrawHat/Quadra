@@ -29,6 +29,9 @@ pub(crate) struct State {
     pub shared: Weak<Shared>,
     /// A frame was asked for and not given yet.
     pub wants_frame: Cell<bool>,
+    /// The size and the scale the handler was last told: AppKit sets a view's size more
+    /// often than it changes.
+    pub told: Cell<(Size, f32)>,
 }
 
 impl State {
@@ -118,6 +121,7 @@ impl MacWindow {
             id: WindowId(shared.next_id()),
             shared: Rc::downgrade(shared),
             wants_frame: Cell::new(false),
+            told: Cell::new((Size::ZERO, 0.0)),
         });
         let view = View::new(mtm, state.clone(), content);
         window.setContentView(Some(&view));

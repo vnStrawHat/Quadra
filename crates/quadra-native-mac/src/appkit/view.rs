@@ -229,7 +229,11 @@ impl View {
     fn resized(&self) {
         let (size, state) = (self.bounds().size, self.ivars());
         let scale = self.window().map_or(1.0, |window| window.backingScaleFactor() as f32);
-        state.send(PlatformEvent::Resize { size: Size::new(size.width as f32, size.height as f32), scale });
+        let size = Size::new(size.width as f32, size.height as f32);
+        if state.told.replace((size, scale)) == (size, scale) {
+            return;
+        }
+        state.send(PlatformEvent::Resize { size, scale });
         if let Some(shared) = state.shared.upgrade() {
             shared.frames();
         }

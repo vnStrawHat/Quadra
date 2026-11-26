@@ -77,8 +77,9 @@ pub trait PlatformHandler {
   **Who draws the buttons** is the system's to say (`PlatformWindow::controls`):
   `WindowControls::App` on Windows, where a title bar draws them at its right end;
   `System { leading }` on macOS, where the system draws its three over the content's left
-  end and a title bar leaves them `leading` logical pixels. The app gives it to the
-  window's views as context; a platform that opens no window of the system's (the headless
+  end and a title bar leaves them `leading` logical pixels (none while the window fills
+  the screen, where the system shows no buttons). The app gives it to the window's views as
+  context, a signal it sets again when the window's size changes; a platform that opens no window of the system's (the headless
   one) says the app draws them, so that a test says the same on every machine, until it
   is told to be as the system it is built for (`HeadlessPlatform::as_the_system`, for the
   tool that draws pictures: a picture drawn on a Mac is a Mac's).

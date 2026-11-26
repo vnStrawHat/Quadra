@@ -58,6 +58,11 @@ impl State {
         }
     }
 
+    fn size_again(&self) {
+        let (size, scale) = self.told.get();
+        self.send(PlatformEvent::Resize { size, scale });
+    }
+
     /// The same when the loop next turns (`Shared::later`).
     pub fn send_later(&self, event: PlatformEvent) {
         if let Some(shared) = self.shared.upgrade() {
@@ -93,6 +98,18 @@ define_class!(
         fn resigned_key(&self, _notification: &NSNotification) {
             self.ivars().1.focused(false);
             self.ivars().0.send(PlatformEvent::Focus(false));
+        }
+
+        /// The window fills the screen now, or no more: the handler is told its size again,
+        /// and asks who draws the buttons then.
+        #[unsafe(method(windowDidEnterFullScreen:))]
+        fn entered_full_screen(&self, _notification: &NSNotification) {
+            self.ivars().0.size_again();
+        }
+
+        #[unsafe(method(windowDidExitFullScreen:))]
+        fn left_full_screen(&self, _notification: &NSNotification) {
+            self.ivars().0.size_again();
         }
     }
 );
@@ -254,6 +271,10 @@ impl PlatformWindow for MacWindow {
     /// The system's three buttons stand over the content's left end: as far as the zoom
     /// button reaches, and as much again as there is before the close button.
     fn controls(&self) -> WindowControls {
+        // A window that fills the screen shows no buttons: a title bar has all its width.
+        if self.window.styleMask().contains(NSWindowStyleMask::FullScreen) {
+            return WindowControls::System { leading: 0.0 };
+        }
         let frame = |which| self.window.standardWindowButton(which).map(|button| button.frame());
         match (frame(NSWindowButton::CloseButton), frame(NSWindowButton::ZoomButton)) {
             (Some(close), Some(zoom)) => {

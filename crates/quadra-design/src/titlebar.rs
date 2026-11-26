@@ -8,7 +8,7 @@ use std::rc::Rc;
 use quadra_layout::{Align, Justify};
 use quadra_platform::{HitRegion, WindowControls};
 use quadra_prim::Color;
-use quadra_reactive::{signal, use_context};
+use quadra_reactive::{Signal, signal, use_context};
 use quadra_tree::{NodeId, Role};
 use quadra_view::{
     AnyView, Div, IntoProp, MountCx, NodeRef, Prop, View, by_text, div, dynamic, row, text, window,
@@ -105,9 +105,16 @@ impl View for Titlebar {
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());
         let mut bar = bar.window_region(HitRegion::Caption);
         // What opened the window says who draws its buttons; a bar in no window draws them.
-        let controls = use_context::<WindowControls>().unwrap_or(WindowControls::App);
-        if let WindowControls::System { leading } = controls {
-            bar = bar.child(div().shrink(0.0).width(leading));
+        // The room the system's take is read again when it changes: a window of macOS that
+        // fills the screen shows none.
+        let live = use_context::<Signal<WindowControls>>();
+        let controls = live.map_or(WindowControls::App, |live| live.get_untracked());
+        if let (WindowControls::System { .. }, Some(live)) = (controls, live) {
+            let room = move || match live.get() {
+                WindowControls::System { leading } => leading,
+                WindowControls::App => 0.0,
+            };
+            bar = bar.child(div().shrink(0.0).width(room));
         }
         if let Some(items) = self.menu {
             let (open, opener) = (signal(false), NodeRef::new());

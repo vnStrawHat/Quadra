@@ -90,9 +90,13 @@ fn where_the_system_draws_the_buttons_the_bar_leaves_them_their_room() {
     let mut h = Harness::new();
     h.tree.set_theme(Rc::new(dark().theme()));
     h.tree.set_keymap(Rc::new(quadra_design::keymap()));
-    h.mount(|| {
+    let controls = Rc::new(std::cell::Cell::new(None));
+    let made = controls.clone();
+    h.mount(move || {
         // As a window of macOS says it.
-        quadra_reactive::provide(WindowControls::System { leading: 78.0 });
+        let controls = quadra_reactive::signal(WindowControls::System { leading: 78.0 });
+        quadra_reactive::provide(controls);
+        made.set(Some(controls));
         let bar = titlebar("Notes").menu(|| vec![MenuItem::new("Quit")]);
         quadra_design::root().child(bar).child(div().grow(1.0).child(text("content")))
     });
@@ -106,4 +110,8 @@ fn where_the_system_draws_the_buttons_the_bar_leaves_them_their_room() {
     assert!(h.tree.window_rect(menu).x >= 78.0);
     assert_eq!(h.tree.window_region_at(Point::new(40.0, 16.0)), HitRegion::Caption);
     assert_eq!(h.tree.window_region_at(Point::new(780.0, 16.0)), HitRegion::Caption);
+    // The window fills the screen and shows no buttons: the bar has their room back.
+    controls.get().unwrap().set(WindowControls::System { leading: 0.0 });
+    h.frame();
+    assert!(h.tree.window_rect(menu).x < 20.0);
 }

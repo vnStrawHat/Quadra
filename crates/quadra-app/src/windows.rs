@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use quadra_platform::{Cursor, WindowHandle, WindowId, WindowOptions};
-use quadra_reactive::{Scope, provide};
+use quadra_reactive::{Scope, provide, signal};
 use quadra_render::{Renderer, SurfaceTarget};
 use quadra_tree::Tree;
 use quadra_view::{AnyView, View, mount_with};
@@ -72,15 +72,27 @@ impl<R: Renderer> App<R> {
         self.follow(&mut tree, &scope);
         let id = window.id();
         let windows = Windows { asked: self.waiting.0.clone(), parent: id };
-        let controls = window.controls();
-        scope.run(|| {
+        let now = window.controls();
+        let controls = scope.run(|| {
+            let controls = signal(now);
             provide(windows);
             provide(controls);
-            mount_with(&mut tree, view)
+            mount_with(&mut tree, view);
+            controls
         });
         window.request_frame();
         let (caret, cursor, remember) = (None, Cursor::Arrow, options.remember);
-        self.windows.push(AppWindow { scope, tree, surface, caret, cursor, window, remember, parent });
+        self.windows.push(AppWindow {
+            scope,
+            tree,
+            surface,
+            caret,
+            cursor,
+            window,
+            remember,
+            parent,
+            controls,
+        });
         Ok(id)
     }
 

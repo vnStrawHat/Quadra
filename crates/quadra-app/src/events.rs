@@ -22,6 +22,10 @@ impl<R: Renderer> PlatformHandler for App<R> {
             PlatformEvent::Resize { .. } => {
                 if let Some(w) = self.windows.iter_mut().find(|w| w.window.id() == window) {
                     w.tree.set_maximized(w.window.is_maximized());
+                    let controls = w.window.controls();
+                    if w.controls.get_untracked() != controls {
+                        w.controls.set(controls);
+                    }
                     let size = crate::device_size(&*w.window);
                     w.tree.set_minimized(size.width == 0 || size.height == 0);
                     w.window.request_frame();

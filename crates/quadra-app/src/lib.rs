@@ -24,7 +24,8 @@ use std::time::Instant;
 
 use quadra_async::{Executor, Timers};
 use quadra_platform::{
-    Appearance, Cursor, KeyNames, Platform, PlatformError, PlatformWindow, WindowId, WindowOptions,
+    Appearance, Cursor, KeyNames, Platform, PlatformError, PlatformWindow, WindowControls, WindowId,
+    WindowOptions,
 };
 use quadra_prim::{Color, Rect};
 use quadra_reactive::{Scope, Signal, memo, provide, signal};
@@ -59,6 +60,9 @@ pub(crate) struct AppWindow {
     remember: Option<String>,
     /// The window it was opened from, which it closes with.
     parent: Option<WindowId>,
+    /// Who draws its buttons and the room they take, as its views read it: asked of the
+    /// window again when its size changes.
+    controls: Signal<WindowControls>,
 }
 
 pub struct App<R: Renderer> {

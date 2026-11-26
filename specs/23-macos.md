@@ -224,14 +224,18 @@ renderer and Core Text.
   every scale, so nothing is counted in device pixels. A window opens at a place it is given
   only when a display shows 64 points of it each way (`appkit/place.rs`); a zoomed window
   comes back by its frame.
+- **Filling the screen** the window shows no buttons, and says so (`controls` with no
+  room): the kit's title bar gives their room back, and takes it again when the window
+  leaves the full screen (the delegate tells the handler the size again both times).
 - **Readers** (12, "Accessibility"): the window's semantic tree is told to the system's
   accessibility by the adapter of `accesskit` for macOS (`appkit/access.rs`), which gives
   the view a class of its own over the view's before the view is in a window. Tested by
   asking the view what a reader asks (`tests/access.rs`); VoiceOver itself is tried by hand.
 - **Not yet**: an app's own menus in the menu
   bar, and the bar in the app's language; the system's
-  three buttons at the middle of a title bar taller than the system's, and their room given
-  back while the window fills the screen.
+  three buttons at the middle of a title bar taller than the system's (they stand where the
+  system puts them, a few points above the middle of the kit's bar: moving them means
+  laying out the system's title bar by hand, which wants a real Mac to look at).
 
 Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:
 a real window that is not shown, what the loop gives the handler (timers, a frame, a wake

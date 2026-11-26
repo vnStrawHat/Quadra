@@ -193,15 +193,18 @@ renderer and Core Text.
   input method composes, a key is its own and is not told as a key. While nothing takes
   text no input method is asked: a key types its own characters, and what was being composed
   is dropped. With Command held a key types nothing.
+- **Images** are decoded by the system's codecs (Image I/O, `ImageIo`): a size from the
+  header as the image is seen (a camera's orientation tag turns it), a frame drawn by Core
+  Graphics at the size asked for into premultiplied RGBA in sRGB, the frames of a GIF whole
+  with their times. The other formats that move show their first frame.
 - **The handler is never entered twice**, as on Windows: what arrives while it runs waits.
 - **Keys**: Command is `Mods::SUPER`, Option is `Mods::ALT`, Control is `Mods::CTRL`.
   **Open**: on a Mac a shortcut is held with Command where Windows holds Ctrl, and the kit's
   key bindings say `ctrl`; whether a binding names a "primary" modifier, or the keymap is
   another one on a Mac, is a decision of the keymap (09), not taken yet.
 - **Not yet**: the semantic tree for readers (`update_semantics`); drops from other
-  programs; the system's image codecs (the decoder
-  is the one of flat test images); where the system's three buttons are, for a title bar of
-  the kit to leave them room; a placement is the window's frame in points from the bottom
+  programs; where the system's three buttons are, for a title bar of the kit to leave them
+  room; a placement is the window's frame in points from the bottom
   left of the first display, not yet in the device pixels the trait says; the menu bar.
 
 Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:

@@ -23,8 +23,8 @@ use objc2_app_kit::{
 };
 use objc2_foundation::{NSDate, NSDefaultRunLoopMode, NSPoint, NSString, NSTimeZone};
 use quadra_platform::{
-    Appearance, Clipboard, FlatImages, ImageDecoder, Platform, PlatformError, PlatformHandler,
-    PlatformWindow, TimerId, Waker, WindowOptions,
+    Appearance, Clipboard, ImageDecoder, Platform, PlatformError, PlatformHandler, PlatformWindow, TimerId,
+    Waker, WindowOptions,
 };
 
 use delivery::Delivery;
@@ -239,10 +239,8 @@ impl Platform for MacPlatform {
         Rc::new(Pasteboard)
     }
 
-    // ponytail: the decoder of flat test images; the system's codecs (Image I/O) with the
-    // views that show pictures (specs/23, "The platform").
     fn image_decoder(&self) -> Arc<dyn ImageDecoder> {
-        Arc::new(FlatImages)
+        Arc::new(crate::images::ImageIo)
     }
 
     fn now(&self) -> Instant {

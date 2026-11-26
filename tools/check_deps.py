@@ -12,7 +12,7 @@ ADMITTED = {
     "oneterm-vt", "polling", "russh", "russh-sftp", "tokio", "zeroize", "argon2", "miniz_oxide",
     # Apple's frameworks, for macOS alone (specs/23).
     "objc2", "objc2-foundation", "objc2-core-foundation", "objc2-core-graphics", "objc2-core-text",
-    "objc2-metal", "objc2-app-kit", "objc2-quartz-core",
+    "objc2-metal", "objc2-app-kit", "objc2-quartz-core", "objc2-image-io",
 }
 
 meta = json.load(sys.stdin)

@@ -2,21 +2,23 @@
 //! the tray and notifications, one instance, reports of crashes that are no panic. Each
 //! service is a trait with an implementation for each OS and a fake that tests drive
 //! ([`FakeShell`]); views find the app's in their context. What is here outside an OS's
-//! module is the same on every OS; an OS's module, `win` for now, is built only for it.
+//! module is the same on every OS; an OS's module (`win`, `mac`) is built only for it.
 
 mod fake;
 mod files;
+#[cfg(target_os = "macos")]
+mod mac;
 #[cfg(windows)]
 mod win;
 
 use std::path::PathBuf;
 use std::rc::Rc;
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 use quadra_app::App;
 use quadra_async::{Inbox, Sender};
 use quadra_reactive::expect;
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 use quadra_render::Renderer;
 
 pub use fake::FakeShell;
@@ -51,6 +53,8 @@ pub struct ShellProcess {
 pub trait Meter {
     fn usage(&self) -> Option<Usage>;
 }
+#[cfg(target_os = "macos")]
+pub use mac::{MacShell, crash_reports, single_instance};
 #[cfg(windows)]
 pub use win::console;
 #[cfg(windows)]
@@ -245,9 +249,12 @@ pub enum Instance {
 /// Gives the app's views the OS's dialogs, opener, tray, meter, sounds and file types
 /// ([`dialogs`], [`opener`], [`tray`], `Rc<dyn Meter>`, `Rc<dyn Sounds>`,
 /// `Rc<dyn Associations>`).
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 pub fn install<R: Renderer>(app: App<R>) -> App<R> {
+    #[cfg(windows)]
     let shell = Rc::new(WinShell);
+    #[cfg(target_os = "macos")]
+    let shell = Rc::new(MacShell);
     let app = app.provide::<Rc<dyn Dialogs>>(shell.clone()).provide::<Rc<dyn Opener>>(shell.clone());
     let app = app.provide::<Rc<dyn Tray>>(shell.clone()).provide::<Rc<dyn Meter>>(shell.clone());
     app.provide::<Rc<dyn Sounds>>(shell.clone()).provide::<Rc<dyn Associations>>(shell)

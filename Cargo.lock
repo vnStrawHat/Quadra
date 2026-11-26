@@ -1806,6 +1806,9 @@ dependencies = [
 name = "quadra-shell"
 version = "0.1.0"
 dependencies = [
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
  "quadra-app",
  "quadra-async",
  "quadra-platform",

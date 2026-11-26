@@ -70,10 +70,8 @@ The user's machine runs Windows; a Mac is not at hand yet.
 `tools/check_mac.sh` names the packages that are not built for macOS; the list is what is
 left of the port, and a milestone ends by taking names off it:
 
-- `quadra-native-win`, and the tools that measure with it (the comparison bench and its
-  runner, the fire demo) (M2, M5).
-- The app `markdown`: its `main` asks the shell for the system's services (crash reports, one
-  instance, dialogs) (M3); and the tool that draws its screens.
+- `quadra-native-win`, and the tools that measure or draw with it (the comparison bench and
+  its runner, the fire demo, the tool that draws Markdown's screens) (M2, M5).
 - Every package of OneTerm, for good (Goals).
 
 Where Quadra has no native crate at all (not Windows, not macOS), `quadra::App` is an app on
@@ -241,6 +239,17 @@ does not draw fails the job. The pictures are kept with the run for fourteen day
 there are. They are not compared with the Windows ones yet. `tools/ci_mac.sh` (through
 `gh`, signed in) waits for the job, says what it did and puts the pictures in
 `.tmp/ci/mac-dark`: the way to look at a page drawn on a Mac from a machine that is none.
+
+## The shell (M3, as built)
+
+`quadra-shell/src/mac` (16, "On macOS"): AppKit's panels and alert for the dialogs, the
+system's `open` for opening, the alert sound, one instance over a socket, and crash reports
+left to the system. `quadra_shell::install` gives an app's views the same services as on
+Windows, so the app `markdown` builds for macOS and its tests run on the runner; the test
+of one instance runs there too. What shows something to the user (a panel, an alert, what
+`open` opens) is tried by hand on a real Mac. Not yet: an item in the menu bar for the
+tray, process usage, an app bundle (`Info.plist`, with the kinds of file an app opens),
+and what M4 needs (sealing, hashing, fetching).
 
 ## Milestones
 

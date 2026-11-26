@@ -196,6 +196,29 @@ the user makes it the default.
 - Tests never write the registry: they use the fake, and the function's values are unit
   tested.
 
+## On macOS
+
+The same traits behind the same `install`, by `quadra-shell/src/mac` (23, M3):
+
+- **Dialogs** are AppKit's, on the main thread: the open and the save panel, and an alert.
+  A dialog's title is the words above the files, as a panel shows no title of its own; its
+  filters are extensions, and one that takes any file leaves the panel open to all. A
+  question has Yes, No and Cancel; the buttons are in English.
+- **Opening** is the system's `open`: a file or a link; `open -R` shows a file in the
+  Finder; an app (a bundle) the user named opens the file as the Finder would
+  (`open -a`), and any other program is run with the arguments and the file.
+- **Sounds**: the alert sound the user set, for every kind.
+- **One instance**: the first process listens on a socket in the user's folder of temporary
+  files (`quadra-<id>.sock`); a later one hands it the folder it started in and its
+  arguments, and returns once the first has them. A socket nobody listens on, left by a
+  process that ended, is taken away. Two started in the same instant may both be the first.
+- **Crash reports** are the system's own (`~/Library/Logs/DiagnosticReports`):
+  `crash_reports` writes nothing.
+- **File types** are those the app's bundle names (`Info.plist`): `Associations::register`
+  says so, and nothing is registered while the app runs.
+- **Not yet**: the tray (`Tray::add` refuses), process usage (`Meter::usage` is none),
+  passwords, sealing and fetching (23, M4).
+
 ## Packaging
 
 `tools/package.sh <example>` builds the release binary of an example with

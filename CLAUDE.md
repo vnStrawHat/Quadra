@@ -36,7 +36,7 @@ implementation is its reference. Its specs, its tests and its own measurements
   elsewhere (another framework, the old V code) carries over only on merit.
 - **Few dependencies, not zero.** A new crate needs an entry in specs/01 (R15) and in
   `tools/check_deps.py`; the gate fails otherwise.
-- **`unsafe` only in `quadra-native-win` and `quadra-shell`.** Every other crate has
+- **`unsafe` only in `quadra-native-win`, `quadra-native-mac` and `quadra-shell`.** Every other crate has
   `[lints] workspace = true`, which forbids it.
 - No procedural macros in the framework; files stay **at most 300 lines** (check.sh).
 - The limited-RAM machine: do not run two release builds at once.
@@ -124,6 +124,7 @@ Target: `x86_64-pc-windows-msvc`. Toolchain pinned in `rust-toolchain.toml`.
 | `quadra-app` | Windows, the frame loop, settings, the log, time, language |
 | `quadra-build` | For an app's build script: the executable's icon |
 | `quadra-native-win` | Windows: D3D11, DirectWrite, Win32, UI Automation (`unsafe` allowed) |
+| `quadra-native-mac` | macOS (specs/23): Core Text so far; built for macOS alone, an empty crate elsewhere (`unsafe` allowed) |
 | `quadra-shell` | OS services: dialogs, opener, tray, one instance, crash reports (`unsafe` allowed) |
 | `quadra-updater` | An app's updates from GitHub Releases: check, fetch and verify, install while it runs (specs/22) |
 | `quadra-testing` | The test harness: no OS, no GPU, fixed text |

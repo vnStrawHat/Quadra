@@ -25,7 +25,7 @@ long=$(files \( -name '*.rs' -o -name '*.sh' -o -name '*.py' \) | xargs -r wc -l
 # 4. unsafe only at the OS boundary (specs/01, R16): every other crate inherits the
 #    workspace lints, which forbid it.
 for toml in crates/*/Cargo.toml bench/*/Cargo.toml apps/oneterm/crates/*/Cargo.toml; do
-	case "$toml" in crates/quadra-native-win/* | crates/quadra-shell/*) continue ;; esac
+	case "$toml" in crates/quadra-native-win/* | crates/quadra-native-mac/* | crates/quadra-shell/*) continue ;; esac
 	grep -A1 '^\[lints\]' "$toml" | grep -q '^workspace = true' ||
 		say "check: $toml must have [lints] workspace = true (specs/01, R16)"
 done

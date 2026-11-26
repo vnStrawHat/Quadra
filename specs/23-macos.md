@@ -79,6 +79,39 @@ Until M2 the facade has no native crate to build an app on there: `quadra::App` 
 no GPU (`NullRenderer`), so that what names the type builds, and `quadra::app()` says that
 Quadra has no native backend for this system yet.
 
+## The native crate (M2)
+
+`quadra-native-mac` is built for macOS alone: on another system it is an empty crate, so the
+workspace builds everywhere. Its bindings are the `objc2` family's crates of Apple's
+frameworks (01, R15), each with the features used and no more.
+
+### Text: Core Text (`CoreText`, as built)
+
+- **Families.** The installed ones by their names, as on Windows; fonts loaded from memory
+  (`load_fonts`: every face of a file, a collection too), searched first and matched by
+  slant, then by the nearest weight. The system's own font has no name a program may ask it
+  by, so it answers to `system-ui` (`SYSTEM_FAMILY`), which is the default family: the
+  interface's font at any weight. A family that is not installed is no face (Core Text
+  answers such a name with another font; that is told apart by the family of what came back).
+- **A face is a font at a size.** A font of Core Text is of one size, and the system's own
+  is another design at another size (its optical size and its tracking), so a face's font is
+  made again at each size it is shaped or drawn at, and kept. Metrics are read at 16 and
+  given per em, as the trait asks.
+- **Shaping** is a line of Core Text: its runs come in the order they are drawn, and each
+  names its font, the face asked for or the one the system's fallback chose, which becomes a
+  face known by its PostScript name. A glyph's cluster is the byte its grapheme begins at: a
+  mark is of the cluster of its base.
+- **Rasterizing** draws a glyph into a bitmap just large enough, a pixel more each way: one
+  byte of coverage a pixel, or premultiplied RGBA when the font has colours of its own
+  (emoji). macOS smooths no font by subpixel, so `GlyphFormat::Subpixel` never comes from
+  here and the flag `GRAYSCALE` changes nothing. A glyph stands where its pen is, to a quarter
+  of a pixel.
+- **Not yet**: OpenType features by family (`set_features`), the families tried before the
+  system's fallback (`set_fallbacks`), bidirectional levels (`bidi_levels`: a paragraph with
+  right-to-left text is laid out left to right, each of its words in visual order).
+
+Its tests (`tests/coretext.rs`) run on a Mac alone: the CI.
+
 ## Milestones
 
 | | Builds | Exit |

@@ -144,6 +144,7 @@ implementation described by specs 00–14 of the V repository.
   |---|---|---|
   | `windows` | Win32, D3D11, DXGI, DirectWrite, the system image codecs | `quadra-native-win`, `quadra-shell` |
   | `accesskit`, `accesskit_windows` | The accessibility bridge to the OS (R11) | `quadra-native-win` |
+  | `objc2-core-foundation`, `objc2-core-graphics`, `objc2-core-text` | Apple's frameworks, as `windows` is Win32: Core Text and what it stands on (23). Generated from the system's headers, no C built; taken for macOS alone, each with the features used and no more | `quadra-native-mac` |
   | `serde_json` (with `serde`, no derive) | Reading and writing themes, settings and keymaps; reading what GitHub answers of a release (22) | `quadra-app`, `quadra-design` (theme files), `quadra-updater` |
   | `oneterm-vt` | The terminal engine: VT parser, grid and scrollback, reflow, selection, damage, key and mouse encoders, the pseudo console. The user's own crate, pinned by tag (v0.4.2); it replaces the engine the V tree wrote (behaviour/17). Its tree: `bitflags`, `log`, `memchr`, `rustc-hash`, `unicode-segmentation`, `unicode-width`, with `kitty-graphics` the decoders `png` and `miniz_oxide`, and with `pty` `polling` and `windows-sys`. Removing it costs the terminal | `quadra-term` (`kitty-graphics`; `pty` under its feature of that name) |
   | `polling` | The poller the pseudo console of `oneterm-vt` is waited on with: its types are in that API | `quadra-term` (its `pty` feature) |
@@ -182,6 +183,8 @@ implementation described by specs 00–14 of the V repository.
 ## R16. `unsafe` only at the OS boundary
 - **Choice**: `#![forbid(unsafe_code)]` in every crate except the Win32 platform crate, the
   D3D11 renderer and the DirectWrite backend. Each `unsafe` block there states its invariant.
+  The native crate of macOS (`quadra-native-mac`, 23) is the same boundary on its system, and
+  the third crate that may hold `unsafe`, with `quadra-native-win` and `quadra-shell`.
 - **Rationale**: the V code needed checked holders for type erasure everywhere; Rust needs none.
 
 ## R17. Build time is a budget

@@ -8,24 +8,23 @@ cd "$(dirname "$0")/.."
 target=aarch64-apple-darwin
 
 # Not on macOS yet; the list is what is left of the port (specs/23, "What is left out"):
-# the Windows native crate and the tools that draw or measure with it (M2), and the apps,
-# whose `main` asks for the shell's services of the system (M3; OneTerm a pty too, M4).
+# the Windows native crate and the tools that draw or measure with it (M2), and the app
+# Markdown, whose `main` asks for the shell's services of the system (M3).
 not_yet="quadra-native-win quadra-bench-shots quadra-bench-markdown-shots quadra-bench-compare
-	quadra-bench-runner quadra-bench-doomfire oneterm-shots oneterm-app markdown"
-# Checked on a Mac only: it holds C (ring, under russh), which another system compiles for
-# macOS only with a compiler and an SDK it has not got.
-needs_c="oneterm-ssh"
+	quadra-bench-runner quadra-bench-doomfire markdown"
+# Never here: OneTerm has moved to its own repository, which ports it (specs/23, Goals).
+not_ours="oneterm-app oneterm-ssh oneterm-vault oneterm-completion oneterm-shots"
 
 skip() { for name in "$@"; do printf -- '--exclude %s ' "$name"; done; }
 
 if [ "$(uname)" = Darwin ]; then
 	# shellcheck disable=SC2046
-	tools/cargo.sh clippy --workspace --all-targets $(skip $not_yet) -- -D warnings
+	tools/cargo.sh clippy --workspace --all-targets --keep-going $(skip $not_yet $not_ours) -- -D warnings
 	# shellcheck disable=SC2046
-	tools/cargo.sh test --workspace $(skip $not_yet)
+	tools/cargo.sh test --workspace --no-fail-fast $(skip $not_yet $not_ours)
 else
 	# shellcheck disable=SC2046
 	tools/cargo.sh clippy --workspace --all-targets --keep-going --target "$target" \
-		$(skip $not_yet $needs_c) -- -D warnings
+		$(skip $not_yet $not_ours) -- -D warnings
 fi
 echo "check_mac: ok"

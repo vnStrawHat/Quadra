@@ -165,10 +165,10 @@ mod tests {
 
     #[test]
     fn a_document_is_read_within_the_bounds_and_written_back() {
-        let header = Header::parse(crate::ONETERM_S).expect("OneTerm 0.6's document");
+        let header = Header::parse(crate::tests::ONETERM_S).expect("OneTerm 0.6's document");
         assert_eq!((header.cost, header.salt.as_slice()), ([19456, 2, 1], &b"defghijklmnopqrs"[..]));
         assert_eq!(Header::parse(&header.write()), Some(header.clone()));
-        let with = |was: &str, now: &str| Header::parse(&crate::ONETERM_S.replace(was, now));
+        let with = |was: &str, now: &str| Header::parse(&crate::tests::ONETERM_S.replace(was, now));
         assert!(with("19456", "19455").is_none(), "less memory than the least");
         assert!(with("\"iterations\": 2", "\"iterations\": 17").is_none());
         assert!(with("\"schema_version\": 1", "\"schema_version\": 9").is_none());

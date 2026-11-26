@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: never
+
 # One run per ref: a newer push to the same branch or pull request cancels the run in progress.
 concurrency:
   group: macos-${{ github.ref }}
@@ -50,6 +53,7 @@ jobs:
       - name: Say what failed
         if: failure()
         run: |
-          grep -vE '^ *(Compiling|Checking|Downloading|Downloaded|Running|Finished|Fresh) |^test .* ok$|^$' check_mac.log |
-            tail -n 60 | sed 's/%/%25/g' | awk '{ printf "%s%%0A", $0 } END { print "" }' > said.txt
+          grep -vE '^ *(Compiling|Checking|Downloading|Downloaded|Running|Finished|Fresh|Doc-tests) |^$' check_mac.log |
+            grep -vE '^test .* (ok|ignored)$|^running [0-9]+ tests?$|^test result: ok' |
+            tail -n 200 | sed 's/%/%25/g' | awk '{ printf "%s%%0A", $0 } END { print "" }' > said.txt
           echo "::error title=tools/check_mac.sh::$(cat said.txt)"

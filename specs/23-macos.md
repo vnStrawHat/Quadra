@@ -15,6 +15,10 @@ here changes what a Windows build is or measures.
   the budgets of 14 measured again on a Mac. No layer that draws for both systems.
 - **Never a broken Windows build.** The Windows gate (`tools/check.sh`) stays what a commit
   must pass.
+- **Quadra, not OneTerm.** The app has moved to its own repository (00, the decisions of
+  2026-11-24); what is still under `apps/oneterm` here is not ported, fixed or checked for
+  macOS (the user's decision, 2026-11-26). OneTerm on a Mac is that repository's work, on
+  what Quadra gives it there.
 
 ## What is built
 
@@ -44,8 +48,7 @@ The user's machine runs Windows; a Mac is not at hand yet.
 
 - **From Windows: `tools/check_mac.sh`** runs clippy for `aarch64-apple-darwin`. That needs no
   Mac: nothing is linked, so no linker and no SDK (Apple's SDK may be used on Apple's hardware
-  alone, so nothing is linked for macOS here). It finds what does not compile there. A crate
-  that holds C is left to the Mac (`ring`, under `russh`: `oneterm-ssh`).
+  alone, so nothing is linked for macOS here). It finds what does not compile there.
 - **On a Mac: the same script** runs clippy and the tests natively. The CI does
   (`.github/workflows/macos.yml`, a runner of GitHub's, on a push to `main` or `macos` and on
   a pull request). The tests of the framework need no OS and no GPU (12), so they say on a
@@ -61,8 +64,9 @@ left of the port, and a milestone ends by taking names off it:
 
 - `quadra-native-win`, and the tools that draw or measure with it (the shots, the comparison
   bench and its runner, the fire demo): until the native crate of macOS draws (M2).
-- The apps `markdown` and `oneterm-app`: their `main` asks the shell for the system's services
-  (crash reports, one instance, dialogs), and OneTerm for a pty (M3, M4).
+- The app `markdown`: its `main` asks the shell for the system's services (crash reports, one
+  instance, dialogs) (M3).
+- Every package of OneTerm, for good (Goals).
 
 Until M2 the facade has no native crate to build an app on there: `quadra::App` is an app on
 no GPU (`NullRenderer`), so that what names the type builds, and `quadra::app()` says that
@@ -76,7 +80,7 @@ Quadra has no native backend for this system yet.
 | **M1** The same tests on a Mac | What the tests find that is Windows' alone above the traits (paths, the user's folders, line ends, the environment) | Every test of the packages built for macOS passes on the runner |
 | **M2** The native crate | `quadra-native-mac`: Core Text, then Metal drawn without a window and compared with the D3D11 pictures of the same scenes, then AppKit windows and input | The gallery runs on a Mac; its pages match the Windows ones within the snapshot tolerance; the manual checks pass on a real Mac |
 | **M3** The shell | `quadra-shell/src/mac`: dialogs, opening, one instance, crash reports, notifications; sealing and fetching | `markdown` runs on a Mac |
-| **M4** OneTerm | The POSIX pty, the user's shells and folders, the updater's bundle | OneTerm runs on a Mac |
+| **M4** The terminal and the updater | `quadra-term`'s session over the POSIX pty of `oneterm-vt`; the updater's app bundle | The terminal's tests pass on a Mac; a terminal runs in the gallery there |
 | **M5** Measured | The budgets of 14 on a Mac, in `docs/benchmarks.md` | Each budget met or the gap explained |
 
 Each ends as a phase does (00): its exit met, `docs/progress.md` updated.

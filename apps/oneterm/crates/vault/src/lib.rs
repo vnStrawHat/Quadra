@@ -137,16 +137,13 @@ fn open(_: &[u8; 32], _: &[u8], _: &[u8]) -> Option<Zeroizing<Vec<u8>>> {
     None
 }
 
-/// OneTerm 0.6's own fixture of a vault and a password sealed under it, made by an
-/// implementation that is neither OneTerm 0.6's nor this one: what it pins is the format.
-#[cfg(test)]
-pub(crate) const ONETERM_S: &str = include_str!("../tests/fixtures/vault.json");
-
-// Sealing is the system's (`quadra_shell`): Windows' alone so far (Quadra's specs/23).
 #[cfg(all(test, windows))]
 mod tests {
     use super::*;
 
+    /// OneTerm 0.6's own fixture of a vault and a password sealed under it, made by an
+    /// implementation that is neither OneTerm 0.6's nor this one: what it pins is the format.
+    pub(crate) const ONETERM_S: &str = include_str!("../tests/fixtures/vault.json");
     const SEALED: &str = "otv1:P5wKTosdTCdcXFxcXFxcXFxcXFxbpgEB6ylBEMijZRhddr55R0kOe/uq";
 
     #[test]

@@ -17,7 +17,7 @@ use quadra_render::{
 
 use atlas::AtlasTexture;
 use backdrop::Backdrop;
-use gpu::Gpu;
+use gpu::{Commands, Gpu};
 use layers::LayerBuffers;
 use surface::Surface;
 
@@ -33,6 +33,8 @@ pub struct MetalRenderer {
     backdrop: Option<Backdrop>,
     steps: Vec<Step>,
     stats: RenderStats,
+    /// The frame last shown in a window, with the GPU still.
+    last: Option<Commands>,
 }
 
 impl MetalRenderer {
@@ -47,6 +49,7 @@ impl MetalRenderer {
             backdrop: None,
             steps: Vec::new(),
             stats: RenderStats::default(),
+            last: None,
         })
     }
 
@@ -65,9 +68,7 @@ impl Renderer for MetalRenderer {
 
     fn resize_surface(&mut self, surface: SurfaceId, size: DeviceSize) -> Result<(), RenderError> {
         let slot = self.surfaces.get_mut(surface.0 as usize).and_then(Option::as_mut);
-        let (old, target) = slot.ok_or(RenderError::BadSurface)?;
-        *old = Surface::new(&self.gpu, *target, size)?;
-        Ok(())
+        slot.ok_or(RenderError::BadSurface)?.0.resize(&self.gpu, size)
     }
 
     fn drop_surface(&mut self, surface: SurfaceId) {
@@ -88,13 +89,12 @@ impl Renderer for MetalRenderer {
         self.frame(surface, scene, clear)
     }
 
-    /// Nothing to show: a surface so far is a texture that is read back.
     fn present(&mut self, surface: SurfaceId) -> Result<(), RenderError> {
-        self.surface(surface).map(|_| ())
+        self.show(surface)
     }
 
     fn read_pixels(&mut self, surface: SurfaceId) -> Result<Pixels, RenderError> {
-        Ok(self.surface(surface)?.read())
+        self.surface(surface)?.read()
     }
 
     fn forget_scene(&mut self, scene: SceneId) {
@@ -104,6 +104,7 @@ impl Renderer for MetalRenderer {
     /// A new device, with every surface made again on it and nothing else kept: the next
     /// draws upload everything.
     fn recover(&mut self) -> Result<(), RenderError> {
+        self.last = None;
         self.gpu = Gpu::new()?;
         self.layers.clear();
         (self.coverage, self.color, self.backdrop) = (None, None, None);

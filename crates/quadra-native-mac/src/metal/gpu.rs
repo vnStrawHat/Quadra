@@ -21,6 +21,8 @@ pub(crate) type Encoder = Retained<ProtocolObject<dyn MTLRenderCommandEncoder>>;
 /// The format of what is drawn into: RGBA, 8 bits a channel, as pixels are read back. Colours
 /// are blended as they are encoded, as on Windows.
 pub(crate) const TARGET: MTLPixelFormat = MTLPixelFormat::RGBA8Unorm;
+/// The format of a window's layer, which takes no RGBA.
+pub(crate) const WINDOW: MTLPixelFormat = MTLPixelFormat::BGRA8Unorm;
 
 /// Compiled when the device is made: `shaders/prims.metal`.
 // ponytail: compiled from source at start-up; a library built by Xcode's tools, embedded as
@@ -39,7 +41,8 @@ pub(crate) fn made<T>(it: Option<T>, what: &str) -> Result<T, RenderError> {
 pub(crate) struct Gpu {
     pub device: Device,
     pub queue: Retained<ProtocolObject<dyn MTLCommandQueue>>,
-    pub pipeline: Retained<ProtocolObject<dyn MTLRenderPipelineState>>,
+    /// The one pipeline, for each format of what is drawn into: a texture's, a window's.
+    pipelines: [Retained<ProtocolObject<dyn MTLRenderPipelineState>>; 2],
     pub sampler: Retained<ProtocolObject<dyn MTLSamplerState>>,
     /// What the atlases' slots and the backdrop's are bound to before their textures exist:
     /// a draw may read no texture that is not bound. Coverage, colour, backdrop.
@@ -54,19 +57,22 @@ impl Gpu {
             device.newLibraryWithSource_options_error(&NSString::from_str(SHADERS), None).map_err(error)?;
         let function = |name: &str| made(library.newFunctionWithName(&NSString::from_str(name)), name);
         let (vertex, fragment) = (function("vs_main")?, function("fs_main")?);
-        let about = MTLRenderPipelineDescriptor::new();
-        about.setVertexFunction(Some(&vertex));
-        about.setFragmentFunction(Some(&fragment));
-        // SAFETY: a render pipeline has a first colour attachment.
-        let color = unsafe { about.colorAttachments().objectAtIndexedSubscript(0) };
-        // Premultiplied alpha over what is there.
-        color.setPixelFormat(TARGET);
-        color.setBlendingEnabled(true);
-        color.setSourceRGBBlendFactor(MTLBlendFactor::One);
-        color.setDestinationRGBBlendFactor(MTLBlendFactor::OneMinusSourceAlpha);
-        color.setSourceAlphaBlendFactor(MTLBlendFactor::One);
-        color.setDestinationAlphaBlendFactor(MTLBlendFactor::OneMinusSourceAlpha);
-        let pipeline = device.newRenderPipelineStateWithDescriptor_error(&about).map_err(error)?;
+        let pipeline = |format: MTLPixelFormat| {
+            let about = MTLRenderPipelineDescriptor::new();
+            about.setVertexFunction(Some(&vertex));
+            about.setFragmentFunction(Some(&fragment));
+            // SAFETY: a render pipeline has a first colour attachment.
+            let color = unsafe { about.colorAttachments().objectAtIndexedSubscript(0) };
+            // Premultiplied alpha over what is there.
+            color.setPixelFormat(format);
+            color.setBlendingEnabled(true);
+            color.setSourceRGBBlendFactor(MTLBlendFactor::One);
+            color.setDestinationRGBBlendFactor(MTLBlendFactor::OneMinusSourceAlpha);
+            color.setSourceAlphaBlendFactor(MTLBlendFactor::One);
+            color.setDestinationAlphaBlendFactor(MTLBlendFactor::OneMinusSourceAlpha);
+            device.newRenderPipelineStateWithDescriptor_error(&about).map_err(error)
+        };
+        let pipelines = [pipeline(TARGET)?, pipeline(WINDOW)?];
         let about = MTLSamplerDescriptor::new();
         about.setMinFilter(MTLSamplerMinMagFilter::Linear);
         about.setMagFilter(MTLSamplerMinMagFilter::Linear);
@@ -80,7 +86,12 @@ impl Gpu {
             texture(&device, MTLPixelFormat::RGBA8Unorm, (1, 1), Some(1), false, read)?,
             texture(&device, TARGET, (1, 1), None, false, read)?,
         ];
-        Ok(Gpu { device, queue, pipeline, sampler, nothing })
+        Ok(Gpu { device, queue, pipelines, sampler, nothing })
+    }
+
+    /// The pipeline that draws into a format.
+    pub fn pipeline(&self, format: MTLPixelFormat) -> &ProtocolObject<dyn MTLRenderPipelineState> {
+        &self.pipelines[usize::from(format == WINDOW)]
     }
 
     pub fn commands(&self) -> Result<Commands, RenderError> {

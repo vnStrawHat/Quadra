@@ -9,7 +9,13 @@ pub struct WindowId(pub u32);
 /// What a renderer needs to make a surface for a window: one variant per windowing system.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WindowHandle {
-    Win32 { hwnd: isize },
+    Win32 {
+        hwnd: isize,
+    },
+    /// A view of AppKit, by its address: the window's content, alive as long as the window.
+    AppKit {
+        view: usize,
+    },
     Headless,
 }
 

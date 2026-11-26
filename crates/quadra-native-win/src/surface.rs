@@ -151,6 +151,8 @@ impl Surface {
             SurfaceTarget::Offscreen => Surface::Offscreen(Offscreen::new(gpu, size)?),
             SurfaceTarget::Win32 { hwnd } if copied => Surface::Copied(Offscreen::new(gpu, size)?, hwnd),
             SurfaceTarget::Win32 { hwnd } => Surface::Window(SwapChain::new(gpu, hwnd, size)?),
+            // Another system's window.
+            SurfaceTarget::AppKit { .. } => return Err(RenderError::BadSurface),
         })
     }
 

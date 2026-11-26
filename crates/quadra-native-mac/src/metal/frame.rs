@@ -2,16 +2,20 @@
 
 use std::ptr::NonNull;
 
+use objc2::runtime::ProtocolObject;
+use objc2_metal::MTLTexture;
 use objc2_metal::{
     MTLClearColor, MTLCommandBuffer, MTLCommandEncoder, MTLLoadAction, MTLPrimitiveType,
     MTLRenderCommandEncoder, MTLRenderPassDescriptor, MTLScissorRect, MTLStoreAction, MTLViewport,
 };
+use objc2_quartz_core::CAMetalDrawable;
 use quadra_prim::{Color, Rect};
 use quadra_render::{DeviceSize, RenderError, RenderStats, Scene, Step, SurfaceId, World};
 
 use super::MetalRenderer;
 use super::backdrop::Backdrop;
 use super::gpu::{Commands, Encoder, Texture, finish, made};
+use super::surface::Shown;
 
 /// `Constants` of the shader: the layer of the run and where the run starts.
 #[repr(C)]
@@ -52,9 +56,26 @@ impl MetalRenderer {
         scene: &mut Scene,
         clear: Color,
     ) -> Result<(), RenderError> {
-        let (size, target) = {
-            let surface = self.surface(surface)?;
-            (surface.size, surface.texture.clone())
+        // One frame is with the GPU at a time: the layers' buffers, which this one writes
+        // into, are read by the one before until it is done.
+        // ponytail: a wait when the GPU is behind; buffers by turns if that is ever measured (M5).
+        if let Some(last) = self.last.take() {
+            last.waitUntilCompleted();
+        }
+        let slot = self.surfaces.get_mut(surface.0 as usize).and_then(Option::as_mut);
+        let (shown, _) = slot.ok_or(RenderError::BadSurface)?;
+        let size = shown.size;
+        let (target, drawable) = match &mut shown.shown {
+            Shown::Texture(texture) => (texture.clone(), None),
+            Shown::Layer { layer, drawn } => {
+                // A frame that was drawn and never shown is sent as it is.
+                if let Some((commands, _)) = drawn.take() {
+                    commands.commit();
+                }
+                // Nothing to draw into now (a window that is on no display): no frame.
+                let Some(drawable) = layer.nextDrawable() else { return Ok(()) };
+                (drawable.texture(), Some(drawable))
+            }
         };
         for layer in scene.take_dropped() {
             self.layers.remove(scene.id(), layer);
@@ -70,7 +91,29 @@ impl MetalRenderer {
             open.endEncoding();
         }
         self.steps = steps;
-        drawn.and(finish(&commands))
+        let Some(drawable) = drawable else { return drawn.and(finish(&commands)) };
+        // A window's frame is sent when it is shown: `present`.
+        let slot = self.surfaces.get_mut(surface.0 as usize).and_then(Option::as_mut);
+        if let Some((shown, _)) = slot
+            && let Shown::Layer { drawn: kept, .. } = &mut shown.shown
+        {
+            *kept = Some((commands, drawable));
+        }
+        drawn
+    }
+
+    /// Shows the frame drawn into a window's layer; a texture has nothing to show.
+    pub(super) fn show(&mut self, surface: SurfaceId) -> Result<(), RenderError> {
+        let slot = self.surfaces.get_mut(surface.0 as usize).and_then(Option::as_mut);
+        let (shown, _) = slot.ok_or(RenderError::BadSurface)?;
+        if let Shown::Layer { drawn, .. } = &mut shown.shown
+            && let Some((commands, drawable)) = drawn.take()
+        {
+            commands.presentDrawable(ProtocolObject::from_ref(&*drawable));
+            commands.commit();
+            self.last = Some(commands);
+        }
+        Ok(())
     }
 
     /// Begins a pass into `target` that clears it, or keeps what is there, with what every
@@ -101,7 +144,7 @@ impl MetalRenderer {
             }
         }
         let encoder = made(commands.renderCommandEncoderWithDescriptor(&about), "render pass")?;
-        encoder.setRenderPipelineState(&self.gpu.pipeline);
+        encoder.setRenderPipelineState(self.gpu.pipeline(target.pixelFormat()));
         encoder.setViewport(MTLViewport {
             originX: 0.0,
             originY: 0.0,

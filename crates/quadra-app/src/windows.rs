@@ -61,6 +61,7 @@ impl<R: Renderer> App<R> {
         let window = self.platform.open_window(&options)?;
         let target = match window.handle() {
             WindowHandle::Win32 { hwnd } => SurfaceTarget::Win32 { hwnd },
+            WindowHandle::AppKit { view } => SurfaceTarget::AppKit { view },
             WindowHandle::Headless => SurfaceTarget::Offscreen,
         };
         let surface = self.renderer.create_surface(target, device_size(&*window))?;

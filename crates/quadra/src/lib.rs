@@ -28,9 +28,11 @@
 //! - The components and their look are the crate `quadra-design`; what the OS does beyond
 //!   windows (dialogs, the tray, one instance) is `quadra-shell`, which an app adds itself.
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 use std::rc::Rc;
 
+#[cfg(target_os = "macos")]
+use quadra_native_mac::{CoreText, MacPlatform, MetalRenderer};
 #[cfg(windows)]
 use quadra_native_win::{D3d11Renderer, DirectWrite, WinPlatform};
 
@@ -80,13 +82,28 @@ pub fn app() -> Result<App> {
     Ok(App::with(Rc::new(platform), renderer, Box::new(text)))
 }
 
-/// An app where Quadra has no native crate yet (specs/23): the type an app names, so that
-/// it builds and its tests run there; [`app`] makes none.
-#[cfg(not(windows))]
+/// An app on the backends of this operating system: AppKit windows, the Metal renderer and
+/// Core Text (specs/23).
+#[cfg(target_os = "macos")]
+pub type App = quadra_app::App<MetalRenderer>;
+
+/// Makes the app: the platform, the GPU device and the text backend. On the main thread
+/// alone, as AppKit is.
+#[cfg(target_os = "macos")]
+pub fn app() -> Result<App> {
+    let platform = MacPlatform::new()?;
+    let text = CoreText::new().map_err(AppError::Text)?;
+    let renderer = MetalRenderer::new()?;
+    Ok(App::with(Rc::new(platform), renderer, Box::new(text)))
+}
+
+/// An app where Quadra has no native crate (specs/23): the type an app names, so that it
+/// builds and its tests run there; [`app`] makes none.
+#[cfg(not(any(windows, target_os = "macos")))]
 pub type App = quadra_app::App<quadra_render::NullRenderer>;
 
-/// Says that Quadra opens no window on this operating system yet (specs/23).
-#[cfg(not(windows))]
+/// Says that Quadra opens no window on this operating system (specs/23).
+#[cfg(not(any(windows, target_os = "macos")))]
 pub fn app() -> Result<App> {
     let why = "Quadra has no native backend for this operating system yet";
     Err(AppError::Platform(quadra_platform::PlatformError(why.to_string())))

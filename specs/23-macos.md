@@ -75,9 +75,9 @@ left of the port, and a milestone ends by taking names off it:
   instance, dialogs) (M3).
 - Every package of OneTerm, for good (Goals).
 
-Until M2 the facade has no native crate to build an app on there: `quadra::App` is an app on
+Where Quadra has no native crate at all (not Windows, not macOS), `quadra::App` is an app on
 no GPU (`NullRenderer`), so that what names the type builds, and `quadra::app()` says that
-Quadra has no native backend for this system yet.
+Quadra has no native backend for the system.
 
 ## The native crate (M2)
 
@@ -138,10 +138,53 @@ what the layer says changed, the scene's steps drawn as runs of instances of one
 - **Surfaces**: a texture that is drawn into and read back, RGBA of 8 bits, in shared
   memory (Apple's silicon). A window's surface comes with the AppKit platform; `draw` waits
   for the GPU, as what was drawn is read next.
-- **Not yet**: a window's surface and its pacing; what a frame cost the GPU (`RenderStats::gpu`).
+- **A window's surface** is a `CAMetalLayer` given to the window's view (BGRA of 8 bits,
+  which a layer takes; a second pipeline state for it). `draw` draws into the layer's next
+  drawable and keeps the commands; `present` has them show it and sends them. One frame is
+  with the GPU at a time: the next waits for it, as it writes into the buffers that one
+  reads. A window that is on no display has nothing to draw into: no frame, and no error.
+- **Not yet**: what a frame cost the GPU (`RenderStats::gpu`).
 
 Its tests are the Windows renderer's, on this one (`tests/pixels.rs`, `text.rs`,
 `gradient.rs`, `mask.rs`, `backdrop.rs`): the two are held to the same pixels.
+
+### The platform: AppKit (`MacPlatform`, as built)
+
+On the main thread alone, as AppKit is. `quadra::app()` builds an app on it, the Metal
+renderer and Core Text.
+
+- **The loop** is Quadra's own turn of AppKit's queue (`nextEventMatchingMask`), not
+  `NSApplication.run`: between two events it gives the windows that asked their frames,
+  fires the timers that are due and delivers a wake. It sleeps until the next timer, or not
+  at all while a window asks for a frame. A wake from another thread, and `quit`, post an
+  event of the app's own that only turns the loop.
+- **Frames** are paced by the layer: taking its next drawable waits for the display.
+- **A window** is an `NSWindow` whose content is one view, a subclass of `NSView` counted
+  from its top left; a window's handle is that view's address (`WindowHandle::AppKit`, as
+  `SurfaceTarget::AppKit`: the trait's types name the second system now). The view tells the
+  handler presses, releases, moves and leaves of the pointer (a tracking area), the wheel
+  (lines from a wheel, points from a trackpad), keys by their code, and the text a key types
+  (`interpretKeyEvents`, which gives it as `insertText:`). The window's delegate tells a
+  request to close (answered no: the app closes a window by dropping it) and the focus.
+  While the user drags the window's edge the loop does not turn, so a resize gives the app
+  its frame at once.
+- **The handler is never entered twice**, as on Windows: what arrives while it runs waits.
+- **Keys**: Command is `Mods::SUPER`, Option is `Mods::ALT`, Control is `Mods::CTRL`.
+  **Open**: on a Mac a shortcut is held with Command where Windows holds Ctrl, and the kit's
+  key bindings say `ctrl`; whether a binding names a "primary" modifier, or the keymap is
+  another one on a Mac, is a decision of the keymap (09), not taken yet.
+- **Not yet**: the pointer's shape (`set_cursor`); input methods (`set_text_input`,
+  composition); the semantic tree for readers (`update_semantics`); changes of the system's
+  appearance, of which only dark or light is read; drops from other programs; the system's
+  image codecs (the decoder is the one of flat test images); what a point of a window with
+  its own frame is to the system (`hit_test`), whose title bar is only made transparent; a
+  placement is the window's frame in points from the bottom left of the first display, not
+  yet in the device pixels the trait says; the menu bar.
+
+Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:
+a real window that is not shown, what the loop gives the handler (timers, a frame, a wake
+from another thread), AppKit's events sent to the window from inside the handler and what
+they arrive as, and frames drawn into the window's layer.
 
 ## Milestones
 

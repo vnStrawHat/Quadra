@@ -2,12 +2,13 @@
 //! far under the box, copied into a texture whose mips are the blur.
 
 use objc2_metal::{
-    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLOrigin, MTLSize, MTLTextureUsage,
+    MTLBlitCommandEncoder, MTLCommandBuffer, MTLCommandEncoder, MTLOrigin, MTLPixelFormat, MTLSize,
+    MTLTexture, MTLTextureUsage,
 };
 use quadra_prim::Rect;
 use quadra_render::{DeviceSize, RenderError};
 
-use super::gpu::{Commands, Gpu, TARGET, Texture, made, texture};
+use super::gpu::{Commands, Gpu, Texture, made, texture};
 
 /// The texture's sides are whole blocks of the largest blur, so each mip's texels are whole
 /// blocks of the surface.
@@ -16,6 +17,8 @@ const BLOCK: u32 = 64;
 pub(crate) struct Backdrop {
     pub texture: Texture,
     size: (u32, u32),
+    /// That of what it was copied from: a copy is between textures of one format.
+    format: MTLPixelFormat,
 }
 
 /// The block a blur averages: the mip level it is sampled at is its power of two.
@@ -49,12 +52,14 @@ impl Backdrop {
             return Ok([0.0; 4]);
         }
         let (w, h) = ((right - left).next_multiple_of(BLOCK), (bottom - top).next_multiple_of(BLOCK));
-        if !slot.as_ref().is_some_and(|b| b.size.0 >= w && b.size.1 >= h) {
+        let format = target.pixelFormat();
+        if !slot.as_ref().is_some_and(|b| b.format == format && b.size.0 >= w && b.size.1 >= h) {
             let grown = slot.as_ref().map_or((0, 0), |b| b.size);
             let size = (w.max(grown.0), h.max(grown.1));
             // Its mips are drawn into when they are made.
             let usage = MTLTextureUsage::ShaderRead | MTLTextureUsage::RenderTarget;
-            *slot = Some(Backdrop { texture: texture(&gpu.device, TARGET, size, None, true, usage)?, size });
+            let texture = texture(&gpu.device, format, size, None, true, usage)?;
+            *slot = Some(Backdrop { texture, size, format });
         }
         let backdrop = slot.as_ref().expect("made above");
         let blit = made(commands.blitCommandEncoder(), "blit encoder")?;

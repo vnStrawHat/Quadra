@@ -142,8 +142,9 @@ an app from them. It is the one place where the three may know each other:
   blitted, and the swap chain is attached when the hardware device is ready (07).
 - **Device loss and display changes** reach both the renderer and the windows.
 
-A second OS adds a second native crate. Nothing above the traits changes. The facade takes
-the native crate of the system it is built for; macOS is the second (23).
+A second OS adds a second native crate. Nothing above the traits changes but the types
+that name a system's window: `WindowHandle` and `SurfaceTarget` have a variant a system. The
+facade takes the native crate of the system it is built for; macOS is the second (23).
 
 ## Win32 behaviour
 

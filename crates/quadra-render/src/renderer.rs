@@ -21,6 +21,8 @@ pub struct DeviceSize {
 pub enum SurfaceTarget {
     /// A Win32 window, by its handle.
     Win32 { hwnd: isize },
+    /// A view of AppKit, by its address: what is drawn shows in it.
+    AppKit { view: usize },
     /// A texture that can be read back: tests and snapshots.
     Offscreen,
 }

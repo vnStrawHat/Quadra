@@ -24,6 +24,9 @@ quadra-view = { path = "../quadra-view" }
 [target.'cfg(windows)'.dependencies]
 quadra-native-win = { path = "../quadra-native-win" }
 
-# No native crate yet (specs/23): the facade still names an app's type, on no GPU.
-[target.'cfg(not(windows))'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
+quadra-native-mac = { path = "../quadra-native-mac" }
+
+# No native crate there (specs/23): the facade still names an app's type, on no GPU.
+[target.'cfg(not(any(windows, target_os = "macos")))'.dependencies]
 quadra-render = { path = "../quadra-render" }

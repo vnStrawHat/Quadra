@@ -1,6 +1,6 @@
 [package]
 name = "quadra-native-mac"
-description = "Quadra on macOS: the Metal renderer and the Core Text text backend; the AppKit platform is to come"
+description = "Quadra on macOS: the AppKit platform, the Metal renderer and the Core Text text backend"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,11 +12,48 @@ publish.workspace = true
 
 # What only macOS builds: all of the crate (specs/23).
 [target.'cfg(target_os = "macos")'.dependencies]
+quadra-a11y = { path = "../quadra-a11y" }
+quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }
 quadra-render = { path = "../quadra-render" }
 quadra-text = { path = "../quadra-text" }
 objc2 = "0.6.5"
-objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSError", "NSString"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "NSArray",
+    "NSDate",
+    "NSError",
+    "NSGeometry",
+    "NSNotification",
+    "NSObjCRuntime",
+    "NSRunLoop",
+    "NSString",
+    "NSTimeZone",
+] }
+objc2-app-kit = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "objc2-core-foundation",
+    "objc2-quartz-core",
+    "NSAppearance",
+    "NSApplication",
+    "NSEvent",
+    "NSGraphics",
+    "NSGraphicsContext",
+    "NSPasteboard",
+    "NSResponder",
+    "NSRunningApplication",
+    "NSScreen",
+    "NSTrackingArea",
+    "NSView",
+    "NSWindow",
+] }
+objc2-quartz-core = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "objc2-core-foundation",
+    "objc2-metal",
+    "CALayer",
+    "CAMetalLayer",
+] }
 # All of it: its parts name each other too much to take a few.
 objc2-metal = "0.3.2"
 objc2-core-foundation = { version = "0.3.2", default-features = false, features = [
@@ -56,6 +93,12 @@ quadra-layout = { path = "../quadra-layout" }
 quadra-reactive = { path = "../quadra-reactive" }
 quadra-tree = { path = "../quadra-tree" }
 quadra-view = { path = "../quadra-view" }
+
+# AppKit runs on the main thread alone, which the tests' harness keeps for itself: the test
+# of the platform has a `main` of its own.
+[[test]]
+name = "window"
+harness = false
 
 # Explicitly not inheriting the workspace lints (see above).
 [lints]

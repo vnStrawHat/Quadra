@@ -1,6 +1,7 @@
 //! The Core Text backend against the fonts every Mac has: matching, the system's own font,
-//! shaping with clusters, fallback, coverage a pixel, colour glyphs, fonts from memory, and
-//! numbers composed as the text system composes them.
+//! shaping with clusters, fallback and the families tried before it, coverage a pixel, colour
+//! glyphs, fonts from memory, OpenType features, bidirectional levels, and numbers composed as
+//! the text system composes them.
 #![cfg(target_os = "macos")]
 
 use std::rc::Rc;
@@ -187,4 +188,58 @@ fn numbers_are_composed_and_equal_what_shaping_gives() {
             assert_eq!(composed.glyphs, shaped, "{family}: {number}");
         }
     }
+}
+
+#[test]
+fn the_families_named_are_tried_before_the_system_fallback() {
+    let mut ct = CoreText::new().unwrap();
+    let face = helvetica(&mut ct);
+    let first = |ct: &mut CoreText| ct.shape("\u{65E5}", face, 16.0)[0];
+    let system = first(&mut ct);
+    let mut chosen = Vec::new();
+    for family in ["Arial Unicode MS", "Hiragino Sans"] {
+        ct.set_fallbacks(&["No Such Family 12345".to_string(), family.to_string()]);
+        let named = ct.face(&key(family)).unwrap_or_else(|| panic!("{family} is installed"));
+        let (direct, through) = (ct.shape("\u{65E5}", named, 16.0)[0], first(&mut ct));
+        assert_eq!((through.id, through.advance), (direct.id, direct.advance), "{family}");
+        assert_ne!(through.face, face);
+        chosen.push(through.face);
+    }
+    assert_ne!(chosen[0], chosen[1], "each family named is the one that is drawn in");
+    ct.set_fallbacks(&[]);
+    assert_eq!(first(&mut ct), system);
+}
+
+#[test]
+fn a_family_is_shaped_with_the_features_it_is_given() {
+    use quadra_text::Feature;
+    let mut ct = CoreText::new().unwrap();
+    let face = ct.face(&key(SYSTEM_FAMILY)).unwrap();
+    let shaped = |ct: &mut CoreText| -> Vec<(u16, f32)> {
+        ct.shape("1a", face, 16.0).iter().map(|g| (g.id, g.advance)).collect()
+    };
+    let plain = shaped(&mut ct);
+    ct.set_features("System-UI", &[Feature::on(b"smcp")]);
+    let small = shaped(&mut ct);
+    assert_ne!(small[1].0, plain[1].0, "a small capital is another glyph: {small:?} {plain:?}");
+    assert_eq!(small[0], plain[0], "a digit is as it was");
+    // Features of another family are not this one's.
+    ct.set_features(SYSTEM_FAMILY, &[]);
+    ct.set_features("Helvetica Neue", &[Feature::on(b"smcp")]);
+    assert_eq!(shaped(&mut ct), plain);
+}
+
+#[test]
+fn right_to_left_text_has_its_levels_and_a_word_comes_in_visual_order() {
+    let mut ct = CoreText::new().unwrap();
+    let face = helvetica(&mut ct);
+    let levels = ct.bidi_levels("ab שלום 12", false).unwrap();
+    assert_eq!(levels.len(), "ab שלום 12".len());
+    assert_eq!((levels[0], levels[3], levels[levels.len() - 1]), (0, 1, 2), "{levels:?}");
+    assert_eq!(ct.bidi_levels("שלום", true).unwrap(), [1; 8]);
+    assert_eq!(ct.bidi_levels("abc", false).unwrap(), [0; 3]);
+    assert_eq!(ct.bidi_levels("", false).unwrap(), []);
+    // A number in a word keeps its order, to the left of the letters before it.
+    let mixed: Vec<u32> = ct.shape("אב12", face, 16.0).iter().map(|g| g.cluster).collect();
+    assert_eq!(mixed, [4, 5, 2, 0]);
 }

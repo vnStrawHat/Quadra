@@ -1,13 +1,14 @@
 //! The fonts faces are made of: the installed families, the system's own font, and fonts
 //! loaded from memory.
 
-use objc2_core_foundation::{CFData, CFDictionary, CFNumber, CFRetained, CFString, CFType};
+use objc2_core_foundation::{CFArray, CFData, CFDictionary, CFNumber, CFRetained, CFString, CFType};
 use objc2_core_text::{
     CTFont, CTFontDescriptor, CTFontManagerCopyAvailableFontFamilyNames,
     CTFontManagerCreateFontDescriptorsFromData, CTFontSymbolicTraits, CTFontUIFontType,
-    kCTFontFamilyNameAttribute, kCTFontTraitsAttribute, kCTFontWeightTrait,
+    kCTFontCascadeListAttribute, kCTFontFamilyNameAttribute, kCTFontFeatureSettingsAttribute,
+    kCTFontOpenTypeFeatureTag, kCTFontOpenTypeFeatureValue, kCTFontTraitsAttribute, kCTFontWeightTrait,
 };
-use quadra_text::FontKey;
+use quadra_text::{Feature, FontKey};
 
 use super::{BASE, SYSTEM_FAMILY};
 
@@ -116,6 +117,49 @@ pub(super) fn matched(loaded: &[Loaded], key: &FontKey) -> Option<CFRetained<CTF
         return system(key).map(|font| slanted(font, key.italic));
     }
     loaded_font(loaded, key).or_else(|| installed_font(key).map(|font| slanted(font, key.italic)))
+}
+
+/// What a face's font is given besides its size: the features its family is shaped with, and
+/// the families tried for what it lacks before the system's fallback. None when there is
+/// neither.
+pub(super) fn more(
+    features: &[Feature],
+    cascade: &[CFRetained<CTFontDescriptor>],
+) -> Option<CFRetained<CTFontDescriptor>> {
+    if features.is_empty() && cascade.is_empty() {
+        return None;
+    }
+    // SAFETY: the names are Core Text's constants, alive for the program's life.
+    let (tag_name, value_name, settings_name, cascade_name) = unsafe {
+        (
+            kCTFontOpenTypeFeatureTag,
+            kCTFontOpenTypeFeatureValue,
+            kCTFontFeatureSettingsAttribute,
+            kCTFontCascadeListAttribute,
+        )
+    };
+    let setting = |feature: &Feature| {
+        let tag = CFString::from_str(std::str::from_utf8(&feature.tag).unwrap_or("    "));
+        let value = CFNumber::new_i32(feature.value as i32);
+        let (tag, value): (&CFType, &CFType) = (&tag, &value);
+        CFDictionary::<CFString, CFType>::from_slices(&[tag_name, value_name], &[tag, value])
+    };
+    let (settings, tried): (Vec<_>, bool) = (features.iter().map(setting).collect(), !cascade.is_empty());
+    let (settings, cascade) =
+        (CFArray::from_retained_objects(&settings), CFArray::from_retained_objects(cascade));
+    let (settings, cascade): (&CFType, &CFType) = (&settings, &cascade);
+    let (mut names, mut values) = (Vec::new(), Vec::new());
+    for (name, value, any) in
+        [(settings_name, settings, !features.is_empty()), (cascade_name, cascade, tried)]
+    {
+        if any {
+            names.push(name);
+            values.push(value);
+        }
+    }
+    let attributes = CFDictionary::<CFString, CFType>::from_slices(&names, &values);
+    // SAFETY: a descriptor of valid attributes.
+    Some(unsafe { CTFontDescriptor::with_attributes(attributes.as_opaque()) })
 }
 
 /// The fonts of a file in memory.

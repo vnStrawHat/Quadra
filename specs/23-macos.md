@@ -106,9 +106,14 @@ frameworks (01, R15), each with the features used and no more.
   (emoji). macOS smooths no font by subpixel, so `GlyphFormat::Subpixel` never comes from
   here and the flag `GRAYSCALE` changes nothing. A glyph stands where its pen is, to a quarter
   of a pixel.
-- **Not yet**: OpenType features by family (`set_features`), the families tried before the
-  system's fallback (`set_fallbacks`), bidirectional levels (`bidi_levels`: a paragraph with
-  right-to-left text is laid out left to right, each of its words in visual order).
+- **Features and fallback families** are given to a face's font when it is made at a size:
+  the OpenType features its family is shaped with (`set_features`; the family a face was
+  asked by, so `system-ui` for the system's font), and the families tried for what a face
+  lacks before the system's fallback (`set_fallbacks`: Core Text's cascade list; a family not
+  installed is passed over). Setting either forgets the fonts made at a size.
+- **Bidirectional levels** (`bidi_levels`) are the Unicode algorithm's as the system's ICU
+  runs it (`libicucore`, four functions declared here): Core Text tells a run's direction,
+  not its level.
 
 Its tests (`tests/coretext.rs`) run on a Mac alone: the CI.
 

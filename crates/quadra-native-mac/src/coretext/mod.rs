@@ -1,6 +1,7 @@
 //! The Core Text text backend (specs/08; specs/23): font matching, fallback, shaping and
 //! rasterization by the OS.
 
+mod bidi;
 mod fonts;
 mod raster;
 mod shape;
@@ -8,8 +9,8 @@ mod shape;
 use std::collections::HashMap;
 
 use objc2_core_foundation::CFRetained;
-use objc2_core_text::{CTFont, CTFontSymbolicTraits};
-use quadra_text::{FaceId, FaceMetrics, FontKey, GlyphBitmap, ShapedGlyph, TextBackend};
+use objc2_core_text::{CTFont, CTFontDescriptor, CTFontSymbolicTraits};
+use quadra_text::{FaceId, FaceMetrics, Feature, FontKey, GlyphBitmap, ShapedGlyph, TextBackend};
 
 /// The family the system's own font answers to: it has no name a program may ask it by.
 pub const SYSTEM_FAMILY: &str = "system-ui";
@@ -22,6 +23,9 @@ struct Face {
     font: CFRetained<CTFont>,
     /// Its PostScript name: what a font that fallback chose is known by.
     name: String,
+    /// The family it was asked by, or its own when fallback chose it: whose features it is
+    /// shaped with.
+    family: String,
     /// It has glyphs with colours of their own (emoji).
     color: bool,
 }
@@ -37,20 +41,32 @@ pub struct CoreText {
     sized: HashMap<(u32, u32), CFRetained<CTFont>>,
     /// Fonts loaded from memory: searched before the installed ones.
     loaded: Vec<fonts::Loaded>,
+    /// The features each family is shaped with, as the app set them.
+    features: Vec<(String, Vec<Feature>)>,
+    /// The families tried for what a face lacks, before the system's fallback.
+    cascade: Vec<CFRetained<CTFontDescriptor>>,
 }
 
 impl CoreText {
     /// Nothing here can fail; a `Result` as the other systems' backends give one.
     pub fn new() -> Result<CoreText, String> {
-        Ok(CoreText { faces: Vec::new(), keys: Vec::new(), sized: HashMap::new(), loaded: Vec::new() })
+        Ok(CoreText {
+            faces: Vec::new(),
+            keys: Vec::new(),
+            sized: HashMap::new(),
+            loaded: Vec::new(),
+            features: Vec::new(),
+            cascade: Vec::new(),
+        })
     }
 
-    /// Keeps a font, at [`BASE`], as a face.
-    fn keep(&mut self, font: CFRetained<CTFont>) -> FaceId {
-        // SAFETY: both calls read a valid font.
+    /// Keeps a font, at [`BASE`], as a face of a family: the one it was asked by, or its own.
+    fn keep(&mut self, font: CFRetained<CTFont>, family: Option<&str>) -> FaceId {
+        // SAFETY: the calls read a valid font.
         let (name, traits) = unsafe { (font.post_script_name().to_string(), font.symbolic_traits()) };
+        let family = family.map_or_else(|| unsafe { font.family_name() }.to_string(), str::to_string);
         let color = traits.contains(CTFontSymbolicTraits::TraitColorGlyphs);
-        self.faces.push(Face { font, name, color });
+        self.faces.push(Face { font, name, family, color });
         FaceId(self.faces.len() as u32 - 1)
     }
 
@@ -61,17 +77,24 @@ impl CoreText {
         }
         // SAFETY: a copy of a valid font at another size, with no matrix and no attributes.
         let base = unsafe { font.copy_with_attributes(BASE, std::ptr::null(), None) };
-        self.keep(base)
+        self.keep(base, None)
     }
 
-    /// A face's font at a size.
+    /// A face's font at a size, with its family's features and the families tried for what
+    /// it lacks.
     fn at(&mut self, face: FaceId, size: f32) -> Option<CFRetained<CTFont>> {
-        let base = &self.faces.get(face.0 as usize)?.font;
-        let sized = self.sized.entry((face.0, size.to_bits())).or_insert_with(|| {
-            // SAFETY: as in `fallback`.
-            unsafe { base.copy_with_attributes(size as f64, std::ptr::null(), None) }
-        });
-        Some(sized.clone())
+        if let Some(known) = self.sized.get(&(face.0, size.to_bits())) {
+            return Some(known.clone());
+        }
+        let base = self.faces.get(face.0 as usize)?;
+        let features = self.features.iter().find(|(family, _)| family.eq_ignore_ascii_case(&base.family));
+        let features = features.map_or(&[][..], |(_, list)| list.as_slice());
+        let more = fonts::more(features, &self.cascade);
+        // SAFETY: a copy of a valid font at another size, with no matrix and the attributes of
+        // a valid descriptor or none.
+        let sized = unsafe { base.font.copy_with_attributes(size as f64, std::ptr::null(), more.as_deref()) };
+        self.sized.insert((face.0, size.to_bits()), sized.clone());
+        Some(sized)
     }
 }
 
@@ -107,7 +130,7 @@ impl TextBackend for CoreText {
             return Some(*face);
         }
         let font = fonts::matched(&self.loaded, key)?;
-        let face = self.keep(font);
+        let face = self.keep(font, Some(&key.family));
         self.keys.push((key.clone(), face));
         Some(face)
     }
@@ -134,5 +157,25 @@ impl TextBackend for CoreText {
 
     fn rasterize(&mut self, face: FaceId, glyph: u16, size: f32, phase: u8) -> Option<GlyphBitmap> {
         self.raster(face, glyph, size, phase)
+    }
+
+    fn bidi_levels(&mut self, text: &str, rtl: bool) -> Option<Vec<u8>> {
+        bidi::levels(text, rtl)
+    }
+
+    fn set_features(&mut self, family: &str, features: &[Feature]) {
+        self.features.retain(|(name, _)| !name.eq_ignore_ascii_case(family));
+        if !features.is_empty() {
+            self.features.push((family.to_string(), features.to_vec()));
+        }
+        self.sized.clear();
+    }
+
+    fn set_fallbacks(&mut self, families: &[String]) {
+        let key = |family: &String| FontKey { family: family.as_str().into(), weight: 400, italic: false };
+        let found = families.iter().filter_map(|family| fonts::matched(&self.loaded, &key(family)));
+        // SAFETY: the descriptor of a valid font.
+        self.cascade = found.map(|font| unsafe { font.font_descriptor() }).collect();
+        self.sized.clear();
     }
 }

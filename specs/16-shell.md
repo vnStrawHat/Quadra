@@ -216,6 +216,18 @@ The same traits behind the same `install`, by `quadra-shell/src/mac` (23, M3):
   `crash_reports` writes nothing.
 - **File types** are those the app's bundle names (`Info.plist`): `Associations::register`
   says so, and nothing is registered while the app runs.
+- **Files the system asks the app to open** (the Finder, `open`, a file dropped on the
+  app's icon) reach an app in a bundle as an event of the application, not as arguments,
+  whether it runs already or is started for them. The first instance's inbox is given them
+  as a `Launch` whose arguments are the files' paths, so an app that listens for later
+  starts opens them with no code of its own.
+- **The bundle**: `tools/package_mac.sh <app>` on a Mac puts the shipped binary in
+  `target/package/<Name>.app` with an `Info.plist` that names it (the identifier
+  `io.github.vnstrawhat.<name>`, or `PACKAGE_ID`), its version (the workspace's), the kinds
+  of file it opens (Markdown: `md`, `markdown`) and that it draws at the display's own
+  scale; the icon is made of the app's `.ico` by the system's `sips` when it can; the bundle
+  is signed ad hoc, which runs on the Mac that made it. Not yet: a Developer ID signature
+  and notarization, which an app that ships to others needs.
 - **Not yet**: the tray (`Tray::add` refuses), process usage (`Meter::usage` is none),
   passwords, sealing and fetching (23, M4).
 

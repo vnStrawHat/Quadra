@@ -259,8 +259,17 @@ left to the system. `quadra_shell::install` gives an app's views the same servic
 Windows, so the app `markdown` builds for macOS and its tests run on the runner; the test
 of one instance runs there too. What shows something to the user (a panel, an alert, what
 `open` opens) is tried by hand on a real Mac. Not yet: an item in the menu bar for the
-tray, process usage, an app bundle (`Info.plist`, with the kinds of file an app opens),
-and what M4 needs (sealing, hashing, fetching).
+tray, process usage, and what M4 needs (sealing, hashing, fetching).
+
+### The app bundle
+
+`tools/package_mac.sh` makes an app's bundle (16, "On macOS"); the CI's job makes
+Markdown's, with the binary the tests built, and so checks its `Info.plist` and its
+signature. The application's delegate takes the files the system asks it to open
+(`application:openURLs:`) and gives their paths to who listens
+(`quadra_native_mac::on_open_files`; what is asked before anyone listens is kept), which
+is the shell's first instance. Tested by sending the delegate what AppKit sends
+(`tests/opens.rs`); a file opened from the Finder is tried by hand.
 
 ## The terminal (M4, started)
 

@@ -11,7 +11,7 @@ use objc2_app_kit::{
     NSApplication, NSApplicationDelegate, NSApplicationTerminateReply, NSEventModifierFlags, NSMenu,
     NSMenuItem,
 };
-use objc2_foundation::{NSObject, NSObjectProtocol, NSProcessInfo, NSString};
+use objc2_foundation::{NSArray, NSObject, NSObjectProtocol, NSProcessInfo, NSString, NSURL};
 
 use super::Shared;
 
@@ -33,6 +33,12 @@ define_class!(
                 shared.close_all();
             }
             NSApplicationTerminateReply::TerminateCancel
+        }
+
+        /// Files opened from the Finder or by `open`, for who listens (`opens.rs`).
+        #[unsafe(method(application:openURLs:))]
+        fn open_urls(&self, _app: &NSApplication, urls: &NSArray<NSURL>) {
+            crate::opens::opened(urls.iter().filter_map(|url| url.to_file_path()).collect());
         }
     }
 );

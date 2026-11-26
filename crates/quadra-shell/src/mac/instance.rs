@@ -1,5 +1,6 @@
 //! One instance (specs/16, "One instance"): the first process of an app listens on a socket
 //! in the user's folder of temporary files; a later one hands it its arguments and ends.
+//! The files the system asks the first to open come to it the same way.
 
 use std::io::{Read, Write};
 use std::net::Shutdown;
@@ -47,5 +48,12 @@ pub fn single_instance(id: &str, args: &[String]) -> Instance {
             }
         });
     }
+    // What the Finder or `open` asks an app in a bundle to open arrives as a later start
+    // does: the system starts no second process for it.
+    let opens = launches.sender();
+    quadra_native_mac::on_open_files(move |files| {
+        let args = files.iter().map(|file| file.display().to_string()).collect();
+        opens.push(Launch { folder: PathBuf::from("/"), args });
+    });
     Instance::First(launches)
 }

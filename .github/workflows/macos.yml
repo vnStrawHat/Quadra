@@ -56,6 +56,14 @@ jobs:
           echo "== the gallery's pages" | tee -a check_mac.log
           bash tools/shots.sh dark 2>&1 | tee -a check_mac.log
 
+      # An app as a bundle (specs/23, "The app bundle"), with the binary of the profile the
+      # tests built: the bundle's making is what is tried here, not the shipped build.
+      - name: Markdown as a bundle
+        run: |
+          set -o pipefail
+          echo "== the bundle" | tee -a check_mac.log
+          PACKAGE_PROFILE=dev bash tools/package_mac.sh markdown 2>&1 | tee -a check_mac.log
+
       - name: Keep the pictures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

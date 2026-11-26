@@ -105,7 +105,7 @@ static float erf_approx(float x) {
 
 // A gradient's colour at a pixel: how far along it the pixel is (params.y: 1 linear at the
 // angle params.x, 2 radial, 3 conic from params.x), sampled from its ramp, premultiplied.
-static float4 gradient(Instance p, float2 q, float2 half_size, texture2d_array<float> poly, sampler linear) {
+static float4 gradient(Instance p, float2 q, float2 half_size, texture2d_array<float> poly, sampler ramp) {
     float ang = p.params.x * 0.017453293, along;
     if (p.params.y < 1.5) { // the line's length reaches the corners, as design tools have it
         float2 dir = float2(cos(ang), sin(ang));
@@ -115,7 +115,7 @@ static float4 gradient(Instance p, float2 q, float2 half_size, texture2d_array<f
     } else {
         along = fract((atan2(q.x, -q.y) - ang) * 0.15915494);
     }
-    return poly.sample(linear, float2(mix(p.uv.x, p.uv.z, saturate(along)), p.uv.y), p.slice, level(0));
+    return poly.sample(ramp, float2(mix(p.uv.x, p.uv.z, saturate(along)), p.uv.y), p.slice, level(0));
 }
 
 // How much of a dashed (flags 4) or dotted (8) border's pixel is ink. The pixel goes by the
@@ -159,16 +159,16 @@ static float border_mark(Instance p, float2 px) {
 }
 
 static float4 shade_quad(Instance p, float2 px, float2 screen, constant Constants &k,
-                         texture2d_array<float> poly, texture2d<float> backdrop, sampler linear) {
+                         texture2d_array<float> poly, texture2d<float> backdrop, sampler ramp) {
     float2 half_size = p.bounds.zw * 0.5;
     float2 center = p.bounds.xy + half_size;
     float coverage = saturate(0.5 - sdf_rrect(px, center, half_size, p.radii));
     float4 c = premul(p.color, 1);
-    if ((p.flags & 1) != 0) c = gradient(p, px - center, half_size, poly, linear);
+    if ((p.flags & 1) != 0) c = gradient(p, px - center, half_size, poly, ramp);
     if ((p.flags & 16) != 0) { // the fill over a blur of what is behind: the mip of its block
         float lod = clamp(ceil(log2(max(2 * p.params.z, 1.0))), 0.0, 6.0);
         float2 at = (screen - k.backdrop_rect.xy) / max(k.backdrop_rect.zw, 1.0);
-        c += backdrop.sample(linear, at, level(lod)) * (1 - c.a);
+        c += backdrop.sample(ramp, at, level(lod)) * (1 - c.a);
     }
     if ((p.flags & 2) != 0) {
         float4 b = p.border; // t r b l
@@ -247,7 +247,7 @@ static float4 shade_line(Instance p, float2 px) {
 // One output, premultiplied, blended as premultiplied alpha. The Windows shader has a second
 // one, a weight a channel, for glyphs smoothed by subpixel: macOS smooths none so, and such a
 // glyph, should one come, is blended by the most covered of its channels.
-fragment float4 fs_main(VsOut i,
+fragment float4 fs_main(VsOut i [[stage_in]],
                         const device Instance *instances [[buffer(0)]],
                         constant Constants &k [[buffer(1)]],
                         texture2d_array<float> mono_atlas [[texture(1)]],

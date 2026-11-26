@@ -41,4 +41,15 @@ jobs:
         uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2 tag, 2026-07-23
 
       - name: Lints and tests
-        run: bash tools/check_mac.sh
+        run: |
+          set -o pipefail
+          bash tools/check_mac.sh 2>&1 | tee check_mac.log
+
+      # The end of what failed, as an annotation of the run: read on the run's page, and by
+      # who has no right to its log.
+      - name: Say what failed
+        if: failure()
+        run: |
+          grep -vE '^ *(Compiling|Checking|Downloading|Downloaded|Running|Finished|Fresh) |^test .* ok$|^$' check_mac.log |
+            tail -n 60 | sed 's/%/%25/g' | awk '{ printf "%s%%0A", $0 } END { print "" }' > said.txt
+          echo "::error title=tools/check_mac.sh::$(cat said.txt)"

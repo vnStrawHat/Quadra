@@ -24,7 +24,7 @@ mod mac {
         NSAppearance, NSAppearanceCustomization, NSAppearanceNameAqua, NSAppearanceNameDarkAqua, NSEvent,
         NSEventModifierFlags, NSEventType, NSView, NSWindow,
     };
-    use objc2_foundation::{NSPoint, NSSize, NSString};
+    use objc2_foundation::{NSNotFound, NSPoint, NSRange, NSRect, NSSize, NSString};
     use quadra_native_mac::{MacPlatform, MetalRenderer};
     use quadra_platform::{
         Cursor, Key, Mods, MouseButton, Platform, PlatformEvent, PlatformHandler, PlatformWindow,
@@ -63,12 +63,37 @@ mod mac {
         (view, view.window().expect("the view is in its window"))
     }
 
-    /// A press and a release of the left button, a key that types "a", the other appearance
+    /// What an input method does: it composes, asks where the caret is, and commits.
+    fn compose(view: &NSView) {
+        let (composed, committed) = (NSString::from_str("việ"), NSString::from_str("việt"));
+        let nowhere = NSRange::new(NSNotFound as usize, 0);
+        // SAFETY: messages of `NSTextInputClient`, which the view answers, with what they take.
+        unsafe {
+            let _: () = msg_send![
+                view,
+                setMarkedText: &*composed,
+                selectedRange: NSRange::new(3, 0),
+                replacementRange: nowhere
+            ];
+            let composing: bool = msg_send![view, hasMarkedText];
+            assert!(composing);
+            let caret: NSRect = msg_send![
+                view,
+                firstRectForCharacterRange: NSRange::new(0, 3),
+                actualRange: std::ptr::null_mut::<NSRange>()
+            ];
+            assert_eq!((caret.size.width, caret.size.height), (2.0, 16.0));
+            let _: () = msg_send![view, insertText: &*committed, replacementRange: nowhere];
+        }
+    }
+
+    /// A press and a release of the left button, keys that type "a" and "b", a composition
+    /// of an input method, the other appearance
     /// (dark, of a light one), a new size and a request to close, as AppKit gives them: from
     /// inside the handler, so each arrives after it. The key goes through the window; the press is given to the view itself,
     /// as a window that is not shown passed none on (seen on GitHub's Mac).
-    fn post(window: &dyn PlatformWindow, dark: bool) {
-        let (view, window) = ns_window(window);
+    fn post(shown: &dyn PlatformWindow, dark: bool) {
+        let (view, window) = ns_window(shown);
         let number = window.windowNumber();
         // In the window's points, from its bottom left: 30 from the left, 40 from the top of
         // a content 200 high.
@@ -84,11 +109,22 @@ mod mac {
                 _ => view.mouseUp(&press),
             }
         }
-        let a = NSString::from_str("a");
-        let key = NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(
-            NSEventType::KeyDown, at, none, 0.0, number, None, &a, &a, false, 0,
-        );
-        window.sendEvent(&key.expect("a key event"));
+        // The first key with nothing that takes text, the second with a caret: through the
+        // input method then. Its context is made active here, as AppKit does in the window
+        // that has the keys, which one that is not shown never is.
+        for (typed, code) in [("a", 0), ("b", 11)] {
+            if code == 11 {
+                shown.set_text_input(Some(Rect::new(10.0, 20.0, 2.0, 16.0)));
+                view.inputContext().expect("a view that takes text").activate();
+            }
+            let typed = NSString::from_str(typed);
+            let key = NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(
+                NSEventType::KeyDown, at, none, 0.0, number, None, &typed, &typed, false, code,
+            );
+            window.sendEvent(&key.expect("a key event"));
+        }
+        compose(view);
+        shown.set_text_input(None);
         // SAFETY: AppKit's constants, read and never written.
         let name = unsafe { if dark { NSAppearanceNameDarkAqua } else { NSAppearanceNameAqua } };
         window.setAppearance(NSAppearance::appearanceNamed(name).as_deref());
@@ -208,6 +244,20 @@ mod mac {
         let key = PlatformEvent::Key { key: Key::A, code: 0, mods: Mods::NONE, down: true, repeat: false };
         let (key, text) = (place(&key), place(&PlatformEvent::Text("a".to_string())));
         assert!(up < key && key < text, "the key, then what it types: {said}");
+        // What the keys typed and the input method composed: the caret in bytes of the text.
+        let composing =
+            |text: &str, caret| PlatformEvent::Composition { text: text.to_string(), caret, target: 0..0 };
+        let wanted = [
+            PlatformEvent::Text("a".to_string()),
+            PlatformEvent::Text("b".to_string()),
+            composing("việ", 5),
+            PlatformEvent::Text("việt".to_string()),
+            composing("", 0),
+        ];
+        let texts = events
+            .iter()
+            .filter(|it| matches!(it, PlatformEvent::Text(_) | PlatformEvent::Composition { .. }));
+        assert!(texts.eq(wanted.iter()), "typed and composed: {said}");
         let sizes: Vec<Size> = events
             .iter()
             .filter_map(|it| if let PlatformEvent::Resize { size, .. } = it { Some(*size) } else { None })

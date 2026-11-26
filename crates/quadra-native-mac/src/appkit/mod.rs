@@ -2,6 +2,7 @@
 //! lives on the main thread, as AppKit does.
 
 mod delivery;
+mod input;
 mod keys;
 mod look;
 mod view;

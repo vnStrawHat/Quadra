@@ -185,13 +185,21 @@ renderer and Core Text.
   (`hit_test`: `Caption`) is the system's: the window is dragged by it
   (`performWindowDragWithEvent`), and zoomed by a second press. `Maximize` is the app's
   own, as the system shows nothing over it. Never run yet: the test's window is not shown.
+- **Text and input methods**: the view is an `NSTextInputClient` that keeps no text. While
+  something takes text (`set_text_input` with a caret) a key goes through the input method
+  (`interpretKeyEvents`), which commits text (`Text`) or composes it (`Composition`: its
+  text, the end of what it selects as the caret, what it selects as the clause being
+  converted); the candidates open beside the caret (`firstRectForCharacterRange`). While an
+  input method composes, a key is its own and is not told as a key. While nothing takes
+  text no input method is asked: a key types its own characters, and what was being composed
+  is dropped. With Command held a key types nothing.
 - **The handler is never entered twice**, as on Windows: what arrives while it runs waits.
 - **Keys**: Command is `Mods::SUPER`, Option is `Mods::ALT`, Control is `Mods::CTRL`.
   **Open**: on a Mac a shortcut is held with Command where Windows holds Ctrl, and the kit's
   key bindings say `ctrl`; whether a binding names a "primary" modifier, or the keymap is
   another one on a Mac, is a decision of the keymap (09), not taken yet.
-- **Not yet**: input methods (`set_text_input`, composition); the semantic tree for readers
-  (`update_semantics`); drops from other programs; the system's image codecs (the decoder
+- **Not yet**: the semantic tree for readers (`update_semantics`); drops from other
+  programs; the system's image codecs (the decoder
   is the one of flat test images); where the system's three buttons are, for a title bar of
   the kit to leave them room; a placement is the window's frame in points from the bottom
   left of the first display, not yet in the device pixels the trait says; the menu bar.
@@ -199,7 +207,8 @@ renderer and Core Text.
 Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:
 a real window that is not shown, what the loop gives the handler (timers, a frame, a wake
 from another thread), AppKit's events sent to the window from inside the handler and what
-they arrive as (a press, a key and its text, the other appearance, a new size, a request to
+they arrive as (a press, a key and its text with and without something that takes text,
+what an input method composes and commits, the other appearance, a new size, a request to
 close), a cursor for every shape, and frames drawn into the window's layer.
 
 ## Milestones

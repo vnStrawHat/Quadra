@@ -7,15 +7,21 @@ use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, Sel};
 use objc2::{AnyThread, DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
 use objc2_app_kit::{
-    NSAppearanceCustomization, NSEvent, NSEventModifierFlags, NSResponder, NSTrackingArea,
+    NSAppearanceCustomization, NSEvent, NSResponder, NSTextInputClient, NSTrackingArea,
     NSTrackingAreaOptions, NSView,
 };
-use objc2_foundation::{NSArray, NSObject, NSObjectProtocol, NSRect, NSSize, NSString};
-use quadra_platform::{HitRegion, MouseButton, PlatformEvent, PointerKind};
-use quadra_prim::{Point, Size};
+use objc2_foundation::{
+    NSArray, NSAttributedString, NSNotFound, NSObject, NSObjectProtocol, NSPoint, NSRange, NSRect, NSSize,
+    NSString,
+};
+use quadra_platform::{MouseButton, PlatformEvent, PointerKind};
+use quadra_prim::Point;
 
 use super::window::State;
 use super::{keys, look};
+
+/// No range, as AppKit says it.
+const NOWHERE: NSRange = NSRange { location: NSNotFound as usize, length: 0 };
 
 define_class!(
     // SAFETY: `NSView` is made to be subclassed, and the class has no `Drop`.
@@ -142,12 +148,7 @@ define_class!(
 
         #[unsafe(method(keyDown:))]
         fn key_down(&self, event: &NSEvent) {
-            self.key(event, true);
-            // What the key types comes through the system's handling of keys, as
-            // `insertText:`. With Command held it types nothing: it is a shortcut.
-            if !event.modifierFlags().contains(NSEventModifierFlags::Command) {
-                self.interpretKeyEvents(&NSArray::from_slice(&[event]));
-            }
+            self.pressed(event);
         }
 
         #[unsafe(method(keyUp:))]
@@ -164,30 +165,72 @@ define_class!(
             }
         }
 
-        /// Text a key typed: a string, or one with attributes that an input method made.
-        #[unsafe(method(insertText:))]
-        fn insert_text(&self, text: &AnyObject) {
-            let text = match text.downcast_ref::<NSString>() {
-                Some(plain) => plain.to_string(),
-                // SAFETY: what is no string here is an attributed one, which has a string.
-                None => unsafe {
-                    let plain: Retained<NSString> = msg_send![text, string];
-                    plain.to_string()
-                },
-            };
-            let typed: String = text.chars().filter(|c| !c.is_control()).collect();
-            if !typed.is_empty() {
-                self.ivars().send(PlatformEvent::Text(typed));
-            }
+    }
+
+    unsafe impl NSObjectProtocol for View {}
+
+    // What an input method asks of where text goes, and tells it (`input.rs`). The view
+    // keeps no text: the composition is all an input method can ask it for.
+    unsafe impl NSTextInputClient for View {
+        #[unsafe(method(insertText:replacementRange:))]
+        fn insert_text(&self, text: &AnyObject, _replaced: NSRange) {
+            self.insert(text);
         }
 
         /// A key that types nothing (an arrow, Enter): it came as a key already, and is not
         /// answered with the system's beep.
         #[unsafe(method(doCommandBySelector:))]
         fn do_command(&self, _command: Sel) {}
-    }
 
-    unsafe impl NSObjectProtocol for View {}
+        #[unsafe(method(setMarkedText:selectedRange:replacementRange:))]
+        fn set_marked_text(&self, text: &AnyObject, selected: NSRange, _replaced: NSRange) {
+            self.mark(text, selected);
+        }
+
+        #[unsafe(method(unmarkText))]
+        fn unmark_text(&self) {
+            self.unmark();
+        }
+
+        #[unsafe(method(selectedRange))]
+        fn selected_range(&self) -> NSRange {
+            NOWHERE
+        }
+
+        #[unsafe(method(markedRange))]
+        fn marked_range(&self) -> NSRange {
+            match self.ivars().marked.get() {
+                0 => NOWHERE,
+                length => NSRange { location: 0, length },
+            }
+        }
+
+        #[unsafe(method(hasMarkedText))]
+        fn has_marked_text(&self) -> bool {
+            self.ivars().marked.get() > 0
+        }
+
+        #[unsafe(method_id(attributedSubstringForProposedRange:actualRange:))]
+        fn substring(&self, _range: NSRange, _actual: *mut NSRange) -> Option<Retained<NSAttributedString>> {
+            None
+        }
+
+        #[unsafe(method_id(validAttributesForMarkedText))]
+        fn valid_attributes(&self) -> Retained<NSArray<NSString>> {
+            NSArray::new()
+        }
+
+        /// Where the candidates open: beside the caret.
+        #[unsafe(method(firstRectForCharacterRange:actualRange:))]
+        fn first_rect(&self, _range: NSRange, _actual: *mut NSRange) -> NSRect {
+            self.caret_on_screen()
+        }
+
+        #[unsafe(method(characterIndexForPoint:))]
+        fn character_index(&self, _point: NSPoint) -> usize {
+            NOWHERE.location
+        }
+    }
 );
 
 /// The button of a press that is neither the left nor the right one.
@@ -221,57 +264,5 @@ impl View {
         };
         view.addTrackingArea(&area);
         view
-    }
-
-    /// Where an event is, in the view's own points.
-    fn place(&self, event: &NSEvent) -> Point {
-        let at = self.convertPoint_fromView(event.locationInWindow(), None);
-        Point::new(at.x as f32, at.y as f32)
-    }
-
-    /// A press on what the app says is its title bar: the window is dragged by it, and
-    /// zoomed by a second press. The press is the system's then, not the app's.
-    fn on_caption(&self, event: &NSEvent) -> bool {
-        let state = self.ivars();
-        let (Some(shared), Some(window)) = (state.shared.upgrade(), self.window()) else { return false };
-        if !state.custom_frame || shared.hit_test(state.id, self.place(event)) != HitRegion::Caption {
-            return false;
-        }
-        // ponytail: a second press zooms; what the user chose for it in the system's
-        // settings (minimize, nothing) when someone asks.
-        if event.clickCount() == 2 {
-            window.zoom(None)
-        } else {
-            window.performWindowDragWithEvent(event)
-        }
-        true
-    }
-
-    fn pointer(&self, event: &NSEvent, kind: PointerKind, button: MouseButton) {
-        let (at, mods) = (self.place(event), keys::mods(event.modifierFlags()));
-        self.ivars().send(PlatformEvent::Pointer { kind, button, at, mods });
-    }
-
-    fn key(&self, event: &NSEvent, down: bool) {
-        let code = event.keyCode();
-        // A change of the modifiers is no key that repeats, and may not be asked whether it does.
-        let repeat = down && keys::flag_of(keys::key(code)).is_none() && event.isARepeat();
-        let mods = keys::mods(event.modifierFlags());
-        self.ivars().send(PlatformEvent::Key { key: keys::key(code), code: code.into(), mods, down, repeat });
-    }
-
-    /// The view's size or its window's scale changed. The loop does not turn while the user
-    /// drags the window's edge, so the frame the app asks for is given at once.
-    fn resized(&self) {
-        let (size, state) = (self.bounds().size, self.ivars());
-        let scale = self.window().map_or(1.0, |window| window.backingScaleFactor() as f32);
-        let size = Size::new(size.width as f32, size.height as f32);
-        if state.told.replace((size, scale)) == (size, scale) {
-            return;
-        }
-        state.send(PlatformEvent::Resize { size, scale });
-        if let Some(shared) = state.shared.upgrade() {
-            shared.frames();
-        }
     }
 }

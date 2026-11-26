@@ -38,6 +38,10 @@ pub(crate) struct State {
     /// The pointer's shape over the content, and AppKit's cursor of it.
     pub shape: Cell<Cursor>,
     pub cursor: RefCell<Retained<NSCursor>>,
+    /// The caret of what takes text, in the view's points; none while nothing does.
+    pub caret: Cell<Option<Rect>>,
+    /// How many UTF-16 units an input method is composing.
+    pub marked: Cell<usize>,
 }
 
 impl State {
@@ -131,6 +135,8 @@ impl MacWindow {
             custom_frame: options.custom_frame,
             shape: Cell::new(Cursor::Arrow),
             cursor: RefCell::new(look::cursor(Cursor::Arrow)),
+            caret: Cell::new(None),
+            marked: Cell::new(0),
         });
         let view = View::new(mtm, state.clone(), content);
         window.setContentView(Some(&view));
@@ -206,10 +212,11 @@ impl PlatformWindow for MacWindow {
         }
     }
 
-    // Not yet (specs/23, "The platform"): input methods, readers.
+    fn set_text_input(&self, caret: Option<Rect>) {
+        self.view.text_input(caret);
+    }
 
-    fn set_text_input(&self, _caret: Option<Rect>) {}
-
+    // Not yet (specs/23, "The platform"): readers.
     fn update_semantics(&self, _update: &TreeUpdate) {}
 
     fn minimize(&self) {

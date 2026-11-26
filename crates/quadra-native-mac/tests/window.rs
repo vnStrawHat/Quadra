@@ -17,7 +17,9 @@ fn main() {
 mod mac {
     use std::time::Duration;
 
-    use objc2::MainThreadMarker;
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
+    use objc2::{MainThreadMarker, msg_send};
     use objc2_app_kit::{
         NSAppearance, NSAppearanceCustomization, NSAppearanceNameAqua, NSAppearanceNameDarkAqua, NSEvent,
         NSEventModifierFlags, NSEventType, NSView, NSWindow,
@@ -43,8 +45,18 @@ mod mac {
         ticks: (TimerId, TimerId),
     }
 
+    /// Says an exception of Objective-C and where it was raised, before it ends the process:
+    /// Rust, which cannot catch one, says neither.
+    unsafe extern "C" fn said(exception: *mut AnyObject) -> *mut AnyObject {
+        // SAFETY: an exception is an object, and every object answers `description`.
+        let what: Retained<NSString> = unsafe { msg_send![exception, description] };
+        eprintln!("an exception of Objective-C: {what}");
+        eprintln!("{}", std::backtrace::Backtrace::force_capture());
+        exception
+    }
+
     /// The window's view and its own object.
-    fn ns_window(window: &dyn PlatformWindow) -> (&NSView, objc2::rc::Retained<NSWindow>) {
+    fn ns_window(window: &dyn PlatformWindow) -> (&NSView, Retained<NSWindow>) {
         let WindowHandle::AppKit { view } = window.handle() else { panic!("not an AppKit window") };
         // SAFETY: the address is of the window's content view, alive as long as the window.
         let view = unsafe { &*(view as *const NSView) };
@@ -115,6 +127,8 @@ mod mac {
 
     pub fn run() {
         assert!(MainThreadMarker::new().is_some(), "the test's main is the main thread");
+        // SAFETY: a function that reads the exception it is given and hands it on.
+        unsafe { objc2::ffi::objc_setExceptionPreprocessor(said) };
         let platform = MacPlatform::new().unwrap();
         let window =
             platform.open_window(&WindowOptions::new("Quadra test").size(320.0, 200.0).hidden()).unwrap();

@@ -42,7 +42,8 @@ fn value(key: impl Into<String>, name: &str, data: impl Into<String>) -> RegValu
 pub fn registration(types: &FileTypes) -> Vec<RegValue> {
     let (id, exe) = (types.prog_id(), types.exe.display().to_string());
     let class = format!(r"Software\Classes\{id}");
-    let file = types.exe.file_name().map(|it| it.to_string_lossy().into_owned()).unwrap_or_default();
+    // A Windows path whatever system reads it: its name is what follows its last separator.
+    let file = exe.rsplit(['\\', '/']).next().unwrap_or_default().to_string();
     let able = format!(r"Software\{}\{}\Capabilities", types.vendor, types.name);
     let mut out = vec![
         value(&class, "", &types.document),

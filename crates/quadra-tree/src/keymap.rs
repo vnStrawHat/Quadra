@@ -141,12 +141,14 @@ pub struct Keymap {
     bindings: Vec<Binding>,
     /// How many of them, the first ones, are those every keymap has.
     built_in: usize,
+    /// Bindings for a Mac alone, each with the place among the others it was added at.
+    mac: Vec<(usize, Binding)>,
 }
 
 impl Default for Keymap {
     /// The bindings every window has: Tab and Shift+Tab move the focus.
     fn default() -> Keymap {
-        let mut keymap = Keymap { bindings: Vec::new(), built_in: 0 };
+        let mut keymap = Keymap { bindings: Vec::new(), built_in: 0, mac: Vec::new() };
         let tab = Keystroke { key: Key::Tab, mods: Mods::NONE };
         keymap.push(vec![tab], None, FocusNext);
         keymap.push(vec![Keystroke { mods: Mods::SHIFT, ..tab }], None, FocusPrevious);

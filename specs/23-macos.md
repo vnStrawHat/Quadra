@@ -216,7 +216,8 @@ renderer and Core Text.
   Quit ends no process: every window is asked to close, as its close button asks, and the
   app decides (15, "Closing"). No item takes a key an app may want for itself: closing with
   Command-W is the app's binding. Its titles are in English.
-- **Not yet**: the code editor's keys as a Mac has them; an app's own menus in the menu
+  The code editor's keys follow (09).
+- **Not yet**: an app's own menus in the menu
   bar, and the bar in the app's language; the
   semantic tree for readers (`update_semantics`); drops from other programs; the system's
   three buttons at the middle of a title bar taller than the system's, and their room given

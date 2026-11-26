@@ -168,8 +168,13 @@ How a key press is decided:
   Command-Backspace the line before the caret. Back and forward are Command with `[` and
   `]`, not Option with an arrow. These lie over the built-in bindings and under every
   binding added after them (a kit's, the app's, the user's). What a PC and a Mac share
-  stays (Home, End, the clipboard's keys with Command). The code editor's own keys are not
-  the Mac's yet. While a sequence is being typed its keys are taken; a key that continues
+  stays (Home, End, the clipboard's keys with Command). What has keys of its own says what
+  they are on a Mac beside what they are elsewhere (`Keymap::bind_in_on_mac`): such a
+  binding is kept aside until the keymap is made a Mac's, and then lies where it was added.
+  The code editor does: the same arrows, Option-Backspace and Option-Delete, replace with
+  Option-Command-F (Command-H is the menu bar's, to hide the app) and the next match with
+  Command-G, with Shift the one before. A keymap a view puts in `app_keymap()` is used as
+  it is. While a sequence is being typed its keys are taken; a key that continues
   no binding drops the sequence and is an ordinary key. A modifier pressed on its way to a
   keystroke is not one.
 - Among the bindings a keystroke completes, the one whose context is nearest the focus wins;

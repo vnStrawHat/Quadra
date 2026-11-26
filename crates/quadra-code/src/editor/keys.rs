@@ -112,6 +112,33 @@ pub fn bind_keys(keymap: &mut Keymap) {
     for (keys, command) in rest {
         keymap.bind_in(EDITOR_CONTEXT, keys, command).expect(well_formed);
     }
+    // On a Mac (specs/09, "On a Mac"): by words with Option, to the ends with Command, and
+    // the keys its menu bar keeps (Command-H hides the app) are left to it.
+    let moves = [
+        ("alt-left", Motion::WordLeft),
+        ("alt-right", Motion::WordRight),
+        ("ctrl-left", Motion::Home),
+        ("ctrl-right", Motion::End),
+        ("ctrl-up", Motion::DocStart),
+        ("ctrl-down", Motion::DocEnd),
+    ];
+    for (keys, motion) in moves {
+        keymap.bind_in_on_mac(EDITOR_CONTEXT, keys, Move(motion, false)).expect(well_formed);
+        let keys = format!("shift-{keys}");
+        keymap.bind_in_on_mac(EDITOR_CONTEXT, &keys, Move(motion, true)).expect(well_formed);
+    }
+    // ponytail: Command-Backspace takes a word as Option-Backspace does, not the line before
+    // the caret: the document has no such delete yet.
+    let rest = [
+        ("alt-backspace", DeleteBack(true)),
+        ("alt-delete", DeleteForward(true)),
+        ("ctrl-alt-f", Replace),
+        ("ctrl-g", FindNext(false)),
+        ("ctrl-shift-g", FindNext(true)),
+    ];
+    for (keys, command) in rest {
+        keymap.bind_in_on_mac(EDITOR_CONTEXT, keys, command).expect(well_formed);
+    }
 }
 
 impl EditorCommand {

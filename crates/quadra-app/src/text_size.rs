@@ -47,7 +47,8 @@ impl TextSize {
 }
 
 /// The app's keymap, from the context of a view: a page of settings puts another, and every
-/// window follows.
+/// window follows. One put here is used as it is: on a Mac its writer makes it a Mac's
+/// (`Keymap::as_a_mac_has_them`), as `App::keymap` does for the one it is given.
 pub fn app_keymap() -> Signal<Rc<Keymap>> {
     use_context::<Signal<Rc<Keymap>>>().expect("app_keymap() is called inside an app")
 }

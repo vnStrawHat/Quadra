@@ -7,16 +7,36 @@ use std::rc::Rc;
 
 use quadra_text::Motion;
 
-use super::{Context, Keymap, Keystroke, TEXT_AREA_CONTEXT, TEXT_CONTEXT};
-use crate::action::{GoBack, GoForward};
+use super::{Context, Keymap, KeymapError, Keystroke, TEXT_AREA_CONTEXT, TEXT_CONTEXT};
+use crate::action::{Action, GoBack, GoForward};
 use crate::field::TextCommand::{Delete, Move};
 
 impl Keymap {
+    /// As [`Keymap::bind_in`], for a Mac alone: the binding is kept aside until the keymap is
+    /// made a Mac's, and then lies among the others where it was added. What has keys of its
+    /// own (an editor) says so what they are on a Mac, beside what they are elsewhere.
+    pub fn bind_in_on_mac(
+        &mut self,
+        context: &str,
+        keys: &str,
+        action: impl Action,
+    ) -> Result<(), KeymapError> {
+        self.bind_in(context, keys, action)?;
+        let binding = self.bindings.pop().expect("it was added just now");
+        self.mac.push((self.bindings.len(), binding));
+        Ok(())
+    }
+
     /// The keymap as a Mac has its keys: the built-in bindings of text are joined by the
     /// Mac's, which win over them, and back and forward are Command with a bracket, not
     /// Option with an arrow. The bindings added after the built-in ones (a kit's, the
     /// app's, the user's) stay over these.
     pub fn as_a_mac_has_them(mut self) -> Keymap {
+        // From the last, so that the places of those before it hold. All lie after the
+        // built-in ones.
+        for (at, binding) in std::mem::take(&mut self.mac).into_iter().rev() {
+            self.bindings.insert(at, binding);
+        }
         let (back, forward) = (TypeId::of::<GoBack>(), TypeId::of::<GoForward>());
         let (built_in, mut at) = (self.built_in, 0);
         self.bindings.retain(|binding| {
@@ -26,7 +46,7 @@ impl Keymap {
         });
         let kept = built_in - (at - self.bindings.len());
 
-        let mut mac = Keymap { bindings: Vec::new(), built_in: 0 };
+        let mut mac = Keymap { bindings: Vec::new(), built_in: 0, mac: Vec::new() };
         let stroke =
             |keys: &str| vec![Keystroke::parse(keys).expect("the built-in bindings are well formed")];
         mac.push(stroke("ctrl-["), None, GoBack);
@@ -78,6 +98,13 @@ mod tests {
         let mut keymap = Keymap::new();
         // A binding of the app's, added before the keymap is made a Mac's, stays over it.
         keymap.bind_in(TEXT_CONTEXT, "alt-delete", TextCommand::SelectAll).unwrap();
+        // One for a Mac alone lies where it was added: over what came before, under what
+        // came after.
+        keymap.bind_in(TEXT_CONTEXT, "f5", TextCommand::Copy).unwrap();
+        keymap.bind_in_on_mac(TEXT_CONTEXT, "f5", TextCommand::Cut).unwrap();
+        keymap.bind_in_on_mac(TEXT_CONTEXT, "f6", TextCommand::Cut).unwrap();
+        keymap.bind_in(TEXT_CONTEXT, "f6", TextCommand::Paste).unwrap();
+        assert_eq!(in_text(&keymap, "f5", &[TEXT_CONTEXT]), Some(TextCommand::Copy));
         let (pc, mac) = (Keymap::new(), keymap.as_a_mac_has_them());
 
         let text = &[TEXT_CONTEXT][..];
@@ -89,6 +116,8 @@ mod tests {
         assert_eq!(in_text(&mac, "alt-backspace", text), Some(Delete(Motion::WordLeft)));
         assert_eq!(in_text(&mac, "ctrl-backspace", text), Some(Delete(Motion::LineStart)));
         assert_eq!(in_text(&mac, "alt-delete", text), Some(TextCommand::SelectAll));
+        assert_eq!(in_text(&mac, "f5", text), Some(TextCommand::Cut));
+        assert_eq!(in_text(&mac, "f6", text), Some(TextCommand::Paste));
         // What a PC and a Mac share is still there.
         assert_eq!(in_text(&mac, "ctrl-a", text), Some(TextCommand::SelectAll));
         assert_eq!(in_text(&mac, "home", text), Some(Move(Motion::LineStart, false)));

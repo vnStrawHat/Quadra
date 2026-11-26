@@ -7,9 +7,9 @@ use quadra::{
     Action, Display, Signal, TextSize, Theme, View, column, div, dynamic, row, scroll, signal, use_context,
 };
 use quadra_design::{
-    Command, MenuItem, NavItem, Notices, Status, Tone, command_palette, dark, icon_button, icons, light,
-    notices, sidebar, status_button, status_divider, status_item, status_label_sized, statusbar, titlebar,
-    tooltip,
+    Command, MenuItem, NavItem, Notices, Status, Tone, command_palette, dark, icon_button, icons, key_label,
+    light, notices, sidebar, status_button, status_divider, status_item, status_label_sized, statusbar,
+    titlebar, tooltip,
 };
 
 use crate::registry::{PAGES, make};
@@ -85,7 +85,9 @@ impl Gallery {
             tooltip("Toggle theme", button)
         });
         let menu = move || {
-            let ask = MenuItem::new("Command palette").keys("Ctrl-K").on_select(move || asking.set(true));
+            let ask = MenuItem::new("Command palette")
+                .keys(key_label("ctrl-k"))
+                .on_select(move || asking.set(true));
             vec![ask, MenuItem::separator(), MenuItem::new("About Quadra")]
         };
         let head = titlebar("Quadra Gallery").menu(menu).control(div().grow(1.0)).control(toggle);
@@ -114,13 +116,13 @@ impl Gallery {
         let search = status_button(icons::SEARCH, "Commands", false).on_click(move || asking.set(true));
         let status = statusbar()
             .left(tooltip("Pages", pages))
-            .left(tooltip("Commands", search).keys("Ctrl-K"))
+            .left(tooltip("Commands", search).keys(key_label("ctrl-k")))
             .left(status_divider())
             .left(status_label_sized(Status::Running, "Ready", 12.0))
             .left(status_item(Some(icons::LAYERS), move || title().to_string()))
             .right(status_item(None, format!("{} pages", PAGES.len())))
             .right(status_item(Some(icons::PALETTE), move || format!("{} \u{B7} compact", name())))
-            .right(status_item(Some(icons::COMMAND), "Ctrl-K"));
+            .right(status_item(Some(icons::COMMAND), key_label("ctrl-k")));
         let palette = command_palette(asking, move || self.commands());
         let all = quadra_design::root().on_action::<OpenPalette>(move |_| asking.set(true));
         let size = use_context::<Signal<TextSize>>(); // none in a test without an app

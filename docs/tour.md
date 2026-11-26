@@ -43,8 +43,8 @@ example has a menu). The semantic tree is in (`quadra-a11y`; `quadra-tree/src/se
 `.role(..)`, `.label(..)`, the state setters; the harness finds controls with `get_by_role`
 and the like and drives them with semantic actions: prefer these in new tests). The bridge
 to assistive technology is in (`PlatformEvent::SemanticsWanted` and `Semantic`,
-`PlatformWindow::update_semantics`; `quadra-native-win/src/a11y.rs` with the adapter of
-`accesskit`; `tests/access.rs` reads a hidden window through UI Automation). The adapter
+`PlatformWindow::update_semantics`; `quadra_a11y::bridge` is the tree as `accesskit` takes it,
+`quadra-native-win/src/a11y.rs` and `quadra-native-mac/src/appkit/access.rs` hold its adapters; `tests/access.rs` reads a hidden window through UI Automation). The adapter
 panics on an update that is not well formed (specs/12 lists the rules): a change to what the
 tree tells a listener goes through `semantics_changed`, and `quadra_a11y::Mirror` in the
 random test is what catches a missed case. Lists with rows of different heights are in

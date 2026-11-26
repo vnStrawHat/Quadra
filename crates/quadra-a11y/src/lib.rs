@@ -3,6 +3,10 @@
 //! way.
 //!
 //! This crate has no OS code: the bridge to an operating system is in its native crate.
+//! What the tree is to `accesskit`, whose adapters those crates use, is [`bridge`].
+
+#[cfg(feature = "accesskit")]
+pub mod bridge;
 
 use std::collections::HashMap;
 use std::fmt::Write;

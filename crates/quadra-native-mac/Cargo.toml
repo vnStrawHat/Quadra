@@ -12,11 +12,14 @@ publish.workspace = true
 
 # What only macOS builds: all of the crate (specs/23).
 [target.'cfg(target_os = "macos")'.dependencies]
-quadra-a11y = { path = "../quadra-a11y" }
+quadra-a11y = { path = "../quadra-a11y", features = ["accesskit"] }
 quadra-platform = { path = "../quadra-platform" }
 quadra-prim = { path = "../quadra-prim" }
 quadra-render = { path = "../quadra-render" }
 quadra-text = { path = "../quadra-text" }
+# The bridge to the system's accessibility (specs/01, R11).
+accesskit = "0.25"
+accesskit_macos = "0.27"
 objc2 = "0.6.5"
 objc2-foundation = { version = "0.3.2", default-features = false, features = [
     "std",
@@ -119,6 +122,10 @@ quadra-view = { path = "../quadra-view" }
 # of the platform has a `main` of its own.
 [[test]]
 name = "window"
+harness = false
+
+[[test]]
+name = "access"
 harness = false
 
 # Explicitly not inheriting the workspace lints (see above).

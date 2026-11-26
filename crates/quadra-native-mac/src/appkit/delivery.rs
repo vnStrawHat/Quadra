@@ -20,6 +20,13 @@ impl Shared {
         self.drain();
     }
 
+    /// Hands something to the handler when the loop next turns: for what is asked while
+    /// something the handler's answer may reach is in use.
+    pub fn later(&self, delivery: Delivery) {
+        self.queue.borrow_mut().push_back(delivery);
+        super::turn();
+    }
+
     pub(crate) fn drain(&self) {
         let Some(mut handler) = self.handler.get() else { return };
         if self.busy.replace(true) {

@@ -10,5 +10,10 @@ publish.workspace = true
 [lints]
 workspace = true
 
+[features]
+# The tree as `accesskit` takes it (`bridge`): for the native crates (specs/01, R11).
+accesskit = ["dep:accesskit"]
+
 [dependencies]
 quadra-prim = { path = "../quadra-prim" }
+accesskit = { version = "0.25", optional = true }

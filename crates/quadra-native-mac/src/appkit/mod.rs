@@ -1,6 +1,7 @@
 //! The AppKit platform (specs/10; specs/23): the loop, timers, wakes and windows. All of it
 //! lives on the main thread, as AppKit does.
 
+mod access;
 mod delivery;
 mod drops;
 mod input;
@@ -187,6 +188,7 @@ impl Platform for MacPlatform {
         app.finishLaunching();
         s.drain(); // what was queued before the loop had a handler
         while !s.quitting.get() {
+            s.drain(); // what was put off until the loop turned
             s.frames();
             let until = match s.sleep() {
                 None => NSDate::distantFuture(),

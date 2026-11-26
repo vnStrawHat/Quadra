@@ -1,10 +1,10 @@
-//! The text of an input for UI Automation: runs of it, a line each when the input says where
+//! The text of an input for a reader: runs of it, a line each when the input says where
 //! its characters are, which its caret, its selection and the bounds of a range are places in.
 
 use std::collections::HashMap;
 
+use crate::{Role, SemanticNode};
 use accesskit::{Node, NodeId, TextPosition, TextSelection};
-use quadra_a11y::{Role, SemanticNode};
 
 use super::rect;
 
@@ -12,7 +12,7 @@ use super::rect;
 const MOST: usize = 2048;
 
 /// What a run is, by its id: the input it is of, and its first character in the value.
-pub(super) type Runs = HashMap<u64, (u64, usize)>;
+pub type Runs = HashMap<u64, (u64, usize)>;
 
 /// The run `k` of an input: the input's id with the top bit set and `k` above the low bits
 /// of its generation, which no node of a tree has (two nodes alive at once have other
@@ -91,7 +91,7 @@ pub(super) fn of(runs: &Runs, node: NodeId, index: usize) -> (u64, usize) {
 
 #[cfg(test)]
 mod tests {
-    use quadra_a11y::{Semantics, TextLine};
+    use crate::{Semantics, TextLine};
     use quadra_prim::Rect;
 
     use super::*;

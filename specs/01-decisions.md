@@ -100,8 +100,9 @@ implementation described by specs 00–14 of the V repository.
 - **Choice**: nodes describe themselves as semantic nodes in Quadra's own tree
   (`quadra-a11y`); updates are sent incrementally and only while assistive technology listens;
   actions arrive as semantic actions. Tests find and drive controls through that same tree,
-  headless, with no desktop session. The bridge to the OS is `accesskit` with its Windows
-  adapter, used only by the native crate (12-a11y-testing).
+  headless, with no desktop session. The bridge to the OS is `accesskit` with its adapters
+  for Windows and macOS, used only by the native crates; what the tree is to `accesskit` is
+  one module, `quadra_a11y::bridge`, behind a feature those crates take (12-a11y-testing).
 - **Rationale**: the V design sent the whole tree after each prepaint and performed every action
   as a mouse click at the node's centre. One tree for both uses keeps accessibility tested by
   every test. The OS protocol itself (UI Automation providers, their patterns and events) is
@@ -109,7 +110,7 @@ implementation described by specs 00–14 of the V repository.
   adapters for the other desktop systems.
 - **Rejected**: an own provider, as in the V code (about 1,100 lines of COM that covered the
   basic patterns).
-- **Reversal cost**: low; only `quadra-native-win` names the crate.
+- **Reversal cost**: low; only the native crates and that one module name the crate.
 
 ## R12. Windowing: own Win32 layer; OS couplings live in the per-OS native crate
 - **Choice**: the platform and renderer traits name no OS concept. Where the two must know each
@@ -143,7 +144,7 @@ implementation described by specs 00–14 of the V repository.
   | Crate | For | Behind |
   |---|---|---|
   | `windows` | Win32, D3D11, DXGI, DirectWrite, the system image codecs | `quadra-native-win`, `quadra-shell` |
-  | `accesskit`, `accesskit_windows` | The accessibility bridge to the OS (R11) | `quadra-native-win` |
+  | `accesskit`, `accesskit_windows`, `accesskit_macos` | The accessibility bridge to the OS (R11). The macOS adapter is written on the `objc2` family of the version before the one Quadra uses (0.5 beside 0.6): on macOS both are built, and the adapter is handed the view as a pointer | `quadra-native-win`, `quadra-native-mac`, `quadra-a11y` (its feature `accesskit`) |
   | `objc2`, `objc2-foundation`, `objc2-core-foundation`, `objc2-core-graphics`, `objc2-core-text`, `objc2-metal`, `objc2-app-kit`, `objc2-quartz-core`, `objc2-image-io` | Apple's frameworks, as `windows` is Win32: AppKit, Metal, Core Text, Image I/O and what they stand on (23). Generated from the system's headers, no C built; taken for macOS alone, with the features used and no more (all of `objc2-metal`, whose parts name each other) | `quadra-native-mac` |
   | `serde_json` (with `serde`, no derive) | Reading and writing themes, settings and keymaps; reading what GitHub answers of a release (22) | `quadra-app`, `quadra-design` (theme files), `quadra-updater` |
   | `oneterm-vt` | The terminal engine: VT parser, grid and scrollback, reflow, selection, damage, key and mouse encoders, the pseudo console. The user's own crate, pinned by tag (v0.4.2); it replaces the engine the V tree wrote (behaviour/17). Its tree: `bitflags`, `log`, `memchr`, `rustc-hash`, `unicode-segmentation`, `unicode-width`, with `kitty-graphics` the decoders `png` and `miniz_oxide`, and with `pty` `polling` and `windows-sys`. Removing it costs the terminal | `quadra-term` (`kitty-graphics`; `pty` under its feature of that name) |

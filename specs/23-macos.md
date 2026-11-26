@@ -219,9 +219,12 @@ renderer and Core Text.
   app decides (15, "Closing"). No item takes a key an app may want for itself: closing with
   Command-W is the app's binding. Its titles are in English.
   The code editor's keys follow (09).
+- **Readers** (12, "Accessibility"): the window's semantic tree is told to the system's
+  accessibility by the adapter of `accesskit` for macOS (`appkit/access.rs`), which gives
+  the view a class of its own over the view's before the view is in a window. Tested by
+  asking the view what a reader asks (`tests/access.rs`); VoiceOver itself is tried by hand.
 - **Not yet**: an app's own menus in the menu
-  bar, and the bar in the app's language; the
-  semantic tree for readers (`update_semantics`); the system's
+  bar, and the bar in the app's language; the system's
   three buttons at the middle of a title bar taller than the system's, and their room given
   back while the window fills the screen; a placement is the window's frame in points from
   the bottom left of the first display, not yet in the device pixels the trait says.

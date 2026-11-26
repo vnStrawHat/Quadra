@@ -47,7 +47,10 @@ semantic children attach to the nearest semantic ancestor.
 ## Accessibility
 
 - `quadra-a11y` defines the semantic tree, its updates and the mirror. It has no OS code and
-  no dependency, so everything in this spec runs headless, without a desktop session.
+  no dependency, so everything in this spec runs headless, without a desktop session. With
+  its feature `accesskit`, which the native crates take, it has one more module (`bridge`):
+  an update as `accesskit` takes it, and what an adapter asks as a semantic action, the
+  same for every system's adapter.
 - **The bridge is the window** (10): the platform reports `SemanticsWanted` when assistive
   technology first asks for a window's tree; from then on the app gives the window what
   `take_semantic_update` returns, with `PlatformWindow::update_semantics`; what a reader asks
@@ -62,6 +65,12 @@ semantic children attach to the nearest semantic ancestor.
   `test_id` is the automation id; what can be clicked is told by its role. Requests reach the
   adapter on a thread of its choosing: they are queued and the window posted a message, so
   the app sees them on the UI thread like any event.
+- On macOS (23) the adapter answers for the window's view what the system's accessibility
+  asks a view (its children, the element with the focus, the element at a point). It is
+  told when the window gets and loses the keys. It asks on the main thread with its own
+  tree in use, so what it asks (the tree, the first time; an action) is given to the app
+  when the loop next turns. Its test (`tests/access.rs`) asks the view of a window that is
+  not shown what a reader would, presses a button and reads a checkbox before and after.
 - A test in the native run reads a window that is never shown through UI Automation itself,
   from a second thread, as a screen reader does: it finds controls by automation id, reads
   name, control type, bounds and toggle state, invokes and toggles, and sees the new state.

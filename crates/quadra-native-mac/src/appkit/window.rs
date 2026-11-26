@@ -20,6 +20,7 @@ use quadra_platform::{
 use quadra_prim::{Rect, Size};
 
 use super::Shared;
+use super::access::Access;
 use super::delivery::Delivery;
 use super::look;
 use super::view::View;
@@ -55,13 +56,20 @@ impl State {
             shared.deliver(Delivery::Event(self.id, event));
         }
     }
+
+    /// The same when the loop next turns (`Shared::later`).
+    pub fn send_later(&self, event: PlatformEvent) {
+        if let Some(shared) = self.shared.upgrade() {
+            shared.later(Delivery::Event(self.id, event));
+        }
+    }
 }
 
 define_class!(
     // SAFETY: `NSObject` asks nothing of a subclass, and the class has no `Drop`.
     #[unsafe(super = NSObject)]
     #[thread_kind = MainThreadOnly]
-    #[ivars = Rc<State>]
+    #[ivars = (Rc<State>, Rc<Access>)]
     struct Delegate;
 
     unsafe impl NSObjectProtocol for Delegate {}
@@ -70,18 +78,20 @@ define_class!(
         /// The user asked to close the window: the app decides, and closes it by dropping it.
         #[unsafe(method(windowShouldClose:))]
         fn should_close(&self, _window: &NSWindow) -> bool {
-            self.ivars().send(PlatformEvent::CloseRequested);
+            self.ivars().0.send(PlatformEvent::CloseRequested);
             false
         }
 
         #[unsafe(method(windowDidBecomeKey:))]
         fn became_key(&self, _notification: &NSNotification) {
-            self.ivars().send(PlatformEvent::Focus(true));
+            self.ivars().1.focused(true);
+            self.ivars().0.send(PlatformEvent::Focus(true));
         }
 
         #[unsafe(method(windowDidResignKey:))]
         fn resigned_key(&self, _notification: &NSNotification) {
-            self.ivars().send(PlatformEvent::Focus(false));
+            self.ivars().1.focused(false);
+            self.ivars().0.send(PlatformEvent::Focus(false));
         }
     }
 );
@@ -90,6 +100,7 @@ pub(crate) struct MacWindow {
     state: Rc<State>,
     window: Retained<NSWindow>,
     view: Retained<View>,
+    access: Rc<Access>,
     /// A window keeps no hold on its delegate: this does.
     _delegate: Retained<Delegate>,
 }
@@ -145,9 +156,11 @@ impl MacWindow {
             dragging: Cell::new(false),
         });
         let view = View::new(mtm, state.clone(), content);
+        // Before the view is in a window (`Access::new`).
+        let access = Rc::new(Access::new(&view, &state));
         window.setContentView(Some(&view));
         window.makeFirstResponder(Some(&view));
-        let delegate = Delegate::alloc(mtm).set_ivars(state.clone());
+        let delegate = Delegate::alloc(mtm).set_ivars((state.clone(), access.clone()));
         // SAFETY: `NSObject`'s initializer, of an object whose instance variables are set.
         let delegate: Retained<Delegate> = unsafe { msg_send![super(delegate), init] };
         window.setDelegate(Some(ProtocolObject::from_ref(&*delegate)));
@@ -170,7 +183,7 @@ impl MacWindow {
             NSApplication::sharedApplication(mtm).activate();
         }
         shared.windows.borrow_mut().push(Rc::downgrade(&state));
-        MacWindow { state, window, view, _delegate: delegate }
+        MacWindow { state, window, view, access, _delegate: delegate }
     }
 }
 
@@ -222,8 +235,9 @@ impl PlatformWindow for MacWindow {
         self.view.text_input(caret);
     }
 
-    // Not yet (specs/23, "The platform"): readers.
-    fn update_semantics(&self, _update: &TreeUpdate) {}
+    fn update_semantics(&self, update: &TreeUpdate) {
+        self.access.update(update, update.scale.unwrap_or(self.scale()));
+    }
 
     fn minimize(&self) {
         self.window.miniaturize(None);

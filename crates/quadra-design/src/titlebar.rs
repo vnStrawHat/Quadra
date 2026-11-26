@@ -1,13 +1,14 @@
 //! The title bar of a window with its own frame (specs/design, "Title bar"): the bar
 //! the window is dragged by, with the app's menu and title at its left, the app's controls,
-//! and the buttons that minimize, maximize and close at its right.
+//! and the buttons that minimize, maximize and close at its right, where the system does
+//! not draw them itself (macOS does, at the left: the bar leaves them their room).
 
 use std::rc::Rc;
 
 use quadra_layout::{Align, Justify};
-use quadra_platform::HitRegion;
+use quadra_platform::{HitRegion, WindowControls};
 use quadra_prim::Color;
-use quadra_reactive::signal;
+use quadra_reactive::{signal, use_context};
 use quadra_tree::{NodeId, Role};
 use quadra_view::{
     AnyView, Div, IntoProp, MountCx, NodeRef, Prop, View, by_text, div, dynamic, row, text, window,
@@ -103,6 +104,11 @@ impl View for Titlebar {
         let bar = bar.bg(token::CHROME).border_bottom(1.0).border_color(token::LINE);
         let bar = bar.text_size(size::TEXT_SM.size).line_height(size::TEXT_SM.line_height());
         let mut bar = bar.window_region(HitRegion::Caption);
+        // What opened the window says who draws its buttons; a bar in no window draws them.
+        let controls = use_context::<WindowControls>().unwrap_or(WindowControls::App);
+        if let WindowControls::System { leading } = controls {
+            bar = bar.child(div().shrink(0.0).width(leading));
+        }
         if let Some(items) = self.menu {
             let (open, opener) = (signal(false), NodeRef::new());
             let button =
@@ -127,6 +133,9 @@ impl View for Titlebar {
         }
         bar = bar
             .child(row().align_items(Align::Center).gap(token::SPACE_XS).grow(1.0).children(self.controls));
+        if controls != WindowControls::App {
+            return bar.mount(cx);
+        }
 
         // The glyphs of the system's own caption buttons, where it has a face of them.
         let families = cx.tree.fonts().borrow_mut().text.backend().families();

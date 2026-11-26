@@ -8,14 +8,14 @@ use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{DefinedClass, MainThreadOnly, define_class, msg_send};
 use objc2_app_kit::{
-    NSApplication, NSBackingStoreType, NSCursor, NSScreen, NSWindow, NSWindowDelegate, NSWindowStyleMask,
-    NSWindowTitleVisibility,
+    NSApplication, NSBackingStoreType, NSCursor, NSScreen, NSWindow, NSWindowButton, NSWindowDelegate,
+    NSWindowStyleMask, NSWindowTitleVisibility,
 };
 use objc2_foundation::{NSNotification, NSObject, NSObjectProtocol, NSPoint, NSRect, NSSize, NSString};
 use quadra_a11y::TreeUpdate;
 use quadra_platform::{
-    Cursor, Placement, PlatformEvent, PlatformWindow, WindowHandle, WindowId, WindowOptions, at_least,
-    fit_size,
+    Cursor, Placement, PlatformEvent, PlatformWindow, WindowControls, WindowHandle, WindowId, WindowOptions,
+    at_least, fit_size,
 };
 use quadra_prim::{Rect, Size};
 
@@ -237,6 +237,19 @@ impl PlatformWindow for MacWindow {
 
     fn is_maximized(&self) -> bool {
         self.window.isZoomed()
+    }
+
+    /// The system's three buttons stand over the content's left end: as far as the zoom
+    /// button reaches, and as much again as there is before the close button.
+    fn controls(&self) -> WindowControls {
+        let frame = |which| self.window.standardWindowButton(which).map(|button| button.frame());
+        match (frame(NSWindowButton::CloseButton), frame(NSWindowButton::ZoomButton)) {
+            (Some(close), Some(zoom)) => {
+                let leading = zoom.origin.x + zoom.size.width + close.origin.x;
+                WindowControls::System { leading: leading as f32 }
+            }
+            _ => WindowControls::of_system(),
+        }
     }
 
     /// The window's frame as AppKit keeps it: in points, from the bottom left of the

@@ -28,7 +28,7 @@ mod mac {
     use quadra_native_mac::{MacPlatform, MetalRenderer};
     use quadra_platform::{
         Cursor, Key, Mods, MouseButton, Platform, PlatformEvent, PlatformHandler, PlatformWindow,
-        PointerKind, TimerId, WindowHandle, WindowId, WindowOptions,
+        PointerKind, TimerId, WindowControls, WindowHandle, WindowId, WindowOptions,
     };
     use quadra_prim::{Color, Point, Rect, Size};
     use quadra_render::{Clip, DeviceSize, Quad, Renderer, Scene, SurfaceTarget};
@@ -170,6 +170,12 @@ mod mac {
             platform.open_window(&WindowOptions::new("Quadra test").size(320.0, 200.0).hidden()).unwrap();
         assert_eq!(window.size(), Size::new(320.0, 200.0));
         assert!(window.scale() >= 1.0);
+        // The system's three buttons, and the room a title bar leaves them.
+        let controls = window.controls();
+        assert!(
+            matches!(controls, WindowControls::System { leading } if (50.0..=120.0).contains(&leading)),
+            "{controls:?}"
+        );
         assert!(platform.utc_offset(0).abs() <= 14 * 3600);
         let looks = platform.appearance();
         assert!(looks.accent.is_some() && looks.text_scale == 1.0, "{looks:?}");

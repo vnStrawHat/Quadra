@@ -13,6 +13,10 @@ font; close hovers `#E81120`. `.title_size(16)` makes the title a window caption
 size, 12 from the left edge (a settings window: 34 tall). An app whose title bar holds its
 tabs or a search field makes it 38 tall so that 28 px controls have 5 above and below.
 
+On macOS the system draws the window's three buttons itself, at the left: the bar leaves
+them their room (as wide as the system says, 78 where it does not), begins after it, and has
+no caption buttons at its right, so the app's controls reach the edge.
+
 ## Toolbar and breadcrumbs
 
 45 tall on `canvas`, 8 at its ends, its buttons 22 px and 4 apart. Breadcrumbs are in the mono

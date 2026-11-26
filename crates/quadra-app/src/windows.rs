@@ -72,8 +72,10 @@ impl<R: Renderer> App<R> {
         self.follow(&mut tree, &scope);
         let id = window.id();
         let windows = Windows { asked: self.waiting.0.clone(), parent: id };
+        let controls = window.controls();
         scope.run(|| {
             provide(windows);
+            provide(controls);
             mount_with(&mut tree, view)
         });
         window.request_frame();

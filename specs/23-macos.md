@@ -181,7 +181,9 @@ renderer and Core Text.
   (`viewDidChangeEffectiveAppearance`). The system's own colours and a size of text are not
   said: macOS has no contrast themes, and no text size for all apps.
 - **A window with its own frame** has the content under a transparent title bar, with the
-  system's three buttons over it. A press where the app says its title bar is
+  system's three buttons over it: the window says where (`controls`: as far as the zoom
+  button reaches and as much again as is before the close button), and the kit's title bar
+  leaves them that room and draws no buttons of its own (10, 13). A press where the app says its title bar is
   (`hit_test`: `Caption`) is the system's: the window is dragged by it
   (`performWindowDragWithEvent`), and zoomed by a second press. `Maximize` is the app's
   own, as the system shows nothing over it. Never run yet: the test's window is not shown.
@@ -203,8 +205,8 @@ renderer and Core Text.
   key bindings say `ctrl`; whether a binding names a "primary" modifier, or the keymap is
   another one on a Mac, is a decision of the keymap (09), not taken yet.
 - **Not yet**: the semantic tree for readers (`update_semantics`); drops from other
-  programs; where the system's three buttons are, for a title bar of the kit to leave them
-  room; a placement is the window's frame in points from the bottom
+  programs; the system's three buttons at the middle of a title bar taller than the
+  system's, and their room given back while the window fills the screen; a placement is the window's frame in points from the bottom
   left of the first display, not yet in the device pixels the trait says; the menu bar.
 
 Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:
@@ -221,10 +223,9 @@ a Mac Metal, Core Text and Image I/O, with the headless platform, as on Windows.
 job draws every page of the dark theme after the tests (`tools/shots.sh dark`): a page that
 does not draw fails the job. The pictures are kept with the run for fourteen days
 (`gallery-dark-macos`, for who is signed in to GitHub), and the run's notice says how many
-there are. They are not compared with the Windows ones yet. A commit whose message has a
-line `ci-show: page page ..` is shown those pictures, made small, as notices of the run,
-which `tools/ci_mac.sh` writes to `.tmp/ci/`: the way to look at a page drawn on a Mac from
-a machine that is none.
+there are. They are not compared with the Windows ones yet. `tools/ci_mac.sh` (through
+`gh`, signed in) waits for the job, says what it did and puts the pictures in
+`.tmp/ci/mac-dark`: the way to look at a page drawn on a Mac from a machine that is none.
 
 ## Milestones
 

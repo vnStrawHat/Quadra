@@ -31,6 +31,7 @@ pub trait PlatformWindow {                       // dropping it closes the windo
     fn set_text_input(&self, caret: Option<Rect>);   // text is typed there, or nowhere
     fn update_semantics(&self, update: &TreeUpdate); // for assistive technology (12)
     fn minimize(&self);  fn toggle_maximize(&self);  fn is_maximized(&self) -> bool;
+    fn controls(&self) -> WindowControls;        // who draws the window's buttons
     fn to_front(&self);  // shown again if minimized, and given the keyboard
 }
 
@@ -73,6 +74,12 @@ pub trait PlatformHandler {
   Over `Caption` and `Maximize` the pointer still reaches the app as moves, and a press and
   release on `Maximize` as a press and release: the button shows them and its click is the
   app's to act on. Minimize and close are buttons of the app's like any other.
+  **Who draws the buttons** is the system's to say (`PlatformWindow::controls`):
+  `WindowControls::App` on Windows, where a title bar draws them at its right end;
+  `System { leading }` on macOS, where the system draws its three over the content's left
+  end and a title bar leaves them `leading` logical pixels. The app gives it to the
+  window's views as context; a platform that opens no window of the system's (the headless
+  one) says what the system it is built for does, so pictures drawn on a Mac are a Mac's.
 - **What a view asks of its window.** `quadra_view::window()` gives the window the calling
   view is in: `.minimize()`, `.toggle_maximize()`, `.close()` (as the close button of the
   OS: the app decides), `.set_title(words)` (what the OS shows of it: its frame, the taskbar),

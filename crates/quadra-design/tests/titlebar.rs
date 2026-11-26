@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use quadra_design::{MenuItem, button, dark, titlebar};
-use quadra_platform::HitRegion;
+use quadra_platform::{HitRegion, WindowControls};
 use quadra_prim::Point;
 use quadra_testing::Harness;
 use quadra_tree::{Role, WindowRequest};
@@ -83,4 +83,27 @@ fn the_title_of_a_small_window_is_its_caption() {
     let mut h = page(true);
     let bar = h.get_by_test_id("titlebar").node();
     assert_eq!(h.tree.window_rect(bar).height, 34.0);
+}
+
+#[test]
+fn where_the_system_draws_the_buttons_the_bar_leaves_them_their_room() {
+    let mut h = Harness::new();
+    h.tree.set_theme(Rc::new(dark().theme()));
+    h.tree.set_keymap(Rc::new(quadra_design::keymap()));
+    h.mount(|| {
+        // As a window of macOS says it.
+        quadra_reactive::provide(WindowControls::System { leading: 78.0 });
+        let bar = titlebar("Notes").menu(|| vec![MenuItem::new("Quit")]);
+        quadra_design::root().child(bar).child(div().grow(1.0).child(text("content")))
+    });
+    h.frame();
+    let tree = h.semantics();
+    for name in ["Minimize", "Maximize", "Close"] {
+        assert!(!tree.contains(&format!("Button \"{name}\"")), "{name} is drawn:\n{tree}");
+    }
+    // The menu's button starts after the system's buttons, which are dragged by too.
+    let menu = h.get_by_role(Role::Button, "Menu").node();
+    assert!(h.tree.window_rect(menu).x >= 78.0);
+    assert_eq!(h.tree.window_region_at(Point::new(40.0, 16.0)), HitRegion::Caption);
+    assert_eq!(h.tree.window_region_at(Point::new(780.0, 16.0)), HitRegion::Caption);
 }

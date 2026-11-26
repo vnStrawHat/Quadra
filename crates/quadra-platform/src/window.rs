@@ -125,6 +125,24 @@ pub enum HitRegion {
     Maximize,
 }
 
+/// Who draws the buttons that close, minimize and zoom a window with its own frame.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum WindowControls {
+    /// The app: a title bar draws them at its right end (Windows).
+    App,
+    /// The system, over the content at its left end (macOS): a title bar draws none, and
+    /// leaves `leading` logical pixels empty there, the buttons and the room around them.
+    System { leading: f32 },
+}
+
+impl WindowControls {
+    /// As the system the program is built for has them: for a platform that opens no window
+    /// of the system's.
+    pub const fn of_system() -> WindowControls {
+        if cfg!(target_os = "macos") { WindowControls::System { leading: 78.0 } } else { WindowControls::App }
+    }
+}
+
 /// The shape of the pointer over a window.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Cursor {
@@ -189,6 +207,10 @@ pub trait PlatformWindow {
     /// keyboard, as far as the OS lets this process.
     fn to_front(&self);
     fn is_maximized(&self) -> bool;
+    /// Who draws the buttons of the window, when it has its own frame.
+    fn controls(&self) -> WindowControls {
+        WindowControls::of_system()
+    }
     /// Where the window is now: what [`WindowOptions::placement`] opens it at again.
     fn placement(&self) -> Placement;
 }

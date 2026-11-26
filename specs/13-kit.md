@@ -327,7 +327,9 @@ As built so far:
   minimize, maximize (restore while the window is maximized) and close: 36 px wide, their
   glyphs at 10 px from the system's face of caption glyphs when it has one, drawn icons
   otherwise; close turns `#E81120` under the pointer. They ask the window (`window()`),
-  and are buttons to a reader.
+  and are buttons to a reader. Where the system draws the window's buttons itself
+  (`WindowControls::System`, macOS: 10) the bar draws none and begins with the room they
+  take, by which the window is dragged too.
 - **The bars** (`bars.rs`). `toolbar()` is a box of 45 px on the canvas with a line under
   it, its children 4 px apart. `statusbar().left(view).right(view)` is the strip of 28 px (lower than a title bar)
   at the bottom of a window, in 12 px text, under a `LINE` as the toolbar is over one; in it stand `status_item(icon, words)`,

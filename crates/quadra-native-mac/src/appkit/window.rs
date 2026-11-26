@@ -44,6 +44,8 @@ pub(crate) struct State {
     pub marked: Cell<usize>,
     /// The left button went down with Control held: the press is the right button's.
     pub as_right: Cell<bool>,
+    /// Something the view takes is dragged over it from another program.
+    pub dragging: Cell<bool>,
 }
 
 impl State {
@@ -140,6 +142,7 @@ impl MacWindow {
             caret: Cell::new(None),
             marked: Cell::new(0),
             as_right: Cell::new(false),
+            dragging: Cell::new(false),
         });
         let view = View::new(mtm, state.clone(), content);
         window.setContentView(Some(&view));

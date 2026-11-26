@@ -4,11 +4,11 @@
 use std::rc::Rc;
 
 use objc2::rc::Retained;
-use objc2::runtime::{AnyObject, Sel};
+use objc2::runtime::{AnyObject, ProtocolObject, Sel};
 use objc2::{AnyThread, DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
 use objc2_app_kit::{
-    NSAppearanceCustomization, NSEvent, NSResponder, NSTextInputClient, NSTrackingArea,
-    NSTrackingAreaOptions, NSView,
+    NSAppearanceCustomization, NSDragOperation, NSDraggingInfo, NSEvent, NSResponder, NSTextInputClient,
+    NSTrackingArea, NSTrackingAreaOptions, NSView,
 };
 use objc2_foundation::{
     NSArray, NSAttributedString, NSNotFound, NSObject, NSObjectProtocol, NSPoint, NSRange, NSRect, NSSize,
@@ -165,6 +165,26 @@ define_class!(
             }
         }
 
+        // What another program drags over the view (`drops.rs`).
+        #[unsafe(method(draggingEntered:))]
+        fn dragging_entered(&self, info: &ProtocolObject<dyn NSDraggingInfo>) -> NSDragOperation {
+            self.drag(info, true)
+        }
+
+        #[unsafe(method(draggingUpdated:))]
+        fn dragging_updated(&self, info: &ProtocolObject<dyn NSDraggingInfo>) -> NSDragOperation {
+            self.drag(info, false)
+        }
+
+        #[unsafe(method(draggingExited:))]
+        fn dragging_exited(&self, _info: Option<&ProtocolObject<dyn NSDraggingInfo>>) {
+            self.drag_left();
+        }
+
+        #[unsafe(method(performDragOperation:))]
+        fn perform_drag(&self, info: &ProtocolObject<dyn NSDraggingInfo>) -> bool {
+            self.drop_of(info)
+        }
     }
 
     unsafe impl NSObjectProtocol for View {}
@@ -263,6 +283,7 @@ impl View {
             )
         };
         view.addTrackingArea(&area);
+        view.takes_drops();
         view
     }
 }

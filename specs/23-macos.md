@@ -208,6 +208,10 @@ renderer and Core Text.
   control characters for `SUPER` here, and copies with `CTRL`.
   The keys of text are the Mac's (09, "On a Mac"): Option with an arrow goes by a word,
   Command with one to an end; back and forward are Command with a bracket.
+- **Drops** from other programs (10, "Drops from the OS"): the view takes files and text
+  (`NSPasteboardTypeFileURL`, `NSPasteboardTypeString`), files when there are both, and
+  says a copy is taken wherever it is. What a pasteboard carries is tested on one of the
+  test's own; a drag over a window is tried by hand.
 - **The menu bar** has what a Mac's user finds in every app's, with the keys the system
   keeps for it: the app's own menu (Hide with Command-H, Hide Others, Show All, Quit with
   Command-Q) and Window (Minimize with Command-M, Zoom, and the windows the system lists).
@@ -217,7 +221,7 @@ renderer and Core Text.
   The code editor's keys follow (09).
 - **Not yet**: an app's own menus in the menu
   bar, and the bar in the app's language; the
-  semantic tree for readers (`update_semantics`); drops from other programs; the system's
+  semantic tree for readers (`update_semantics`); the system's
   three buttons at the middle of a title bar taller than the system's, and their room given
   back while the window fills the screen; a placement is the window's frame in points from
   the bottom left of the first display, not yet in the device pixels the trait says.

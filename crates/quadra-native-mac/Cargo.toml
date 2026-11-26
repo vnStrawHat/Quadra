@@ -32,6 +32,7 @@ objc2-foundation = { version = "0.3.2", default-features = false, features = [
     "NSRunLoop",
     "NSString",
     "NSTimeZone",
+    "NSURL",
 ] }
 objc2-app-kit = { version = "0.3.2", default-features = false, features = [
     "std",
@@ -44,12 +45,14 @@ objc2-app-kit = { version = "0.3.2", default-features = false, features = [
     "NSColorSpace",
     "NSControl",
     "NSCursor",
+    "NSDragging",
     "NSEvent",
     "NSMenu",
     "NSMenuItem",
     "NSGraphics",
     "NSGraphicsContext",
     "NSPasteboard",
+    "NSPasteboardItem",
     "NSResponder",
     "NSRunningApplication",
     "NSScreen",

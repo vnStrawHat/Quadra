@@ -1,6 +1,8 @@
 //! Draws the pages of the gallery without a window, to pictures, for design review and for
-//! comparison with the reference pictures (specs/12, "Snapshots"): the software device, the
-//! real text, the headless platform. Nothing shows on the desktop. A page that opens something
+//! comparison with the reference pictures (specs/12, "Snapshots"): the system's renderer
+//! (on Windows its software device, so that a picture does not depend on the machine's GPU;
+//! on a Mac Metal, which has none), the real text, the headless platform. Nothing shows on
+//! the desktop. A page that opens something
 //! is drawn a second time with it open (`<page>-open.png`).
 //!
 //!     tools/cargo.sh run -p quadra-bench-shots -- [out dir] [dark|light] [page ..]
@@ -16,13 +18,16 @@ use std::time::Duration;
 use quadra_app::{App, AppError};
 use quadra_design::{dark, light};
 use quadra_gallery::{Gallery, PAGES};
-use quadra_native_win::{D3d11Renderer, DirectWrite};
+#[cfg(target_os = "macos")]
+use quadra_native_mac::{CoreText as Fonts, ImageIo as Codecs, MetalRenderer as Gpu};
+#[cfg(windows)]
+use quadra_native_win::{D3d11Renderer as Gpu, DirectWrite as Fonts, WicImages as Codecs};
 use quadra_platform::{
     HeadlessPlatform, Key, Mods, MouseButton, Platform, PlatformEvent, PointerKind, WindowId, WindowOptions,
 };
 use quadra_prim::{Color, Point, Size};
 
-type Shots = App<D3d11Renderer>;
+type Shots = App<Gpu>;
 
 /// The size of the window the pages are drawn in, as the reference pictures have it.
 const SIZE: (f32, f32) = (1200.0, 800.0);
@@ -156,9 +161,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(&out)?;
 
     let platform = HeadlessPlatform::new();
-    platform.set_image_decoder(std::sync::Arc::new(quadra_native_win::WicImages));
-    let text = DirectWrite::new().map_err(AppError::Text)?;
-    let app = App::with(Rc::new(platform.clone()), D3d11Renderer::new(true)?, Box::new(text));
+    platform.set_image_decoder(std::sync::Arc::new(Codecs));
+    let text = Fonts::new().map_err(AppError::Text)?;
+    #[cfg(windows)]
+    let gpu = Gpu::new(true)?;
+    #[cfg(target_os = "macos")]
+    let gpu = Gpu::new()?;
+    let app = App::with(Rc::new(platform.clone()), gpu, Box::new(text));
     // `contrast`: a high contrast of black windows and white text (the system's "Night sky").
     let night_sky = quadra_platform::SystemColors {
         window: Color::rgb(0x000000),

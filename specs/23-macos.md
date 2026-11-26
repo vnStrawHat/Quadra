@@ -69,10 +69,10 @@ The user's machine runs Windows; a Mac is not at hand yet.
 `tools/check_mac.sh` names the packages that are not built for macOS; the list is what is
 left of the port, and a milestone ends by taking names off it:
 
-- `quadra-native-win`, and the tools that draw or measure with it (the shots, the comparison
-  bench and its runner, the fire demo): until the native crate of macOS draws (M2).
+- `quadra-native-win`, and the tools that measure with it (the comparison bench and its
+  runner, the fire demo) (M2, M5).
 - The app `markdown`: its `main` asks the shell for the system's services (crash reports, one
-  instance, dialogs) (M3).
+  instance, dialogs) (M3); and the tool that draws its screens.
 - Every package of OneTerm, for good (Goals).
 
 Where Quadra has no native crate at all (not Windows, not macOS), `quadra::App` is an app on
@@ -213,6 +213,15 @@ from another thread), AppKit's events sent to the window from inside the handler
 they arrive as (a press, a key and its text with and without something that takes text,
 what an input method composes and commits, the other appearance, a new size, a request to
 close), a cursor for every shape, and frames drawn into the window's layer.
+
+### The gallery's pages on a Mac
+
+`bench/shots` draws with the renderer, the text and the codecs of the system it runs on: on
+a Mac Metal, Core Text and Image I/O, with the headless platform, as on Windows. The CI's
+job draws every page of the dark theme after the tests (`tools/shots.sh dark`): a page that
+does not draw fails the job. The pictures are kept with the run for fourteen days
+(`gallery-dark-macos`, for who is signed in to GitHub), and the run's notice says how many
+there are. They are not compared with the Windows ones yet.
 
 ## Milestones
 

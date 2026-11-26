@@ -1604,6 +1604,7 @@ dependencies = [
  "quadra-async",
  "quadra-design",
  "quadra-gallery",
+ "quadra-native-mac",
  "quadra-native-win",
  "quadra-platform",
  "quadra-prim",

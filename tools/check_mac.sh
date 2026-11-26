@@ -8,9 +8,9 @@ cd "$(dirname "$0")/.."
 target=aarch64-apple-darwin
 
 # Not on macOS yet; the list is what is left of the port (specs/23, "What is left out"):
-# the Windows native crate and the tools that draw or measure with it (M2), and the app
-# Markdown, whose `main` asks for the shell's services of the system (M3).
-not_yet="quadra-native-win quadra-bench-shots quadra-bench-markdown-shots quadra-bench-compare
+# the Windows native crate and the tools that measure with it (M2), and the app Markdown,
+# whose `main` asks for the shell's services of the system (M3), with the tool that draws it.
+not_yet="quadra-native-win quadra-bench-markdown-shots quadra-bench-compare
 	quadra-bench-runner quadra-bench-doomfire markdown"
 # Never here: OneTerm has moved to its own repository, which ports it (specs/23, Goals).
 not_ours="oneterm-app oneterm-ssh oneterm-vault oneterm-completion oneterm-shots"

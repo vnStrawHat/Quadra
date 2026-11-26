@@ -170,11 +170,12 @@ renderer and Core Text.
   its frame at once. A size is told once: AppKit sets a view's size more often than it
   changes.
 - **The pointer's shape** is a cursor rectangle over all of the view, made again when the
-  app sets another shape. A diagonal resize is AppKit's cursor of a frame's corner (macOS
-  15). AppKit names none for a move, waiting, progress and help, nor for a diagonal resize
-  before 15: those are the ones the system's own apps show, asked for by name, and on a
-  system that has one no more (macOS 26 has none for a move) the open hand for a move and
-  the arrow for the others.
+  app sets another shape. Only the cursors AppKit names are used: a move is the open hand,
+  a diagonal resize is the cursor of a frame's corner (macOS 15; the arrow before it), and
+  waiting, progress and help are the arrow (the system shows its own wheel over an app that
+  does not answer). The ones the system's own apps show without a name are not asked for:
+  macOS 26 says it answers `_moveCursor` and raises an exception when asked for it, so
+  whether one is there cannot be known before it is asked for.
 - **The appearance** is read from AppKit's own: dark or light, more contrast (the user's
   "Increase contrast"), the accent colour. The view tells a change of it
   (`viewDidChangeEffectiveAppearance`). The system's own colours and a size of text are not

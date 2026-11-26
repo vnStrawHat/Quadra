@@ -137,7 +137,7 @@ mod mac {
         assert!(platform.utc_offset(0).abs() <= 14 * 3600);
         let looks = platform.appearance();
         assert!(looks.accent.is_some() && looks.text_scale == 1.0, "{looks:?}");
-        // Every shape has a cursor, those AppKit does not name among them.
+        // Every shape has a cursor.
         for shape in [
             Cursor::Text,
             Cursor::Pointer,

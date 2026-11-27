@@ -108,9 +108,29 @@ fn about(model: &Model) -> Vec<SettingsGroup> {
         .wide(mark)
         .row("Version", "", text(env!("CARGO_PKG_VERSION")))
         .row("Program", "", text(exe.display().to_string()))
-        .row("Built with", "", text("Quadra, a native UI framework on Direct3D 11 and DirectWrite"));
+        .row("Built with", "", text(BUILT_WITH));
     vec![app, default_app(model, exe)]
 }
+
+/// What draws the app on the system it is built for.
+const BUILT_WITH: &str = if cfg!(target_os = "macos") {
+    "Quadra, a native UI framework on Metal and Core Text"
+} else {
+    "Quadra, a native UI framework on Direct3D 11 and DirectWrite"
+};
+
+/// What Set as default does, which the systems do not let an app do alike.
+const SET_AS_DEFAULT: &str = if cfg!(target_os = "macos") {
+    concat!(
+        "This makes Markdown the app that opens .md and .markdown files. Markdown has to run from ",
+        "its app bundle (Markdown.app), where macOS reads the files it opens."
+    )
+} else {
+    concat!(
+        "Windows lets the user alone choose: this registers Markdown for .md and .markdown, then ",
+        "opens Default apps, where you choose it."
+    )
+};
 
 /// Whether Markdown opens `.md` files, and Set as default.
 fn default_app(model: &Model, exe: PathBuf) -> SettingsGroup {
@@ -145,9 +165,7 @@ fn default_app(model: &Model, exe: PathBuf) -> SettingsGroup {
             }
         }
     });
-    let note = "Windows lets the user alone choose: this registers Markdown for .md and .markdown, \
-                then opens Default apps, where you choose it.";
     SettingsGroup::new("Default app")
-        .row(".md files", note, set)
+        .row(".md files", SET_AS_DEFAULT, set)
         .wide(div().text_color(token::TEXT_2).child(text(says)))
 }

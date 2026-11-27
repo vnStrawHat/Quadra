@@ -8,7 +8,7 @@ use quadra::{
     row, scroll, show, signal, untrack,
 };
 use quadra_code::editor;
-use quadra_design::{split, token};
+use quadra_design::{key_label, split, token};
 use quadra_md::markdown;
 
 use crate::model::{Model, PREVIEW, RAW, SIDE_BY_SIDE};
@@ -101,7 +101,8 @@ fn preview(m: &Model, follow: &Follow) -> impl View + use<> {
 /// What an empty document shows: the logo, and how to start.
 fn empty(m: &Model) -> Div {
     let text = m.text;
-    let words = "Open a file (Ctrl+O), drop one here, or start writing in Raw (Ctrl+1).";
+    let (open, raw) = (key_label("ctrl-o"), key_label("ctrl-1"));
+    let words = format!("Open a file ({open}), drop one here, or start writing in Raw ({raw}).");
     column()
         .align_items(quadra::Align::Center)
         .gap(token::SPACE_XL)

@@ -40,8 +40,8 @@ pub(crate) fn bar(model: &Model, files: &Files) -> impl View + use<> {
         .control(dot)
         .control(div().grow(1.0))
         .control(layout)
-        .control(tooltip("Outline (Ctrl+Shift+O)", outline))
-        .control(tooltip("Open (Ctrl+O)", open))
-        .control(tooltip("Save (Ctrl+S)", save))
-        .control(div().padding_right(token::SPACE_MD).child(tooltip("Settings (Ctrl+,)", settings)))
+        .control(tooltip("Outline", outline).keys("ctrl-shift-o"))
+        .control(tooltip("Open", open).keys("ctrl-o"))
+        .control(tooltip("Save", save).keys("ctrl-s"))
+        .control(div().padding_right(token::SPACE_MD).child(tooltip("Settings", settings).keys("ctrl-,")))
 }

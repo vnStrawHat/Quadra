@@ -46,12 +46,15 @@ const GROUPS: [&[Button]; 4] = [
     ],
 ];
 
+/// A button's key as a keymap writes it.
+fn stroke(key: &str) -> String {
+    key.to_lowercase().replace('+', "-")
+}
+
 /// The keys of the buttons that have them, as a keymap writes them.
 pub(crate) fn keys() -> impl Iterator<Item = (String, Format)> {
-    GROUPS.iter().flat_map(|group| group.iter()).filter(|b| !b.2.is_empty()).map(|&(_, _, key, what)| {
-        let stroke = key.to_lowercase().replace('+', "-");
-        (stroke, what)
-    })
+    let with_keys = GROUPS.iter().flat_map(|group| group.iter()).filter(|b| !b.2.is_empty());
+    with_keys.map(|&(_, _, key, what)| (stroke(key), what))
 }
 
 /// Makes `what` of the editor's selection as one change, then gives it the focus back.
@@ -73,10 +76,10 @@ pub(crate) fn toolbar(m: &Model) -> Div {
             bar = bar.child(quadra_design::vdivider());
         }
         for &(svg, name, key, what) in group.iter() {
-            let tip = if key.is_empty() { name.to_string() } else { format!("{name} ({key})") };
             let m = m.clone();
-            bar = bar
-                .child(tooltip(tip, icon_button(svg, name).size(Size::Md).on_click(move || apply(&m, what))));
+            let tip = tooltip(name, icon_button(svg, name).size(Size::Md).on_click(move || apply(&m, what)));
+            // The key is said as the system writes keys.
+            bar = bar.child(if key.is_empty() { tip } else { tip.keys(stroke(key)) });
         }
     }
     bar

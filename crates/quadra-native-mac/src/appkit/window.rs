@@ -48,6 +48,9 @@ pub(crate) struct State {
     pub as_right: Cell<bool>,
     /// Something the view takes is dragged over it from another program.
     pub dragging: Cell<bool>,
+    /// The window, and how tall the app's title bar was last found to be (`buttons.rs`).
+    pub window: objc2::rc::Weak<NSWindow>,
+    pub bar: Cell<f32>,
 }
 
 impl State {
@@ -172,6 +175,8 @@ impl MacWindow {
             marked: Cell::new(0),
             as_right: Cell::new(false),
             dragging: Cell::new(false),
+            window: objc2::rc::Weak::from_retained(&window),
+            bar: Cell::new(0.0),
         });
         let view = View::new(mtm, state.clone(), content);
         // Before the view is in a window (`Access::new`).

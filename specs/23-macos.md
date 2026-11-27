@@ -68,7 +68,11 @@ The user's machine runs Windows; a Mac is not at hand yet.
   file, asks it for a second file while it runs and asks it to quit, and keeps pictures of
   the whole screen with the run (`tools/window_mac.sh`, in `.tmp/shots/window`): the one
   place the system's three buttons are seen over the app's title bar. A try that fails no
-  job: a runner may capture nothing.
+  job: a runner may capture nothing. It did capture (run 45922708564, 2026-11-27): the
+  window with the system's buttons at the left of the app's bar, a few points above its
+  middle, the app's own menu and Window in the menu bar, the bundle's icon in the Dock; the
+  file opened by `open` shown, the second file a tab of the one process, and the app
+  ended by Quit. The buttons have been put at the bar's middle since.
 
 ## What is left out, for now
 
@@ -229,6 +233,12 @@ renderer and Core Text.
   every scale, so nothing is counted in device pixels. A window opens at a place it is given
   only when a display shows 64 points of it each way (`appkit/place.rs`); a zoomed window
   comes back by its frame.
+- **The buttons** stand at the middle of the app's title bar (`appkit/buttons.rs`). AppKit
+  puts them at the middle of its own bar, which is lower than an app's: after every frame
+  the window asks the handler how far down the point under the close button is caption
+  (the question the system asks of a point; two questions while the height holds), makes
+  the view that holds the system's bar as tall, and puts each button at its middle, again
+  whenever AppKit has put them back. Seen on the runner's screen.
 - **Filling the screen** the window shows no buttons, and says so (`controls` with no
   room): the kit's title bar gives their room back, and takes it again when the window
   leaves the full screen (the delegate tells the handler the size again both times).
@@ -237,10 +247,8 @@ renderer and Core Text.
   the view a class of its own over the view's before the view is in a window. Tested by
   asking the view what a reader asks (`tests/access.rs`); VoiceOver itself is tried by hand.
 - **Not yet**: an app's own menus in the menu
-  bar, and the bar in the app's language; the system's
-  three buttons at the middle of a title bar taller than the system's (they stand where the
-  system puts them, a few points above the middle of the kit's bar: moving them means
-  laying out the system's title bar by hand, which wants a real Mac to look at).
+  bar, and the bar in the app's language; what
+  the user chose a second press on a title bar to do.
 
 Its test (`tests/window.rs`) has a `main` of its own, as AppKit must be on the main thread:
 a real window that is not shown, what the loop gives the handler (timers, a frame, a wake
@@ -297,9 +305,9 @@ updater's app bundle.
 
 ## What a real Mac is asked
 
-The runner shows no window and has no user: what follows is tried by hand, once, on a real
-Mac, and what it finds is fixed there. Until then each is built and tested as far as the
-runner goes, and none is known to work.
+The runner has no user: what follows is tried by hand, once, on a real Mac, and what it
+finds is fixed there. Until then each is built and tested as far as the runner goes, and
+only what its screen showed (above, "What the runner's screen shows") is known to work.
 
 - A window that shows: the gallery (`cargo run -p quadra-gallery`) and Markdown from its
   bundle (`tools/package_mac.sh markdown`, then the Finder). The system's three buttons
@@ -321,7 +329,7 @@ runner goes, and none is known to work.
 
 What the port leaves, and why: an app's own menus in the menu bar (the keys of an Edit
 menu are taken before the view sees them, and what a disabled item does with its key wants
-a Mac to try); the three buttons at the middle of a taller bar; the tray, process usage,
+a Mac to try); the tray, process usage,
 passwords, sealing and fetching and the updater's bundle (only OneTerm asks for them, and
 its repository ports it); a Developer ID signature and notarization (the user's account).
 

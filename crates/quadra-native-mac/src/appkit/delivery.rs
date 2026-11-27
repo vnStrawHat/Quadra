@@ -85,6 +85,7 @@ impl Shared {
         };
         for window in asking {
             self.deliver(Delivery::Frame(window));
+            self.place_buttons(window); // the bar they stand in is laid out now
         }
     }
 }

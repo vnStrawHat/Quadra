@@ -786,6 +786,12 @@ of the window) and the shadow of its level.
 - `menu_button(label, || items)` takes `.icon(body)`, `.variant(..)`, `.size(..)` and
   `.test_id(..)` for its face. `popover_button(label, || content)` is the same button (in
   the default variant) over a popover.
+- A row is one line. In a menu of a width of its own (the searched menu) a label longer
+  than its room is cut with an ellipsis, and so is the detail after it: their boxes shrink,
+  the keys and the 16 px before them never do, and nothing wraps over the rows beside it.
+  `.ellipsis_start()` cuts the label at its start, for a label whose end tells one row from
+  another (`user@host:port`, a path). A menu as wide as its rows shows each whole. To a
+  reader the row's name is the whole label either way.
 - More of the menu. `MenuItem::heading(name)` names the group of rows under it: 24 px,
   muted, never chosen. `.submenu(items)` makes a row one that opens a menu of those rows
   beside itself, against the menu's right edge (its left where only that fits) and never

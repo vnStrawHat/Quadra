@@ -33,6 +33,8 @@ pub struct MenuItem {
     keys: Option<String>,
     /// The keys' text is in the mono face: an address, a number.
     mono: bool,
+    /// A label too long for the menu is cut at its start, not at its end.
+    cut_start: bool,
     checked: Option<bool>,
     disabled: bool,
     danger: bool,
@@ -89,6 +91,12 @@ impl MenuItem {
     /// The text at the right end in the mono face: an address, a size.
     pub fn mono(mut self) -> Self {
         self.mono = true;
+        self
+    }
+
+    /// A label too long for the menu loses its start, not its end: `user@host:port`, a path.
+    pub fn ellipsis_start(mut self) -> Self {
+        self.cut_start = true;
         self
     }
 

@@ -798,6 +798,11 @@ out of the field.
 A select's options may have a detail each (`.details(..)`, 2026-11-26, issue #48), shown after
 the name in the menu and not in the field; a menu row's detail is its description to a reader
 (`DescribedBy` its text).
+A menu's row is one line (2026-11-27, issue #49; `crates/quadra-design/tests/menu_line.rs`): in
+a menu of a width of its own (the searched menu) a long label wrapped over the rows beside it,
+and its keys wrapped too. The label and the detail are cut with an ellipsis, the keys never
+shrink. `text(..).ellipsis_start()` and `MenuItem::ellipsis_start()` cut the start and show
+the end, for `user@host:port` or a path.
 
 ### The move loop keeps drawing (2026-11-22)
 

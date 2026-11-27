@@ -48,14 +48,16 @@ fn face(item: &MenuItem, marks: bool) -> Div {
             _ => face.child(div().width(14.0)),
         },
     };
-    let face = face.child(text(item.label.clone()));
+    // One line, in a box that may shrink: what the menu's width has no room for is cut.
+    let label = text(item.label.clone());
+    let label = if item.cut_start { label.ellipsis_start() } else { label.ellipsis() };
+    let face = face.child(div().min_width(0.0).child(label));
     // The detail is the row's description to a reader, not part of its name.
     let face = match &item.detail {
         Some(words) => {
-            let told = NodeRef::new();
-            let words =
-                div().text_size(12.0).text_color(token::TEXT_2).node_ref(&told).child(text(words.clone()));
-            face.described_by(&told).child(words)
+            let (told, words) = (NodeRef::new(), text(words.clone()).ellipsis());
+            let words = div().min_width(0.0).text_size(12.0).text_color(token::TEXT_2).child(words);
+            face.described_by(&told).child(words.node_ref(&told))
         }
         None => face,
     };
@@ -63,7 +65,8 @@ fn face(item: &MenuItem, marks: bool) -> Div {
     // The shortcut in 12 px; disabled, in the row's colour.
     let face = match &item.keys {
         Some(keys) => {
-            let keys = div().text_size(size::TEXT_SM.size).child(text(keys.clone()));
+            // The keys keep their width: they are never cut, and never wrap.
+            let keys = div().shrink(0.0).text_size(size::TEXT_SM.size).child(text(keys.clone()));
             let keys = if item.disabled { keys } else { keys.text_color(token::TEXT_2) };
             face.child(if item.mono { keys.font_family(crate::fonts::MONO) } else { keys })
         }

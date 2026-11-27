@@ -68,6 +68,9 @@ no controls. Neither has a foot: what is in it acts at once.
   12 px `text_2`.
 - A destructive row (`.danger()`) is `error`. A row may say a few words after its label in
   12 px `text_2` (`.detail(..)`): to a reader the row's description, not part of its name.
+- A row's label and detail are one line each, cut with an ellipsis where the menu's width
+  ends them (at the label's start for a row that asks it); its shortcut is never cut or
+  wrapped.
 - A long menu is capped at half the window or 450 px and scrolls.
 - A searched menu has a head of 32 over its rows (a 12 px search icon in `text_3`, the
   field, a `line` under it), is 360 wide, and Enter does the first row that can be done.

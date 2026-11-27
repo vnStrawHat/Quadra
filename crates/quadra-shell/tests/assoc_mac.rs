@@ -4,6 +4,7 @@
 #![cfg(target_os = "macos")]
 
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
 use quadra_shell::{Associations, FileTypes, MacShell, same_program};
 
@@ -22,6 +23,12 @@ fn a_bundle_is_registered_and_made_the_one_that_opens_its_kinds() {
     };
     MacShell.register(&types).expect("Launch Services reads the bundle");
     assert!(MacShell.choose_default(&types), "the bundle is made the one that opens .md");
-    let opener = MacShell.opener_of(".md").expect("an app opens .md");
-    assert!(same_program(&opener, &types.exe), "{} opens .md, not {}", opener.display(), types.exe.display());
+    // Launch Services may take a moment to answer with what it was just told.
+    let ours = |opener: &Option<PathBuf>| opener.as_deref().is_some_and(|it| same_program(it, &types.exe));
+    let (began, mut opener) = (Instant::now(), MacShell.opener_of(".md"));
+    while !ours(&opener) && began.elapsed() < Duration::from_secs(5) {
+        std::thread::sleep(Duration::from_millis(200));
+        opener = MacShell.opener_of(".md");
+    }
+    assert!(ours(&opener), "{opener:?} opens .md, not {}", types.exe.display());
 }

@@ -280,7 +280,10 @@ The same traits behind the same `install`, by `quadra-shell/src/mac` (23, M3):
 - **The bundle**: `tools/package_mac.sh <app>` on a Mac puts the shipped binary in
   `target/package/<Name>.app` with an `Info.plist` that names it (the identifier
   `io.github.vnstrawhat.<name>`, or `PACKAGE_ID`), its version (the workspace's), the kinds
-  of file it opens (Markdown: `md`, `markdown`) and that it draws at the display's own
+  of file it opens (Markdown: `md`, `markdown`, and the kind by the system's name for it,
+  `net.daringfireball.markdown`, a kind of text, which the bundle says again for a Mac
+  where no other app has: asked which app opens a kind, Launch Services answers among the
+  apps that name the kind, not its extensions alone) and that it draws at the display's own
   scale; the icon is made of the app's `.ico` by the system's `sips` when it can; the bundle
   is signed ad hoc, which runs on the Mac that made it. Not yet: a Developer ID signature
   and notarization, which an app that ships to others needs.

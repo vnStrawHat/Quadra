@@ -11,9 +11,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 [ "$(uname)" = Darwin ] || { echo "package_mac: a bundle is made on a Mac" >&2; exit 1; }
 name="${1:?usage: tools/package_mac.sh <example|markdown>}"
-kinds="" icon=""
+kinds="" icon="" kind_id=""
 case "$name" in
-markdown) crate=markdown bin=markdown title=Markdown kinds="md markdown" icon=apps/markdown/assets/logo.ico ;;
+markdown) crate=markdown bin=markdown title=Markdown kinds="md markdown" kind_id=net.daringfireball.markdown
+	icon=apps/markdown/assets/logo.ico
+	;;
 *)
 	[ -d "examples/$name" ] || { echo "package_mac: no examples/$name" >&2; exit 1; }
 	crate="quadra-$name" bin="$name"
@@ -40,12 +42,29 @@ fi
 types=""
 if [ -n "$kinds" ]; then
 	extensions=$(for kind in $kinds; do printf '<string>%s</string>' "$kind"; done)
+	# The kind by the system's name for it too, a kind of text: asked which app opens a kind,
+	# Launch Services answers among the apps that name the kind, not its extensions alone.
+	# The kind is said again (imported) for a Mac where no other app has said it.
+	named="" imported=""
+	if [ -n "$kind_id" ]; then
+		named="<key>LSItemContentTypes</key><array><string>$kind_id</string></array>"
+		imported="<key>UTImportedTypeDeclarations</key><array><dict>
+			<key>UTTypeIdentifier</key><string>$kind_id</string>
+			<key>UTTypeDescription</key><string>$title document</string>
+			<key>UTTypeConformsTo</key><array><string>public.plain-text</string></array>
+			<key>UTTypeTagSpecification</key><dict>
+				<key>public.filename-extension</key><array>$extensions</array>
+			</dict>
+		</dict></array>"
+	fi
 	types="<key>CFBundleDocumentTypes</key><array><dict>
 		<key>CFBundleTypeName</key><string>$title document</string>
 		<key>CFBundleTypeRole</key><string>Editor</string>
 		<key>LSHandlerRank</key><string>Alternate</string>
 		<key>CFBundleTypeExtensions</key><array>$extensions</array>
-	</dict></array>"
+		$named
+	</dict></array>
+	$imported"
 fi
 cat > "$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

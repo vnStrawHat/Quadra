@@ -7,12 +7,14 @@ use std::sync::{Mutex, PoisonError};
 
 use objc2_foundation::NSURL;
 
-/// The path a file's URL names, in the characters the URL has. The path as the file system
-/// writes it (`to_file_path`) has every accented letter taken apart, which is not the name
-/// the user sees or an app compares.
+/// The path a file's URL names, with its accented letters whole (composed, as text is typed
+/// and compared). The system writes a file's URL as its file system writes names, every
+/// such letter taken apart, and takes either form of a name for the same file.
+// ponytail: a volume that tells the two forms apart (some network shares) would not find a
+// name it keeps taken apart; try the path as given first if one is met.
 pub fn file_path(url: &NSURL) -> Option<PathBuf> {
     let path = url.path().filter(|_| url.isFileURL())?;
-    Some(PathBuf::from(path.to_string()))
+    Some(PathBuf::from(path.precomposedStringWithCanonicalMapping().to_string()))
 }
 
 type Listener = Box<dyn FnMut(Vec<PathBuf>) + Send>;

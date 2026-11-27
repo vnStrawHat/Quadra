@@ -6,6 +6,9 @@ use std::ffi::c_void;
 use std::path::{Path, PathBuf};
 
 use objc2::rc::Retained;
+use objc2::runtime::{AnyObject, NSObjectProtocol, Sel};
+use objc2::{class, msg_send, sel};
+use objc2_app_kit::NSWorkspace;
 use objc2_foundation::{NSBundle, NSString, NSURL, ns_string};
 
 use super::MacShell;
@@ -30,6 +33,39 @@ unsafe extern "C" {
     ) -> *mut NSURL;
     fn LSSetDefaultRoleHandlerForContentType(kind: &NSString, roles: u32, bundle_id: &NSString) -> i32;
     fn LSRegisterURL(bundle: &NSURL, update: u8) -> i32;
+}
+
+// Where the class of a kind of file is (`UTType`, macOS 11).
+#[link(name = "UniformTypeIdentifiers", kind = "framework")]
+unsafe extern "C" {}
+
+/// The workspace's method that makes an app the default, as the function it is: an app's
+/// URL, a kind, and what to call when it is done.
+type MakeDefault = unsafe extern "C-unwind" fn(&NSWorkspace, Sel, &NSURL, &AnyObject, *const c_void);
+
+/// Asks the workspace to make the app in `bundle` the one that opens `kind` (macOS 12 and
+/// later, where the call of Launch Services answers and changes nothing). It is done a
+/// moment later; false where the workspace has no such call.
+fn ask_workspace(bundle: &NSURL, kind: &NSString) -> bool {
+    let workspace = NSWorkspace::sharedWorkspace();
+    let make = sel!(setDefaultApplicationAtURL:toOpenContentType:completionHandler:);
+    if !workspace.respondsToSelector(make) {
+        return false;
+    }
+    // SAFETY: a method of the class that takes a string and gives a kind, or none.
+    let kind: Option<Retained<AnyObject>> = unsafe { msg_send![class!(UTType), typeWithIdentifier: kind] };
+    let Some(kind) = kind else { return false };
+    // The message is sent by the runtime's own function, called as the method's: what to
+    // call when it is done is a block, which is given as none, and a block is what `objc2`
+    // says only with a crate more.
+    // SAFETY: the method takes these three and gives nothing; the workspace answers to it
+    // (asked above), and the objects live through the call.
+    unsafe {
+        let send =
+            std::mem::transmute::<unsafe extern "C-unwind" fn(), MakeDefault>(objc2::ffi::objc_msgSend);
+        send(&workspace, make, bundle, &kind, std::ptr::null());
+    }
+    true
 }
 
 /// The system's name of the kind of file an extension (`.md`) is of.
@@ -75,15 +111,18 @@ impl Associations for MacShell {
         quadra_native_mac::file_path(&*NSBundle::bundleWithURL(&app)?.executableURL()?)
     }
 
-    /// Makes the app the one that opens its kinds: on macOS an app may.
+    /// Makes the app the one that opens its kinds: on macOS an app may. Asked of the
+    /// workspace, and of Launch Services for a macOS before the workspace's call.
     fn choose_default(&self, types: &FileTypes) -> bool {
-        let bundle = bundle_of(&types.exe).and_then(NSURL::from_file_path);
-        let id = bundle.and_then(|url| NSBundle::bundleWithURL(&url)).and_then(|it| it.bundleIdentifier());
-        let Some(id) = id else { return false };
+        let Some(bundle) = bundle_of(&types.exe).and_then(NSURL::from_file_path) else { return false };
+        let Some(id) = NSBundle::bundleWithURL(&bundle).and_then(|it| it.bundleIdentifier()) else {
+            return false;
+        };
         let kinds: Vec<Retained<NSString>> = types.extensions.iter().filter_map(|it| kind_of(it)).collect();
-        // SAFETY: both strings live through each call.
-        let made = |kind: &Retained<NSString>| unsafe {
-            LSSetDefaultRoleHandlerForContentType(kind, ANY_ROLE, &id) == 0
+        let made = |kind: &Retained<NSString>| {
+            // SAFETY: both strings live through the call.
+            let taken = unsafe { LSSetDefaultRoleHandlerForContentType(kind, ANY_ROLE, &id) } == 0;
+            ask_workspace(&bundle, kind) || taken
         };
         !kinds.is_empty() && kinds.iter().all(made)
     }

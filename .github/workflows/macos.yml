@@ -72,6 +72,31 @@ jobs:
           echo "== the app of .md files" | tee -a check_mac.log
           QUADRA_BUNDLE="$PWD/target/package/Markdown.app" bash tools/cargo.sh test -p quadra-shell --test assoc_mac 2>&1 | tee -a check_mac.log
 
+      # Asked of the runner's macOS once (specs/16, "On macOS"): what makes an app the default
+      # for a kind of file there, and when. It fails no job, and goes when it has answered.
+      - name: What makes an app the default, asked of the system
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          cat > "$RUNNER_TEMP/assoc.swift" <<'SWIFT'
+          import AppKit
+          import UniformTypeIdentifiers
+          let app = URL(fileURLWithPath: CommandLine.arguments[1])
+          let kind = UTType(filenameExtension: "md")!
+          let ws = NSWorkspace.shared
+          func now() -> String { ws.urlForApplication(toOpen: kind)?.path ?? "none" }
+          print("assoc: the kind of .md is \(kind.identifier); its app is \(now())")
+          let done = DispatchSemaphore(value: 0)
+          ws.setDefaultApplication(at: app, toOpen: kind) { error in
+              print("assoc: the workspace said \(String(describing: error))")
+              done.signal()
+          }
+          print("assoc: at once its app is \(now())")
+          print("assoc: the wait for the workspace: \(done.wait(timeout: .now() + 20))")
+          print("assoc: then its app is \(now())")
+          SWIFT
+          swift "$RUNNER_TEMP/assoc.swift" "$PWD/target/package/Markdown.app" 2>&1 | tee -a check_mac.log
+
       # The bundle in a real window, as the runner's screen shows it (specs/23, "What a real
       # Mac is asked"): a try that fails no job, as a runner may show or capture nothing.
       - name: Markdown in a real window

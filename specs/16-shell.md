@@ -227,11 +227,13 @@ The same traits behind the same `install`, by `quadra-shell/src/mac` (23, M3):
   `opener_of` asks which app opens the kind an extension is of
   (`UTTypeCreatePreferredIdentifierForTag`, `LSCopyDefaultApplicationURLForContentType`) and
   gives the program its bundle names, so an app compares it with its own as on Windows. On
-  macOS an app may make itself the default: `choose_default` does
-  (`LSSetDefaultRoleHandlerForContentType`, for each of its extensions' kinds), and is false
-  when the system refused or the program is in no bundle. These are Launch Services' calls
-  of C, deprecated since macOS 12 and kept; `NSWorkspace`'s when the oldest macOS served
-  (11) has them.
+  macOS an app may make itself the default: `choose_default` asks, for each of its
+  extensions' kinds, the workspace (`setDefaultApplicationAtURL:toOpenContentType:`, macOS
+  12 and later, which makes the change a moment after) and Launch Services
+  (`LSSetDefaultRoleHandlerForContentType`, for macOS 11: on the runner's macOS 26 it
+  answers that it did and changes nothing). It is false when neither took it or the
+  program is in no bundle. The other calls are Launch Services' calls of C, deprecated
+  since macOS 12 and kept.
 - **The tray** is an item in the menu bar (`NSStatusItem`) with the app's picture (RGBA, at
   18 points) or a copy of the app's icon, and the tooltip. As the menu bar's items do, one
   with a menu opens it when it is clicked, and an item chosen is `TrayEvent::Item`; one

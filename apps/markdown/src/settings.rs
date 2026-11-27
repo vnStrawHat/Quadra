@@ -122,8 +122,8 @@ const BUILT_WITH: &str = if cfg!(target_os = "macos") {
 /// What Set as default does, which the systems do not let an app do alike.
 const SET_AS_DEFAULT: &str = if cfg!(target_os = "macos") {
     concat!(
-        "This asks macOS to make Markdown the app that opens .md and .markdown files; macOS may ask ",
-        "you to confirm. Markdown has to run from its app bundle (Markdown.app)."
+        "This makes Markdown the app that opens .md and .markdown files. Markdown has to run from ",
+        "its app bundle (Markdown.app), where macOS reads the files it opens."
     )
 } else {
     concat!(

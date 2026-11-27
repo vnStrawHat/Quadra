@@ -80,11 +80,10 @@ jobs:
           echo "== Markdown's screens" | tee -a check_mac.log
           bash tools/cargo.sh run -q -p quadra-bench-markdown-shots -- .tmp/shots/markdown 2>&1 | tee -a check_mac.log
 
-      # The bundle asks to be the app that opens its files (specs/16, "On macOS"), of Launch
-      # Services and the workspace, for the runner's user, which nothing but this job uses.
-      # The system lets the user say yes first, and a runner has none: the picture is what
-      # its screen shows then. Last, so that nothing it shows is over the pictures above.
-      - name: Markdown asks to be the app of its files
+      # The bundle made the app that opens its files (specs/16, "On macOS"), for the runner's
+      # user, which nothing but this job uses. After the step that opens the bundle: macOS
+      # makes no app the default that was never opened. The picture is the screen then.
+      - name: Markdown made the app of its files
         run: |
           set -o pipefail
           echo "== the app of .md files" | tee -a check_mac.log

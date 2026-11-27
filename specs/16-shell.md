@@ -227,15 +227,16 @@ The same traits behind the same `install`, by `quadra-shell/src/mac` (23, M3):
   `opener_of` asks which app opens the kind an extension is of
   (`UTTypeCreatePreferredIdentifierForTag`, `LSCopyDefaultApplicationURLForContentType`) and
   gives the program its bundle names, so an app compares it with its own as on Windows. On
-  macOS an app may ask to be the default, and the system lets the user agree first:
-  `choose_default` asks, for each of its extensions' kinds, the workspace
-  (`setDefaultApplicationAtURL:toOpenContentType:`, macOS 12 and later) and Launch Services
-  (`LSSetDefaultRoleHandlerForContentType`, for macOS 11). It is true when the system took
-  the asking, false when it did not or the program is in no bundle; whether the app is the
-  one is `opener_of`'s to say, which an app asks again when its window comes back to the
-  front. Asked of the runner's macOS 26 (run 45935041715): Launch Services' call answers
-  that it did and changes nothing, and the workspace's, asked in Swift too, never says it
-  is done while nobody answers. The other calls are Launch Services' calls of C,
+  macOS an app may make itself the default: `choose_default` asks, for each of its
+  extensions' kinds, the workspace (`setDefaultApplicationAtURL:toOpenContentType:`, macOS
+  12 and later) and Launch Services (`LSSetDefaultRoleHandlerForContentType`, for macOS
+  11). It is true when the system took the asking, false when it did not or the program is
+  in no bundle; whether the app is the one is `opener_of`'s to say. What the runner's
+  macOS 26 showed: asked for a bundle just made and never opened, both calls change
+  nothing (Launch Services' answers that it did; the workspace's, asked in Swift too,
+  never says it is done; run 45935041715); asked after the bundle was opened once, the app
+  is the default at once and the system shows nothing (run 45937090461). An app asks from
+  its own window, so it has been opened. The other calls are Launch Services' calls of C,
   deprecated since macOS 12 and kept.
 - **The tray** is an item in the menu bar (`NSStatusItem`) with the app's picture (RGBA, at
   18 points) or a copy of the app's icon, and the tooltip. As the menu bar's items do, one
@@ -295,9 +296,9 @@ The same traits behind the same `install`, by `quadra-shell/src/mac` (23, M3):
 - **Tests**: the tests of fetching, hashing, sealing, passwords, usage and a process read
   from outside are the same on both systems and run on the CI's Mac. There alone
   (`CI` set) an item is put in the menu bar and taken away (`tests/tray_mac.rs`), and the
-  bundle the job made is registered and asks to be the default for `.md`
-  (`tests/assoc_mac.rs`, `QUADRA_BUNDLE`; what the runner's screen shows then is kept as
-  `default.png`): no test changes a person's menu bar or which app
+  bundle the job made and opened is registered, made the default for `.md` and asked
+  back (`tests/assoc_mac.rs`, `QUADRA_BUNDLE`; what the runner's screen shows then is kept
+  as `default.png`): no test changes a person's menu bar or which app
   opens their files.
 
 ## Packaging

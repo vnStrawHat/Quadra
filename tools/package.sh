@@ -21,7 +21,7 @@ markdown) crate=markdown bin=markdown ;;
 esac
 manifest=$(cygpath -w "$PWD/tools/app.manifest")
 # Only the final crate is linked again with these arguments; its dependencies are built once.
-tools/cargo.sh rustc --profile dist --quiet -p "$crate" --bin "$bin" -- \
+tools/cargo.sh rustc --profile dist -p "$crate" --bin "$bin" -- \
 	-C link-arg=/MANIFEST:EMBED -C "link-arg=/MANIFESTINPUT:$manifest"
 out="${PACKAGE_OUT:-target/package/$name}"
 rm -rf "$out"

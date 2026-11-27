@@ -1,6 +1,6 @@
 //! Reading another process from outside (specs/16, "Process usage"): the test binary is run
 //! again as a child that spins and holds memory, and is read while it waits to be killed.
-#![cfg(windows)]
+#![cfg(any(windows, target_os = "macos"))]
 
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
@@ -44,9 +44,9 @@ fn a_child_is_read_from_outside() {
     let _ = child.kill();
     let _ = child.wait();
     assert!(spun, "the child said it spun");
-    let cpu = cycles.expect("Windows reads the cycles") as f64 / rate;
+    let cpu = cycles.expect("the system reads the cycles") as f64 / rate;
     assert!((0.25..2.0).contains(&cpu), "300 ms of spinning took {cpu} s of the processor");
-    let memory = memory.expect("Windows reads the memory");
+    let memory = memory.expect("the system reads the memory");
     assert!(memory as usize > HELD, "a private working set of {memory} bytes holds {HELD}");
     assert!(!shown, "the child has no window");
 }

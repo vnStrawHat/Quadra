@@ -1,6 +1,6 @@
 //! Fetching and hashing by the OS (specs/16, "Fetching"): a GET against a server of the test
 //! on 127.0.0.1, which sees the headers asked with; SHA-256 by its known answers.
-#![cfg(windows)]
+#![cfg(any(windows, target_os = "macos"))]
 
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;

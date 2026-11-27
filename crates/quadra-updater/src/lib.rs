@@ -133,10 +133,10 @@ impl Updater {
 }
 
 pub use quadra_shell::Network;
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 use quadra_shell::{http_get, sha256};
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 fn http_get(
     _: &str,
     _: &[(&str, &str)],
@@ -145,7 +145,7 @@ fn http_get(
 ) -> Result<u16, String> {
     Err("no HTTP on this system yet".into())
 }
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 fn sha256(_: &[u8]) -> Option<[u8; 32]> {
     None
 }

@@ -22,7 +22,7 @@ pub use instance::single_instance;
 pub use measure::{cycles_per_second, private_memory, process_cycles, window_shown};
 pub use process::shell_process;
 pub use seal::{open, random_bytes, random_key, seal, sha256};
-pub use secret::{derive_key, hash_password, verify_password};
+pub use secret::derive_key;
 pub use usage::process_usage;
 
 use std::path::{Path, PathBuf};

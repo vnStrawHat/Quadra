@@ -64,6 +64,14 @@ jobs:
           echo "== the bundle" | tee -a check_mac.log
           PACKAGE_PROFILE=dev bash tools/package_mac.sh markdown 2>&1 | tee -a check_mac.log
 
+      # The bundle made the app that opens its files (specs/16, "On macOS"): asked of Launch
+      # Services for the runner's user, which nothing but this job uses.
+      - name: Markdown made the app of its files
+        run: |
+          set -o pipefail
+          echo "== the app of .md files" | tee -a check_mac.log
+          QUADRA_BUNDLE="$PWD/target/package/Markdown.app" bash tools/cargo.sh test -p quadra-shell --test assoc_mac 2>&1 | tee -a check_mac.log
+
       # The bundle in a real window, as the runner's screen shows it (specs/23, "What a real
       # Mac is asked"): a try that fails no job, as a runner may show or capture nothing.
       - name: Markdown in a real window

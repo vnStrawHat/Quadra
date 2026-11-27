@@ -8,6 +8,9 @@ mod fake;
 mod files;
 #[cfg(target_os = "macos")]
 mod mac;
+mod net;
+#[cfg(any(windows, target_os = "macos"))]
+mod secret;
 #[cfg(windows)]
 mod win;
 
@@ -54,37 +57,23 @@ pub trait Meter {
     fn usage(&self) -> Option<Usage>;
 }
 #[cfg(target_os = "macos")]
-pub use mac::{MacShell, crash_reports, single_instance};
+use mac as os;
+#[cfg(target_os = "macos")]
+pub use mac::{MacShell, console};
+pub use net::Network;
+#[cfg(any(windows, target_os = "macos"))]
+pub use os::{crash_reports, process_usage, shell_process, single_instance, user_environment};
+#[cfg(any(windows, target_os = "macos"))]
+pub use os::{cycles_per_second, private_memory, process_cycles, window_shown};
+#[cfg(any(windows, target_os = "macos"))]
+pub use os::{derive_key, http_get, open, random_bytes, random_key, seal, sha256};
+#[cfg(any(windows, target_os = "macos"))]
+pub use secret::{hash_password, verify_password};
 #[cfg(windows)]
-pub use win::console;
+use win as os;
 #[cfg(windows)]
-pub use win::shell_process;
-#[cfg(windows)]
-pub use win::{
-    WinShell, crash_reports, hash_password, process_usage, single_instance, user_environment, verify_password,
-};
-#[cfg(windows)]
-pub use win::{cycles_per_second, private_memory, process_cycles, window_shown};
-#[cfg(windows)]
-pub use win::{derive_key, http_get, open, random_bytes, random_key, seal, sha256};
+pub use win::{WinShell, console};
 pub use zeroize::{Zeroize, Zeroizing};
-
-/// How a fetch reaches a server (specs/16, "Fetching").
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Network {
-    /// An HTTP proxy named by hand, `host:port` (an `http://` before it is taken off). None is
-    /// the system's, found as the OS finds it.
-    pub proxy: Option<String>,
-    /// Whether a server's certificate is checked. Off, whoever stands on the way can answer in
-    /// the server's place: for a network that opens TLS on the way, and nothing else.
-    pub verify_tls: bool,
-}
-
-impl Default for Network {
-    fn default() -> Network {
-        Network { proxy: None, verify_tls: true }
-    }
-}
 
 /// What a dialog of files asks: its title, the kinds of file it shows (a name and patterns,
 /// `("Images", "*.png;*.jpg")`), whether several may be chosen, and where it starts.

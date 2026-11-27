@@ -1,10 +1,24 @@
 //! The macOS shell (specs/16; specs/23, M3): AppKit's panels and alert, opening by the
-//! system's `open`, one instance over a socket. What shows something to the user is never
-//! run by a test: those are manual checks.
+//! system's `open`, one instance over a socket, an item in the menu bar, and what the
+//! system's own libraries seal, hash, fetch and measure. What holds the thread until the
+//! user answers is never run by a test: those are manual checks.
 
+mod assoc;
+pub mod console;
+mod crash;
+mod fetch;
 mod instance;
+mod process;
+mod seal;
+mod tray;
+mod usage;
 
+pub use crash::crash_reports;
+pub use fetch::http_get;
 pub use instance::single_instance;
+pub use process::{shell_process, user_environment};
+pub use seal::{derive_key, open, random_bytes, random_key, seal, sha256};
+pub use usage::{cycles_per_second, private_memory, process_cycles, process_usage, window_shown};
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -18,17 +32,14 @@ use objc2_app_kit::{
 use objc2_foundation::{NSArray, NSString, NSURL};
 
 use crate::{
-    Answer, Associations, Dialogs, FileDialog, FileTypes, Message, MessageKind, Meter, Opener, Sound, Sounds,
-    Tray, TrayEvent, TrayIcon, TrayImage, Usage,
+    Answer, Dialogs, FileDialog, Message, MessageKind, Meter, Opener, Sound, Sounds, Tray, TrayEvent,
+    TrayIcon, TrayImage, Usage,
 };
+use tray::MacTray;
 
 /// The shell of macOS. Its dialogs are AppKit's, on the main thread, and hold it until they
 /// are answered.
 pub struct MacShell;
-
-/// Crashes that are no panic: macOS writes a report of each itself, which the user finds in
-/// Console (`~/Library/Logs/DiagnosticReports`). Nothing is written to `folder`.
-pub fn crash_reports(_folder: &Path) {}
 
 /// What a dialog asks, said to a panel (an open panel is a save panel).
 fn prepare(panel: &NSSavePanel, of: &FileDialog, kinds: bool) {
@@ -144,37 +155,29 @@ impl Sounds for MacShell {
 }
 
 impl Meter for MacShell {
-    // ponytail: not read yet (the task's info, by Mach); a view that shows it shows nothing.
     fn usage(&self) -> Option<Usage> {
-        None
+        process_usage()
     }
 }
 
 impl Tray for MacShell {
-    // ponytail: no item in the menu bar yet (`NSStatusItem`): refused, as the trait allows.
     fn add(
         &self,
-        _image: Option<&TrayImage>,
-        _tooltip: &str,
-        _menu: &[&str],
-        _events: quadra_async::Sender<TrayEvent>,
+        image: Option<&TrayImage>,
+        tooltip: &str,
+        menu: &[&str],
+        events: quadra_async::Sender<TrayEvent>,
     ) -> Option<Box<dyn TrayIcon>> {
-        None
+        Some(Box::new(MacTray::add(image, tooltip, menu, events)?))
     }
 }
 
-/// On macOS an app's kinds of file are written in its bundle (`Info.plist`), which the
-/// system reads when the app is put in place: nothing is registered while it runs.
-impl Associations for MacShell {
-    fn register(&self, _types: &FileTypes) -> Result<(), String> {
-        Err("on macOS an app's kinds of file are those its bundle names".to_string())
+impl TrayIcon for MacTray {
+    fn notify(&self, title: &str, text: &str) {
+        MacTray::notify(self, title, text);
     }
 
-    fn opener_of(&self, _extension: &str) -> Option<PathBuf> {
-        None
-    }
-
-    fn choose_default(&self, _types: &FileTypes) -> bool {
-        false
+    fn set_tooltip(&mut self, tooltip: &str) {
+        MacTray::set_tooltip(self, tooltip);
     }
 }

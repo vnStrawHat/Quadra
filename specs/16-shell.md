@@ -212,10 +212,66 @@ The same traits behind the same `install`, by `quadra-shell/src/mac` (23, M3):
   files (`quadra-<id>.sock`); a later one hands it the folder it started in and its
   arguments, and returns once the first has them. A socket nobody listens on, left by a
   process that ended, is taken away. Two started in the same instant may both be the first.
-- **Crash reports** are the system's own (`~/Library/Logs/DiagnosticReports`):
-  `crash_reports` writes nothing.
-- **File types** are those the app's bundle names (`Info.plist`): `Associations::register`
-  says so, and nothing is registered while the app runs.
+- **Crash reports**: macOS writes the report of a crash itself
+  (`~/Library/Logs/DiagnosticReports`). What it cannot know, the app adds: `crash_reports`
+  handles the signals of a crash (an instruction that is none, a trap, an abort, arithmetic,
+  the two of memory) on the stack kept for signals, writes `<date-time>.txt` with the signal
+  and the log's last 100 lines in the folder, and returns, so what crashed crashes again
+  under the system's handler, which writes its report and ends the process. A panic that
+  aborts is the report of panics' to tell. The handler allocates and writes a file, which a
+  handler of signals is not promised it can: an alarm ends a process that waits there for
+  itself.
+- **File types** are those the app's bundle names (`Info.plist`), which Launch Services
+  reads when it registers the bundle. `Associations::register` has it read the bundle the
+  program is in again (`LSRegisterURL`), and says why not for a program in no bundle.
+  `opener_of` asks which app opens the kind an extension is of
+  (`UTTypeCreatePreferredIdentifierForTag`, `LSCopyDefaultApplicationURLForContentType`) and
+  gives the program its bundle names, so an app compares it with its own as on Windows. On
+  macOS an app may make itself the default: `choose_default` does
+  (`LSSetDefaultRoleHandlerForContentType`, for each of its extensions' kinds), and is false
+  when the system refused or the program is in no bundle. These are Launch Services' calls
+  of C, deprecated since macOS 12 and kept; `NSWorkspace`'s when the oldest macOS served
+  (11) has them.
+- **The tray** is an item in the menu bar (`NSStatusItem`) with the app's picture (RGBA, at
+  18 points) or a copy of the app's icon, and the tooltip. As the menu bar's items do, one
+  with a menu opens it when it is clicked, and an item chosen is `TrayEvent::Item`; one
+  with no menu tells its click (`TrayEvent::Click`). There is no double click there.
+  Dropping the icon takes the item away.
+- **Notifications** are said by the system's `osascript` (`display notification`, the
+  title and the text passed as arguments, never as script): they show under Script
+  Editor's picture, not the app's. `UNUserNotificationCenter`, which wants the app in a
+  bundle and the user's leave, when an app on macOS has much to say.
+- **Process usage** is read from the system's `libproc` (`proc_pid_rusage`, the task's
+  info), where Activity Monitor reads: the processor time (the system's clock ticks, made
+  time), the time since the process started (which leaves out the time the Mac slept), the
+  memory Activity Monitor shows (the physical footprint, as `memory` and as
+  `private_bytes`), what is resident and the most that was, the threads. Another process
+  from outside, for the runner: its processor time in nanoseconds stands for the cycle
+  count (`cycles_per_second` is 10^9), its footprint for its memory, and its window is
+  shown when the window server lists one of its own at the layer of apps' windows.
+  `shell_process`: the path (`proc_pidpath`), the processes it started (`proc_listpids`),
+  the newest's arguments (`sysctl`, `KERN_PROCARGS2`) with a space between two.
+  `user_environment` is the process's own: macOS keeps none beside the processes, and a
+  shell makes its own from its profiles.
+- **Passwords and sealing** are CommonCrypto's, in the form Windows writes, so a vault
+  sealed on one system opens on the other (`tests/seal.rs` opens on every system what
+  Windows sealed): `CC_SHA256`, `CCKeyDerivationPBKDF` (PBKDF2 with HMAC-SHA256),
+  AES-256-GCM by `CCCryptorGCMOneshotEncrypt` and `Decrypt` (in the system's library since
+  macOS 10.13; declared in the header Apple's own code uses, not in the public one), random
+  bytes from `/dev/urandom`. The hash a password is kept as (`pbkdf2-sha256$...`) is made
+  and verified by code shared by the systems (`secret.rs`).
+- **Fetching** is the `curl` macOS ships (`/usr/bin/curl`), so the system's certificates
+  and TLS are used and nothing of HTTP is linked in: the body comes on its output piece by
+  piece, the status last on the other stream, an error is `curl`'s words. Redirects are
+  followed, never from https to http (`--proto-redir`); connecting gives up after 10 s, a
+  silence after 30 s. The proxy is the one named by hand, or the one System Settings names
+  for the address's scheme with the hosts it leaves out (`scutil --proxy`); the
+  environment's variables are not read. A proxy found by a script (a PAC file) is not
+  asked: the request goes straight. The updater (22) checks, fetches and verifies on macOS
+  by it; installing there waits for the bundle (23).
+- **The console** (`console`): the size is the terminal's (`TIOCGWINSZ`), `enable_vt` is
+  whether the output is a terminal (it reads the sequences with nothing to turn on), and
+  `write` writes to the output at once.
 - **Files the system asks the app to open** (the Finder, `open`, a file dropped on the
   app's icon) reach an app in a bundle as an event of the application, not as arguments,
   whether it runs already or is started for them. The first instance's inbox is given them
@@ -228,8 +284,12 @@ The same traits behind the same `install`, by `quadra-shell/src/mac` (23, M3):
   scale; the icon is made of the app's `.ico` by the system's `sips` when it can; the bundle
   is signed ad hoc, which runs on the Mac that made it. Not yet: a Developer ID signature
   and notarization, which an app that ships to others needs.
-- **Not yet**: the tray (`Tray::add` refuses), process usage (`Meter::usage` is none),
-  passwords, sealing and fetching (23, M4).
+- **Tests**: the tests of fetching, hashing, sealing, passwords, usage and a process read
+  from outside are the same on both systems and run on the CI's Mac. There alone
+  (`CI` set) an item is put in the menu bar and taken away (`tests/tray_mac.rs`), and the
+  bundle the job made is registered, made the default for `.md` and asked back
+  (`tests/assoc_mac.rs`, `QUADRA_BUNDLE`): no test changes a person's menu bar or which app
+  opens their files.
 
 ## Packaging
 

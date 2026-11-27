@@ -30,7 +30,7 @@ here changes what a Windows build is or measures.
 | Accessibility | UI Automation, by `accesskit_windows` | NSAccessibility, by `accesskit`'s adapter for macOS (01, R11) |
 | Image decoding | WIC | Image I/O |
 | Shell services (16) | `quadra-shell/src/win` | `quadra-shell/src/mac` |
-| Sealing, hashing, fetching (16) | CNG, WinHTTP | the system's (CommonCrypto, URLSession), decided in M3 |
+| Sealing, hashing, fetching (16) | CNG, WinHTTP | the system's: CommonCrypto, and the `curl` it ships (16, "On macOS") |
 | Pseudo terminal (18) | ConPTY | the POSIX pty of `oneterm-vt` |
 | Updates (22) | an `.exe` replaced while it runs | an app bundle; decided when an app ships there |
 
@@ -79,8 +79,9 @@ The user's machine runs Windows; a Mac is not at hand yet.
 `tools/check_mac.sh` names the packages that are not built for macOS; the list is what is
 left of the port, and a milestone ends by taking names off it:
 
-- `quadra-native-win`, and the tools that measure with it (the comparison bench and its
-  runner, the fire demo) (M2, M5).
+- `quadra-native-win`, and the tools that measure with it (the comparison bench, the fire
+  demo) (M2, M5). The bench's runner, which measures an app from outside by the shell,
+  builds for macOS.
 - Every package of OneTerm, for good (Goals).
 
 Where Quadra has no native crate at all (not Windows, not macOS), `quadra::App` is an app on
@@ -270,13 +271,19 @@ there are. They are not compared with the Windows ones yet. `tools/ci_mac.sh` (t
 
 ## The shell (M3, as built)
 
-`quadra-shell/src/mac` (16, "On macOS"): AppKit's panels and alert for the dialogs, the
-system's `open` for opening, the alert sound, one instance over a socket, and crash reports
-left to the system. `quadra_shell::install` gives an app's views the same services as on
-Windows, so the app `markdown` builds for macOS and its tests run on the runner; the test
-of one instance runs there too. What shows something to the user (a panel, an alert, what
-`open` opens) is tried by hand on a real Mac. Not yet: an item in the menu bar for the
-tray, process usage, and what M4 needs (sealing, hashing, fetching).
+`quadra-shell/src/mac` (16, "On macOS") gives on macOS every service the shell gives on
+Windows, under the same names: AppKit's panels and alert for the dialogs, the system's
+`open` for opening, the alert sound, one instance over a socket, an item in the menu bar
+for the tray, notifications, the app's kinds of file (Launch Services), what a process
+used, a shell's process, sealing, hashing and passwords (CommonCrypto, in the form Windows
+writes), fetching (the system's `curl`), the console, and the log's last lines beside the
+system's report of a crash. `quadra_shell::install` gives an app's views the same services
+as on Windows, so the app `markdown` builds for macOS and its tests run on the runner, and
+the updater checks, fetches and verifies there. The shell's tests that ask nobody are the
+same on both systems and run on the runner; what shows something to the user (a panel, an
+alert, what `open` opens, a notification) is tried by hand on a real Mac. Markdown's
+Settings say what Set as default does on a Mac (the app makes itself the one that opens
+`.md`, from its bundle) and what draws it there.
 
 The tool that draws Markdown's screens (`bench/markdown-shots`) draws with the system it
 runs on, as the gallery's does: the CI's job draws them on a Mac after the gallery's pages
@@ -320,7 +327,10 @@ only what its screen showed (above, "What the runner's screen shows") is known t
 - The menu bar: Hide, Quit (the windows are asked), Minimize, Zoom.
 - The shell: the open and save panels, an alert, `open` of a file and of a link, the alert
   sound; a second start of an app that is one instance; a `.md` file opened from the
-  Finder, and one dropped on the app's icon, with the app running and not.
+  Finder, and one dropped on the app's icon, with the app running and not. Set as default
+  in Markdown's Settings, then a `.md` file opened from the Finder. An item in the menu
+  bar: its picture, its menu, an item chosen, a notification. A fetch behind a proxy named
+  in System Settings.
 - A file and text dragged from another program onto a window.
 - VoiceOver reading a window: the controls, a text input's caret and selection, an action.
 - A window closed and opened again where it was, with a display taken away between.
@@ -329,9 +339,9 @@ only what its screen showed (above, "What the runner's screen shows") is known t
 
 What the port leaves, and why: an app's own menus in the menu bar (the keys of an Edit
 menu are taken before the view sees them, and what a disabled item does with its key wants
-a Mac to try); the tray, process usage,
-passwords, sealing and fetching and the updater's bundle (only OneTerm asks for them, and
-its repository ports it); a Developer ID signature and notarization (the user's account).
+a Mac to try); installing an update (the updater's app bundle, decided when an app ships
+there); notifications under the app's own picture and a proxy found by a script (16, "On
+macOS"); a Developer ID signature and notarization (the user's account).
 
 ## Milestones
 

@@ -56,20 +56,34 @@ objc2 = "0.6.5"
 objc2-foundation = { version = "0.3.2", default-features = false, features = [
     "std",
     "NSArray",
+    "NSBundle",
+    "NSDictionary",
+    "NSGeometry",
+    "NSObject",
     "NSString",
     "NSURL",
+    "NSValue",
 ] }
 objc2-app-kit = { version = "0.3.2", default-features = false, features = [
     "std",
+    "objc2-core-foundation",
     "NSAlert",
     "NSApplication",
+    "NSBitmapImageRep",
     "NSButton",
     "NSControl",
     "NSGraphics",
+    "NSImage",
+    "NSImageRep",
+    "NSMenu",
+    "NSMenuItem",
     "NSOpenPanel",
     "NSPanel",
     "NSResponder",
     "NSSavePanel",
+    "NSStatusBar",
+    "NSStatusBarButton",
+    "NSStatusItem",
     "NSView",
     "NSWindow",
 ] }
@@ -78,6 +92,11 @@ objc2-app-kit = { version = "0.3.2", default-features = false, features = [
 quadra-platform = { path = "../quadra-platform" }
 quadra-text = { path = "../quadra-text" }
 quadra-view = { path = "../quadra-view" }
+
+# On the main thread, as an application's code is (the item in the menu bar).
+[[test]]
+name = "tray_mac"
+harness = false
 
 # Explicitly not inheriting the workspace lints (see above).
 [lints]

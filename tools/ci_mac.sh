@@ -3,7 +3,8 @@
 # tools/ci_mac.sh [branch]. It asks GitHub through `gh`, signed in (`gh auth login`): the
 # run's notice (the tests that passed), the end of the log of what failed, and the pictures
 # the job drew on the Mac, which it puts in .tmp/ci/mac-dark: the gallery's pages in its
-# folder `dark`, Markdown's screens in `markdown`.
+# folder `dark`, Markdown's screens in `markdown`, the runner's screen with Markdown in a
+# real window in `window` (tools/window_mac.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # Where the installer of Windows puts it, for a shell opened before it was installed.

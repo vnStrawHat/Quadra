@@ -64,6 +64,15 @@ jobs:
           echo "== the bundle" | tee -a check_mac.log
           PACKAGE_PROFILE=dev bash tools/package_mac.sh markdown 2>&1 | tee -a check_mac.log
 
+      # The bundle in a real window, as the runner's screen shows it (specs/23, "What a real
+      # Mac is asked"): a try that fails no job, as a runner may show or capture nothing.
+      - name: Markdown in a real window
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          echo "== a real window" | tee -a check_mac.log
+          bash tools/window_mac.sh 2>&1 | tee -a check_mac.log
+
       # Markdown's screens the same way (specs/23, M3): the app as it is on a Mac.
       - name: Markdown's screens as pictures
         run: |
@@ -79,6 +88,7 @@ jobs:
           path: |
             .tmp/shots/dark
             .tmp/shots/markdown
+            .tmp/shots/window
           if-no-files-found: ignore
           retention-days: 14
 

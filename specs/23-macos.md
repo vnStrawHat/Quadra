@@ -64,6 +64,11 @@ The user's machine runs Windows; a Mac is not at hand yet.
 - **What a runner cannot say**: how a window feels. Resizing, the trackpad, input methods,
   Retina, the menu bar and the timing of a frame are tried on a real Mac, by hand, as the
   manual checks of R5 were on Windows. M2's window work waits for one.
+- **What the runner's screen shows**: the job opens Markdown's bundle as the Finder opens a
+  file, asks it for a second file while it runs and asks it to quit, and keeps pictures of
+  the whole screen with the run (`tools/window_mac.sh`, in `.tmp/shots/window`): the one
+  place the system's three buttons are seen over the app's title bar. A try that fails no
+  job: a runner may capture nothing.
 
 ## What is left out, for now
 

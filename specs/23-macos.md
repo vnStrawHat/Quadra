@@ -290,6 +290,36 @@ on a Mac runs its test (a command through `sh`). Keys are a Mac's (18, "Input").
 a terminal in an app built for macOS (the gallery has none on either system), and the
 updater's app bundle.
 
+## What a real Mac is asked
+
+The runner shows no window and has no user: what follows is tried by hand, once, on a real
+Mac, and what it finds is fixed there. Until then each is built and tested as far as the
+runner goes, and none is known to work.
+
+- A window that shows: the gallery (`cargo run -p quadra-gallery`) and Markdown from its
+  bundle (`tools/package_mac.sh markdown`, then the Finder). The system's three buttons
+  over the title bar and what they do; the window dragged by the bar, zoomed by two presses
+  on it, resized; the full screen and back (the bar takes the buttons' room, then gives it).
+- Retina, and a window moved between displays of two scales.
+- Keys: Command for shortcuts, the keys of text and of the editor, Control with a press as
+  the other button; an input method (Vietnamese Telex, Japanese) with its candidates beside
+  the caret.
+- The menu bar: Hide, Quit (the windows are asked), Minimize, Zoom.
+- The shell: the open and save panels, an alert, `open` of a file and of a link, the alert
+  sound; a second start of an app that is one instance; a `.md` file opened from the
+  Finder, and one dropped on the app's icon, with the app running and not.
+- A file and text dragged from another program onto a window.
+- VoiceOver reading a window: the controls, a text input's caret and selection, an action.
+- A window closed and opened again where it was, with a display taken away between.
+- A local shell in a terminal view: Control with C, Command with C and V, Option.
+- The budgets of 14 (M5): the time of a frame, memory, an idle app that does not wake.
+
+What the port leaves, and why: an app's own menus in the menu bar (the keys of an Edit
+menu are taken before the view sees them, and what a disabled item does with its key wants
+a Mac to try); the three buttons at the middle of a taller bar; the tray, process usage,
+passwords, sealing and fetching and the updater's bundle (only OneTerm asks for them, and
+its repository ports it); a Developer ID signature and notarization (the user's account).
+
 ## Milestones
 
 | | Builds | Exit |

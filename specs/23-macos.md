@@ -283,7 +283,10 @@ the updater checks, fetches and verifies there. The shell's tests that ask nobod
 same on both systems and run on the runner; what shows something to the user (a panel, an
 alert, what `open` opens, a notification) is tried by hand on a real Mac. Markdown's
 Settings say what Set as default does on a Mac (the app makes itself the one that opens
-`.md`, from its bundle) and what draws it there.
+`.md`, from its bundle) and what draws it there. An app's folders (15, "Where files go")
+are `~/Library/Application Support/<name>` for its settings and `~/Library/Logs/<name>`
+for its log and crash reports; what an app says of its keys (a tooltip, the editor's hint
+over a link) is written as the system writes keys.
 
 The tool that draws Markdown's screens (`bench/markdown-shots`) draws with the system it
 runs on, as the gallery's does: the CI's job draws them on a Mac after the gallery's pages

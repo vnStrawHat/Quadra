@@ -22,11 +22,21 @@ pub struct AppDirs {
 }
 
 impl AppDirs {
-    /// The folders of the user's account for an app of this name: under `%APPDATA%` and
-    /// `%LOCALAPPDATA%`. None where the environment does not say them.
+    /// The folders of the user's account for an app of this name: on Windows under
+    /// `%APPDATA%` and `%LOCALAPPDATA%`, on macOS under `~/Library/Application Support` and
+    /// `~/Library/Logs`. None where the environment does not say them.
     pub fn for_app(name: &str) -> Option<AppDirs> {
-        let under = |var: &str| std::env::var_os(var).map(|root| PathBuf::from(root).join(name));
-        Some(AppDirs { config: under("APPDATA")?, data: under("LOCALAPPDATA")? })
+        AppDirs::from(name, cfg!(target_os = "macos"), |var| std::env::var_os(var).map(PathBuf::from))
+    }
+
+    /// The folders as a system's convention has them, of what its environment says.
+    fn from(name: &str, mac: bool, said: impl Fn(&str) -> Option<PathBuf>) -> Option<AppDirs> {
+        if mac {
+            let library = said("HOME")?.join("Library");
+            let config = library.join("Application Support").join(name);
+            return Some(AppDirs { config, data: library.join("Logs").join(name) });
+        }
+        Some(AppDirs { config: said("APPDATA")?.join(name), data: said("LOCALAPPDATA")?.join(name) })
     }
 
     /// Both under one folder: tests, and an app that is carried on a stick.
@@ -112,5 +122,21 @@ impl<R: Renderer> App<R> {
     /// The system's appearance as it is now.
     pub fn appearance(&self) -> Appearance {
         self.appearance.get_untracked()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_app_s_folders_are_where_its_system_keeps_them() {
+        let said = |var: &str| Some(PathBuf::from(format!("/{var}")));
+        let mac = AppDirs::from("App", true, said).unwrap();
+        assert_eq!(mac.config, Path::new("/HOME/Library/Application Support/App"));
+        assert_eq!(mac.data, Path::new("/HOME/Library/Logs/App"));
+        let win = AppDirs::from("App", false, said).unwrap();
+        assert_eq!((win.config, win.data), ("/APPDATA/App".into(), "/LOCALAPPDATA/App".into()));
+        assert_eq!(AppDirs::from("App", true, |_| None), None);
     }
 }

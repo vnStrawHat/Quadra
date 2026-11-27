@@ -12,7 +12,8 @@ by this file.
 An app writes nothing unless it is told where: `App::dirs(AppDirs::for_app("name"))` (then
 `Rc<AppDirs>` in the context of views) takes
 the folders of the user's account (`%APPDATA%\name` for settings, `%LOCALAPPDATA%\name` for
-logs and crash reports), read from the environment. Without them settings live in memory,
+logs and crash reports; on macOS `~/Library/Application Support/name` and
+`~/Library/Logs/name`), read from the environment. Without them settings live in memory,
 the log in its ring, and a crash report on the standard error stream. So tests, the shots
 tool and the benches never write outside the project; a test that does gives a folder under
 `.tmp/`.

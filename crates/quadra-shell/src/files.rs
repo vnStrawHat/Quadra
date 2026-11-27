@@ -86,7 +86,8 @@ pub trait Associations {
     fn register(&self, types: &FileTypes) -> Result<(), String>;
     /// The program that opens files of `extension` (`.md`) now, if any.
     fn opener_of(&self, extension: &str) -> Option<PathBuf>;
-    /// Shows where the user makes the app the default: no app may do it itself.
+    /// Shows where the user makes the app the default (Windows), or asks the system to make
+    /// it, which asks the user (macOS): no app may do it by itself.
     fn choose_default(&self, types: &FileTypes) -> bool;
 }
 

@@ -282,8 +282,8 @@ as on Windows, so the app `markdown` builds for macOS and its tests run on the r
 the updater checks, fetches and verifies there. The shell's tests that ask nobody are the
 same on both systems and run on the runner; what shows something to the user (a panel, an
 alert, what `open` opens, a notification) is tried by hand on a real Mac. Markdown's
-Settings say what Set as default does on a Mac (the app makes itself the one that opens
-`.md`, from its bundle) and what draws it there. An app's folders (15, "Where files go")
+Settings say what Set as default does on a Mac (the app asks to be the one that opens
+`.md`, from its bundle, and macOS may ask the user to confirm) and what draws it there. An app's folders (15, "Where files go")
 are `~/Library/Application Support/<name>` for its settings and `~/Library/Logs/<name>`
 for its log and crash reports; what an app says of its keys (a tooltip, the editor's hint
 over a link) is written as the system writes keys.
@@ -331,7 +331,8 @@ only what its screen showed (above, "What the runner's screen shows") is known t
 - The shell: the open and save panels, an alert, `open` of a file and of a link, the alert
   sound; a second start of an app that is one instance; a `.md` file opened from the
   Finder, and one dropped on the app's icon, with the app running and not. Set as default
-  in Markdown's Settings, then a `.md` file opened from the Finder. An item in the menu
+  in Markdown's Settings: what macOS asks, the line that says Markdown opens `.md` once
+  the window is back, then a `.md` file opened from the Finder. An item in the menu
   bar: its picture, its menu, an item chosen, a notification. A fetch behind a proxy named
   in System Settings.
 - A file and text dragged from another program onto a window.

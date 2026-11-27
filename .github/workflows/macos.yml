@@ -64,39 +64,6 @@ jobs:
           echo "== the bundle" | tee -a check_mac.log
           PACKAGE_PROFILE=dev bash tools/package_mac.sh markdown 2>&1 | tee -a check_mac.log
 
-      # The bundle made the app that opens its files (specs/16, "On macOS"): asked of Launch
-      # Services for the runner's user, which nothing but this job uses.
-      - name: Markdown made the app of its files
-        run: |
-          set -o pipefail
-          echo "== the app of .md files" | tee -a check_mac.log
-          QUADRA_BUNDLE="$PWD/target/package/Markdown.app" bash tools/cargo.sh test -p quadra-shell --test assoc_mac 2>&1 | tee -a check_mac.log
-
-      # Asked of the runner's macOS once (specs/16, "On macOS"): what makes an app the default
-      # for a kind of file there, and when. It fails no job, and goes when it has answered.
-      - name: What makes an app the default, asked of the system
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        run: |
-          cat > "$RUNNER_TEMP/assoc.swift" <<'SWIFT'
-          import AppKit
-          import UniformTypeIdentifiers
-          let app = URL(fileURLWithPath: CommandLine.arguments[1])
-          let kind = UTType(filenameExtension: "md")!
-          let ws = NSWorkspace.shared
-          func now() -> String { ws.urlForApplication(toOpen: kind)?.path ?? "none" }
-          print("assoc: the kind of .md is \(kind.identifier); its app is \(now())")
-          let done = DispatchSemaphore(value: 0)
-          ws.setDefaultApplication(at: app, toOpen: kind) { error in
-              print("assoc: the workspace said \(String(describing: error))")
-              done.signal()
-          }
-          print("assoc: at once its app is \(now())")
-          print("assoc: the wait for the workspace: \(done.wait(timeout: .now() + 20))")
-          print("assoc: then its app is \(now())")
-          SWIFT
-          swift "$RUNNER_TEMP/assoc.swift" "$PWD/target/package/Markdown.app" 2>&1 | tee -a check_mac.log
-
       # The bundle in a real window, as the runner's screen shows it (specs/23, "What a real
       # Mac is asked"): a try that fails no job, as a runner may show or capture nothing.
       - name: Markdown in a real window
@@ -112,6 +79,19 @@ jobs:
           set -o pipefail
           echo "== Markdown's screens" | tee -a check_mac.log
           bash tools/cargo.sh run -q -p quadra-bench-markdown-shots -- .tmp/shots/markdown 2>&1 | tee -a check_mac.log
+
+      # The bundle asks to be the app that opens its files (specs/16, "On macOS"), of Launch
+      # Services and the workspace, for the runner's user, which nothing but this job uses.
+      # The system lets the user say yes first, and a runner has none: the picture is what
+      # its screen shows then. Last, so that nothing it shows is over the pictures above.
+      - name: Markdown asks to be the app of its files
+        run: |
+          set -o pipefail
+          echo "== the app of .md files" | tee -a check_mac.log
+          QUADRA_BUNDLE="$PWD/target/package/Markdown.app" bash tools/cargo.sh test -p quadra-shell --test assoc_mac -- --nocapture 2>&1 | tee -a check_mac.log
+          mkdir -p .tmp/shots/window
+          sleep 3
+          screencapture -x .tmp/shots/window/default.png || true
 
       - name: Keep the pictures
         if: always()

@@ -1,6 +1,7 @@
 //! File types on macOS (specs/16, "On macOS"): an app's kinds of file are those its bundle
 //! names (`Info.plist`), which Launch Services reads when it registers the bundle. Which app
-//! opens a kind is asked of it, and an app may make itself the one.
+//! opens a kind is asked of it, and an app may ask to be the one: the system lets the user
+//! agree first.
 
 use std::ffi::c_void;
 use std::path::{Path, PathBuf};
@@ -44,8 +45,9 @@ unsafe extern "C" {}
 type MakeDefault = unsafe extern "C-unwind" fn(&NSWorkspace, Sel, &NSURL, &AnyObject, *const c_void);
 
 /// Asks the workspace to make the app in `bundle` the one that opens `kind` (macOS 12 and
-/// later, where the call of Launch Services answers and changes nothing). It is done a
-/// moment later; false where the workspace has no such call.
+/// later, where the call of Launch Services answers and changes nothing). The system asks
+/// the user where it wants their yes, and makes the change then; false where the workspace
+/// has no such call.
 fn ask_workspace(bundle: &NSURL, kind: &NSString) -> bool {
     let workspace = NSWorkspace::sharedWorkspace();
     let make = sel!(setDefaultApplicationAtURL:toOpenContentType:completionHandler:);
@@ -111,8 +113,9 @@ impl Associations for MacShell {
         quadra_native_mac::file_path(&*NSBundle::bundleWithURL(&app)?.executableURL()?)
     }
 
-    /// Makes the app the one that opens its kinds: on macOS an app may. Asked of the
-    /// workspace, and of Launch Services for a macOS before the workspace's call.
+    /// Asks the system to make the app the one that opens its kinds, of the workspace and,
+    /// for a macOS before the workspace's call, of Launch Services. True when it took the
+    /// asking: the change is made once the user agrees, where the system asks them.
     fn choose_default(&self, types: &FileTypes) -> bool {
         let Some(bundle) = bundle_of(&types.exe).and_then(NSURL::from_file_path) else { return false };
         let Some(id) = NSBundle::bundleWithURL(&bundle).and_then(|it| it.bundleIdentifier()) else {

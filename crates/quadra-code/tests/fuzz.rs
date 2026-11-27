@@ -125,7 +125,9 @@ fn a_long_line_of_what_never_closes_is_read_in_the_time_its_length_takes() {
             let started = Instant::now();
             check(*lang, &line, 0, &mut out);
             let took = started.elapsed();
-            assert!(took < Duration::from_millis(500), "{} took {took:?} for a line of {unit:?}", lang.0);
+            // Far under what a line read again for each of its characters takes, and over
+            // what a shared runner takes on a slow day (550 ms seen on the Mac of the CI).
+            assert!(took < Duration::from_secs(2), "{} took {took:?} for a line of {unit:?}", lang.0);
         }
     }
 }

@@ -247,7 +247,7 @@ impl Widget for RichText {
         self.tiles.clear();
         match &self.ellipsis {
             Some(Some(dots)) if paragraph.size().width > cx.rect.width + 0.5 => {
-                cut(cx, paragraph, dots, (color, text), &mut self.tiles)
+                cut(cx, paragraph, (dots, false), (color, text), &mut self.tiles)
             }
             _ => paint_runs(cx, paragraph, cx.rect.origin(), color, &mut self.tiles),
         }

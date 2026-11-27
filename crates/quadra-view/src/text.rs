@@ -20,12 +20,20 @@ pub struct TextView {
     color: Option<Paint>,
     selectable: bool,
     ellipsis: bool,
+    cut_start: bool,
 }
 
 /// Text: a constant, or something reactive whose changes set the node's text.
 pub fn text<M>(content: impl IntoProp<String, M>) -> TextView {
     let values = TextValues::default();
-    TextView { content: content.into_prop(), values, color: None, selectable: false, ellipsis: false }
+    TextView {
+        content: content.into_prop(),
+        values,
+        color: None,
+        selectable: false,
+        ellipsis: false,
+        cut_start: false,
+    }
 }
 
 impl TextView {
@@ -64,6 +72,13 @@ impl TextView {
     /// text (a tab's title under a width it may not pass) shows what fits and "…".
     pub fn ellipsis(mut self) -> Self {
         self.ellipsis = true;
+        self
+    }
+
+    /// One line, cut with an ellipsis at its start: "…" and the end of the words, for words
+    /// whose end tells one from another (`user@host:port`, a path).
+    pub fn ellipsis_start(mut self) -> Self {
+        (self.ellipsis, self.cut_start) = (true, true);
         self
     }
 }
@@ -138,7 +153,7 @@ impl View for TextView {
         };
         let style = Style { text: self.values, ..Style::default() };
         let mut widget = Text::new(initial);
-        widget.ellipsis = self.ellipsis.then_some(None);
+        (widget.ellipsis, widget.cut_start) = (self.ellipsis.then_some(None), self.cut_start);
         let id = cx.tree.insert_widget(style, Box::new(widget));
         if let Some(color) = self.color {
             cx.tree.patch_style(id, Patch::TextColor(color));

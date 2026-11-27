@@ -315,7 +315,10 @@ locale at the window root; a subtree can provide its own.
   when the text changes. Its key context is "text-select", which binds those two keys only.
 - `text(..).ellipsis()` is one line, as wide as its box lets it be: when the box is
   narrower than the text, what fits is painted and an ellipsis after it (shaped at measure;
-  cutting is paint alone).
+  cutting is paint alone). `text(..).ellipsis_start()` cuts the other end: the ellipsis,
+  then the end of the words as far as it fits, for words whose end tells one from another
+  (`user@host:port`, a path). It is the left of the line that goes, whatever the direction
+  of the script.
 - `rich_text([span("was "), span("restarted").bold(), span("the guide").link(url)])` is one
   paragraph of spans, each saying what it has otherwise than the text around it:
   `.bold()`, `.weight(..)`, `.italic()`, `.size(px)`, `.family(name)`, `.color(..)` (a

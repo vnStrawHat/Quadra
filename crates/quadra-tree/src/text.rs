@@ -29,6 +29,8 @@ pub struct Text {
     tiles: Vec<GlyphTile>,
     /// One line, cut where its box ends with an ellipsis, shaped at measure.
     pub ellipsis: Option<Option<std::rc::Rc<Word>>>,
+    /// The ellipsis stands where the line starts, and what shows is its end.
+    pub cut_start: bool,
     /// The available widths the last measure's size holds for; the height it never reads.
     holds: Option<(f32, f32)>,
 }
@@ -38,8 +40,8 @@ impl Text {
         let (text, style, color) = (text.into(), TextStyle::default(), Color::BLACK);
         let (selected, selection) = ((0, 0), Color::TRANSPARENT);
         let (tiles, ellipsis) = (Vec::new(), None);
-        let (paragraph, stale, holds) = (None, false, None);
-        Text { text, style, color, selection, paragraph, stale, selected, tiles, ellipsis, holds }
+        let (paragraph, stale, holds, cut_start) = (None, false, None, false);
+        Text { text, style, color, selection, paragraph, stale, selected, tiles, ellipsis, cut_start, holds }
     }
 
     /// The offset in the text nearest a point from the node's corner.
@@ -141,7 +143,7 @@ impl Widget for Text {
         match &self.ellipsis {
             Some(Some(dots)) if paragraph.size().width > cx.rect.width + 0.5 => {
                 let color = self.color;
-                cut(cx, paragraph, dots, (|_| color, color), &mut self.tiles)
+                cut(cx, paragraph, (dots, self.cut_start), (|_| color, color), &mut self.tiles)
             }
             _ => paint_glyphs(cx, paragraph, cx.rect.origin(), self.color, &mut self.tiles),
         }
@@ -167,10 +169,11 @@ impl Widget for Text {
 
 /// Paints the one line of a paragraph as far as there is room for it and an ellipsis after
 /// it, at the node's corner: each glyph in the colour of its run, the ellipsis in `plain`.
+/// With `at_start` it is the ellipsis and then the end of the line, as far as it fits.
 pub(crate) fn cut(
     cx: &mut PaintCx,
     paragraph: &Paragraph,
-    dots: &Word,
+    (dots, at_start): (&Word, bool),
     (color, plain): (impl Fn(usize) -> Color, Color),
     tiles: &mut Vec<GlyphTile>,
 ) {
@@ -178,14 +181,22 @@ pub(crate) fn cut(
     let (scale, origin) = (cx.scale, cx.rect.origin());
     let baseline = ((origin.y + line.baseline) * scale).round();
     let (glyphs, start) = paragraph.line_glyphs(line);
-    let room = cx.rect.width - dots.width;
+    let (room, whole) = (cx.rect.width - dots.width, paragraph.size().width);
+    // What is kept: from the line's start what ends within the room, or to its end what
+    // starts within the room from there.
+    let kept = |x: f32, advance: f32| if at_start { whole - x <= room } else { x + advance <= room };
+    let kept = || glyphs.iter().filter(|g| kept(g.x - start, g.advance));
+    // The kept end of a line is moved to stand right after the ellipsis.
+    let first = kept().map(|g| g.x - start).fold(whole, f32::min);
+    let by = if at_start { dots.width - first } else { 0.0 };
     let mut end = 0.0f32;
-    for g in glyphs.iter().filter(|g| g.x - start + g.advance <= room) {
+    for g in kept() {
         let (run, size) = paragraph.run_at(g.cluster as usize);
-        let pen = Point::new((origin.x + g.x - start) * scale, baseline - (g.y * scale).round());
+        let pen = Point::new((origin.x + g.x - start + by) * scale, baseline - (g.y * scale).round());
         tiles.extend(paint_glyph(cx, (g.face, g.id), size * scale, pen, color(run)));
         end = end.max(g.x - start + g.advance);
     }
+    let end = if at_start { 0.0 } else { end };
     for g in &dots.glyphs {
         let pen = Point::new((origin.x + end + g.x) * scale, baseline - (g.y * scale).round());
         tiles.extend(paint_glyph(cx, (g.face, g.id), paragraph.style().size * scale, pen, plain));

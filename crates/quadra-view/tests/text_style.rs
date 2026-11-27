@@ -96,3 +96,28 @@ fn a_text_with_an_ellipsis_shows_what_fits_and_dots_where_its_box_ends() {
     let node = h.get_by_text("abcdefghij").node();
     assert_eq!(h.tree.window_rect(node).height, 14.0); // one line all the way
 }
+
+#[test]
+fn an_ellipsis_at_the_start_shows_the_dots_and_then_the_end_of_the_words() {
+    let mut h = Harness::new();
+    h.mount(move || {
+        let (end, start) = (text("abcdefghij").ellipsis(), text("abcdefghij").ellipsis_start());
+        column().text_size(10.0).child(div().width(30.0).child(end)).child(div().width(30.0).child(start))
+    });
+    h.frame();
+    // Each glyph's line, its left edge and its tile, in the order they are read.
+    let scene = h.tree.scene();
+    let all = scene.roots().iter().flat_map(|&root| scene.layer(root).instances());
+    let glyphs = all.filter(|i| i.kind == quadra_render::Kind::Mono as u32);
+    let mut glyphs: Vec<(f32, f32, [f32; 4])> = glyphs.map(|i| (i.bounds[1], i.bounds[0], i.uv)).collect();
+    glyphs.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.total_cmp(&b.1)));
+    // 6 px a letter on the fake backend, and as much for the dots: four letters and them.
+    assert_eq!(glyphs.len(), 10, "{glyphs:?}");
+    let (end, start) = glyphs.split_at(5);
+    // The dots end one line and start the other, where the box starts.
+    assert_eq!(start[0].2, end[4].2);
+    assert_eq!(start[0].1, end[0].1);
+    // After them come the last four letters, none of the first four, and all within the box.
+    assert!(start[1..].iter().all(|it| end[..4].iter().all(|first| first.2 != it.2)), "{glyphs:?}");
+    assert!(start.iter().all(|it| it.1 < 30.0) && start[4].1 > start[1].1, "{start:?}");
+}
